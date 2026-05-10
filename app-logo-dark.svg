@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Smart Sprint Planner (dark)">
+  <title>Smart Sprint Planner (dark)</title>
+  <defs>
+    <linearGradient id="bgGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A237E;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0D1B6E;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="shadowDark" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#00000060"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded square — darker for dark theme -->
+  <rect width="64" height="64" rx="12" ry="12" fill="url(#bgGradDark)" filter="url(#shadowDark)"/>
+
+  <!-- Subtle glow border -->
+  <rect x="1" y="1" width="62" height="62" rx="11" ry="11" fill="none" stroke="#3949AB" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Accent stripe top -->
+  <rect x="0" y="0" width="64" height="4" rx="2" fill="#5C6BC0" opacity="0.4"/>
+
+  <!-- Letters SSP — центрированы по обеим осям -->
+  <text
+    x="32"
+    y="32"
+    text-anchor="middle"
+    dominant-baseline="central"
+    font-family="'Segoe UI', 'Arial', sans-serif"
+    font-size="24"
+    font-weight="800"
+    fill="#EF5350"
+    letter-spacing="-1.5"
+  >SSP</text>
+
+  <!-- Underline accent (центрирован под текстом) -->
+  <rect x="16" y="52" width="32" height="3" rx="1.5" fill="#EF5350" opacity="0.8"/>
+</svg>

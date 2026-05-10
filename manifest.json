@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/youtrack-app.json",
+  "name": "smart-sprint-planner",
+  "title": "Smart Sprint Planner",
+  "description": "Multi-role sprint planning plugin for YouTrack 2024.3+. Supports 9 functional roles with separate composition tables, resources, and history snapshots. Plugin settings live in a dedicated widget with server-side authorization.",
+  "vendor": {
+    "name": "Letsrollamigo",
+    "email": "Oberon999@yandex.kz"
+  },
+  "version": "1.3.0",
+  "icon": "app-logo.svg",
+  "iconDark": "app-logo-dark.svg",
+  "minYouTrackVersion": "2024.3",
+  "settings": "settings.json",
+  "changeNotes": "v1.3.0 — Cascade aggregation parent ← child + Forbid direct work-item logging on container issues. Two new self-contained workflow rules in the YT-app root: (1) workflow-cascade-aggregation.js sums per-role plan/fact fields (derived from the existing DTA Fields → Estimate/Fact mapping) from child issues into level-2 (story-like) and level-3 (epic-like) parents along the configured parent link; max 2 hierarchy levels. (2) workflow-forbid-container.js rejects any save that adds or edits a work item on a level-2/level-3 container issue, ensuring time logging happens only on leaf children. New settings block «Cascade aggregation of work hours» exposes 7 controls: cascade-on toggle, forbid-on toggle, configurable kind-field name (default «Type»), comma-separated level-2 / level-3 value lists (defaults «Story» / «Epic»), and parent-link inward / outward names (defaults match the built-in YouTrack «Subtask» link). A live UI warning highlights the dangerous combination cascade-on + forbid-off without blocking save. All workflow strings and UI labels are localised across all 15 languages with EN fallback. See CHANGELOG.md.",
+  "widgets": [
+    {
+      "key": "ssp-main",
+      "name": "Smart Sprint Planner",
+      "description": "Sprint composition planning, task allocation, history of confirmed sprints with working drafts. Settings are accessible via the «Plugin settings» button in the page header for members of settingsManagerGroup.",
+      "extensionPoint": "PROJECT_SETTINGS",
+      "indexPath": "widgets/main/index.html"
+    }
+  ]
+}
