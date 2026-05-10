@@ -537,7 +537,7 @@ and beyond.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each release and when.
   Useful when a behaviour described here was introduced in a specific
   version.
-- [SECURITY.md](SECURITY.md) — server-side authorization model,
+- [SECURITY.md](../.github/SECURITY.md) — server-side authorization model,
   threat surface, and disclosure process. Read this before granting
   `settingsManagerGroup` to a wider audience.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — how to file bugs, request

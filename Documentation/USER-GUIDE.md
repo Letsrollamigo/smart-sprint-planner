@@ -273,7 +273,7 @@ The **Excel** button on each snapshot exports an .xlsx with columns: task, estim
 
 **Cross-user protection of working copies**: `editorLogin` is always overwritten with the server-side `ctx.currentUser.login` (defense-in-depth). Take-over of someone else's working copy is forbidden.
 
-See [SECURITY.md](SECURITY.md) for the full access matrix.
+See [SECURITY.md](../.github/SECURITY.md) for the full access matrix.
 
 ---
 

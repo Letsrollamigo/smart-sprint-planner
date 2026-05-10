@@ -1,6 +1,6 @@
 # Security Model — Smart Sprint Planner
 
-> 🇬🇧 English · 🇷🇺 [Читать по-русски](SECURITY.ru.md)
+> 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
 Applies to **v1.0.0** and later. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and explicit role hierarchy.
 

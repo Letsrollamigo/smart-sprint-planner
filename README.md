@@ -52,7 +52,7 @@ Requirements: Node.js 18+. A YouTrack 2024.3+ instance is needed for end-to-end 
 
 - [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with screenshots and configuration examples.
 - [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.
-- [SECURITY.md](Documentation/SECURITY.md) — security model, threat surface, and disclosure process.
+- [SECURITY.md](.github/SECURITY.md) — security model, threat surface, and disclosure process.
 - [CHANGELOG.md](Documentation/CHANGELOG.md) — release history.
 - [CONTRIBUTING.md](Documentation/CONTRIBUTING.md) — how to contribute (DCO sign-off required).
 - [CODE_OF_CONDUCT.md](Documentation/CODE_OF_CONDUCT.md) — community guidelines.

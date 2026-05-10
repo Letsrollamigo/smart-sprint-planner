@@ -88,4 +88,4 @@ This adds a `Signed-off-by:` line. It is a lightweight statement that you author
 
 Use [GitHub Issues](https://github.com/Letsrollamigo/smart-sprint-planner/issues). Templates are provided for both bug reports and feature requests.
 
-For security issues, please follow the disclosure process in [SECURITY.md](SECURITY.md).
+For security issues, please follow the disclosure process in [SECURITY.md](../.github/SECURITY.md).

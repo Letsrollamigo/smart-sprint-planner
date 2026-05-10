@@ -1,6 +1,6 @@
 # Модель безопасности — Smart Sprint Planner
 
-> 🇬🇧 [Read in English](SECURITY.md) · 🇷🇺 По-русски
+> 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
 Применимо к **v1.0.0** и более новым версиям. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная иерархия ролей.
 
