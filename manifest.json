@@ -3,8 +3,10 @@
   "name": "smart-sprint-planner",
   "title": "Smart Sprint Planner",
   "description": "Multi-role sprint planning plugin for YouTrack 2024.3+. Supports 9 functional roles with separate composition tables, resources, and history snapshots. Plugin settings live in a dedicated widget with server-side authorization.",
+  "url": "https://github.com/Letsrollamigo/smart-sprint-planner",
   "vendor": {
     "name": "Letsrollamigo",
+    "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
   "version": "1.3.0",
