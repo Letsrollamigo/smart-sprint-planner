@@ -212,6 +212,27 @@ strong, we'll absorb it" is a team that's quietly normalising overtime.
 The signal exists so the conversation happens *during planning*, not in
 the retrospective after a missed sprint.
 
+### When to skip the three-knob model — manual per-assignee resource (v1.4.0)
+
+Some teams don't model capacity through KPI × Grade × Availability. The
+team lead simply says: "Anna has 30 hours this sprint, Boris has 24,
+Clara is on training so 8". In that mode, the three knobs and the grade
+multiplier add ceremony without adding signal.
+
+For those teams, plugin settings expose **«Manual per-assignee
+resource»** (the `manualPersonalResource` checkbox under the Planning
+Modes section, dependent on Personal Planning being enabled). When it's
+on, the «Resource (h)» cell in the per-assignee distribution table
+becomes a numeric input you fill directly; the autocalc from KPE × rate
+× participation is silenced. Grade stays editable but becomes a label —
+useful as a reference, no longer a multiplier. The overlimit signal,
+totals, and remainder all follow the manually-entered hours.
+
+Use it when capacity is set top-down (fixed weekly hours, contracted
+external resource, partner-team loans) and the team lead owns the
+number directly. Switch back to the three-knob model when capacity
+becomes a function of structural inputs the team itself can tune.
+
 ---
 
 ## 4. Time-tracking discipline: DTA + cascade

@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.3.0",
+  "version": "1.4.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3",
   "settings": "settings.json",
-  "changeNotes": "v1.3.0 — Cascade aggregation parent ← child + Forbid direct work-item logging on container issues. Two new self-contained workflow rules in the YT-app root: (1) workflow-cascade-aggregation.js sums per-role plan/fact fields (derived from the existing DTA Fields → Estimate/Fact mapping) from child issues into level-2 (story-like) and level-3 (epic-like) parents along the configured parent link; max 2 hierarchy levels. (2) workflow-forbid-container.js rejects any save that adds or edits a work item on a level-2/level-3 container issue, ensuring time logging happens only on leaf children. New settings block «Cascade aggregation of work hours» exposes 7 controls: cascade-on toggle, forbid-on toggle, configurable kind-field name (default «Type»), comma-separated level-2 / level-3 value lists (defaults «Story» / «Epic»), and parent-link inward / outward names (defaults match the built-in YouTrack «Subtask» link). A live UI warning highlights the dangerous combination cascade-on + forbid-off without blocking save. All workflow strings and UI labels are localised across all 15 languages with EN fallback. See CHANGELOG.md.",
+  "changeNotes": "v1.4.0 — New «System» column in the Distribute Tasks table (read-only, sortable) makes it obvious at a glance which project/system each task belongs to. Optional «Manual per-assignee resource» mode in plugin settings lets team leads enter the available hours per assignee directly instead of computing them from grade × KPE × rate (grade stays informational). The Resources by assignee table gains a new «Allocations by project» column with a per-system hours/percent breakdown, automatically visible when the System field is configured. Sprint refresh button is renamed «Refresh from issues», and the dynamic editing mode label is rewritten from «Inline editing» to «Direct editing» across all 15 locales. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

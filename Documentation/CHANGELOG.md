@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.4.0] — 2026-05-12
+
+### Added
+- **«System» column in the Distribute Tasks table.** New read-only, sortable column shows `item.system` for every active task, placed between «Allocation» and «Assignee». Multi-key sort gains a `system` primary key (asc, with XPriority tie-breaker), wired through `_sortKeyMemo` and the header click delegate exactly like existing sort columns. The column appears for everyone and renders «—» when the System field is not configured.
+- **«Manual per-assignee resource» setting** (`manualPersonalResource`). New child checkbox of `personalPlanningEnabled` in the Planning Modes section. When enabled, the «Resource (h)» cell in «Resources by assignee» becomes a numeric input bound to `entry.manualResource`; both `entry.resource` and the totals follow the manual value. The Grade dropdown remains editable but no longer triggers the `NKC × KPE × rate × participation` autorecalc — it stays informational. Backend whitelist gains the new boolean key, and the parent/child UI dependency (disabled when `personalPlanningEnabled=false`) mirrors the existing `usePersonalForResource` behavior.
+- **«Allocations by project» column in «Resources by assignee».** New optional column auto-shown when both `_settings.fieldSystem` is configured **and** `personalPlanningEnabled` is on. Each row renders a compact per-system breakdown — `system · hours · percent` — built from active (`PLANNED`/`UNPLANNED`) items filtered by `taskAssignments[id].assignee === login`, grouped by `item.system`. Items without a system surface under «No project/system» in muted style; rows above 100 % of the assignee's resource get an `--over` class and a ⚠ marker. The table re-renders automatically after assignee reassignment, manual-resource edits, and resource changes.
+
+### Changed
+- **«Refresh from YouTrack» button renamed to «Refresh from issues»** — both for the assignee table refresh button and the Gantt refresh button. Localised across all 15 dictionaries with culturally adapted wording (e.g. «Aus Tickets aktualisieren», «課題から更新», «Görevlerden yenile»).
+- **«Inline editing of YouTrack fields» mode label rewritten to «Direct editing of YouTrack issue fields».** Affects `lblDynEdit` and `hintSsbInline`; tooltip and description keys keep their existing wording. Localised across all 15 dictionaries.
+
+### Compatibility
+- **No breaking changes.** Old snapshots without `manualResource` fall back to the auto-calculated `resource`. The «System» and «Allocations by project» columns are additive only.
+
+### Sync points
+- This release is the v7.1.0 ↔ v1.4.0 sync point with the internal partner branch — the feature set is identical; only the identity (vendor, repo, license) differs.
+
+---
+
 ## [1.3.0] — Unreleased
 
 ### Added

@@ -498,6 +498,10 @@ var ALLOWED_SETTINGS_KEYS = [
   'assignerGroups','assignerGroupNames',
   // Параметры планирования
   'dynEditEnabled','personalPlanningEnabled','usePersonalForResource',
+  /* v1.4.0 — ручной ввод ресурса по исполнителям (дочерний к personalPlanning).
+     При включении entry.resource в personalPlanning.resourcesByAssignee становится
+     manual-input в ЧЧ; авторасчёт по грейду игнорируется. */
+  'manualPersonalResource',
   'nkcJanuary','nkcMay','nkcOther','rate','participation',
   'kpe',
   /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI. */
@@ -605,7 +609,7 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems'];
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
     if (bv !== undefined && bv !== null && typeof bv !== 'boolean') return false;
@@ -1451,7 +1455,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.2.4' });
+        ctx.response.json({ version: '1.4.0' });
       }
     },
 

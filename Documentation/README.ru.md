@@ -3,7 +3,7 @@
 > 🇬🇧 [Read in English](../README.md) · 🇷🇺 По-русски
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)](CHANGELOG.ru.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](CHANGELOG.ru.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](../tests/)
 [![Поддержать на TON](https://img.shields.io/badge/Поддержать-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -17,7 +17,9 @@
 ## Возможности
 
 - **9 функциональных ролей** — анализ, тестирование, платформенная разработка, backend, frontend, iOS, Android, fullstack, базы данных. Роли включаются опционально в каждом проекте; универсальная роль `devPlatform` позволяет командам мапить любой стек (1C, SAP, Salesforce, low-code и т.д.) на собственное custom-поле.
-- **Таблицы состава по каждой роли** — назначения с учётом capacity vs. load, overlimit-защита, inline-редактирование.
+- **Таблицы состава по каждой роли** — назначения с учётом capacity vs. load, overlimit-защита, прямое редактирование полей YouTrack из таблицы спринта.
+- **Распределение задач по исполнителям** с колонкой «Система» (read-only, сортируемая) и опциональной колонкой «Аллокации по проектам» — per-system breakdown часов и процентов от capacity исполнителя.
+- **Ручной ввод ресурса по исполнителям** — режим `manualPersonalResource` для команд, где team-lead задаёт capacity «сверху вниз» (фиксированные часы в неделю), а не через KPE-коэффициенты.
 - **История спринтов** — подтверждённые снимки, общий рабочий черновик, персональные черновики у каждого пользователя, восстановление в один клик.
 - **Gantt-таймлайн по ролям** с фильтрацией по спринтам.
 - **Excel-экспорт** для вкладок планирования и истории.
@@ -28,7 +30,7 @@
 
 ## Установка
 
-1. Скачайте `Smart-Sprint-Planner-v1.3.0.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
+1. Скачайте `Smart-Sprint-Planner-v1.4.0.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
 2. В YouTrack: **Настройки проекта → Приложения → Установить из файла** → загрузите zip.
 3. Откройте любой проект и добавьте виджет **Smart Sprint Planner** на страницу настроек.
 4. Нажмите **⚙ Plugin settings** в шапке виджета. Первое сохранение требует пользователя из `settingsManagerGroup` — пока группа не настроена, все мутации запрещены.

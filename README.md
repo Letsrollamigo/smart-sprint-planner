@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-brightgreen.svg)](Documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](Documentation/CHANGELOG.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -17,7 +17,9 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 ## Features
 
 - **9 functional roles** — analysis, testing, platform development, backend, frontend, iOS, Android, fullstack, database. Roles can be selectively enabled per project; a generic `devPlatform` role lets teams map any platform stack (1C, SAP, Salesforce, low-code, etc.) to a custom field.
-- **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and inline editing.
+- **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and direct editing of YouTrack fields from the sprint table.
+- **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity.
+- **Manual per-assignee resource** — opt-in `manualPersonalResource` mode for teams whose capacity is set top-down by the team lead (fixed weekly hours per person) instead of derived from KPE coefficients.
 - **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
 - **Gantt timeline per role** with sprint-aware filtering.
 - **Excel export** for both planning and history tabs.
@@ -28,7 +30,7 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 
 ## Installation
 
-1. Download `Smart-Sprint-Planner-v1.3.0.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
+1. Download `Smart-Sprint-Planner-v1.4.0.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
 2. In YouTrack: **Project Settings → Apps → Install from file** → upload the zip.
 3. Open any project and add the **Smart Sprint Planner** widget to its settings page.
 4. Click **⚙ Plugin settings** in the widget header. The first save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.

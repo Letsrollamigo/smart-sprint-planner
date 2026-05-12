@@ -1217,6 +1217,11 @@
     .gantt-role-selector select { flex: 0 0 240px; }
     .readonly-mode #ganttUpdateBtn { display: none; }
     .readonly-mode .gantt-cell    { pointer-events: none; }
+    /* v1.4.0 — «Аллокации по проектам» (renderCurrentRoleAssigneeTable). */
+    .td-alloc-by-sys { vertical-align: middle; min-width: 180px; }
+    .alloc-by-sys-row { white-space: nowrap; font-size: 11px; line-height: 1.4; }
+    .alloc-by-sys-row--over { color: var(--error); font-weight: 500; }
+    .alloc-by-sys-row--nosys { color: var(--muted); font-style: italic; }
   </style>
   <!-- v5.0.3 (итерация 5) — SheetJS теперь lazy-load по требованию (см. exportSprintToExcel
        в main.js). Раньше блокирующий <script> в <head> задерживал init виджета на проксированных
@@ -1252,11 +1257,11 @@
       <button id="openSettingsBtn" class="btn btn--sm" style="display:none"
               data-i18n="btnOpenSettings"
               data-i18n-title="btnOpenSettingsTitle">⚙ Настройки плагина</button>
-      <a href="https://github.com/arsenyolear/smart-sprint-planner/blob/main/USER-GUIDE.md"
+      <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
          target="_blank" rel="noopener noreferrer" class="btn btn--sm" style="background:transparent;border-color:var(--border);color:var(--text)">
         <span data-i18n="linkGuide">📖 Руководство пользователя</span>
       </a>
-      <a href="https://github.com/arsenyolear/smart-sprint-planner/issues"
+      <a href="https://github.com/Letsrollamigo/smart-sprint-planner/issues"
          target="_blank" rel="noopener noreferrer" class="btn btn--sm">
         <span data-i18n="linkFeedback">💬 Обратная связь</span>
       </a>
@@ -1457,7 +1462,7 @@
               <button class="btn btn--sm btn--primary editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees">➕ Подобрать исполнителей</button>
               <button class="btn btn--sm editor-btn" id="currentRoleClearAssigneesBtn" style="border-color:var(--error);color:var(--error)" data-i18n="btnClearAssignees">✕ Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="btn btn--sm" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt">🔄 Обновить из YouTrack</button>
+              <button class="btn btn--sm" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt">🔄 Обновить из задач</button>
             </div>
           </div>
           <div class="tbl-wrap">
@@ -1510,7 +1515,7 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack на Ганте. -->
-      <button id="ganttSyncFromYtBtn" class="btn" data-i18n="btnSyncFromYt">🔄 Обновить из YouTrack</button>
+      <button id="ganttSyncFromYtBtn" class="btn" data-i18n="btnSyncFromYt">🔄 Обновить из задач</button>
       <button id="ganttUpdateBtn" class="btn editor-btn" data-i18n="btnUpdateGantt">Обновить Гант</button>
     </div>
     <div id="ganttContainer"></div>
@@ -2020,6 +2025,14 @@
             </div>
             <p style="font-size:12px;color:var(--muted);margin:0">
               <span data-i18n="descPersonalRes">При активации параметра ручной ввод доступного ресурса на вкладке «Планирование общей загрузки спринта» заменяется на калькулируемое значение на основе состава команды.</span>
+            </p>
+            <!-- v1.4.0 — Manual per-assignee resource (зависит от personalPlanning) -->
+            <div class="role-check" id="manualPersonalResourceCheck" style="margin-top:4px">
+              <span class="role-check__cb"></span>
+              <span class="role-check__label" data-i18n="lblManualPersonalRes">Ручной ввод ресурса по исполнителям</span>
+            </div>
+            <p style="font-size:12px;color:var(--muted);margin:0">
+              <span data-i18n="descManualPersonalRes">Если включено, ресурс каждого исполнителя в таблице «Ресурсы по исполнителям» вводится вручную в часах, а не вычисляется автоматически по грейду. Грейд остаётся информационным.</span>
             </p>
             <!-- Независимый: dynEdit -->
             <div class="role-check" id="dynEditCheck" data-i18n-tooltip="tooltipDynEdit"

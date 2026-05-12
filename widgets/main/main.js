@@ -97,7 +97,7 @@
     ssbCascade: "Plan/fact roll-up",
     ssbOn: "on",
     ssbOff: "off",
-    hintSsbInline: "Inline editing of issue fields directly in the planner table (dynEditEnabled).",
+    hintSsbInline: "Direct editing of issue fields in the planner table (dynEditEnabled).",
     hintSsbPersonal: "Per-assignee distribution layer enabled (personalPlanningEnabled).",
     hintSsbDta: "Differentiated time accounting workflow active \u2014 work items are aggregated into per-role fact-fields.",
     hintSsbCascade: "Cascade aggregation parent \u2190 child active \u2014 child plan/fact fields roll up into level-2/level-3 parents.",
@@ -153,7 +153,7 @@
     toastOverlimitDowngraded: "Sprint status downgraded due to overlimit. Fix and re-validate.",
     tooltipRowLocked: 'Sprint is distributed. Use "Open for edit" in history to modify.',
     toastAllocatedLockHint: 'Sprint is distributed \u2014 table is read-only. To edit, open the sprint from history with "Open for edit".',
-    lblDynEdit: "Inline editing of YouTrack fields from sprint table",
+    lblDynEdit: "Direct editing of YouTrack issue fields from sprint table",
     tooltipDynEdit: "When enabled, the sprint table gains extra columns (Fact, Resource, Allocation) and the State/System/Priority/XPriority cells become editable with direct write-back to YouTrack issues. Be mindful of YouTrack API load on bulk edits.",
     descDynEdit: 'When enabled: the "Refresh task data" button is hidden; table fields become interactive. Changes are applied to YouTrack tasks with confirmation.',
     lblPersonalRes: "Use personal planning for automatic total resource calculation",
@@ -422,7 +422,7 @@
     excelColResource: "Resource",
     excelColAlloc: "Allocation",
     thSortClickHint: "Click to sort by this column (click again to disable).",
-    btnSyncFromYt: "\u{1F504} Sync from YouTrack",
+    btnSyncFromYt: "\u{1F504} Refresh from issues",
     toastSyncFromYtNoTasks: "No tasks to sync.",
     toastSyncFromYtNoField: "Assignee field is not configured for the role.",
     toastSyncFromYtUpdated: "Pulled from YouTrack: {n} updates.",
@@ -530,7 +530,13 @@
     wcMigrationNotice: "Unfinished v5.2 edit was committed as a draft. In v5.3, edits no longer destroy validated snapshots \u2014 use \xABOpen for editing\xBB to create a working copy.",
     wcStorageQuotaExceeded: "Working-copies storage quota reached. Discard old unfinished edits.",
     cannotEditFinished: "Closed sprints cannot be edited.",
-    unnamedSprint: "(unnamed sprint)"
+    unnamedSprint: "(unnamed sprint)",
+    lblManualPersonalRes: "Manual per-assignee resource",
+    descManualPersonalRes: "When enabled, per-assignee resource in the \xABResources by assignee\xBB table is entered manually in hours instead of auto-calc by grade. Grade remains informational only.",
+    thAllocByProject: "Allocations by project",
+    allocBySysNoProject: "No project/system",
+    allocBySysOverlimit: "Over limit",
+    hourShort: "h"
   };
 
   // widgets/main/i18n/ru.json
@@ -612,7 +618,7 @@
     ssbCascade: "\u041A\u0430\u0441\u043A\u0430\u0434 \u043F\u043B\u0430\u043D/\u0444\u0430\u043A\u0442",
     ssbOn: "\u0432\u043A\u043B",
     ssbOff: "\u0432\u044B\u043A\u043B",
-    hintSsbInline: "Inline-\u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043F\u043E\u043B\u0435\u0439 \u0437\u0430\u0434\u0430\u0447 \u043F\u0440\u044F\u043C\u043E \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u0430 (dynEditEnabled).",
+    hintSsbInline: "\u041F\u0440\u044F\u043C\u043E\u0435 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043F\u043E\u043B\u0435\u0439 \u0437\u0430\u0434\u0430\u0447 \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0449\u0438\u043A\u0430 (dynEditEnabled).",
     hintSsbPersonal: "\u0423\u0440\u043E\u0432\u0435\u043D\u044C \u0440\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u044F \u043F\u043E \u0438\u0441\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044F\u043C \u0430\u043A\u0442\u0438\u0432\u0435\u043D (personalPlanningEnabled).",
     hintSsbDta: "Workflow \u0434\u0438\u0444\u0444\u0435\u0440\u0435\u043D\u0446\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u043E\u0433\u043E \u0443\u0447\u0451\u0442\u0430 \u0442\u0440\u0443\u0434\u043E\u0437\u0430\u0442\u0440\u0430\u0442 \u0430\u043A\u0442\u0438\u0432\u0435\u043D \u2014 workItems \u0430\u0433\u0440\u0435\u0433\u0438\u0440\u0443\u044E\u0442\u0441\u044F \u043F\u043E \u0440\u043E\u043B\u044F\u043C \u0432 fact-\u043F\u043E\u043B\u044F.",
     hintSsbCascade: "\u041A\u0430\u0441\u043A\u0430\u0434\u043D\u0430\u044F \u0430\u0433\u0440\u0435\u0433\u0430\u0446\u0438\u044F parent \u2190 child \u0430\u043A\u0442\u0438\u0432\u043D\u0430 \u2014 \u043F\u043E\u043B\u044F \u043F\u043B\u0430\u043D\u0430/\u0444\u0430\u043A\u0442\u0430 \u0434\u043E\u0447\u0435\u0440\u043D\u0438\u0445 \u0437\u0430\u0434\u0430\u0447 \u0441\u0443\u043C\u043C\u0438\u0440\u0443\u044E\u0442\u0441\u044F \u0432 parent'\u044B 2-\u0433\u043E \u0438 3-\u0433\u043E \u0443\u0440\u043E\u0432\u043D\u0435\u0439.",
@@ -668,7 +674,7 @@
     toastOverlimitDowngraded: "\u0421\u0442\u0430\u0442\u0443\u0441 \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043F\u043E\u043D\u0438\u0436\u0435\u043D \u0438\u0437-\u0437\u0430 \u043F\u0435\u0440\u0435\u043B\u0438\u043C\u0438\u0442\u0430. \u0423\u0441\u0442\u0440\u0430\u043D\u0438\u0442\u0435 \u0438 \u0432\u0430\u043B\u0438\u0434\u0438\u0440\u0443\u0439\u0442\u0435 \u0437\u0430\u043D\u043E\u0432\u043E.",
     tooltipRowLocked: "\u0421\u043F\u0440\u0438\u043D\u0442 \u0440\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0451\u043D. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430 \u043F\u0440\u0430\u0432\u043A\u0443\xBB \u0432 \u0438\u0441\u0442\u043E\u0440\u0438\u0438, \u0447\u0442\u043E\u0431\u044B \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C.",
     toastAllocatedLockHint: "\u0421\u043F\u0440\u0438\u043D\u0442 \u0440\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0451\u043D \u2014 \u0442\u0430\u0431\u043B\u0438\u0446\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0434\u043B\u044F \u0447\u0442\u0435\u043D\u0438\u044F. \u0414\u043B\u044F \u043F\u0440\u0430\u0432\u043E\u043A \u043E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u043F\u0440\u0438\u043D\u0442 \u0438\u0437 \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u043A\u043D\u043E\u043F\u043A\u043E\u0439 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430 \u043F\u0440\u0430\u0432\u043A\u0443\xBB.",
-    lblDynEdit: "Inline-\u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043F\u043E\u043B\u0435\u0439 YouTrack \u0438\u0437 \u0442\u0430\u0431\u043B\u0438\u0446\u044B \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    lblDynEdit: "\u041F\u0440\u044F\u043C\u043E\u0435 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u043F\u043E\u043B\u0435\u0439 \u0437\u0430\u0434\u0430\u0447 YouTrack \u0438\u0437 \u0442\u0430\u0431\u043B\u0438\u0446\u044B \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     tooltipDynEdit: "\u041F\u0440\u0438 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0438 \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043F\u043E\u044F\u0432\u043B\u044F\u044E\u0442\u0441\u044F \u0434\u043E\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u043A\u043E\u043B\u043E\u043D\u043A\u0438 (\u0424\u0430\u043A\u0442, \u0420\u0435\u0441\u0443\u0440\u0441, \u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u044F) \u0438 \u044F\u0447\u0435\u0439\u043A\u0438 State/System/Priority/XPriority \u0441\u0442\u0430\u043D\u043E\u0432\u044F\u0442\u0441\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u0443\u0435\u043C\u044B\u043C\u0438 \u0441 \u0437\u0430\u043F\u0438\u0441\u044C\u044E \u043F\u0440\u044F\u043C\u043E \u0432 YouTrack-\u0437\u0430\u0434\u0430\u0447\u0443. \u0423\u0447\u0438\u0442\u044B\u0432\u0430\u0439\u0442\u0435 \u043D\u0430\u0433\u0440\u0443\u0437\u043A\u0443 \u043D\u0430 YouTrack API \u043F\u0440\u0438 \u043C\u0430\u0441\u0441\u043E\u0432\u044B\u0445 \u043F\u0440\u0430\u0432\u043A\u0430\u0445.",
     descDynEdit: "\u0415\u0441\u043B\u0438 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E: \u043A\u043D\u043E\u043F\u043A\u0430 \xAB\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u043E \u0437\u0430\u0434\u0430\u0447\u0430\u043C\xBB \u0441\u043A\u0440\u044B\u0432\u0430\u0435\u0442\u0441\u044F, \u043F\u043E\u043B\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 \xAB\u0421\u043E\u0441\u0442\u0430\u0432 \u0441\u043F\u0440\u0438\u043D\u0442\u0430\xBB \u0441\u0442\u0430\u043D\u043E\u0432\u044F\u0442\u0441\u044F \u0438\u043D\u0442\u0435\u0440\u0430\u043A\u0442\u0438\u0432\u043D\u044B\u043C\u0438. \u0418\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F \u043F\u0440\u0438\u043C\u0435\u043D\u044F\u044E\u0442\u0441\u044F \u043A \u0437\u0430\u0434\u0430\u0447\u0430\u043C \u0432 YouTrack \u0441 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435\u043C.",
     lblPersonalRes: "\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u044C \u043F\u0435\u0440\u0441\u043E\u043D\u0430\u043B\u044C\u043D\u043E\u0435 \u043F\u043B\u0430\u043D\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0434\u043B\u044F \u0430\u0432\u0442\u043E\u0440\u0430\u0441\u0447\u0451\u0442\u0430 \u043E\u0431\u0449\u0435\u0433\u043E \u0440\u0435\u0441\u0443\u0440\u0441\u0430 \u043D\u0430 \u0441\u043F\u0440\u0438\u043D\u0442",
@@ -937,7 +943,7 @@
     excelColResource: "\u0420\u0435\u0441\u0443\u0440\u0441",
     excelColAlloc: "\u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u044F",
     thSortClickHint: "\u041A\u043B\u0438\u043A \u2014 \u0441\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u043A\u0430 \u043F\u043E \u044D\u0442\u043E\u0439 \u043A\u043E\u043B\u043E\u043D\u043A\u0435 (\u043F\u043E\u0432\u0442\u043E\u0440\u043D\u043E \u2014 \u0432\u044B\u043A\u043B.)",
-    btnSyncFromYt: "\u{1F504} \u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0438\u0437 YouTrack",
+    btnSyncFromYt: "\u{1F504} \u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0438\u0437 \u0437\u0430\u0434\u0430\u0447",
     toastSyncFromYtNoTasks: "\u041D\u0435\u0442 \u0437\u0430\u0434\u0430\u0447 \u0434\u043B\u044F \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438.",
     toastSyncFromYtNoField: "\u041D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043E \u043F\u043E\u043B\u0435 \xAB\u041D\u0430\u0437\u043D\u0430\u0447\u0435\u043D\xBB \u0434\u043B\u044F \u0440\u043E\u043B\u0438.",
     toastSyncFromYtUpdated: "\u041F\u043E\u0434\u0442\u044F\u043D\u0443\u0442\u043E \u0438\u0437 YouTrack: {n} \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0439.",
@@ -1045,7 +1051,13 @@
     wcMigrationNotice: "\u041D\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u043E\u0435 \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 v5.2 \u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u043E \u043A\u0430\u043A \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A. \u0412 v5.3 \u043F\u0440\u0430\u0432\u043A\u0438 \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0440\u0430\u0437\u0440\u0443\u0448\u0430\u044E\u0442 \u0432\u0430\u043B\u0438\u0434\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0441\u043D\u0438\u043C\u043A\u0438 \u2014 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \xAB\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430 \u043F\u0440\u0430\u0432\u043A\u0443\xBB, \u0447\u0442\u043E\u0431\u044B \u0441\u043E\u0437\u0434\u0430\u0442\u044C \u0440\u0430\u0431\u043E\u0447\u0443\u044E \u043A\u043E\u043F\u0438\u044E.",
     wcStorageQuotaExceeded: "\u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442 \u043B\u0438\u043C\u0438\u0442 \u0445\u0440\u0430\u043D\u0438\u043B\u0438\u0449\u0430 \u0440\u0430\u0431\u043E\u0447\u0438\u0445 \u043A\u043E\u043F\u0438\u0439. \u0423\u0434\u0430\u043B\u0438\u0442\u0435 \u0441\u0442\u0430\u0440\u044B\u0435 \u043D\u0435\u0437\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u0430\u0432\u043A\u0438.",
     cannotEditFinished: "\u0417\u0430\u043A\u0440\u044B\u0442\u044B\u0435 \u0441\u043F\u0440\u0438\u043D\u0442\u044B \u043D\u0435\u043B\u044C\u0437\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C.",
-    unnamedSprint: "(\u0441\u043F\u0440\u0438\u043D\u0442 \u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438)"
+    unnamedSprint: "(\u0441\u043F\u0440\u0438\u043D\u0442 \u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438)",
+    lblManualPersonalRes: "\u0420\u0443\u0447\u043D\u043E\u0439 \u0432\u0432\u043E\u0434 \u0440\u0435\u0441\u0443\u0440\u0441\u0430 \u043F\u043E \u0438\u0441\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044F\u043C",
+    descManualPersonalRes: "\u0415\u0441\u043B\u0438 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u043E, \u0440\u0435\u0441\u0443\u0440\u0441 \u043A\u0430\u0436\u0434\u043E\u0433\u043E \u0438\u0441\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0435 \xAB\u0420\u0435\u0441\u0443\u0440\u0441\u044B \u043F\u043E \u0438\u0441\u043F\u043E\u043B\u043D\u0438\u0442\u0435\u043B\u044F\u043C\xBB \u0432\u0432\u043E\u0434\u0438\u0442\u0441\u044F \u0432\u0440\u0443\u0447\u043D\u0443\u044E \u0432 \u0447\u0430\u0441\u0430\u0445, \u0430 \u043D\u0435 \u0432\u044B\u0447\u0438\u0441\u043B\u044F\u0435\u0442\u0441\u044F \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u043F\u043E \u0433\u0440\u0435\u0439\u0434\u0443. \u0413\u0440\u0435\u0439\u0434 \u043E\u0441\u0442\u0430\u0451\u0442\u0441\u044F \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u043E\u043D\u043D\u044B\u043C.",
+    thAllocByProject: "\u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u0438 \u043F\u043E \u043F\u0440\u043E\u0435\u043A\u0442\u0430\u043C",
+    allocBySysNoProject: "\u0412\u043D\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432/\u0441\u0438\u0441\u0442\u0435\u043C",
+    allocBySysOverlimit: "\u041F\u0435\u0440\u0435\u043B\u0438\u043C\u0438\u0442",
+    hourShort: "\u0447"
   };
 
   // widgets/main/src/i18n/languages.js
@@ -1323,7 +1335,7 @@
         }
       }
     };
-    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id"];
+    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id", "system"];
     var _sortKeyMemo = null;
     function getSortKey() {
       if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -1368,6 +1380,13 @@
         if (primary === "priority") {
           var c1 = _prRank(a.priority) - _prRank(b.priority);
           if (c1 !== 0) return c1;
+          return _xpRank(a.xpriority) - _xpRank(b.xpriority) || _idCmp(a.issueId, b.issueId);
+        }
+        if (primary === "system") {
+          var sysA = String(a.system || "").toLowerCase();
+          var sysB = String(b.system || "").toLowerCase();
+          var cs = sysA < sysB ? -1 : sysA > sysB ? 1 : 0;
+          if (cs !== 0) return cs;
           return _xpRank(a.xpriority) - _xpRank(b.xpriority) || _idCmp(a.issueId, b.issueId);
         }
         var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
@@ -1867,7 +1886,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.3.0";
+    var APP_VERSION = "1.4.0";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -3724,11 +3743,12 @@
       }
     }
     function bindSettingsFormHandlers() {
-      ["dynEditCheck", "usePersonalForResourceCheck", "personalPlanningCheck"].forEach(function(id) {
+      ["dynEditCheck", "usePersonalForResourceCheck", "personalPlanningCheck", "manualPersonalResourceCheck"].forEach(function(id) {
         var el = document.getElementById(id);
         if (!el || el._sspBound) return;
         el.addEventListener("click", function() {
           if (id === "usePersonalForResourceCheck" && el.classList.contains("role-check--disabled")) return;
+          if (id === "manualPersonalResourceCheck" && el.classList.contains("role-check--disabled")) return;
           el.classList.toggle("active");
           if (id === "personalPlanningCheck") applyModesDependencies();
         });
@@ -3745,10 +3765,14 @@
     }
     function applyModesDependencies() {
       var parentEl = document.getElementById("personalPlanningCheck");
+      var parentOn = !!(parentEl && parentEl.classList.contains("active"));
       var childEl = document.getElementById("usePersonalForResourceCheck");
       if (childEl) {
-        var parentOn = !!(parentEl && parentEl.classList.contains("active"));
         childEl.classList.toggle("role-check--disabled", !parentOn);
+      }
+      var manualEl = document.getElementById("manualPersonalResourceCheck");
+      if (manualEl) {
+        manualEl.classList.toggle("role-check--disabled", !parentOn);
       }
       try {
         if (typeof _applyPersonalPlanningToSegmentedControl === "function") _applyPersonalPlanningToSegmentedControl();
@@ -4590,6 +4614,7 @@
       setCheck("dynEditCheck", !!(_settings && _settings.dynEditEnabled));
       setCheck("usePersonalForResourceCheck", !!(_settings && _settings.usePersonalForResource));
       setCheck("personalPlanningCheck", !!(_settings && _settings.personalPlanningEnabled));
+      setCheck("manualPersonalResourceCheck", !!(_settings && _settings.manualPersonalResource));
       var hideDiagLogChk = document.getElementById("hideDiagLogUiCheck");
       if (hideDiagLogChk) hideDiagLogChk.checked = !!(_settings && _settings.hideDiagLogUi);
       var dtaChk = document.getElementById("dtaEnabledCheck");
@@ -4785,6 +4810,8 @@
         dynEditEnabled: document.getElementById("dynEditCheck").classList.contains("active"),
         personalPlanningEnabled: document.getElementById("personalPlanningCheck").classList.contains("active"),
         usePersonalForResource: document.getElementById("usePersonalForResourceCheck").classList.contains("active"),
+        /* v1.4.0 — ручной ввод ресурса по исполнителям; дочерний к personalPlanning. */
+        manualPersonalResource: document.getElementById("manualPersonalResourceCheck").classList.contains("active"),
         /* v6.3.0 D110 — нативный input.checked. */
         hideDiagLogUi: !!(document.getElementById("hideDiagLogUiCheck") && document.getElementById("hideDiagLogUiCheck").checked),
         /* v1.2.0 DTA — feature flag + mapping. Mapping собирается из _dtaRows;
@@ -8386,11 +8413,48 @@
     var KPE_DEFAULTS_LOCAL = { "\u0421\u0442\u0430\u0436\u0451\u0440": 0, "\u0414\u0436\u0443\u043D": 0.5, "\u041C\u0438\u0434\u043B": 0.65, "\u0421\u0438\u043D\u044C\u043E\u0440": 0.75 };
     var GRADES_LOCAL = ["\u0421\u0442\u0430\u0436\u0451\u0440", "\u0414\u0436\u0443\u043D", "\u041C\u0438\u0434\u043B", "\u0421\u0438\u043D\u044C\u043E\u0440"];
     var _pendingDelAssigneeLogin = null;
+    function calcAssigneeAllocByProject(login) {
+      if (!_currentSprintRoleRec || !_currentRolePP) return [];
+      var rec = _currentSprintRoleRec;
+      var rk = rec.roleKey || _currentRolePP && _currentRolePP.roleKey || (getActiveRoles()[0] || ALL_ROLES[0]).key;
+      var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : rec.items || [];
+      var ta = _currentRolePP.taskAssignments || {};
+      var byKey = {};
+      items.forEach(function(item) {
+        if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) return;
+        if (!ta[item.issueId] || ta[item.issueId].assignee !== login) return;
+        var alloc = item["alloc_" + rk];
+        var est = item["estimate_" + rk];
+        var fact = item["fact_" + rk];
+        var allocVal = alloc !== null && alloc !== void 0 ? alloc / 60 : Math.max(0, (est || 0) - (fact || 0)) / 60;
+        var key = item.system ? String(item.system) : "__none__";
+        byKey[key] = (byKey[key] || 0) + allocVal;
+      });
+      var entry = _currentRolePP.resourcesByAssignee[login];
+      var totalRes = entry && typeof entry.resource === "number" ? entry.resource : 0;
+      var rows = Object.keys(byKey).map(function(k) {
+        var hours = Math.round(byKey[k] * 100) / 100;
+        var percent = totalRes > 0 ? Math.round(hours / totalRes * 100) : null;
+        return { system: k, hours, percent };
+      });
+      rows.sort(function(a, b) {
+        return b.hours - a.hours;
+      });
+      return rows;
+    }
     function renderCurrentRoleAssigneeTable() {
       var tbody = document.getElementById("currentRoleAssigneeBody");
       if (!tbody) return;
+      var manualMode = !!(_settings && _settings.manualPersonalResource);
+      var showByProj = !!(_settings && _settings.fieldSystem && _settings.personalPlanningEnabled);
+      var colCount = showByProj ? 6 : 5;
+      var ttable = document.getElementById("currentRoleAssigneeTable");
+      var thead = ttable ? ttable.querySelector("thead") : null;
+      if (thead) {
+        thead.innerHTML = "<tr><th>" + T("thTeamMember") + "</th><th>" + T("thGrade") + '</th><th class="td-num">' + T("thResourceH") + "</th>" + (showByProj ? "<th>" + T("thAllocByProject") + "</th>" : "") + '<th class="td-num">' + T("thRemainH") + '</th><th style="width:36px"></th></tr>';
+      }
       if (!_currentRolePP || !Object.keys(_currentRolePP.resourcesByAssignee || {}).length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty">' + T("emptyAssignees") + "</td></tr>";
+        tbody.innerHTML = '<tr><td colspan="' + colCount + '" class="empty">' + T("emptyAssignees") + "</td></tr>";
         return;
       }
       tbody.innerHTML = "";
@@ -8399,9 +8463,33 @@
         var used = calcAssigneeUsed(login);
         var remain = Math.round((entry.resource - used) * 100) / 100;
         var tr = document.createElement("tr");
+        var resCellHtml;
+        if (manualMode) {
+          var manualVal = typeof entry.manualResource === "number" ? entry.manualResource : typeof entry.resource === "number" ? entry.resource : 0;
+          resCellHtml = '<td class="td-num" id="currentRole_res_' + encodeLogin(login) + '"><input type="number" min="0" step="0.25" class="currentRole-manual-res" data-login="' + esc(login) + '" value="' + round2(manualVal) + '" style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
+        } else {
+          resCellHtml = '<td class="td-num" id="currentRole_res_' + encodeLogin(login) + '">' + round2(entry.resource) + "</td>";
+        }
+        var byProjCellHtml = "";
+        if (showByProj) {
+          var rows = calcAssigneeAllocByProject(login);
+          if (!rows.length) {
+            byProjCellHtml = '<td class="td-alloc-by-sys"><span style="color:var(--muted)">\u2014</span></td>';
+          } else {
+            var hSuf = T("hourShort");
+            var rowsHtml = rows.map(function(r) {
+              var sysLabel = r.system === "__none__" ? T("allocBySysNoProject") : r.system;
+              var pctStr = r.percent === null ? "" : " \xB7 " + r.percent + "%";
+              var over = r.percent !== null && r.percent > 100;
+              var cls = "alloc-by-sys-row" + (over ? " alloc-by-sys-row--over" : "") + (r.system === "__none__" ? " alloc-by-sys-row--nosys" : "");
+              return '<div class="' + cls + '">' + esc(sysLabel) + " \xB7 " + round2(r.hours) + hSuf + pctStr + (over ? " \u26A0" : "") + "</div>";
+            }).join("");
+            byProjCellHtml = '<td class="td-alloc-by-sys">' + rowsHtml + "</td>";
+          }
+        }
         tr.innerHTML = "<td>" + esc(entry.assigneeName || login) + '</td><td><select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' + GRADES_LOCAL.map(function(g) {
           return '<option value="' + g + '"' + (entry.grade === g ? " selected" : "") + ">" + g + "</option>";
-        }).join("") + '</select></td><td class="td-num" id="currentRole_res_' + encodeLogin(login) + '">' + round2(entry.resource) + '</td><td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" style="font-size:14px;padding:2px 6px">\u{1F5D1}</button></td>';
+        }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" style="font-size:14px;padding:2px 6px">\u{1F5D1}</button></td>';
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-grade-sel").forEach(function(sel) {
@@ -8409,21 +8497,43 @@
           var login = sel.getAttribute("data-login");
           if (!_currentRolePP.resourcesByAssignee[login]) return;
           _currentRolePP.resourcesByAssignee[login].grade = sel.value;
-          var nkc2 = getCurrentRoleNkcHours();
-          var kpe = _settings.kpe && _settings.kpe[sel.value] !== void 0 ? _settings.kpe[sel.value] : KPE_DEFAULTS_LOCAL[sel.value] || 0.65;
-          var rate = _settings.rate !== void 0 ? _settings.rate : 1;
-          var parti = _settings.participation !== void 0 ? _settings.participation : 1;
-          _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;
-          var resEl = document.getElementById("currentRole_res_" + encodeLogin(login));
-          if (resEl) resEl.textContent = round2(_currentRolePP.resourcesByAssignee[login].resource);
+          if (!manualMode) {
+            var nkc2 = getCurrentRoleNkcHours();
+            var kpe = _settings.kpe && _settings.kpe[sel.value] !== void 0 ? _settings.kpe[sel.value] : KPE_DEFAULTS_LOCAL[sel.value] || 0.65;
+            var rate = _settings.rate !== void 0 ? _settings.rate : 1;
+            var parti = _settings.participation !== void 0 ? _settings.participation : 1;
+            _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;
+            var resEl = document.getElementById("currentRole_res_" + encodeLogin(login));
+            if (resEl) resEl.textContent = round2(_currentRolePP.resourcesByAssignee[login].resource);
+            var used2 = calcAssigneeUsed(login);
+            var rem2 = Math.round((_currentRolePP.resourcesByAssignee[login].resource - used2) * 100) / 100;
+            var remEl = document.getElementById("currentRole_rem_" + encodeLogin(login));
+            if (remEl) {
+              remEl.textContent = round2(rem2);
+              remEl.style.color = rem2 < 0 ? "var(--error)" : "var(--success)";
+            }
+            updateCurrentRoleTotals();
+          }
+          saveCurrentRoleState();
+        });
+      });
+      tbody.querySelectorAll(".currentRole-manual-res").forEach(function(inp) {
+        inp.addEventListener("change", function() {
+          var login = inp.getAttribute("data-login");
+          if (!_currentRolePP.resourcesByAssignee[login]) return;
+          var v = parseFloat(inp.value);
+          if (!isFinite(v) || v < 0) v = 0;
+          _currentRolePP.resourcesByAssignee[login].manualResource = v;
+          _currentRolePP.resourcesByAssignee[login].resource = v;
           var used2 = calcAssigneeUsed(login);
-          var rem2 = Math.round((_currentRolePP.resourcesByAssignee[login].resource - used2) * 100) / 100;
+          var rem2 = Math.round((v - used2) * 100) / 100;
           var remEl = document.getElementById("currentRole_rem_" + encodeLogin(login));
           if (remEl) {
             remEl.textContent = round2(rem2);
             remEl.style.color = rem2 < 0 ? "var(--error)" : "var(--success)";
           }
           updateCurrentRoleTotals();
+          if (showByProj) renderCurrentRoleAssigneeTable();
           saveCurrentRoleState();
         });
       });
@@ -8491,11 +8601,11 @@
           return '<span class="sort-icon">' + (active2 ? "\u25BC" : "\u2195") + "</span>";
         };
         var _sk = getSortKey();
-        thead.innerHTML = '<tr><th class="td-id sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '">' + T("thId") + _sortIc(_sk === "id") + "</th><th>" + T("thTitle") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thPriority") + _sortIc(_sk === "priority") + '</th><th class="sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thXpriority") + _sortIc(_sk === "xpriority") + '</th><th style="white-space:nowrap">' + T("thAllocH") + '</th><th style="min-width:160px">' + T("thAssignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
+        thead.innerHTML = '<tr><th class="td-id sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '">' + T("thId") + _sortIc(_sk === "id") + "</th><th>" + T("thTitle") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thPriority") + _sortIc(_sk === "priority") + '</th><th class="sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thXpriority") + _sortIc(_sk === "xpriority") + '</th><th style="white-space:nowrap">' + T("thAllocH") + '</th><th class="sortable' + (_sk === "system" ? " sortable--active" : "") + '" data-sort-key="system" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thSystem") + _sortIc(_sk === "system") + '</th><th style="min-width:160px">' + T("thAssignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
         _bindSortHeaders(thead);
       }
       if (!_currentSprintRoleRec) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty">' + T("emptyTaskCurrentRole") + "</td></tr>";
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">' + T("emptyTaskCurrentRole") + "</td></tr>";
         return;
       }
       var rec = _currentSprintRoleRec;
@@ -8506,7 +8616,7 @@
       });
       if (typeof multiKeySort === "function") active = multiKeySort(active);
       if (!active.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty">' + T("currentRoleNoTasks") + "</td></tr>";
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">' + T("currentRoleNoTasks") + "</td></tr>";
         return;
       }
       var ta = _currentRolePP && _currentRolePP.taskAssignments ? _currentRolePP.taskAssignments : {};
@@ -8534,7 +8644,7 @@
         }).join("") + "</select>";
         var sprintStartDate = sprintStart ? toDateIn(sprintStart) : "";
         var sprintEndDate = sprintEnd ? toDateIn(sprintEnd) : "";
-        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + '</td><td class="td-xpriority">' + esc(item.xpriority || "\u2014") + '</td><td class="td-num">' + allocH + "</td><td>" + assigneeSel + '</td><td><input type="date" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td><td><input type="date" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
+        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + '</td><td class="td-xpriority">' + esc(item.xpriority || "\u2014") + '</td><td class="td-num">' + allocH + '</td><td class="td-system">' + esc(item.system || "\u2014") + "</td><td>" + assigneeSel + '</td><td><input type="date" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td><td><input type="date" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-task-assignee").forEach(function(sel) {
@@ -8556,6 +8666,12 @@
           }
           updateCurrentRoleTotals();
           updateCurrentRoleAssigneeRemain();
+          if (_settings && _settings.fieldSystem && _settings.personalPlanningEnabled) {
+            try {
+              renderCurrentRoleAssigneeTable();
+            } catch (_) {
+            }
+          }
           saveCurrentRoleState();
           updateIssueAssigneeField(issueId, login, rec.roleKey);
         });

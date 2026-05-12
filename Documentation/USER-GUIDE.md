@@ -2,7 +2,7 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](USER-GUIDE.ru.md)
 
-**Document version:** 1.3.0 — 2026-05-10
+**Document version:** 1.4.0 — 2026-05-12
 **Minimum YouTrack version:** 2024.3
 **UI languages:** 15 (auto-detect from browser, English fallback; toggle in the widget header)
 
@@ -100,7 +100,7 @@ For each active role:
 - **`fieldEst`** — estimation field (e.g., `Estimation`).
 - **`fieldFact`** — actual time field (`Spent time`).
 - **`userField`** — assignee field (`Assignee`, `Developer`, `Tester`).
-- **Inline editing** (`dynEditEnabled`) — enables editing of `State` / `System` / `Priority` / `XPriority` directly from the sprint table with a write-back to YouTrack.
+- **Direct editing** (`dynEditEnabled`, v1.4.0 rename — was *Inline editing*) — enables editing of `State` / `System` / `Priority` / `XPriority` directly from the sprint table with a write-back to YouTrack.
 - Also: `fieldPriority`, `fieldXPriority`, `fieldState`, `fieldSystem`, `fieldSprint`, `fieldVersion`.
 
 ### 3.3 Calculation norms
@@ -114,6 +114,7 @@ For each active role:
 
 - **`personalPlanningEnabled`** — activates the **Per-Assignee Distribution** level on the Planning tab.
 - **`usePersonalForResource`** — auto-recalculates the role's resource pool from the per-assignee distribution (requires `personalPlanningEnabled`).
+- **`manualPersonalResource`** (v1.4.0) — when enabled, the «Resource (h)» cell for each assignee in the Per-Assignee Distribution view becomes a numeric input bound to `entry.manualResource`; the autocalc from `NKC × KPE × rate × participation` is suppressed and the Grade dropdown becomes informational only. Use this when team-lead capacity is set top-down (fixed weekly hours per person) rather than derived from KPE coefficients. Requires `personalPlanningEnabled=true`; the checkbox is disabled otherwise.
 
 ### 3.5 Differentiated Time Tracking (DTA)
 
@@ -175,9 +176,12 @@ Visible when `personalPlanningEnabled=true`. A role selector (`#planningRoleSel`
 - **Resource-mode indicator** when `usePersonalForResource=false`: ✅ OK / 🟡 under-distributed / 🔴 over-allocated — it shows the difference between the manually entered role resource and the sum across assignees.
 - **Soft-warn confirm on role switch with dirty data** — prevents silent loss of unsaved per-assignee edits.
 - **Two-way sync with the Gantt timeline**: changing the assignee via the `<select>` in the task table immediately recolors the corresponding bar on `#tab-gantt` (if visible). The cached color in `taskAssignments[issueId].ganttColor` is invalidated on every write. If the Gantt tab is not open, the next `refreshGanttForCurrentSprint` picks up the new assignee automatically.
-- **🔄 Refresh from YouTrack** — bulk-fetches the current assignees from YouTrack for every task in the sprint (up to 200 issueIds per request, via `POST /refresh-assignees`). YouTrack is the source of truth: if someone changed the assignee directly on the issue, this button reconciles `_currentRolePP.taskAssignments` with reality. The change appears in the table immediately and recolors the Gantt.
+- **🔄 Refresh from issues** (v1.4.0 rename — was *🔄 Refresh from YouTrack*) — bulk-fetches the current assignees from YouTrack for every task in the sprint (up to 200 issueIds per request, via `POST /refresh-assignees`). YouTrack is the source of truth: if someone changed the assignee directly on the issue, this button reconciles `_currentRolePP.taskAssignments` with reality. The change appears in the table immediately and recolors the Gantt.
 - **Auto-select sprint when switching from Resource Allocation** — switching to Per-Assignee Distribution picks up the sprint that was active on Resource Allocation. No need to re-select.
 - **Dynamic role-summary re-render** — header counters of the role block (Resource / Σ Allocation / Task count / overlimit) update after every assignee/grade/dates change, with no tab switching required.
+- **«System» column in the task distribution table** (v1.4.0) — read-only, sortable column placed between «Allocation» and «Assignee» showing `item.system` for each active task. The sort cycle gains `system` as a primary key (ascending, with XPriority as a tie-breaker). The column always renders; tasks without a System value show «—».
+- **Manual per-assignee resource** (v1.4.0) — when `manualPersonalResource=true` (see §3.4), the «Resource (h)» cell in the assignees table becomes a numeric input. Both the assignee remainder and the role totals follow the manually-entered value live; the Grade dropdown stops auto-recalculation but remains editable for documentation purposes.
+- **«Allocations by project» column in the assignees table** (v1.4.0) — auto-shown when the System field is configured (`fieldSystem`) and `personalPlanningEnabled=true`. Each row renders a per-system breakdown — `system · hours · percent` — built from active items (PLANNED / UNPLANNED) assigned to that login, grouped by `item.system`. Tasks without a System value show under «No project/system» in muted italic; rows exceeding 100 % of the assignee's resource get a red `⚠` marker. The column updates automatically on assignee reassignment, manual-resource edits, and allocation changes.
 
 ### 4.3 Hybrid behavior for historical sprints
 
@@ -198,7 +202,7 @@ A dedicated top-level tab `#tab-gantt` with a per-role timeline.
 
 - **Role selector** (`#ganttRoleSel`) at the top — synchronized with `localStorage.ssp_lastActiveRole` (shared with the Per-Assignee Distribution level). Switching the role on Gantt is reflected when the next Per-Assignee Distribution opens, and vice versa.
 - **Refresh Gantt** button — re-renders the timeline from current data. Hidden in hybrid read-only mode.
-- **🔄 Refresh from YouTrack** — bulk-pulls current assignees from YT for every task in the sprint (the same button as on Per-Assignee Distribution; up to 200 issueIds per request).
+- **🔄 Refresh from issues** (v1.4.0 rename) — bulk-pulls current assignees from YT for every task in the sprint (the same button as on Per-Assignee Distribution; up to 200 issueIds per request).
 - **Bar color = function of the assignee**: a fixed palette of 12 colors via `assigneeColorOf(login, allLogins)` — round-robin by the login's index in the role's sorted login list. The same login gets the same color regardless of the current table composition. Tasks without an assignee get gray (`#9aa3ad`).
 - **Single-click → reassign**: a single click on a bar opens the `#reassignOverlay` modal with the role's assignee list and a "— Unassigned —" option. After **Apply**, `taskAssignments[issueId].assignee` is updated AND the value is **written back to the YouTrack issue field** via `POST /update-issue-field`. The bar is recolored immediately and the dirty flag is set. **Requires inline editing** (`dynEditEnabled=true` in Settings) — otherwise a single click shows a `ganttReassignDisabledByInlineEdit` toast. Reassign means a YouTrack write-back, which should not be available in plugin-only edit mode.
 - **Double-click → local color marker**: dblclick on a bar cycles the local color override `taskAssignments[issueId].userColorOverride` through `red → blue → null`. **Does not require inline editing** — this is a local UI marker without a YouTrack write-back. Useful for highlighting tasks (e.g., "needs discussion" = red, "ready for review" = blue). Persisted in `personalPlanning`.
@@ -264,7 +268,7 @@ The **Excel** button on each snapshot exports an .xlsx with columns: task, estim
 | Group | What it grants |
 |-------|----------------|
 | `settingsManagerGroup` (app-settings) | Plugin settings management (opens the settings overlay). The **source of truth** for plugin permissions. |
-| `editGroups` (`ssp_settings`) | Editing `_sprint`, `_roleItems`, `_items` (sprint-data POST). Inline editing of YouTrack fields. |
+| `editGroups` (`ssp_settings`) | Editing `_sprint`, `_roleItems`, `_items` (sprint-data POST). Direct editing of YouTrack fields. |
 | `validationGroups` (`ssp_settings`) | Sprint validation (`POST sprint-data?action=validate`); creating and committing working copies (`POST working-drafts`). |
 | `historyClearGroups` (`ssp_settings`) | Full history clearing (`POST history?action=clear`). |
 | `assignerGroups` (`ssp_settings`) | **Only** changing the assignee and start/end-dates on Per-Assignee Distribution and on the Gantt timeline (via `action=assignerSync`). YouTrack write-back is allowed only for assignee fields via `POST /update-issue-field`. Cannot change composition, capacity, or status. Hierarchy: `editor ⊃ assigner ⊃ viewer`. |
