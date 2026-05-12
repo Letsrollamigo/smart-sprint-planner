@@ -192,6 +192,7 @@
   "btnRefreshTasks": "⟳ 작업 데이터 새로고침",
   "btnRecalc": "∑ 잔여 재계산",
   "btnClear": "✕ 지우기",
+  "btnToday": "오늘",
   "btnValidate": "✔ 검증",
   "thId": "ID",
   "thSystem": "시스템",

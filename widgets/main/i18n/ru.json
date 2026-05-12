@@ -210,6 +210,7 @@
   "btnRefreshTasks": "⟳ Обновить данные по задачам",
   "btnRecalc": "∑ Пересчитать остаток",
   "btnClear": "✕ Очистить",
+  "btnToday": "Сегодня",
   "btnValidate": "✔ Валидировать",
 
   "thId": "ID",

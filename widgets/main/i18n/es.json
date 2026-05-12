@@ -192,6 +192,7 @@
   "btnRefreshTasks": "⟳ Actualizar datos de tareas",
   "btnRecalc": "∑ Recalcular restante",
   "btnClear": "✕ Limpiar",
+  "btnToday": "Hoy",
   "btnValidate": "✔ Validar",
   "thId": "ID",
   "thSystem": "Sistema",

@@ -192,6 +192,7 @@
   "btnRefreshTasks": "⟳ 刷新任务数据",
   "btnRecalc": "∑ 重新计算剩余",
   "btnClear": "✕ 清除",
+  "btnToday": "今天",
   "btnValidate": "✔ 验证",
   "thId": "ID",
   "thSystem": "系统",
