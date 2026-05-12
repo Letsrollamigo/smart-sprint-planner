@@ -515,5 +515,9 @@
   "allocBySysNoProject": "无项目/系统",
   "allocBySysOverlimit": "超出限额",
   "hourShort": "时",
-  "minuteShort": "分"
+  "minuteShort": "分",
+  "gradeIntern": "实习生",
+  "gradeJunior": "初级",
+  "gradeMiddle": "中级",
+  "gradeSenior": "高级"
 }

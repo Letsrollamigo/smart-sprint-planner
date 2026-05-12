@@ -538,7 +538,11 @@
     allocBySysNoProject: "No project/system",
     allocBySysOverlimit: "Over limit",
     hourShort: "h",
-    minuteShort: "m"
+    minuteShort: "m",
+    gradeIntern: "Intern",
+    gradeJunior: "Junior",
+    gradeMiddle: "Middle",
+    gradeSenior: "Senior"
   };
 
   // widgets/main/i18n/ru.json
@@ -1061,7 +1065,11 @@
     allocBySysNoProject: "\u0412\u043D\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432/\u0441\u0438\u0441\u0442\u0435\u043C",
     allocBySysOverlimit: "\u041F\u0435\u0440\u0435\u043B\u0438\u043C\u0438\u0442",
     hourShort: "\u0447",
-    minuteShort: "\u043C"
+    minuteShort: "\u043C",
+    gradeIntern: "\u0421\u0442\u0430\u0436\u0451\u0440",
+    gradeJunior: "\u0414\u0436\u0443\u043D",
+    gradeMiddle: "\u041C\u0438\u0434\u043B",
+    gradeSenior: "\u0421\u0438\u043D\u044C\u043E\u0440"
   };
 
   // widgets/main/src/i18n/languages.js
@@ -4820,11 +4828,11 @@
       setVal("s_nkc_other", _settings && _settings.nkcOther || 145);
       setVal("s_rate", _settings && _settings.rate !== void 0 ? _settings.rate : 1);
       setVal("s_participation", _settings && _settings.participation !== void 0 ? _settings.participation : 1);
-      var kpe = _settings && _settings.kpe || {};
-      setVal("s_kpe_intern", kpe["\u0421\u0442\u0430\u0436\u0451\u0440"] !== void 0 ? kpe["\u0421\u0442\u0430\u0436\u0451\u0440"] : 0);
-      setVal("s_kpe_jun", kpe["\u0414\u0436\u0443\u043D"] !== void 0 ? kpe["\u0414\u0436\u0443\u043D"] : 0.5);
-      setVal("s_kpe_mid", kpe["\u041C\u0438\u0434\u043B"] !== void 0 ? kpe["\u041C\u0438\u0434\u043B"] : 0.65);
-      setVal("s_kpe_senior", kpe["\u0421\u0438\u043D\u044C\u043E\u0440"] !== void 0 ? kpe["\u0421\u0438\u043D\u044C\u043E\u0440"] : 0.75);
+      var kpe = _migrateKpeObject(_settings && _settings.kpe || {});
+      setVal("s_kpe_intern", kpe.Intern !== void 0 ? kpe.Intern : 0);
+      setVal("s_kpe_jun", kpe.Junior !== void 0 ? kpe.Junior : 0.5);
+      setVal("s_kpe_mid", kpe.Middle !== void 0 ? kpe.Middle : 0.65);
+      setVal("s_kpe_senior", kpe.Senior !== void 0 ? kpe.Senior : 0.75);
       _valGroupsState.ids = (_settings && _settings.validationGroups || []).slice();
       _valGroupsState.names = (_settings && _settings.validationGroupNames || []).slice();
       _editGroupsState.ids = (_settings && _settings.editGroups || []).slice();
@@ -5018,10 +5026,10 @@
         rate: isFinite(parseFloat(document.getElementById("s_rate").value)) ? parseFloat(document.getElementById("s_rate").value) : 1,
         participation: isFinite(parseFloat(document.getElementById("s_participation").value)) ? parseFloat(document.getElementById("s_participation").value) : 1,
         kpe: {
-          "\u0421\u0442\u0430\u0436\u0451\u0440": parseFloat(document.getElementById("s_kpe_intern").value) || 0,
-          "\u0414\u0436\u0443\u043D": parseFloat(document.getElementById("s_kpe_jun").value) || 0.5,
-          "\u041C\u0438\u0434\u043B": parseFloat(document.getElementById("s_kpe_mid").value) || 0.65,
-          "\u0421\u0438\u043D\u044C\u043E\u0440": parseFloat(document.getElementById("s_kpe_senior").value) || 0.75
+          Intern: parseFloat(document.getElementById("s_kpe_intern").value) || 0,
+          Junior: parseFloat(document.getElementById("s_kpe_jun").value) || 0.5,
+          Middle: parseFloat(document.getElementById("s_kpe_mid").value) || 0.65,
+          Senior: parseFloat(document.getElementById("s_kpe_senior").value) || 0.75
         },
         fieldPriority: document.getElementById("s_priority").value || null,
         fieldXPriority: document.getElementById("s_xpriority").value || null,
@@ -8415,9 +8423,11 @@
         return;
       }
       var nkc = getCurrentRoleNkcHours();
+      var kpeMap = _migrateKpeObject(_settings.kpe || {});
       Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
         var entry = _currentRolePP.resourcesByAssignee[login];
-        var kpe = _settings.kpe && _settings.kpe[entry.grade] !== void 0 ? _settings.kpe[entry.grade] : KPE_DEFAULTS_LOCAL[entry.grade] || 0.65;
+        var g = _migrateGrade(entry.grade);
+        var kpe = kpeMap[g] !== void 0 ? kpeMap[g] : KPE_DEFAULTS_LOCAL[g] || 0.65;
         var rate = _settings.rate !== void 0 ? _settings.rate : 1;
         var parti = _settings.participation !== void 0 ? _settings.participation : 1;
         entry.resource = nkc * kpe * rate * parti;
@@ -8443,7 +8453,7 @@
       var savedGrades = {};
       if (_currentRolePP && _currentRolePP.resourcesByAssignee) {
         Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-          savedGrades[login] = _currentRolePP.resourcesByAssignee[login].grade || "\u041C\u0438\u0434\u043B";
+          savedGrades[login] = _migrateGrade(_currentRolePP.resourcesByAssignee[login].grade) || "Middle";
         });
       }
       var roles;
@@ -8503,8 +8513,9 @@
           users.forEach(function(u) {
             var login = u.login || "";
             if (!login || assigneeSet[login]) return;
-            var grade = savedGrades[login] || "\u041C\u0438\u0434\u043B";
-            var kpe = _settings.kpe && _settings.kpe[grade] !== void 0 ? _settings.kpe[grade] : KPE_DEFAULTS_LOCAL[grade] || 0.65;
+            var grade = savedGrades[login] || "Middle";
+            var kpeMap = _migrateKpeObject(_settings.kpe || {});
+            var kpe = kpeMap[grade] !== void 0 ? kpeMap[grade] : KPE_DEFAULTS_LOCAL[grade] || 0.65;
             var rate = _settings.rate !== void 0 ? _settings.rate : 1;
             var parti = _settings.participation !== void 0 ? _settings.participation : 1;
             assigneeSet[login] = {
@@ -8519,8 +8530,9 @@
           Object.keys(_currentRolePP.taskAssignments).forEach(function(issueId) {
             var ta = _currentRolePP.taskAssignments[issueId];
             if (!ta || !ta.assignee || assigneeSet[ta.assignee]) return;
-            var grade = savedGrades[ta.assignee] || "\u041C\u0438\u0434\u043B";
-            var kpe = _settings.kpe && _settings.kpe[grade] !== void 0 ? _settings.kpe[grade] : KPE_DEFAULTS_LOCAL[grade] || 0.65;
+            var grade = savedGrades[ta.assignee] || "Middle";
+            var kpeMap = _migrateKpeObject(_settings.kpe || {});
+            var kpe = kpeMap[grade] !== void 0 ? kpeMap[grade] : KPE_DEFAULTS_LOCAL[grade] || 0.65;
             var rate = _settings.rate !== void 0 ? _settings.rate : 1;
             var parti = _settings.participation !== void 0 ? _settings.participation : 1;
             assigneeSet[ta.assignee] = {
@@ -8574,8 +8586,28 @@
     function emptyPP() {
       return { nkcKey: "other", resourcesByAssignee: {}, taskAssignments: {}, calculatedAt: null, validatedAt: null, validatedBy: null };
     }
-    var KPE_DEFAULTS_LOCAL = { "\u0421\u0442\u0430\u0436\u0451\u0440": 0, "\u0414\u0436\u0443\u043D": 0.5, "\u041C\u0438\u0434\u043B": 0.65, "\u0421\u0438\u043D\u044C\u043E\u0440": 0.75 };
-    var GRADES_LOCAL = ["\u0421\u0442\u0430\u0436\u0451\u0440", "\u0414\u0436\u0443\u043D", "\u041C\u0438\u0434\u043B", "\u0421\u0438\u043D\u044C\u043E\u0440"];
+    var GRADES_LOCAL = ["Intern", "Junior", "Middle", "Senior"];
+    var KPE_DEFAULTS_LOCAL = { Intern: 0, Junior: 0.5, Middle: 0.65, Senior: 0.75 };
+    var _GRADE_LEGACY_MAP = {
+      "\u0421\u0442\u0430\u0436\u0451\u0440": "Intern",
+      "\u0414\u0436\u0443\u043D": "Junior",
+      "\u041C\u0438\u0434\u043B": "Middle",
+      "\u0421\u0438\u043D\u044C\u043E\u0440": "Senior"
+    };
+    function _migrateGrade(g) {
+      if (!g) return g;
+      return _GRADE_LEGACY_MAP[g] || g;
+    }
+    function _migrateKpeObject(kpe) {
+      if (!kpe || typeof kpe !== "object") return kpe;
+      var out = {};
+      for (var k in kpe) {
+        if (!Object.prototype.hasOwnProperty.call(kpe, k)) continue;
+        var nk = _migrateGrade(k);
+        out[nk] = kpe[k];
+      }
+      return out;
+    }
     var _pendingDelAssigneeLogin = null;
     function calcAssigneeAllocByProject(login) {
       if (!_currentSprintRoleRec || !_currentRolePP) return [];
@@ -8652,7 +8684,8 @@
           }
         }
         tr.innerHTML = "<td>" + esc(entry.assigneeName || login) + '</td><td><select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' + GRADES_LOCAL.map(function(g) {
-          return '<option value="' + g + '"' + (entry.grade === g ? " selected" : "") + ">" + g + "</option>";
+          var currentGrade = _migrateGrade(entry.grade);
+          return '<option value="' + g + '"' + (currentGrade === g ? " selected" : "") + ">" + esc(T("grade" + g)) + "</option>";
         }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" style="font-size:14px;padding:2px 6px">\u{1F5D1}</button></td>';
         tbody.appendChild(tr);
       });
@@ -8663,7 +8696,8 @@
           _currentRolePP.resourcesByAssignee[login].grade = sel.value;
           if (!manualMode) {
             var nkc2 = getCurrentRoleNkcHours();
-            var kpe = _settings.kpe && _settings.kpe[sel.value] !== void 0 ? _settings.kpe[sel.value] : KPE_DEFAULTS_LOCAL[sel.value] || 0.65;
+            var kpeMap = _migrateKpeObject(_settings.kpe || {});
+            var kpe = kpeMap[sel.value] !== void 0 ? kpeMap[sel.value] : KPE_DEFAULTS_LOCAL[sel.value] || 0.65;
             var rate = _settings.rate !== void 0 ? _settings.rate : 1;
             var parti = _settings.participation !== void 0 ? _settings.participation : 1;
             _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;

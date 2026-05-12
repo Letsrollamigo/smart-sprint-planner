@@ -515,5 +515,9 @@
   "allocBySysNoProject": "Proje/sistem yok",
   "allocBySysOverlimit": "Limit aşımı",
   "hourShort": "s",
-  "minuteShort": "d"
+  "minuteShort": "d",
+  "gradeIntern": "Stajyer",
+  "gradeJunior": "Junior",
+  "gradeMiddle": "Mid",
+  "gradeSenior": "Senior"
 }

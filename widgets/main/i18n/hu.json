@@ -515,5 +515,9 @@
   "allocBySysNoProject": "Projekt/rendszer nélkül",
   "allocBySysOverlimit": "Túllépve",
   "hourShort": "ó",
-  "minuteShort": "p"
+  "minuteShort": "p",
+  "gradeIntern": "Gyakornok",
+  "gradeJunior": "Junior",
+  "gradeMiddle": "Mid",
+  "gradeSenior": "Senior"
 }

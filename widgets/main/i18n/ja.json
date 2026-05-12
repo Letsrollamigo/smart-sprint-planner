@@ -515,5 +515,9 @@
   "allocBySysNoProject": "プロジェクト/システムなし",
   "allocBySysOverlimit": "上限超過",
   "hourShort": "時",
-  "minuteShort": "分"
+  "minuteShort": "分",
+  "gradeIntern": "インターン",
+  "gradeJunior": "ジュニア",
+  "gradeMiddle": "ミドル",
+  "gradeSenior": "シニア"
 }

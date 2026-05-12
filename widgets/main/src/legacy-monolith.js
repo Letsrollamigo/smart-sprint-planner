@@ -3723,11 +3723,13 @@
     setVal('s_rate',          (_settings && _settings.rate          !== undefined) ? _settings.rate          : 1);
     setVal('s_participation', (_settings && _settings.participation !== undefined) ? _settings.participation : 1);
 
-    var kpe = (_settings && _settings.kpe) || {};
-    setVal('s_kpe_intern', kpe['Стажёр'] !== undefined ? kpe['Стажёр'] : 0);
-    setVal('s_kpe_jun',    kpe['Джун']   !== undefined ? kpe['Джун']   : 0.5);
-    setVal('s_kpe_mid',    kpe['Мидл']   !== undefined ? kpe['Мидл']   : 0.65);
-    setVal('s_kpe_senior', kpe['Синьор'] !== undefined ? kpe['Синьор'] : 0.75);
+    /* v1.4.1 D128 — kpe object is migrated on read so legacy installs with
+       Cyrillic-keyed values still resolve via the English canonical keys. */
+    var kpe = _migrateKpeObject((_settings && _settings.kpe) || {});
+    setVal('s_kpe_intern', kpe.Intern !== undefined ? kpe.Intern : 0);
+    setVal('s_kpe_jun',    kpe.Junior !== undefined ? kpe.Junior : 0.5);
+    setVal('s_kpe_mid',    kpe.Middle !== undefined ? kpe.Middle : 0.65);
+    setVal('s_kpe_senior', kpe.Senior !== undefined ? kpe.Senior : 0.75);
 
     // Multi-select групп — состояние из _settings
     _valGroupsState.ids        = ((_settings && _settings.validationGroups)         || []).slice();
@@ -3953,10 +3955,10 @@
       participation: isFinite(parseFloat(document.getElementById('s_participation').value))
                        ? parseFloat(document.getElementById('s_participation').value) : 1,
       kpe: {
-        'Стажёр': parseFloat(document.getElementById('s_kpe_intern').value) || 0,
-        'Джун':   parseFloat(document.getElementById('s_kpe_jun').value)    || 0.5,
-        'Мидл':   parseFloat(document.getElementById('s_kpe_mid').value)    || 0.65,
-        'Синьор': parseFloat(document.getElementById('s_kpe_senior').value) || 0.75
+        Intern: parseFloat(document.getElementById('s_kpe_intern').value) || 0,
+        Junior: parseFloat(document.getElementById('s_kpe_jun').value)    || 0.5,
+        Middle: parseFloat(document.getElementById('s_kpe_mid').value)    || 0.65,
+        Senior: parseFloat(document.getElementById('s_kpe_senior').value) || 0.75
       },
       fieldPriority:    document.getElementById('s_priority').value      || null,
       fieldXPriority:   document.getElementById('s_xpriority').value     || null,
@@ -7507,10 +7509,11 @@
       return;
     }
     var nkc = getCurrentRoleNkcHours();
+    var kpeMap = _migrateKpeObject(_settings.kpe || {});
     Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
       var entry = _currentRolePP.resourcesByAssignee[login];
-      var kpe   = (_settings.kpe && _settings.kpe[entry.grade] !== undefined)
-        ? _settings.kpe[entry.grade] : (KPE_DEFAULTS_LOCAL[entry.grade] || 0.65);
+      var g = _migrateGrade(entry.grade);
+      var kpe   = (kpeMap[g] !== undefined) ? kpeMap[g] : (KPE_DEFAULTS_LOCAL[g] || 0.65);
       var rate  = _settings.rate         !== undefined ? _settings.rate         : 1;
       var parti = _settings.participation !== undefined ? _settings.participation : 1;
       entry.resource = nkc * kpe * rate * parti;
@@ -7535,7 +7538,7 @@
     var savedGrades = {};
     if (_currentRolePP && _currentRolePP.resourcesByAssignee) {
       Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-        savedGrades[login] = _currentRolePP.resourcesByAssignee[login].grade || 'Мидл';
+        savedGrades[login] = _migrateGrade(_currentRolePP.resourcesByAssignee[login].grade) || 'Middle';
       });
     }
 
@@ -7604,10 +7607,10 @@
         users.forEach(function(u) {
           var login = u.login || '';
           if (!login || assigneeSet[login]) return;
-          // Сохранить грейд из снэпшота если был, иначе «Мидл»
-          var grade = savedGrades[login] || 'Мидл';
-          var kpe   = (_settings.kpe && _settings.kpe[grade] !== undefined)
-            ? _settings.kpe[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
+          // Сохранить грейд из снэпшота если был, иначе Middle (canonical default)
+          var grade = savedGrades[login] || 'Middle';
+          var kpeMap = _migrateKpeObject(_settings.kpe || {});
+          var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
           var rate  = _settings.rate         !== undefined ? _settings.rate         : 1;
           var parti = _settings.participation !== undefined ? _settings.participation : 1;
           assigneeSet[login] = {
@@ -7624,9 +7627,9 @@
         Object.keys(_currentRolePP.taskAssignments).forEach(function(issueId) {
           var ta = _currentRolePP.taskAssignments[issueId];
           if (!ta || !ta.assignee || assigneeSet[ta.assignee]) return;
-          var grade = savedGrades[ta.assignee] || 'Мидл';
-          var kpe   = (_settings.kpe && _settings.kpe[grade] !== undefined)
-            ? _settings.kpe[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
+          var grade = savedGrades[ta.assignee] || 'Middle';
+          var kpeMap = _migrateKpeObject(_settings.kpe || {});
+          var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
           var rate  = _settings.rate !== undefined ? _settings.rate : 1;
           var parti = _settings.participation !== undefined ? _settings.participation : 1;
           assigneeSet[ta.assignee] = {
@@ -7683,8 +7686,36 @@
     return { nkcKey:'other', resourcesByAssignee:{}, taskAssignments:{}, calculatedAt:null, validatedAt:null, validatedBy:null };
   }
 
-  var KPE_DEFAULTS_LOCAL = { 'Стажёр': 0, 'Джун': 0.5, 'Мидл': 0.65, 'Синьор': 0.75 };
-  var GRADES_LOCAL = ['Стажёр', 'Джун', 'Мидл', 'Синьор'];
+  /* v1.4.1 D128 — canonical grade keys flipped from Cyrillic to English. The
+     storage layer (kpe object in settings, entry.grade in working drafts and
+     confirmed snapshots) now uses 'Intern' / 'Junior' / 'Middle' / 'Senior'.
+     Display in the assignee table dropdown is localised via T('gradeIntern'),
+     T('gradeJunior'), T('gradeMiddle'), T('gradeSenior') — those keys are
+     defined in all 15 locale dictionaries. Migration helper below translates
+     legacy Cyrillic-keyed data on read so existing installs do not lose their
+     KPE values or per-assignee grade selections. */
+  var GRADES_LOCAL = ['Intern', 'Junior', 'Middle', 'Senior'];
+  var KPE_DEFAULTS_LOCAL = { Intern: 0, Junior: 0.5, Middle: 0.65, Senior: 0.75 };
+  var _GRADE_LEGACY_MAP = {
+    'Стажёр': 'Intern',
+    'Джун':   'Junior',
+    'Мидл':   'Middle',
+    'Синьор': 'Senior'
+  };
+  function _migrateGrade(g) {
+    if (!g) return g;
+    return _GRADE_LEGACY_MAP[g] || g;
+  }
+  function _migrateKpeObject(kpe) {
+    if (!kpe || typeof kpe !== 'object') return kpe;
+    var out = {};
+    for (var k in kpe) {
+      if (!Object.prototype.hasOwnProperty.call(kpe, k)) continue;
+      var nk = _migrateGrade(k);
+      out[nk] = kpe[k];
+    }
+    return out;
+  }
 
   /* ── Таблица исполнителей ── */
   var _pendingDelAssigneeLogin = null;
@@ -7792,7 +7823,10 @@
         '<td>' + esc(entry.assigneeName || login) + '</td>' +
         '<td>' +
           '<select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' +
-          GRADES_LOCAL.map(function(g){ return '<option value="'+g+'"'+(entry.grade===g?' selected':'')+'>'+g+'</option>'; }).join('') +
+          GRADES_LOCAL.map(function(g){
+            var currentGrade = _migrateGrade(entry.grade);
+            return '<option value="'+g+'"'+(currentGrade===g?' selected':'')+'>'+esc(T('grade'+g))+'</option>';
+          }).join('') +
           '</select>' +
         '</td>' +
         resCellHtml +
@@ -7813,7 +7847,8 @@
         /* v1.4.0 — в manualMode грейд информативен; ресурс не пересчитывается. */
         if (!manualMode) {
           var nkc2  = getCurrentRoleNkcHours();
-          var kpe   = (_settings.kpe && _settings.kpe[sel.value] !== undefined) ? _settings.kpe[sel.value] : (KPE_DEFAULTS_LOCAL[sel.value] || 0.65);
+          var kpeMap = _migrateKpeObject(_settings.kpe || {});
+          var kpe   = (kpeMap[sel.value] !== undefined) ? kpeMap[sel.value] : (KPE_DEFAULTS_LOCAL[sel.value] || 0.65);
           var rate  = _settings.rate !== undefined ? _settings.rate : 1;
           var parti = _settings.participation !== undefined ? _settings.participation : 1;
           _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;

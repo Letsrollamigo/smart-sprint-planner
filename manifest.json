@@ -14,7 +14,7 @@
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.4.1 — Localization polish. Hour and minute suffixes in time displays (capacity, plan/fact, allocations) now follow the active UI language instead of always rendering in Russian. The project name label in the widget header re-translates correctly when the language is switched at runtime. The four date inputs in sprint and task fields now use a small built-in popup calendar localised through the plugin language, replacing the native browser calendar that always followed the OS locale in Chromium. See CHANGELOG.md.",
+  "changeNotes": "v1.4.1 — Localization polish. Per-assignee grade values (Intern / Junior / Middle / Senior) are now stored under canonical English keys and rendered through the plugin's i18n dictionary, so the dropdown matches the active UI language across all 15 locales instead of always displaying Russian. Hour and minute suffixes in time displays (capacity, plan/fact, allocations) now follow the active UI language. The project name label in the widget header re-translates correctly when the language is switched at runtime. The four date inputs in sprint and task fields now use a small built-in popup calendar localised through the plugin language, replacing the native browser calendar that always followed the OS locale in Chromium. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

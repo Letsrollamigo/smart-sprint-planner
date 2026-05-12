@@ -560,5 +560,9 @@
   "allocBySysNoProject": "Вне проектов/систем",
   "allocBySysOverlimit": "Перелимит",
   "hourShort": "ч",
-  "minuteShort": "м"
+  "minuteShort": "м",
+  "gradeIntern": "Стажёр",
+  "gradeJunior": "Джун",
+  "gradeMiddle": "Мидл",
+  "gradeSenior": "Синьор"
 }

@@ -515,5 +515,9 @@
   "allocBySysNoProject": "Sans projet/système",
   "allocBySysOverlimit": "Dépassé",
   "hourShort": "h",
-  "minuteShort": "m"
+  "minuteShort": "m",
+  "gradeIntern": "Stagiaire",
+  "gradeJunior": "Junior",
+  "gradeMiddle": "Mid",
+  "gradeSenior": "Senior"
 }

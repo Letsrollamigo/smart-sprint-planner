@@ -515,5 +515,9 @@
   "allocBySysNoProject": "Bez projektu/systému",
   "allocBySysOverlimit": "Překročeno",
   "hourShort": "h",
-  "minuteShort": "m"
+  "minuteShort": "m",
+  "gradeIntern": "Stážista",
+  "gradeJunior": "Junior",
+  "gradeMiddle": "Mid",
+  "gradeSenior": "Senior"
 }
