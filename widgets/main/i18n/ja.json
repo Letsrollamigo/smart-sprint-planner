@@ -513,5 +513,6 @@
   "thAllocByProject": "プロジェクト別配分",
   "allocBySysNoProject": "プロジェクト/システムなし",
   "allocBySysOverlimit": "上限超過",
-  "hourShort": "時"
+  "hourShort": "時",
+  "minuteShort": "分"
 }

@@ -513,5 +513,6 @@
   "thAllocByProject": "Allocazioni per progetto",
   "allocBySysNoProject": "Nessun progetto/sistema",
   "allocBySysOverlimit": "Superato",
-  "hourShort": "h"
+  "hourShort": "h",
+  "minuteShort": "m"
 }

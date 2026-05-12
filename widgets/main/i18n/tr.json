@@ -513,5 +513,6 @@
   "thAllocByProject": "Projeye göre tahsisler",
   "allocBySysNoProject": "Proje/sistem yok",
   "allocBySysOverlimit": "Limit aşımı",
-  "hourShort": "s"
+  "hourShort": "s",
+  "minuteShort": "d"
 }

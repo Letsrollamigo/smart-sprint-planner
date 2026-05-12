@@ -1,6 +1,6 @@
 {
   "name": "smart-sprint-planner",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "scripts": {
     "build": "esbuild widgets/main/src/index.js --bundle --format=iife --target=es2017 --outfile=widgets/main/main.js",
@@ -8,7 +8,7 @@
     "test": "playwright test && node --test tests/unit/*.test.js",
     "test:ui": "playwright test --ui",
     "test:unit": "node --test tests/unit/*.test.js",
-    "zip": "npm run build && npm run build:check && cd .. && zip -r 'Realises SSP/Smart-Sprint-Planner-v1.4.0.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/REFACTORING_PLAN.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github'"
+    "zip": "npm run build && npm run build:check && cd .. && zip -r 'Realises SSP/Smart-Sprint-Planner-v1.4.1.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/REFACTORING_PLAN.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github'"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

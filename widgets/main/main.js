@@ -536,7 +536,8 @@
     thAllocByProject: "Allocations by project",
     allocBySysNoProject: "No project/system",
     allocBySysOverlimit: "Over limit",
-    hourShort: "h"
+    hourShort: "h",
+    minuteShort: "m"
   };
 
   // widgets/main/i18n/ru.json
@@ -1057,7 +1058,8 @@
     thAllocByProject: "\u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u0438 \u043F\u043E \u043F\u0440\u043E\u0435\u043A\u0442\u0430\u043C",
     allocBySysNoProject: "\u0412\u043D\u0435 \u043F\u0440\u043E\u0435\u043A\u0442\u043E\u0432/\u0441\u0438\u0441\u0442\u0435\u043C",
     allocBySysOverlimit: "\u041F\u0435\u0440\u0435\u043B\u0438\u043C\u0438\u0442",
-    hourShort: "\u0447"
+    hourShort: "\u0447",
+    minuteShort: "\u043C"
   };
 
   // widgets/main/src/i18n/languages.js
@@ -1483,6 +1485,11 @@
       document.querySelectorAll("[data-i18n-tooltip]").forEach(function(el) {
         el.setAttribute("data-tooltip", T(el.getAttribute("data-i18n-tooltip")));
       });
+      try {
+        var dateInputs = document.querySelectorAll('input[type="date"]');
+        for (var di = 0; di < dateInputs.length; di++) dateInputs[di].setAttribute("lang", _lang);
+      } catch (_) {
+      }
     }
     function setLang2(lang) {
       var prev = _lang;
@@ -1549,8 +1556,14 @@
       var v = _settings && typeof _settings.defaultLang === "string" ? _settings.defaultLang : "";
       _i18nBridge.setProjectDefault(v || null);
     }
+    function _updateProjectNameLabel() {
+      if (!_projectDisplayName) return;
+      var lbl = document.getElementById("projectNameLabel");
+      if (lbl) lbl.textContent = T("labelProject") + _projectDisplayName;
+    }
     function _doFullRerender() {
       applyI18N();
+      _updateProjectNameLabel();
       try {
         _refreshFeatureStatusBar();
       } catch (_) {
@@ -1714,6 +1727,7 @@
     var _activeWorkingDraftKey = null;
     var _thisTabToken = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : "tab_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
     var _currentUser = null, _isValidator = false, _isEditor = false;
+    var _projectDisplayName = "";
     var _isAssigner = false;
     var _valGroups = /* @__PURE__ */ new Set(), _editGroups = /* @__PURE__ */ new Set();
     var _histPage = 1;
@@ -1791,9 +1805,10 @@
       var sign = m < 0 ? "-" : "";
       m = Math.abs(m);
       var h = Math.floor(m / 60), mn = m % 60, p = [];
-      if (h) p.push(h + "\u0447");
-      if (mn) p.push(mn + "\u043C");
-      return sign + (p.length ? p.join(" ") : "0\u043C");
+      var hSuf = T("hourShort"), mSuf = T("minuteShort");
+      if (h) p.push(h + hSuf);
+      if (mn) p.push(mn + mSuf);
+      return sign + (p.length ? p.join(" ") : "0" + mSuf);
     }
     function fmtHours(m) {
       if (m === null || m === void 0) return "\u2014";
@@ -1801,17 +1816,19 @@
       var sign = m < 0 ? "-" : "";
       m = Math.abs(m);
       var h = Math.floor(m / 60), mn = m % 60, p = [];
-      if (h) p.push(h + "\u0447");
-      if (mn) p.push(mn + "\u043C");
-      return sign + (p.length ? p.join(" ") : "0\u043C");
+      var hSuf = T("hourShort"), mSuf = T("minuteShort");
+      if (h) p.push(h + hSuf);
+      if (mn) p.push(mn + mSuf);
+      return sign + (p.length ? p.join(" ") : "0" + mSuf);
     }
     function fmtHoursOnly(m) {
       if (m === null || m === void 0) return "\u2014";
       m = Math.round(m);
       var h = Math.floor(m / 60), mn = m % 60, p = [];
-      if (h) p.push(h + "\u0447");
-      if (mn) p.push(mn + "\u043C");
-      return p.length ? p.join(" ") : "0\u043C";
+      var hSuf = T("hourShort"), mSuf = T("minuteShort");
+      if (h) p.push(h + hSuf);
+      if (mn) p.push(mn + mSuf);
+      return p.length ? p.join(" ") : "0" + mSuf;
     }
     function parsePeriod(s) {
       if (!s) return 0;
@@ -1886,7 +1903,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.4.0";
+    var APP_VERSION = "1.4.1";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -3556,7 +3573,8 @@
       }
       diag("YTApp registered. project=" + (_ctx && _ctx.project ? _ctx.project.id : "?"), "info");
       if (_ctx && _ctx.project && (_ctx.project.name || _ctx.project.shortName)) {
-        document.getElementById("projectNameLabel").textContent = T("labelProject") + (_ctx.project.name || _ctx.project.shortName);
+        _projectDisplayName = _ctx.project.name || _ctx.project.shortName;
+        _updateProjectNameLabel();
       }
       var _initT0 = Date.now();
       diag("init: loadMe + loadProjectFields START", "info");
@@ -3800,8 +3818,8 @@
           _projectFields = r.fields || [];
           diag("Fields loaded: " + _projectFields.length, "ok");
           if (r.projectName) {
-            var lbl = document.getElementById("projectNameLabel");
-            if (lbl && !lbl.textContent) lbl.textContent = T("labelProject") + r.projectName;
+            _projectDisplayName = r.projectName;
+            _updateProjectNameLabel();
           }
           _ytBaseFromProject();
         }
@@ -8644,7 +8662,7 @@
         }).join("") + "</select>";
         var sprintStartDate = sprintStart ? toDateIn(sprintStart) : "";
         var sprintEndDate = sprintEnd ? toDateIn(sprintEnd) : "";
-        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + '</td><td class="td-xpriority">' + esc(item.xpriority || "\u2014") + '</td><td class="td-num">' + allocH + '</td><td class="td-system">' + esc(item.system || "\u2014") + "</td><td>" + assigneeSel + '</td><td><input type="date" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td><td><input type="date" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
+        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + '</td><td class="td-xpriority">' + esc(item.xpriority || "\u2014") + '</td><td class="td-num">' + allocH + '</td><td class="td-system">' + esc(item.system || "\u2014") + "</td><td>" + assigneeSel + '</td><td><input type="date" lang="' + esc(_lang) + '" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td><td><input type="date" lang="' + esc(_lang) + '" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-task-assignee").forEach(function(sel) {

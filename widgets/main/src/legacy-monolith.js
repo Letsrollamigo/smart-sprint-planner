@@ -246,6 +246,16 @@
     document.querySelectorAll('[data-i18n-tooltip]').forEach(function(el) {
       el.setAttribute('data-tooltip', T(el.getAttribute('data-i18n-tooltip')));
     });
+    /* v1.4.1 D127 — native <input type="date"> в Chromium берёт locale для всплывающего
+       календаря из OS locale, игнорируя <html lang> и Accept-Language. Атрибут lang на
+       самом input уважается (Chrome 109+). Синхронизируем все date-inputs с активным
+       _lang — иначе календарь оставался в OS locale ("май 2026", "Пн Вт", "Удалить").
+       Вызов внутри applyI18N покрывает и initial boot (line ~2345), и каждый setLang
+       через _doFullRerender → applyI18N. */
+    try {
+      var dateInputs = document.querySelectorAll('input[type="date"]');
+      for (var di = 0; di < dateInputs.length; di++) dateInputs[di].setAttribute('lang', _lang);
+    } catch(_){}
     /* v5.10.0 — удалён мёртвый guard на renderDistribPanel + tab-distrib (оба удалены в v5.6.0). */
   }
 
@@ -333,8 +343,20 @@
     _i18nBridge.setProjectDefault(v || null);
   }
 
+  /* v1.4.1 D126 — пере-применить локализованный префикс T('labelProject') к шапке.
+     До v1.4.1 projectNameLabel.textContent выставлялся один раз (на register/load)
+     и оставался stale при смене языка. Теперь _doFullRerender дёргает это, и шапка
+     перерисовывается синхронно с другими динамическими областями. Безопасно вызывать
+     раньше, чем _projectDisplayName заполнен — функция в этом случае no-op. */
+  function _updateProjectNameLabel() {
+    if (!_projectDisplayName) return;
+    var lbl = document.getElementById('projectNameLabel');
+    if (lbl) lbl.textContent = T('labelProject') + _projectDisplayName;
+  }
+
   function _doFullRerender() {
     applyI18N();
+    _updateProjectNameLabel();
     /* v1.3.1 — после applyI18N status-bar показывает локализованный
        on/off лейбл для своих 4 chip'ов. */
     try { _refreshFeatureStatusBar(); } catch(_){}
@@ -440,6 +462,12 @@
                                     ? crypto.randomUUID()
                                     : ('tab_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10));
   var _currentUser = null, _isValidator = false, _isEditor = false;
+  /* v1.4.1 D125 — кэш display-имени проекта. Заполняется на YTApp.register
+     (из _ctx.project.name|shortName) и на loadProjectFields (из r.projectName).
+     Нужен, чтобы _doFullRerender мог пере-применить локализованный префикс
+     T('labelProject') при смене языка — до v1.4.1 projectNameLabel ставился
+     один раз и оставался stale. */
+  var _projectDisplayName = '';
   /* v6.1.0 D82 (F5) — assigner-роль (variant b: assignee + start/end-dates). */
   var _isAssigner = false;
   var _valGroups = new Set(), _editGroups = new Set();
@@ -529,14 +557,18 @@
   /* v5.0.3 — Период всегда отображается в часах и минутах (без недель/дней).
      Раньше большие значения переходили в "Xн Yд" → запутывало пользователя.
      parsePeriod() остаётся обратно совместимым: принимает и [нwdд] из legacy-данных. */
+  /* v1.4.1 D124 — единицы часов/минут берутся из активной локали через T('hourShort')
+     и T('minuteShort'). До v1.4.1 литералы 'ч' / 'м' были захардкожены, из-за чего
+     plan/fact/capacity-плашки оставались русскими при любом языке UI. */
   function fmtPeriod(m) {
     if (m===null||m===undefined) return '—';
     m=Math.round(m);
     var sign = m < 0 ? '-' : '';
     m = Math.abs(m);
     var h=Math.floor(m/60), mn=m%60, p=[];
-    if(h)p.push(h+'ч'); if(mn)p.push(mn+'м');
-    return sign + (p.length?p.join(' '):'0м');
+    var hSuf = T('hourShort'), mSuf = T('minuteShort');
+    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
+    return sign + (p.length?p.join(' '):'0'+mSuf);
   }
 
   function fmtHours(m) {
@@ -545,16 +577,18 @@
     var sign = m < 0 ? '-' : '';
     m = Math.abs(m);
     var h=Math.floor(m/60), mn=m%60, p=[];
-    if(h)p.push(h+'ч'); if(mn)p.push(mn+'м');
-    return sign+(p.length?p.join(' '):'0м');
+    var hSuf = T('hourShort'), mSuf = T('minuteShort');
+    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
+    return sign+(p.length?p.join(' '):'0'+mSuf);
   }
 
   function fmtHoursOnly(m) {
     if (m===null||m===undefined) return '—';
     m=Math.round(m);
     var h=Math.floor(m/60), mn=m%60, p=[];
-    if(h)p.push(h+'ч'); if(mn)p.push(mn+'м');
-    return p.length?p.join(' '):'0м';
+    var hSuf = T('hourShort'), mSuf = T('minuteShort');
+    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
+    return p.length?p.join(' '):'0'+mSuf;
   }
 
   function parsePeriod(s) {
@@ -615,7 +649,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.4.0';
+  var APP_VERSION = '1.4.1';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2231,8 +2265,8 @@
     }
     diag('YTApp registered. project='+(_ctx&&_ctx.project?_ctx.project.id:'?'),'info');
     if (_ctx && _ctx.project && (_ctx.project.name || _ctx.project.shortName)) {
-      document.getElementById('projectNameLabel').textContent =
-        T('labelProject') + (_ctx.project.name || _ctx.project.shortName);
+      _projectDisplayName = _ctx.project.name || _ctx.project.shortName;
+      _updateProjectNameLabel();
     }
     /* v5.0.3 (итерация 5) — loadProjectGroups убран из критического пути
        (нужен только в settings-overlay; ленивая загрузка при openSettingsOverlay).
@@ -2554,8 +2588,11 @@
         _projectFields = r.fields || [];
         diag('Fields loaded: '+_projectFields.length,'ok');
         if (r.projectName) {
-          var lbl = document.getElementById('projectNameLabel');
-          if (lbl && !lbl.textContent) lbl.textContent = T('labelProject') + r.projectName;
+          /* v1.4.1 — раньше textContent выставлялся только если он пустой; теперь
+             всегда обновляем кэш и пере-применяем helper, чтобы projectNameLabel
+             корректно перерисовывался при последующих setLang(). */
+          _projectDisplayName = r.projectName;
+          _updateProjectNameLabel();
         }
         _ytBaseFromProject();
       }
@@ -7817,8 +7854,8 @@
         /* v1.4.0 — System cell (read-only even under dynEdit). */
         '<td class="td-system">'+esc(item.system||'—')+'</td>'+
         '<td>'+assigneeSel+'</td>'+
-        '<td><input type="date" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>'+
-        '<td><input type="date" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
+        '<td><input type="date" lang="'+esc(_lang)+'" class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>'+
+        '<td><input type="date" lang="'+esc(_lang)+'" class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/></td>';
       tbody.appendChild(tr);
     });
 

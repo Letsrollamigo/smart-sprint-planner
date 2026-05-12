@@ -558,5 +558,6 @@
   "thAllocByProject": "Аллокации по проектам",
   "allocBySysNoProject": "Вне проектов/систем",
   "allocBySysOverlimit": "Перелимит",
-  "hourShort": "ч"
+  "hourShort": "ч",
+  "minuteShort": "м"
 }

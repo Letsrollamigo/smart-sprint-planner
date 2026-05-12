@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.4.1] — 2026-05-12
+
+### Fixed
+- **Hour and minute suffixes now follow the active UI language.** The three internal time formatters (`fmtPeriod`, `fmtHours`, `fmtHoursOnly`) used to embed hardcoded `'ч'` and `'м'` literals, so every capacity, plan/fact and allocations cell rendered Russian suffixes regardless of the selected interface language. Suffixes are now read from a pair of dictionary keys, `hourShort` (already present) and a new `minuteShort`, defined across all 15 locales.
+- **Project name label in the widget header now re-translates on language switch.** Previously the «Project: …» prefix was written into `projectNameLabel` once at app registration and never refreshed, so changing the UI language at runtime left the prefix stale in the original language. The label is now updated on every full rerender via a small helper that reads from a cached project name and re-applies `T('labelProject')`.
+- **Native date pickers now inherit the plugin language.** The four `<input type="date">` controls in sprint and task date pickers receive a `lang` attribute synchronised with the active UI language. In Chromium-based browsers (the runtime YouTrack ships against) this aligns the popup calendar — month names, weekday headers and the «Clear / Today» buttons — with the rest of the UI, instead of falling back to the OS locale.
+
+### Compatibility
+- **No breaking changes.** Pure localisation polish on top of v1.4.0; no schema, settings or workflow changes. Existing v1.4.0 installations upgrade in place.
+
+---
+
 ## [1.4.0] — 2026-05-12
 
 ### Added

@@ -513,5 +513,6 @@
   "thAllocByProject": "Alokace podle projektů",
   "allocBySysNoProject": "Bez projektu/systému",
   "allocBySysOverlimit": "Překročeno",
-  "hourShort": "h"
+  "hourShort": "h",
+  "minuteShort": "m"
 }

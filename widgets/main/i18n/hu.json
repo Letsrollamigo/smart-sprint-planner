@@ -513,5 +513,6 @@
   "thAllocByProject": "Allokációk projektenként",
   "allocBySysNoProject": "Projekt/rendszer nélkül",
   "allocBySysOverlimit": "Túllépve",
-  "hourShort": "ó"
+  "hourShort": "ó",
+  "minuteShort": "p"
 }
