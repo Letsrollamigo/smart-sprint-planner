@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.4.2] — 2026-05-13
+
+### Changed
+- **SheetJS is now bundled inside the app zip instead of loaded from `cdn.sheetjs.com`.** The Excel export feature previously loaded `xlsx.full.min.js` at runtime from the SheetJS CDN; the library now ships inside the widget under `widgets/main/lib/xlsx.mini.min.js` (Apache 2.0, version 0.20.3) and is loaded via a relative path. This removes the external network dependency, makes the export work in air-gapped self-hosted YouTrack instances, and removes the CDN as a point of failure. The Apache 2.0 LICENSE notice is shipped alongside the bundled file as `widgets/main/lib/xlsx-LICENSE.txt`.
+- **Switched from `xlsx.full.min.js` to `xlsx.mini.min.js`** (~280 KB instead of ~800 KB). The plugin only uses XLSX write APIs (`book_new`, `aoa_to_sheet`, `book_append_sheet`, `writeFile`); the mini build covers these and drops legacy XLS / XLSB / formula / chart / encryption code that the plugin never touches.
+
+### Compatibility
+- **No breaking changes.** Behaviour is identical for end users — same export buttons, same XLSX output, same lazy-load on first export. Only the loading source and bundle size change.
+
+---
+
 ## [1.4.1] — 2026-05-12
 
 ### Fixed

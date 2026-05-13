@@ -2057,7 +2057,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.4.1";
+    var APP_VERSION = "1.4.2";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -7625,16 +7625,14 @@
       if (_xlsxLoadPromise) return _xlsxLoadPromise;
       _xlsxLoadPromise = new Promise(function(resolve, reject) {
         var s = document.createElement("script");
-        s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
-        s.integrity = "sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT=";
-        s.crossOrigin = "anonymous";
+        s.src = "lib/xlsx.mini.min.js";
         s.onload = function() {
-          diag("XLSX lib loaded", "ok");
+          diag("XLSX lib loaded (bundled)", "ok");
           resolve();
         };
         s.onerror = function(e) {
           _xlsxLoadPromise = null;
-          reject(new Error("XLSX CDN load failed"));
+          reject(new Error("XLSX bundled load failed"));
         };
         document.head.appendChild(s);
       });

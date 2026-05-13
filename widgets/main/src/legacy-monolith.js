@@ -802,7 +802,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.4.1';
+  var APP_VERSION = '1.4.2';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -6629,19 +6629,27 @@
   }
 
   /* ═══ Экспорт в Excel ═══════════════════════════════════════ */
-  /* v5.0.3 (итерация 5) — Lazy-load SheetJS. Раньше скрипт блокировал init,
-     что вызывало ошибки YTApp.register() через медленные прокси. */
+  /* v1.4.2 D129 — SheetJS теперь поставляется в составе app-zip'а
+     (widgets/main/lib/xlsx.mini.min.js, ~280 KB Apache-2.0 build), а не
+     загружается с cdn.sheetjs.com. Это убирает внешнюю зависимость
+     (важно для air-gapped self-hosted YT instances), исключает CDN
+     availability как точку отказа экспорта, а также упрощает security
+     review плагина. Mini-build покрывает наш use-case полностью —
+     XLSX write-only (book_new, aoa_to_sheet, book_append_sheet,
+     writeFile). v5.0.3 lazy-load logic сохранена: первый клик
+     «Экспорт в Excel» подгружает скрипт, последующие используют
+     загруженный XLSX напрямую. */
   var _xlsxLoadPromise = null;
   function loadXLSXLib() {
     if (typeof XLSX !== 'undefined') return Promise.resolve();
     if (_xlsxLoadPromise) return _xlsxLoadPromise;
     _xlsxLoadPromise = new Promise(function(resolve, reject){
       var s = document.createElement('script');
-      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-      s.integrity = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT=';
-      s.crossOrigin = 'anonymous';
-      s.onload  = function(){ diag('XLSX lib loaded','ok'); resolve(); };
-      s.onerror = function(e){ _xlsxLoadPromise = null; reject(new Error('XLSX CDN load failed')); };
+      /* Relative path внутри widget iframe → YT отдаёт файл из app-zip'а
+         (тот же скоп, что index.html, settings.json и i18n/*.json). */
+      s.src = 'lib/xlsx.mini.min.js';
+      s.onload  = function(){ diag('XLSX lib loaded (bundled)','ok'); resolve(); };
+      s.onerror = function(e){ _xlsxLoadPromise = null; reject(new Error('XLSX bundled load failed')); };
       document.head.appendChild(s);
     });
     return _xlsxLoadPromise;

@@ -8,6 +8,17 @@
 
 ---
 
+## [1.4.2] — 2026-05-13
+
+### Changed
+- **SheetJS теперь поставляется внутри app-zip'а вместо загрузки с `cdn.sheetjs.com`.** Раньше функция Excel-экспорта подгружала `xlsx.full.min.js` в runtime с SheetJS CDN; теперь библиотека лежит в составе виджета под `widgets/main/lib/xlsx.mini.min.js` (Apache 2.0, версия 0.20.3) и загружается через относительный путь. Это убирает внешнюю сетевую зависимость, делает экспорт работающим в air-gapped self-hosted YouTrack instances, и устраняет CDN как точку отказа. Apache 2.0 LICENSE уведомление поставляется рядом с библиотекой как `widgets/main/lib/xlsx-LICENSE.txt`.
+- **Переключение с `xlsx.full.min.js` на `xlsx.mini.min.js`** (~280 KB вместо ~800 KB). Плагин использует только XLSX write API (`book_new`, `aoa_to_sheet`, `book_append_sheet`, `writeFile`); mini-build их покрывает и отбрасывает legacy XLS / XLSB / formula / chart / encryption код, который плагин никогда не использует.
+
+### Compatibility
+- **Без breaking changes.** Поведение для пользователей идентичное — те же кнопки экспорта, тот же XLSX output, тот же lazy-load при первом экспорте. Меняется только источник загрузки и размер библиотеки.
+
+---
+
 ## [1.4.1] — 2026-05-12
 
 ### Fixed
