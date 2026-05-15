@@ -51,7 +51,7 @@ Each active role gets its own sub-tab with an independent composition, resource 
 
 A single widget — **`ssp-main`** (extension point `PROJECT_SETTINGS`). It contains:
 
-- **Header bar** — shared across all tabs. Includes the **Current sprint** selector (one for the whole widget), an aggregated status badge (the minimum status across active roles: PLANNING < CONFIRMED < ALLOCATED), a **✏ Working copy** indicator (if the selected sprint has a draft in progress), and a **➕ New sprint** button. Switching the sprint in the header immediately re-renders the active tab. If a historical sprint without its own working copy is selected, the active tab enters hybrid read-only mode.
+- **Header bar** — shared across all tabs. Includes the **Current sprint** selector (one for the whole widget), an aggregated status badge (the minimum status across active roles: PLANNING < CONFIRMED < ALLOCATED), a **✏ Working copy** indicator (if the selected sprint has a draft in progress), and a **➕ New sprint** button (v1.6.2 — single draft per role, auto-switches to Planning → Roles; see §4.1). Switching the sprint in the header immediately re-renders the active tab. If a historical sprint without its own working copy is selected, the active tab enters hybrid read-only mode.
 - **Three top-level tabs**: **📋 Planning** (with two detail levels — *Resource Allocation* and *Per-Assignee Distribution*), **📈 Gantt** (per-role timeline), and **🕑 Sprint History**.
 - **⚙ Plugin settings** button — settings overlay (visible only to members of `settingsManagerGroup`).
 - **Server-side draft** — unsaved edits are debounced-flushed to the backend (`ssp_drafts`, per-user slots) and restored after F5. The header shows `●  Unsaved changes` or `💾 Draft saved HH:MM`.
@@ -166,6 +166,16 @@ The expansion state persists in `ui.expandedRoles[]`. Below the expand toggle (�
 #### Sorting in task tables
 
 The headers of the **ID / Priority / XPriority** columns are clickable — a click changes the sort key. The `↕` icon (gray) appears on inactive columns; the `▼` icon (blue) marks the active one. A second click on the active column turns sorting off (storage order). The sort key persists in `localStorage.ssp_sortKey`.
+
+#### Creating a new sprint (v1.6.2)
+
+Clicking **➕ New sprint** in the header is the canonical entry point for sprint creation:
+
+- **Single draft per role.** Each click reuses the same in-progress draft instead of stacking new ones — its sprint name is the localized placeholder *«New sprint (unsaved)»* (15 locales). Repeated clicks overwrite the same draft, so an accidental double-click no longer pollutes the sprint dropdown with UID-named ghosts. As soon as you fill in name + dates and click **Save parameters**, the draft becomes a real sprint, and the next **➕ New sprint** click starts a fresh draft.
+- **Auto-switch to Planning → Roles.** Whichever tab you were on (History, Gantt, Per-Assignee Distribution, Plugin settings), the click brings you to *Planning → Resource Allocation* automatically — the place where sprint name, dates, and role composition are filled in.
+- **Required name and dates on save.** Clicking **Save parameters** with an empty sprint name, start date or end date blocks the save, shows a localized toast («Sprint name is required» / «Start date is required» / «End date is required»), and focuses the missing field. This replaces the pre-v1.6.2 silent save of an undeletable UID-named empty sprint.
+
+After save, the sprint appears in the **Current sprint** selector under its real name and is ready for composition editing across roles.
 
 ### 4.2 Per-Assignee Distribution level
 
