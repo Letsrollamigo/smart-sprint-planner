@@ -519,5 +519,9 @@
   "gradeIntern": "Becario",
   "gradeJunior": "Junior",
   "gradeMiddle": "Mid",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "Nuevo sprint (no guardado)",
+  "toastSprintNameRequired": "Se requiere el nombre del sprint",
+  "toastSprintDateStartRequired": "Se requiere la fecha de inicio del sprint",
+  "toastSprintDateEndRequired": "Se requiere la fecha de finalización del sprint"
 }

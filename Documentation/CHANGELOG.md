@@ -8,6 +8,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.6.3] — 2026-05-15
+
+### Fixed
+- **Critical: wrong-row mutation in role composition table under active sort.** With sorting enabled on the role composition table, clicking «Delete» on a row deleted a *different* task — the one at the same visual position in the unsorted (storage) order. The same wrong-row mutation affected the «Inclusion status» dropdown, the allocation input, and the dynamic-edit cells (estimate, state, priority, xpriority, system). Root cause: per-row interactive elements were tagged with `data-gi` (numeric position in the rendered sorted+paginated view), but click/blur handlers used that index to splice/lookup into the unsorted `_roleItems[rk]` source array. Fixed by tagging every interactive element with `data-iid="<issueId>"` and resolving the source index by issueId on every action. Diag-log entries (`del-item-btn click: item iid=… not found in role …`) surface any future mismatch.
+
+### Compatibility
+- **No schema changes.** Storage written by v1.6.0/v1.6.1/v1.6.2 reads unchanged.
+
+---
+
+## [1.6.2] — 2026-05-15
+
+### Fixed
+- **Required sprint name and dates on save.** Clicking «Save parameters» when the sprint name, start date or end date is empty now blocks the save, shows a localized toast (4 new keys across all 15 locales), and focuses the missing field. Previously the form silently saved an empty-name sprint that later appeared in the sprint dropdown as a UID-like undeletable entry.
+- **«New sprint» button — single draft reuse.** Each click no longer generates a new UID-named sprint. Instead, the button reuses a single unsaved draft with a readable, localized name «New sprint (unsaved)». Multiple consecutive clicks overwrite the same draft. Once the user fills in name + dates and saves, the next «New sprint» click creates a fresh draft.
+- **«New sprint» button — auto-switch to Planning.** Clicking the «New sprint» button from any tab (History, Settings, Gantt, etc.) now switches the active tab to «Planning → Roles» automatically so the user lands on the correct context for filling in sprint name, dates, and role composition.
+
+### Added
+- New i18n keys (15 locales): `newSprintDraftName`, `toastSprintNameRequired`, `toastSprintDateStartRequired`, `toastSprintDateEndRequired`.
+
+### Compatibility
+- **No schema changes.** Storage written by v1.6.0/v1.6.1 is read by v1.6.2 unchanged.
+
+---
+
+## [1.6.1] — 2026-05-15
+
+### Fixed
+- **Critical hotfix: `module.exports` override broke all backend API calls in YouTrack.** The test-export shim added in v1.6.0 used `module.exports = {...}`, which in YouTrack's CommonJS-based scripting runtime replaced the entire exports object, removing the `exports.httpHandler` entry point. Every backend API call failed silently, causing the frontend to degrade to viewer mode — settings, history, and all interactive elements disappeared despite the user having settings-group access. Fixed by switching to `Object.assign(exports, {...})`, which adds the test symbols to the existing exports object without discarding `httpHandler`.
+
+### Compatibility
+- **No data changes.** Storage written by v1.6.0 (if any) is read correctly by v1.6.1.
+- **Upgrade from v1.4.2 is safe.** All v1.6.0 forward-compat infrastructure (pluginVersion stamping, BASELINE_ASSUMED, ForRead/ForWrite validators) is present and working.
+
+---
+
+## [1.6.0] — 2026-05-15
+
+### Added
+- **Forward-compatibility foundation (Stage A — single-shot).** All three backend snapshot whitelists now accept an optional `pluginVersion` string (`X.Y.Z`, max 32 chars). Every snapshot written by v1.6.0+ is stamped with `CURRENT_PLUGIN_VERSION` immediately before storage. Legacy snapshots without the field receive a `BASELINE_ASSUMED` audit entry in `migrationLog` on first read (assumed version `1.4.2`).
+- **Schema migration registry** (`SCHEMA_MIGRATIONS`, `migrateSnap`, `versionLt`). The registry is empty in v1.6.0 — the first entry will be added when the first breaking schema change lands (expected v1.7.0 State Rollup). Infrastructure is in place.
+- **Split read/write validators.** `validateSprintForRead` / `validateHistoryForRead` / `validateWorkingDraftForRead` — tolerant: unknown top-level keys are logged as `WARN_UNKNOWN_KEY` in `migrationLog` and accepted. `validateSprintForWrite` / `validateHistoryForWrite` / `validateWorkingDraftForWrite` — strict: current whitelist enforcement. Old names (`validateSprint` etc.) remain as deprecated aliases until v1.7.0.
+- **JSON whitelist source of truth.** `schema/whitelists.json` is the single source for the three `ALLOWED_*_KEYS` arrays. `npm run build` auto-syncs the AUTOGEN block in `backend-project.js`. CI verifies sync is idempotent via `git diff --exit-code backend-project.js`.
+- **Backward-compatibility CI suite.** Four new unit test files (78 tests total): `snapshot-migration.test.js`, `backward-compatibility.test.js` (full migrate+validate chain), `schema-evolution.test.js` (whitelist expansion guard), `compat-prev-release.test.js` (prev-version fixture upgrade path). Deterministic fixture generator at `tests/fixtures/generate-baseline.js`; frozen snapshots in `1.4.2/` (legacy contract) and `1.6.0/`.
+- **CommonJS test-export shim** in `backend-project.js` (guarded `if (typeof module !== 'undefined')`). Unit tests can `require()` the backend and access internals directly.
+- **PR template** updated with schema-change checklist. CI `build.yml` step added: verify whitelist sync idempotent after `npm run build`.
+
+### Compatibility
+- **No breaking changes.** All existing v1.4.x snapshots in storage continue to load unchanged. The `BASELINE_ASSUMED` audit entry is written to `migrationLog` on the next read and the snapshot passes validation as before.
+- **No user-visible changes.** Every UI surface, workflow, export and import path behaves identically to v1.4.2.
+
+---
+
 ## [1.4.2] — 2026-05-13
 
 ### Changed

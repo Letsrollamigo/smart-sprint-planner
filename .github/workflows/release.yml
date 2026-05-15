@@ -70,11 +70,13 @@ jobs:
           zip -r "$ZIP_NAME" . \
             -x '*.DS_Store' '*/.DS_Store' \
                '.claude/*' '.roadmap-source/*' \
-               'CLAUDE.md' 'REFACTORING_PLAN.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' \
+               'CLAUDE.md' 'REFACTORING_PLAN.md' 'REFACTORING_PLAN_STAGE_6.md' 'REFACTORING_PLAN_STAGE_6_v1.6.0.md' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' \
                'Documentation/*' 'Documentation' \
                'published/*' 'published' \
+               'MP publication/*' 'MP publication' \
                'node_modules/*' 'package*.json' 'playwright.config.js' \
                'tests/*' 'widgets/main/src/*' \
+               'schema/*' 'schema' 'scripts/*' 'scripts' \
                'playwright-report/*' 'test-results/*' \
                '.git/*' '.github/*' \
                'USER-GUIDE.pdf' '*.pdf'

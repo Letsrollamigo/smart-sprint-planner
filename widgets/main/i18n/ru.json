@@ -7,16 +7,13 @@
     "review_status": "human_authored",
     "version": "1.1.0-rc"
   },
-
   "appTitle": "Smart Sprint Planner",
   "linkGuide": "📖 Руководство пользователя",
   "linkFeedback": "💬 Обратная связь",
-
   "tabSettings": "⚙ Настройки",
   "tabPlanning": "📋 Планирование",
   "tabGantt": "📈 Диаграмма Ганта",
   "tabHistory": "🕑 История спринтов",
-
   "planningLevelRoles": "👥 Аллокация общего ресурса",
   "planningLevelPeople": "👤 Распределение по исполнителям",
   "lblGanttRole": "Роль:",
@@ -30,7 +27,6 @@
   "planningRoleStatOverlimit": "⚠ Перелимит",
   "btnJumpToPeople": "→ Открыть в режиме распределения по исполнителям",
   "lblTasksAbbrPlanning": "задач",
-
   "lblPlanningRole": "Роль:",
   "planningPeopleNoSprint": "Выберите спринт в шапке виджета или создайте новый.",
   "planningPeopleEmptyTitleTpl": "Для роли «{role}» ещё не подобраны исполнители",
@@ -46,11 +42,9 @@
   "resStatusUnderTpl": "🟡 Недо-распределение: {n} ч свободны",
   "resStatusOverTpl": "🔴 Перелимит: {n} ч сверх ресурса роли",
   "roleSwitchDirtyText": "У роли «{role}» есть несохранённые изменения. Они будут потеряны при переключении. Продолжить?",
-
   "btnOpenForEditingHistorical": "✏ Открыть на правку",
   "lblHistoricalReadonlyHint": "Спринт открыт в режиме просмотра. Нажмите «Открыть на правку», чтобы внести изменения.",
   "wcCrossTabHint": "✏ Открыто в другой вкладке браузера",
-
   "cardRoles": "Функциональные роли команд-участников спринта",
   "cardFieldEst": "Поля оценок",
   "cardFieldFact": "Поля факта трудозатрат",
@@ -88,7 +82,6 @@
   "hintSsbCascade": "Каскадная агрегация parent ← child активна — поля плана/факта дочерних задач суммируются в parent'ы 2-го и 3-го уровней.",
   "dtaTypePlaceholder": "напр. Разработка",
   "dtaEmptyTable": "Маппинги пока не заданы. Нажмите «+ Добавить маппинг», чтобы создать.",
-
   "secCascade": "Каскад оценок и ЧЧ",
   "cardCascade": "Каскадная агрегация оценок и трудозатрат",
   "lblCascadeEnabled": "Включить каскадную агрегацию parent ← child",
@@ -106,7 +99,6 @@
   "hintCascadeLinks": "По умолчанию используются имена встроенной связи YouTrack «Subtask» (inward «subtask of», outward «parent for»). Переопределяйте только если в проекте сконфигурирована собственная связь. Должны быть заполнены оба направления.",
   "phCascadeLinkInward": "subtask of",
   "phCascadeLinkOutward": "parent for",
-
   "secAccess": "Доступ и роли",
   "secFields": "Маппинг полей YouTrack",
   "secNorms": "Нормативы расчёта",
@@ -115,7 +107,6 @@
   "lblLang": "Язык интерфейса",
   "lblDefaultLang": "Язык проекта по умолчанию",
   "hintDefaultLang": "Применяется к пользователям, которые ещё не выбрали свой язык. Оставьте пустым — ляжет fallback на язык браузера пользователя (или RU как legacy-default).",
-
   "fldPriority": "Приоритет",
   "fldXpriority": "Сквозной приоритет",
   "fldState": "Состояние",
@@ -134,13 +125,11 @@
   "phFilterGroups": "Фильтровать группы",
   "grpTeams": "ГРУППЫ И КОМАНДЫ",
   "btnResetGroup": "Сбросить выбор",
-
   "overlimitModalBody": "Текущая аллокация превышает доступный ресурс. Чтобы исправить, уменьшите аллокации или увеличьте ресурс. Если оставить как есть — статус спринта будет понижен до Черновика и потребуется повторная валидация.",
   "overlimitModalBodyTpl": "Текущая аллокация по роли «{role}» превышает доступный ресурс. Чтобы исправить, уменьшите аллокации или увеличьте ресурс. Если оставить как есть — статус спринта будет понижен до Черновика и потребуется повторная валидация.",
   "overlimitModalDowngrade": "Понизить статус и продолжить",
   "overlimitModalCancel": "Отменить — я исправлю",
   "toastOverlimitDowngraded": "Статус спринта понижен из-за перелимита. Устраните и валидируйте заново.",
-
   "tooltipRowLocked": "Спринт распределён. Нажмите «Открыть на правку» в истории, чтобы редактировать.",
   "toastAllocatedLockHint": "Спринт распределён — таблица только для чтения. Для правок откройте спринт из истории кнопкой «Открыть на правку».",
   "lblDynEdit": "Прямое редактирование полей задач YouTrack из таблицы спринта",
@@ -160,15 +149,12 @@
   "lblKpeMid": "КПЕ Мидл",
   "lblKpeSenior": "КПЕ Синьор",
   "btnSaveSettings": "Сохранить настройки",
-
   "bannerCfg": "⚠️ Одно или несколько ранее выбранных полей удалено или изменило тип. Исправьте конфигурацию.",
   "bannerNoSettings": "⚠️ Настройки плагина не заполнены. Перейдите на вкладку «Настройки».",
   "bannerNoRoles": "⚠️ Не выбраны функциональные роли участников. Выберите хотя бы одну роль в настройках.",
-
   "bannerOrphanGanttColorsText": "⚠ Найдены назначения только в Ганте:",
   "bannerOrphanGanttColorsHint": "Назначьте их вручную в режиме «Люди».",
   "btnDismiss": "Скрыть",
-
   "modalReassignTitle": "Назначить задачу",
   "modalReassignBody": "Выберите ответственного для задачи",
   "reassignOptionUnassigned": "— Не назначен —",
@@ -176,7 +162,6 @@
   "btnCancel": "Отмена",
   "ganttReassignNoRights": "У вас нет прав на переназначение задач.",
   "ganttReassignDisabledByInlineEdit": "Включите inline-редактирование полей YouTrack в настройках, чтобы переназначать задачи на диаграмме Ганта.",
-
   "diagPanelTitle": "Диагностический лог (для разбора инцидентов)",
   "btnExportLog": "Экспорт TXT",
   "toastLogExported": "Лог экспортирован.",
@@ -184,7 +169,6 @@
   "lblHideDiagLogUi": "Скрыть панель диагностического лога из UI",
   "hintHideDiagLogUi": "При установленном флаге блок «Диагностический лог» в нижней части виджета скрывается. Сами события продолжают записываться в память и доступны через экспорт TXT после снятия флага.",
   "ganttBarTooltipUnassigned": "Не назначен",
-
   "cardSprintIntro": "Вводные данные по спринту",
   "lblSprintName": "Название спринта",
   "phSprintName": "напр. Спринт 1 — апрель 2026",
@@ -192,7 +176,6 @@
   "lblDateEnd": "Дата окончания",
   "lblSprintField": "Спринт",
   "lblVersionField": "Версия",
-
   "cardAvailRes": "Доступные ресурсы",
   "cardRemRes": "Остатки ресурсов",
   "cardStatusPlanning": "Статус планирования",
@@ -212,7 +195,6 @@
   "btnClear": "✕ Очистить",
   "btnToday": "Сегодня",
   "btnValidate": "✔ Валидировать",
-
   "thId": "ID",
   "thSystem": "Система",
   "thPriority": "Приоритет",
@@ -224,9 +206,7 @@
   "thResource": "Ресурс",
   "thAllocation": "Аллокация",
   "thIncStatus": "Статус<br>включения",
-
   "phSelectRole": "— выберите роль —",
-
   "lblCurrentSprint": "Текущий спринт",
   "phNoSprintsActive": "— нет активных спринтов —",
   "btnNewSprintWidget": "➕ Новый спринт",
@@ -236,7 +216,6 @@
   "wcCloseTitle": "Закрыть рабочую копию?",
   "wcCloseBody": "У вас есть незавершённая правка по выбранному спринту/роли. Изменения уже сохранены автоматически — вы сможете продолжить позже из Истории.",
   "wcCloseConfirm": "Закрыть и переключить",
-
   "wcSourceSnapshot": "Снимок",
   "wcSourceWorkingCopy": "Рабочая копия",
   "wcSpoilerNotice": "Это незавершённая правка от {who}, {when}",
@@ -257,7 +236,6 @@
   "btnSaveCurrentRoleParams": "💾 Сохранить параметры",
   "toastCurrentRoleParamsSaved": "Параметры распределения сохранены",
   "btnValidateCurrentRole": "✔ Валидировать распределение",
-
   "cardAssignees": "Ресурсы по исполнителям",
   "btnPickAssignees": "➕ Подобрать исполнителей",
   "btnClearAssignees": "✕ Очистить",
@@ -278,9 +256,7 @@
   "btnUpdateGantt": "↺ Обновить диаграмму Ганта",
   "ganttDblClickHint": "Двойной клик по бару — переключить цвет (красный ↔ синий)",
   "emptyGantt": "Выберите спринт и назначьте исполнителей задачам",
-
   "btnClearHistory": "🗑 Очистить всю историю",
-
   "dirtyBadge": "●  Несохранённые изменения",
   "draftSavedAt": "💾 Черновик сохранён {ts}",
   "draftSavedAtTitle": "Локальный черновик в браузере. Используйте «Очистить черновик», чтобы перезагрузить серверную версию.",
@@ -301,7 +277,6 @@
   "toastDraftQuotaExceeded": "Браузер исчерпал лимит локального хранилища — очистите черновик",
   "toastDraftTooLarge": "Черновик слишком большой для локального хранения",
   "emptyHistory": "Нет сохранённых спринтов",
-
   "modalClearHistTitle": "Очистить историю спринтов",
   "clearAllHistTitle": "Очистить историю спринтов",
   "modalClearHistWarn": "⚠ Это действие удалит все записи истории безвозвратно.",
@@ -329,7 +304,6 @@
   "dynModalTitle": "Обновить значение поля",
   "phDynInput": "напр. 2д 4ч",
   "btnYesUpdate": "Да, обновить",
-
   "toastInitError": "Ошибка инициализации: ",
   "toastSettingsSaved": "Настройки сохранены",
   "toastSettingsErr": "Ошибка сохранения",
@@ -350,7 +324,6 @@
   "toastCleared": "Состав очищен",
   "toastEstUpdated": "Оценки обновлены",
   "toastPickAtLeastOne": "Выберите хотя бы одну задачу",
-
   "titlePickAll": "Выбрать все результаты со всех страниц",
   "toastPickAllLoading": "Подгружаем все страницы…",
   "toastPickAllLoaded": "Выбрано задач: {n}",
@@ -382,10 +355,8 @@
   "toastDateError": "Дата окончания не может быть меньше даты начала",
   "toastTasksAdded": "Добавлено: ",
   "toastDuplicates": " (дублей пропущено: ",
-
   "pageOf": "Стр. ",
   "pageOfSep": " / ",
-
   "noSprintsAvail": "— нет доступных спринтов —",
   "phNotSelected": "— не выбрано —",
   "labelProject": "Проект: ",
@@ -410,7 +381,6 @@
   "currentRoleHeadStart": "Начало",
   "currentRoleHeadEnd": "Окончание",
   "currentRoleHeadStatus": "Статус",
-
   "excelSprintName": "Название спринта",
   "excelRole": "Роль",
   "excelPeriod": "Период",
@@ -431,9 +401,7 @@
   "excelColFact": "Факт",
   "excelColResource": "Ресурс",
   "excelColAlloc": "Аллокация",
-
   "thSortClickHint": "Клик — сортировка по этой колонке (повторно — выкл.)",
-
   "btnSyncFromYt": "🔄 Обновить из задач",
   "toastSyncFromYtNoTasks": "Нет задач для синхронизации.",
   "toastSyncFromYtNoField": "Не настроено поле «Назначен» для роли.",
@@ -445,11 +413,9 @@
   "excelColStartDate": "Старт",
   "excelColEndDate": "Финиш",
   "excelTotal": "ИТОГО:",
-
   "excelSheetBase": "Текущий снимок",
   "excelSheetWorking": "Ваша рабочая копия",
   "excelDiffHighlightLegend": "Колонка «Δ» помечает отличающиеся строки между листами (assignee, даты, оценка, аллокация, inclusion).",
-
   "dynFieldState": "Состояние",
   "dynFieldPriority": "Приоритет",
   "dynFieldXpriority": "Сквозной приоритет",
@@ -457,11 +423,8 @@
   "dynConfirmEst": "Обновить оценку задачи",
   "dynConfirmEstTo": "до «",
   "dynIssuePrefix": "Задача: ",
-
   "tasksNotFound": "Задачи не найдены",
-
   "ganttColTask": "Задача / Исполнитель",
-
   "compEmpty": "Состав пуст",
   "compSprintEmpty": "Состав спринта пуст. Нажмите «+ Подобрать задачи».",
   "currentRoleCalcEmpty": "Выберите спринт и нажмите «Рассчитать ресурс»",
@@ -484,22 +447,18 @@
   "grpsNotFound": "Группы не найдены",
   "grpsNotLoaded": "Группы не загружены",
   "suffixActive": " (активный)",
-
   "status_PLANNING": "Черновик",
   "status_CONFIRMED": "Состав согласован",
   "status_ALLOCATED": "Распределён по людям",
   "tooltipStatusAllocated": "Состав согласован, распределён по людям",
   "status_FINISHED": "Закрыт",
-
   "inc_INC_PENDING": "Ожидает распределения",
   "inc_INC_PLANNED": "Включена планово",
   "inc_INC_UNPLANNED": "Включена внепланово",
   "inc_INC_EXCLUDED": "Исключена из спринта",
-
   "btnOpenSettings": "⚙ Настройки плагина",
   "btnOpenSettingsTitle": "Открыть настройки плагина (доступно участникам группы управления настройками)",
   "bannerNotConfigured": "⚠️ Плагин не настроен. Администратор проекта должен задать группу управления настройками в Project Settings → Apps → Sprint Planner.",
-
   "appTitleSettings": "Smart Sprint Planner: настройки",
   "btnCloseSettings": "✕ Закрыть",
   "btnCloseSettingsTitle": "Закрыть настройки и вернуться к планированию",
@@ -508,10 +467,8 @@
   "settingsNoAccess": "Доступ к настройкам ограничен",
   "settingsNoAccessHint": "Обратитесь к администратору проекта. Управление настройками плагина разрешено только участникам выделенной группы.",
   "settingsNoAccessGroup": "Требуется членство в группе: {group}",
-
   "overlimitWarnSrv": "Сервер: обнаружен перелимит ресурсов в роли {role}",
   "nkcCrossMonthWarn": "⚠️ Спринт пересекает границу месяца. Проверьте выбранную норму часов.",
-
   "wcBannerTextTpl": "✏ Рабочая копия: {sprint} [{role}] · базовый снимок от {date}",
   "wcLevel_NONE": "Изменений нет",
   "wcLevel_META_ONLY": "Только метаданные — повторная валидация не требуется",
@@ -564,5 +521,9 @@
   "gradeIntern": "Стажёр",
   "gradeJunior": "Джун",
   "gradeMiddle": "Мидл",
-  "gradeSenior": "Синьор"
+  "gradeSenior": "Синьор",
+  "newSprintDraftName": "Новый спринт (не сохранён)",
+  "toastSprintNameRequired": "Введите название спринта",
+  "toastSprintDateStartRequired": "Укажите дату начала спринта",
+  "toastSprintDateEndRequired": "Укажите дату окончания спринта"
 }

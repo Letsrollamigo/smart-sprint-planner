@@ -519,5 +519,9 @@
   "gradeIntern": "Stajyer",
   "gradeJunior": "Junior",
   "gradeMiddle": "Mid",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "Yeni sprint (kaydedilmemiş)",
+  "toastSprintNameRequired": "Sprint adı gereklidir",
+  "toastSprintDateStartRequired": "Sprint başlangıç tarihi gereklidir",
+  "toastSprintDateEndRequired": "Sprint bitiş tarihi gereklidir"
 }

@@ -519,5 +519,9 @@
   "gradeIntern": "인턴",
   "gradeJunior": "주니어",
   "gradeMiddle": "미들",
-  "gradeSenior": "시니어"
+  "gradeSenior": "시니어",
+  "newSprintDraftName": "새 스프린트 (저장되지 않음)",
+  "toastSprintNameRequired": "스프린트 이름을 입력하세요",
+  "toastSprintDateStartRequired": "스프린트 시작 날짜를 입력하세요",
+  "toastSprintDateEndRequired": "스프린트 종료 날짜를 입력하세요"
 }

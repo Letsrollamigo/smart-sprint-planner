@@ -542,7 +542,11 @@
     gradeIntern: "Intern",
     gradeJunior: "Junior",
     gradeMiddle: "Middle",
-    gradeSenior: "Senior"
+    gradeSenior: "Senior",
+    newSprintDraftName: "New sprint (unsaved)",
+    toastSprintNameRequired: "Sprint name is required",
+    toastSprintDateStartRequired: "Sprint start date is required",
+    toastSprintDateEndRequired: "Sprint end date is required"
   };
 
   // widgets/main/i18n/ru.json
@@ -1069,7 +1073,11 @@
     gradeIntern: "\u0421\u0442\u0430\u0436\u0451\u0440",
     gradeJunior: "\u0414\u0436\u0443\u043D",
     gradeMiddle: "\u041C\u0438\u0434\u043B",
-    gradeSenior: "\u0421\u0438\u043D\u044C\u043E\u0440"
+    gradeSenior: "\u0421\u0438\u043D\u044C\u043E\u0440",
+    newSprintDraftName: "\u041D\u043E\u0432\u044B\u0439 \u0441\u043F\u0440\u0438\u043D\u0442 (\u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D)",
+    toastSprintNameRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    toastSprintDateStartRequired: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u0430\u0442\u0443 \u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    toastSprintDateEndRequired: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u0430\u0442\u0443 \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F \u0441\u043F\u0440\u0438\u043D\u0442\u0430"
   };
 
   // widgets/main/src/i18n/languages.js
@@ -2057,7 +2065,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.4.2";
+    var APP_VERSION = "1.6.3";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -6187,12 +6195,48 @@
     function doSaveRoleHeader(rk) {
       var s = document.getElementById("dateStart").value;
       var e = document.getElementById("dateEnd").value;
+      var nameVal = (document.getElementById("sprintName").value || "").trim();
+      var draftName = T("newSprintDraftName");
+      if (!nameVal || nameVal === draftName) {
+        toast(T("toastSprintNameRequired"), "warn");
+        var nameEl = document.getElementById("sprintName");
+        if (nameEl) {
+          try {
+            nameEl.focus();
+          } catch (_) {
+          }
+        }
+        return;
+      }
+      if (!s) {
+        toast(T("toastSprintDateStartRequired"), "warn");
+        var dsEl = document.getElementById("dateStart");
+        if (dsEl) {
+          try {
+            dsEl.focus();
+          } catch (_) {
+          }
+        }
+        return;
+      }
+      if (!e) {
+        toast(T("toastSprintDateEndRequired"), "warn");
+        var deEl = document.getElementById("dateEnd");
+        if (deEl) {
+          try {
+            deEl.focus();
+          } catch (_) {
+          }
+        }
+        return;
+      }
       if (s && e && fromDateIn(e) < fromDateIn(s)) {
         document.getElementById("errDate").textContent = T("toastDateError");
+        toast(T("toastDateError"), "warn");
         return;
       }
       document.getElementById("errDate").textContent = "";
-      _sprint.name = document.getElementById("sprintName").value.trim().substring(0, 60) || null;
+      _sprint.name = nameVal.substring(0, 60);
       _sprint.dateStart = fromDateIn(s);
       _sprint.dateEnd = fromDateIn(e);
       var role = ALL_ROLES.find(function(r) {
@@ -6235,21 +6279,37 @@
       });
     }
     function doNewSprint(rk) {
-      _sprint = {
-        sprintId: uid(),
-        dateStart: null,
-        dateEnd: null,
-        status: STATUS.PLANNING
-      };
-      ALL_ROLES.forEach(function(r) {
-        _sprint[r.resKey] = 0;
-      });
+      var draftName = T("newSprintDraftName");
+      var isActiveDraft = _sprint && _sprint.status === STATUS.PLANNING && (!_sprint.name || _sprint.name === draftName);
+      if (isActiveDraft) {
+        _sprint.name = draftName;
+        _sprint.dateStart = null;
+        _sprint.dateEnd = null;
+        ALL_ROLES.forEach(function(r) {
+          _sprint[r.resKey] = 0;
+        });
+      } else {
+        _sprint = {
+          sprintId: uid(),
+          name: draftName,
+          dateStart: null,
+          dateEnd: null,
+          status: STATUS.PLANNING
+        };
+        ALL_ROLES.forEach(function(r) {
+          _sprint[r.resKey] = 0;
+        });
+      }
       _roleItems = {};
       var editBanner = document.getElementById("editHistBanner");
       if (editBanner) {
         editBanner.style.display = "none";
         editBanner.textContent = "";
       }
+      var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
+      if (planBtn && !planBtn.classList.contains("active")) planBtn.click();
+      var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
+      if (rolesBtn) rolesBtn.click();
       var postData = { sprint: _sprint, roleItems: _roleItems };
       apiPost("sprint-data", postData).then(function() {
         getActiveRoles().forEach(function(r) {
@@ -6257,7 +6317,23 @@
           renderRoleComposition(r.key);
           updateRoleRemaining(r.key);
         });
+        if (typeof renderWidgetHeader === "function") {
+          try {
+            renderWidgetHeader();
+          } catch (_) {
+          }
+        }
         toast(T("toastSprintCreated"), "success");
+        setTimeout(function() {
+          var nameEl = document.getElementById("sprintName");
+          if (nameEl) {
+            try {
+              nameEl.focus();
+              nameEl.select();
+            } catch (_) {
+            }
+          }
+        }, 50);
       });
     }
     function getRoleItemsArr(rk) {
@@ -6335,48 +6411,61 @@
         var allocDefault = delta !== null && delta !== void 0 ? Math.max(0, delta) : null;
         var allocVal = alloc !== null && alloc !== void 0 ? alloc : allocDefault;
         var allocDisplay = allocVal !== null && allocVal !== void 0 ? fmtPeriod(allocVal) : "";
-        var allocCell = '<td class="td-num"><input type="text" class="alloc-input" data-gi="' + gi + '" data-rk="' + rk + '" value="' + esc(allocDisplay) + '" placeholder="\u2014"' + roAttr + "/></td>";
+        var iidAttr = esc(item.issueId || "");
+        var allocCell = '<td class="td-num"><input type="text" class="alloc-input" data-iid="' + iidAttr + '" data-rk="' + rk + '" value="' + esc(allocDisplay) + '" placeholder="\u2014"' + roAttr + "/></td>";
         var resCell;
         if (dynEdit) {
           var estDisplay = est !== null && est !== void 0 ? fmtPeriod(est) : "";
           var factDisplay = fact !== null && fact !== void 0 ? fmtHoursOnly(fact) : '<span style="color:var(--muted)">\u2014</span>';
-          resCell = '<td class="td-num"><input type="text" class="dyn-period-input" data-gi="' + gi + '" data-rk="' + rk + '" value="' + esc(estDisplay) + '" placeholder="\u2014" style="min-width:70px"' + roAttr + '/></td><td class="td-num">' + factDisplay + '</td><td class="td-num">' + fmtDelta(delta) + "</td>" + allocCell;
+          resCell = '<td class="td-num"><input type="text" class="dyn-period-input" data-iid="' + iidAttr + '" data-rk="' + rk + '" value="' + esc(estDisplay) + '" placeholder="\u2014" style="min-width:70px"' + roAttr + '/></td><td class="td-num">' + factDisplay + '</td><td class="td-num">' + fmtDelta(delta) + "</td>" + allocCell;
         } else {
           resCell = '<td class="td-num">' + fmtDelta(delta) + "</td>" + allocCell;
         }
         var stateCell;
         if (dynEdit && _settings && _settings.fieldState) {
-          stateCell = '<td><span class="dyn-enum-cell" data-gi="' + gi + '" data-rk="' + rk + '" data-field="fieldState" style="cursor:pointer;text-decoration:underline dotted;color:var(--primary)">' + esc(localizeEnumVal(item.state) || "\u2014") + "</span></td>";
+          stateCell = '<td><span class="dyn-enum-cell" data-iid="' + iidAttr + '" data-rk="' + rk + '" data-field="fieldState" style="cursor:pointer;text-decoration:underline dotted;color:var(--primary)">' + esc(localizeEnumVal(item.state) || "\u2014") + "</span></td>";
         } else {
           stateCell = "<td>" + esc(localizeEnumVal(item.state) || "\u2014") + "</td>";
         }
         var systemCell, priorityCell, xpriorityCell;
         var dynStyle = "cursor:pointer;text-decoration:underline dotted;color:var(--primary)";
         if (dynEdit && _settings && _settings.fieldSystem) {
-          systemCell = '<td><span class="dyn-enum-cell" data-gi="' + gi + '" data-rk="' + rk + '" data-field="fieldSystem" style="' + dynStyle + '">' + esc(item.system || "\u2014") + "</span></td>";
+          systemCell = '<td><span class="dyn-enum-cell" data-iid="' + iidAttr + '" data-rk="' + rk + '" data-field="fieldSystem" style="' + dynStyle + '">' + esc(item.system || "\u2014") + "</span></td>";
         } else {
           systemCell = "<td>" + esc(item.system || "\u2014") + "</td>";
         }
         if (dynEdit && _settings && _settings.fieldPriority) {
-          priorityCell = '<td><span class="dyn-enum-cell" data-gi="' + gi + '" data-rk="' + rk + '" data-field="fieldPriority" style="' + dynStyle + '">' + esc(localizeEnumVal(item.priority) || "\u2014") + "</span></td>";
+          priorityCell = '<td><span class="dyn-enum-cell" data-iid="' + iidAttr + '" data-rk="' + rk + '" data-field="fieldPriority" style="' + dynStyle + '">' + esc(localizeEnumVal(item.priority) || "\u2014") + "</span></td>";
         } else {
           priorityCell = "<td>" + esc(localizeEnumVal(item.priority) || "\u2014") + "</td>";
         }
         if (dynEdit && _settings && _settings.fieldXPriority) {
-          xpriorityCell = '<td><span class="dyn-enum-cell" data-gi="' + gi + '" data-rk="' + rk + '" data-field="fieldXPriority" style="' + dynStyle + '">' + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</span></td>";
+          xpriorityCell = '<td><span class="dyn-enum-cell" data-iid="' + iidAttr + '" data-rk="' + rk + '" data-field="fieldXPriority" style="' + dynStyle + '">' + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</span></td>";
         } else {
           xpriorityCell = "<td>" + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</td>";
         }
-        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" class="link">' + esc(item.issueId) + "</a></td>" + systemCell + priorityCell + xpriorityCell + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-gi="' + gi + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
+        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" class="link">' + esc(item.issueId) + "</a></td>" + systemCell + priorityCell + xpriorityCell + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-iid="' + iidAttr + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
           return '<option value="' + v + '"' + (item.inclusionStatus === v ? " selected" : "") + ">" + esc(incLabel(v)) + "</option>";
-        }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-gi="' + gi + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '">\u{1F5D1}</button></td>';
+        }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '">\u{1F5D1}</button></td>';
         tbody.appendChild(tr);
       });
+      function _findIdxByIid(rkx, iidx) {
+        var arr = getRoleItemsArr(rkx);
+        for (var __i = 0; __i < arr.length; __i++) {
+          if (arr[__i] && arr[__i].issueId === iidx) return __i;
+        }
+        return -1;
+      }
       tbody.querySelectorAll(".inc-sel").forEach(function(sel) {
         sel.addEventListener("change", function(e) {
           var rk2 = e.target.dataset.rk;
-          var gi2 = parseInt(e.target.dataset.gi);
-          getRoleItemsArr(rk2)[gi2].inclusionStatus = e.target.value;
+          var iid = e.target.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
+          if (idx < 0) {
+            diag("inc-sel change: item iid=" + iid + " not found in role " + rk2, "warn");
+            return;
+          }
+          getRoleItemsArr(rk2)[idx].inclusionStatus = e.target.value;
           updateRoleRemaining(rk2);
           _markDirty("roleItems");
           _draftSaveDebounced("roleItems", function() {
@@ -6388,8 +6477,13 @@
       tbody.querySelectorAll(".del-item-btn").forEach(function(btn) {
         btn.addEventListener("click", function() {
           var rk2 = btn.dataset.rk;
-          var gi2 = parseInt(btn.dataset.gi);
-          getRoleItemsArr(rk2).splice(gi2, 1);
+          var iid = btn.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
+          if (idx < 0) {
+            diag("del-item-btn click: item iid=" + iid + " not found in role " + rk2, "warn");
+            return;
+          }
+          getRoleItemsArr(rk2).splice(idx, 1);
           renderRoleComposition(rk2);
           updateRoleRemaining(rk2);
           _markDirty("roleItems");
@@ -6403,8 +6497,13 @@
         inp.addEventListener("blur", function() {
           if (inp.readOnly) return;
           var rk2 = inp.dataset.rk;
-          var gi2 = parseInt(inp.dataset.gi);
-          var item = getRoleItemsArr(rk2)[gi2];
+          var iid = inp.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
+          if (idx < 0) {
+            diag("alloc-input blur: item iid=" + iid + " not found in role " + rk2, "warn");
+            return;
+          }
+          var item = getRoleItemsArr(rk2)[idx];
           if (!item) return;
           var newVal = parsePeriod(inp.value);
           var oldVal = item["alloc_" + rk2];
@@ -6432,9 +6531,14 @@
           inp.addEventListener("blur", function() {
             if (inp.readOnly) return;
             var rk2 = inp.dataset.rk;
-            var gi2 = parseInt(inp.dataset.gi);
+            var iid = inp.dataset.iid;
+            var idx = _findIdxByIid(rk2, iid);
+            if (idx < 0) {
+              diag("dyn-period-input blur: item iid=" + iid + " not found in role " + rk2, "warn");
+              return;
+            }
             var newVal = parsePeriod(inp.value);
-            var item = getRoleItemsArr(rk2)[gi2];
+            var item = getRoleItemsArr(rk2)[idx];
             var oldVal = item["estimate_" + rk2];
             if (newVal === oldVal) return;
             showDynFieldConfirm(
@@ -6464,9 +6568,14 @@
           cell.addEventListener("click", /* @__PURE__ */ function(c) {
             return function() {
               var rk2 = c.dataset.rk;
-              var gi2 = parseInt(c.dataset.gi);
+              var iid = c.dataset.iid;
+              var idx = _findIdxByIid(rk2, iid);
+              if (idx < 0) {
+                diag("dyn-enum-cell click: item iid=" + iid + " not found in role " + rk2, "warn");
+                return;
+              }
               var dataField = c.dataset.field;
-              var item = getRoleItemsArr(rk2)[gi2];
+              var item = getRoleItemsArr(rk2)[idx];
               var fieldName = _settings && _settings[dataField];
               if (!fieldName) return;
               var fieldTitleMap = { fieldState: T("dynFieldState"), fieldPriority: T("dynFieldPriority"), fieldXPriority: T("dynFieldXpriority"), fieldSystem: T("dynFieldSystem") };

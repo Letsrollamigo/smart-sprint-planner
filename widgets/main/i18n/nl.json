@@ -519,5 +519,9 @@
   "gradeIntern": "Stagiair",
   "gradeJunior": "Junior",
   "gradeMiddle": "Mid",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "Nieuwe sprint (niet opgeslagen)",
+  "toastSprintNameRequired": "Sprint-naam is verplicht",
+  "toastSprintDateStartRequired": "Startdatum van sprint is verplicht",
+  "toastSprintDateEndRequired": "Einddatum van sprint is verplicht"
 }

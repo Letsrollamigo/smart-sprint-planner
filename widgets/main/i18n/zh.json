@@ -519,5 +519,9 @@
   "gradeIntern": "实习生",
   "gradeJunior": "初级",
   "gradeMiddle": "中级",
-  "gradeSenior": "高级"
+  "gradeSenior": "高级",
+  "newSprintDraftName": "新冲刺(未保存)",
+  "toastSprintNameRequired": "请输入冲刺名称",
+  "toastSprintDateStartRequired": "请输入冲刺开始日期",
+  "toastSprintDateEndRequired": "请输入冲刺结束日期"
 }

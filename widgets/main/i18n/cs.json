@@ -519,5 +519,9 @@
   "gradeIntern": "Stážista",
   "gradeJunior": "Junior",
   "gradeMiddle": "Mid",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "Nový sprint (neuložený)",
+  "toastSprintNameRequired": "Zadejte název sprintu",
+  "toastSprintDateStartRequired": "Zadejte počáteční datum sprintu",
+  "toastSprintDateEndRequired": "Zadejte konečné datum sprintu"
 }

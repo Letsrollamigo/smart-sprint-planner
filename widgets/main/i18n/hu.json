@@ -519,5 +519,9 @@
   "gradeIntern": "Gyakornok",
   "gradeJunior": "Junior",
   "gradeMiddle": "Mid",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "Új sprint (nem mentett)",
+  "toastSprintNameRequired": "A sprint neve kötelező",
+  "toastSprintDateStartRequired": "A sprint kezdődátuma kötelező",
+  "toastSprintDateEndRequired": "A sprint befejező dátuma kötelező"
 }

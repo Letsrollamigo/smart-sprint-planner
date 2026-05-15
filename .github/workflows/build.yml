@@ -32,6 +32,11 @@ jobs:
       - name: Build bundle
         run: npm run build
 
+      - name: Verify whitelist sync idempotent (D125 — AUTOGEN guard)
+        run: |
+          npm run build:whitelists
+          git diff --exit-code backend-project.js || { echo "ERROR: backend-project.js differs after sync. Edit schema/whitelists.json, not the AUTOGEN block."; exit 1; }
+
       - name: Syntax check (build:check)
         run: npm run build:check
 

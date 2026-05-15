@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "key": "ssp-fixture-2026-05-20-full_devFront",
+  "baseSnapshotHash": "fixture-hash-abc123",
+  "baseStatusAtOpen": "ALLOCATED",
+  "createdAt": 1779321600000,
+  "updatedAt": 1779321600000,
+  "editorLogin": "fixture_user_2",
+  "editorTabToken": "fixture-tab-token-xyz",
+  "sprint": {
+    "sprintId": "ssp-fixture-2026-05-20-full",
+    "name": "Fixture Sprint Full",
+    "status": "ALLOCATED",
+    "dateStart": 1779148800000,
+    "dateEnd": 1780358400000,
+    "updatedBy": "fixture_user_1",
+    "updatedAt": 1779235200000,
+    "personalPlanning": {}
+  },
+  "items": [],
+  "personalPlanning": {
+    "devFront": {
+      "nkcKey": "may",
+      "people": [],
+      "taskAssignments": {}
+    }
+  },
+  "revisions": []
+}

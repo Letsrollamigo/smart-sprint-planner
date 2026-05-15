@@ -519,5 +519,9 @@
   "gradeIntern": "インターン",
   "gradeJunior": "ジュニア",
   "gradeMiddle": "ミドル",
-  "gradeSenior": "シニア"
+  "gradeSenior": "シニア",
+  "newSprintDraftName": "新しいスプリント (未保存)",
+  "toastSprintNameRequired": "スプリント名を入力してください",
+  "toastSprintDateStartRequired": "スプリント開始日を入力してください",
+  "toastSprintDateEndRequired": "スプリント終了日を入力してください"
 }

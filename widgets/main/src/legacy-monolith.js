@@ -802,7 +802,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.4.2';
+  var APP_VERSION = '1.6.3';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5199,12 +5199,34 @@
   function doSaveRoleHeader(rk) {
     var s = document.getElementById('dateStart').value;
     var e = document.getElementById('dateEnd').value;
+    /* v1.6.2 D126 — обязательные поля: название + даты начала/окончания. */
+    var nameVal = (document.getElementById('sprintName').value || '').trim();
+    var draftName = T('newSprintDraftName');
+    if (!nameVal || nameVal === draftName) {
+      toast(T('toastSprintNameRequired'), 'warn');
+      var nameEl = document.getElementById('sprintName');
+      if (nameEl) { try { nameEl.focus(); } catch(_){} }
+      return;
+    }
+    if (!s) {
+      toast(T('toastSprintDateStartRequired'), 'warn');
+      var dsEl = document.getElementById('dateStart');
+      if (dsEl) { try { dsEl.focus(); } catch(_){} }
+      return;
+    }
+    if (!e) {
+      toast(T('toastSprintDateEndRequired'), 'warn');
+      var deEl = document.getElementById('dateEnd');
+      if (deEl) { try { deEl.focus(); } catch(_){} }
+      return;
+    }
     if (s && e && fromDateIn(e) < fromDateIn(s)) {
       document.getElementById('errDate').textContent = T('toastDateError');
+      toast(T('toastDateError'), 'warn');
       return;
     }
     document.getElementById('errDate').textContent = '';
-    _sprint.name      = document.getElementById('sprintName').value.trim().substring(0,60)||null;
+    _sprint.name      = nameVal.substring(0,60);
     _sprint.dateStart = fromDateIn(s);
     _sprint.dateEnd   = fromDateIn(e);
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
@@ -5239,17 +5261,43 @@
     });
   }
 
-  /* ── Новый спринт ── */
+  /* ── Новый спринт ──
+     v1.6.2 D126: переиспользуем единственный черновик с читаемым именем
+     "Новый спринт (не сохранён)" вместо генерации новых uid()-имён при каждом клике.
+     При повторном клике без сохранения — перезаписываем тот же черновик, не плодим entries.
+     После создания/переиспользования — переключаемся на вкладку Планирование уровень Роли
+     (нажатие кнопки на любой вкладке должно приводить к планированию). */
   function doNewSprint(rk) {
-    _sprint = {
-      sprintId: uid(),
-      dateStart: null, dateEnd: null,
-      status: STATUS.PLANNING
-    };
-    ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
+    var draftName = T('newSprintDraftName');
+    var isActiveDraft = _sprint &&
+      _sprint.status === STATUS.PLANNING &&
+      (!_sprint.name || _sprint.name === draftName);
+
+    if (isActiveDraft) {
+      // Переиспользуем тот же sprintId, обнуляем поля черновика.
+      _sprint.name = draftName;
+      _sprint.dateStart = null;
+      _sprint.dateEnd = null;
+      ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
+    } else {
+      _sprint = {
+        sprintId: uid(),
+        name: draftName,
+        dateStart: null, dateEnd: null,
+        status: STATUS.PLANNING
+      };
+      ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
+    }
     _roleItems = {};
     var editBanner = document.getElementById('editHistBanner');
     if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
+
+    /* Переключаемся на Планирование → Роли (с любой вкладки). */
+    var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
+    if (planBtn && !planBtn.classList.contains('active')) planBtn.click();
+    var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
+    if (rolesBtn) rolesBtn.click();
+
     var postData = { sprint: _sprint, roleItems: _roleItems };
     apiPost('sprint-data', postData).then(function() {
       getActiveRoles().forEach(function(r) {
@@ -5257,7 +5305,15 @@
         renderRoleComposition(r.key);
         updateRoleRemaining(r.key);
       });
+      if (typeof renderWidgetHeader === 'function') {
+        try { renderWidgetHeader(); } catch(_){}
+      }
       toast(T('toastSprintCreated'), 'success');
+      /* Фокус на поле названия — пользователь сразу видит, что нужно ввести. */
+      setTimeout(function() {
+        var nameEl = document.getElementById('sprintName');
+        if (nameEl) { try { nameEl.focus(); nameEl.select(); } catch(_){} }
+      }, 50);
     });
   }
 
@@ -5352,8 +5408,14 @@
       var allocDefault = (delta !== null && delta !== undefined) ? Math.max(0, delta) : null;
       var allocVal = (alloc !== null && alloc !== undefined) ? alloc : allocDefault;
       var allocDisplay = allocVal !== null && allocVal !== undefined ? fmtPeriod(allocVal) : '';
+      /* v1.6.2 D127 — bug fix: per-row interactive elements address the item by stable
+         issueId (data-iid) instead of by numeric position (data-gi). The previous data-gi
+         was the index in the sorted+paginated view, but handlers indexed the unsorted
+         _roleItems[rk] array — clicking Delete/Exclude under an active sort affected the
+         wrong row. */
+      var iidAttr = esc(item.issueId || '');
       var allocCell = '<td class="td-num">'+
-        '<input type="text" class="alloc-input" data-gi="'+gi+'" data-rk="'+rk+'" value="'+esc(allocDisplay)+'" placeholder="—"'+roAttr+'/>'+
+        '<input type="text" class="alloc-input" data-iid="'+iidAttr+'" data-rk="'+rk+'" value="'+esc(allocDisplay)+'" placeholder="—"'+roAttr+'/>'+
         '</td>';
 
       var resCell;
@@ -5361,7 +5423,7 @@
         var estDisplay = est !== null && est !== undefined ? fmtPeriod(est) : '';
         var factDisplay = fact !== null && fact !== undefined ? fmtHoursOnly(fact) : '<span style="color:var(--muted)">—</span>';
         resCell =
-          '<td class="td-num"><input type="text" class="dyn-period-input" data-gi="'+gi+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="—" style="min-width:70px"'+roAttr+'/></td>'+
+          '<td class="td-num"><input type="text" class="dyn-period-input" data-iid="'+iidAttr+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="—" style="min-width:70px"'+roAttr+'/></td>'+
           '<td class="td-num">'+factDisplay+'</td>'+
           '<td class="td-num">'+fmtDelta(delta)+'</td>'+
           allocCell;
@@ -5372,7 +5434,7 @@
       // Поле состояния: обычное или редактируемое
       var stateCell;
       if (dynEdit && _settings && _settings.fieldState) {
-        stateCell = '<td><span class="dyn-enum-cell" data-gi="'+gi+'" data-rk="'+rk+'" data-field="fieldState" style="cursor:pointer;text-decoration:underline dotted;color:var(--primary)">'+esc(localizeEnumVal(item.state)||'—')+'</span></td>';
+        stateCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldState" style="cursor:pointer;text-decoration:underline dotted;color:var(--primary)">'+esc(localizeEnumVal(item.state)||'—')+'</span></td>';
       } else {
         stateCell = '<td>'+esc(localizeEnumVal(item.state)||'—')+'</td>';
       }
@@ -5381,17 +5443,17 @@
       var systemCell, priorityCell, xpriorityCell;
       var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
       if (dynEdit && _settings && _settings.fieldSystem) {
-        systemCell = '<td><span class="dyn-enum-cell" data-gi="'+gi+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span></td>';
+        systemCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span></td>';
       } else {
         systemCell = '<td>'+esc(item.system||'—')+'</td>';
       }
       if (dynEdit && _settings && _settings.fieldPriority) {
-        priorityCell = '<td><span class="dyn-enum-cell" data-gi="'+gi+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.priority)||'—')+'</span></td>';
+        priorityCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.priority)||'—')+'</span></td>';
       } else {
         priorityCell = '<td>'+esc(localizeEnumVal(item.priority)||'—')+'</td>';
       }
       if (dynEdit && _settings && _settings.fieldXPriority) {
-        xpriorityCell = '<td><span class="dyn-enum-cell" data-gi="'+gi+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.xpriority)||'—')+'</span></td>';
+        xpriorityCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.xpriority)||'—')+'</span></td>';
       } else {
         xpriorityCell = '<td>'+esc(localizeEnumVal(item.xpriority)||'—')+'</td>';
       }
@@ -5404,19 +5466,31 @@
         stateCell+
         '<td class="td-title">'+esc(item.title||'')+'</td>'+
         resCell+
-        '<td><select class="inc-sel" data-gi="'+gi+'" data-rk="'+rk+'">'+
+        '<td><select class="inc-sel" data-iid="'+iidAttr+'" data-rk="'+rk+'">'+
           Object.values(INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
         '</select></td>'+
-        '<td><button class="btn btn--icon del-item-btn" data-gi="'+gi+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'">🗑</button></td>';
+        '<td><button class="btn btn--icon del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'">🗑</button></td>';
       tbody.appendChild(tr);
     });
+
+    /* v1.6.2 D127 — стабильный lookup по issueId; индекс в _roleItems[rk] не совпадает
+       с позицией в DOM-таблице, когда применена сортировка через multiKeySort. */
+    function _findIdxByIid(rkx, iidx) {
+      var arr = getRoleItemsArr(rkx);
+      for (var __i = 0; __i < arr.length; __i++) {
+        if (arr[__i] && arr[__i].issueId === iidx) return __i;
+      }
+      return -1;
+    }
 
     // Навесить события
     tbody.querySelectorAll('.inc-sel').forEach(function(sel) {
       sel.addEventListener('change', function(e) {
         var rk2 = e.target.dataset.rk;
-        var gi2 = parseInt(e.target.dataset.gi);
-        getRoleItemsArr(rk2)[gi2].inclusionStatus = e.target.value;
+        var iid = e.target.dataset.iid;
+        var idx = _findIdxByIid(rk2, iid);
+        if (idx < 0) { diag('inc-sel change: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+        getRoleItemsArr(rk2)[idx].inclusionStatus = e.target.value;
         updateRoleRemaining(rk2);
         /* v5.0.3 — draft */
         _markDirty('roleItems');
@@ -5428,8 +5502,10 @@
     tbody.querySelectorAll('.del-item-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var rk2 = btn.dataset.rk;
-        var gi2 = parseInt(btn.dataset.gi);
-        getRoleItemsArr(rk2).splice(gi2, 1);
+        var iid = btn.dataset.iid;
+        var idx = _findIdxByIid(rk2, iid);
+        if (idx < 0) { diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+        getRoleItemsArr(rk2).splice(idx, 1);
         renderRoleComposition(rk2);
         updateRoleRemaining(rk2);
         /* v5.0.3 — draft */
@@ -5444,8 +5520,10 @@
       inp.addEventListener('blur', function() {
         if (inp.readOnly) return; // v5.2.0 — locked после ALLOCATED
         var rk2  = inp.dataset.rk;
-        var gi2  = parseInt(inp.dataset.gi);
-        var item = getRoleItemsArr(rk2)[gi2];
+        var iid  = inp.dataset.iid;
+        var idx  = _findIdxByIid(rk2, iid);
+        if (idx < 0) { diag('alloc-input blur: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+        var item = getRoleItemsArr(rk2)[idx];
         if (!item) return;
         var newVal = parsePeriod(inp.value);
         var oldVal = item['alloc_'+rk2];
@@ -5478,9 +5556,11 @@
         inp.addEventListener('blur', function() {
           if (inp.readOnly) return; // v5.2.0 — locked после ALLOCATED
           var rk2 = inp.dataset.rk;
-          var gi2 = parseInt(inp.dataset.gi);
+          var iid = inp.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
+          if (idx < 0) { diag('dyn-period-input blur: item iid='+iid+' not found in role '+rk2,'warn'); return; }
           var newVal = parsePeriod(inp.value);
-          var item = getRoleItemsArr(rk2)[gi2];
+          var item = getRoleItemsArr(rk2)[idx];
           var oldVal = item['estimate_'+rk2];
           if (newVal === oldVal) return;
           showDynFieldConfirm(
@@ -5506,9 +5586,11 @@
       tbody.querySelectorAll('.dyn-enum-cell').forEach(function(cell) {
         cell.addEventListener('click', (function(c) { return function() {
           var rk2      = c.dataset.rk;
-          var gi2      = parseInt(c.dataset.gi);
+          var iid      = c.dataset.iid;
+          var idx      = _findIdxByIid(rk2, iid);
+          if (idx < 0) { diag('dyn-enum-cell click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
           var dataField = c.dataset.field;   // 'fieldState' | 'fieldPriority' | 'fieldXPriority' | 'fieldSystem'
-          var item     = getRoleItemsArr(rk2)[gi2];
+          var item     = getRoleItemsArr(rk2)[idx];
           var fieldName = _settings && _settings[dataField];
           if (!fieldName) return;
           // Универсальный обработчик: грузим бандл и определяем текущее значение из итема

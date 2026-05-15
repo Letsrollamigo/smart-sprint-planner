@@ -1,0 +1,26 @@
+{
+  "$comment": "Source of truth для backend whitelist'ов. После любой правки запускать `npm run build` — backend-project.js пересинхронизуется автоматически через scripts/sync-backend-whitelists.js. См. CLAUDE.md → Soft-deprecation policy. История изменений — в Documentation/CHANGELOG.md, НЕ в этом файле.",
+  "ALLOWED_SPRINT_KEYS": [
+    "sprintId", "name", "status", "dateStart", "dateEnd", "updatedBy", "updatedAt",
+    "editingFromHistory", "historyIdx",
+    "sprintFieldVal", "versionFieldVal", "personalPlanning",
+    "migrationLog",
+    "pluginVersion"
+  ],
+  "ALLOWED_HISTORY_SNAP_KEYS": [
+    "sprintId", "name", "status", "roleKey", "roleLabel",
+    "confirmedBy", "confirmedAt", "dateStart", "dateEnd",
+    "finishedBy", "finishedAt",
+    "isOverLimit", "sprintFieldVal", "versionFieldVal",
+    "settings", "items", "personalPlanning",
+    "hasWorkingCopy", "revisions",
+    "migrationLog",
+    "pluginVersion"
+  ],
+  "ALLOWED_WORKING_DRAFT_KEYS": [
+    "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",
+    "createdAt", "updatedAt", "editorLogin", "editorTabToken",
+    "sprint", "items", "personalPlanning", "revisions",
+    "pluginVersion"
+  ]
+}

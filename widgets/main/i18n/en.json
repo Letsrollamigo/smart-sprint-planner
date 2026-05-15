@@ -7,16 +7,13 @@
     "review_status": "human_authored",
     "version": "1.1.0-rc"
   },
-
   "appTitle": "Smart Sprint Planner",
   "linkGuide": "📖 User Guide",
   "linkFeedback": "💬 Feedback",
-
   "tabSettings": "⚙ Settings",
   "tabPlanning": "📋 Planning",
   "tabGantt": "📈 Gantt Chart",
   "tabHistory": "🕑 Sprint History",
-
   "planningLevelRoles": "👥 Total resource allocation",
   "planningLevelPeople": "👤 Distribution by assignees",
   "lblGanttRole": "Role:",
@@ -30,7 +27,6 @@
   "planningRoleStatOverlimit": "⚠ Over limit",
   "btnJumpToPeople": "→ Open in assignee distribution mode",
   "lblTasksAbbrPlanning": "tasks",
-
   "lblPlanningRole": "Role:",
   "planningPeopleNoSprint": "Pick a sprint in the widget header or create a new one.",
   "planningPeopleEmptyTitleTpl": "No assignees picked for role «{role}» yet",
@@ -46,11 +42,9 @@
   "resStatusUnderTpl": "🟡 Under-distributed: {n} h available",
   "resStatusOverTpl": "🔴 Overlimit: {n} h over role resource",
   "roleSwitchDirtyText": "Role «{role}» has unsaved changes. They will be lost if you switch. Continue?",
-
   "btnOpenForEditingHistorical": "✏ Open for editing",
   "lblHistoricalReadonlyHint": "Sprint is in view-only mode. Click «Open for editing» to make changes.",
   "wcCrossTabHint": "✏ Open in another browser tab",
-
   "cardRoles": "Functional Roles of Sprint Participants",
   "cardFieldEst": "Estimate Fields",
   "cardFieldFact": "Actual Effort Fields",
@@ -88,7 +82,6 @@
   "hintSsbCascade": "Cascade aggregation parent ← child active — child plan/fact fields roll up into level-2/level-3 parents.",
   "dtaTypePlaceholder": "e.g. Development",
   "dtaEmptyTable": "No mappings yet. Click «+ Add mapping» to add one.",
-
   "secCascade": "Cascade of estimates & hours",
   "cardCascade": "Cascade aggregation of estimates and work hours",
   "lblCascadeEnabled": "Enable cascade aggregation parent ← child",
@@ -106,7 +99,6 @@
   "hintCascadeLinks": "Defaults match the built-in YouTrack «Subtask» link type (inward «subtask of», outward «parent for»). Override only if your project uses a custom relation. Both directions must be filled.",
   "phCascadeLinkInward": "subtask of",
   "phCascadeLinkOutward": "parent for",
-
   "secAccess": "Access & roles",
   "secFields": "YouTrack field mapping",
   "secNorms": "Calculation norms",
@@ -115,7 +107,6 @@
   "lblLang": "Interface language",
   "lblDefaultLang": "Project default language",
   "hintDefaultLang": "Applied to users who have not picked a personal language. Leave empty to fall back to the user's browser preference (or RU as the legacy default).",
-
   "fldPriority": "Priority",
   "fldXpriority": "Cross Priority",
   "fldState": "State",
@@ -134,13 +125,11 @@
   "phFilterGroups": "Filter groups",
   "grpTeams": "GROUPS AND TEAMS",
   "btnResetGroup": "Reset selection",
-
   "overlimitModalBody": "Current allocation exceeds the available resource. To fix it, reduce allocations or raise the resource. If you leave it as is — the sprint status will be downgraded to Draft and require re-validation.",
   "overlimitModalBodyTpl": "Current allocation for role \"{role}\" exceeds the available resource. To fix it, reduce allocations or raise the resource. If you leave it as is — the sprint status will be downgraded to Draft and require re-validation.",
   "overlimitModalDowngrade": "Downgrade status and continue",
   "overlimitModalCancel": "Cancel — I will fix it",
   "toastOverlimitDowngraded": "Sprint status downgraded due to overlimit. Fix and re-validate.",
-
   "tooltipRowLocked": "Sprint is distributed. Use \"Open for edit\" in history to modify.",
   "toastAllocatedLockHint": "Sprint is distributed — table is read-only. To edit, open the sprint from history with \"Open for edit\".",
   "lblDynEdit": "Direct editing of YouTrack issue fields from sprint table",
@@ -160,15 +149,12 @@
   "lblKpeMid": "PF Middle",
   "lblKpeSenior": "PF Senior",
   "btnSaveSettings": "Save Settings",
-
   "bannerCfg": "⚠️ One or more previously selected fields have been removed or changed type. Please fix the configuration.",
   "bannerNoSettings": "⚠️ Plugin settings are not filled in. Go to the Settings tab.",
   "bannerNoRoles": "⚠️ No functional roles selected. Please choose at least one role in Settings.",
-
   "bannerOrphanGanttColorsText": "⚠ Assignments found only in Gantt:",
   "bannerOrphanGanttColorsHint": "Assign them manually in “People” mode.",
   "btnDismiss": "Dismiss",
-
   "modalReassignTitle": "Reassign task",
   "modalReassignBody": "Choose assignee for task",
   "reassignOptionUnassigned": "— Unassigned —",
@@ -176,7 +162,6 @@
   "btnCancel": "Cancel",
   "ganttReassignNoRights": "You don't have rights to reassign tasks.",
   "ganttReassignDisabledByInlineEdit": "Enable inline editing of YouTrack fields in settings to reassign tasks on the Gantt chart.",
-
   "diagPanelTitle": "Diagnostic log (for incident investigation)",
   "btnExportLog": "Export TXT",
   "toastLogExported": "Log exported.",
@@ -184,7 +169,6 @@
   "lblHideDiagLogUi": "Hide diagnostic log panel from UI",
   "hintHideDiagLogUi": "When checked, the «Diagnostic log» block at the bottom of the widget is hidden. Events still go to memory and are available through TXT export after unchecking.",
   "ganttBarTooltipUnassigned": "Unassigned",
-
   "cardSprintIntro": "Sprint Overview",
   "lblSprintName": "Sprint Name",
   "phSprintName": "e.g. Sprint 1 — April 2026",
@@ -192,7 +176,6 @@
   "lblDateEnd": "End Date",
   "lblSprintField": "Sprint",
   "lblVersionField": "Version",
-
   "cardAvailRes": "Available Resources",
   "cardRemRes": "Resource Remainders",
   "cardStatusPlanning": "Planning Status",
@@ -212,7 +195,6 @@
   "btnClear": "✕ Clear",
   "btnToday": "Today",
   "btnValidate": "✔ Validate",
-
   "thId": "ID",
   "thSystem": "System",
   "thPriority": "Priority",
@@ -224,9 +206,7 @@
   "thResource": "Resource",
   "thAllocation": "Allocation",
   "thIncStatus": "Inclusion<br>Status",
-
   "phSelectRole": "— select role —",
-
   "lblCurrentSprint": "Current sprint",
   "phNoSprintsActive": "— no active sprints —",
   "btnNewSprintWidget": "➕ New sprint",
@@ -236,7 +216,6 @@
   "wcCloseTitle": "Close working copy?",
   "wcCloseBody": "You have an in-progress edit for the current sprint/role. Changes are auto-saved — you can resume later from History.",
   "wcCloseConfirm": "Close and switch",
-
   "wcSourceSnapshot": "Snapshot",
   "wcSourceWorkingCopy": "Working copy",
   "wcSpoilerNotice": "This is an in-progress edit by {who}, {when}",
@@ -257,7 +236,6 @@
   "btnSaveCurrentRoleParams": "💾 Save parameters",
   "toastCurrentRoleParamsSaved": "Distribution parameters saved",
   "btnValidateCurrentRole": "✔ Validate Distribution",
-
   "cardAssignees": "Assignee Resources",
   "btnPickAssignees": "➕ Pick Assignees",
   "btnClearAssignees": "✕ Clear",
@@ -278,9 +256,7 @@
   "btnUpdateGantt": "↺ Update Gantt Chart",
   "ganttDblClickHint": "Double-click a bar to toggle color (red ↔ blue)",
   "emptyGantt": "Select a sprint and assign tasks to team members",
-
   "btnClearHistory": "🗑 Clear All History",
-
   "dirtyBadge": "●  Unsaved changes",
   "draftSavedAt": "💾 Draft saved {ts}",
   "draftSavedAtTitle": "Local draft in browser. Use “Clear draft” to reload the server version.",
@@ -301,7 +277,6 @@
   "toastDraftQuotaExceeded": "Browser local storage quota exceeded — clear the draft",
   "toastDraftTooLarge": "Draft is too large for local storage",
   "emptyHistory": "No saved sprints",
-
   "modalClearHistTitle": "Clear Sprint History",
   "clearAllHistTitle": "Clear Sprint History",
   "modalClearHistWarn": "⚠ This action will permanently delete all history records.",
@@ -329,7 +304,6 @@
   "dynModalTitle": "Update Field Value",
   "phDynInput": "e.g. 2d 4h",
   "btnYesUpdate": "Yes, update",
-
   "toastInitError": "Initialization error: ",
   "toastSettingsSaved": "Settings saved",
   "toastSettingsErr": "Save error",
@@ -350,7 +324,6 @@
   "toastCleared": "Composition cleared",
   "toastEstUpdated": "Estimates updated",
   "toastPickAtLeastOne": "Select at least one task",
-
   "titlePickAll": "Select all results across all pages",
   "toastPickAllLoading": "Loading all pages…",
   "toastPickAllLoaded": "Selected tasks: {n}",
@@ -382,10 +355,8 @@
   "toastDateError": "End date cannot be before start date",
   "toastTasksAdded": "Added: ",
   "toastDuplicates": " (duplicates skipped: ",
-
   "pageOf": "Page ",
   "pageOfSep": " / ",
-
   "noSprintsAvail": "— no sprints available —",
   "phNotSelected": "— not selected —",
   "labelProject": "Project: ",
@@ -410,7 +381,6 @@
   "currentRoleHeadStart": "Start",
   "currentRoleHeadEnd": "End",
   "currentRoleHeadStatus": "Status",
-
   "excelSprintName": "Sprint Name",
   "excelRole": "Role",
   "excelPeriod": "Period",
@@ -431,9 +401,7 @@
   "excelColFact": "Fact",
   "excelColResource": "Resource",
   "excelColAlloc": "Allocation",
-
   "thSortClickHint": "Click to sort by this column (click again to disable).",
-
   "btnSyncFromYt": "🔄 Refresh from issues",
   "toastSyncFromYtNoTasks": "No tasks to sync.",
   "toastSyncFromYtNoField": "Assignee field is not configured for the role.",
@@ -444,12 +412,10 @@
   "excelColLink": "Link",
   "excelColStartDate": "Start",
   "excelColEndDate": "Finish",
-
   "excelSheetBase": "Current snapshot",
   "excelSheetWorking": "Your working copy",
   "excelDiffHighlightLegend": "Column “Δ” marks rows that differ between sheets (assignee, dates, estimate, allocation, inclusion).",
   "excelTotal": "TOTAL:",
-
   "dynFieldState": "State",
   "dynFieldPriority": "Priority",
   "dynFieldXpriority": "Cross Priority",
@@ -457,11 +423,8 @@
   "dynConfirmEst": "Update task estimate",
   "dynConfirmEstTo": "to «",
   "dynIssuePrefix": "Task: ",
-
   "tasksNotFound": "No tasks found",
-
   "ganttColTask": "Task / Assignee",
-
   "compEmpty": "Composition is empty",
   "compSprintEmpty": "Sprint composition is empty. Click \"+ Pick Tasks\".",
   "currentRoleCalcEmpty": "Select a sprint and click \"Calculate Resource\"",
@@ -483,22 +446,18 @@
   "resManagedByCurrentRole": "Managed via Task Distribution",
   "grpsNotFound": "Groups not found",
   "grpsNotLoaded": "Groups not loaded",
-
   "status_PLANNING": "Draft",
   "status_CONFIRMED": "Composition agreed",
   "status_ALLOCATED": "Distributed",
   "tooltipStatusAllocated": "Composition agreed, distributed",
   "status_FINISHED": "Closed",
-
   "inc_INC_PENDING": "Pending",
   "inc_INC_PLANNED": "Planned",
   "inc_INC_UNPLANNED": "Unplanned",
   "inc_INC_EXCLUDED": "Excluded",
-
   "btnOpenSettings": "⚙ Plugin Settings",
   "btnOpenSettingsTitle": "Open plugin settings (available to members of the settings management group)",
   "bannerNotConfigured": "⚠️ Plugin not configured. Project admin must set the management group in Project Settings → Apps → Sprint Planner.",
-
   "appTitleSettings": "Smart Sprint Planner: Settings",
   "btnCloseSettings": "✕ Close",
   "btnCloseSettingsTitle": "Close settings and return to planning",
@@ -507,11 +466,9 @@
   "settingsNoAccess": "Settings access denied",
   "settingsNoAccessHint": "Contact your project admin. Plugin settings management is restricted to a dedicated group.",
   "settingsNoAccessGroup": "Group membership required: {group}",
-
   "overlimitWarnSrv": "Server: resource overlimit detected for role {role}",
   "nkcCrossMonthWarn": "⚠️ Sprint crosses month boundary. Verify the selected standard hours.",
   "suffixActive": " (active)",
-
   "wcBannerTextTpl": "✏ Working copy: {sprint} [{role}] · base snapshot from {date}",
   "wcLevel_NONE": "No changes",
   "wcLevel_META_ONLY": "Metadata only — no re-validation needed",
@@ -564,5 +521,9 @@
   "gradeIntern": "Intern",
   "gradeJunior": "Junior",
   "gradeMiddle": "Middle",
-  "gradeSenior": "Senior"
+  "gradeSenior": "Senior",
+  "newSprintDraftName": "New sprint (unsaved)",
+  "toastSprintNameRequired": "Sprint name is required",
+  "toastSprintDateStartRequired": "Sprint start date is required",
+  "toastSprintDateEndRequired": "Sprint end date is required"
 }

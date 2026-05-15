@@ -28,6 +28,17 @@
 - [ ] If a new flow was added or an existing one was altered, Playwright tests cover it.
 - [ ] DCO sign-off is present on every commit (`git commit -s ...`).
 
+### If snapshot schema changed (v1.6.0+ soft-deprecation policy)
+
+> Skip if no whitelist or snapshot shape was changed.
+
+- [ ] `schema/whitelists.json` edited (NOT the AUTOGEN block in `backend-project.js` — overwritten by `npm run build`).
+- [ ] `git diff --exit-code backend-project.js` clean after a second `npm run build:whitelists` run.
+- [ ] If new keys break snapshot shape: `SCHEMA_MIGRATIONS` entry added with `to === CURRENT_PLUGIN_VERSION`.
+- [ ] `VERSION=<new-version> npm run fixtures:generate` run; new fixture directory committed.
+- [ ] `tests/unit/compat-prev-release.test.js` green — all previous fixture versions migrate cleanly.
+- [ ] Any new nested-object field validated with its own deep whitelist (not just top-level `typeof === 'object'`).
+
 ## Testing
 
 <!-- How did you verify this change? Manual steps, automated tests, edge cases checked. -->

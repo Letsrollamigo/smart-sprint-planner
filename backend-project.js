@@ -143,12 +143,69 @@ var MAX_DRAFTS_TOTAL         = 1024 * 1024; // 1 МБ суммарно по пр
 // Хранятся в ssp_workdrafts как dict { '<sprintId>_<roleKey>': workingDraft }.
 // Multi-user видимость (виден всем валидаторам) — для cross-user lock и pill «Уже редактирует {who}».
 var ALLOWED_WORKING_DRAFTS_KEYS = ['data'];
-var ALLOWED_WORKING_DRAFT_KEYS  = [
-  'schemaVersion','key','baseSnapshotHash','baseStatusAtOpen',
-  'createdAt','updatedAt','editorLogin','editorTabToken',
-  'sprint','items','personalPlanning','revisions'
+// AUTOGEN:WHITELISTS BEGIN — generated from schema/whitelists.json by scripts/sync-backend-whitelists.js. Do NOT edit by hand.
+var ALLOWED_SPRINT_KEYS = [
+  'sprintId',
+  'name',
+  'status',
+  'dateStart',
+  'dateEnd',
+  'updatedBy',
+  'updatedAt',
+  'editingFromHistory',
+  'historyIdx',
+  'sprintFieldVal',
+  'versionFieldVal',
+  'personalPlanning',
+  'migrationLog',
+  'pluginVersion'
 ];
+var ALLOWED_HISTORY_SNAP_KEYS = [
+  'sprintId',
+  'name',
+  'status',
+  'roleKey',
+  'roleLabel',
+  'confirmedBy',
+  'confirmedAt',
+  'dateStart',
+  'dateEnd',
+  'finishedBy',
+  'finishedAt',
+  'isOverLimit',
+  'sprintFieldVal',
+  'versionFieldVal',
+  'settings',
+  'items',
+  'personalPlanning',
+  'hasWorkingCopy',
+  'revisions',
+  'migrationLog',
+  'pluginVersion'
+];
+var ALLOWED_WORKING_DRAFT_KEYS = [
+  'schemaVersion',
+  'key',
+  'baseSnapshotHash',
+  'baseStatusAtOpen',
+  'createdAt',
+  'updatedAt',
+  'editorLogin',
+  'editorTabToken',
+  'sprint',
+  'items',
+  'personalPlanning',
+  'revisions',
+  'pluginVersion'
+];
+// AUTOGEN:WHITELISTS END
 var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVAL'];
+// v1.6.0 D125 — глобальная версия плагина для отслеживания совместимости snapshot'ов.
+// Должна совпадать с manifest.json:version и frontend APP_VERSION.
+// См. CLAUDE.md → Версионирование (6 точек bump).
+// TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
+//                    через build-step (esbuild --define или pre-build node-скрипт).
+var CURRENT_PLUGIN_VERSION = '1.6.3';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -197,6 +254,12 @@ function migrateInc(v) {
 function migrateSprintObj(s) {
   if (!s || typeof s !== 'object') return s;
   if (s.status) s.status = migrateStatus(s.status);
+  // v1.6.0 D125 — BASELINE_ASSUMED: pre-v1.6.0 snapshots без pluginVersion.
+  if (!s.pluginVersion) {
+    _appendMigrationLog(s, { at: Date.now(), level: 'BASELINE_ASSUMED', fromVersion: 'unset', toVersion: '1.4.2' });
+    s.pluginVersion = '1.4.2';
+  }
+  migrateSnap(s, CURRENT_PLUGIN_VERSION);
   return s;
 }
 
@@ -222,6 +285,12 @@ function migrateHistoryArr(h) {
         if (it && it.inclusionStatus) it.inclusionStatus = migrateInc(it.inclusionStatus);
       });
     }
+    // v1.6.0 D125 — BASELINE_ASSUMED per record.
+    if (!rec.pluginVersion) {
+      _appendMigrationLog(rec, { at: Date.now(), level: 'BASELINE_ASSUMED', fromVersion: 'unset', toVersion: '1.4.2' });
+      rec.pluginVersion = '1.4.2';
+    }
+    migrateSnap(rec, CURRENT_PLUGIN_VERSION);
   });
   return h;
 }
@@ -252,6 +321,64 @@ function stripDeprecatedSprintKeys(s) {
     if (Object.prototype.hasOwnProperty.call(s, dk)) delete s[dk];
   }
   return s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v1.6.0 D125 — Schema migration registry.
+   Каждый элемент — миграция с версии `from` на версию `to`. Применяется
+   на READ к каждому snapshot'у (sprint, history record, working draft).
+   Registry пуст в v1.6.0 — первая запись появится при первом breaking change.
+   Формат записи: { from: 'X.Y.Z', to: 'X.Y.Z', migrate: function(snap){}, note: '' }
+   Правило для PR: любое изменение whitelist'ов или shape snapshot'а ОБЯЗАНО
+   добавить запись сюда + fixture в tests/fixtures/snapshots/<new-version>/. */
+var SCHEMA_MIGRATIONS = [];
+
+function versionLt(a, b) {
+  if (a === b) return false;
+  if (a === 'unset' || !a) return true;
+  if (b === 'unset') return false;
+  var pa = String(a).split('.').map(function (n) { return parseInt(n, 10) || 0; });
+  var pb = String(b).split('.').map(function (n) { return parseInt(n, 10) || 0; });
+  for (var i = 0; i < 3; i++) {
+    if ((pa[i] || 0) < (pb[i] || 0)) return true;
+    if ((pa[i] || 0) > (pb[i] || 0)) return false;
+  }
+  return false;
+}
+
+function _appendMigrationLog(snap, entry) {
+  if (!Array.isArray(snap.migrationLog)) snap.migrationLog = [];
+  snap.migrationLog.push(entry);
+  if (snap.migrationLog.length > 50) snap.migrationLog = snap.migrationLog.slice(-50);
+}
+
+function migrateSnap(snap, target) {
+  if (!snap || typeof snap !== 'object') return snap;
+  target = target || CURRENT_PLUGIN_VERSION;
+  var from = snap.pluginVersion || 'unset';
+  for (var i = 0; i < SCHEMA_MIGRATIONS.length; i++) {
+    var step = SCHEMA_MIGRATIONS[i];
+    if (versionLt(from, step.to)) {
+      try {
+        step.migrate(snap);
+      } catch (e) {
+        _appendMigrationLog(snap, {
+          at: Date.now(), level: 'MIGRATION_ERROR',
+          fromVersion: step.from, toVersion: step.to,
+          error: String(e && e.message || e)
+        });
+        console.error('[migrateSnap] step ' + step.from + ' → ' + step.to + ' threw: ' + e);
+      }
+      from = step.to;
+      _appendMigrationLog(snap, {
+        at: Date.now(), level: 'SCHEMA_BUMP',
+        fromVersion: step.from, toVersion: step.to,
+        note: step.note || ''
+      });
+    }
+  }
+  snap.pluginVersion = target;
+  return snap;
 }
 
 /**
@@ -328,15 +455,6 @@ function assertNum(val) {
   return typeof val === 'number' && isFinite(val);
 }
 
-// Whitelist ключей верхнего уровня sprint-объекта (без динамических resource*/remain*)
-var ALLOWED_SPRINT_KEYS = [
-  'sprintId','name','status','dateStart','dateEnd','updatedBy','updatedAt',
-  'editingFromHistory','historyIdx',
-  'sprintFieldVal','versionFieldVal','personalPlanning',
-  // v5.12.0 — audit-trail (D65)
-  'migrationLog'
-];
-
 /* v5.12.0 — B (D65): валидация поля migrationLog (опциональный массив записей аудита). */
 function validateMigrationLog(arr, context) {
   if (arr == null) return null;
@@ -351,41 +469,40 @@ function validateMigrationLog(arr, context) {
   return null;
 }
 
-/**
- * Валидация sprint-объекта.
- * Whitelist ключей + типизация по ключам + whitelist значений status (латинские коды).
- * personalPlanning — допускается как nested-объект с soft-проверкой
- * глубины (sanitizeDeep уже применён выше; здесь — лимит размера через JSON-stringify
- * на уровне эндпоинта). v5.9.0 — `gantt` удалён из whitelist'а (D60).
- */
-function validateSprint(sprint) {
+/* v1.6.0 D125 — pluginVersion: optional string 'X.Y.Z', max 32 chars.
+   Absent/null → accepted (pre-v1.6.0 snapshots). Malformed string → rejected. */
+function validatePluginVersion(v) {
+  if (v == null) return true;
+  if (typeof v !== 'string') return false;
+  if (v.length > 32) return false;
+  return /^\d+\.\d+\.\d+$/.test(v);
+}
+
+/* v1.6.0 D125 — Sprint validator split: ForWrite (strict whitelist) + ForRead (tolerant).
+   Deprecated alias validateSprint → validateSprintForWrite, removed in v1.7.0. */
+function validateSprintForWrite(sprint) {
   if (!sprint || typeof sprint !== 'object') return false;
   var keys = Object.keys(sprint);
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
     if (ALLOWED_SPRINT_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
-      return false; // неизвестный ключ
+      return false;
     }
   }
-  // Строковые поля
   if (!assertStr(sprint.sprintId,        100)) return false;
   if (!assertStr(sprint.name,            500)) return false;
   if (!assertStr(sprint.updatedBy,       200)) return false;
   if (!assertStr(sprint.sprintFieldVal,  500)) return false;
   if (!assertStr(sprint.versionFieldVal, 500)) return false;
-  // status — whitelist латинских кодов (миграция произведена на READ)
   if (sprint.status !== undefined && sprint.status !== null) {
     if (typeof sprint.status !== 'string' || STATUS_CODES.indexOf(sprint.status) < 0) return false;
   }
-  // Числовые поля
   if (!assertNum(sprint.dateStart))  return false;
   if (!assertNum(sprint.dateEnd))    return false;
   if (!assertNum(sprint.updatedAt))  return false;
   if (sprint.historyIdx !== undefined && sprint.historyIdx !== null && !assertNum(sprint.historyIdx)) return false;
-  // Булевы
   if (sprint.editingFromHistory !== undefined && sprint.editingFromHistory !== null
       && typeof sprint.editingFromHistory !== 'boolean') return false;
-  // Динамические числовые поля ресурса (resource*, remain*)
   for (var j = 0; j < keys.length; j++) {
     var sk = keys[j];
     if (/^(resource|remain)[A-Za-z0-9_]*$/.test(sk)) {
@@ -393,13 +510,53 @@ function validateSprint(sprint) {
       if (sv !== null && sv !== undefined && (!assertNum(sv) || sv < 0 || sv > 1e8)) return false;
     }
   }
-  // personalPlanning — typeof object, sanitizeDeep уже применён.
-  // v5.9.0 — `gantt` typeof-проверка удалена (поле запрещено в whitelist'е, D60).
   if (sprint.personalPlanning !== undefined && sprint.personalPlanning !== null
       && typeof sprint.personalPlanning !== 'object') return false;
   if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
+  if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
 }
+
+function validateSprintForRead(sprint) {
+  if (!sprint || typeof sprint !== 'object') return false;
+  var keys = Object.keys(sprint);
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (ALLOWED_SPRINT_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
+      _appendMigrationLog(sprint, { at: Date.now(), level: 'WARN_UNKNOWN_KEY',
+        fromVersion: sprint.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: k });
+    }
+  }
+  if (!assertStr(sprint.sprintId,        100)) return false;
+  if (!assertStr(sprint.name,            500)) return false;
+  if (!assertStr(sprint.updatedBy,       200)) return false;
+  if (!assertStr(sprint.sprintFieldVal,  500)) return false;
+  if (!assertStr(sprint.versionFieldVal, 500)) return false;
+  if (sprint.status !== undefined && sprint.status !== null) {
+    if (typeof sprint.status !== 'string' || STATUS_CODES.indexOf(sprint.status) < 0) return false;
+  }
+  if (!assertNum(sprint.dateStart))  return false;
+  if (!assertNum(sprint.dateEnd))    return false;
+  if (!assertNum(sprint.updatedAt))  return false;
+  if (sprint.historyIdx !== undefined && sprint.historyIdx !== null && !assertNum(sprint.historyIdx)) return false;
+  if (sprint.editingFromHistory !== undefined && sprint.editingFromHistory !== null
+      && typeof sprint.editingFromHistory !== 'boolean') return false;
+  for (var j = 0; j < keys.length; j++) {
+    var sk = keys[j];
+    if (/^(resource|remain)[A-Za-z0-9_]*$/.test(sk)) {
+      var sv = sprint[sk];
+      if (sv !== null && sv !== undefined && (!assertNum(sv) || sv < 0 || sv > 1e8)) return false;
+    }
+  }
+  if (sprint.personalPlanning !== undefined && sprint.personalPlanning !== null
+      && typeof sprint.personalPlanning !== 'object') return false;
+  if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
+  if (!validatePluginVersion(sprint.pluginVersion)) return false;
+  return true;
+}
+
+// @deprecated since v1.6.0; use validateSprintForWrite() or validateSprintForRead().
+function validateSprint(sprint) { return validateSprintForWrite(sprint); }
 
 // Whitelist ключей задачи (без динамических estimate_*/fact_*/alloc_*/allocation*/estH_*/factH_*)
 var ALLOWED_ITEM_KEYS = [
@@ -673,118 +830,106 @@ function validateSettings(settings) {
   return true;
 }
 
-// Whitelist ключей одной записи истории (без resource*/remain* — те через regex).
-var ALLOWED_HISTORY_SNAP_KEYS = [
-  'sprintId','name','status','roleKey','roleLabel',
-  'confirmedBy','confirmedAt','dateStart','dateEnd',
-  'finishedBy','finishedAt',
-  'isOverLimit','sprintFieldVal','versionFieldVal',
-  'settings','items','personalPlanning',
-  // v5.3.0 — working copies model (immutable snapshots, D3/b)
-  'hasWorkingCopy','revisions',
-  // v5.9.0 — `gantt` удалён (D60). Existing storage records на READ пропускаются;
-  // следующая запись через POST sprint-data/history тихо отрежет поле через filterKeys.
-  // v5.12.0 — audit-trail (D65)
-  'migrationLog'
-];
+/* v1.6.0 D125 — History validator split: ForWrite (strict) + ForRead (tolerant).
+   Deprecated alias validateHistory → validateHistoryForWrite, removed in v1.7.0. */
+function _validateHistoryRecord(h, i, strict) {
+  if (!h || typeof h !== 'object') return false;
+  var hKeys = Object.keys(h);
+  for (var hk = 0; hk < hKeys.length; hk++) {
+    var k = hKeys[hk];
+    if (ALLOWED_HISTORY_SNAP_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
+      if (strict) return false;
+      _appendMigrationLog(h, { at: Date.now(), level: 'WARN_UNKNOWN_KEY',
+        fromVersion: h.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: k });
+    }
+  }
+  var hStrFields = ['sprintId','name','roleLabel','confirmedBy','finishedBy','sprintFieldVal','versionFieldVal'];
+  for (var fi = 0; fi < hStrFields.length; fi++) {
+    if (!assertStr(h[hStrFields[fi]], 500)) return false;
+  }
+  if (h.status !== undefined && h.status !== null) {
+    if (typeof h.status !== 'string' || STATUS_CODES.indexOf(h.status) < 0) return false;
+  }
+  if (h.roleKey !== undefined && h.roleKey !== null) {
+    if (typeof h.roleKey !== 'string' || ROLE_KEYS.indexOf(h.roleKey) < 0) return false;
+  }
+  if (!assertNum(h.confirmedAt)) return false;
+  if (!assertNum(h.dateStart))   return false;
+  if (!assertNum(h.dateEnd))     return false;
+  if (!assertNum(h.finishedAt))  return false;
+  if (h.isOverLimit !== undefined && h.isOverLimit !== null
+      && typeof h.isOverLimit !== 'boolean') return false;
+  for (var dk = 0; dk < hKeys.length; dk++) {
+    var dn = hKeys[dk];
+    if (/^(resource|remain)[A-Za-z0-9_]*$/.test(dn)) {
+      var dv = h[dn];
+      if (dv !== null && dv !== undefined && (!assertNum(dv) || dv < -1e8 || dv > 1e8)) return false;
+    }
+  }
+  if (h.settings !== undefined && h.settings !== null) {
+    if (typeof h.settings !== 'object') return false;
+    if (!validateSettings(h.settings)) return false;
+  }
+  if (h.items !== undefined && h.items !== null) {
+    if (!Array.isArray(h.items)) return false;
+    if (h.items.length > 1000) return false;
+    for (var j = 0; j < h.items.length; j++) {
+      if (!validateItem(h.items[j])) return false;
+    }
+  }
+  if (h.personalPlanning !== undefined && h.personalPlanning !== null
+      && typeof h.personalPlanning !== 'object') return false;
+  if (h.hasWorkingCopy !== undefined && h.hasWorkingCopy !== null
+      && typeof h.hasWorkingCopy !== 'boolean') return false;
+  if (h.revisions !== undefined && h.revisions !== null) {
+    if (!Array.isArray(h.revisions)) return false;
+    if (h.revisions.length > 1000) return false;
+    for (var ri = 0; ri < h.revisions.length; ri++) {
+      var rv = h.revisions[ri];
+      if (!rv || typeof rv !== 'object') return false;
+      if (!assertNum(rv.at)) return false;
+      if (!assertStr(rv.by, 200)) return false;
+      if (typeof rv.level !== 'string' || ALLOWED_REVISION_LEVELS.indexOf(rv.level) < 0) return false;
+    }
+  }
+  if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
+  if (!validatePluginVersion(h.pluginVersion)) return false;
+  return true;
+}
 
-/**
- * Валидация history: массив снапшотов.
- * Whitelist ключей записи + типизация + whitelist status (латинские коды).
- * roleKey — из ROLE_KEYS whitelist.
- */
-function validateHistory(history) {
+function validateHistoryForWrite(history) {
   if (!Array.isArray(history)) return false;
   if (history.length > 500) return false;
   for (var i = 0; i < history.length; i++) {
-    var h = history[i];
-    if (!h || typeof h !== 'object') return false;
-    var hKeys = Object.keys(h);
-    for (var hk = 0; hk < hKeys.length; hk++) {
-      var k = hKeys[hk];
-      if (ALLOWED_HISTORY_SNAP_KEYS.indexOf(k) < 0
-          && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) return false;
-    }
-    // Строковые поля
-    var hStrFields = ['sprintId','name','roleLabel','confirmedBy','finishedBy',
-                      'sprintFieldVal','versionFieldVal'];
-    for (var fi = 0; fi < hStrFields.length; fi++) {
-      if (!assertStr(h[hStrFields[fi]], 500)) return false;
-    }
-    // status — whitelist
-    if (h.status !== undefined && h.status !== null) {
-      if (typeof h.status !== 'string' || STATUS_CODES.indexOf(h.status) < 0) return false;
-    }
-    // roleKey — whitelist
-    if (h.roleKey !== undefined && h.roleKey !== null) {
-      if (typeof h.roleKey !== 'string' || ROLE_KEYS.indexOf(h.roleKey) < 0) return false;
-    }
-    // Числовые
-    if (!assertNum(h.confirmedAt)) return false;
-    if (!assertNum(h.dateStart))   return false;
-    if (!assertNum(h.dateEnd))     return false;
-    if (!assertNum(h.finishedAt))  return false;
-    // Булево
-    if (h.isOverLimit !== undefined && h.isOverLimit !== null
-        && typeof h.isOverLimit !== 'boolean') return false;
-    // Динамические resource*/remain*
-    for (var dk = 0; dk < hKeys.length; dk++) {
-      var dn = hKeys[dk];
-      if (/^(resource|remain)[A-Za-z0-9_]*$/.test(dn)) {
-        var dv = h[dn];
-        if (dv !== null && dv !== undefined && (!assertNum(dv) || dv < -1e8 || dv > 1e8)) return false;
-      }
-    }
-    // settings снапшота — через validateSettings
-    if (h.settings !== undefined && h.settings !== null) {
-      if (typeof h.settings !== 'object') return false;
-      if (!validateSettings(h.settings)) return false;
-    }
-    // items
-    if (h.items !== undefined && h.items !== null) {
-      if (!Array.isArray(h.items)) return false;
-      if (h.items.length > 1000) return false;
-      for (var j = 0; j < h.items.length; j++) {
-        if (!validateItem(h.items[j])) return false;
-      }
-    }
-    // personalPlanning — объект (sanitizeDeep применён выше).
-    // v5.9.0 — `gantt` typeof-проверка и v5.8.0 warning-лог удалены (D60, D61). Поле
-    // запрещено в whitelist'е (filterKeys тихо отрежет до этой ветки).
-    if (h.personalPlanning !== undefined && h.personalPlanning !== null
-        && typeof h.personalPlanning !== 'object') return false;
-    // v5.3.0 — hasWorkingCopy (boolean), revisions (массив {at, by, level})
-    if (h.hasWorkingCopy !== undefined && h.hasWorkingCopy !== null
-        && typeof h.hasWorkingCopy !== 'boolean') return false;
-    if (h.revisions !== undefined && h.revisions !== null) {
-      if (!Array.isArray(h.revisions)) return false;
-      if (h.revisions.length > 1000) return false;
-      for (var ri = 0; ri < h.revisions.length; ri++) {
-        var rv = h.revisions[ri];
-        if (!rv || typeof rv !== 'object') return false;
-        if (!assertNum(rv.at)) return false;
-        if (!assertStr(rv.by, 200)) return false;
-        if (typeof rv.level !== 'string' || ALLOWED_REVISION_LEVELS.indexOf(rv.level) < 0) return false;
-      }
-    }
-    // v5.12.0 — audit-trail (D65)
-    if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
+    if (!_validateHistoryRecord(history[i], i, true)) return false;
   }
   return true;
 }
 
-/**
- * v5.3.0 — Валидация одной working copy.
- * Whitelist ключей + типизация. editorLogin перезаписывается серверным значением
- * (defense-in-depth) непосредственно в endpoint'е.
- */
-function validateWorkingDraft(d) {
+function validateHistoryForRead(history) {
+  if (!Array.isArray(history)) return false;
+  if (history.length > 500) return false;
+  for (var i = 0; i < history.length; i++) {
+    if (!_validateHistoryRecord(history[i], i, false)) return false;
+  }
+  return true;
+}
+
+// @deprecated since v1.6.0; use validateHistoryForWrite() or validateHistoryForRead().
+function validateHistory(history) { return validateHistoryForWrite(history); }
+
+/* v1.6.0 D125 — WorkingDraft validator split: ForWrite (strict) + ForRead (tolerant).
+   Deprecated alias validateWorkingDraft → validateWorkingDraftForWrite, removed v1.7.0. */
+function _validateWorkingDraftBody(d, strict) {
   if (!d || typeof d !== 'object') return false;
   var keys = Object.keys(d);
   for (var i = 0; i < keys.length; i++) {
-    if (ALLOWED_WORKING_DRAFT_KEYS.indexOf(keys[i]) < 0) return false;
+    if (ALLOWED_WORKING_DRAFT_KEYS.indexOf(keys[i]) < 0) {
+      if (strict) return false;
+      _appendMigrationLog(d, { at: Date.now(), level: 'WARN_UNKNOWN_KEY',
+        fromVersion: d.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: keys[i] });
+    }
   }
-  // Required scalar fields
   if (typeof d.key !== 'string' || d.key.length === 0 || d.key.length > 200) return false;
   if (!assertNum(d.createdAt) || d.createdAt === null) return false;
   if (!assertNum(d.updatedAt) || d.updatedAt === null) return false;
@@ -795,11 +940,10 @@ function validateWorkingDraft(d) {
     if (typeof d.baseStatusAtOpen !== 'string' || STATUS_CODES.indexOf(d.baseStatusAtOpen) < 0) return false;
   }
   if (d.schemaVersion !== undefined && d.schemaVersion !== null && !assertNum(d.schemaVersion)) return false;
-  // Sprint
   if (d.sprint !== undefined && d.sprint !== null) {
-    if (!validateSprint(d.sprint)) return false;
+    if (strict) { if (!validateSprintForWrite(d.sprint)) return false; }
+    else        { if (!validateSprintForRead(d.sprint))  return false; }
   }
-  // Items
   if (d.items !== undefined && d.items !== null) {
     if (!Array.isArray(d.items)) return false;
     if (d.items.length > 1000) return false;
@@ -807,11 +951,8 @@ function validateWorkingDraft(d) {
       if (!validateItem(d.items[j])) return false;
     }
   }
-  // Blocks
-  // v5.9.0 — `gantt` typeof-проверка удалена (D60). Поле запрещено в whitelist'е.
   if (d.personalPlanning !== undefined && d.personalPlanning !== null
       && typeof d.personalPlanning !== 'object') return false;
-  // Revisions
   if (d.revisions !== undefined && d.revisions !== null) {
     if (!Array.isArray(d.revisions)) return false;
     if (d.revisions.length > 1000) return false;
@@ -823,8 +964,15 @@ function validateWorkingDraft(d) {
       if (typeof rv.level !== 'string' || ALLOWED_REVISION_LEVELS.indexOf(rv.level) < 0) return false;
     }
   }
+  if (!validatePluginVersion(d.pluginVersion)) return false;
   return true;
 }
+
+function validateWorkingDraftForWrite(d) { return _validateWorkingDraftBody(d, true); }
+function validateWorkingDraftForRead(d)  { return _validateWorkingDraftBody(d, false); }
+
+// @deprecated since v1.6.0; use validateWorkingDraftForWrite() or validateWorkingDraftForRead().
+function validateWorkingDraft(d) { return validateWorkingDraftForWrite(d); }
 
 // ─── Аутентификация и авторизация ────────────────────────────────────────────
 
@@ -1169,7 +1317,9 @@ exports.httpHandler = {
             }
             prevSprint.personalPlanning = body.sprint.personalPlanning || null;
             prevSprint = stripDeprecatedSprintKeys(prevSprint);
-            if (!validateSprint(prevSprint)) {
+            // v1.6.0 D125 — stamp before validate+persist.
+            prevSprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+            if (!validateSprintForWrite(prevSprint)) {
               badRequest(ctx, 'invalid_sprint_structure');
               return;
             }
@@ -1185,7 +1335,9 @@ exports.httpHandler = {
           if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedSprintKeys).
           body.sprint = stripDeprecatedSprintKeys(body.sprint);
-          if (!validateSprint(body.sprint)) {
+          // v1.6.0 D125 — stamp before validate+persist.
+          body.sprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+          if (!validateSprintForWrite(body.sprint)) {
             badRequest(ctx, 'invalid_sprint_structure');
             return;
           }
@@ -1375,7 +1527,11 @@ exports.httpHandler = {
             if (pp !== undefined && pp !== null && typeof pp !== 'object') continue;
             existing[byId[inc.sprintId]].personalPlanning = pp || null;
           }
-          if (!validateHistory(existing)) {
+          // v1.6.0 D125 — stamp each record before validate+persist.
+          for (var esi = 0; esi < existing.length; esi++) {
+            if (existing[esi] && typeof existing[esi] === 'object') existing[esi].pluginVersion = CURRENT_PLUGIN_VERSION;
+          }
+          if (!validateHistoryForWrite(existing)) {
             badRequest(ctx, 'invalid_history_structure');
             return;
           }
@@ -1401,7 +1557,11 @@ exports.httpHandler = {
         if (body.history !== undefined) {
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedHistoryKeys).
           body.history = stripDeprecatedHistoryKeys(body.history);
-          if (!validateHistory(body.history)) {
+          // v1.6.0 D125 — stamp each record before validate+persist.
+          for (var hsi = 0; hsi < body.history.length; hsi++) {
+            if (body.history[hsi] && typeof body.history[hsi] === 'object') body.history[hsi].pluginVersion = CURRENT_PLUGIN_VERSION;
+          }
+          if (!validateHistoryForWrite(body.history)) {
             badRequest(ctx, 'invalid_history_structure');
             return;
           }
@@ -1455,7 +1615,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.4.2' });
+        ctx.response.json({ version: '1.6.3' });
       }
     },
 
@@ -1671,7 +1831,12 @@ exports.httpHandler = {
         for (var i = 0; i < inKeys.length; i++) {
           var k = inKeys[i];
           var d = inMap[k];
-          if (!validateWorkingDraft(d)) {
+          // v1.6.0 D125 — stamp before validate+persist (defense-in-depth: nested sprint too).
+          if (d && typeof d === 'object') {
+            d.pluginVersion = CURRENT_PLUGIN_VERSION;
+            if (d.sprint && typeof d.sprint === 'object') d.sprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+          }
+          if (!validateWorkingDraftForWrite(d)) {
             badRequest(ctx, 'invalid_working_draft:' + k);
             return;
           }
@@ -2054,3 +2219,38 @@ exports.httpHandler = {
 
   ]
 };
+
+/* v1.6.0 D125 — Test-only CommonJS exports.
+   ВАЖНО: Object.assign(exports, ...) вместо module.exports = {...}.
+   В YT scripting runtime module существует, и прямое `module.exports = {...}`
+   стирало бы exports.httpHandler — единственную точку входа плагина.
+   Object.assign добавляет тест-символы к уже существующему объекту exports,
+   не заменяя его. Unit tests работают через require() — получают тот же объект. */
+if (typeof module !== 'undefined' && module.exports) {
+  Object.assign(exports, {
+    // Validators
+    validateSprintForWrite:       validateSprintForWrite,
+    validateSprintForRead:        validateSprintForRead,
+    validateSprint:               validateSprint,
+    validateHistoryForWrite:      validateHistoryForWrite,
+    validateHistoryForRead:       validateHistoryForRead,
+    validateHistory:              validateHistory,
+    validateWorkingDraftForWrite: validateWorkingDraftForWrite,
+    validateWorkingDraftForRead:  validateWorkingDraftForRead,
+    validateWorkingDraft:         validateWorkingDraft,
+    validatePluginVersion:        validatePluginVersion,
+    validateMigrationLog:         validateMigrationLog,
+    // Migration
+    migrateSprintObj:             migrateSprintObj,
+    migrateHistoryArr:            migrateHistoryArr,
+    migrateSnap:                  migrateSnap,
+    versionLt:                    versionLt,
+    _appendMigrationLog:          _appendMigrationLog,
+    // Schema
+    SCHEMA_MIGRATIONS:            SCHEMA_MIGRATIONS,
+    CURRENT_PLUGIN_VERSION:       CURRENT_PLUGIN_VERSION,
+    ALLOWED_SPRINT_KEYS:          ALLOWED_SPRINT_KEYS,
+    ALLOWED_HISTORY_SNAP_KEYS:    ALLOWED_HISTORY_SNAP_KEYS,
+    ALLOWED_WORKING_DRAFT_KEYS:   ALLOWED_WORKING_DRAFT_KEYS,
+  });
+}

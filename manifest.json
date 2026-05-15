@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.4.2",
+  "version": "1.6.3",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.4.2 — SheetJS bundled locally. The Excel export feature previously loaded SheetJS at runtime from cdn.sheetjs.com, which broke export in air-gapped self-hosted YouTrack instances and added an external dependency. The library (Apache 2.0, mini build covering XLSX write) is now shipped inside the app zip under widgets/main/lib/ and loaded from the relative path — no external network call. The full-size build was replaced by the mini build since the plugin only uses XLSX write APIs. See CHANGELOG.md.",
+  "changeNotes": "v1.6.3 — Critical hotfix: with an active sort on the role composition table, clicking «Delete» or changing «Inclusion status» on a row affected the wrong task — the one at the same visual position in the unsorted order. Per-row interactive elements (delete button, inclusion select, allocation input, dynamic-edit cells) now address the task by stable issueId instead of by numeric row index. No schema changes. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",
