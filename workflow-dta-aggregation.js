@@ -847,3 +847,12 @@ exports.rule = entities.Issue.onChange({
   guard: function(ctx) { return _commonGuard(ctx && ctx.issue); },
   action: function(ctx) { _runIfDtaEnabled(ctx && ctx.issue, ctx); }
 });
+
+// v1.7.1 — Test-only exports (для node --test). YT scripting игнорирует typeof module проверку.
+if (typeof module !== 'undefined' && module.exports) {
+  Object.assign(module.exports, {
+    WF_I18N:    WF_I18N,
+    tWf:        tWf,
+    pickLocale: pickLocale
+  });
+}

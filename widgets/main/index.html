@@ -529,16 +529,21 @@
     .confirm-btns { display: flex; justify-content: flex-end; gap: 8px; }
 
     /* ── Toast ── */
+    /* v1.7.1 — toast UX fix:
+       - перемещён из top-right в bottom-right (раньше перекрывал хедер виджета);
+       - bottom offset = 80px чтобы быть выше fixed .save-row (~52px + 28px margin);
+       - pointer-events: none ВСЕГДА (даже при .show) — клики проходят сквозь
+         тост на любой кнопке/инпуте под ним; пользователь не блокируется. */
     .toast {
-      position: fixed; top: 24px; right: 24px;
+      position: fixed; bottom: 80px; right: 24px;
       padding: 12px 20px; border-radius: var(--radius);
       font-size: 13px; font-weight: 500;
       max-width: 380px; box-shadow: var(--shadow); z-index: 9999;
-      opacity: 0; transform: translateY(-10px);
+      opacity: 0; transform: translateY(10px);
       transition: opacity .2s, transform .2s;
       pointer-events: none;
     }
-    .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .toast.show { opacity: 1; transform: translateY(0); }
     .toast--error   { background: var(--error); color: #fff; }
     .toast--success { background: var(--success); color: #fff; }
     .toast--warn    { background: var(--warn); color: #fff; }
@@ -684,20 +689,24 @@
     .empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }
     .link  { color: var(--primary); text-decoration: none; }
     .link:hover { text-decoration: underline; }
-    /* v1.3.1 — sticky save-row: кнопка сохранения всегда видна внизу
-       viewport'а пока пользователь скроллит длинную форму настроек.
-       Полупрозрачный фон + backdrop-blur, чтобы было видно что под полосой
-       есть прокручиваемый контент. */
+    /* v1.7.1 — fixed-position save-row: кнопка сохранения ВСЕГДА видна
+       внизу viewport'а независимо от скролла или высоты контента (раньше
+       sticky-вариант v1.3.1 ломался при определённых layout-условиях).
+       Inner-wrapper центрирует контент в width виджета (max 1600px),
+       background + backdrop-blur показывают что под полосой есть прокрутка. */
     .save-row {
-      display: flex; align-items: center; gap: 12px;
-      margin-top: 18px;
-      position: sticky;
-      bottom: 0;
-      padding: 12px 0;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
       background: var(--bg);
       border-top: 1px solid var(--border);
-      z-index: 5;
+      z-index: 51;
       box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, .15);
+    }
+    .save-row__inner {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px;
     }
     @supports (backdrop-filter: blur(8px)) {
       .save-row {
@@ -982,7 +991,8 @@
       max-width: 1600px;
       width: 100%;
       margin: 0 auto;
-      padding: 20px 24px 40px;
+      /* v1.7.1: bottom padding учитывает высоту fixed .save-row (~52 px) + запас. */
+      padding: 20px 24px 90px;
       box-sizing: border-box;
     }
     .settings-overlay__header {
@@ -1319,6 +1329,10 @@
     <span class="ssb-chip" id="ssbCascade" data-module="cascade" data-i18n-title="hintSsbCascade">
       <span class="ssb-chip__dot"></span>
       <span class="ssb-chip__txt"><span data-i18n="ssbCascade">Plan/fact roll-up</span> · <span class="ssb-chip__state" data-i18n="ssbOff">off</span></span>
+    </span>
+    <span class="ssb-chip" id="ssbStateRollup" data-module="stateRollup" data-i18n-title="hintSsbStateRollup">
+      <span class="ssb-chip__dot"></span>
+      <span class="ssb-chip__txt"><span data-i18n="ssbStateRollup">State rollup</span> · <span class="ssb-chip__state" data-i18n="ssbOff">off</span></span>
     </span>
   </div>
 
@@ -1803,19 +1817,20 @@
         <button type="button" class="settings-nav__chip" data-target="secModes"  data-i18n="secModes">Режимы планирования</button>
         <button type="button" class="settings-nav__chip" data-target="secDta"    data-i18n="secDta">Differentiated time tracking</button>
         <button type="button" class="settings-nav__chip" data-target="secCascade" data-i18n="secCascade">Cascade aggregation</button>
+        <button type="button" class="settings-nav__chip" data-target="secStateRollup" data-i18n="cardStateRollup">State rollup parent ← children</button>
         <button type="button" class="settings-nav__chip" data-target="secMisc"   data-i18n="secMisc">Прочее</button>
       </nav>
 
       <!-- v5.1.0 СЕКЦИЯ 1: Доступ и роли (БЛОК 1 + БЛОК 5) -->
       <section class="settings-section" id="secAccess">
         <!-- БЛОК 1: Функциональные роли -->
-        <details class="card settings-card" open>
+        <details class="card settings-card">
           <summary data-i18n="cardRoles">Функциональные роли команд-участников спринта</summary>
           <div class="roles-grid" id="rolesGrid"></div>
         </details>
 
         <!-- БЛОК 5: Управление правами (v1.3.0 — 1-column layout, переименование) -->
-        <details class="card settings-card" open>
+        <details class="card settings-card">
           <summary data-i18n="cardGroups">Управление правами</summary>
           <div class="form-grid form-grid--2">
             <div class="field" style="grid-column: 1 / -1;">
@@ -2007,7 +2022,7 @@
 
       <!-- v5.1.0 СЕКЦИЯ 4: Режимы планирования (3 чекбокса: parent personalPlanning, child usePersonalForResource, dynEdit) -->
       <section class="settings-section" id="secModes">
-        <details class="card settings-card" open>
+        <details class="card settings-card">
           <summary data-i18n="cardModes">Режимы планирования</summary>
           <div style="display:flex;flex-direction:column;gap:12px;">
             <!-- Родитель: персональное планирование -->
@@ -2049,7 +2064,7 @@
 
       <!-- v1.2.0 СЕКЦИЯ DTA: дифференцированный учёт трудозатрат (workflow-rule). -->
       <section class="settings-section" id="secDta">
-        <details class="card settings-card" id="cardDtaWrap" open>
+        <details class="card settings-card" id="cardDtaWrap">
           <summary data-i18n="cardDta">Differentiated Time Accounting</summary>
           <div class="form-grid form-grid--2" style="grid-column:1 / -1">
             <div class="field" style="grid-column:1 / -1">
@@ -2088,7 +2103,7 @@
            прямого списания на контейнерных issue (Story/Epic-like). Workflow-rules:
            workflow-cascade-aggregation.js, workflow-forbid-container.js. -->
       <section class="settings-section" id="secCascade">
-        <details class="card settings-card" id="cardCascadeWrap" open>
+        <details class="card settings-card" id="cardCascadeWrap">
           <summary data-i18n="cardCascade">Cascade aggregation of work hours</summary>
           <div class="form-grid form-grid--2" style="grid-column:1 / -1">
             <div class="field" style="grid-column:1 / -1">
@@ -2136,9 +2151,96 @@
         </details>
       </section>
 
+      <!-- v1.7.0 D128 СЕКЦИЯ State Rollup: автоматический пересчёт parent.State
+           ← min(children.State). Workflow-rule: workflow-state-rollup.js.
+           Переиспользует cascadeKindField / cascadeLevel2Values / cascadeLevel3Values
+           / cascadeParentLink* из секции Cascade (выше). -->
+      <section class="settings-section" id="secStateRollup">
+        <details class="card settings-card" id="cardStateRollupWrap">
+          <summary data-i18n="cardStateRollup">State rollup parent ← children</summary>
+          <div class="form-grid form-grid--2" style="grid-column:1 / -1">
+
+            <!-- Master toggle -->
+            <div class="field" style="grid-column:1 / -1">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="stateRollupEnabledCheck"/>
+                <span data-i18n="lblStateRollupEnabled">Enable state rollup parent ← min(children)</span>
+              </label>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollup">When enabled, the bundled workflow rule recomputes container State (Story / Epic) as the least-progressed state across child issues whenever any child State changes. Reuses the hierarchy config from «Cascade aggregation» above. Disable if you have custom state-propagation workflows.</div>
+              <div class="hint" id="hintStateRollupNoHierarchy" style="display:none;font-size:11px;color:var(--error);margin-top:6px;font-weight:500" data-i18n="hintStateRollupNoHierarchy">⚠ Rollup needs hierarchy config from «Cascade aggregation» above (kind field + level-2 / level-3 values). Fill that section first.</div>
+            </div>
+
+            <!-- State order builder: live bundle multi-select + ordered list with up/down -->
+            <div class="field" style="grid-column:1 / -1">
+              <label data-i18n="lblStateRollupOrder">State order (least-progressed → most-progressed)</label>
+              <div class="state-rollup-builder" style="display:flex;gap:12px;align-items:flex-start">
+                <div style="flex:1;min-width:0">
+                  <label for="stateRollupBundleSel" style="font-size:11px;color:var(--muted)" data-i18n="lblStateRollupBundle">Available states (from project bundle)</label>
+                  <select id="stateRollupBundleSel" multiple size="6" style="width:100%"></select>
+                  <button type="button" class="btn btn--sm" id="stateRollupAddBtn" data-i18n="btnStateRollupAdd" style="margin-top:4px">→ Add to order</button>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <label for="stateRollupOrderList" style="font-size:11px;color:var(--muted)" data-i18n="lblStateRollupOrderList">Ordered (drag-free; use buttons)</label>
+                  <select id="stateRollupOrderList" size="6" style="width:100%"></select>
+                  <div style="display:flex;gap:4px;margin-top:4px">
+                    <button type="button" class="btn btn--sm" id="stateRollupUpBtn" data-i18n="btnStateRollupUp">↑ Up</button>
+                    <button type="button" class="btn btn--sm" id="stateRollupDownBtn" data-i18n="btnStateRollupDown">↓ Down</button>
+                    <button type="button" class="btn btn--sm" id="stateRollupRemoveBtn" data-i18n="btnStateRollupRemove">✕ Remove</button>
+                  </div>
+                </div>
+              </div>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollupOrder">Select states from the project bundle and order them from «least progressed» (Open / Backlog) at the top to «most progressed» (Done / Closed) at the bottom. The rollup picks the topmost state across all children. Minimum 2 states.</div>
+              <div class="hint" id="warnStateRollupOrderShort" style="display:none;font-size:11px;color:var(--error);margin-top:4px;font-weight:500" data-i18n="warnStateRollupOrderShort">⚠ State order must contain at least 2 states.</div>
+            </div>
+
+            <!-- Resolved states (multi-select из того же bundle) -->
+            <div class="field" style="grid-column:1 / -1">
+              <label for="stateRollupResolvedSel" data-i18n="lblStateRollupResolved">Resolved states (won't be reopened by rollup)</label>
+              <select id="stateRollupResolvedSel" multiple size="4" style="width:100%"></select>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollupResolved">When a container is already in any of these states, rollup will not change it back. Typically: Done, Cancelled. Leave empty to disable the guard (containers will follow children even after closing).</div>
+            </div>
+
+            <!-- Floor state (single select из stateRollupOrder) -->
+            <div class="field">
+              <label for="stateRollupFloorSel" data-i18n="lblStateRollupFloor">Floor state (optional)</label>
+              <select id="stateRollupFloorSel">
+                <option value="" data-i18n="optStateRollupFloorNone">— none (pure min) —</option>
+              </select>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollupFloor">Containers won't drop below this state even if children would push them lower. Use to keep Epics out of «Backlog» once analysis has started.</div>
+            </div>
+
+            <!-- Strategy: enum пока только min -->
+            <div class="field">
+              <label for="stateRollupStrategySel" data-i18n="lblStateRollupStrategy">Strategy</label>
+              <select id="stateRollupStrategySel" disabled>
+                <option value="min" selected>min — least-progressed wins</option>
+              </select>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollupStrategy">v1.7.0 supports «min» only. «max» (any-progressed) and «mode» (majority) are reserved for future releases.</div>
+            </div>
+
+            <!-- Rescan button — Вариант B (§10.3): disabled в v1.7.0/v1.7.1, full impl в v1.7.x.
+                 Tooltip wrapper: disabled buttons don't show native title tooltip in most
+                 browsers — wrap in span with title + pointer-events:none on button. -->
+            <div class="field" style="grid-column:1 / -1">
+              <span class="btn-disabled-wrap" id="stateRollupRescanBtnWrap"
+                title=""
+                data-i18n-title="stateRollupRescanDeferred"
+                style="display:inline-block;cursor:not-allowed">
+                <button type="button" class="btn btn--sm" id="stateRollupRescanBtn" disabled
+                  style="pointer-events:none"
+                  data-i18n="btnStateRollupRescan">⟳ Rescan all containers now</button>
+              </span>
+              <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollupRescan">Forces a one-time recomputation across all level-2 / level-3 containers in this project. Use after enabling rollup for the first time or after a bulk state change. Cooldown: 60 seconds.</div>
+              <div class="hint" id="stateRollupRescanStatus" style="display:none;font-size:11px;color:var(--muted);margin-top:4px"></div>
+            </div>
+
+          </div>
+        </details>
+      </section>
+
       <!-- v5.1.0 СЕКЦИЯ 5: Прочее (язык интерфейса — копия langSel из шапки) -->
       <section class="settings-section" id="secMisc">
-        <details class="card settings-card" id="cardMisc" open>
+        <details class="card settings-card" id="cardMisc">
           <summary data-i18n="cardMisc">Прочее</summary>
           <div class="form-grid form-grid--2">
             <div class="field">
@@ -2169,8 +2271,10 @@
       </section>
 
       <div class="save-row">
-        <button type="button" class="btn btn--primary" id="saveSettingsBtn" data-i18n="btnSaveSettings">Сохранить настройки</button>
-        <span class="save-hint" id="saveSettingsHint"></span>
+        <div class="save-row__inner">
+          <button type="button" class="btn btn--primary" id="saveSettingsBtn" data-i18n="btnSaveSettings">Сохранить настройки</button>
+          <span class="save-hint" id="saveSettingsHint"></span>
+        </div>
       </div>
     </form>
 

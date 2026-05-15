@@ -132,3 +132,12 @@ exports.rule = entities.Issue.onChange({
     workflow.check(false, tWf(lang, 'errForbidContainer'));
   }
 });
+
+// v1.7.1 — Test-only exports (для node --test). YT scripting игнорирует typeof module проверку.
+if (typeof module !== 'undefined' && module.exports) {
+  Object.assign(module.exports, {
+    WF_I18N:    WF_I18N,
+    tWf:        tWf,
+    pickLocale: pickLocale
+  });
+}

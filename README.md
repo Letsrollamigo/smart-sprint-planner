@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.3-brightgreen.svg)](Documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.1-brightgreen.svg)](Documentation/CHANGELOG.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -12,7 +12,7 @@
 > its development, donations in any amount are welcome on TON:
 > `UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
 
-Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles in one widget — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, differentiated time accounting and parent ← child cascade aggregation.
+Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles in one widget — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, differentiated time accounting, parent ← child cascade aggregation, and parent.State ← min(children) state rollup.
 
 ## Features
 
@@ -26,11 +26,12 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 - **15-language UI** — Czech, German, English, Spanish, French, Hungarian, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Russian, Turkish, Chinese (Simplified). Auto-detected from browser, manually switchable, fallback to English.
 - **Differentiated Time Accounting (DTA)** — work-item type → role mapping, per-role fact aggregation back into custom fields, mandatory work-type validation, optional plan/fact ratio warnings.
 - **Cascade aggregation parent ← child** — plan and fact fields on a container issue are computed as the sum of its direct children, so estimates and actuals roll up automatically. Container issues can be locked from receiving direct work-item logs.
+- **State rollup parent ← min(children)** *(v1.7.0)* — container issue State automatically follows the least-progressed child State (min strategy). Configurable state order, resolved-states guard against re-opening closed containers, optional floor state. Disabled by default; reuses cascade hierarchy config.
 - **Server-side authorization** on every mutating endpoint via project-scoped `ssp_settings`. Deny-by-default until `settingsManagerGroup` is configured.
 
 ## Installation
 
-1. Download `Smart-Sprint-Planner-v1.6.3.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
+1. Download `Smart-Sprint-Planner-v1.7.1.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
 2. In YouTrack: **Project Settings → Apps → Install from file** → upload the zip.
 3. Open any project and add the **Smart Sprint Planner** widget to its settings page.
 4. Click **⚙ Plugin settings** in the widget header. The first save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.
@@ -44,8 +45,8 @@ git clone https://github.com/Letsrollamigo/smart-sprint-planner.git
 cd smart-sprint-planner
 npm install
 npm run build:check    # syntax-validates bundle + workflow files
-npm test               # Playwright suite (31 specs)
-node --test tests/unit/*.test.js   # unit suite (44 specs)
+npm test               # Playwright suite (36 specs)
+node --test tests/unit/*.test.js   # unit suite (152 specs)
 ```
 
 Requirements: Node.js 18+. A YouTrack 2024.3+ instance is needed for end-to-end manual verification; the Playwright suite uses a mock backend.

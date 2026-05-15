@@ -320,6 +320,44 @@ Two practical rules:
   supports it. Hierarchy depth costs cognitive overhead at refinement
   and planning.
 
+### State rollup parent.State ← min(children) — closing the container narrative (v1.7.0)
+
+Cascade aggregation handles the *numbers* (hours flow up); state
+rollup handles the *status* (container State follows the slowest
+child). Together they form the **container discipline triad** —
+container = projection: time aggregated ←, state inherited ←, direct
+work forbidden. This is what makes parent issues actually trustworthy
+on a board: the team never has to remember to manually drag a Story
+forward when its tasks move.
+
+Three practical rules for adopting state rollup:
+
+- **Define your state order as a team, not as a tool config.** The
+  ordered list of states is the team's shared model of "what
+  progress looks like". If two team members would rank `In Review`
+  and `In Testing` differently, you have a bigger conversation to
+  have than a settings field. Run a 15-minute alignment session
+  before enabling rollup — once everyone agrees on the order,
+  rollup becomes invisible infrastructure.
+- **Configure the resolved-states guard.** Set `Done` and
+  `Cancelled` (or your equivalents) as resolved states from day one.
+  Without this guard, reopening a single child task drags a
+  closed Epic back into "In Progress" — annoying enough that teams
+  turn rollup off entirely. With the guard, closed containers stay
+  closed; reopening a child triggers a deliberate human conversation
+  about whether to reopen the container too.
+- **Use the floor only when business rules demand it.** A floor
+  state ("Epic never goes below `In Analysis`") is useful when an
+  Epic represents a commitment that survives sub-task churn — once
+  analysis starts, the Epic shouldn't appear in the backlog again
+  even if all current children are dropped. For most teams, no
+  floor is the right starting point.
+
+State rollup is **disabled by default**. Treat it as the third
+opt-in step after enabling DTA and cascade aggregation — the same
+container hierarchy config (`cascadeKindField` + level-2 / level-3
+values + parent link) is reused, so there's no extra setup work.
+
 ---
 
 ## 5. Multi-team coordination via roles

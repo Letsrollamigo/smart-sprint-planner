@@ -773,17 +773,10 @@
     var el=document.getElementById('toast');
     el.textContent=msg; el.className='toast toast--'+(type||'error');
     void el.offsetWidth; el.classList.add('show');
-    /* v6.3.0 D102 — позиция toast'а в текущей видимой части outer viewport (через
-       getBoundingClientRect document.documentElement). Дополнительно — frameElement scroll
-       и обычный scrollIntoView как fallback'и. */
-    try {
-      var __rect = document.documentElement.getBoundingClientRect();
-      var __visibleTop = Math.max(0, -__rect.top);
-      el.style.position = 'absolute';
-      el.style.top = (__visibleTop + 24) + 'px';
-    } catch(_){}
-    if (typeof _scrollFrameIntoView === 'function') _scrollFrameIntoView();
-    try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(_){}
+    /* v1.7.1 — упростили позиционирование: убрали override на position:absolute
+       + top:<calc>+24px (v6.3.0 D102). Теперь position:fixed bottom:80px right:24px
+       из CSS работает корректно во всех frame-контекстах + не перекрывает хедер
+       виджета и интерактивные элементы (pointer-events:none пропускает клики). */
     setTimeout(function(){el.classList.remove('show');},4500);
   }
 
@@ -802,7 +795,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.6.3';
+  var APP_VERSION = '1.7.1';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2520,7 +2513,16 @@
         var targetId = chip.getAttribute('data-target');
         if (!targetId) return;
         var target = document.getElementById(targetId);
-        if (target && typeof target.scrollIntoView === 'function') {
+        if (!target) return;
+        /* v1.7.1: все секции collapse-by-default. При клике на nav-chip
+           разворачиваем все <details class="settings-card"> внутри target секции,
+           чтобы пользователь сразу видел контент без дополнительного клика. */
+        try {
+          target.querySelectorAll('details.settings-card').forEach(function(d) {
+            d.open = true;
+          });
+        } catch (_) {}
+        if (typeof target.scrollIntoView === 'function') {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
@@ -2784,8 +2786,9 @@
     var modules = [
       { id: 'ssbInline',   on: !!s.dynEditEnabled },
       { id: 'ssbPersonal', on: !!s.personalPlanningEnabled },
-      { id: 'ssbDta',      on: !!s.dtaEnabled },
-      { id: 'ssbCascade',  on: !!s.cascadeAggregationEnabled }
+      { id: 'ssbDta',         on: !!s.dtaEnabled },
+      { id: 'ssbCascade',     on: !!s.cascadeAggregationEnabled },
+      { id: 'ssbStateRollup', on: !!s.stateRollupEnabled } /* v1.7.0 D128 */
     ];
     modules.forEach(function(m) {
       var el = document.getElementById(m.id);
@@ -3632,6 +3635,176 @@
     }
   }
 
+  /* v1.7.0 D128 — State rollup UI helpers. */
+  function _stateRollupBundleStates() {
+    var fname = (_settings && typeof _settings.fieldState === 'string' && _settings.fieldState)
+      ? _settings.fieldState : 'State';
+    if (_fieldValuesCache[fname]) {
+      return Promise.resolve(_fieldValuesCache[fname].values || []);
+    }
+    return apiGet('field-values?fieldName=' + encodeURIComponent(fname)).then(function(r) {
+      if (r && r.success && r.values) _fieldValuesCache[fname] = r;
+      return (r && r.values) || [];
+    }).catch(function() { return []; });
+  }
+
+  function _fillStateRollupBundleSel(bundleStates, currentOrder) {
+    var sel = document.getElementById('stateRollupBundleSel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    (bundleStates || []).forEach(function(name) {
+      if (currentOrder.indexOf(name) >= 0) return;
+      var o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      sel.appendChild(o);
+    });
+  }
+
+  function _fillStateRollupOrderList(orderArray) {
+    var sel = document.getElementById('stateRollupOrderList');
+    if (!sel) return;
+    sel.innerHTML = '';
+    (orderArray || []).forEach(function(name) {
+      var o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      sel.appendChild(o);
+    });
+  }
+
+  function _fillStateRollupResolvedSel(bundleStates, currentResolved) {
+    var sel = document.getElementById('stateRollupResolvedSel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    (bundleStates || []).forEach(function(name) {
+      var o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      if ((currentResolved || []).indexOf(name) >= 0) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function _fillStateRollupFloorSel(orderArray, currentFloor) {
+    var sel = document.getElementById('stateRollupFloorSel');
+    if (!sel) return;
+    var firstOpt = sel.querySelector('option[value=""]');
+    sel.innerHTML = '';
+    if (firstOpt) sel.appendChild(firstOpt);
+    (orderArray || []).forEach(function(name) {
+      var o = document.createElement('option');
+      o.value = name; o.textContent = name;
+      if (name === currentFloor) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function _stateRollupCurrentOrder() {
+    var sel = document.getElementById('stateRollupOrderList');
+    if (!sel) return [];
+    var out = [];
+    for (var i = 0; i < sel.options.length; i++) out.push(sel.options[i].value);
+    return out;
+  }
+
+  function _stateRollupCurrentResolved() {
+    var sel = document.getElementById('stateRollupResolvedSel');
+    if (!sel) return [];
+    var out = [];
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].selected) out.push(sel.options[i].value);
+    }
+    return out;
+  }
+
+  function _refreshStateRollupValidation() {
+    var order = _stateRollupCurrentOrder();
+    var warn = document.getElementById('warnStateRollupOrderShort');
+    if (warn) warn.style.display = (order.length > 0 && order.length < 2) ? '' : 'none';
+    var lvl2 = (_settings && Array.isArray(_settings.cascadeLevel2Values)) ? _settings.cascadeLevel2Values : [];
+    var lvl3 = (_settings && Array.isArray(_settings.cascadeLevel3Values)) ? _settings.cascadeLevel3Values : [];
+    var enabledChk = document.getElementById('stateRollupEnabledCheck');
+    var hint = document.getElementById('hintStateRollupNoHierarchy');
+    if (hint && enabledChk) {
+      hint.style.display = (enabledChk.checked && !lvl2.length && !lvl3.length) ? '' : 'none';
+    }
+  }
+
+  function _bindStateRollupButtons() {
+    var addBtn    = document.getElementById('stateRollupAddBtn');
+    var upBtn     = document.getElementById('stateRollupUpBtn');
+    var downBtn   = document.getElementById('stateRollupDownBtn');
+    var removeBtn = document.getElementById('stateRollupRemoveBtn');
+
+    if (addBtn && !addBtn._sspBound) {
+      addBtn._sspBound = true;
+      addBtn.addEventListener('click', function() {
+        var bundleSel = document.getElementById('stateRollupBundleSel');
+        var orderList = document.getElementById('stateRollupOrderList');
+        if (!bundleSel || !orderList) return;
+        var toAdd = [];
+        for (var i = 0; i < bundleSel.options.length; i++) {
+          if (bundleSel.options[i].selected) toAdd.push(bundleSel.options[i].value);
+        }
+        toAdd.forEach(function(name) {
+          var o = document.createElement('option');
+          o.value = name; o.textContent = name;
+          orderList.appendChild(o);
+        });
+        var curOrder = _stateRollupCurrentOrder();
+        var floorVal = (document.getElementById('stateRollupFloorSel') || {}).value || '';
+        _stateRollupBundleStates().then(function(states) {
+          _fillStateRollupBundleSel(states, curOrder);
+          _fillStateRollupFloorSel(curOrder, floorVal);
+        });
+        _refreshStateRollupValidation();
+      });
+    }
+
+    if (upBtn && !upBtn._sspBound) {
+      upBtn._sspBound = true;
+      upBtn.addEventListener('click', function() {
+        var sel = document.getElementById('stateRollupOrderList');
+        if (!sel || sel.selectedIndex <= 0) return;
+        var idx = sel.selectedIndex;
+        var opt = sel.options[idx];
+        sel.removeChild(opt);
+        sel.insertBefore(opt, sel.options[idx - 1]);
+        sel.selectedIndex = idx - 1;
+        _fillStateRollupFloorSel(_stateRollupCurrentOrder(), (document.getElementById('stateRollupFloorSel') || {}).value || '');
+      });
+    }
+
+    if (downBtn && !downBtn._sspBound) {
+      downBtn._sspBound = true;
+      downBtn.addEventListener('click', function() {
+        var sel = document.getElementById('stateRollupOrderList');
+        if (!sel || sel.selectedIndex < 0 || sel.selectedIndex >= sel.options.length - 1) return;
+        var idx = sel.selectedIndex;
+        var opt = sel.options[idx];
+        var next = sel.options[idx + 1];
+        sel.removeChild(next);
+        sel.insertBefore(next, opt);
+        sel.selectedIndex = idx + 1;
+        _fillStateRollupFloorSel(_stateRollupCurrentOrder(), (document.getElementById('stateRollupFloorSel') || {}).value || '');
+      });
+    }
+
+    if (removeBtn && !removeBtn._sspBound) {
+      removeBtn._sspBound = true;
+      removeBtn.addEventListener('click', function() {
+        var sel = document.getElementById('stateRollupOrderList');
+        if (!sel || sel.selectedIndex < 0) return;
+        sel.removeChild(sel.options[sel.selectedIndex]);
+        var curOrder = _stateRollupCurrentOrder();
+        var floorVal = (document.getElementById('stateRollupFloorSel') || {}).value || '';
+        _stateRollupBundleStates().then(function(states) {
+          _fillStateRollupBundleSel(states, curOrder);
+          _fillStateRollupFloorSel(curOrder, floorVal);
+        });
+        _refreshStateRollupValidation();
+      });
+    }
+  }
+
   /* ── Применить значения _settings к форме ── */
   function applySettingsUI() {
     // Defensive: гарантируем инициализацию состояния multi-select групп
@@ -3707,6 +3880,20 @@
     if (linkOutEl) linkOutEl.value = (_settings && typeof _settings.cascadeParentLinkOutward === 'string') ? _settings.cascadeParentLinkOutward : '';
     _bindCascadeWarning();
     _refreshCascadeWarning();
+    /* v1.7.0 D128 — State Rollup: load 7 ключей в form. */
+    var srEnabledChk = document.getElementById('stateRollupEnabledCheck');
+    if (srEnabledChk) srEnabledChk.checked = !!(_settings && _settings.stateRollupEnabled);
+    var srOrder    = (_settings && Array.isArray(_settings.stateRollupOrder))         ? _settings.stateRollupOrder         : [];
+    var srResolved = (_settings && Array.isArray(_settings.stateRollupResolvedStates)) ? _settings.stateRollupResolvedStates : [];
+    var srFloor    = (_settings && typeof _settings.stateRollupFloor === 'string')     ? _settings.stateRollupFloor         : '';
+    _fillStateRollupOrderList(srOrder);
+    _stateRollupBundleStates().then(function(bundleStates) {
+      _fillStateRollupBundleSel(bundleStates, srOrder);
+      _fillStateRollupResolvedSel(bundleStates, srResolved);
+      _fillStateRollupFloorSel(srOrder, srFloor);
+      _refreshStateRollupValidation();
+    });
+    _bindStateRollupButtons();
     /* v1.1.0 — defaultLang select. Заполняем 15 опциями (пустую сохраняем как «inherit»),
        подставляем сохранённое значение, регистрируем live-apply через setProjectDefault. */
     var defLangSel = document.getElementById('defaultLangSel');
@@ -3857,7 +4044,7 @@
             state.names.splice(idx, 1);
           } else {
             if (state.ids.length >= 100) {
-              toast(T('toastError') + 'limit 100 groups', 'err');
+              toast(T('toastMaxGroupsReached'), 'err');
               return;
             }
             state.ids.push(gid);
@@ -3940,6 +4127,13 @@
       cascadeLevel3Values:       _cascadeMultiSelectValues(document.getElementById('cascadeLevel3Sel')),
       cascadeParentLinkInward:   _cascadeStrOrNull(document.getElementById('cascadeLinkInwardInput')),
       cascadeParentLinkOutward:  _cascadeStrOrNull(document.getElementById('cascadeLinkOutwardInput')),
+      /* v1.7.0 D128 — State Rollup. rescanRequested/At не сохраняем здесь
+         (управляются кнопкой Rescan; в v1.7.0 кнопка disabled — ключи не трогаем). */
+      stateRollupEnabled:       !!(document.getElementById('stateRollupEnabledCheck') && document.getElementById('stateRollupEnabledCheck').checked),
+      stateRollupOrder:         _stateRollupCurrentOrder(),
+      stateRollupResolvedStates: _stateRollupCurrentResolved(),
+      stateRollupFloor:         (function() { var v = document.getElementById('stateRollupFloorSel'); return (v && v.value) ? v.value : null; })(),
+      stateRollupStrategy:      'min',
       /* v1.1.0 — project-default язык. Пустая строка из <option value=""> → undefined,
          чтобы whitelist не отверг (defaultLang допускает только валидные ISO-коды или отсутствие). */
       defaultLang:             (function () {

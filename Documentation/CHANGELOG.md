@@ -8,6 +8,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.7.1] — 2026-05-15
+
+### Added (Translations)
+- **Full translations for state rollup in 13 locales** (`cs`, `de`, `es`, `fr`, `hu`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `tr`, `zh`). Previously v1.7.0 shipped these as EN placeholders with `TODO(i18n v1.7.x): translate` markers — surfaced during smoke test when a Czech-language user saw English workflow messages despite `pickLocale` correctly returning `'cs'`. Now state rollup is on parity with cascade/dta/forbid (which already had full translations). Coverage: 4 workflow message keys × 13 locales (52 strings) + 28 UI labels × 13 locales (364 strings) = **416 new translations**.
+- **Strict i18n placeholder guard test** (`workflow-i18n.test.js`). Catches accidental `dict[key] === en[key]` placeholder regressions on any future workflow-message addition. Per-workflow allowlist for legitimate non-translatable values (`cascadeFieldChange` template, `unitH`/`unitM` symbols).
+
+### Fixed
+- **Pre-existing critical: KPE whitelist rejected canonical English grade keys.** Frontend storage layer since v1.4.1 D128 writes English KPE grade keys (`Intern` / `Junior` / `Middle` / `Senior`), but backend `ALLOWED_KPE_KEYS` whitelist contained only legacy Russian keys (`Стажёр` / `Джун` / `Мидл` / `Синьор`). Any settings POST returned `invalid_settings_structure` for projects re-initialized after v1.4.1 — including all clean test installs. Surfaced during v1.7.0 acceptance smoke test in clean YT instance. Whitelist extended to accept both alphabets. Backward compatible. Adds 6 unit tests including direct repro of the failing settings payload.
+- **Sticky save button regression.** «Save settings» button no longer slides off-screen when scrolling long settings forms. Replaced fragile `position: sticky bottom: 0` (broken under various layout conditions since v1.3.1) with reliable `position: fixed` + inner-wrapper for max-width centering.
+- **Toast UX overlap with interactive elements.** Toasts moved from `top-right` to `bottom-right`, positioned 80 px above the fixed save row, and `pointer-events: none` is now permanent (even during `.show`) — clicks always pass through to underlying buttons / inputs, never blocking the user.
+- **Rescan stub button tooltip.** Disabled HTML buttons don't show native `title` tooltip in most browsers. Wrapped `#stateRollupRescanBtn` in a `<span>` with the title attribute + `pointer-events: none` on the button — tooltip now appears reliably on hover with text «Coming in a future release» / «Появится в одном из следующих релизов» (version-agnostic phrasing — actual rescan implementation is on the backlog, no fixed target version).
+
+### Changed
+- **All settings sections now collapse by default.** Previously all 11 setting cards (`<details>` elements) opened automatically, producing a long unwieldy form. After upgrade, every settings section starts collapsed; clicking a top-nav chip auto-expands all `<details>` inside the target section AND scrolls to it. Manual toggle on the section summary still works.
+- **Toast: 1 hardcoded English string moved to i18n.** «limit 100 groups» error in the group multi-select replaced with localized `toastMaxGroupsReached` key (added to all 15 locales — EN + RU full, 13 placeholder).
+
+### Added
+- **Workflow message i18n audit (`workflow-i18n.test.js`).** Verifies all 4 workflow files (`cascade-aggregation`, `dta-aggregation`, `forbid-container`, `state-rollup`) export `WF_I18N` covering all 15 supported locales, that `pickLocale` correctly resolves project default → user locale → `FALLBACK_LANG`, and that EN/RU translations are distinct (not placeholders). 24 new unit tests; `WF_I18N` + `tWf` + `pickLocale` test-export shims added to all 4 workflows.
+- **Settings validation test suite (`settings-validation.test.js`).** Targeted KPE bug repro + future regression guard.
+
+### Compatibility
+- **No schema changes.** `stateRollup*` whitelist additions from v1.7.0 unchanged. Existing `ssp_settings` payloads (with either Russian or English KPE keys) continue to validate.
+
+---
+
+## [1.7.0] — 2026-05-15
+
+### Added
+- **State rollup: parent issue State ← min(children.State).** New workflow rule (`workflow-state-rollup.js`) automatically recomputes container State (Story / Epic) as the least-progressed state across child issues whenever any child State changes. Disabled by default — upgrade is safe for all existing projects. Enable per-project in Plugin Settings → «State rollup» section.
+- **Settings UI — State rollup section.** Configure: ordered list of states (least → most progressed), resolved states guard (containers won't be re-opened), optional floor state (containers won't drop below it), strategy enum (v1.7.0: `min` only; `max`/`mode` reserved for future). Uses hierarchy config from «Cascade aggregation» section (kindField / level-2 / level-3 values / parent link).
+- **Status-bar chip `ssbStateRollup`.** Shows rollup on/off state at a glance in the widget status bar.
+- **«Rescan all containers» button** (disabled stub in v1.7.0, Variant B). Full mass-rescan implementation deferred to v1.7.1 after pilot feedback — see [ROADMAP.md: Stage В.1](../Documentation/ROADMAP.md).
+- **Schema migration registry.** `SCHEMA_MIGRATIONS` gets its first real entry (`1.6.x → 1.7.0`, no-op for sprint/history snapshots). Settings additions are purely additive — no migration step required.
+- **28 new i18n keys × 15 locales** for the State rollup UI (EN + RU fully translated; 13 other locales: EN placeholder with `TODO(i18n v1.7.x)` marker).
+- **Backward-compat fixture frozen** for v1.6.3 (`tests/fixtures/snapshots/1.6.3/`). All prior fixture sets (v1.4.2, v1.6.0, v1.6.3) pass through v1.7.0 validators without `invalid_*_structure`.
+
+### Compatibility
+- **No breaking schema changes.** All `stateRollup*` settings keys are additive and optional. Sprints, history snapshots, and working drafts written by v1.6.x are read unchanged by v1.7.0. Rollback to v1.6.3: disable `stateRollupEnabled` per-project (soft rollback) or reinstall v1.6.3 zip (hard rollback) — v1.6.3 backend simply ignores unknown `stateRollup*` keys on the next settings save.
+
+---
+
 ## [1.6.3] — 2026-05-15
 
 ### Fixed

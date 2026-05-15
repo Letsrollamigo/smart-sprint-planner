@@ -2,7 +2,7 @@
 
 > 🇬🇧 [Read in English](USER-GUIDE.md) · 🇷🇺 По-русски
 
-**Версия документа:** 1.6.3 — 2026-05-15
+**Версия документа:** 1.7.1 — 2026-05-15
 **Минимальная версия YouTrack:** 2024.3
 **Языки интерфейса:** 15 (авто-детект по браузеру, fallback на английский; переключатель в шапке виджета)
 
@@ -140,7 +140,37 @@ Workflow-rule (`workflow-dta-aggregation.js`) поставляется **вну�
 
 **Зачем оба вместе?** Каскадная агрегация перезаписывает plan/fact-поля parent'а при любом изменении ребёнка. Если кто-то параллельно списывает трудозатраты прямо на story или epic — это прямое списание будет затёрто следующей агрегацией. Settings UI выдаёт non-blocking warning при опасной комбинации cascade=on + forbid=off — production-режим **оба включены**.
 
-### 3.7 Прочее
+### 3.7 Каскад состояний (parent.State ← min children) — v1.7.0
+
+Третье workflow-правило (`workflow-state-rollup.js`) поставляется внутри YT-app zip. При включении автоматически пересчитывает **State** контейнерной задачи как *наименее продвинутое* состояние среди дочерних задач при любом изменении child.State. Настраивается через chip **«Каскад состояний parent ← children»** в настройках плагина. **По умолчанию выключено** — апгрейд безопасен для существующих проектов.
+
+**Настройки (per project):**
+
+- **`stateRollupEnabled`** — master toggle.
+- **`stateRollupOrder`** — упорядоченный список имён state'ов от *наименее продвинутого* (вверху, например `Open` / `Backlog`) к *наиболее продвинутому* (внизу, например `Done` / `Closed`). Настраивается через UI-builder: слева multi-select из bundle проекта, кнопка *→ Добавить в порядок*, потом изменение порядка кнопками ↑ Вверх / ↓ Вниз. Минимум 2 состояния.
+- **`stateRollupResolvedStates`** — multi-select состояний, считающихся *резолвнутыми*. Если контейнер уже в одном из этих состояний — rollup его не трогает (не реоткрывает). Обычно: `Done`, `Cancelled`. Оставьте пустым для отключения guard'а.
+- **`stateRollupFloor`** *(опционально)* — single-select состояния, ниже которого контейнер не опускается, даже если children пытаются опустить ниже. Используйте, чтобы Epic не возвращался в `Backlog` после начала анализа.
+- **`stateRollupStrategy`** — сейчас фиксировано `min` (least-progressed wins). Enum зарезервирован для будущих `max` (any-progressed) и `mode` (majority).
+
+**Переиспользование иерархии:** rollup использует ту же иерархию, что и cascade aggregation выше (`cascadeKindField`, `cascadeLevel2Values`, `cascadeLevel3Values`, `cascadeParentLink*`) — отдельной иерархии не требуется. Если они пусты — в секции State rollup отображается inline-предупреждение.
+
+**Поведение на изменение child.State** (immediate, не batched):
+
+1. Идём вверх по настроенной parent-связи.
+2. Если kind parent'а ∈ level-2 *или* level-3 — пересчитываем его State как `order[min(child indices)]`.
+3. Применяем optional floor: `target = order[max(min, floorIdx)]`.
+4. Применяем resolved-states guard: если parent уже в resolved state — пропускаем.
+5. Идемпотентная запись: если parent.State уже равен target — write не происходит (loop-safe).
+6. Если parent сам level-2 и у него есть level-3 grandparent — пересчитываем grandparent в том же проходе.
+
+**Локализация:** workflow-сообщения, эмиттящиеся в issue activity, переведены на все 15 поддерживаемых локалей (`en`, `ru`, `cs`, `de`, `es`, `fr`, `hu`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `tr`, `zh`) и следуют той же `pickLocale` цепочке что и cascade/dta workflow: `ssp_settings.defaultLang` → `currentUser.profile.locale.language` → `en`.
+
+**Out of scope в v1.7.x** (см. `Documentation/ROADMAP.md`):
+- Mass rescan trigger (one-shot пересчёт всех контейнеров проекта) — кнопка **⟳ Пересчитать все контейнеры сейчас** отрисовывается как disabled-заглушка с tooltip *«Появится в одном из следующих релизов»*.
+- Стратегии агрегации `max` / `mode`.
+- Sprint-level rollup (State спринта derived из state'ов задач) и cross-project Epic rollup.
+
+### 3.8 Прочее
 
 - **Переключатель языка** (RU/EN) — дублирует селектор в шапке виджета.
 - **`enableDebugLog`** — debug-режим серверных логов.
@@ -346,5 +376,5 @@ A: Нет, это by design. Assigner-роль ограничена: можно 
 
 ---
 
-**Конец руководства.** Версия документа 1.6.3 · 2026-05-15.
+**Конец руководства.** Версия документа 1.7.1 · 2026-05-15.
 

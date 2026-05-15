@@ -97,10 +97,12 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS is empty array in v1.6.0', function () {
+test('SCHEMA_MIGRATIONS has exactly 1 entry for v1.7.0 State Rollup', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 0,
-    'Registry should be empty — first entry expected in v1.7.0 State Rollup');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 1,
+    'Registry should have 1 entry (v1.7.0 State Rollup); update this test when next entry is added');
+  assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
+  assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {

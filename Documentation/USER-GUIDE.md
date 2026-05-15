@@ -2,7 +2,7 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](USER-GUIDE.ru.md)
 
-**Document version:** 1.6.3 — 2026-05-15
+**Document version:** 1.7.1 — 2026-05-15
 **Minimum YouTrack version:** 2024.3
 **UI languages:** 15 (auto-detect from browser, English fallback; toggle in the widget header)
 
@@ -140,7 +140,37 @@ The **kind field name** (default `Type`), the **level-2 / level-3 value lists** 
 
 **Why pair them?** Cascade aggregation overwrites the parent's plan/fact fields whenever a child changes. If someone also logs work directly on a story or epic, that direct entry will be wiped on the next aggregation. The settings UI raises a non-blocking warning whenever cascade is on and forbid is off — the safe production setup is **both on**.
 
-### 3.7 Other
+### 3.7 State rollup (parent.State ← min children) — v1.7.0
+
+A third workflow rule (`workflow-state-rollup.js`) ships in the YT-app zip. When enabled, it automatically recomputes a container issue's **State** as the *least-progressed* state across its child issues whenever any child State changes. Configured via the **State rollup parent ← children** chip in plugin settings. **Disabled by default** — upgrade is safe for existing projects.
+
+**Settings (per project):**
+
+- **`stateRollupEnabled`** — master toggle.
+- **`stateRollupOrder`** — ordered list of state names from *least-progressed* (top, e.g. `Open` / `Backlog`) to *most-progressed* (bottom, e.g. `Done` / `Closed`). Configured via a builder UI: select states from the project bundle on the left, click *→ Add to order*, then reorder with ↑ Up / ↓ Down buttons. Minimum 2 states required.
+- **`stateRollupResolvedStates`** — multi-select of states that are considered *resolved*. When a container is already in any of these states, the rollup leaves it alone (won't reopen). Typically: `Done`, `Cancelled`. Leave empty to disable the guard.
+- **`stateRollupFloor`** *(optional)* — single-select state below which the container won't drop, even if its children would push it lower. Use this to keep Epics out of `Backlog` once analysis has started.
+- **`stateRollupStrategy`** — currently fixed to `min` (least-progressed wins). The enum is reserved for future `max` (any-progressed) and `mode` (majority).
+
+**Hierarchy reuse:** the rollup uses the same hierarchy configuration as the cascade aggregation above (`cascadeKindField`, `cascadeLevel2Values`, `cascadeLevel3Values`, `cascadeParentLink*`) — no separate hierarchy setup. If those are empty, an inline warning appears in the State rollup section.
+
+**Behavior on child.State change** (immediate, not batched):
+
+1. Walk up via the configured parent link.
+2. If the parent's kind matches level-2 *or* level-3, recompute its State as `order[min(child indices)]`.
+3. Apply the optional floor: `target = order[max(min, floorIdx)]`.
+4. Apply the resolved-states guard: if parent is already in a resolved state, skip.
+5. Idempotent write: if parent's current State already equals the target, no write happens (loop-safe).
+6. If the parent is itself level-2 with a level-3 grandparent, recompute that grandparent in the same pass.
+
+**Localization:** workflow messages emitted to issue activity are translated into all 15 supported locales (`en`, `ru`, `cs`, `de`, `es`, `fr`, `hu`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `tr`, `zh`) and follow the same `pickLocale` chain as cascade/dta workflows: `ssp_settings.defaultLang` → `currentUser.profile.locale.language` → `en`.
+
+**Out of scope in v1.7.x** (see `Documentation/ROADMAP.md`):
+- Mass rescan trigger (one-shot recomputation across all containers in a project) — the **⟳ Rescan all containers now** button is rendered as a disabled stub with the tooltip *«Coming in a future release»*.
+- `max` / `mode` aggregation strategies.
+- Sprint-level rollup (sprint State derived from issue states) and cross-project Epic rollup.
+
+### 3.8 Other
 
 - **Language toggle** (RU/EN) — duplicates the selector in the widget header.
 - **`enableDebugLog`** — debug mode for server-side logs.
@@ -346,5 +376,5 @@ A: No, this is by design. The assigner role is restricted: you can change **only
 
 ---
 
-**End of guide.** Document version 1.6.3 · 2026-05-15.
+**End of guide.** Document version 1.7.1 · 2026-05-15.
 

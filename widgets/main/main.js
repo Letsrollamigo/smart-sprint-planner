@@ -546,7 +546,36 @@
     newSprintDraftName: "New sprint (unsaved)",
     toastSprintNameRequired: "Sprint name is required",
     toastSprintDateStartRequired: "Sprint start date is required",
-    toastSprintDateEndRequired: "Sprint end date is required"
+    toastSprintDateEndRequired: "Sprint end date is required",
+    cardStateRollup: "State rollup parent \u2190 children",
+    lblStateRollupEnabled: "Enable state rollup parent \u2190 min(children)",
+    hintStateRollup: "When enabled, the bundled workflow rule recomputes container State (Story / Epic) as the least-progressed state across child issues whenever any child State changes. Reuses the hierarchy config from \xABCascade aggregation\xBB above. Disable if you have custom state-propagation workflows.",
+    hintStateRollupNoHierarchy: "\u26A0 Rollup needs hierarchy config from \xABCascade aggregation\xBB above (kind field + level-2 / level-3 values). Fill that section first.",
+    lblStateRollupOrder: "State order (least-progressed \u2192 most-progressed)",
+    lblStateRollupBundle: "Available states (from project bundle)",
+    lblStateRollupOrderList: "Ordered (drag-free; use buttons)",
+    btnStateRollupAdd: "\u2192 Add to order",
+    btnStateRollupUp: "\u2191 Up",
+    btnStateRollupDown: "\u2193 Down",
+    btnStateRollupRemove: "\u2715 Remove",
+    hintStateRollupOrder: "Select states from the project bundle and order them from \xABleast progressed\xBB (Open / Backlog) at the top to \xABmost progressed\xBB (Done / Closed) at the bottom. The rollup picks the topmost state across all children. Minimum 2 states.",
+    warnStateRollupOrderShort: "\u26A0 State order must contain at least 2 states.",
+    lblStateRollupResolved: "Resolved states (won\u2019t be reopened by rollup)",
+    hintStateRollupResolved: "When a container is already in any of these states, rollup will not change it back. Typically: Done, Cancelled. Leave empty to disable the guard (containers will follow children even after closing).",
+    lblStateRollupFloor: "Floor state (optional)",
+    optStateRollupFloorNone: "\u2014 none (pure min) \u2014",
+    hintStateRollupFloor: "Containers won\u2019t drop below this state even if children would push them lower. Use to keep Epics out of \xABBacklog\xBB once analysis has started.",
+    lblStateRollupStrategy: "Strategy",
+    hintStateRollupStrategy: "v1.7.0 supports \xABmin\xBB only. \xABmax\xBB (any-progressed) and \xABmode\xBB (majority) are reserved for future releases.",
+    btnStateRollupRescan: "\u27F3 Rescan all containers now",
+    hintStateRollupRescan: "Forces a one-time recomputation across all level-2 / level-3 containers in this project. Use after enabling rollup for the first time or after a bulk state change. Cooldown: 60 seconds.",
+    stateRollupRescanDeferred: "Coming in a future release",
+    stateRollupRescanQueued: "Rescan queued. Workflow will process all containers shortly.",
+    toastStateRollupRescanCooldown: "Rescan already running, please wait.",
+    toastStateRollupRescanFailed: "Rescan request failed. Check workflow status.",
+    ssbStateRollup: "State rollup",
+    hintSsbStateRollup: "State rollup status (parent.State \u2190 min children)",
+    toastMaxGroupsReached: "Maximum 100 groups reached"
   };
 
   // widgets/main/i18n/ru.json
@@ -1077,7 +1106,36 @@
     newSprintDraftName: "\u041D\u043E\u0432\u044B\u0439 \u0441\u043F\u0440\u0438\u043D\u0442 (\u043D\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D)",
     toastSprintNameRequired: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     toastSprintDateStartRequired: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u0430\u0442\u0443 \u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
-    toastSprintDateEndRequired: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u0430\u0442\u0443 \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F \u0441\u043F\u0440\u0438\u043D\u0442\u0430"
+    toastSprintDateEndRequired: "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0434\u0430\u0442\u0443 \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    cardStateRollup: "\u041A\u0430\u0441\u043A\u0430\u0434 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 parent \u2190 children",
+    lblStateRollupEnabled: "\u0412\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043A\u0430\u0441\u043A\u0430\u0434 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 parent \u2190 min(children)",
+    hintStateRollup: "\u041F\u0440\u0438 \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0438 \u0432\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u0435 workflow-\u043F\u0440\u0430\u0432\u0438\u043B\u043E \u043F\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044B\u0432\u0430\u0435\u0442 State \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u0430 (Story / Epic) \u043A\u0430\u043A \u043D\u0430\u0438\u043C\u0435\u043D\u0435\u0435 \u043F\u0440\u043E\u0434\u0432\u0438\u043D\u0443\u0442\u043E\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0441\u0440\u0435\u0434\u0438 \u0434\u043E\u0447\u0435\u0440\u043D\u0438\u0445 \u0437\u0430\u0434\u0430\u0447 \u043F\u0440\u0438 \u043B\u044E\u0431\u043E\u043C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u0438 child.State. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0435\u0442 \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044E \u0438\u0437 \u0441\u0435\u043A\u0446\u0438\u0438 \xAB\u041A\u0430\u0441\u043A\u0430\u0434\u043D\u0430\u044F \u0430\u0433\u0440\u0435\u0433\u0430\u0446\u0438\u044F \u0447\u0430\u0441\u043E\u0432\xBB \u0432\u044B\u0448\u0435. \u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u0435, \u0435\u0441\u043B\u0438 \u0443 \u0432\u0430\u0441 \u0435\u0441\u0442\u044C \u0441\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0435 workflow \u0434\u043B\u044F \u0440\u0430\u0441\u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439.",
+    hintStateRollupNoHierarchy: "\u26A0 \u0414\u043B\u044F \u043A\u0430\u0441\u043A\u0430\u0434\u0430 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 \u043D\u0443\u0436\u043D\u0430 \u0438\u0435\u0440\u0430\u0440\u0445\u0438\u044F \u0438\u0437 \u0441\u0435\u043A\u0446\u0438\u0438 \xAB\u041A\u0430\u0441\u043A\u0430\u0434\u043D\u0430\u044F \u0430\u0433\u0440\u0435\u0433\u0430\u0446\u0438\u044F \u0447\u0430\u0441\u043E\u0432\xBB (kind-\u043F\u043E\u043B\u0435 + \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F level-2 / level-3). \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0437\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u0435 \u0435\u0451.",
+    lblStateRollupOrder: "\u041F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 (\u043E\u0442 \u043D\u0430\u0438\u043C\u0435\u043D\u0435\u0435 \u043A \u043D\u0430\u0438\u0431\u043E\u043B\u0435\u0435 \u043F\u0440\u043E\u0434\u0432\u0438\u043D\u0443\u0442\u043E\u043C\u0443)",
+    lblStateRollupBundle: "\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F (\u0438\u0437 bundle \u043F\u0440\u043E\u0435\u043A\u0442\u0430)",
+    lblStateRollupOrderList: "\u0423\u043F\u043E\u0440\u044F\u0434\u043E\u0447\u0435\u043D\u043D\u044B\u0435 (\u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043A\u043D\u043E\u043F\u043A\u0438)",
+    btnStateRollupAdd: "\u2192 \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0432 \u043F\u043E\u0440\u044F\u0434\u043E\u043A",
+    btnStateRollupUp: "\u2191 \u0412\u0432\u0435\u0440\u0445",
+    btnStateRollupDown: "\u2193 \u0412\u043D\u0438\u0437",
+    btnStateRollupRemove: "\u2715 \u0423\u0431\u0440\u0430\u0442\u044C",
+    hintStateRollupOrder: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F \u0438\u0437 bundle \u043F\u0440\u043E\u0435\u043A\u0442\u0430 \u0438 \u0443\u043F\u043E\u0440\u044F\u0434\u043E\u0447\u044C\u0442\u0435 \u0438\u0445 \u0441\u0432\u0435\u0440\u0445\u0443 (\u043D\u0430\u0438\u043C\u0435\u043D\u0435\u0435 \u043F\u0440\u043E\u0434\u0432\u0438\u043D\u0443\u0442\u043E\u0435 \u2014 Open / Backlog) \u0432\u043D\u0438\u0437 (\u043D\u0430\u0438\u0431\u043E\u043B\u0435\u0435 \u043F\u0440\u043E\u0434\u0432\u0438\u043D\u0443\u0442\u043E\u0435 \u2014 Done / Closed). Rollup \u0432\u044B\u0431\u0438\u0440\u0430\u0435\u0442 \u0441\u0430\u043C\u043E\u0435 \u0432\u0435\u0440\u0445\u043D\u0435\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 \u0438\u0437 \u0432\u0441\u0435\u0445 children. \u041C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F.",
+    warnStateRollupOrderShort: "\u26A0 \u041F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 \u0434\u043E\u043B\u0436\u0435\u043D \u0441\u043E\u0434\u0435\u0440\u0436\u0430\u0442\u044C \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u044F.",
+    lblStateRollupResolved: "\u0420\u0435\u0437\u043E\u043B\u0432\u043D\u0443\u0442\u044B\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F (rollup \u043D\u0435 \u0440\u0435\u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442)",
+    hintStateRollupResolved: "\u0415\u0441\u043B\u0438 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440 \u0443\u0436\u0435 \u0432 \u043E\u0434\u043D\u043E\u043C \u0438\u0437 \u044D\u0442\u0438\u0445 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 \u2014 rollup \u0435\u0433\u043E \u043D\u0435 \u043C\u0435\u043D\u044F\u0435\u0442. \u041E\u0431\u044B\u0447\u043D\u043E: \u0413\u043E\u0442\u043E\u0432\u043E, \u041E\u0442\u043C\u0435\u043D\u0435\u043D\u043E. \u041E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u043F\u0443\u0441\u0442\u044B\u043C, \u0447\u0442\u043E\u0431\u044B \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C guard (\u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u044B \u0431\u0443\u0434\u0443\u0442 \u0441\u043B\u0435\u0434\u043E\u0432\u0430\u0442\u044C \u0437\u0430 children \u0434\u0430\u0436\u0435 \u043F\u043E\u0441\u043B\u0435 \u0437\u0430\u043A\u0440\u044B\u0442\u0438\u044F).",
+    lblStateRollupFloor: "\u041C\u0438\u043D\u0438\u043C\u0430\u043B\u044C\u043D\u043E\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435 (\u043E\u043F\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E)",
+    optStateRollupFloorNone: "\u2014 \u043D\u0435\u0442 (\u0447\u0438\u0441\u0442\u044B\u0439 min) \u2014",
+    hintStateRollupFloor: "\u041A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u044B \u043D\u0435 \u043E\u043F\u0443\u0441\u043A\u0430\u044E\u0442\u0441\u044F \u043D\u0438\u0436\u0435 \u044D\u0442\u043E\u0433\u043E \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F, \u0434\u0430\u0436\u0435 \u0435\u0441\u043B\u0438 children \u043F\u044B\u0442\u0430\u044E\u0442\u0441\u044F \u0438\u0445 \u043E\u043F\u0443\u0441\u0442\u0438\u0442\u044C. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435, \u0447\u0442\u043E\u0431\u044B Epic \u043D\u0435 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u043B\u0441\u044F \u0432 \xABBacklog\xBB \u043F\u043E\u0441\u043B\u0435 \u043D\u0430\u0447\u0430\u043B\u0430 \u0430\u043D\u0430\u043B\u0438\u0437\u0430.",
+    lblStateRollupStrategy: "\u0421\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u044F",
+    hintStateRollupStrategy: "v1.7.0 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \xABmin\xBB. \xABmax\xBB (any-progressed) \u0438 \xABmode\xBB (majority) \u0437\u0430\u0440\u0435\u0437\u0435\u0440\u0432\u0438\u0440\u043E\u0432\u0430\u043D\u044B \u0434\u043B\u044F \u0431\u0443\u0434\u0443\u0449\u0438\u0445 \u0440\u0435\u043B\u0438\u0437\u043E\u0432.",
+    btnStateRollupRescan: "\u27F3 \u041F\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044C \u0432\u0441\u0435 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u044B \u0441\u0435\u0439\u0447\u0430\u0441",
+    hintStateRollupRescan: "\u041F\u0440\u0438\u043D\u0443\u0434\u0438\u0442\u0435\u043B\u044C\u043D\u043E \u043F\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u044B\u0432\u0430\u0435\u0442 \u0432\u0441\u0435 level-2 / level-3 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u044B \u043F\u0440\u043E\u0435\u043A\u0442\u0430. \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u043F\u043E\u0441\u043B\u0435 \u043F\u0435\u0440\u0432\u043E\u0433\u043E \u0432\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F rollup \u0438\u043B\u0438 \u043C\u0430\u0441\u0441\u043E\u0432\u043E\u0439 \u043F\u0440\u0430\u0432\u043A\u0438 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439. Cooldown: 60 \u0441\u0435\u043A\u0443\u043D\u0434.",
+    stateRollupRescanDeferred: "\u041F\u043E\u044F\u0432\u0438\u0442\u0441\u044F \u0432 \u043E\u0434\u043D\u043E\u043C \u0438\u0437 \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0445 \u0440\u0435\u043B\u0438\u0437\u043E\u0432",
+    stateRollupRescanQueued: "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u043F\u043E\u0441\u0442\u0430\u0432\u043B\u0435\u043D \u0432 \u043E\u0447\u0435\u0440\u0435\u0434\u044C. Workflow \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442 \u043A\u043E\u043D\u0442\u0435\u0439\u043D\u0435\u0440\u044B \u0432 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0435\u0435 \u0432\u0440\u0435\u043C\u044F.",
+    toastStateRollupRescanCooldown: "\u041F\u0435\u0440\u0435\u0441\u0447\u0451\u0442 \u0443\u0436\u0435 \u0432\u044B\u043F\u043E\u043B\u043D\u044F\u0435\u0442\u0441\u044F, \u043F\u043E\u0434\u043E\u0436\u0434\u0438\u0442\u0435.",
+    toastStateRollupRescanFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0441\u0442\u0430\u0442\u0443\u0441 workflow.",
+    ssbStateRollup: "\u041A\u0430\u0441\u043A\u0430\u0434 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439",
+    hintSsbStateRollup: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043A\u0430\u0441\u043A\u0430\u0434\u0430 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 (parent.State \u2190 min children)",
+    toastMaxGroupsReached: "\u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442 \u043B\u0438\u043C\u0438\u0442 \u0432 100 \u0433\u0440\u0443\u043F\u043F"
   };
 
   // widgets/main/src/i18n/languages.js
@@ -2048,24 +2106,12 @@
       el.className = "toast toast--" + (type || "error");
       void el.offsetWidth;
       el.classList.add("show");
-      try {
-        var __rect = document.documentElement.getBoundingClientRect();
-        var __visibleTop = Math.max(0, -__rect.top);
-        el.style.position = "absolute";
-        el.style.top = __visibleTop + 24 + "px";
-      } catch (_) {
-      }
-      if (typeof _scrollFrameIntoView === "function") _scrollFrameIntoView();
-      try {
-        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      } catch (_) {
-      }
       setTimeout(function() {
         el.classList.remove("show");
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.6.3";
+    var APP_VERSION = "1.7.1";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -3812,7 +3858,14 @@
           var targetId = chip.getAttribute("data-target");
           if (!targetId) return;
           var target = document.getElementById(targetId);
-          if (target && typeof target.scrollIntoView === "function") {
+          if (!target) return;
+          try {
+            target.querySelectorAll("details.settings-card").forEach(function(d) {
+              d.open = true;
+            });
+          } catch (_) {
+          }
+          if (typeof target.scrollIntoView === "function") {
             target.scrollIntoView({ behavior: "smooth", block: "start" });
           }
         });
@@ -4013,7 +4066,9 @@
         { id: "ssbInline", on: !!s.dynEditEnabled },
         { id: "ssbPersonal", on: !!s.personalPlanningEnabled },
         { id: "ssbDta", on: !!s.dtaEnabled },
-        { id: "ssbCascade", on: !!s.cascadeAggregationEnabled }
+        { id: "ssbCascade", on: !!s.cascadeAggregationEnabled },
+        { id: "ssbStateRollup", on: !!s.stateRollupEnabled }
+        /* v1.7.0 D128 */
       ];
       modules.forEach(function(m) {
         var el = document.getElementById(m.id);
@@ -4770,6 +4825,168 @@
         });
       }
     }
+    function _stateRollupBundleStates() {
+      var fname = _settings && typeof _settings.fieldState === "string" && _settings.fieldState ? _settings.fieldState : "State";
+      if (_fieldValuesCache[fname]) {
+        return Promise.resolve(_fieldValuesCache[fname].values || []);
+      }
+      return apiGet("field-values?fieldName=" + encodeURIComponent(fname)).then(function(r) {
+        if (r && r.success && r.values) _fieldValuesCache[fname] = r;
+        return r && r.values || [];
+      }).catch(function() {
+        return [];
+      });
+    }
+    function _fillStateRollupBundleSel(bundleStates, currentOrder) {
+      var sel = document.getElementById("stateRollupBundleSel");
+      if (!sel) return;
+      sel.innerHTML = "";
+      (bundleStates || []).forEach(function(name) {
+        if (currentOrder.indexOf(name) >= 0) return;
+        var o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        sel.appendChild(o);
+      });
+    }
+    function _fillStateRollupOrderList(orderArray) {
+      var sel = document.getElementById("stateRollupOrderList");
+      if (!sel) return;
+      sel.innerHTML = "";
+      (orderArray || []).forEach(function(name) {
+        var o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        sel.appendChild(o);
+      });
+    }
+    function _fillStateRollupResolvedSel(bundleStates, currentResolved) {
+      var sel = document.getElementById("stateRollupResolvedSel");
+      if (!sel) return;
+      sel.innerHTML = "";
+      (bundleStates || []).forEach(function(name) {
+        var o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        if ((currentResolved || []).indexOf(name) >= 0) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    function _fillStateRollupFloorSel(orderArray, currentFloor) {
+      var sel = document.getElementById("stateRollupFloorSel");
+      if (!sel) return;
+      var firstOpt = sel.querySelector('option[value=""]');
+      sel.innerHTML = "";
+      if (firstOpt) sel.appendChild(firstOpt);
+      (orderArray || []).forEach(function(name) {
+        var o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        if (name === currentFloor) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    function _stateRollupCurrentOrder() {
+      var sel = document.getElementById("stateRollupOrderList");
+      if (!sel) return [];
+      var out = [];
+      for (var i = 0; i < sel.options.length; i++) out.push(sel.options[i].value);
+      return out;
+    }
+    function _stateRollupCurrentResolved() {
+      var sel = document.getElementById("stateRollupResolvedSel");
+      if (!sel) return [];
+      var out = [];
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].selected) out.push(sel.options[i].value);
+      }
+      return out;
+    }
+    function _refreshStateRollupValidation() {
+      var order = _stateRollupCurrentOrder();
+      var warn = document.getElementById("warnStateRollupOrderShort");
+      if (warn) warn.style.display = order.length > 0 && order.length < 2 ? "" : "none";
+      var lvl2 = _settings && Array.isArray(_settings.cascadeLevel2Values) ? _settings.cascadeLevel2Values : [];
+      var lvl3 = _settings && Array.isArray(_settings.cascadeLevel3Values) ? _settings.cascadeLevel3Values : [];
+      var enabledChk = document.getElementById("stateRollupEnabledCheck");
+      var hint = document.getElementById("hintStateRollupNoHierarchy");
+      if (hint && enabledChk) {
+        hint.style.display = enabledChk.checked && !lvl2.length && !lvl3.length ? "" : "none";
+      }
+    }
+    function _bindStateRollupButtons() {
+      var addBtn = document.getElementById("stateRollupAddBtn");
+      var upBtn = document.getElementById("stateRollupUpBtn");
+      var downBtn = document.getElementById("stateRollupDownBtn");
+      var removeBtn = document.getElementById("stateRollupRemoveBtn");
+      if (addBtn && !addBtn._sspBound) {
+        addBtn._sspBound = true;
+        addBtn.addEventListener("click", function() {
+          var bundleSel = document.getElementById("stateRollupBundleSel");
+          var orderList = document.getElementById("stateRollupOrderList");
+          if (!bundleSel || !orderList) return;
+          var toAdd = [];
+          for (var i = 0; i < bundleSel.options.length; i++) {
+            if (bundleSel.options[i].selected) toAdd.push(bundleSel.options[i].value);
+          }
+          toAdd.forEach(function(name) {
+            var o = document.createElement("option");
+            o.value = name;
+            o.textContent = name;
+            orderList.appendChild(o);
+          });
+          var curOrder = _stateRollupCurrentOrder();
+          var floorVal = (document.getElementById("stateRollupFloorSel") || {}).value || "";
+          _stateRollupBundleStates().then(function(states) {
+            _fillStateRollupBundleSel(states, curOrder);
+            _fillStateRollupFloorSel(curOrder, floorVal);
+          });
+          _refreshStateRollupValidation();
+        });
+      }
+      if (upBtn && !upBtn._sspBound) {
+        upBtn._sspBound = true;
+        upBtn.addEventListener("click", function() {
+          var sel = document.getElementById("stateRollupOrderList");
+          if (!sel || sel.selectedIndex <= 0) return;
+          var idx = sel.selectedIndex;
+          var opt = sel.options[idx];
+          sel.removeChild(opt);
+          sel.insertBefore(opt, sel.options[idx - 1]);
+          sel.selectedIndex = idx - 1;
+          _fillStateRollupFloorSel(_stateRollupCurrentOrder(), (document.getElementById("stateRollupFloorSel") || {}).value || "");
+        });
+      }
+      if (downBtn && !downBtn._sspBound) {
+        downBtn._sspBound = true;
+        downBtn.addEventListener("click", function() {
+          var sel = document.getElementById("stateRollupOrderList");
+          if (!sel || sel.selectedIndex < 0 || sel.selectedIndex >= sel.options.length - 1) return;
+          var idx = sel.selectedIndex;
+          var opt = sel.options[idx];
+          var next = sel.options[idx + 1];
+          sel.removeChild(next);
+          sel.insertBefore(next, opt);
+          sel.selectedIndex = idx + 1;
+          _fillStateRollupFloorSel(_stateRollupCurrentOrder(), (document.getElementById("stateRollupFloorSel") || {}).value || "");
+        });
+      }
+      if (removeBtn && !removeBtn._sspBound) {
+        removeBtn._sspBound = true;
+        removeBtn.addEventListener("click", function() {
+          var sel = document.getElementById("stateRollupOrderList");
+          if (!sel || sel.selectedIndex < 0) return;
+          sel.removeChild(sel.options[sel.selectedIndex]);
+          var curOrder = _stateRollupCurrentOrder();
+          var floorVal = (document.getElementById("stateRollupFloorSel") || {}).value || "";
+          _stateRollupBundleStates().then(function(states) {
+            _fillStateRollupBundleSel(states, curOrder);
+            _fillStateRollupFloorSel(curOrder, floorVal);
+          });
+          _refreshStateRollupValidation();
+        });
+      }
+    }
     function applySettingsUI() {
       if (!_valGroupsState || typeof _valGroupsState !== "object") _valGroupsState = { ids: [], names: [] };
       if (!_editGroupsState || typeof _editGroupsState !== "object") _editGroupsState = { ids: [], names: [] };
@@ -4825,6 +5042,19 @@
       if (linkOutEl) linkOutEl.value = _settings && typeof _settings.cascadeParentLinkOutward === "string" ? _settings.cascadeParentLinkOutward : "";
       _bindCascadeWarning();
       _refreshCascadeWarning();
+      var srEnabledChk = document.getElementById("stateRollupEnabledCheck");
+      if (srEnabledChk) srEnabledChk.checked = !!(_settings && _settings.stateRollupEnabled);
+      var srOrder = _settings && Array.isArray(_settings.stateRollupOrder) ? _settings.stateRollupOrder : [];
+      var srResolved = _settings && Array.isArray(_settings.stateRollupResolvedStates) ? _settings.stateRollupResolvedStates : [];
+      var srFloor = _settings && typeof _settings.stateRollupFloor === "string" ? _settings.stateRollupFloor : "";
+      _fillStateRollupOrderList(srOrder);
+      _stateRollupBundleStates().then(function(bundleStates) {
+        _fillStateRollupBundleSel(bundleStates, srOrder);
+        _fillStateRollupResolvedSel(bundleStates, srResolved);
+        _fillStateRollupFloorSel(srOrder, srFloor);
+        _refreshStateRollupValidation();
+      });
+      _bindStateRollupButtons();
       var defLangSel = document.getElementById("defaultLangSel");
       if (defLangSel) {
         _populateDefaultLangSelect(defLangSel);
@@ -4942,7 +5172,7 @@
               state.names.splice(idx, 1);
             } else {
               if (state.ids.length >= 100) {
-                toast(T("toastError") + "limit 100 groups", "err");
+                toast(T("toastMaxGroupsReached"), "err");
                 return;
               }
               state.ids.push(gid);
@@ -5021,6 +5251,16 @@
         cascadeLevel3Values: _cascadeMultiSelectValues(document.getElementById("cascadeLevel3Sel")),
         cascadeParentLinkInward: _cascadeStrOrNull(document.getElementById("cascadeLinkInwardInput")),
         cascadeParentLinkOutward: _cascadeStrOrNull(document.getElementById("cascadeLinkOutwardInput")),
+        /* v1.7.0 D128 — State Rollup. rescanRequested/At не сохраняем здесь
+           (управляются кнопкой Rescan; в v1.7.0 кнопка disabled — ключи не трогаем). */
+        stateRollupEnabled: !!(document.getElementById("stateRollupEnabledCheck") && document.getElementById("stateRollupEnabledCheck").checked),
+        stateRollupOrder: _stateRollupCurrentOrder(),
+        stateRollupResolvedStates: _stateRollupCurrentResolved(),
+        stateRollupFloor: function() {
+          var v = document.getElementById("stateRollupFloorSel");
+          return v && v.value ? v.value : null;
+        }(),
+        stateRollupStrategy: "min",
         /* v1.1.0 — project-default язык. Пустая строка из <option value=""> → undefined,
            чтобы whitelist не отверг (defaultLang допускает только валидные ISO-коды или отсутствие). */
         defaultLang: function() {

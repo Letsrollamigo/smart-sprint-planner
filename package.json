@@ -1,16 +1,16 @@
 {
   "name": "smart-sprint-planner",
-  "version": "1.6.3",
+  "version": "1.7.1",
   "private": true,
   "scripts": {
     "build:whitelists": "node scripts/sync-backend-whitelists.js",
     "build": "npm run build:whitelists && esbuild widgets/main/src/index.js --bundle --format=iife --target=es2017 --outfile=widgets/main/main.js",
-    "build:check": "npm run build:whitelists && node --check widgets/main/main.js && node --check backend-project.js && node --check workflow-dta-aggregation.js && node --check workflow-cascade-aggregation.js && node --check workflow-forbid-container.js",
+    "build:check": "npm run build:whitelists && node --check widgets/main/main.js && node --check backend-project.js && node --check workflow-dta-aggregation.js && node --check workflow-cascade-aggregation.js && node --check workflow-forbid-container.js && node --check workflow-state-rollup.js",
     "fixtures:generate": "node tests/fixtures/generate-baseline.js",
     "test": "playwright test && node --test tests/unit/*.test.js",
     "test:ui": "playwright test --ui",
     "test:unit": "node --test tests/unit/*.test.js",
-    "zip": "npm run build && npm run build:check && cd .. && zip -r 'Realises SSP/Smart-Sprint-Planner-v1.6.3.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/REFACTORING_PLAN.md' '*/REFACTORING_PLAN_STAGE_6.md' '*/REFACTORING_PLAN_STAGE_6_v1.6.0.md' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts'"
+    "zip": "npm run build && npm run build:check && cd .. && zip -r 'Realises SSP/Smart-Sprint-Planner-v1.7.1.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/REFACTORING_PLAN.md' '*/REFACTORING_PLAN_STAGE_6.md' '*/REFACTORING_PLAN_STAGE_6_v1.6.0.md' '*/STATE_ROLLUP_SPEC.md' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts'"
   },
   "devDependencies": {
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",

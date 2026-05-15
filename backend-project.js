@@ -205,7 +205,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.6.3';
+var CURRENT_PLUGIN_VERSION = '1.7.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -331,7 +331,15 @@ function stripDeprecatedSprintKeys(s) {
    Формат записи: { from: 'X.Y.Z', to: 'X.Y.Z', migrate: function(snap){}, note: '' }
    Правило для PR: любое изменение whitelist'ов или shape snapshot'а ОБЯЗАНО
    добавить запись сюда + fixture в tests/fixtures/snapshots/<new-version>/. */
-var SCHEMA_MIGRATIONS = [];
+var SCHEMA_MIGRATIONS = [
+  /* v1.7.0 D128 — State Rollup.
+     sprint/history/working-draft shape НЕ меняется (settings additive, snapshot no-op).
+     Settings-defaults инициализируются на GET /settings load (§8.2 spec), не здесь. */
+  { from: '1.6.0', to: '1.7.0',
+    migrate: function (snap) { /* no-op: shape unchanged */ },
+    note: 'v1.7.0: State Rollup — stateRollup* settings keys added; sprint/history shape unchanged'
+  }
+];
 
 function versionLt(a, b) {
   if (a === b) return false;
@@ -692,10 +700,30 @@ var ALLOWED_SETTINGS_KEYS = [
   // Метаданные
   'savedAt',
   // v5.3.0 — миграционный флаг (commit-as-PLANNING для in-flight v5.2.0 правок)
-  'migratedTo'
+  'migratedTo',
+  /* v1.7.0 D128 — State Rollup: parent.State ← min(children.State).
+     stateRollupEnabled       — master toggle, default false.
+     stateRollupOrder         — ordered array of state names (least → most progressed).
+     stateRollupResolvedStates— states treated as resolved; guard prevents re-opening.
+     stateRollupFloor         — optional floor state (parent won't go below this).
+     stateRollupStrategy      — enum, v1.7.0 accepts only 'min' (reserved for future).
+     stateRollupRescanRequested    — manual rescan flag (v1.7.1 impl, forward-compat key).
+     stateRollupRescanRequestedAt  — timestamp for rescan cooldown (v1.7.1 impl). */
+  'stateRollupEnabled',
+  'stateRollupOrder',
+  'stateRollupResolvedStates',
+  'stateRollupFloor',
+  'stateRollupStrategy',
+  'stateRollupRescanRequested',
+  'stateRollupRescanRequestedAt'
 ];
 
-var ALLOWED_KPE_KEYS = ['Стажёр','Джун','Мидл','Синьор'];
+/* v1.7.0: KPE whitelist accepts both legacy Russian keys (Стажёр/Джун/Мидл/Синьор)
+   and canonical English keys (Intern/Junior/Middle/Senior, frontend storage layer
+   since v1.4.1 D128 — see widgets/main/src/legacy-monolith.js GRADES_LOCAL).
+   Pre-existing fix: previously frontend wrote English keys but backend rejected
+   the save with invalid_settings_structure on any settings POST. */
+var ALLOWED_KPE_KEYS = ['Стажёр','Джун','Мидл','Синьор','Intern','Junior','Middle','Senior'];
 
 /* v1.1.0 — whitelist 15 ISO-кодов языков. ОБЯЗАН совпадать с widgets/main/src/i18n/languages.js.
    Любой иной код (включая регион "en-US", "ru-RU") отклоняется → 400 invalid_input. */
@@ -766,7 +794,8 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems'];
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
+    /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled','stateRollupRescanRequested'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
     if (bv !== undefined && bv !== null && typeof bv !== 'boolean') return false;
@@ -827,6 +856,34 @@ function validateSettings(settings) {
   // v5.3.0 — migratedTo: строка-маркер версии миграции (например '5.3')
   if (settings.migratedTo !== undefined && settings.migratedTo !== null
       && (typeof settings.migratedTo !== 'string' || settings.migratedTo.length > 20)) return false;
+  /* v1.7.0 D128 — State Rollup validation. */
+  // stateRollupOrder: array<string ≤200>, max 50, all unique
+  if (settings.stateRollupOrder !== undefined && settings.stateRollupOrder !== null) {
+    if (!isStrArr(settings.stateRollupOrder, 200, 50)) return false;
+    var srSeen = {};
+    for (var sro = 0; sro < settings.stateRollupOrder.length; sro++) {
+      if (srSeen[settings.stateRollupOrder[sro]]) return false;
+      srSeen[settings.stateRollupOrder[sro]] = true;
+    }
+  }
+  // stateRollupResolvedStates: array<string ≤200>, max 20
+  if (settings.stateRollupResolvedStates !== undefined && settings.stateRollupResolvedStates !== null
+      && !isStrArr(settings.stateRollupResolvedStates, 200, 20)) return false;
+  // stateRollupFloor: string|null ≤200, must be ∈ stateRollupOrder if order is set
+  if (settings.stateRollupFloor !== undefined && settings.stateRollupFloor !== null) {
+    if (!assertStr(settings.stateRollupFloor, 200)) return false;
+    if (Array.isArray(settings.stateRollupOrder)
+        && settings.stateRollupOrder.indexOf(settings.stateRollupFloor) < 0) return false;
+  }
+  // stateRollupStrategy: enum, v1.7.0 accepts only 'min'
+  if (settings.stateRollupStrategy !== undefined && settings.stateRollupStrategy !== null) {
+    if (settings.stateRollupStrategy !== 'min') return false;
+  }
+  // stateRollupRescanRequestedAt: number (ms timestamp) | null
+  if (settings.stateRollupRescanRequestedAt !== undefined && settings.stateRollupRescanRequestedAt !== null) {
+    if (typeof settings.stateRollupRescanRequestedAt !== 'number'
+        || !isFinite(settings.stateRollupRescanRequestedAt)) return false;
+  }
   return true;
 }
 
@@ -1615,7 +1672,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.6.3' });
+        ctx.response.json({ version: '1.7.1' });
       }
     },
 
@@ -2252,5 +2309,8 @@ if (typeof module !== 'undefined' && module.exports) {
     ALLOWED_SPRINT_KEYS:          ALLOWED_SPRINT_KEYS,
     ALLOWED_HISTORY_SNAP_KEYS:    ALLOWED_HISTORY_SNAP_KEYS,
     ALLOWED_WORKING_DRAFT_KEYS:   ALLOWED_WORKING_DRAFT_KEYS,
+    ALLOWED_SETTINGS_KEYS:        ALLOWED_SETTINGS_KEYS,
+    ALLOWED_KPE_KEYS:             ALLOWED_KPE_KEYS,
+    validateSettings:             validateSettings,
   });
 }

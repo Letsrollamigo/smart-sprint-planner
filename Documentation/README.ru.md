@@ -3,7 +3,7 @@
 > 🇬🇧 [Read in English](../README.md) · 🇷🇺 По-русски
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
-[![Version](https://img.shields.io/badge/version-1.6.3-brightgreen.svg)](CHANGELOG.ru.md)
+[![Version](https://img.shields.io/badge/version-1.7.1-brightgreen.svg)](CHANGELOG.ru.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](../tests/)
 [![Поддержать на TON](https://img.shields.io/badge/Поддержать-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -12,7 +12,7 @@
 > поддержать его развитие, любая сумма приветствуется на TON-кошелёк:
 > `UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
 
-Плагин ролевого планирования спринтов для **YouTrack 2024.3+**. Планируйте состав спринта по ролям анализа, тестирования и семи инженерных направлений в одном виджете — с трекингом загрузки, рабочими черновиками, снимками подтверждённой истории, Gantt-таймлайном по каждой роли, дифференцированным учётом трудозатрат и каскадной агрегацией parent ← child.
+Плагин ролевого планирования спринтов для **YouTrack 2024.3+**. Планируйте состав спринта по ролям анализа, тестирования и семи инженерных направлений в одном виджете — с трекингом загрузки, рабочими черновиками, снимками подтверждённой истории, Gantt-таймлайном по каждой роли, дифференцированным учётом трудозатрат, каскадной агрегацией parent ← child и каскадом состояний parent.State ← min(children).
 
 ## Возможности
 
@@ -26,11 +26,12 @@
 - **15 языков UI** — чешский, немецкий, английский, испанский, французский, венгерский, итальянский, японский, корейский, нидерландский, польский, португальский, русский, турецкий, китайский (упрощённый). Авто-детект по браузеру, ручное переключение, fallback на английский.
 - **Дифференцированный учёт трудозатрат (DTA)** — маппинг типа work-item → роль, агрегация факта по ролям обратно в custom-поля задачи, обязательная валидация типа работы, опциональные уведомления о соотношении план/факт.
 - **Каскадная агрегация parent ← child** — поля плана и факта в контейнерной задаче считаются как сумма прямых детей, оценки и факт сворачиваются автоматически. Контейнерные задачи можно блокировать от прямых списаний work-item.
+- **Каскад состояний parent ← min(children)** *(v1.7.0)* — State контейнерной задачи автоматически следует за наименее продвинутым state'ом дочерних (стратегия min). Настраиваемый порядок состояний, guard от реоткрытия резолвнутых контейнеров, опциональное минимальное состояние (floor). По умолчанию выключено; переиспользует cascade-иерархию.
 - **Server-side авторизация** на каждом мутирующем эндпоинте через проектные настройки `ssp_settings`. Deny-by-default до настройки `settingsManagerGroup`.
 
 ## Установка
 
-1. Скачайте `Smart-Sprint-Planner-v1.6.3.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
+1. Скачайте `Smart-Sprint-Planner-v1.7.1.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
 2. В YouTrack: **Настройки проекта → Приложения → Установить из файла** → загрузите zip.
 3. Откройте любой проект и добавьте виджет **Smart Sprint Planner** на страницу настроек.
 4. Нажмите **⚙ Plugin settings** в шапке виджета. Первое сохранение требует пользователя из `settingsManagerGroup` — пока группа не настроена, все мутации запрещены.
@@ -44,8 +45,8 @@ git clone https://github.com/Letsrollamigo/smart-sprint-planner.git
 cd smart-sprint-planner
 npm install
 npm run build:check    # syntax-проверка bundle и workflow-файлов
-npm test               # Playwright-набор (31 spec)
-node --test tests/unit/*.test.js   # unit-набор (44 spec)
+npm test               # Playwright-набор (36 spec)
+node --test tests/unit/*.test.js   # unit-набор (152 spec)
 ```
 
 Требования: Node.js 18+. Для end-to-end ручной проверки нужен инстанс YouTrack 2024.3+; Playwright-тесты используют mock-бэкенд.
