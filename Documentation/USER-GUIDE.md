@@ -2,7 +2,7 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](USER-GUIDE.ru.md)
 
-**Document version:** 1.4.0 — 2026-05-12
+**Document version:** 1.6.3 — 2026-05-15
 **Minimum YouTrack version:** 2024.3
 **UI languages:** 15 (auto-detect from browser, English fallback; toggle in the widget header)
 
@@ -336,5 +336,5 @@ A: No, this is by design. The assigner role is restricted: you can change **only
 
 ---
 
-**End of guide.** Document version 1.0.0 · 2026-05-08.
+**End of guide.** Document version 1.6.3 · 2026-05-15.
 

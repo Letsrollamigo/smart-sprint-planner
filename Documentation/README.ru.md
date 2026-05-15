@@ -3,7 +3,7 @@
 > 🇬🇧 [Read in English](../README.md) · 🇷🇺 По-русски
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](CHANGELOG.ru.md)
+[![Version](https://img.shields.io/badge/version-1.6.3-brightgreen.svg)](CHANGELOG.ru.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](../tests/)
 [![Поддержать на TON](https://img.shields.io/badge/Поддержать-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -30,7 +30,7 @@
 
 ## Установка
 
-1. Скачайте `Smart-Sprint-Planner-v1.4.0.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
+1. Скачайте `Smart-Sprint-Planner-v1.6.3.zip` со страницы [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases).
 2. В YouTrack: **Настройки проекта → Приложения → Установить из файла** → загрузите zip.
 3. Откройте любой проект и добавьте виджет **Smart Sprint Planner** на страницу настроек.
 4. Нажмите **⚙ Plugin settings** в шапке виджета. Первое сохранение требует пользователя из `settingsManagerGroup` — пока группа не настроена, все мутации запрещены.

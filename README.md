@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-brightgreen.svg)](Documentation/CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.3-brightgreen.svg)](Documentation/CHANGELOG.md)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
@@ -30,7 +30,7 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 
 ## Installation
 
-1. Download `Smart-Sprint-Planner-v1.4.0.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
+1. Download `Smart-Sprint-Planner-v1.6.3.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
 2. In YouTrack: **Project Settings → Apps → Install from file** → upload the zip.
 3. Open any project and add the **Smart Sprint Planner** widget to its settings page.
 4. Click **⚙ Plugin settings** in the widget header. The first save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.
