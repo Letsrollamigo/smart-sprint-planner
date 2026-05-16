@@ -73,7 +73,7 @@
      в YT iframe — get/setItem молча падают с SecurityError, get возвращает null,
      getSortKey всегда даёт 'off' → визуально «сортировка не работает». Memo
      гарантирует консистентность state в пределах сессии независимо от storage. */
-  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system'];
+  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId'];
   var _sortKeyMemo = null;
   function getSortKey() {
     if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -116,6 +116,14 @@
         var cs = sysA < sysB ? -1 : (sysA > sysB ? 1 : 0);
         if (cs !== 0) return cs;
         return (_xpRank(a.xpriority) - _xpRank(b.xpriority)) || _idCmp(a.issueId, b.issueId);
+      }
+      /* v1.8.0 D130 — externalTicketId: lexicographic, undefined/empty sorts to end. */
+      if (primary === 'externalTicketId') {
+        var extA = String(a.externalTicketId || '').toLowerCase();
+        var extB = String(b.externalTicketId || '').toLowerCase();
+        var ce = extA < extB ? -1 : (extA > extB ? 1 : 0);
+        if (ce !== 0) return ce;
+        return _idCmp(a.issueId, b.issueId);
       }
       // 'xpriority' (default)
       var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
@@ -795,7 +803,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.7.1';
+  var APP_VERSION = '1.8.2';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -1359,6 +1367,7 @@
     if (!baseSnap) return;
     var level = computeRequiredRevalidationLevel(baseSnap, draft);
     var newStatus = applyRevalidationLevel(baseSnap.status, level);
+    diag('[COMMIT-WC] role='+rk+' baseStatus='+baseSnap.status+' level='+level+' newStatus='+newStatus+' snapFromStatus='+(snapFromCurrent&&snapFromCurrent.status), 'info');
     var finalSnap = snapFromCurrent;
     finalSnap.status = newStatus;
     if (level !== 'NONE' && level !== 'META_ONLY') {
@@ -1368,11 +1377,18 @@
       finalSnap.confirmedAt = baseSnap.confirmedAt;
       finalSnap.confirmedBy = baseSnap.confirmedBy;
     }
-    finalSnap.revisions = (baseSnap.revisions || []).concat([{
-      at:    Date.now(),
-      by:    (_currentUser && _currentUser.login) || '',
-      level: level
-    }]).slice(-200);  /* лимит 200 ревизий — защита от runaway */
+    /* v1.8.1 — не записывать revision с level='NONE' (no-op commit без реальных изменений).
+       Ранее: при closing working copy без правок level='NONE' приводил к invalid_history_structure
+       (backend whitelist его отвергал). Теперь добавляем revision ТОЛЬКО для значимых уровней. */
+    var newRevisions = (baseSnap.revisions || []).slice();
+    if (level !== 'NONE') {
+      newRevisions.push({
+        at:    Date.now(),
+        by:    (_currentUser && _currentUser.login) || '',
+        level: level
+      });
+    }
+    finalSnap.revisions = newRevisions.slice(-200);  /* лимит 200 ревизий — защита от runaway */
     finalSnap.hasWorkingCopy = false;
     if (baseSnap.finishedAt) finalSnap.finishedAt = baseSnap.finishedAt;
     if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
@@ -1388,6 +1404,12 @@
     return apiPost('history', { history: _history }).then(function(){
       if (typeof renderHistory === 'function') renderHistory();
       if (typeof renderRoleComposition === 'function') renderRoleComposition(rk);
+      /* v1.8.1 — после commit working copy шапка должна пересчитаться, иначе
+         бейдж в main-виджете висит на старом статусе (например "Черновик"), даже
+         когда таблица истории уже показывает новый (CONFIRMED/ALLOCATED). */
+      if (typeof renderWidgetHeader === 'function') {
+        try { renderWidgetHeader(); } catch(_){}
+      }
       try {
         var statusLabelKey = 'status_' + newStatus;
         var levelKey       = 'wcLevel_' + level;
@@ -3825,12 +3847,14 @@
     renderRolesGrid();
     renderDynamicRoleFields();
 
-    fillFieldSelect(document.getElementById('s_priority'),     ['enum'],             _settings && _settings.fieldPriority);
-    fillFieldSelect(document.getElementById('s_xpriority'),    ['enum'],             _settings && _settings.fieldXPriority);
-    fillFieldSelect(document.getElementById('s_state'),        ['state', 'enum'],    _settings && _settings.fieldState);
-    fillFieldSelect(document.getElementById('s_system'),       ['enum', 'owned'],    _settings && _settings.fieldSystem);
-    fillFieldSelect(document.getElementById('s_sprint_field'), ['enum'],             _settings && _settings.fieldSprint);
-    fillFieldSelect(document.getElementById('s_version_field'),['version', 'build'], _settings && _settings.fieldVersion);
+    fillFieldSelect(document.getElementById('s_priority'),            ['enum'],             _settings && _settings.fieldPriority);
+    fillFieldSelect(document.getElementById('s_xpriority'),           ['enum'],             _settings && _settings.fieldXPriority);
+    fillFieldSelect(document.getElementById('s_state'),               ['state', 'enum'],    _settings && _settings.fieldState);
+    fillFieldSelect(document.getElementById('s_system'),              ['enum', 'owned'],    _settings && _settings.fieldSystem);
+    /* v1.8.0 D130 — Etap В.2 — string-type filter: excludes text/enum/integer/period. */
+    fillFieldSelect(document.getElementById('s_external_ticket_id'),  ['string'],           _settings && _settings.fieldExternalTicketId);
+    fillFieldSelect(document.getElementById('s_sprint_field'),        ['enum'],             _settings && _settings.fieldSprint);
+    fillFieldSelect(document.getElementById('s_version_field'),       ['version', 'build'], _settings && _settings.fieldVersion);
 
     setCheck('dynEditCheck',                !!(_settings && _settings.dynEditEnabled));
     setCheck('usePersonalForResourceCheck', !!(_settings && _settings.usePersonalForResource));
@@ -4154,12 +4178,14 @@
         Middle: parseFloat(document.getElementById('s_kpe_mid').value)    || 0.65,
         Senior: parseFloat(document.getElementById('s_kpe_senior').value) || 0.75
       },
-      fieldPriority:    document.getElementById('s_priority').value      || null,
-      fieldXPriority:   document.getElementById('s_xpriority').value     || null,
-      fieldState:       document.getElementById('s_state').value         || null,
-      fieldSystem:      document.getElementById('s_system').value        || null,
-      fieldSprint:      document.getElementById('s_sprint_field').value  || null,
-      fieldVersion:     document.getElementById('s_version_field').value || null,
+      fieldPriority:         document.getElementById('s_priority').value           || null,
+      fieldXPriority:        document.getElementById('s_xpriority').value          || null,
+      fieldState:            document.getElementById('s_state').value              || null,
+      fieldSystem:           document.getElementById('s_system').value             || null,
+      /* v1.8.0 D130 — Etap В.2 — external ticket ID field name. */
+      fieldExternalTicketId: document.getElementById('s_external_ticket_id').value || null,
+      fieldSprint:           document.getElementById('s_sprint_field').value       || null,
+      fieldVersion:          document.getElementById('s_version_field').value      || null,
       validationGroups:        _valGroupsState.ids.slice(),
       validationGroupNames:    _valGroupsState.names.slice(),
       editGroups:              _editGroupsState.ids.slice(),
@@ -4222,6 +4248,16 @@
         var bc = document.getElementById('bannerCfg');
         if (bc) bc.classList.add('hidden');
         toast(T('toastSettingsSaved'), 'success');
+        /* v1.8.1 — soft warning: обязательные поля (Priority + State) не выбраны.
+           Save проходит (нет блокировки), но пользователь предупреждается. */
+        var missingRequired = [];
+        if (!data.fieldPriority) missingRequired.push(T('fldPriority'));
+        if (!data.fieldState)    missingRequired.push(T('fldState'));
+        if (missingRequired.length) {
+          setTimeout(function() {
+            toast(T('toastRequiredFieldsMissing') + ': ' + missingRequired.join(', '), 'warn');
+          }, 400);
+        }
         // После сохранения — пересчёт прав, видимости вкладок и перерендер планировщика
         checkValidator();
         checkEditorRights();
@@ -4453,9 +4489,24 @@
       btn.addEventListener('click', function(e){
         if (e && e.stopPropagation) e.stopPropagation();
         var rk = btn.dataset.roleKey;
+        /* v1.8.1 — явно зафиксировать целевую роль ДО переключения уровня, иначе
+           refreshPlanningPeopleForCurrentSprint берёт rk из sel.value/_activeSubtab,
+           а они хранят последнюю использованную роль (баг #3 из v1.8.1 acceptance). */
         safeLs.set('ssp_lastActiveRole', rk);
+        _activeSubtab = rk;
+        var peopleSel = document.getElementById('planningRoleSel');
+        if (peopleSel) {
+          if (!peopleSel.options.length && typeof populatePlanningRoleSel === 'function') {
+            try { populatePlanningRoleSel(); } catch(_){}
+          }
+          if (peopleSel.querySelector('option[value="'+rk+'"]')) peopleSel.value = rk;
+        }
         var lvlBtn = document.querySelector('.planning-level-btn[data-level="people"]');
         if (lvlBtn && lvlBtn.style.display !== 'none' && !lvlBtn.classList.contains('hidden')) lvlBtn.click();
+        /* Явный refresh с переданным rk — на случай если levelBtn.click() не вызвал refresh. */
+        if (typeof refreshPlanningPeopleForCurrentSprint === 'function') {
+          try { refreshPlanningPeopleForCurrentSprint(rk); } catch(_){}
+        }
       });
     });
     /* v5.6.0 — Этап 4 (4d): после рендера accordion — монтируем full editable buildRolePanel
@@ -5210,11 +5261,21 @@
     var _sk = (typeof getSortKey === 'function') ? getSortKey() : 'off';
     /* v6.3.1 D112 — крупные явные sort-иконки через .sort-icon обёртку. */
     function _sortIcon(active) { return '<span class="sort-icon">'+(active?'▼':'↕')+'</span>'; }
+    /* v1.8.1 — Опциональные колонки скрываются, если соответствующее поле не настроено.
+       Priority + State остаются всегда (обязательные). System + XPriority — опциональны. */
     thead.innerHTML = '<tr>'+
       '<th class="sortable'+(_sk==='id'?' sortable--active':'')+'" data-sort-key="id" title="'+esc(T('thSortClickHint'))+'" style="min-width:90px">'+T('thId')+_sortIcon(_sk==='id')+'</th>'+
-      '<th style="min-width:80px">'+T('thSystem')+'</th>'+
+      /* v1.8.0 D130 — externalTicketId column header (2nd position, right after issue ID link). */
+      (_settings && _settings.fieldExternalTicketId
+        ? '<th class="sortable'+(_sk==='externalTicketId'?' sortable--active':'')+'" data-sort-key="externalTicketId" title="'+esc(T('thSortClickHint'))+'" style="min-width:120px">'+T('thExternalTicketId')+_sortIcon(_sk==='externalTicketId')+'</th>'
+        : '')+
+      (_settings && _settings.fieldSystem
+        ? '<th style="min-width:80px">'+T('thSystem')+'</th>'
+        : '')+
       '<th class="sortable'+(_sk==='priority'?' sortable--active':'')+'" data-sort-key="priority" title="'+esc(T('thSortClickHint'))+'" style="min-width:80px">'+T('thPriority')+_sortIcon(_sk==='priority')+'</th>'+
-      '<th class="th-dev sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'">'+T('thXpriority')+_sortIcon(_sk==='xpriority')+'</th>'+
+      (_settings && _settings.fieldXPriority
+        ? '<th class="th-dev sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'">'+T('thXpriority')+_sortIcon(_sk==='xpriority')+'</th>'
+        : '')+
       '<th class="th-dev">'+T('thState')+'</th>'+
       '<th style="min-width:160px">'+T('thTitle')+'</th>'+
       numCols+
@@ -5370,7 +5431,15 @@
   function renderRoleStatusBadge(rk) {
     var b = document.getElementById('statusBadge_'+rk);
     if (!b) return;
-    var s = _sprint ? (_sprint.status || STATUS.PLANNING) : STATUS.PLANNING;
+    /* v1.8.1 — статус берётся per-role из _history (не из глобального _sprint.status).
+       Раньше использовали _sprint.status, что приводило к синхронизации статусов между
+       всеми ролями: валидация одной роли → у всех карточек ставится её статус. */
+    var s = STATUS.PLANNING;
+    if (_sprint && _sprint.sprintId) {
+      var roleSnapId = _sprint.sprintId + '_' + rk;
+      var rec = _history && _history.find(function(r){ return r && r.sprintId === roleSnapId; });
+      if (rec && rec.status) s = rec.status;
+    }
     b.textContent = statusLabel(s); b.className = 's-badge';
     b.removeAttribute('title');
     if(s===STATUS.ALLOCATED) { b.classList.add('s-badge--allocated'); b.setAttribute('title', T('tooltipStatusAllocated')); }
@@ -5391,35 +5460,52 @@
 
   /* ── Сохранить параметры спринта для роли ── */
   function doSaveRoleHeader(rk) {
+    /* v1.8.2 — inline-error helper. Глобальный toast при validation попадает в position:fixed
+       которое в YT-iframe иногда уходит за viewport главного окна (особенно при 2+ ролях
+       когда контент длинный). Inline-error всегда рядом с проблемным полем + scrollIntoView. */
+    function _clearFieldErrors() {
+      ['sprintName','dateStart','dateEnd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('field-err-input');
+      });
+      var en = document.getElementById('errName'); if (en) en.textContent = '';
+      var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
+    }
+    function _showFieldError(fieldId, errSpanId, msgKey) {
+      var fld = document.getElementById(fieldId);
+      var err = document.getElementById(errSpanId);
+      if (err) err.textContent = T(msgKey);
+      if (fld) {
+        fld.classList.add('field-err-input');
+        try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
+        try { fld.focus(); } catch(_){}
+      }
+      /* Toast оставляем как дублирующий сигнал — но основной visual cue теперь inline. */
+      toast(T(msgKey), 'warn');
+    }
+    _clearFieldErrors();
     var s = document.getElementById('dateStart').value;
     var e = document.getElementById('dateEnd').value;
     /* v1.6.2 D126 — обязательные поля: название + даты начала/окончания. */
     var nameVal = (document.getElementById('sprintName').value || '').trim();
     var draftName = T('newSprintDraftName');
     if (!nameVal || nameVal === draftName) {
-      toast(T('toastSprintNameRequired'), 'warn');
-      var nameEl = document.getElementById('sprintName');
-      if (nameEl) { try { nameEl.focus(); } catch(_){} }
+      _showFieldError('sprintName', 'errName', 'toastSprintNameRequired');
       return;
     }
     if (!s) {
-      toast(T('toastSprintDateStartRequired'), 'warn');
-      var dsEl = document.getElementById('dateStart');
-      if (dsEl) { try { dsEl.focus(); } catch(_){} }
+      _showFieldError('dateStart', 'errDate', 'toastSprintDateStartRequired');
       return;
     }
     if (!e) {
-      toast(T('toastSprintDateEndRequired'), 'warn');
-      var deEl = document.getElementById('dateEnd');
-      if (deEl) { try { deEl.focus(); } catch(_){} }
+      _showFieldError('dateEnd', 'errDate', 'toastSprintDateEndRequired');
       return;
     }
     if (s && e && fromDateIn(e) < fromDateIn(s)) {
-      document.getElementById('errDate').textContent = T('toastDateError');
-      toast(T('toastDateError'), 'warn');
+      _showFieldError('dateEnd', 'errDate', 'toastDateError');
       return;
     }
-    document.getElementById('errDate').textContent = '';
+    _clearFieldErrors();
     _sprint.name      = nameVal.substring(0,60);
     _sprint.dateStart = fromDateIn(s);
     _sprint.dateEnd   = fromDateIn(e);
@@ -5449,6 +5535,15 @@
       renderRoleStatusBadge(rk);
       if (btn) { btn.disabled = false; btn.textContent = T('btnSaveParams'); }
       toast(T('toastSprintSaved'), 'success');
+      /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты
+         сразу после сохранения параметров. Раньше изменения подхватывались только после
+         перезахода на вкладку. Дополнительно: убеждаемся что _currentSprintId указывает
+         на _sprint.sprintId (для свежесозданного спринта). */
+      if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+        _currentSprintId = _sprint.sprintId;
+        var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
+      }
+      if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
     }).catch(function(e) {
       if (btn) { btn.disabled = false; btn.textContent = T('btnSaveParams'); }
       toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
@@ -5486,6 +5581,13 @@
     var editBanner = document.getElementById('editHistBanner');
     if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
 
+    /* v1.8.1 — синхронизируем _currentSprintId на свежесозданный спринт, иначе
+       селектор «Текущий спринт» в шапке виджета остаётся на предыдущем редактируемом. */
+    if (_sprint && _sprint.sprintId) {
+      _currentSprintId = _sprint.sprintId;
+      var _uiNS = _draftGet('ui') || {}; _uiNS.currentSprintId = _currentSprintId; _draftSet('ui', _uiNS);
+    }
+
     /* Переключаемся на Планирование → Роли (с любой вкладки). */
     var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
     if (planBtn && !planBtn.classList.contains('active')) planBtn.click();
@@ -5511,6 +5613,22 @@
     });
   }
 
+  /* ── v1.8.0 D130 — Etap В.2 — External ticket ID cell renderer (module-level).
+     Used in role composition, assignee view, and history tables.
+     - empty/undefined → muted '—'
+     - http(s) URL     → clickable <a> (target=_blank, rel=noopener)
+     - plain string    → truncated text with full value in title tooltip
+     esc() is mandatory on every path — this is a user-controlled string from a YT custom field. */
+  function _renderExternalTicketCell(val) {
+    if (!val) return '<td style="color:var(--muted)">—</td>';
+    var safe = esc(String(val));
+    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"';
+    if (/^https?:\/\//i.test(val)) {
+      return '<td '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></td>';
+    }
+    return '<td '+style+' title="'+safe+'">'+safe+'</td>';
+  }
+
   /* ── Таблица состава для роли ── */
   function getRoleItemsArr(rk) {
     if (!_roleItems[rk]) _roleItems[rk] = [];
@@ -5531,7 +5649,13 @@
     if (refreshBtn) refreshBtn.disabled = !has;
 
     if (!has) {
-      var colCount = (_settings && _settings.dynEditEnabled) ? 12 : 10;
+      /* v1.8.0 D130 + v1.8.1 — динамический colspan с учётом опциональных колонок:
+         база = 8 (без dynEdit) или 10 (с dynEdit); +1 за каждую активную опциональную колонку. */
+      var extColInc = (_settings && _settings.fieldExternalTicketId) ? 1 : 0;
+      var sysColInc = (_settings && _settings.fieldSystem)            ? 1 : 0;
+      var xpColInc  = (_settings && _settings.fieldXPriority)         ? 1 : 0;
+      var baseCount = (_settings && _settings.dynEditEnabled) ? 10 : 8;
+      var colCount = baseCount + extColInc + sysColInc + xpColInc;
       tbody.innerHTML = '<tr><td colspan="'+colCount+'" class="empty">'+T('compSprintEmpty')+'</td></tr>';
       var pagEl = document.getElementById('planPag_'+rk);
       if (pagEl) pagEl.style.display = 'none';
@@ -5654,9 +5778,12 @@
 
       tr.innerHTML =
         '<td class="td-id"><a href="'+safeUrl(item.url)+'" target="_blank" class="link">'+esc(item.issueId)+'</a></td>'+
-        systemCell+
+        /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : '')+
+        /* v1.8.1 — System / XPriority cells показываются только если поле настроено. */
+        (_settings && _settings.fieldSystem    ? systemCell    : '')+
         priorityCell+
-        xpriorityCell+
+        (_settings && _settings.fieldXPriority ? xpriorityCell : '')+
         stateCell+
         '<td class="td-title">'+esc(item.title||'')+'</td>'+
         resCell+
@@ -5935,10 +6062,12 @@
           }
           if (_settings && _settings[role.fieldEst])  item['estimate_'+rk] = getMin(_settings[role.fieldEst]);
           if (_settings && _settings[role.fieldFact]) item['fact_'+rk]     = getMin(_settings[role.fieldFact]);
-          if (_settings && _settings.fieldPriority)   item.priority  = getStr(_settings.fieldPriority);
-          if (_settings && _settings.fieldXPriority)  item.xpriority = getStr(_settings.fieldXPriority);
-          if (_settings && _settings.fieldState)      item.state     = getStr(_settings.fieldState);
-          if (_settings && _settings.fieldSystem)     item.system    = getStr(_settings.fieldSystem);
+          if (_settings && _settings.fieldPriority)         item.priority          = getStr(_settings.fieldPriority);
+          if (_settings && _settings.fieldXPriority)        item.xpriority         = getStr(_settings.fieldXPriority);
+          if (_settings && _settings.fieldState)            item.state             = getStr(_settings.fieldState);
+          if (_settings && _settings.fieldSystem)           item.system            = getStr(_settings.fieldSystem);
+          /* v1.8.0 D130 — Etap В.2 — populate externalTicketId from YT string field. */
+          if (_settings && _settings.fieldExternalTicketId) item.externalTicketId  = getStr(_settings.fieldExternalTicketId);
           if (!item.url || item.url.indexOf('/null/') >= 0) {
             item.url = _ytBase + '/issue/' + (issue.idReadable || item.issueId);
           }
@@ -5976,6 +6105,7 @@
       if (btn) { btn.disabled = false; btn.textContent = T('btnValidate'); }
       if (!ok) { toast(T('toastNoValidRights')); return; }
       _sprint.status = STATUS.CONFIRMED;
+      diag('[VALIDATE-COMPOSITION] role='+rk+' set _sprint.status='+_sprint.status+' wcKey='+_activeWorkingDraftKey, 'info');
       // v5.0 — отправляем с ?action=validate + полный sprint+roleItems,
       // чтобы сервер мог посчитать overlimit и вернуть warnings.
       apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }, { action: 'validate' })
@@ -5993,6 +6123,9 @@
           }
           return saveRoleHistorySnapshot(rk);
         }).then(function() {
+        /* Диаг после snapshot: что в _history для этой роли? */
+        var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
+        diag('[VALIDATE-COMPOSITION] role='+rk+' after snap: _history.status='+(_diagSnap?_diagSnap.status:'NOT_FOUND')+' _sprint.status='+_sprint.status, 'info');
         /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
            Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
         if (_sprint) {
@@ -6061,6 +6194,12 @@
         system:   i.system,
         inclusionStatus: i.inclusionStatus,
       };
+      /* v1.8.0 D130 — Etap В.2 — фиксируем externalTicketId в snapshot.
+         Раньше поле не копировалось в snap.items, поэтому история не содержала
+         значений нового поля даже когда оно было задано на live item. */
+      if (i.externalTicketId !== undefined && i.externalTicketId !== null && i.externalTicketId !== '') {
+        obj.externalTicketId = i.externalTicketId;
+      }
       obj['estimate_'+rk] = i['estimate_'+rk];
       obj['fact_'+rk]     = i['fact_'+rk];
       obj['alloc_'+rk]    = i['alloc_'+rk] !== undefined ? i['alloc_'+rk] : null;
@@ -6182,18 +6321,21 @@
       }
       return null;
     }
-    var stateField    = _settings && _settings.fieldState    || null;
-    var priorityField = _settings && _settings.fieldPriority || null;
-    var xpField       = _settings && _settings.fieldXPriority|| null;
-    var systemField   = _settings && _settings.fieldSystem   || null;
+    var stateField    = _settings && _settings.fieldState            || null;
+    var priorityField = _settings && _settings.fieldPriority         || null;
+    var xpField       = _settings && _settings.fieldXPriority        || null;
+    var systemField   = _settings && _settings.fieldSystem           || null;
+    /* v1.8.0 D130 — Etap В.2 — external ticket ID field. */
+    var extTicketField = _settings && _settings.fieldExternalTicketId || null;
     return {
-      id:         iss.id,
-      idReadable: iss.idReadable || iss.id,
-      summary:    (iss.summary && iss.summary.trim()) || null,
-      state:    { name: cfValPres(stateField ? [stateField, 'State','Состояние'] : ['State','Состояние']) || '—' },
-      priority: cfValPres(priorityField ? [priorityField,'Priority','Приоритет'] : ['Priority','Приоритет']),
-      xpriority:cfValPres(xpField      ? [xpField,'Сквозной приоритет'] : ['Сквозной приоритет']),
-      system:   systemField ? cfValPres([systemField]) : null,
+      id:               iss.id,
+      idReadable:       iss.idReadable || iss.id,
+      summary:          (iss.summary && iss.summary.trim()) || null,
+      state:          { name: cfValPres(stateField ? [stateField, 'State','Состояние'] : ['State','Состояние']) || '—' },
+      priority:       cfValPres(priorityField  ? [priorityField,'Priority','Приоритет'] : ['Priority','Приоритет']),
+      xpriority:      cfValPres(xpField        ? [xpField,'Сквозной приоритет'] : ['Сквозной приоритет']),
+      system:         systemField    ? cfValPres([systemField])    : null,
+      externalTicketId: extTicketField ? cfValPres([extTicketField]) : null,
     };
   }
 
@@ -6398,17 +6540,21 @@
          считает активными только PLANNED/UNPLANNED. Кто хочет триаж — может
          вручную сменить статус в столбце «Статус включения» на PENDING. */
       var newItem = {
-        issueId: issueId,
-        url: _ytBase + '/issue/' + issueId,
-        title: issue && issue.summary ? issue.summary : issueId,
-        priority:  issue && issue.priority  ? issue.priority  : '',
-        xpriority: issue && issue.xpriority ? issue.xpriority : '',
-        state:     issue && issue.state     ? issue.state.name : '',
-        system:    issue && issue.system    ? issue.system     : '',
+        issueId:  issueId,
+        url:      _ytBase + '/issue/' + issueId,
+        title:    issue && issue.summary    ? issue.summary    : issueId,
+        priority: issue && issue.priority   ? issue.priority   : '',
+        xpriority:issue && issue.xpriority  ? issue.xpriority  : '',
+        state:    issue && issue.state      ? issue.state.name : '',
+        system:   issue && issue.system     ? issue.system     : '',
         inclusionStatus: INC.PLANNED,
         addedAt: Date.now(),
         addedBy: _currentUser ? _currentUser.login : null,
       };
+      /* v1.8.0 D130 — Etap В.2 — populate externalTicketId if mapping configured. */
+      if (_settings && _settings.fieldExternalTicketId && issue && issue.externalTicketId) {
+        newItem.externalTicketId = issue.externalTicketId;
+      }
       newItem['estimate_'+rk] = null;
       newItem['fact_'+rk]     = null;
       newItem['alloc_'+rk]    = null; // null → при рендере = дельта по умолчанию
@@ -6498,7 +6644,17 @@
         .replace('{when}', fmtDT(d.updatedAt));
       wcPill = '<span class="wc-has-copy-pill" title="'+esc(pillTitle)+'">'+esc(T('wcHasCopyPill'))+'</span>';
     }
+    /* v1.8.1 — название спринта и роль теперь видны в свёрнутом виде (первые поля).
+       Раньше rec.name был только в body (раскрытый вид), что затрудняло идентификацию. */
+    var sprintNameInline = rec.name
+      ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerName')+'</span><span class="spoiler__mv" style="font-weight:600">'+esc(rec.name)+'</span></div>'
+      : '';
+    var roleInline = rec.roleLabel
+      ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerRole')+'</span><span class="spoiler__mv">'+esc(rec.roleLabel)+'</span></div>'
+      : '';
     meta.innerHTML =
+      sprintNameInline +
+      roleInline +
       '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateStart)+'</span></div>'+
       '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateEnd)+'</span></div>'+
       '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv"><span class="s-badge '+badgeClass+'"'+(badgeTitle?' title="'+esc(badgeTitle)+'"':'')+'>'+esc(statusLabel(rec.status))+'</span>'+(rec.isOverLimit?'<span class="overlimit-tag">'+T('overlimitTag')+'</span>':'')+wcPill+'</span></div>'+
@@ -6626,12 +6782,18 @@
       if (!items || !items.length) {
         tw.innerHTML = '<div class="empty">'+T('histNoTasks')+'</div>';
       } else {
+        /* v1.8.0 D130 — externalTicketId column in history (visible if setting configured).
+           v1.8.1 — XPriority column в истории тоже опциональна. */
+        var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
+        var hasXPri      = !!(_settings && _settings.fieldXPriority);
         var tbl = document.createElement('table'); tbl.className = 'tbl';
         tbl.innerHTML = '<thead><tr>'+
           '<th style="min-width:90px">'+T('histColNum')+'</th>'+
+          /* 2nd position, right after issue ID. */
+          (hasExtTicket ? '<th style="min-width:120px">'+T('thExternalTicketId')+'</th>' : '')+
           '<th style="min-width:120px">'+T('histColTitle')+'</th>'+
           '<th style="min-width:80px">'+T('histColPriority')+'</th>'+
-          '<th class="th-dev">'+T('histColXpriority')+'</th>'+
+          (hasXPri ? '<th class="th-dev">'+T('histColXpriority')+'</th>' : '')+
           '<th style="min-width:80px">'+T('histColState')+'</th>'+
           '<th style="min-width:120px">'+T('histColIncStatus')+'</th>'+
           '<th class="td-num th-dev">'+fmtThLabel(rec.roleLabel||rk)+'</th>'+
@@ -6651,9 +6813,12 @@
           var tr = document.createElement('tr');
           tr.innerHTML =
             '<td class="td-id"><a href="'+safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a></td>'+
+            /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+            (hasExtTicket ? _renderExternalTicketCell(item.externalTicketId) : '')+
             '<td class="td-title">'+esc(item.title||'')+'</td>'+
             '<td>'+esc(localizeEnumVal(item.priority)||'—')+'</td>'+
-            '<td>'+esc(localizeEnumVal(item.xpriority)||'—')+'</td>'+
+            /* v1.8.1 — XPriority cell in history (optional). */
+            (hasXPri ? '<td>'+esc(localizeEnumVal(item.xpriority)||'—')+'</td>' : '')+
             '<td>'+esc(localizeEnumVal(item.state)||'—')+'</td>'+
             '<td>'+esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : '—')+'</td>'+
             '<td class="td-num">'+histDelta(delta)+'</td>';
@@ -7509,28 +7674,50 @@
       }
     }
 
-    /* 2. Бейдж статуса */
-    var meta = _currentSprintId ? metaCache[_currentSprintId] : null;
-    if (meta && meta.status) {
+    /* 2. Бейджи статуса — список per-role (v1.8.1).
+       Раньше — единый агрегированный бейдж с min(STATUS_RANK) среди ролей. Это
+       вводило в заблуждение: при одной аллоцированной и одной черновой роли в шапке
+       висел «Черновик». Теперь — explicit список «Роль: Статус».
+       Источник статуса каждой роли:
+         - запись в _history (per-role snapshot) — берём её status (включая FINISHED);
+         - если записи нет — PLANNING (роль ещё не валидирована). */
+    if (_currentSprintId) {
+      var activeRoles = (typeof getActiveRoles === 'function' && getActiveRoles().length)
+        ? getActiveRoles()
+        : ALL_ROLES;
+      var entries = (typeof getSprintRolesEntries === 'function')
+        ? getSprintRolesEntries(_currentSprintId)
+        : [];
+      var statusByRole = {};
+      entries.forEach(function(rec) {
+        if (rec && rec.roleKey && rec.status) statusByRole[rec.roleKey] = rec.status;
+      });
       badge.classList.remove('hidden');
       badge.classList.remove('widget-header__badge--planning',
         'widget-header__badge--confirmed',
         'widget-header__badge--allocated',
         'widget-header__badge--finished');
-      badge.classList.add('widget-header__badge--' + String(meta.status).toLowerCase());
-      badge.textContent = (typeof statusLabel === 'function') ? statusLabel(meta.status) : meta.status;
-      var roleLines = Object.keys(meta.statusByRole || {}).map(function(rk) {
-        var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-        var label = role ? role.label : rk;
-        var st = meta.statusByRole[rk];
+      badge.removeAttribute('title');
+      /* v1.8.1 — inline-стили убраны, layout управляется через CSS .widget-header__badge
+         (flex-wrap + flex-basis:100%). Inline-style раньше дублировал и конфликтовал с CSS,
+         из-за чего при 4+ ролях бейджи наезжали на селектор спринта. */
+      badge.removeAttribute('style');
+      var _diagDump = activeRoles.map(function(role) {
+        return role.key + '=' + (statusByRole[role.key] || 'PLANNING(default)');
+      }).join(', ');
+      diag('[RENDER-HEADER] sprintId='+_currentSprintId+' entries='+entries.length+' roles=['+_diagDump+']', 'info');
+      badge.innerHTML = activeRoles.map(function(role) {
+        var st = statusByRole[role.key] || 'PLANNING';
         var stLabel = (typeof statusLabel === 'function') ? statusLabel(st) : st;
-        return label + ': ' + stLabel;
-      });
-      badge.title = roleLines.length
-        ? T('hintBadgeAggregated') + '\n' + roleLines.join('\n')
-        : T('hintBadgeAggregated');
+        var rLabel  = (typeof roleLabel === 'function') ? roleLabel(role) : (role.label || role.key);
+        var cls     = 's-badge s-badge--' + String(st).toLowerCase();
+        return '<span class="'+cls+'" title="'+esc(rLabel + ': ' + stLabel)+'">'
+             +    '<span style="opacity:.7">'+esc(rLabel)+':</span> '+esc(stLabel)
+             + '</span>';
+      }).join('');
     } else {
       badge.classList.add('hidden');
+      badge.innerHTML = '';
     }
 
     /* 3. WC indicator */
@@ -8246,20 +8433,34 @@
       function _sortIc(active) { return '<span class="sort-icon">'+(active?'▼':'↕')+'</span>'; }
       thead.innerHTML = '<tr>'+
         '<th class="td-id sortable'+(_sk==='id'?' sortable--active':'')+'" data-sort-key="id" title="'+esc(T('thSortClickHint'))+'">'+T('thId')+_sortIc(_sk==='id')+'</th>'+
+        /* v1.8.0 D130 — externalTicketId column (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId
+          ? '<th class="sortable'+(_sk==='externalTicketId'?' sortable--active':'')+'" data-sort-key="externalTicketId" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap;min-width:120px">'+T('thExternalTicketId')+_sortIc(_sk==='externalTicketId')+'</th>'
+          : '')+
         '<th>'+T('thTitle')+'</th>'+
         '<th class="sortable'+(_sk==='priority'?' sortable--active':'')+'" data-sort-key="priority" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thPriority')+_sortIc(_sk==='priority')+'</th>'+
-        '<th class="sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thXpriority')+_sortIc(_sk==='xpriority')+'</th>'+
+        /* v1.8.1 — XPriority опциональна. */
+        (_settings && _settings.fieldXPriority
+          ? '<th class="sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thXpriority')+_sortIc(_sk==='xpriority')+'</th>'
+          : '')+
         '<th style="white-space:nowrap">'+T('thAllocH')+'</th>'+
-        /* v1.4.0 — System column (read-only, sortable). */
-        '<th class="sortable'+(_sk==='system'?' sortable--active':'')+'" data-sort-key="system" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thSystem')+_sortIc(_sk==='system')+'</th>'+
+        /* v1.4.0 — System column (read-only, sortable). v1.8.1 — опциональна. */
+        (_settings && _settings.fieldSystem
+          ? '<th class="sortable'+(_sk==='system'?' sortable--active':'')+'" data-sort-key="system" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thSystem')+_sortIc(_sk==='system')+'</th>'
+          : '')+
         '<th style="min-width:160px">'+T('thAssignee')+'</th>'+
         '<th style="min-width:130px">'+T('thStart')+'</th>'+
         '<th style="min-width:130px">'+T('thFinish')+'</th>'+
         '</tr>';
       _bindSortHeaders(thead);
     }
+    /* v1.8.1 — colspan для empty-state с учётом опциональных колонок. */
+    var extColInc = (_settings && _settings.fieldExternalTicketId) ? 1 : 0;
+    var sysColInc = (_settings && _settings.fieldSystem)            ? 1 : 0;
+    var xpColInc  = (_settings && _settings.fieldXPriority)         ? 1 : 0;
+    var peopleBase = 7; // ID + Title + Priority + AllocH + Assignee + Start + Finish
     if (!_currentSprintRoleRec) {
-      tbody.innerHTML = '<tr><td colspan="9" class="empty">'+T('emptyTaskCurrentRole')+'</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="'+(peopleBase+extColInc+sysColInc+xpColInc)+'" class="empty">'+T('emptyTaskCurrentRole')+'</td></tr>';
       return;
     }
     var rec = _currentSprintRoleRec;
@@ -8271,7 +8472,7 @@
     /* v6.1.0 D81 (F4) — multi-key sort на «Люди». */
     if (typeof multiKeySort === 'function') active = multiKeySort(active);
     if (!active.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="empty">'+T('currentRoleNoTasks')+'</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="'+(peopleBase+extColInc+sysColInc+xpColInc)+'" class="empty">'+T('currentRoleNoTasks')+'</td></tr>';
       return;
     }
 
@@ -8318,13 +8519,15 @@
 
       tr.innerHTML =
         '<td class="td-id"><a href="'+safeUrl(item.url||'')+'" target="_blank" class="link">'+esc(issueId)+'</a></td>'+
+        /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : '')+
         '<td class="td-title">'+esc(item.title||'')+(outOfRange?'<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ вне диапазона</span>':'')+'</td>'+
-        /* v6.1.0 D79 (F2) — read-only Priority + XPriority на «Люди». */
+        /* v6.1.0 D79 (F2) — read-only Priority. v1.8.1 — XPriority опциональна. */
         '<td class="td-priority">'+esc(item.priority || '—')+'</td>'+
-        '<td class="td-xpriority">'+esc(item.xpriority || '—')+'</td>'+
+        (_settings && _settings.fieldXPriority ? '<td class="td-xpriority">'+esc(item.xpriority || '—')+'</td>' : '')+
         '<td class="td-num">'+allocH+'</td>'+
-        /* v1.4.0 — System cell (read-only even under dynEdit). */
-        '<td class="td-system">'+esc(item.system||'—')+'</td>'+
+        /* v1.4.0 — System cell (read-only). v1.8.1 — опциональна. */
+        (_settings && _settings.fieldSystem    ? '<td class="td-system">'+esc(item.system||'—')+'</td>' : '')+
         '<td>'+assigneeSel+'</td>'+
         '<td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>'+
         '<td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>';
@@ -8487,8 +8690,11 @@
       _currentRolePP.validatedBy = _currentUser ? (_currentUser.fullName || _currentUser.login) : null;
       /* v5.0.3 — _currentSprintRoleRec теперь всегда запись истории. Если она соответствует
          активному _sprint — поднимаем статус и в памяти _sprint, и в записи истории. */
+      var _diagBeforeRec = _currentSprintRoleRec ? _currentSprintRoleRec.status : 'NULL';
+      var _diagBeforeWc  = _activeWorkingDraftKey;
       if (_currentSprintRoleRec) _currentSprintRoleRec.status = STATUS.ALLOCATED;
       if (isActiveSprintRecord(_currentSprintRoleRec)) _sprint.status = STATUS.ALLOCATED;
+      diag('[VALIDATE-PEOPLE] role='+(_currentSprintRoleRec?_currentSprintRoleRec.roleKey:'?')+' before='+_diagBeforeRec+' wc='+_diagBeforeWc+' set rec.status=ALLOCATED active='+isActiveSprintRecord(_currentSprintRoleRec), 'info');
       if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
       saveCurrentRoleState();
 
@@ -8498,8 +8704,13 @@
       if (histIdx >= 0) {
         _history[histIdx].personalPlanning = deepClone(_currentRolePP);
         _history[histIdx].status = STATUS.ALLOCATED;
+        diag('[VALIDATE-PEOPLE] post-set _history['+histIdx+'].status='+_history[histIdx].status+' sprintId='+_history[histIdx].sprintId, 'info');
         apiPost('history', { history: _history })
-          .then(function(){ renderHistory(); if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} } })
+          .then(function(){
+            var _diagAfter = _history[histIdx] ? _history[histIdx].status : 'GONE';
+            diag('[VALIDATE-PEOPLE] post-apiPost _history['+histIdx+'].status='+_diagAfter, 'info');
+            renderHistory(); if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
+          })
           .catch(function(e){ diag('currentRoleValidate history update failed: '+e,'err'); });
       }
 

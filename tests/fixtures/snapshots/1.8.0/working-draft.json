@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "key": "ssp-fixture-2026-05-20-full_devFront",
+  "baseSnapshotHash": "fixture-hash-abc123",
+  "baseStatusAtOpen": "ALLOCATED",
+  "createdAt": 1779321600000,
+  "updatedAt": 1779321600000,
+  "editorLogin": "fixture_user_2",
+  "editorTabToken": "fixture-tab-token-xyz",
+  "sprint": {
+    "sprintId": "ssp-fixture-2026-05-20-full",
+    "name": "Fixture Sprint Full",
+    "status": "ALLOCATED",
+    "dateStart": 1779148800000,
+    "dateEnd": 1780358400000,
+    "updatedBy": "fixture_user_1",
+    "updatedAt": 1779235200000,
+    "sprintFieldVal": "Fixture Sprint May 2026",
+    "versionFieldVal": "v2026.05",
+    "resourceDevFront": 80,
+    "resourceDevBack": 96,
+    "resourceTesting": 56,
+    "remainDevFront": 38,
+    "remainDevBack": 30,
+    "remainTesting": 21,
+    "personalPlanning": {
+      "devFront": {
+        "nkcKey": "may",
+        "people": [
+          {
+            "name": "fixture_user_1",
+            "grade": "Middle",
+            "kpe": 1,
+            "participation": 1,
+            "nkc": 168
+          }
+        ],
+        "taskAssignments": {}
+      }
+    },
+    "migrationLog": [],
+    "pluginVersion": "1.8.0"
+  },
+  "items": [],
+  "personalPlanning": {
+    "devFront": {
+      "nkcKey": "may",
+      "people": [],
+      "taskAssignments": {}
+    }
+  },
+  "revisions": [],
+  "pluginVersion": "1.8.0"
+}

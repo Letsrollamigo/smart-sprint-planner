@@ -136,6 +136,14 @@
     fldSprintOptional: "(optional)",
     fldVersion: "Version",
     fldVersionOptional: "(optional)",
+    fldExternalTicketId: "External ticket ID",
+    fldExternalTicketIdOptional: "(optional)",
+    hintExternalTicketId: "Select the YouTrack string field that stores the ticket ID in the external system (Service Desk, Jira, 1C, SAP, \u2026). Once saved, a read-only column with that ID will appear in task tables.",
+    thExternalTicketId: "External ID",
+    cardOtherFieldsRequired: "Required",
+    cardOtherFieldsOptional: "Optional",
+    fldOptionalSuffix: "(optional)",
+    toastRequiredFieldsMissing: "Required fields are not set",
     lblValGroup: "Sprint Validation",
     lblEditGroup: "Sprint Editing",
     lblHistClearGroup: "Full Sprint History Clearing",
@@ -383,6 +391,8 @@
     labelProject: "Project: ",
     overlimitBadge: "\u26A0 Allocation exceeds task resource",
     overlimitTooltip: "Allocation of one or more tasks exceeds the task resource (delta)",
+    histSpoilerName: "Name",
+    histSpoilerRole: "Role",
     histSpoilerStart: "Start",
     histSpoilerEnd: "End",
     histSpoilerStatus: "Status",
@@ -696,6 +706,14 @@
     fldSprintOptional: "(\u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E)",
     fldVersion: "\u0412\u0435\u0440\u0441\u0438\u044F",
     fldVersionOptional: "(\u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E)",
+    fldExternalTicketId: "ID \u0437\u0430\u0434\u0430\u0447\u0438 \u0432\u043E \u0432\u043D\u0435\u0448\u043D\u0435\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u0435",
+    fldExternalTicketIdOptional: "(\u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E)",
+    hintExternalTicketId: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 string-\u043F\u043E\u043B\u0435 YouTrack, \u0432 \u043A\u043E\u0442\u043E\u0440\u043E\u043C \u0445\u0440\u0430\u043D\u0438\u0442\u0441\u044F ID \u0442\u0438\u043A\u0435\u0442\u0430 \u0432\u043E \u0432\u043D\u0435\u0448\u043D\u0435\u0439 \u0441\u0438\u0441\u0442\u0435\u043C\u0435 (Service Desk, Jira, 1C, SAP, \u2026). \u041F\u043E\u0441\u043B\u0435 \u0441\u043E\u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u0432 \u0442\u0430\u0431\u043B\u0438\u0446\u0430\u0445 \u0437\u0430\u0434\u0430\u0447 \u043F\u043E\u044F\u0432\u0438\u0442\u0441\u044F read-only \u043A\u043E\u043B\u043E\u043D\u043A\u0430 \u0441 \u044D\u0442\u0438\u043C ID.",
+    thExternalTicketId: "\u0412\u043D\u0435\u0448\u043D\u0438\u0439 ID",
+    cardOtherFieldsRequired: "\u041E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435",
+    cardOtherFieldsOptional: "\u041D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435",
+    fldOptionalSuffix: "(\u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E)",
+    toastRequiredFieldsMissing: "\u041D\u0435 \u0437\u0430\u0434\u0430\u043D\u044B \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B\u0435 \u043F\u043E\u043B\u044F",
     lblValGroup: "\u0412\u0430\u043B\u0438\u0434\u0430\u0446\u0438\u044F \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     lblEditGroup: "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     lblHistClearGroup: "\u041F\u043E\u043B\u043D\u0430\u044F \u043E\u0447\u0438\u0441\u0442\u043A\u0430 \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u0441\u043F\u0440\u0438\u043D\u0442\u043E\u0432",
@@ -943,6 +961,8 @@
     labelProject: "\u041F\u0440\u043E\u0435\u043A\u0442: ",
     overlimitBadge: "\u26A0 \u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u044F \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u0435\u0442 \u0440\u0435\u0441\u0443\u0440\u0441 \u0437\u0430\u0434\u0430\u0447\u0438",
     overlimitTooltip: "\u0410\u043B\u043B\u043E\u043A\u0430\u0446\u0438\u044F \u043E\u0434\u043D\u043E\u0439 \u0438\u043B\u0438 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u0437\u0430\u0434\u0430\u0447 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u0435\u0442 \u0440\u0435\u0441\u0443\u0440\u0441 (\u0434\u0435\u043B\u044C\u0442\u0443) \u044D\u0442\u043E\u0439 \u0437\u0430\u0434\u0430\u0447\u0438",
+    histSpoilerName: "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435",
+    histSpoilerRole: "\u0420\u043E\u043B\u044C",
     histSpoilerStart: "\u041D\u0430\u0447\u0430\u043B\u043E",
     histSpoilerEnd: "\u041E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u0435",
     histSpoilerStatus: "\u0421\u0442\u0430\u0442\u0443\u0441",
@@ -1413,7 +1433,7 @@
         }
       }
     };
-    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id", "system"];
+    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id", "system", "externalTicketId"];
     var _sortKeyMemo = null;
     function getSortKey() {
       if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -1466,6 +1486,13 @@
           var cs = sysA < sysB ? -1 : sysA > sysB ? 1 : 0;
           if (cs !== 0) return cs;
           return _xpRank(a.xpriority) - _xpRank(b.xpriority) || _idCmp(a.issueId, b.issueId);
+        }
+        if (primary === "externalTicketId") {
+          var extA = String(a.externalTicketId || "").toLowerCase();
+          var extB = String(b.externalTicketId || "").toLowerCase();
+          var ce = extA < extB ? -1 : extA > extB ? 1 : 0;
+          if (ce !== 0) return ce;
+          return _idCmp(a.issueId, b.issueId);
         }
         var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
         if (c2 !== 0) return c2;
@@ -2111,7 +2138,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.7.1";
+    var APP_VERSION = "1.8.2";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -2654,6 +2681,7 @@
       if (!baseSnap) return;
       var level = computeRequiredRevalidationLevel(baseSnap, draft);
       var newStatus = applyRevalidationLevel(baseSnap.status, level);
+      diag("[COMMIT-WC] role=" + rk + " baseStatus=" + baseSnap.status + " level=" + level + " newStatus=" + newStatus + " snapFromStatus=" + (snapFromCurrent && snapFromCurrent.status), "info");
       var finalSnap = snapFromCurrent;
       finalSnap.status = newStatus;
       if (level !== "NONE" && level !== "META_ONLY") {
@@ -2663,11 +2691,15 @@
         finalSnap.confirmedAt = baseSnap.confirmedAt;
         finalSnap.confirmedBy = baseSnap.confirmedBy;
       }
-      finalSnap.revisions = (baseSnap.revisions || []).concat([{
-        at: Date.now(),
-        by: _currentUser && _currentUser.login || "",
-        level
-      }]).slice(-200);
+      var newRevisions = (baseSnap.revisions || []).slice();
+      if (level !== "NONE") {
+        newRevisions.push({
+          at: Date.now(),
+          by: _currentUser && _currentUser.login || "",
+          level
+        });
+      }
+      finalSnap.revisions = newRevisions.slice(-200);
       finalSnap.hasWorkingCopy = false;
       if (baseSnap.finishedAt) finalSnap.finishedAt = baseSnap.finishedAt;
       if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
@@ -2680,6 +2712,12 @@
       return apiPost("history", { history: _history }).then(function() {
         if (typeof renderHistory === "function") renderHistory();
         if (typeof renderRoleComposition === "function") renderRoleComposition(rk);
+        if (typeof renderWidgetHeader === "function") {
+          try {
+            renderWidgetHeader();
+          } catch (_) {
+          }
+        }
         try {
           var statusLabelKey = "status_" + newStatus;
           var levelKey = "wcLevel_" + level;
@@ -5006,6 +5044,7 @@
       fillFieldSelect(document.getElementById("s_xpriority"), ["enum"], _settings && _settings.fieldXPriority);
       fillFieldSelect(document.getElementById("s_state"), ["state", "enum"], _settings && _settings.fieldState);
       fillFieldSelect(document.getElementById("s_system"), ["enum", "owned"], _settings && _settings.fieldSystem);
+      fillFieldSelect(document.getElementById("s_external_ticket_id"), ["string"], _settings && _settings.fieldExternalTicketId);
       fillFieldSelect(document.getElementById("s_sprint_field"), ["enum"], _settings && _settings.fieldSprint);
       fillFieldSelect(document.getElementById("s_version_field"), ["version", "build"], _settings && _settings.fieldVersion);
       setCheck("dynEditCheck", !!(_settings && _settings.dynEditEnabled));
@@ -5283,6 +5322,8 @@
         fieldXPriority: document.getElementById("s_xpriority").value || null,
         fieldState: document.getElementById("s_state").value || null,
         fieldSystem: document.getElementById("s_system").value || null,
+        /* v1.8.0 D130 — Etap В.2 — external ticket ID field name. */
+        fieldExternalTicketId: document.getElementById("s_external_ticket_id").value || null,
         fieldSprint: document.getElementById("s_sprint_field").value || null,
         fieldVersion: document.getElementById("s_version_field").value || null,
         validationGroups: _valGroupsState.ids.slice(),
@@ -5352,6 +5393,14 @@
         var bc = document.getElementById("bannerCfg");
         if (bc) bc.classList.add("hidden");
         toast(T("toastSettingsSaved"), "success");
+        var missingRequired = [];
+        if (!data.fieldPriority) missingRequired.push(T("fldPriority"));
+        if (!data.fieldState) missingRequired.push(T("fldState"));
+        if (missingRequired.length) {
+          setTimeout(function() {
+            toast(T("toastRequiredFieldsMissing") + ": " + missingRequired.join(", "), "warn");
+          }, 400);
+        }
         checkValidator();
         checkEditorRights();
         checkAssignerRights();
@@ -5574,8 +5623,25 @@
           if (e && e.stopPropagation) e.stopPropagation();
           var rk = btn.dataset.roleKey;
           safeLs.set("ssp_lastActiveRole", rk);
+          _activeSubtab = rk;
+          var peopleSel = document.getElementById("planningRoleSel");
+          if (peopleSel) {
+            if (!peopleSel.options.length && typeof populatePlanningRoleSel === "function") {
+              try {
+                populatePlanningRoleSel();
+              } catch (_) {
+              }
+            }
+            if (peopleSel.querySelector('option[value="' + rk + '"]')) peopleSel.value = rk;
+          }
           var lvlBtn = document.querySelector('.planning-level-btn[data-level="people"]');
           if (lvlBtn && lvlBtn.style.display !== "none" && !lvlBtn.classList.contains("hidden")) lvlBtn.click();
+          if (typeof refreshPlanningPeopleForCurrentSprint === "function") {
+            try {
+              refreshPlanningPeopleForCurrentSprint(rk);
+            } catch (_) {
+            }
+          }
         });
       });
       if (typeof _mountExpandedRoleBodies === "function") {
@@ -6257,7 +6323,8 @@
       function _sortIcon(active) {
         return '<span class="sort-icon">' + (active ? "\u25BC" : "\u2195") + "</span>";
       }
-      thead.innerHTML = '<tr><th class="sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '" style="min-width:90px">' + T("thId") + _sortIcon(_sk === "id") + '</th><th style="min-width:80px">' + T("thSystem") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="min-width:80px">' + T("thPriority") + _sortIcon(_sk === "priority") + '</th><th class="th-dev sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '">' + T("thXpriority") + _sortIcon(_sk === "xpriority") + '</th><th class="th-dev">' + T("thState") + '</th><th style="min-width:160px">' + T("thTitle") + "</th>" + numCols + '<th style="min-width:160px">' + T("thIncStatus") + "</th><th></th></tr>";
+      thead.innerHTML = '<tr><th class="sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '" style="min-width:90px">' + T("thId") + _sortIcon(_sk === "id") + "</th>" + /* v1.8.0 D130 — externalTicketId column header (2nd position, right after issue ID link). */
+      (_settings && _settings.fieldExternalTicketId ? '<th class="sortable' + (_sk === "externalTicketId" ? " sortable--active" : "") + '" data-sort-key="externalTicketId" title="' + esc(T("thSortClickHint")) + '" style="min-width:120px">' + T("thExternalTicketId") + _sortIcon(_sk === "externalTicketId") + "</th>" : "") + (_settings && _settings.fieldSystem ? '<th style="min-width:80px">' + T("thSystem") + "</th>" : "") + '<th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="min-width:80px">' + T("thPriority") + _sortIcon(_sk === "priority") + "</th>" + (_settings && _settings.fieldXPriority ? '<th class="th-dev sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '">' + T("thXpriority") + _sortIcon(_sk === "xpriority") + "</th>" : "") + '<th class="th-dev">' + T("thState") + '</th><th style="min-width:160px">' + T("thTitle") + "</th>" + numCols + '<th style="min-width:160px">' + T("thIncStatus") + "</th><th></th></tr>";
       if (typeof _bindSortHeaders === "function") {
         try {
           _bindSortHeaders(thead);
@@ -6413,7 +6480,14 @@
     function renderRoleStatusBadge(rk) {
       var b = document.getElementById("statusBadge_" + rk);
       if (!b) return;
-      var s = _sprint ? _sprint.status || STATUS.PLANNING : STATUS.PLANNING;
+      var s = STATUS.PLANNING;
+      if (_sprint && _sprint.sprintId) {
+        var roleSnapId = _sprint.sprintId + "_" + rk;
+        var rec = _history && _history.find(function(r) {
+          return r && r.sprintId === roleSnapId;
+        });
+        if (rec && rec.status) s = rec.status;
+      }
       b.textContent = statusLabel(s);
       b.className = "s-badge";
       b.removeAttribute("title");
@@ -6433,49 +6507,55 @@
       val.textContent = fmtHours(rem);
     }
     function doSaveRoleHeader(rk) {
+      function _clearFieldErrors() {
+        ["sprintName", "dateStart", "dateEnd"].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.classList.remove("field-err-input");
+        });
+        var en = document.getElementById("errName");
+        if (en) en.textContent = "";
+        var ed = document.getElementById("errDate");
+        if (ed) ed.textContent = "";
+      }
+      function _showFieldError(fieldId, errSpanId, msgKey) {
+        var fld = document.getElementById(fieldId);
+        var err = document.getElementById(errSpanId);
+        if (err) err.textContent = T(msgKey);
+        if (fld) {
+          fld.classList.add("field-err-input");
+          try {
+            fld.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (_) {
+          }
+          try {
+            fld.focus();
+          } catch (_) {
+          }
+        }
+        toast(T(msgKey), "warn");
+      }
+      _clearFieldErrors();
       var s = document.getElementById("dateStart").value;
       var e = document.getElementById("dateEnd").value;
       var nameVal = (document.getElementById("sprintName").value || "").trim();
       var draftName = T("newSprintDraftName");
       if (!nameVal || nameVal === draftName) {
-        toast(T("toastSprintNameRequired"), "warn");
-        var nameEl = document.getElementById("sprintName");
-        if (nameEl) {
-          try {
-            nameEl.focus();
-          } catch (_) {
-          }
-        }
+        _showFieldError("sprintName", "errName", "toastSprintNameRequired");
         return;
       }
       if (!s) {
-        toast(T("toastSprintDateStartRequired"), "warn");
-        var dsEl = document.getElementById("dateStart");
-        if (dsEl) {
-          try {
-            dsEl.focus();
-          } catch (_) {
-          }
-        }
+        _showFieldError("dateStart", "errDate", "toastSprintDateStartRequired");
         return;
       }
       if (!e) {
-        toast(T("toastSprintDateEndRequired"), "warn");
-        var deEl = document.getElementById("dateEnd");
-        if (deEl) {
-          try {
-            deEl.focus();
-          } catch (_) {
-          }
-        }
+        _showFieldError("dateEnd", "errDate", "toastSprintDateEndRequired");
         return;
       }
       if (s && e && fromDateIn(e) < fromDateIn(s)) {
-        document.getElementById("errDate").textContent = T("toastDateError");
-        toast(T("toastDateError"), "warn");
+        _showFieldError("dateEnd", "errDate", "toastDateError");
         return;
       }
-      document.getElementById("errDate").textContent = "";
+      _clearFieldErrors();
       _sprint.name = nameVal.substring(0, 60);
       _sprint.dateStart = fromDateIn(s);
       _sprint.dateEnd = fromDateIn(e);
@@ -6510,6 +6590,18 @@
           btn.textContent = T("btnSaveParams");
         }
         toast(T("toastSprintSaved"), "success");
+        if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+          _currentSprintId = _sprint.sprintId;
+          var _uiNew = _draftGet("ui") || {};
+          _uiNew.currentSprintId = _currentSprintId;
+          _draftSet("ui", _uiNew);
+        }
+        if (typeof renderWidgetHeader === "function") {
+          try {
+            renderWidgetHeader();
+          } catch (_) {
+          }
+        }
       }).catch(function(e2) {
         if (btn) {
           btn.disabled = false;
@@ -6546,6 +6638,12 @@
         editBanner.style.display = "none";
         editBanner.textContent = "";
       }
+      if (_sprint && _sprint.sprintId) {
+        _currentSprintId = _sprint.sprintId;
+        var _uiNS = _draftGet("ui") || {};
+        _uiNS.currentSprintId = _currentSprintId;
+        _draftSet("ui", _uiNS);
+      }
       var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
       if (planBtn && !planBtn.classList.contains("active")) planBtn.click();
       var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
@@ -6576,6 +6674,15 @@
         }, 50);
       });
     }
+    function _renderExternalTicketCell(val) {
+      if (!val) return '<td style="color:var(--muted)">\u2014</td>';
+      var safe = esc(String(val));
+      var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"';
+      if (/^https?:\/\//i.test(val)) {
+        return "<td " + style + ' title="' + safe + '"><a href="' + safeUrl(val) + '" target="_blank" rel="noopener noreferrer" class="link">' + safe + "</a></td>";
+      }
+      return "<td " + style + ' title="' + safe + '">' + safe + "</td>";
+    }
     function getRoleItemsArr(rk) {
       if (!_roleItems[rk]) _roleItems[rk] = [];
       return _roleItems[rk];
@@ -6596,7 +6703,11 @@
       if (recalcBtn) recalcBtn.disabled = !has;
       if (refreshBtn) refreshBtn.disabled = !has;
       if (!has) {
-        var colCount = _settings && _settings.dynEditEnabled ? 12 : 10;
+        var extColInc = _settings && _settings.fieldExternalTicketId ? 1 : 0;
+        var sysColInc = _settings && _settings.fieldSystem ? 1 : 0;
+        var xpColInc = _settings && _settings.fieldXPriority ? 1 : 0;
+        var baseCount = _settings && _settings.dynEditEnabled ? 10 : 8;
+        var colCount = baseCount + extColInc + sysColInc + xpColInc;
         tbody.innerHTML = '<tr><td colspan="' + colCount + '" class="empty">' + T("compSprintEmpty") + "</td></tr>";
         var pagEl = document.getElementById("planPag_" + rk);
         if (pagEl) pagEl.style.display = "none";
@@ -6684,7 +6795,9 @@
         } else {
           xpriorityCell = "<td>" + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</td>";
         }
-        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" class="link">' + esc(item.issueId) + "</a></td>" + systemCell + priorityCell + xpriorityCell + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-iid="' + iidAttr + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
+        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" class="link">' + esc(item.issueId) + "</a></td>" + /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : "") + /* v1.8.1 — System / XPriority cells показываются только если поле настроено. */
+        (_settings && _settings.fieldSystem ? systemCell : "") + priorityCell + (_settings && _settings.fieldXPriority ? xpriorityCell : "") + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-iid="' + iidAttr + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
           return '<option value="' + v + '"' + (item.inclusionStatus === v ? " selected" : "") + ">" + esc(incLabel(v)) + "</option>";
         }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '">\u{1F5D1}</button></td>';
         tbody.appendChild(tr);
@@ -6975,6 +7088,7 @@
             if (_settings && _settings.fieldXPriority) item.xpriority = getStr(_settings.fieldXPriority);
             if (_settings && _settings.fieldState) item.state = getStr(_settings.fieldState);
             if (_settings && _settings.fieldSystem) item.system = getStr(_settings.fieldSystem);
+            if (_settings && _settings.fieldExternalTicketId) item.externalTicketId = getStr(_settings.fieldExternalTicketId);
             if (!item.url || item.url.indexOf("/null/") >= 0) {
               item.url = _ytBase + "/issue/" + (issue.idReadable || item.issueId);
             }
@@ -7038,6 +7152,7 @@
           return;
         }
         _sprint.status = STATUS.CONFIRMED;
+        diag("[VALIDATE-COMPOSITION] role=" + rk + " set _sprint.status=" + _sprint.status + " wcKey=" + _activeWorkingDraftKey, "info");
         apiPost("sprint-data", { sprint: _sprint, roleItems: _roleItems }, { action: "validate" }).then(function(resp) {
           if (resp && Array.isArray(resp.warnings) && resp.warnings.length) {
             resp.warnings.forEach(function(w) {
@@ -7053,6 +7168,10 @@
           }
           return saveRoleHistorySnapshot(rk);
         }).then(function() {
+          var _diagSnap = _history.find(function(h) {
+            return h && h.sprintId === _sprint.sprintId + "_" + rk;
+          });
+          diag("[VALIDATE-COMPOSITION] role=" + rk + " after snap: _history.status=" + (_diagSnap ? _diagSnap.status : "NOT_FOUND") + " _sprint.status=" + _sprint.status, "info");
           if (_sprint) {
             _sprint.editingFromHistory = false;
             delete _sprint.historyIdx;
@@ -7134,6 +7253,9 @@
           system: i.system,
           inclusionStatus: i.inclusionStatus
         };
+        if (i.externalTicketId !== void 0 && i.externalTicketId !== null && i.externalTicketId !== "") {
+          obj.externalTicketId = i.externalTicketId;
+        }
         obj["estimate_" + rk] = i["estimate_" + rk];
         obj["fact_" + rk] = i["fact_" + rk];
         obj["alloc_" + rk] = i["alloc_" + rk] !== void 0 ? i["alloc_" + rk] : null;
@@ -7253,6 +7375,7 @@
       var priorityField = _settings && _settings.fieldPriority || null;
       var xpField = _settings && _settings.fieldXPriority || null;
       var systemField = _settings && _settings.fieldSystem || null;
+      var extTicketField = _settings && _settings.fieldExternalTicketId || null;
       return {
         id: iss.id,
         idReadable: iss.idReadable || iss.id,
@@ -7260,7 +7383,8 @@
         state: { name: cfValPres(stateField ? [stateField, "State", "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435"] : ["State", "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435"]) || "\u2014" },
         priority: cfValPres(priorityField ? [priorityField, "Priority", "\u041F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442"] : ["Priority", "\u041F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442"]),
         xpriority: cfValPres(xpField ? [xpField, "\u0421\u043A\u0432\u043E\u0437\u043D\u043E\u0439 \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442"] : ["\u0421\u043A\u0432\u043E\u0437\u043D\u043E\u0439 \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442"]),
-        system: systemField ? cfValPres([systemField]) : null
+        system: systemField ? cfValPres([systemField]) : null,
+        externalTicketId: extTicketField ? cfValPres([extTicketField]) : null
       };
     }
     function doPickSearch() {
@@ -7485,6 +7609,9 @@
           addedAt: Date.now(),
           addedBy: _currentUser ? _currentUser.login : null
         };
+        if (_settings && _settings.fieldExternalTicketId && issue && issue.externalTicketId) {
+          newItem.externalTicketId = issue.externalTicketId;
+        }
         newItem["estimate_" + rk] = null;
         newItem["fact_" + rk] = null;
         newItem["alloc_" + rk] = null;
@@ -7568,7 +7695,9 @@
         var pillTitle = T("wcEditedBy").replace("{who}", d.editorLogin || "?").replace("{when}", fmtDT(d.updatedAt));
         wcPill = '<span class="wc-has-copy-pill" title="' + esc(pillTitle) + '">' + esc(T("wcHasCopyPill")) + "</span>";
       }
-      meta.innerHTML = '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStart") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateStart) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerEnd") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateEnd) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStatus") + '</span><span class="spoiler__mv"><span class="s-badge ' + badgeClass + '"' + (badgeTitle ? ' title="' + esc(badgeTitle) + '"' : "") + ">" + esc(statusLabel(rec.status)) + "</span>" + (rec.isOverLimit ? '<span class="overlimit-tag">' + T("overlimitTag") + "</span>" : "") + wcPill + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerTasks") + '</span><span class="spoiler__mv">' + (rec.items ? rec.items.length : 0) + "</span></div>" + (remVal !== void 0 && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRem") + '</span><span class="spoiler__mv" style="color:' + (remVal < 0 ? "var(--error)" : "var(--success)") + '">' + fmtHours(remVal) + "</span></div>" : "");
+      var sprintNameInline = rec.name ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerName") + '</span><span class="spoiler__mv" style="font-weight:600">' + esc(rec.name) + "</span></div>" : "";
+      var roleInline = rec.roleLabel ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRole") + '</span><span class="spoiler__mv">' + esc(rec.roleLabel) + "</span></div>" : "";
+      meta.innerHTML = sprintNameInline + roleInline + '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStart") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateStart) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerEnd") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateEnd) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStatus") + '</span><span class="spoiler__mv"><span class="s-badge ' + badgeClass + '"' + (badgeTitle ? ' title="' + esc(badgeTitle) + '"' : "") + ">" + esc(statusLabel(rec.status)) + "</span>" + (rec.isOverLimit ? '<span class="overlimit-tag">' + T("overlimitTag") + "</span>" : "") + wcPill + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerTasks") + '</span><span class="spoiler__mv">' + (rec.items ? rec.items.length : 0) + "</span></div>" + (remVal !== void 0 && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRem") + '</span><span class="spoiler__mv" style="color:' + (remVal < 0 ? "var(--error)" : "var(--success)") + '">' + fmtHours(remVal) + "</span></div>" : "");
       var ctrl = document.createElement("div");
       ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex-shrink:0;";
       var xlsBtn = document.createElement("button");
@@ -7710,9 +7839,12 @@
         if (!items || !items.length) {
           tw.innerHTML = '<div class="empty">' + T("histNoTasks") + "</div>";
         } else {
+          var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
+          var hasXPri = !!(_settings && _settings.fieldXPriority);
           var tbl = document.createElement("table");
           tbl.className = "tbl";
-          tbl.innerHTML = '<thead><tr><th style="min-width:90px">' + T("histColNum") + '</th><th style="min-width:120px">' + T("histColTitle") + '</th><th style="min-width:80px">' + T("histColPriority") + '</th><th class="th-dev">' + T("histColXpriority") + '</th><th style="min-width:80px">' + T("histColState") + '</th><th style="min-width:120px">' + T("histColIncStatus") + '</th><th class="td-num th-dev">' + fmtThLabel(rec.roleLabel || rk) + "</th></tr></thead><tbody></tbody>";
+          tbl.innerHTML = '<thead><tr><th style="min-width:90px">' + T("histColNum") + "</th>" + /* 2nd position, right after issue ID. */
+          (hasExtTicket ? '<th style="min-width:120px">' + T("thExternalTicketId") + "</th>" : "") + '<th style="min-width:120px">' + T("histColTitle") + '</th><th style="min-width:80px">' + T("histColPriority") + "</th>" + (hasXPri ? '<th class="th-dev">' + T("histColXpriority") + "</th>" : "") + '<th style="min-width:80px">' + T("histColState") + '</th><th style="min-width:120px">' + T("histColIncStatus") + '</th><th class="td-num th-dev">' + fmtThLabel(rec.roleLabel || rk) + "</th></tr></thead><tbody></tbody>";
           var tb = tbl.querySelector("tbody");
           items.forEach(function(item) {
             var est = item["estimate_" + rk];
@@ -7724,7 +7856,9 @@
               return v < 0 ? '<span class="delta-neg">\u2212' + s + "</span>" : s;
             }
             var tr = document.createElement("tr");
-            tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" rel="noopener noreferrer" class="link">' + esc(item.issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + "</td><td>" + esc(localizeEnumVal(item.priority) || "\u2014") + "</td><td>" + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</td><td>" + esc(localizeEnumVal(item.state) || "\u2014") + "</td><td>" + esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : "\u2014") + '</td><td class="td-num">' + histDelta(delta) + "</td>";
+            tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url) + '" target="_blank" rel="noopener noreferrer" class="link">' + esc(item.issueId) + "</a></td>" + /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+            (hasExtTicket ? _renderExternalTicketCell(item.externalTicketId) : "") + '<td class="td-title">' + esc(item.title || "") + "</td><td>" + esc(localizeEnumVal(item.priority) || "\u2014") + "</td>" + /* v1.8.1 — XPriority cell in history (optional). */
+            (hasXPri ? "<td>" + esc(localizeEnumVal(item.xpriority) || "\u2014") + "</td>" : "") + "<td>" + esc(localizeEnumVal(item.state) || "\u2014") + "</td><td>" + esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : "\u2014") + '</td><td class="td-num">' + histDelta(delta) + "</td>";
             tb.appendChild(tr);
           });
           tw.appendChild(tbl);
@@ -8515,8 +8649,13 @@
           _draftSet("ui", ui);
         }
       }
-      var meta = _currentSprintId ? metaCache[_currentSprintId] : null;
-      if (meta && meta.status) {
+      if (_currentSprintId) {
+        var activeRoles = typeof getActiveRoles === "function" && getActiveRoles().length ? getActiveRoles() : ALL_ROLES;
+        var entries = typeof getSprintRolesEntries === "function" ? getSprintRolesEntries(_currentSprintId) : [];
+        var statusByRole = {};
+        entries.forEach(function(rec) {
+          if (rec && rec.roleKey && rec.status) statusByRole[rec.roleKey] = rec.status;
+        });
         badge.classList.remove("hidden");
         badge.classList.remove(
           "widget-header__badge--planning",
@@ -8524,20 +8663,22 @@
           "widget-header__badge--allocated",
           "widget-header__badge--finished"
         );
-        badge.classList.add("widget-header__badge--" + String(meta.status).toLowerCase());
-        badge.textContent = typeof statusLabel === "function" ? statusLabel(meta.status) : meta.status;
-        var roleLines = Object.keys(meta.statusByRole || {}).map(function(rk) {
-          var role = ALL_ROLES.find(function(r) {
-            return r.key === rk;
-          });
-          var label = role ? role.label : rk;
-          var st = meta.statusByRole[rk];
+        badge.removeAttribute("title");
+        badge.removeAttribute("style");
+        var _diagDump = activeRoles.map(function(role) {
+          return role.key + "=" + (statusByRole[role.key] || "PLANNING(default)");
+        }).join(", ");
+        diag("[RENDER-HEADER] sprintId=" + _currentSprintId + " entries=" + entries.length + " roles=[" + _diagDump + "]", "info");
+        badge.innerHTML = activeRoles.map(function(role) {
+          var st = statusByRole[role.key] || "PLANNING";
           var stLabel = typeof statusLabel === "function" ? statusLabel(st) : st;
-          return label + ": " + stLabel;
-        });
-        badge.title = roleLines.length ? T("hintBadgeAggregated") + "\n" + roleLines.join("\n") : T("hintBadgeAggregated");
+          var rLabel = typeof roleLabel === "function" ? roleLabel(role) : role.label || role.key;
+          var cls = "s-badge s-badge--" + String(st).toLowerCase();
+          return '<span class="' + cls + '" title="' + esc(rLabel + ": " + stLabel) + '"><span style="opacity:.7">' + esc(rLabel) + ":</span> " + esc(stLabel) + "</span>";
+        }).join("");
       } else {
         badge.classList.add("hidden");
+        badge.innerHTML = "";
       }
       if (_currentSprintId && hasWorkingCopyForSprint(_currentSprintId)) {
         wcInd.classList.remove("hidden");
@@ -9146,11 +9287,18 @@
           return '<span class="sort-icon">' + (active2 ? "\u25BC" : "\u2195") + "</span>";
         };
         var _sk = getSortKey();
-        thead.innerHTML = '<tr><th class="td-id sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '">' + T("thId") + _sortIc(_sk === "id") + "</th><th>" + T("thTitle") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thPriority") + _sortIc(_sk === "priority") + '</th><th class="sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thXpriority") + _sortIc(_sk === "xpriority") + '</th><th style="white-space:nowrap">' + T("thAllocH") + '</th><th class="sortable' + (_sk === "system" ? " sortable--active" : "") + '" data-sort-key="system" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thSystem") + _sortIc(_sk === "system") + '</th><th style="min-width:160px">' + T("thAssignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
+        thead.innerHTML = '<tr><th class="td-id sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '">' + T("thId") + _sortIc(_sk === "id") + "</th>" + /* v1.8.0 D130 — externalTicketId column (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId ? '<th class="sortable' + (_sk === "externalTicketId" ? " sortable--active" : "") + '" data-sort-key="externalTicketId" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap;min-width:120px">' + T("thExternalTicketId") + _sortIc(_sk === "externalTicketId") + "</th>" : "") + "<th>" + T("thTitle") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thPriority") + _sortIc(_sk === "priority") + "</th>" + /* v1.8.1 — XPriority опциональна. */
+        (_settings && _settings.fieldXPriority ? '<th class="sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thXpriority") + _sortIc(_sk === "xpriority") + "</th>" : "") + '<th style="white-space:nowrap">' + T("thAllocH") + "</th>" + /* v1.4.0 — System column (read-only, sortable). v1.8.1 — опциональна. */
+        (_settings && _settings.fieldSystem ? '<th class="sortable' + (_sk === "system" ? " sortable--active" : "") + '" data-sort-key="system" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thSystem") + _sortIc(_sk === "system") + "</th>" : "") + '<th style="min-width:160px">' + T("thAssignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
         _bindSortHeaders(thead);
       }
+      var extColInc = _settings && _settings.fieldExternalTicketId ? 1 : 0;
+      var sysColInc = _settings && _settings.fieldSystem ? 1 : 0;
+      var xpColInc = _settings && _settings.fieldXPriority ? 1 : 0;
+      var peopleBase = 7;
       if (!_currentSprintRoleRec) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty">' + T("emptyTaskCurrentRole") + "</td></tr>";
+        tbody.innerHTML = '<tr><td colspan="' + (peopleBase + extColInc + sysColInc + xpColInc) + '" class="empty">' + T("emptyTaskCurrentRole") + "</td></tr>";
         return;
       }
       var rec = _currentSprintRoleRec;
@@ -9161,7 +9309,7 @@
       });
       if (typeof multiKeySort === "function") active = multiKeySort(active);
       if (!active.length) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty">' + T("currentRoleNoTasks") + "</td></tr>";
+        tbody.innerHTML = '<tr><td colspan="' + (peopleBase + extColInc + sysColInc + xpColInc) + '" class="empty">' + T("currentRoleNoTasks") + "</td></tr>";
         return;
       }
       var ta = _currentRolePP && _currentRolePP.taskAssignments ? _currentRolePP.taskAssignments : {};
@@ -9189,7 +9337,9 @@
         }).join("") + "</select>";
         var sprintStartDate = sprintStart ? toDateIn(sprintStart) : "";
         var sprintEndDate = sprintEnd ? toDateIn(sprintEnd) : "";
-        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + '</a></td><td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + '</td><td class="td-xpriority">' + esc(item.xpriority || "\u2014") + '</td><td class="td-num">' + allocH + '</td><td class="td-system">' + esc(item.system || "\u2014") + "</td><td>" + assigneeSel + '</td><td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td><td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>';
+        tr.innerHTML = '<td class="td-id"><a href="' + safeUrl(item.url || "") + '" target="_blank" class="link">' + esc(issueId) + "</a></td>" + /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
+        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : "") + '<td class="td-title">' + esc(item.title || "") + (outOfRange ? '<span style="color:var(--error);font-size:11px;margin-left:4px">\u26A0 \u0432\u043D\u0435 \u0434\u0438\u0430\u043F\u0430\u0437\u043E\u043D\u0430</span>' : "") + '</td><td class="td-priority">' + esc(item.priority || "\u2014") + "</td>" + (_settings && _settings.fieldXPriority ? '<td class="td-xpriority">' + esc(item.xpriority || "\u2014") + "</td>" : "") + '<td class="td-num">' + allocH + "</td>" + /* v1.4.0 — System cell (read-only). v1.8.1 — опциональна. */
+        (_settings && _settings.fieldSystem ? '<td class="td-system">' + esc(item.system || "\u2014") + "</td>" : "") + "<td>" + assigneeSel + '</td><td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_start ? toDateIn(ta_start) : sprintStartDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td><td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="' + esc(issueId) + '" value="' + (ta_end ? toDateIn(ta_end) : sprintEndDate) + '" min="' + sprintStartDate + '" max="' + sprintEndDate + '" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>';
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-task-assignee").forEach(function(sel) {
@@ -9344,8 +9494,11 @@
         }
         _currentRolePP.validatedAt = Date.now();
         _currentRolePP.validatedBy = _currentUser ? _currentUser.fullName || _currentUser.login : null;
+        var _diagBeforeRec = _currentSprintRoleRec ? _currentSprintRoleRec.status : "NULL";
+        var _diagBeforeWc = _activeWorkingDraftKey;
         if (_currentSprintRoleRec) _currentSprintRoleRec.status = STATUS.ALLOCATED;
         if (isActiveSprintRecord(_currentSprintRoleRec)) _sprint.status = STATUS.ALLOCATED;
+        diag("[VALIDATE-PEOPLE] role=" + (_currentSprintRoleRec ? _currentSprintRoleRec.roleKey : "?") + " before=" + _diagBeforeRec + " wc=" + _diagBeforeWc + " set rec.status=ALLOCATED active=" + isActiveSprintRecord(_currentSprintRoleRec), "info");
         if (typeof renderWidgetHeader === "function") {
           try {
             renderWidgetHeader();
@@ -9359,7 +9512,10 @@
         if (histIdx >= 0) {
           _history[histIdx].personalPlanning = deepClone(_currentRolePP);
           _history[histIdx].status = STATUS.ALLOCATED;
+          diag("[VALIDATE-PEOPLE] post-set _history[" + histIdx + "].status=" + _history[histIdx].status + " sprintId=" + _history[histIdx].sprintId, "info");
           apiPost("history", { history: _history }).then(function() {
+            var _diagAfter = _history[histIdx] ? _history[histIdx].status : "GONE";
+            diag("[VALIDATE-PEOPLE] post-apiPost _history[" + histIdx + "].status=" + _diagAfter, "info");
             renderHistory();
             if (typeof renderWidgetHeader === "function") {
               try {

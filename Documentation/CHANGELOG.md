@@ -8,6 +8,110 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.8.2] — 2026-05-17
+
+> **GitHub publication target.** This release consolidates v1.8.0 + v1.8.1 + v1.8.2 — the first two were local-only iterations during the UX polish cycle and never shipped to GitHub. Per `CLAUDE.md` → «Release notes на публикацию», all changes since the last published release (v1.7.1) are merged into the v1.8.2 release notes. Intermediate `## [1.8.0]` and `## [1.8.1]` sections below are preserved for development audit but are not user-visible in the GitHub Release UI.
+
+### Added — External ticket ID (originally v1.8.0)
+- **Settings UI — new optional «External ticket ID» dropdown** in «Other fields» section. Selects a YouTrack `string`-type custom field that stores ticket IDs in an external system (Service Desk, Jira, 1C, SAP, …).
+- **Read-only «External ID» column** in three task tables: role composition, assignee view («People»), and history snapshots. **Column position: 2nd, right after the issue ID link** (UX-feedback applied in v1.8.1).
+- **URL detection:** values matching `https?://…` render as clickable `<a>` (opens in new tab); plain strings render truncated to `12em` with the full value in a hover tooltip.
+- **Auto-populate** at pick / refresh — value is read from YouTrack when adding tasks or refreshing estimates. Frozen in confirmed history snapshots (historical accuracy preserved).
+- **Sort by External ID** — added to the sort cycle (`off → xpriority → priority → id → system → externalTicketId`), lexicographic; empty values sort last.
+- **First live item-level schema migration** — `ALLOWED_ITEM_KEYS` extended with `externalTicketId` (optional, ≤ 1000 chars, length increased from initial 200 after real-world URLs exceeded the limit). `SCHEMA_MIGRATIONS` registry contains v1.7.0 → v1.8.0 step (no-op, additive).
+- **i18n × 15 locales** for the External ID feature (4 keys: `fldExternalTicketId`, `fldExternalTicketIdOptional`, `hintExternalTicketId`, `thExternalTicketId`).
+
+### Added — UX architecture (v1.8.1)
+- **Per-role status badges in the widget header.** Replaces the aggregated single-badge (which showed `min(STATUS_RANK)` of all roles and displayed «Draft» when at least one role was not yet validated, regardless of others). Now each active role shows its own status with role name as prefix.
+- **Per-role status badge on role cards** — reads from `_history[<sprintId>_<roleKey>].status` instead of the global `_sprint.status`. Validating one role no longer flips the status indicator on the others.
+- **Settings → «Other fields» visually grouped** into «Required» (Priority, State — marked with red `*`) and «Optional» (XPriority, System, External ticket ID, Sprint, Version — each with muted `(optional)` suffix). 3 new i18n keys × 15 locales = 45 strings (`cardOtherFieldsRequired`, `cardOtherFieldsOptional`, `fldOptionalSuffix`).
+- **Optional columns hide when not configured** — XPriority and System columns now disappear from all 3 tables (role composition, assignee view, history) when the corresponding YT field mapping is empty. Symmetric with External ID behavior.
+- **Soft warning at Settings save** when Required fields (Priority/State) are not set — non-blocking warn-toast 400ms after the success-toast, listing which fields are recommended. 1 new i18n key × 15 locales.
+- **History spoiler now shows sprint name + role in the collapsed view** — previously these were only in the expanded body, making it hard to identify which sprint/role a row referred to. 2 new i18n keys × 15 locales (`histSpoilerName`, `histSpoilerRole`).
+- **«Jump to People» from a role card carries the role context** — clicking the button on Analytics card opens People tab with Analytics pre-selected, regardless of which role was last viewed there. Previously fell back to `safeLs.lastActiveRole` (stale).
+- **Role selector on the People tab is visually elevated** — accent border-left, 👥 icon, uppercase bold label, larger select with primary-color border and focus-ring. The role-being-edited is no longer easy to miss.
+- **Status badges in widget header wrap correctly** with 2-9 active roles — explicit `flex: 0 0 100%` + `flex-wrap: wrap` + compact font (10px, `padding 2px 6px`) ensures the badge list moves to its own line under the sprint selector and reflows across rows without horizontal scroll, even on narrow viewports.
+- **Inline-error highlight at sprint param save** (v1.8.2) — name and date fields gate. When validation fails, the offending field gets a red border + `field-err` text under it + `scrollIntoView({behavior:'smooth', block:'center'})`. Toast remains as duplicate signal but is no longer the only feedback — relevant when the YT-iframe scroll position pushes the fixed-position toast outside the main window viewport.
+
+### Fixed
+- **`saveRoleHistorySnapshot` did not copy `externalTicketId`** into `snap.items` — values were live on items but never reached history. Root of the v1.8.0 acceptance failure («тикет ID не записался в историю»). Field is now explicitly copied when non-empty.
+- **`invalid_history_structure` on auto-snapshot** after sprint validation — caused by a stale `revisions[i].level = 'NONE'` entry accumulated in `_history` from earlier working-copy commits without significant changes. `'NONE'` was returned by `computeRequiredRevalidationLevel` but missing from backend `ALLOWED_REVISION_LEVELS` whitelist. Fixed both sides: backend whitelist now accepts `'NONE'` (backward-compat for existing poisoned data); frontend `_commitWorkingCopy` skips writing a revision entry when `level === 'NONE'` (forward fix — no more accumulation).
+- **`renderWidgetHeader` not called after working-copy commit** — header badge stayed on old status after editing a historical sprint via «Open for editing» → validate. Added explicit `renderWidgetHeader()` call in `_commitWorkingCopy.then(...)`.
+- **«+ New Sprint» button — current-sprint selector did not update** to the freshly created draft. Fixed by synchronizing `_currentSprintId = _sprint.sprintId` in `doNewSprint` before the API roundtrip, and persisting to `ui` draft.
+- **Saving sprint params on a new sprint** — header selector did not refresh until tab switch. Added `_currentSprintId` sync + `renderWidgetHeader()` to `doSaveRoleHeader` success branch.
+- **External ID length limit was too strict** — initial 200-char limit rejected real-world ticket URLs (e.g., `https://tracker.example.com/t#id104909392` and longer). Now uses the standard `strFields` limit of 1000 chars.
+- **`SCHEMA_MIGRATIONS` migration entry for v1.8.0** — added explicit `{from:'1.7.0', to:'1.8.0', migrate:noop}` for audit-trail in `migrationLog` of each migrated snapshot. First item-level migration in the registry (previously only settings-level).
+- **History POST error diagnostics** — when `validateHistoryForWrite` rejects a payload, the response now includes the specific failing field/index (e.g., `invalid_history_structure: revisions[0].level_invalid:NONE (record[5])`) instead of opaque `invalid_history_structure`. Made root-cause hunt for the `NONE` bug possible.
+
+### Changed
+- **Hint text under External ticket ID dropdown removed** — the label + `(optional)` suffix is self-explanatory.
+- **Sort cycle extended** from 5 to 6 positions to include `externalTicketId`.
+- **Cache-buster version bumps** (v1.8.1, v1.8.2) — multiple in-place re-installs of v1.8.0 caused YouTrack to keep cached `widgets/main/main.js` and `widgets/main/index.html`. Each version bump forces a fresh asset hash.
+- **`validateItem` / `ALLOWED_ITEM_KEYS`** added to the CommonJS test-export shim — required by new unit tests.
+- **`snapshot-migration.test.js`** updated: `SCHEMA_MIGRATIONS.length === 2` (was 1).
+
+### Security
+- All `externalTicketId` values pass through `esc()` on every render path. URL values pass through `safeUrl()` before being placed in `href` — same treatment as `item.url`.
+- Field is read-only on the client. Population only through the existing pick / refresh API path. Whitelist guards prevent posting arbitrary unknown keys.
+
+### Backward compatibility
+- **No breaking schema changes.** `externalTicketId` is optional on every item; sprints / history / working-drafts written by v1.6.x or v1.7.x are read by v1.8.2 unchanged.
+- **`level='NONE'` revisions** existing from pre-fix working-copy commits are now accepted by the backend whitelist. They stop accumulating on new commits but old ones are tolerated and pass POST validation.
+- **Rollback** (soft, per-project): clear the «External ticket ID» dropdown in Settings → save. Column disappears; stored values remain in snapshots. **Rollback** (hard, reinstall v1.7.1 zip): v1.7.1 backend silently ignores `externalTicketId` keys via tolerant ForRead (`WARN_UNKNOWN_KEY` in `migrationLog`).
+
+### Test coverage
+- **185 unit tests** (was 169 at v1.7.1).
+- **New test file** `tests/unit/external-ticket-id.test.js` — 8 cases (whitelist presence, boundary, type rejection, URL acceptance, backward compat).
+- **Accumulating fixtures**: `tests/fixtures/snapshots/1.4.2/`, `1.6.0/`, `1.6.3/`, `1.7.0/`, `1.7.1/`, `1.8.0/`, `1.8.1/`, `1.8.2/` — every previous release is regression-validated by `compat-prev-release.test.js` against current validators.
+
+---
+
+## [1.8.1] — 2026-05-16
+
+### Changed
+- **Settings → «Other fields» regrouped** into two visual blocks:
+  - **Required:** `Priority` and `State` (marked with red `*`)
+  - **Optional:** `XPriority`, `System`, `External ticket ID`, `Sprint field`, `Version` — each with a muted `(optional)` suffix
+- **External ID column moved to 2nd position** in all three task tables (Role composition, Assignee view, History) — right after the issue ID link.
+- **Removed hint text** under the External ticket ID dropdown — the label + optional suffix is self-explanatory.
+- **3 new i18n keys × 15 locales = 45 strings:** `cardOtherFieldsRequired`, `cardOtherFieldsOptional`, `fldOptionalSuffix` (unified optional marker across XPriority / System / External ticket ID / Sprint / Version).
+
+### Fixed
+- **YT-app static-asset cache.** Version bump 1.8.0 → 1.8.1 forces YouTrack to refresh cached `widgets/main/main.js` and `widgets/main/index.html` after multiple in-place v1.8.0 reinstalls. No data migration involved — schema unchanged.
+
+### Backward compatibility
+- **No schema changes.** v1.8.0 snapshots are read by v1.8.1 transparently (same shape, same whitelists). `SCHEMA_MIGRATIONS` unchanged (still 2 entries: v1.6.0 → v1.7.0, v1.7.0 → v1.8.0).
+- New `tests/fixtures/snapshots/1.8.1/` is byte-identical to `1.8.0/` except for `pluginVersion: "1.8.1"`.
+
+---
+
+## [1.8.0] — 2026-05-16
+
+### Added
+- **Settings UI — External ticket ID dropdown.** New optional field in «Other fields» settings section. Selects a YouTrack `string`-type custom field that stores ticket IDs in an external system (Service Desk, Jira, 1C, SAP, etc.). Supports any string field — plain IDs (e.g. `EXT-1234`) and clickable URLs alike. Available in all 15 supported interface languages.
+- **Read-only «External ID» column in three tables:** role composition, assignee view («Люди»), and history snapshots. Column is hidden when the setting is not configured — zero visual impact for teams that don't use it. URL values (matching `^https?://`) render as clickable `<a>` links opening in a new tab; plain strings render truncated to `12em` with the full value in a tooltip.
+- **Auto-populate at pick/refresh.** External ticket ID is read from YouTrack when adding tasks («Подобрать задачи») or refreshing estimates. Value is frozen in confirmed history snapshots — historical accuracy is preserved even if the YT field changes later.
+- **Sort by External ID.** `externalTicketId` added to the sort cycle (`off → xpriority → priority → id → system → externalTicketId`). Lexicographic order; undefined/empty values sort last.
+- **First item-level schema migration.** `ALLOWED_ITEM_KEYS` extended with `externalTicketId` (optional, ≤ 200 chars). A corresponding `SCHEMA_MIGRATIONS` entry (`from: '1.7.0', to: '1.8.0'`, no-op) proves the pipeline end-to-end — previously only settings-level migrations had been exercised (v1.7.0 stateRollup).
+- **4 new i18n keys × 15 locales = 60 translation strings.** Full translations in all locales; no EN placeholders.
+- **Backward-compat fixture for v1.7.1** frozen in `tests/fixtures/snapshots/1.7.1/`. New v1.8.0 fixture contains a sample history item with `externalTicketId: "EXT-1234"`. All prior fixtures (v1.4.2 through v1.7.1) pass `validateItem`/`validateHistory` without `invalid_*_structure`.
+- **8 new unit tests** (`tests/unit/external-ticket-id.test.js`): whitelist presence, valid values, boundary (200 chars), rejection of oversized and non-string values, backward compat (undefined field), version bump guard.
+
+### Changed
+- **Sort cycle extended** from 5 to 6 positions to include `externalTicketId`.
+- **`validateItem` and `ALLOWED_ITEM_KEYS` added to CommonJS test-export shim** — required to support the new unit tests; previously these were only accessible internally.
+- **`snapshot-migration.test.js`** updated: the hardcoded `SCHEMA_MIGRATIONS.length === 1` guard now expects 2 entries and validates both the v1.7.0 and v1.8.0 steps.
+
+### Security
+- `externalTicketId` values are passed through `esc()` on every render path. URL values are passed through `safeUrl()` before being placed in `href` — same treatment as existing `item.url`.
+- Field is read-only in the plugin; population only through the existing pick/refresh path via the YT API. Whitelist guards prevent posting arbitrary unknown keys.
+
+### Backward compatibility
+- **No breaking changes.** `externalTicketId` is optional on every item; any sprint, history, or working-draft written by v1.6.x or v1.7.x is read by v1.8.0 without error.
+- **Rollback.** Soft rollback: clear the «External ticket ID» dropdown in Settings → save. Column disappears; stored values remain in existing snapshots. Hard rollback: reinstall v1.7.1 zip — the v1.7.1 backend tolerates unknown `externalTicketId` keys via `validateItemForRead` (`WARN_UNKNOWN_KEY` in `migrationLog`).
+
+---
+
 ## [1.7.1] — 2026-05-15
 
 ### Added (Translations)

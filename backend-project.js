@@ -199,13 +199,19 @@ var ALLOWED_WORKING_DRAFT_KEYS = [
   'pluginVersion'
 ];
 // AUTOGEN:WHITELISTS END
-var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVAL'];
+/* v1.8.1 — 'NONE' добавлен для backward-compat. Pre-v1.8.1 frontend записывал level='NONE'
+   в revision при commit working copy без реальных изменений (см. computeRequiredRevalidationLevel
+   ветка `return 'NONE'`). Эти записи накопились в _history у пилотов и блокировали любой
+   следующий POST history через invalid_history_structure: revisions[i].level_invalid:NONE.
+   В v1.8.1 frontend уже не пишет 'NONE' (skip revision при level==='NONE'), но старые записи
+   должны читаться и переписываться без ошибок. */
+var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVAL','NONE'];
 // v1.6.0 D125 — глобальная версия плагина для отслеживания совместимости snapshot'ов.
 // Должна совпадать с manifest.json:version и frontend APP_VERSION.
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.7.1';
+var CURRENT_PLUGIN_VERSION = '1.8.2';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -338,6 +344,13 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.6.0', to: '1.7.0',
     migrate: function (snap) { /* no-op: shape unchanged */ },
     note: 'v1.7.0: State Rollup — stateRollup* settings keys added; sprint/history shape unchanged'
+  },
+  /* v1.8.0 D130 — Etap В.2 — External ticket ID.
+     item.externalTicketId — optional additive field; undefined допустим на старых snapshot'ах.
+     Settings: fieldExternalTicketId — optional string field name; null/undefined допустимо. */
+  { from: '1.7.0', to: '1.8.0',
+    migrate: function (snap) { /* no-op: items.externalTicketId — optional additive field */ },
+    note: 'v1.8.0: Added optional externalTicketId on sprint items (Etap В.2)'
   }
 ];
 
@@ -569,7 +582,10 @@ function validateSprint(sprint) { return validateSprintForWrite(sprint); }
 // Whitelist ключей задачи (без динамических estimate_*/fact_*/alloc_*/allocation*/estH_*/factH_*)
 var ALLOWED_ITEM_KEYS = [
   'issueId','url','title','priority','xpriority','state','system',
-  'version','inclusionStatus','assignee','addedBy','addedAt'
+  'version','inclusionStatus','assignee','addedBy','addedAt',
+  /* v1.8.0 D130 — Etap В.2 — external ticket ID (optional, populated from
+     _settings.fieldExternalTicketId at pick/refresh time). Read-only in UI. */
+  'externalTicketId'
 ];
 
 /**
@@ -590,8 +606,11 @@ function validateItem(item) {
   // Обязательное строковое поле
   if (!assertStr(item.issueId, 100)) return false;
   // Остальные строковые поля
+  /* v1.8.0 D130 — externalTicketId добавлен в стандартный strFields (лимит 1000).
+     Изначальный отдельный лимит 200 снят: значение может быть URL (> 200 символов).
+     URL-рендер в UI управляется на фронтенде; длинные значения усекаются через ellipsis. */
   var strFields = ['url', 'title', 'priority', 'xpriority', 'state', 'system',
-                   'version', 'assignee', 'addedBy'];
+                   'version', 'assignee', 'addedBy', 'externalTicketId'];
   for (var s = 0; s < strFields.length; s++) {
     if (!assertStr(item[strFields[s]], 1000)) return false;
   }
@@ -656,6 +675,8 @@ var ALLOWED_SETTINGS_KEYS = [
   // Прочие поля
   'fieldPriority','fieldXPriority','fieldState','fieldSystem',
   'fieldSprint','fieldVersion',
+  /* v1.8.0 D130 — Etap В.2 — external ticket ID field name (string field in YT). */
+  'fieldExternalTicketId',
   // Группы (без settingsManagerGroup)
   'validationGroups','validationGroupNames','editGroups','editGroupNames',
   'historyClearGroups','historyClearGroupNames',
@@ -961,6 +982,113 @@ function validateHistoryForWrite(history) {
     if (!_validateHistoryRecord(history[i], i, true)) return false;
   }
   return true;
+}
+
+/* v1.8.0 D130 — Диагностическая обертка над validateHistoryForWrite.
+   Возвращает { ok: bool, where: string, idx: number } — для error response
+   в POST /history, чтобы можно было понять где конкретно упала валидация. */
+function diagnoseHistoryWrite(history) {
+  if (!Array.isArray(history)) return { ok: false, where: 'not an array', idx: -1 };
+  if (history.length > 500) return { ok: false, where: 'too many records', idx: -1 };
+  for (var i = 0; i < history.length; i++) {
+    var h = history[i];
+    if (!h || typeof h !== 'object') return { ok: false, where: 'not object', idx: i };
+    var hKeys = Object.keys(h);
+    for (var hk = 0; hk < hKeys.length; hk++) {
+      var k = hKeys[hk];
+      if (ALLOWED_HISTORY_SNAP_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
+        return { ok: false, where: 'unknown_top_key:' + k, idx: i };
+      }
+    }
+    var hStrFields = ['sprintId','name','roleLabel','confirmedBy','finishedBy','sprintFieldVal','versionFieldVal'];
+    for (var fi = 0; fi < hStrFields.length; fi++) {
+      if (!assertStr(h[hStrFields[fi]], 500)) {
+        return { ok: false, where: 'str_field:' + hStrFields[fi] + ' type=' + typeof h[hStrFields[fi]] + ' len=' + (h[hStrFields[fi]] && h[hStrFields[fi]].length), idx: i };
+      }
+    }
+    if (h.status !== undefined && h.status !== null) {
+      if (typeof h.status !== 'string' || STATUS_CODES.indexOf(h.status) < 0) {
+        return { ok: false, where: 'status_invalid:' + h.status, idx: i };
+      }
+    }
+    if (h.roleKey !== undefined && h.roleKey !== null) {
+      if (typeof h.roleKey !== 'string' || ROLE_KEYS.indexOf(h.roleKey) < 0) {
+        return { ok: false, where: 'roleKey_invalid:' + h.roleKey, idx: i };
+      }
+    }
+    if (!assertNum(h.confirmedAt)) return { ok: false, where: 'confirmedAt_invalid:' + typeof h.confirmedAt, idx: i };
+    if (!assertNum(h.dateStart))   return { ok: false, where: 'dateStart_invalid:' + typeof h.dateStart, idx: i };
+    if (!assertNum(h.dateEnd))     return { ok: false, where: 'dateEnd_invalid:' + typeof h.dateEnd, idx: i };
+    if (!assertNum(h.finishedAt))  return { ok: false, where: 'finishedAt_invalid:' + typeof h.finishedAt, idx: i };
+    // v1.8.1 — добавлены проверки которых не было: isOverLimit / resource*-remain* / personalPlanning / hasWorkingCopy / revisions.
+    if (h.isOverLimit !== undefined && h.isOverLimit !== null && typeof h.isOverLimit !== 'boolean') {
+      return { ok: false, where: 'isOverLimit_invalid:' + typeof h.isOverLimit + '=' + h.isOverLimit, idx: i };
+    }
+    for (var dk = 0; dk < hKeys.length; dk++) {
+      var dn = hKeys[dk];
+      if (/^(resource|remain)[A-Za-z0-9_]*$/.test(dn)) {
+        var dv = h[dn];
+        if (dv !== null && dv !== undefined && (!assertNum(dv) || dv < -1e8 || dv > 1e8)) {
+          return { ok: false, where: 'resource/remain_invalid:' + dn + '=' + JSON.stringify(dv) + ' type=' + typeof dv, idx: i };
+        }
+      }
+    }
+    if (h.settings !== undefined && h.settings !== null) {
+      if (typeof h.settings !== 'object') return { ok: false, where: 'settings_not_object', idx: i };
+      if (!validateSettings(h.settings)) {
+        // Подробнее: какой именно ключ settings упал?
+        var sKeys = Object.keys(h.settings);
+        for (var sk = 0; sk < sKeys.length; sk++) {
+          if (ALLOWED_SETTINGS_KEYS.indexOf(sKeys[sk]) < 0) {
+            return { ok: false, where: 'settings_unknown_key:' + sKeys[sk], idx: i };
+          }
+        }
+        return { ok: false, where: 'settings_validation_failed', idx: i };
+      }
+    }
+    if (h.items !== undefined && h.items !== null) {
+      if (!Array.isArray(h.items)) return { ok: false, where: 'items_not_array', idx: i };
+      if (h.items.length > 1000) return { ok: false, where: 'items_too_many', idx: i };
+      for (var j = 0; j < h.items.length; j++) {
+        if (!validateItem(h.items[j])) {
+          var item = h.items[j];
+          var itemKeys = item ? Object.keys(item) : [];
+          var badKey = null;
+          for (var ik = 0; ik < itemKeys.length; ik++) {
+            var ik_k = itemKeys[ik];
+            if (ALLOWED_ITEM_KEYS.indexOf(ik_k) < 0 && !/^(estimate_|fact_|alloc_|allocation|estH_|factH_)/.test(ik_k)) {
+              badKey = ik_k;
+              break;
+            }
+          }
+          return { ok: false, where: 'item[' + j + ']_invalid' + (badKey ? ' bad_key=' + badKey : ' issueId=' + (item && item.issueId)), idx: i };
+        }
+      }
+    }
+    if (h.personalPlanning !== undefined && h.personalPlanning !== null && typeof h.personalPlanning !== 'object') {
+      return { ok: false, where: 'personalPlanning_not_object:' + typeof h.personalPlanning, idx: i };
+    }
+    if (h.hasWorkingCopy !== undefined && h.hasWorkingCopy !== null && typeof h.hasWorkingCopy !== 'boolean') {
+      return { ok: false, where: 'hasWorkingCopy_invalid:' + typeof h.hasWorkingCopy + '=' + h.hasWorkingCopy, idx: i };
+    }
+    if (h.revisions !== undefined && h.revisions !== null) {
+      if (!Array.isArray(h.revisions)) return { ok: false, where: 'revisions_not_array', idx: i };
+      if (h.revisions.length > 1000)   return { ok: false, where: 'revisions_too_many', idx: i };
+      for (var ri = 0; ri < h.revisions.length; ri++) {
+        var rv = h.revisions[ri];
+        if (!rv || typeof rv !== 'object')   return { ok: false, where: 'revisions[' + ri + ']_not_object', idx: i };
+        if (!assertNum(rv.at))               return { ok: false, where: 'revisions[' + ri + '].at_invalid:' + typeof rv.at, idx: i };
+        if (!assertStr(rv.by, 200))          return { ok: false, where: 'revisions[' + ri + '].by_invalid:' + typeof rv.by + ' len=' + (rv.by && rv.by.length), idx: i };
+        if (typeof rv.level !== 'string' || ALLOWED_REVISION_LEVELS.indexOf(rv.level) < 0) {
+          return { ok: false, where: 'revisions[' + ri + '].level_invalid:' + rv.level, idx: i };
+        }
+      }
+    }
+    if (!validatePluginVersion(h.pluginVersion)) return { ok: false, where: 'pluginVersion_invalid:' + h.pluginVersion + ' type=' + typeof h.pluginVersion, idx: i };
+    var migErr = validateMigrationLog(h.migrationLog, 'history[' + i + ']');
+    if (migErr !== null) return { ok: false, where: 'migrationLog_invalid: ' + migErr, idx: i };
+  }
+  return { ok: true, where: null, idx: -1 };
 }
 
 function validateHistoryForRead(history) {
@@ -1619,7 +1747,9 @@ exports.httpHandler = {
             if (body.history[hsi] && typeof body.history[hsi] === 'object') body.history[hsi].pluginVersion = CURRENT_PLUGIN_VERSION;
           }
           if (!validateHistoryForWrite(body.history)) {
-            badRequest(ctx, 'invalid_history_structure');
+            /* v1.8.0 D130 — debug: подробная причина чтобы починить багов было проще. */
+            var diag = diagnoseHistoryWrite(body.history);
+            badRequest(ctx, 'invalid_history_structure: ' + (diag.where || 'unknown') + ' (record[' + diag.idx + '])');
             return;
           }
           var hStr = JSON.stringify(body.history);
@@ -1672,7 +1802,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.7.1' });
+        ctx.response.json({ version: '1.8.2' });
       }
     },
 
@@ -2310,7 +2440,9 @@ if (typeof module !== 'undefined' && module.exports) {
     ALLOWED_HISTORY_SNAP_KEYS:    ALLOWED_HISTORY_SNAP_KEYS,
     ALLOWED_WORKING_DRAFT_KEYS:   ALLOWED_WORKING_DRAFT_KEYS,
     ALLOWED_SETTINGS_KEYS:        ALLOWED_SETTINGS_KEYS,
+    ALLOWED_ITEM_KEYS:            ALLOWED_ITEM_KEYS,
     ALLOWED_KPE_KEYS:             ALLOWED_KPE_KEYS,
+    validateItem:                 validateItem,
     validateSettings:             validateSettings,
   });
 }

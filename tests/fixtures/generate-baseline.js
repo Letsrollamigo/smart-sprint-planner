@@ -99,7 +99,18 @@ const HISTORY = [
     confirmedBy:  'fixture_user_validator',
     finishedAt:   1777766400000,
     finishedBy:   'fixture_user_validator',
-    items:        [],
+    items:        [
+      /* v1.8.0 D130 — first fixture item carrying externalTicketId.
+         Validates ALLOWED_ITEM_KEYS extension + ForRead/ForWrite acceptance. */
+      {
+        issueId:          'FIX-1',
+        title:            'Fixture task with external ID',
+        inclusionStatus:  'INC_PLANNED',
+        addedAt:          1776556800000,
+        addedBy:          'fixture_user_validator',
+        externalTicketId: 'EXT-1234'
+      }
+    ],
     personalPlanning: {},
     hasWorkingCopy: false,
     revisions:    [],

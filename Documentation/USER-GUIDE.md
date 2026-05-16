@@ -102,6 +102,7 @@ For each active role:
 - **`userField`** — assignee field (`Assignee`, `Developer`, `Tester`).
 - **Direct editing** (`dynEditEnabled`, v1.4.0 rename — was *Inline editing*) — enables editing of `State` / `System` / `Priority` / `XPriority` directly from the sprint table with a write-back to YouTrack.
 - Also: `fieldPriority`, `fieldXPriority`, `fieldState`, `fieldSystem`, `fieldSprint`, `fieldVersion`.
+- **`fieldExternalTicketId`** (v1.8.0) — external ticket ID field. Select a YouTrack `string`-type custom field that stores the ID (or URL) of the corresponding ticket in an external system (Service Desk, Jira, 1C, SAP, etc.). Once configured, a read-only **«External ID»** column appears in the role composition table, the assignee view, and the sprint history. If the value matches `https?://…`, it renders as a clickable link; otherwise it renders as plain text. The field is populated automatically when you pick tasks or refresh estimates; the value is frozen in confirmed snapshots. Leave empty to disable the feature entirely.
 
 ### 3.3 Calculation norms
 

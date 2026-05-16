@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.7.1",
+  "version": "1.8.2",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.7.1 — UX polish + pre-existing kpe whitelist fix. Settings: sections collapse-by-default with auto-expand on nav-chip click; save button now fixed at bottom (sticky regression fix); rescan stub button tooltip works (wrap-span pattern). Toast UX: moved to bottom-right above save row, never blocks underlying clicks. i18n audit: all workflow messages and toasts go through localization layer. Critical: kpe whitelist now accepts canonical English grade keys (Intern/Junior/Middle/Senior) — pre-existing v1.4.1 bug that caused invalid_settings_structure on settings save in clean projects. See CHANGELOG.md.",
+  "changeNotes": "v1.8.2 (consolidates v1.8.0+v1.8.1+v1.8.2 since v1.7.1) — New feature: External ticket ID. Optional Settings dropdown selects a YouTrack string field that stores ticket IDs in external systems (Service Desk, Jira, 1C, SAP, …); read-only column appears in role composition, assignee view, and history (2nd position, right after issue ID); URL values render as clickable links; sortable; auto-populated from YT at pick/refresh. UX architecture overhaul: per-role status badges in widget header (replaces misleading min-aggregation), per-role badge on role cards, Settings → «Other fields» grouped Required (Priority/State *) vs Optional (XPriority, System, External ID, Sprint, Version), optional columns hide when not configured, soft warning for unset required fields, role context preserved when jumping to People tab, role selector visually elevated, history spoiler shows sprint name + role in collapsed view. Critical fixes: working-copy NONE-level revisions blocking POST history (backend whitelist + frontend skip), externalTicketId actually persisted to history, widget header refreshes after working-copy commit, sprint selector updates immediately after «+ New sprint», status badges wrap correctly with 4-9 active roles, inline-error highlight on sprint param validation (toast-visibility fix). 4 new i18n keys (External ID feature) + 8 new i18n keys (UX strings) × 15 locales = 180 new translation strings, all locales fully translated. First item-level schema migration in registry (additive, no breaking changes). 185 unit tests pass. All v1.6.x and v1.7.x snapshots upgrade transparently. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

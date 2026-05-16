@@ -216,7 +216,9 @@
     .field input:focus, .field select:focus { border-color: var(--primary); }
     .field input::placeholder { color: var(--muted); }
     .field input[readonly] { opacity: .6; cursor: default; }
-    .field-err { font-size: 11px; color: var(--error); }
+    .field-err { font-size: 11px; color: var(--error); display: block; margin-top: 4px; min-height: 1em; }
+    /* v1.8.2 — inline error highlight на input при validation fail. */
+    .field input.field-err-input { border-color: var(--error) !important; box-shadow: 0 0 0 2px rgba(224,90,106,.18); }
 
     /* ── Чекбоксы ролей ── */
     .roles-grid {
@@ -1087,11 +1089,37 @@
       border: 1px solid var(--border); border-radius: var(--radius);
       padding: 5px 8px; font-size: 13px;
     }
+    /* v1.8.2 — гарантированный wrap бейджей статусов независимо от количества ролей (до 9).
+       Раньше: при 9 ролях бейджи уходили в горизонтальный скролл (родитель не мог shrink).
+       Теперь: явно width:100% + max-width:100% + min-width:0 + overflow:hidden на контейнере;
+       внутри бейджи компактные (font-size:10px, padding:2px 6px), flex-shrink:0 + flex-wrap:wrap. */
+    .widget-header { min-width: 0; max-width: 100%; }
+    .widget-header__sprint { min-width: 0 !important; flex-shrink: 1 !important; }
     .widget-header__badge {
-      display: inline-block; padding: 3px 10px; border-radius: 12px;
-      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
-      cursor: help; white-space: nowrap;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      width: 100%;
+      flex: 0 0 100%;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      padding: 0;
+      background: transparent;
+      border: none;
+      cursor: default;
     }
+    .widget-header__badge .s-badge {
+      flex: 0 0 auto;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      white-space: nowrap;
+      letter-spacing: .2px;
+      line-height: 1.4;
+    }
+    /* Старые single-status модификаторы оставляем для совместимости с другими элементами */
     .widget-header__badge--planning  { background: rgba(120, 120, 120, .18); color: #555; }
     .widget-header__badge--confirmed { background: rgba(120, 180, 255, .25); color: #1f4a7d; }
     .widget-header__badge--allocated { background: rgba(120, 200, 140, .28); color: #1f7a3a; }
@@ -1189,9 +1217,45 @@
     .planning-role-card:not(.expanded) .planning-role-body { display: none; }
 
     /* v5.5.0 — Этап 3c: уровень «Люди» — селектор роли, empty-state, summary, индикатор режима */
-    .planning-people-roleSel { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .planning-people-roleSel label { font-weight: 500; }
-    .planning-people-roleSel select { min-width: 220px; padding: 6px 10px; }
+    /* v1.8.1 — выбор роли на «Людях» сделан более явным:
+       — крупный label, акцент-бордюр, иконка, увеличенный select. */
+    .planning-people-roleSel {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px 16px;
+      border-left: 4px solid var(--primary, #4a90e2);
+      background: var(--surface-2, rgba(74,144,226,0.06));
+    }
+    .planning-people-roleSel::before {
+      content: '👥';
+      font-size: 20px;
+      margin-right: 2px;
+    }
+    .planning-people-roleSel label {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .planning-people-roleSel select {
+      min-width: 260px;
+      padding: 8px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 2px solid var(--primary, #4a90e2);
+      border-radius: 4px;
+      background: var(--surface, #fff);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .planning-people-roleSel select:hover,
+    .planning-people-roleSel select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(74,144,226,0.2);
+    }
     .empty-state {
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       padding: 36px 20px; border: 1px dashed var(--border); border-radius: var(--radius);
@@ -1908,34 +1972,59 @@
             <span data-i18n="cardOtherFields">Прочие поля</span>
             <span class="card-title-badge">enum / state / version / user</span>
           </summary>
+          <!-- v1.8.0 D131 — Группировка: обязательные (Priority + State) / необязательные. -->
+          <div class="card-subtitle" style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px" data-i18n="cardOtherFieldsRequired">Обязательные</div>
           <div class="form-grid form-grid--3">
             <div class="field">
-              <label for="s_priority" data-i18n="fldPriority">Приоритет</label>
+              <label for="s_priority">
+                <span data-i18n="fldPriority">Приоритет</span>
+                <span style="color:var(--error);margin-left:2px" title="обязательное поле">*</span>
+              </label>
               <select id="s_priority" class="app-select"><option value="">— не выбрано —</option></select>
             </div>
             <div class="field">
-              <label for="s_xpriority" data-i18n="fldXpriority">Сквозной приоритет</label>
+              <label for="s_state">
+                <span data-i18n="fldState">Состояние</span>
+                <span style="color:var(--error);margin-left:2px" title="обязательное поле">*</span>
+              </label>
+              <select id="s_state" class="app-select"><option value="">— не выбрано —</option></select>
+            </div>
+          </div>
+          <div class="card-subtitle" style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:16px;margin-bottom:8px" data-i18n="cardOtherFieldsOptional">Необязательные</div>
+          <div class="form-grid form-grid--3">
+            <div class="field">
+              <label for="s_xpriority">
+                <span data-i18n="fldXpriority">Сквозной приоритет</span>
+                <span style="font-size:9px;opacity:.6" data-i18n="fldOptionalSuffix">(необязательно)</span>
+              </label>
               <select id="s_xpriority" class="app-select"><option value="">— не выбрано —</option></select>
             </div>
             <div class="field">
-              <label for="s_state" data-i18n="fldState">Состояние</label>
-              <select id="s_state" class="app-select"><option value="">— не выбрано —</option></select>
-            </div>
-            <div class="field">
-              <label for="s_system" data-i18n="fldSystem">Система</label>
+              <label for="s_system">
+                <span data-i18n="fldSystem">Система</span>
+                <span style="font-size:9px;opacity:.6" data-i18n="fldOptionalSuffix">(необязательно)</span>
+              </label>
               <select id="s_system" class="app-select"><option value="">— не выбрано —</option></select>
+            </div>
+            <!-- v1.8.0 D130 — Etap В.2 — External ticket ID dropdown -->
+            <div class="field">
+              <label for="s_external_ticket_id">
+                <span data-i18n="fldExternalTicketId">ID задачи во внешней системе</span>
+                <span style="font-size:9px;opacity:.6" data-i18n="fldOptionalSuffix">(необязательно)</span>
+              </label>
+              <select id="s_external_ticket_id" class="app-select"><option value="">— не выбрано —</option></select>
             </div>
             <div class="field">
               <label for="s_sprint_field">
                 <span data-i18n="fldSprint">Поле спринта</span>
-                <span style="font-size:9px;opacity:.6" data-i18n="fldSprintOptional">(необязательно)</span>
+                <span style="font-size:9px;opacity:.6" data-i18n="fldOptionalSuffix">(необязательно)</span>
               </label>
               <select id="s_sprint_field" class="app-select"><option value="">— не выбрано —</option></select>
             </div>
             <div class="field">
               <label for="s_version_field">
                 <span data-i18n="fldVersion">Версия</span>
-                <span style="font-size:9px;opacity:.6" data-i18n="fldVersionOptional">(необязательно)</span>
+                <span style="font-size:9px;opacity:.6" data-i18n="fldOptionalSuffix">(необязательно)</span>
               </label>
               <select id="s_version_field" class="app-select"><option value="">— не выбрано —</option></select>
             </div>
