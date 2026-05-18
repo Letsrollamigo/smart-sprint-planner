@@ -2138,7 +2138,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.8.2";
+    var APP_VERSION = "1.8.3";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",

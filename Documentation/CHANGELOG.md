@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.8.3] — 2026-05-18
+
+> **Marketplace approval hotfix.** Response to JB Marketplace reviewer feedback (Stanislav Dubin, 2026-05-18): «Plugin settings manager group» should use the native YouTrack UserGroup picker rather than a plain text input. v1.8.3 ships the schema change + a backend resolver that transparently handles both the new picker output (`{id, name}` object) and the legacy text-input value (string with a manually-typed group name).
+
+### Changed
+- **`settings.json:settingsManagerGroup`** — `type` changed from `string` to `object` with `x-entity: "UserGroup"`. In Project Settings → Apps → Smart Sprint Planner this setting now opens the standard YouTrack group picker (search-as-you-type, group avatar, validated reference) instead of a free-text input.
+
+### Fixed (compat)
+- **`isSettingsManagerConfigured(ctx)`** and **`isSettingsManager(ctx)`** in `backend-project.js` now accept both shapes of the value:
+  - **New shape** (post-upgrade picker output): `{ id: "...", name: "..." }` object. Resolver uses `id` and `name` for `userInGroups()` membership check.
+  - **Legacy shape** (existing installations where the setting was filled before v1.8.3): plain string with the group name. Resolver continues to treat it as the group name for `userInGroups()`.
+- **`GET /check-settings-manager` endpoint** updated to extract `groupName` from either shape so the client-side «who can manage settings» status banner keeps working without re-configuration.
+
+### Backward compatibility
+- **No re-configuration required** for existing installations. The legacy string value remains valid until the project administrator opens Project Settings → Apps and saves with the new picker (at which point YouTrack writes the new object shape).
+- **No schema migration required** — `settings.json` schema lives in app-settings (`ctx.settings`), not in plugin storage (`ssp_*` namespace). `SCHEMA_MIGRATIONS` registry unchanged.
+- All v1.8.2 fixtures still pass under v1.8.3 validators (193 unit tests).
+
+### Other
+- New `tests/fixtures/snapshots/1.8.3/` baseline (byte-identical to `1.8.2/` except `pluginVersion: "1.8.3"`).
+- Version bump across the standard 6 points + zip filename.
+
+---
+
 ## [1.8.2] — 2026-05-17
 
 > **GitHub publication target.** This release consolidates v1.8.0 + v1.8.1 + v1.8.2 — the first two were local-only iterations during the UX polish cycle and never shipped to GitHub. Per `CLAUDE.md` → «Release notes на публикацию», all changes since the last published release (v1.7.1) are merged into the v1.8.2 release notes. Intermediate `## [1.8.0]` and `## [1.8.1]` sections below are preserved for development audit but are not user-visible in the GitHub Release UI.

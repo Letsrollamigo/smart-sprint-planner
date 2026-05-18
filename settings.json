@@ -6,8 +6,9 @@
   "properties": {
     "settingsManagerGroup": {
       "title": "Plugin settings manager group (required)",
-      "description": "Name of a YouTrack group whose members can access the «Plugin settings» widget. While empty, all plugin mutations are denied (deny-by-default). Set only by a project administrator via Project Settings → Apps. CANNOT be set from inside the plugin — this removes the chicken-and-egg vulnerability of initial setup.",
-      "type": "string",
+      "description": "YouTrack user group whose members can access the «Plugin settings» widget. While empty, all plugin mutations are denied (deny-by-default). Set only by a project administrator via Project Settings → Apps. CANNOT be set from inside the plugin — this removes the chicken-and-egg vulnerability of initial setup.",
+      "type": "object",
+      "x-entity": "UserGroup",
       "x-scope": "PROJECT"
     },
     "enableDebugLog": {

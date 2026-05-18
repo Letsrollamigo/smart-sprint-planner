@@ -8,6 +8,30 @@
 
 ---
 
+## [1.8.3] — 2026-05-18
+
+> **Hotfix для одобрения на JB Marketplace.** Ответ на review-feedback от reviewer'а Stanislav Dubin (2026-05-18): настройка «Plugin settings manager group» должна использовать нативный YouTrack-picker группы пользователей, а не plain text input. v1.8.3 ставит изменение схемы + backend-resolver, прозрачно работающий с обеими формами значения (новый object `{id, name}` от picker'а и legacy строка с вручную набранным именем группы).
+
+### Изменено
+- **`settings.json:settingsManagerGroup`** — `type` изменён с `string` на `object` + `x-entity: "UserGroup"`. В Project Settings → Apps → Smart Sprint Planner эта настройка теперь открывает стандартный YouTrack picker группы (поиск по мере ввода, аватар группы, валидированная ссылка) вместо свободного текстового поля.
+
+### Исправлено (совместимость)
+- **`isSettingsManagerConfigured(ctx)`** и **`isSettingsManager(ctx)`** в `backend-project.js` теперь принимают обе формы значения:
+  - **Новая форма** (post-upgrade picker output): объект `{ id: "...", name: "..." }`. Resolver использует `id` и `name` для membership-проверки через `userInGroups()`.
+  - **Legacy форма** (существующие установки, где настройка была заполнена до v1.8.3): строка с именем группы. Resolver продолжает трактовать её как имя группы для `userInGroups()`.
+- **Endpoint `GET /check-settings-manager`** обновлён — извлекает `groupName` из любой формы, чтобы клиентский status-banner «кто может управлять настройками» работал без re-configuration.
+
+### Обратная совместимость
+- **Re-configuration не требуется** для существующих установок. Legacy-строка остаётся валидной до момента когда project administrator откроет Project Settings → Apps и сохранит новым picker'ом (YouTrack тогда запишет новую object-форму).
+- **Schema-миграция не нужна** — `settings.json` schema живёт в app-settings (`ctx.settings`), не в plugin storage (`ssp_*` namespace). `SCHEMA_MIGRATIONS` registry без изменений.
+- Все fixtures v1.8.2 продолжают проходить под validators v1.8.3 (193 unit-теста).
+
+### Прочее
+- Новый baseline `tests/fixtures/snapshots/1.8.3/` (byte-identical с `1.8.2/`, кроме `pluginVersion: "1.8.3"`).
+- Version bump по стандартным 6 точкам + zip filename.
+
+---
+
 ## [1.8.2] — 2026-05-17
 
 > **Цель GitHub-публикации.** Этот релиз консолидирует v1.8.0 + v1.8.1 + v1.8.2 — первые две версии были локальными итерациями полировки UX и не публиковались на GitHub. По правилу `CLAUDE.md` → «Release notes на публикацию», все изменения с момента последнего published-релиза (v1.7.1) объединены в release notes v1.8.2. Промежуточные секции `## [1.8.0]` и `## [1.8.1]` ниже сохранены для аудита разработки, но в GitHub Release UI пользователю не показываются.
