@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.8.3",
+  "version": "1.8.4",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.8.3 — Marketplace approval fix. The «Plugin settings manager group» setting in Project Settings → Apps → Smart Sprint Planner now uses the native YouTrack UserGroup picker (x-entity:UserGroup) instead of a plain text input. Backend group-membership resolver accepts both the new object value (id + name) and the legacy string value, so existing installations with a manually-typed group name continue to work unchanged through the upgrade — no re-configuration required. All other v1.8.2 changes carry over unchanged. See CHANGELOG.md.",
+  "changeNotes": "v1.8.4 — Marketplace approval hotfix #2: settings.json `$schema` URL changed from `https://json-schema.org/draft-07/schema#` to `http://json-schema.org/draft-07/schema#`. The AJV validator used by YouTrack's project app configuration UI does not resolve HTTPS schema references; the previous HTTPS form caused a runtime error («no schema with key or ref ...») when saving the Group value in Project Settings → Apps → Smart Sprint Planner. The HTTP form is the documented canonical identifier for JSON Schema Draft 7 and is what AJV expects. Includes an accumulated description-text polish in the same file (no logic change). See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

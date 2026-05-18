@@ -8,6 +8,27 @@
 
 ---
 
+## [1.8.4] — 2026-05-18
+
+> **Hotfix №2 для одобрения на JB Marketplace.** Ответ на follow-up от reviewer'а Stanislav Dubin (2026-05-18, 16:46 GMT+2): сохранение значения Group в Project Settings → Apps → Smart Sprint Planner выбрасывало runtime-ошибку «no schema with key or ref `https://json-schema.org/draft-07/schema#`», потому что AJV validator, используемый UI конфигурации project app в YouTrack, не резолвит HTTPS schema references (известное ограничение AJV — см. [Stack Overflow #69133771](https://stackoverflow.com/questions/69133771/ajv-no-schema-with-key-or-ref-https-json-schema-org-draft-07-schema)). HTTP — документированный канонический идентификатор для JSON Schema Draft 7, и именно его ждёт AJV.
+
+### Исправлено
+- **`settings.json:$schema`** — URL изменён с `https://json-schema.org/draft-07/schema#` на `http://json-schema.org/draft-07/schema#`. Изменение в один символ (убрана `s`). Решает AJV validation-ошибку при сохранении значения Group, которая появилась после schema-миграции v1.8.3 на `type: "object"` + `x-entity: "UserGroup"`.
+
+### Изменено
+- **Полировка описаний в `settings.json`** (накоплено с прошлой сессии, отгружено вместе с фиксом `$schema`). Без изменений логики. Top-level `description` плюс per-property `description` для `settingsManagerGroup` и `enableDebugLog` переписаны: убран внутренний жаргон («chicken-and-egg vulnerability») в пользу более ясного admin-facing языка. Видно проектным администраторам в Project Settings → Apps → Smart Sprint Planner.
+
+### Обратная совместимость
+- **Breaking changes нет.** Schema URL — parser hint, не сохраняется в persisted data, существующие установки не затронуты.
+- **Миграции в `SCHEMA_MIGRATIONS` registry нет** (`settings.json` живёт в app-settings, не в plugin storage namespace `ssp_*`).
+- Все fixtures v1.8.3 продолжают проходить через validators v1.8.4 (**201 unit-тест**, +8 fixture-тестов для 1.8.4 baseline).
+
+### Прочее
+- Новый baseline `tests/fixtures/snapshots/1.8.4/` (byte-identical с `1.8.3/`, кроме `pluginVersion: "1.8.4"`).
+- Version bump по стандартным 6 точкам + zip filename.
+
+---
+
 ## [1.8.3] — 2026-05-18
 
 > **Hotfix для одобрения на JB Marketplace.** Ответ на review-feedback от reviewer'а Stanislav Dubin (2026-05-18): настройка «Plugin settings manager group» должна использовать нативный YouTrack-picker группы пользователей, а не plain text input. v1.8.3 ставит изменение схемы + backend-resolver, прозрачно работающий с обеими формами значения (новый object `{id, name}` от picker'а и legacy строка с вручную набранным именем группы).
