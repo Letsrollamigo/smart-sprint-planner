@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.8.5] — 2026-05-18
+
+> **UX polish — two changes bundled.** (1) New dedicated *Save sprint parameters* button in the *Sprint intro* card on the Planning tab. (2) Click-anchored toast positioning — toasts now appear ~280px above the last user click, on the opposite X-side from the click, guaranteeing visibility in the parent viewport and preventing overlap with the just-clicked button. Both changes are visible UX surface only, no schema impact.
+
+### Added
+- **`#saveSprintIntroBtn` in `card-sprint-intro` (D130)** — new editor-only button rendered directly under the optional Sprint / Version block. The shared fields (sprint name, start/end dates, optional Sprint / Version select) live at the top of the page, but until now the only way to save them was via the per-role *Save parameters* button buried inside an expanded role accordion — a violation of the principle of least surprise. The new button is an additional explicit entry point; per-role buttons continue to work as before (they still save the shared fields together with the role's resource). On click: validates `sprintName` + `dateStart` + `dateEnd` with the same inline-error helpers introduced in v1.8.2 (`_showFieldError` / `_clearFieldErrors` on `#errName` / `#errDate` + duplicate toast as backup signal), then writes `_sprint.name` / `dateStart` / `dateEnd` / `sprintFieldVal` / `versionFieldVal` and POSTs the new sprint via `apiPost('sprint-data', { sprint: _sprint })`. On success: refreshes the widget header (sprint selector label + status badge) and surfaces the standard `toastSprintSaved` notification.
+- **New i18n key `btnSaveSprintIntro`** in all 15 supported locales (cs, de, en, es, fr, hu, it, ja, ko, nl, pl, pt, ru, tr, zh).
+
+### Changed
+- **Click-anchored toast positioning (D131)** — replaces the previous `position: fixed; bottom: 80px; right: 24px` CSS-only approach (v1.7.1 simplification) with a click-anchored runtime positioning subsystem. The YouTrack widget runs in a sandboxed iframe where `position: fixed` pins to the iframe frame rather than the parent viewport, and `window.parent.document` is cross-origin blocked. The new subsystem captures `mousedown` coordinates via a document-level capture listener (`_lastClickX` / `_lastClickY`); the `toast()` function then positions the toast ~280px above the click, on the opposite X-side, guaranteeing visibility in the parent viewport without overlapping the just-clicked button. Because the iframe has no own scroll (stretched to content), iframe-doc click coordinates equal visible parent-viewport coordinates. A best-effort attempt is made first to attach the toast to `window.top.document` or `window.parent.document` (in case YouTrack ever removes sandboxing); on cross-origin failure the function falls back to local iframe positioning. Message text is normalised: `\n+` → ` · ` for single-line presentation; CSS `white-space: nowrap` + `text-overflow: ellipsis` prevents the «square block» rendering that long messages caused in earlier iterations. `pointer-events: none` remains enforced on `.toast` and `.toast.show` — clicks always pass through to the underlying button. **Origin**: ported from the proprietary fork (sessions 7.2.5 → 7.2.8, fifth and final iteration after four failed approaches: CSS bottom-fixed, frame-element bottom-pin, frame-element top-pin with line-clamp, parent-document host).
+- **No change to existing handlers.** `doSaveRoleHeader(rk)` (`#saveHeaderBtn_<rk>` inside per-role accordions) keeps its current behaviour: it still saves both the shared sprint fields and the role-specific resource. The new save button is purely additive. No `toast()` callsite was touched — only the function body was rewritten; all 100+ callsites continue to work transparently.
+
+### Backward compatibility
+- **No breaking changes.** No schema fields touched, no whitelist changes, no `SCHEMA_MIGRATIONS` entry.
+- All v1.8.4 fixtures still pass under v1.8.5 validators (**209 unit tests**, +4 fixture-tests for the 1.8.5 baseline).
+- Toast subsystem is contained in `widgets/main/src/legacy-monolith.js` only; no backend or storage impact.
+
+### Other
+- New `tests/fixtures/snapshots/1.8.5/` baseline (byte-identical to `1.8.4/` except `pluginVersion: "1.8.5"`).
+- Version bump across the standard 6 points + zip filename.
+- Bundle size: `widgets/main/main.js` grew from 522.1 KB → 526.6 KB (+4.5 KB for the toast positioning subsystem).
+
+---
+
 ## [1.8.4] — 2026-05-18
 
 > **Marketplace approval hotfix #2.** Response to JB Marketplace reviewer follow-up (Stanislav Dubin, 2026-05-18, 16:46 GMT+2): saving the Group value in Project Settings → Apps → Smart Sprint Planner threw a runtime error «no schema with key or ref `https://json-schema.org/draft-07/schema#`» because the AJV validator used by the YouTrack project app configuration UI does not resolve HTTPS schema references (known AJV limitation — see [Stack Overflow #69133771](https://stackoverflow.com/questions/69133771/ajv-no-schema-with-key-or-ref-https-json-schema-org-draft-07-schema)). HTTP is the documented canonical identifier for JSON Schema Draft 7 anchor and is what AJV expects.

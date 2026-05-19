@@ -196,6 +196,7 @@
   "cardComposition": "스프린트 구성",
   "btnNewSprint": "➕ 새 스프린트",
   "btnSaveParams": "💾 매개변수 저장",
+  "btnSaveSprintIntro": "💾 스프린트 설정 저장",
   "btnPickTasks": "+ 작업 선택",
   "btnRefreshTasks": "⟳ 작업 데이터 새로고침",
   "btnRecalc": "∑ 잔여 재계산",

@@ -532,16 +532,35 @@
 
     /* ── Toast ── */
     /* v1.7.1 — toast UX fix:
-       - перемещён из top-right в bottom-right (раньше перекрывал хедер виджета);
-       - bottom offset = 80px чтобы быть выше fixed .save-row (~52px + 28px margin);
-       - pointer-events: none ВСЕГДА (даже при .show) — клики проходят сквозь
-         тост на любой кнопке/инпуте под ним; пользователь не блокируется. */
+       - v1.7.1: bottom-right (раньше перекрывал хедер виджета).
+       - v1.8.5 D131 (cherry-pick из proprietary v7.2.8 К.1 v5): click-anchored
+         позиционирование. CSS — стартовая позиция top:24px right:24px (default
+         для случаев когда JS ещё не успел положить click-coords); JS toast()
+         переопределяет position:absolute + top/left/right в runtime на основе
+         _lastClickX/_lastClickY от capture mousedown-listener'а.
+         Причина: YT widget = sandboxed iframe. `position:fixed` пинит к раме
+         iframe'а, не к visible parent viewport (parent.innerHeight ≠ effective
+         visible region). `window.parent.document` cross-origin блокируется.
+         Единственный надёжный сигнал visible-области = координаты клика в
+         iframe-doc, т.к. iframe не имеет собственного scroll'а (растянут на
+         content, scroll живёт в parent). Toast рисуется ~280px выше клика на
+         противоположной X-стороне — гарантированно в visible поле, не
+         перекрывая нажатую кнопку.
+       - white-space:nowrap + overflow:hidden + text-overflow:ellipsis —
+         одна строка, гарантированно не «квадрат». JS toast() заменяет '\n+'
+         на ' · ' перед textContent для compact формы длинных сообщений.
+       - pointer-events:none ВСЕГДА (включая .show) — клики проходят сквозь
+         тост. */
     .toast {
-      position: fixed; bottom: 80px; right: 24px;
-      padding: 12px 20px; border-radius: var(--radius);
-      font-size: 13px; font-weight: 500;
-      max-width: 380px; box-shadow: var(--shadow); z-index: 9999;
-      opacity: 0; transform: translateY(10px);
+      position: fixed; top: 24px; right: 24px;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; line-height: 1.4;
+      max-width: 380px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: var(--shadow); z-index: 9999;
+      opacity: 0; transform: translateY(-10px);
       transition: opacity .2s, transform .2s;
       pointer-events: none;
     }
@@ -1476,6 +1495,13 @@
           <label for="versionFieldVal" data-i18n="lblVersionField">Версия</label>
           <select id="versionFieldVal" class="app-select"><option value="">— не выбрано —</option></select>
         </div>
+      </div>
+      <!-- v1.8.5 D130 — отдельная кнопка «Сохранить параметры спринта» для общих полей.
+           Дублирует часть doSaveRoleHeader, отвечающую только за _sprint.name/dateStart/dateEnd/sprintFieldVal/versionFieldVal,
+           без записи в _sprint[role.resKey]. Per-role кнопка «Сохранить параметры» внутри ролей остаётся как было. -->
+      <div class="sprint-intro-actions" style="margin-top:14px">
+        <button id="saveSprintIntroBtn" class="btn btn--primary editor-btn" data-i18n="btnSaveSprintIntro">💾 Сохранить параметры спринта</button>
+        <span class="field-err" id="errSprintIntro"></span>
       </div>
     </div>
     <div class="planning-levels" role="tablist">

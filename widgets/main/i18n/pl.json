@@ -196,6 +196,7 @@
   "cardComposition": "Skład sprintu",
   "btnNewSprint": "➕ Nowy sprint",
   "btnSaveParams": "💾 Zapisz parametry",
+  "btnSaveSprintIntro": "💾 Zapisz parametry sprintu",
   "btnPickTasks": "+ Wybierz zadania",
   "btnRefreshTasks": "⟳ Odśwież dane zadań",
   "btnRecalc": "∑ Przelicz pozostałe",

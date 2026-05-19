@@ -197,6 +197,7 @@
   "cardComposition": "Состав спринта",
   "btnNewSprint": "➕ Новый спринт",
   "btnSaveParams": "💾 Сохранить параметры",
+  "btnSaveSprintIntro": "💾 Сохранить параметры спринта",
   "btnPickTasks": "+ Подобрать задачи",
   "btnRefreshTasks": "⟳ Обновить данные по задачам",
   "btnRecalc": "∑ Пересчитать остаток",

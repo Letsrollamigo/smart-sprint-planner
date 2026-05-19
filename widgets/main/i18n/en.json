@@ -197,6 +197,7 @@
   "cardComposition": "Sprint Composition",
   "btnNewSprint": "➕ New Sprint",
   "btnSaveParams": "💾 Save Parameters",
+  "btnSaveSprintIntro": "💾 Save Sprint Parameters",
   "btnPickTasks": "+ Pick Tasks",
   "btnRefreshTasks": "⟳ Refresh Task Data",
   "btnRecalc": "∑ Recalculate Remainder",

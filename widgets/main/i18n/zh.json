@@ -196,6 +196,7 @@
   "cardComposition": "冲刺组成",
   "btnNewSprint": "➕ 新冲刺",
   "btnSaveParams": "💾 保存参数",
+  "btnSaveSprintIntro": "💾 保存冲刺参数",
   "btnPickTasks": "+ 选择任务",
   "btnRefreshTasks": "⟳ 刷新任务数据",
   "btnRecalc": "∑ 重新计算剩余",

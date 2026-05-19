@@ -8,6 +8,30 @@
 
 ---
 
+## [1.8.5] — 2026-05-18
+
+> **UX-полировка — два изменения объединены.** (1) Новая отдельная кнопка *«Сохранить параметры спринта»* в карточке *«Вводные данные по спринту»* на вкладке «Планирование». (2) Click-anchored позиционирование тостов — тосты теперь появляются ~280px выше последнего клика пользователя, на противоположной X-стороне от клика, что гарантирует видимость в parent viewport и исключает перекрытие нажатой кнопки. Оба изменения — visible UX surface only, без impact'а на schema.
+
+### Добавлено
+- **`#saveSprintIntroBtn` в `card-sprint-intro` (D130)** — новая editor-only кнопка, отрисованная прямо под блоком опциональных полей Спринт / Версия. Общие поля (название спринта, даты начала/окончания, опциональные селекторы Спринт / Версия) живут наверху страницы, но до этого релиза сохранить их можно было только через per-role кнопку *«Сохранить параметры»*, спрятанную внутри развёрнутого аккордеона роли — это противоречило principle of least surprise. Новая кнопка — **дополнительный** explicit entry point; per-role кнопки продолжают работать как раньше (они по-прежнему сохраняют и общие поля, и resource роли). По клику: валидирует `sprintName` + `dateStart` + `dateEnd` теми же inline-error хелперами, что и v1.8.2 (`_showFieldError` / `_clearFieldErrors` на `#errName` / `#errDate` + дублирующий toast как backup-сигнал), затем пишет `_sprint.name` / `dateStart` / `dateEnd` / `sprintFieldVal` / `versionFieldVal` и POST'ит новое состояние спринта через `apiPost('sprint-data', { sprint: _sprint })`. На success: рефрешит шапку виджета (label селектора спринта + status badge) и показывает стандартный `toastSprintSaved`.
+- **Новый i18n-ключ `btnSaveSprintIntro`** во всех 15 поддерживаемых локалях (cs, de, en, es, fr, hu, it, ja, ko, nl, pl, pt, ru, tr, zh).
+
+### Изменено
+- **Click-anchored позиционирование тостов (D131)** — заменяет предыдущий CSS-only подход `position: fixed; bottom: 80px; right: 24px` (упрощение v1.7.1) на runtime click-anchored positioning subsystem. YT widget работает в sandboxed iframe, где `position: fixed` пинит к раме iframe'а, а не к visible parent viewport; `window.parent.document` блокируется cross-origin guard'ом. Новая подсистема ловит координаты `mousedown` через document-level capture-listener (`_lastClickX` / `_lastClickY`); функция `toast()` затем располагает тост ~280px выше клика на противоположной X-стороне — гарантирует visibility в parent viewport без перекрытия нажатой кнопки. Поскольку iframe не имеет собственного scroll'а (растянут на content), iframe-doc координаты клика == visible parent-viewport координаты. Сначала best-effort попытка прицепить toast к `window.top.document` / `window.parent.document` (на случай если YT когда-то снимет sandbox); при cross-origin failure — fallback на local iframe positioning. Текст сообщения нормализован: `\n+` → ` · ` для single-line presentation; CSS `white-space: nowrap` + `text-overflow: ellipsis` исключает «квадрат», который длинные сообщения вызывали в предыдущих итерациях. `pointer-events: none` остаётся enforce'нутым на `.toast` и `.toast.show` — клики всегда проходят к подложке. **Origin**: cherry-pick из proprietary fork (сессии 7.2.5 → 7.2.8, пятая и финальная итерация после четырёх провалившихся подходов: CSS bottom-fixed, frame-element bottom-pin, frame-element top-pin с line-clamp, parent-document host).
+- **Существующие обработчики не тронуты.** `doSaveRoleHeader(rk)` (`#saveHeaderBtn_<rk>` внутри per-role аккордеонов) сохраняет текущее поведение: продолжает сохранять и общие поля спринта, и role-specific resource. Новая кнопка save — чисто additive. Ни один из 100+ callsite'ов `toast()` не тронут — переписано только тело функции; все callsite'ы продолжают работать прозрачно.
+
+### Обратная совместимость
+- **Breaking changes нет.** Schema-поля не тронуты, whitelist изменений нет, записи в `SCHEMA_MIGRATIONS` нет.
+- Все fixtures v1.8.4 продолжают проходить через validators v1.8.5 (**209 unit-тестов**, +4 fixture-теста для 1.8.5 baseline).
+- Toast subsystem — contained в `widgets/main/src/legacy-monolith.js`; никакого impact'а на backend или storage.
+
+### Прочее
+- Новый baseline `tests/fixtures/snapshots/1.8.5/` (byte-identical с `1.8.4/`, кроме `pluginVersion: "1.8.5"`).
+- Version bump по стандартным 6 точкам + zip filename.
+- Размер bundle'а: `widgets/main/main.js` вырос с 522.1 KB → 526.6 KB (+4.5 KB на toast positioning subsystem).
+
+---
+
 ## [1.8.4] — 2026-05-18
 
 > **Hotfix №2 для одобрения на JB Marketplace.** Ответ на follow-up от reviewer'а Stanislav Dubin (2026-05-18, 16:46 GMT+2): сохранение значения Group в Project Settings → Apps → Smart Sprint Planner выбрасывало runtime-ошибку «no schema with key or ref `https://json-schema.org/draft-07/schema#`», потому что AJV validator, используемый UI конфигурации project app в YouTrack, не резолвит HTTPS schema references (известное ограничение AJV — см. [Stack Overflow #69133771](https://stackoverflow.com/questions/69133771/ajv-no-schema-with-key-or-ref-https-json-schema-org-draft-07-schema)). HTTP — документированный канонический идентификатор для JSON Schema Draft 7, и именно его ждёт AJV.

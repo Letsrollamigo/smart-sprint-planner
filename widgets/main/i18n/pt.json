@@ -196,6 +196,7 @@
   "cardComposition": "Composição do sprint",
   "btnNewSprint": "➕ Novo sprint",
   "btnSaveParams": "💾 Guardar parâmetros",
+  "btnSaveSprintIntro": "💾 Guardar parâmetros do sprint",
   "btnPickTasks": "+ Selecionar tarefas",
   "btnRefreshTasks": "⟳ Atualizar dados das tarefas",
   "btnRecalc": "∑ Recalcular restante",

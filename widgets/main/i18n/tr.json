@@ -196,6 +196,7 @@
   "cardComposition": "Sprint kompozisyonu",
   "btnNewSprint": "➕ Yeni sprint",
   "btnSaveParams": "💾 Parametreleri kaydet",
+  "btnSaveSprintIntro": "💾 Sprint parametrelerini kaydet",
   "btnPickTasks": "+ Görev seç",
   "btnRefreshTasks": "⟳ Görev verilerini yenile",
   "btnRecalc": "∑ Kalanı yeniden hesapla",

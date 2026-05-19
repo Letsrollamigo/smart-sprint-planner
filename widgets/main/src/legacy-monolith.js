@@ -777,15 +777,130 @@
   function fmtDate(ts)   { return ts ? new Date(ts).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; }
   function fmtDT(ts)     { return ts ? new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'; }
 
+  /* v1.8.5 D131 — Click-anchored toast (cherry-pick из proprietary v7.2.8 К.1 v5).
+     После серии итераций в proprietary (CSS-fixed bottom-right, frameElement bottom-pin,
+     frameElement top-pin + line-clamp, parent/top document host) единственный надёжный
+     способ показать toast в visible поле YT-iframe — позиционирование относительно
+     последнего mousedown. YT widget = sandboxed iframe: position:fixed пинит к раме,
+     не к visible parent viewport; window.parent.document cross-origin блокируется.
+     Iframe не имеет собственного scroll'а (растянут на content, scroll живёт в parent),
+     поэтому iframe-doc координаты клика совпадают с visible координатами в parent
+     viewport. Toast рисуется ~280px выше клика на противоположной X-стороне —
+     гарантированно в видимой области, не перекрывая нажатую кнопку.
+     Capture-фаза (third arg = true) обязательна — иначе stopPropagation'ы на конкретных
+     handler'ах прячут event от document-level listener'а. */
+  var _lastClickX = 0, _lastClickY = 0;
+  try {
+    document.addEventListener('mousedown', function(e) {
+      if (typeof e.clientY === 'number' && !isNaN(e.clientY)) {
+        _lastClickX = e.clientX;
+        _lastClickY = e.clientY;
+      }
+    }, true);
+  } catch(_){}
+  /* Best-effort попытка прицепить toast-host к window.top или window.parent document
+     (если когда-нибудь YT снимет sandboxing). На production YT обычно cross-origin
+     блокируется — тогда возвращаем null и используем local fallback в toast(). */
+  function _ensureParentToastHost() {
+    var candidates = [];
+    try { if (window.top    && window.top    !== window) candidates.push(window.top); } catch(_){}
+    try { if (window.parent && window.parent !== window && candidates.indexOf(window.parent) < 0) candidates.push(window.parent); } catch(_){}
+    for (var ci = 0; ci < candidates.length; ci++) {
+      var w = candidates[ci];
+      try {
+        var d = w.document;
+        if (!d || !d.body) continue;
+        var existing = d.getElementById('ssp-parent-toast-host');
+        if (existing) return existing;
+        var host = d.createElement('div');
+        host.id = 'ssp-parent-toast-host';
+        host.style.cssText = [
+          'position:fixed', 'top:24px', 'right:24px',
+          'z-index:2147483647',
+          'pointer-events:none',
+          'display:flex', 'flex-direction:column', 'gap:8px',
+          'max-width:50vw', 'max-height:50vh',
+          'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif'
+        ].join(';');
+        d.body.appendChild(host);
+        return host;
+      } catch(_) { /* cross-origin — пробуем следующий */ }
+    }
+    return null;
+  }
   function toast(msg, type) {
-    var el=document.getElementById('toast');
-    el.textContent=msg; el.className='toast toast--'+(type||'error');
+    var text = String(msg == null ? '' : msg).replace(/\n+/g, ' · ');
+    var t = type || 'error';
+    /* Path A — parent/top document host (если cross-origin позволил). */
+    var host = _ensureParentToastHost();
+    if (host) {
+      try {
+        var pDoc = host.ownerDocument || (host.parentNode && host.parentNode.ownerDocument);
+        if (!pDoc) throw new Error('host has no ownerDocument');
+        var item = pDoc.createElement('div');
+        var colors = {
+          error:   { bg: '#e05a6a', fg: '#fff' },
+          success: { bg: '#5cb368', fg: '#fff' },
+          warn:    { bg: '#e09a3a', fg: '#fff' },
+          info:    { bg: '#5b7cfa', fg: '#fff' },
+          err:     { bg: '#e05a6a', fg: '#fff' }
+        };
+        var c = colors[t] || colors.error;
+        item.style.cssText = [
+          'background:'+c.bg, 'color:'+c.fg,
+          'padding:10px 16px', 'border-radius:8px',
+          'font-size:13px', 'font-weight:500', 'line-height:1.4',
+          'box-shadow:0 4px 12px rgba(0,0,0,0.18)',
+          'opacity:0', 'transform:translateY(-8px)',
+          'transition:opacity .2s,transform .2s',
+          'pointer-events:none', 'max-width:100%',
+          'overflow-wrap:break-word', 'word-wrap:break-word',
+          'white-space:pre-wrap'
+        ].join(';');
+        item.textContent = text;
+        host.appendChild(item);
+        setTimeout(function(){ item.style.opacity = '1'; item.style.transform = 'translateY(0)'; }, 10);
+        setTimeout(function(){ item.style.opacity = '0'; item.style.transform = 'translateY(-8px)'; }, 4500);
+        setTimeout(function(){ if (item && item.parentNode) item.parentNode.removeChild(item); }, 4900);
+        return;
+      } catch(_){}
+    }
+    /* Path B — local iframe fallback с click-anchored позиционированием. */
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'toast toast--' + t;
+    /* Reset потенциальных предыдущих overrides. */
+    el.style.whiteSpace = 'pre-wrap';
+    el.style.overflow = 'visible';
+    el.style.textOverflow = '';
+    el.style.maxWidth = '420px';
+    el.style.maxHeight = '40vh';
+    el.style.overflowY = 'auto';
+    el.style.position = 'absolute';
+    el.style.pointerEvents = 'none';
+    el.style.bottom = '';
+    /* Y: ~280px выше клика. Если клик в верхней части (≤300px) — фиксируем top=8px. */
+    var anchorY = _lastClickY > 0 ? _lastClickY : 300;
+    var pageOff = window.pageYOffset || 0;
+    var toastTop = Math.max(8, anchorY + pageOff - 280);
+    el.style.top = toastTop + 'px';
+    /* X: противоположная сторона от клика — не перекрываем нажатую кнопку. */
+    var iframeWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
+    if (_lastClickX > iframeWidth / 2) {
+      el.style.left = '24px';
+      el.style.right = '';
+    } else {
+      el.style.right = '24px';
+      el.style.left = '';
+    }
     void el.offsetWidth; el.classList.add('show');
-    /* v1.7.1 — упростили позиционирование: убрали override на position:absolute
-       + top:<calc>+24px (v6.3.0 D102). Теперь position:fixed bottom:80px right:24px
-       из CSS работает корректно во всех frame-контекстах + не перекрывает хедер
-       виджета и интерактивные элементы (pointer-events:none пропускает клики). */
-    setTimeout(function(){el.classList.remove('show');},4500);
+    setTimeout(function(){
+      el.classList.remove('show');
+      el.style.position = ''; el.style.top = ''; el.style.right = ''; el.style.left = '';
+      el.style.whiteSpace = ''; el.style.overflow = ''; el.style.maxHeight = '';
+      el.style.overflowY = ''; el.style.maxWidth = '';
+    }, 4500);
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -803,7 +918,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.8.4';
+  var APP_VERSION = '1.8.5';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5549,6 +5664,101 @@
       toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
     });
   }
+
+  /* v1.8.5 D130 — Сохранить общие поля «Вводных данных по спринту» без role-resource части.
+     Отдельная кнопка #saveSprintIntroBtn в карточке card-sprint-intro: общие поля живут наверху,
+     раньше save-кнопка находилась только внутри per-role аккордеона (#saveHeaderBtn_<rk>), что
+     противоречило principle of least surprise. Per-role кнопка продолжает сохранять и общие поля,
+     и role-specific resource — изменений в doSaveRoleHeader нет. */
+  function doSaveSprintIntro() {
+    function _clearFieldErrors() {
+      ['sprintName','dateStart','dateEnd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('field-err-input');
+      });
+      var en = document.getElementById('errName'); if (en) en.textContent = '';
+      var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
+      var ei = document.getElementById('errSprintIntro'); if (ei) ei.textContent = '';
+    }
+    function _showFieldError(fieldId, errSpanId, msgKey) {
+      var fld = document.getElementById(fieldId);
+      var err = document.getElementById(errSpanId);
+      if (err) err.textContent = T(msgKey);
+      if (fld) {
+        fld.classList.add('field-err-input');
+        try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
+        try { fld.focus(); } catch(_){}
+      }
+      toast(T(msgKey), 'warn');
+    }
+    _clearFieldErrors();
+    var s = document.getElementById('dateStart').value;
+    var e = document.getElementById('dateEnd').value;
+    var nameVal = (document.getElementById('sprintName').value || '').trim();
+    var draftName = T('newSprintDraftName');
+    if (!nameVal || nameVal === draftName) {
+      _showFieldError('sprintName', 'errName', 'toastSprintNameRequired');
+      return;
+    }
+    if (!s) {
+      _showFieldError('dateStart', 'errDate', 'toastSprintDateStartRequired');
+      return;
+    }
+    if (!e) {
+      _showFieldError('dateEnd', 'errDate', 'toastSprintDateEndRequired');
+      return;
+    }
+    if (s && e && fromDateIn(e) < fromDateIn(s)) {
+      _showFieldError('dateEnd', 'errDate', 'toastDateError');
+      return;
+    }
+    _clearFieldErrors();
+    _sprint.name      = nameVal.substring(0,60);
+    _sprint.dateStart = fromDateIn(s);
+    _sprint.dateEnd   = fromDateIn(e);
+    var sprintFv  = document.getElementById('sprintFieldVal');
+    var versionFv = document.getElementById('versionFieldVal');
+    if (sprintFv)  _sprint.sprintFieldVal  = sprintFv.value  || null;
+    if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
+    _sprint.updatedAt = Date.now();
+    _sprint.updatedBy = _currentUser ? _currentUser.login : null;
+
+    var btn = document.getElementById('saveSprintIntroBtn');
+    var origLabel = btn ? btn.textContent : null;
+    if (btn) { btn.disabled = true; btn.textContent = T('toastSaving'); }
+    _markDirty('sprint');
+    _draftSet('sprint', _sprint);
+    _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
+    apiPost('sprint-data', { sprint: _sprint }).then(function() {
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || T('btnSaveSprintIntro'); }
+      toast(T('toastSprintSaved'), 'success');
+      /* Sync header + currentSprintId (как в doSaveRoleHeader при new-sprint flow). */
+      if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+        _currentSprintId = _sprint.sprintId;
+        var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
+      }
+      if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
+    }).catch(function(err) {
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || T('btnSaveSprintIntro'); }
+      toast(T('toastSaveError')+': '+(err&&err.message?err.message:err));
+    });
+  }
+
+  /* v1.8.5 D130 — bind handler один раз; defensive pattern с DOMContentLoaded. */
+  (function bindSaveSprintIntroHandler(){
+    function bind() {
+      var btn = document.getElementById('saveSprintIntroBtn');
+      if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', function(){ doSaveSprintIntro(); });
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bind);
+    } else {
+      bind();
+    }
+  })();
 
   /* ── Новый спринт ──
      v1.6.2 D126: переиспользуем единственный черновик с читаемым именем

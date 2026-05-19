@@ -196,6 +196,7 @@
   "cardComposition": "Sprint összetétele",
   "btnNewSprint": "➕ Új sprint",
   "btnSaveParams": "💾 Paraméterek mentése",
+  "btnSaveSprintIntro": "💾 Sprint-paraméterek mentése",
   "btnPickTasks": "+ Feladatok kiválasztása",
   "btnRefreshTasks": "⟳ Feladatadatok frissítése",
   "btnRecalc": "∑ Maradék újraszámítása",

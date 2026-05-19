@@ -218,6 +218,7 @@
     cardComposition: "Sprint Composition",
     btnNewSprint: "\u2795 New Sprint",
     btnSaveParams: "\u{1F4BE} Save Parameters",
+    btnSaveSprintIntro: "\u{1F4BE} Save Sprint Parameters",
     btnPickTasks: "+ Pick Tasks",
     btnRefreshTasks: "\u27F3 Refresh Task Data",
     btnRecalc: "\u2211 Recalculate Remainder",
@@ -788,6 +789,7 @@
     cardComposition: "\u0421\u043E\u0441\u0442\u0430\u0432 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     btnNewSprint: "\u2795 \u041D\u043E\u0432\u044B\u0439 \u0441\u043F\u0440\u0438\u043D\u0442",
     btnSaveParams: "\u{1F4BE} \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B",
+    btnSaveSprintIntro: "\u{1F4BE} \u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C \u043F\u0430\u0440\u0430\u043C\u0435\u0442\u0440\u044B \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
     btnPickTasks: "+ \u041F\u043E\u0434\u043E\u0431\u0440\u0430\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0438",
     btnRefreshTasks: "\u27F3 \u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u043E \u0437\u0430\u0434\u0430\u0447\u0430\u043C",
     btnRecalc: "\u2211 \u041F\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u0442\u044C \u043E\u0441\u0442\u0430\u0442\u043E\u043A",
@@ -2127,18 +2129,149 @@
     function fmtDT(ts) {
       return ts ? new Date(ts).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "\u2014";
     }
+    var _lastClickX = 0, _lastClickY = 0;
+    try {
+      document.addEventListener("mousedown", function(e) {
+        if (typeof e.clientY === "number" && !isNaN(e.clientY)) {
+          _lastClickX = e.clientX;
+          _lastClickY = e.clientY;
+        }
+      }, true);
+    } catch (_) {
+    }
+    function _ensureParentToastHost() {
+      var candidates = [];
+      try {
+        if (window.top && window.top !== window) candidates.push(window.top);
+      } catch (_) {
+      }
+      try {
+        if (window.parent && window.parent !== window && candidates.indexOf(window.parent) < 0) candidates.push(window.parent);
+      } catch (_) {
+      }
+      for (var ci = 0; ci < candidates.length; ci++) {
+        var w = candidates[ci];
+        try {
+          var d = w.document;
+          if (!d || !d.body) continue;
+          var existing = d.getElementById("ssp-parent-toast-host");
+          if (existing) return existing;
+          var host = d.createElement("div");
+          host.id = "ssp-parent-toast-host";
+          host.style.cssText = [
+            "position:fixed",
+            "top:24px",
+            "right:24px",
+            "z-index:2147483647",
+            "pointer-events:none",
+            "display:flex",
+            "flex-direction:column",
+            "gap:8px",
+            "max-width:50vw",
+            "max-height:50vh",
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif'
+          ].join(";");
+          d.body.appendChild(host);
+          return host;
+        } catch (_) {
+        }
+      }
+      return null;
+    }
     function toast(msg, type) {
+      var text = String(msg == null ? "" : msg).replace(/\n+/g, " \xB7 ");
+      var t = type || "error";
+      var host = _ensureParentToastHost();
+      if (host) {
+        try {
+          var pDoc = host.ownerDocument || host.parentNode && host.parentNode.ownerDocument;
+          if (!pDoc) throw new Error("host has no ownerDocument");
+          var item = pDoc.createElement("div");
+          var colors = {
+            error: { bg: "#e05a6a", fg: "#fff" },
+            success: { bg: "#5cb368", fg: "#fff" },
+            warn: { bg: "#e09a3a", fg: "#fff" },
+            info: { bg: "#5b7cfa", fg: "#fff" },
+            err: { bg: "#e05a6a", fg: "#fff" }
+          };
+          var c = colors[t] || colors.error;
+          item.style.cssText = [
+            "background:" + c.bg,
+            "color:" + c.fg,
+            "padding:10px 16px",
+            "border-radius:8px",
+            "font-size:13px",
+            "font-weight:500",
+            "line-height:1.4",
+            "box-shadow:0 4px 12px rgba(0,0,0,0.18)",
+            "opacity:0",
+            "transform:translateY(-8px)",
+            "transition:opacity .2s,transform .2s",
+            "pointer-events:none",
+            "max-width:100%",
+            "overflow-wrap:break-word",
+            "word-wrap:break-word",
+            "white-space:pre-wrap"
+          ].join(";");
+          item.textContent = text;
+          host.appendChild(item);
+          setTimeout(function() {
+            item.style.opacity = "1";
+            item.style.transform = "translateY(0)";
+          }, 10);
+          setTimeout(function() {
+            item.style.opacity = "0";
+            item.style.transform = "translateY(-8px)";
+          }, 4500);
+          setTimeout(function() {
+            if (item && item.parentNode) item.parentNode.removeChild(item);
+          }, 4900);
+          return;
+        } catch (_) {
+        }
+      }
       var el = document.getElementById("toast");
-      el.textContent = msg;
-      el.className = "toast toast--" + (type || "error");
+      if (!el) return;
+      el.textContent = text;
+      el.className = "toast toast--" + t;
+      el.style.whiteSpace = "pre-wrap";
+      el.style.overflow = "visible";
+      el.style.textOverflow = "";
+      el.style.maxWidth = "420px";
+      el.style.maxHeight = "40vh";
+      el.style.overflowY = "auto";
+      el.style.position = "absolute";
+      el.style.pointerEvents = "none";
+      el.style.bottom = "";
+      var anchorY = _lastClickY > 0 ? _lastClickY : 300;
+      var pageOff = window.pageYOffset || 0;
+      var toastTop = Math.max(8, anchorY + pageOff - 280);
+      el.style.top = toastTop + "px";
+      var iframeWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
+      if (_lastClickX > iframeWidth / 2) {
+        el.style.left = "24px";
+        el.style.right = "";
+      } else {
+        el.style.right = "24px";
+        el.style.left = "";
+      }
       void el.offsetWidth;
       el.classList.add("show");
       setTimeout(function() {
         el.classList.remove("show");
+        el.style.position = "";
+        el.style.top = "";
+        el.style.right = "";
+        el.style.left = "";
+        el.style.whiteSpace = "";
+        el.style.overflow = "";
+        el.style.maxHeight = "";
+        el.style.overflowY = "";
+        el.style.maxWidth = "";
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.8.4";
+    var APP_VERSION = "1.8.5";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -6610,6 +6743,118 @@
         toast(T("toastSaveError") + ": " + (e2 && e2.message ? e2.message : e2));
       });
     }
+    function doSaveSprintIntro() {
+      function _clearFieldErrors() {
+        ["sprintName", "dateStart", "dateEnd"].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el) el.classList.remove("field-err-input");
+        });
+        var en = document.getElementById("errName");
+        if (en) en.textContent = "";
+        var ed = document.getElementById("errDate");
+        if (ed) ed.textContent = "";
+        var ei = document.getElementById("errSprintIntro");
+        if (ei) ei.textContent = "";
+      }
+      function _showFieldError(fieldId, errSpanId, msgKey) {
+        var fld = document.getElementById(fieldId);
+        var err = document.getElementById(errSpanId);
+        if (err) err.textContent = T(msgKey);
+        if (fld) {
+          fld.classList.add("field-err-input");
+          try {
+            fld.scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (_) {
+          }
+          try {
+            fld.focus();
+          } catch (_) {
+          }
+        }
+        toast(T(msgKey), "warn");
+      }
+      _clearFieldErrors();
+      var s = document.getElementById("dateStart").value;
+      var e = document.getElementById("dateEnd").value;
+      var nameVal = (document.getElementById("sprintName").value || "").trim();
+      var draftName = T("newSprintDraftName");
+      if (!nameVal || nameVal === draftName) {
+        _showFieldError("sprintName", "errName", "toastSprintNameRequired");
+        return;
+      }
+      if (!s) {
+        _showFieldError("dateStart", "errDate", "toastSprintDateStartRequired");
+        return;
+      }
+      if (!e) {
+        _showFieldError("dateEnd", "errDate", "toastSprintDateEndRequired");
+        return;
+      }
+      if (s && e && fromDateIn(e) < fromDateIn(s)) {
+        _showFieldError("dateEnd", "errDate", "toastDateError");
+        return;
+      }
+      _clearFieldErrors();
+      _sprint.name = nameVal.substring(0, 60);
+      _sprint.dateStart = fromDateIn(s);
+      _sprint.dateEnd = fromDateIn(e);
+      var sprintFv = document.getElementById("sprintFieldVal");
+      var versionFv = document.getElementById("versionFieldVal");
+      if (sprintFv) _sprint.sprintFieldVal = sprintFv.value || null;
+      if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
+      _sprint.updatedAt = Date.now();
+      _sprint.updatedBy = _currentUser ? _currentUser.login : null;
+      var btn = document.getElementById("saveSprintIntroBtn");
+      var origLabel = btn ? btn.textContent : null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = T("toastSaving");
+      }
+      _markDirty("sprint");
+      _draftSet("sprint", _sprint);
+      _draftSet("meta", { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
+      apiPost("sprint-data", { sprint: _sprint }).then(function() {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origLabel || T("btnSaveSprintIntro");
+        }
+        toast(T("toastSprintSaved"), "success");
+        if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+          _currentSprintId = _sprint.sprintId;
+          var _uiNew = _draftGet("ui") || {};
+          _uiNew.currentSprintId = _currentSprintId;
+          _draftSet("ui", _uiNew);
+        }
+        if (typeof renderWidgetHeader === "function") {
+          try {
+            renderWidgetHeader();
+          } catch (_) {
+          }
+        }
+      }).catch(function(err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = origLabel || T("btnSaveSprintIntro");
+        }
+        toast(T("toastSaveError") + ": " + (err && err.message ? err.message : err));
+      });
+    }
+    (function bindSaveSprintIntroHandler() {
+      function bind() {
+        var btn = document.getElementById("saveSprintIntroBtn");
+        if (btn && !btn.dataset.bound) {
+          btn.dataset.bound = "1";
+          btn.addEventListener("click", function() {
+            doSaveSprintIntro();
+          });
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bind);
+      } else {
+        bind();
+      }
+    })();
     function doNewSprint(rk) {
       var draftName = T("newSprintDraftName");
       var isActiveDraft = _sprint && _sprint.status === STATUS.PLANNING && (!_sprint.name || _sprint.name === draftName);

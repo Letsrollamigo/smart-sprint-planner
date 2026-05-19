@@ -196,6 +196,7 @@
   "cardComposition": "Sprint-Zusammensetzung",
   "btnNewSprint": "➕ Neuer Sprint",
   "btnSaveParams": "💾 Parameter speichern",
+  "btnSaveSprintIntro": "💾 Sprint-Parameter speichern",
   "btnPickTasks": "+ Aufgaben auswählen",
   "btnRefreshTasks": "⟳ Aufgabendaten aktualisieren",
   "btnRecalc": "∑ Rest neu berechnen",

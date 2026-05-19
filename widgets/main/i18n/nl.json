@@ -196,6 +196,7 @@
   "cardComposition": "Sprint-samenstelling",
   "btnNewSprint": "➕ Nieuwe sprint",
   "btnSaveParams": "💾 Parameters opslaan",
+  "btnSaveSprintIntro": "💾 Sprint-parameters opslaan",
   "btnPickTasks": "+ Taken selecteren",
   "btnRefreshTasks": "⟳ Taakgegevens vernieuwen",
   "btnRecalc": "∑ Resterend opnieuw berekenen",

@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.8.4",
+  "version": "1.8.5",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.8.4 — Marketplace approval hotfix #2: settings.json `$schema` URL changed from `https://json-schema.org/draft-07/schema#` to `http://json-schema.org/draft-07/schema#`. The AJV validator used by YouTrack's project app configuration UI does not resolve HTTPS schema references; the previous HTTPS form caused a runtime error («no schema with key or ref ...») when saving the Group value in Project Settings → Apps → Smart Sprint Planner. The HTTP form is the documented canonical identifier for JSON Schema Draft 7 and is what AJV expects. Includes an accumulated description-text polish in the same file (no logic change). See CHANGELOG.md.",
+  "changeNotes": "v1.8.5 — UX polish, two changes bundled. (1) New 'Save sprint parameters' button in the 'Sprint intro' card on the Planning tab — explicit save entry point for the shared fields (sprint name, dates, optional Sprint/Version); the per-role 'Save parameters' button inside role accordions is unchanged and continues to save shared fields plus the role's resource. One new i18n key in 15 locales. (2) Click-anchored toast positioning — the YouTrack widget runs in a sandboxed iframe where `position:fixed` pins to the iframe frame rather than the parent viewport and `window.parent.document` is cross-origin blocked, which caused toasts to disappear off-screen or render as a vertical block. Toasts now capture the last user click coordinates and render ~280px above the click on the opposite X-side, guaranteeing visibility without overlapping the just-clicked button. Single-line `nowrap+ellipsis` rendering replaces the previous multi-line block. No schema impact, no breaking changes, 209 unit tests pass. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",
