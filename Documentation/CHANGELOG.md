@@ -8,6 +8,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.0] — 2026-05-19
+
+> **Etap Г — Sprint goals + Stand-up assist.** Two additive features closing Scrum-ceremonies (daily standup + sprint review). No breaking changes; all new fields are optional. 217 unit tests pass.
+
+### Added
+
+- **Sprint goal field (`_sprint.sprintGoal`, ≤500 chars)** — a shared optional text field in the *Sprint Intro* card (Planning tab), below the Sprint / Version optional selects and above the *Save sprint parameters* button. The goal is visible to all roles. On save, soft-warn toast fires 400 ms later if the field is left empty. The `#sprintGoal` textarea is populated automatically when switching between sprints.
+- **Sprint goal frozen in history snapshots** — when a role snapshot is saved (validate/confirm), `_sprint.sprintGoal` is copied into `_history[i].sprintGoal` (frozen at that moment, independent of subsequent edits to the live sprint).
+- **Outcome + retro dialog at confirm** — before `saveRoleHistorySnapshot` writes the snapshot, a modal dialog (*Confirm sprint outcome*) is shown:
+  - Read-only display of the current sprint goal (or a «goal was not set» notice if empty).
+  - Radio group: ✅ Achieved / ⚖ Partial / ❌ Missed (required — Confirm button is disabled until one is selected).
+  - Optional retrospective note textarea (≤1000 chars).
+  - Cancel reverts `_sprint.status` back to PLANNING.
+  - `goalOutcome` and `goalRetroNote` are stored on `_history[i]`.
+- **History view — goal + outcome in collapsed header** — the spoiler header now shows the outcome badge and a truncated goal (≤80 chars, full text in tooltip) alongside sprint name, role, and period. No need to expand the spoiler to see delivery status.
+- **History view — goal card in expanded body** — full goal text + outcome label + retro note rendered in a card above the confirmed-by line.
+- **🗣 Stand-up sub-tab** in Planning — new third level next to *Roles* and *Distribution by assignees*. Classifies the active role's sprint tasks into three buckets based on the last refreshed snapshot:
+  - ✅ **Done** — state ∈ `settings.standupDoneStates` (or last 2 positions of State Rollup order if not configured).
+  - 🔄 **In flight** — not Done, fact > 0 or `inclusionStatus = IN_PROGRESS`.
+  - 📋 **Not started** — not Done, fact = 0.
+  - Sprint goal banner above buckets (or a soft hint to add one if missing).
+  - Role switcher dropdown; 🔄 Refresh button triggers existing `/refresh-assignees` endpoint.
+  - Empty states: no sprint selected; role has no tasks.
+  - Hint if Done states are not configured.
+- **Settings → 🗣 Stand-up assist section** — new settings card with a multi-select `#standupDoneStatesList` populated from the same project state bundle as State Rollup. Selection is saved as `settings.standupDoneStates` (array of state name strings). If empty, the Stand-up view automatically falls back to the last 2 positions of `stateRollupOrder`.
+- **Backend: new optional fields accepted** — `validateSprintForWrite/Read` accepts `sprintGoal`; `_validateHistoryRecord` / `diagnoseHistoryWrite` accept `sprintGoal`, `goalOutcome` (enum `achieved|partial|missed`), `goalRetroNote`; `validateSettings` accepts `standupDoneStates` (array ≤50 unique strings).
+- **`SCHEMA_MIGRATIONS[2]`** — `{from:'1.8.0', to:'1.9.0', migrate:noop}` covering all additive fields (sprint + history + settings).
+- **i18n** — 35 new keys (19 sprint-goals + 16 stand-up) in all 15 locales. EN + RU: full translations. 13 other locales: `[v1.9.0]`-prefixed EN placeholders (full translations in v1.9.1).
+
+### Backward compatibility
+
+- **No breaking changes.** All new fields are optional. Sprint snapshots created in v1.8.x open without errors — `sprintGoal` is `undefined`, goal card is not rendered, outcome dialog shows «goal was not set» notice and still accepts outcome selection.
+- All v1.8.5 fixtures pass under v1.9.0 validators (**217 unit tests**, +4 fixture-tests for the 1.9.0 baseline).
+- Existing `standupDoneStates = []` (or missing) → Stand-up gracefully falls back to `stateRollupOrder`-based Done classification.
+
+### Other
+
+- New `tests/fixtures/snapshots/1.9.0/` baseline: `sprint-baseline.json` with `sprintGoal` set; `history.json` with `goalOutcome: "achieved"` + `goalRetroNote` on first record.
+- `tests/unit/snapshot-migration.test.js` updated: `SCHEMA_MIGRATIONS.length === 3`.
+- `tests/unit/external-ticket-id.test.js` updated: `CURRENT_PLUGIN_VERSION is 1.9.0`.
+- 6-point version bump (manifest, package.json, APP\_VERSION, CURRENT\_PLUGIN\_VERSION, app-version endpoint, zip filename).
+- Bundle size: `widgets/main/main.js` grew from 526.6 KB → 549.6 KB (+23 KB for goal dialog + stand-up view).
+
+---
+
 ## [1.8.5] — 2026-05-18
 
 > **UX polish — two changes bundled.** (1) New dedicated *Save sprint parameters* button in the *Sprint intro* card on the Planning tab. (2) Click-anchored toast positioning — toasts now appear ~280px above the last user click, on the opposite X-side from the click, guaranteeing visibility in the parent viewport and preventing overlap with the just-clicked button. Both changes are visible UX surface only, no schema impact.

@@ -5,7 +5,8 @@
     "editingFromHistory", "historyIdx",
     "sprintFieldVal", "versionFieldVal", "personalPlanning",
     "migrationLog",
-    "pluginVersion"
+    "pluginVersion",
+    "sprintGoal"
   ],
   "ALLOWED_HISTORY_SNAP_KEYS": [
     "sprintId", "name", "status", "roleKey", "roleLabel",
@@ -15,7 +16,8 @@
     "settings", "items", "personalPlanning",
     "hasWorkingCopy", "revisions",
     "migrationLog",
-    "pluginVersion"
+    "pluginVersion",
+    "sprintGoal", "goalOutcome", "goalRetroNote"
   ],
   "ALLOWED_WORKING_DRAFT_KEYS": [
     "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",

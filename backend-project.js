@@ -158,7 +158,8 @@ var ALLOWED_SPRINT_KEYS = [
   'versionFieldVal',
   'personalPlanning',
   'migrationLog',
-  'pluginVersion'
+  'pluginVersion',
+  'sprintGoal'
 ];
 var ALLOWED_HISTORY_SNAP_KEYS = [
   'sprintId',
@@ -181,7 +182,10 @@ var ALLOWED_HISTORY_SNAP_KEYS = [
   'hasWorkingCopy',
   'revisions',
   'migrationLog',
-  'pluginVersion'
+  'pluginVersion',
+  'sprintGoal',
+  'goalOutcome',
+  'goalRetroNote'
 ];
 var ALLOWED_WORKING_DRAFT_KEYS = [
   'schemaVersion',
@@ -211,7 +215,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.8.5';
+var CURRENT_PLUGIN_VERSION = '1.9.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -351,6 +355,17 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.7.0', to: '1.8.0',
     migrate: function (snap) { /* no-op: items.externalTicketId — optional additive field */ },
     note: 'v1.8.0: Added optional externalTicketId on sprint items (Etap В.2)'
+  },
+  /* v1.9.0 D132 — Etap Г — Sprint goals + Stand-up assist.
+     sprint.sprintGoal — optional string ≤ 500 (shared sprint-level goal).
+     history[i].sprintGoal — optional string ≤ 500 (frozen from sprint at confirm).
+     history[i].goalOutcome — optional enum {achieved,partial,missed}.
+     history[i].goalRetroNote — optional string ≤ 1000 (retro comment at confirm).
+     settings.standupDoneStates — optional array<string>, state names for Done bucket.
+     All fields optional/additive — no-op migration. */
+  { from: '1.8.0', to: '1.9.0',
+    migrate: function (snap) { /* no-op: all goal/standup fields are optional additive */ },
+    note: 'v1.9.0: Added optional sprintGoal (_sprint + _history) + goalOutcome/goalRetroNote (_history) + standupDoneStates (settings) — Etap Г'
   }
 ];
 
@@ -533,6 +548,10 @@ function validateSprintForWrite(sprint) {
   }
   if (sprint.personalPlanning !== undefined && sprint.personalPlanning !== null
       && typeof sprint.personalPlanning !== 'object') return false;
+  /* v1.9.0 D132 — Sprint goal: optional string ≤ 500. */
+  if (sprint.sprintGoal !== undefined && sprint.sprintGoal !== null) {
+    if (!assertStr(sprint.sprintGoal, 500)) return false;
+  }
   if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
@@ -571,6 +590,10 @@ function validateSprintForRead(sprint) {
   }
   if (sprint.personalPlanning !== undefined && sprint.personalPlanning !== null
       && typeof sprint.personalPlanning !== 'object') return false;
+  /* v1.9.0 D132 — Sprint goal: optional string ≤ 500. */
+  if (sprint.sprintGoal !== undefined && sprint.sprintGoal !== null) {
+    if (!assertStr(sprint.sprintGoal, 500)) return false;
+  }
   if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
@@ -736,7 +759,9 @@ var ALLOWED_SETTINGS_KEYS = [
   'stateRollupFloor',
   'stateRollupStrategy',
   'stateRollupRescanRequested',
-  'stateRollupRescanRequestedAt'
+  'stateRollupRescanRequestedAt',
+  /* v1.9.0 D132 — Stand-up assist: admin-configurable list of state names that count as Done. */
+  'standupDoneStates'
 ];
 
 /* v1.7.0: KPE whitelist accepts both legacy Russian keys (Стажёр/Джун/Мидл/Синьор)
@@ -905,6 +930,15 @@ function validateSettings(settings) {
     if (typeof settings.stateRollupRescanRequestedAt !== 'number'
         || !isFinite(settings.stateRollupRescanRequestedAt)) return false;
   }
+  /* v1.9.0 D132 — Stand-up assist: standupDoneStates — array<string ≤200>, max 50, unique. */
+  if (settings.standupDoneStates !== undefined && settings.standupDoneStates !== null) {
+    if (!isStrArr(settings.standupDoneStates, 200, 50)) return false;
+    var sdsSeen = {};
+    for (var sds = 0; sds < settings.standupDoneStates.length; sds++) {
+      if (sdsSeen[settings.standupDoneStates[sds]]) return false;
+      sdsSeen[settings.standupDoneStates[sds]] = true;
+    }
+  }
   return true;
 }
 
@@ -969,6 +1003,16 @@ function _validateHistoryRecord(h, i, strict) {
       if (!assertStr(rv.by, 200)) return false;
       if (typeof rv.level !== 'string' || ALLOWED_REVISION_LEVELS.indexOf(rv.level) < 0) return false;
     }
+  }
+  /* v1.9.0 D132 — Sprint goals fields on history snapshot. */
+  if (h.sprintGoal !== undefined && h.sprintGoal !== null) {
+    if (!assertStr(h.sprintGoal, 500)) return false;
+  }
+  if (h.goalOutcome !== undefined && h.goalOutcome !== null) {
+    if (typeof h.goalOutcome !== 'string' || ['achieved','partial','missed'].indexOf(h.goalOutcome) < 0) return false;
+  }
+  if (h.goalRetroNote !== undefined && h.goalRetroNote !== null) {
+    if (!assertStr(h.goalRetroNote, 1000)) return false;
   }
   if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
   if (!validatePluginVersion(h.pluginVersion)) return false;
@@ -1087,6 +1131,18 @@ function diagnoseHistoryWrite(history) {
     if (!validatePluginVersion(h.pluginVersion)) return { ok: false, where: 'pluginVersion_invalid:' + h.pluginVersion + ' type=' + typeof h.pluginVersion, idx: i };
     var migErr = validateMigrationLog(h.migrationLog, 'history[' + i + ']');
     if (migErr !== null) return { ok: false, where: 'migrationLog_invalid: ' + migErr, idx: i };
+    /* v1.9.0 D132 — Sprint goals fields. */
+    if (h.sprintGoal !== undefined && h.sprintGoal !== null && !assertStr(h.sprintGoal, 500)) {
+      return { ok: false, where: 'sprintGoal_invalid: len=' + (h.sprintGoal && h.sprintGoal.length), idx: i };
+    }
+    if (h.goalOutcome !== undefined && h.goalOutcome !== null) {
+      if (typeof h.goalOutcome !== 'string' || ['achieved','partial','missed'].indexOf(h.goalOutcome) < 0) {
+        return { ok: false, where: 'goalOutcome_invalid:' + h.goalOutcome, idx: i };
+      }
+    }
+    if (h.goalRetroNote !== undefined && h.goalRetroNote !== null && !assertStr(h.goalRetroNote, 1000)) {
+      return { ok: false, where: 'goalRetroNote_invalid: len=' + (h.goalRetroNote && h.goalRetroNote.length), idx: i };
+    }
   }
   return { ok: true, where: null, idx: -1 };
 }
@@ -1823,7 +1879,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.8.5' });
+        ctx.response.json({ version: '1.9.0' });
       }
     },
 

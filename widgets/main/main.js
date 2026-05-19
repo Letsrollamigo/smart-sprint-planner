@@ -586,7 +586,41 @@
     toastStateRollupRescanFailed: "Rescan request failed. Check workflow status.",
     ssbStateRollup: "State rollup",
     hintSsbStateRollup: "State rollup status (parent.State \u2190 min children)",
-    toastMaxGroupsReached: "Maximum 100 groups reached"
+    toastMaxGroupsReached: "Maximum 100 groups reached",
+    lblSprintGoal: "\u{1F3AF} Sprint goal",
+    phSprintGoal: "What the team wants to achieve by sprint end",
+    hintSprintGoal: "One or two lines. Not a task list \u2014 an outcome.",
+    errSprintGoalTooLong: "Sprint goal must be \u2264 500 characters",
+    toastSprintGoalMissing: "Sprint goal is empty \u2014 consider adding one",
+    dialogConfirmGoalTitle: "Confirm sprint outcome",
+    lblGoalOutcome: "Goal outcome",
+    optGoalAchieved: "\u2705 Achieved",
+    optGoalPartial: "\u2696 Partial",
+    optGoalMissed: "\u274C Missed",
+    lblGoalRetroNote: "Retrospective note (optional)",
+    phGoalRetroNote: "What worked / didn't work toward this goal",
+    errGoalRetroNoteTooLong: "Retro note must be \u2264 1000 characters",
+    btnConfirmGoal: "Confirm sprint",
+    btnCancelGoal: "Cancel",
+    histGoalLabel: "\u{1F3AF} Goal",
+    histOutcomeLabel: "Outcome",
+    histRetroLabel: "\u{1F4DD} Retro",
+    histGoalNotSet: "Sprint goal was not set",
+    planningLevelStandup: "\u{1F5E3} Stand-up",
+    cardStandupSettings: "\u{1F5E3} Stand-up assist",
+    lblStandupDoneStates: "Done states for Stand-up",
+    hintStandupDoneStates: "Tasks in these states appear in the Done bucket. If empty, the last 2 positions of State Rollup order are used.",
+    standupRoleLabel: "Role:",
+    btnStandupRefresh: "\u{1F504} Refresh",
+    toastStandupRefreshed: "Stand-up refreshed",
+    standupBucketDone: "\u2705 Done",
+    standupBucketInflight: "\u{1F504} In flight",
+    standupBucketNotStarted: "\u{1F4CB} Not started",
+    standupNoSprint: "Pick a sprint in the widget header or create a new one.",
+    standupEmptyRole: "No tasks in this role. Add tasks in \xABRoles\xBB.",
+    standupGoalLabel: "\u{1F3AF} Sprint goal:",
+    standupGoalMissing: "Sprint goal is not set. Add it in the Sprint Intro card.",
+    standupNoDoneStatesHint: "Configure Done states in Settings \u2192 Stand-up to populate the Done bucket."
   };
 
   // widgets/main/i18n/ru.json
@@ -1157,7 +1191,41 @@
     toastStateRollupRescanFailed: "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u043F\u0435\u0440\u0435\u0441\u0447\u0451\u0442. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0441\u0442\u0430\u0442\u0443\u0441 workflow.",
     ssbStateRollup: "\u041A\u0430\u0441\u043A\u0430\u0434 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439",
     hintSsbStateRollup: "\u0421\u0442\u0430\u0442\u0443\u0441 \u043A\u0430\u0441\u043A\u0430\u0434\u0430 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439 (parent.State \u2190 min children)",
-    toastMaxGroupsReached: "\u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442 \u043B\u0438\u043C\u0438\u0442 \u0432 100 \u0433\u0440\u0443\u043F\u043F"
+    toastMaxGroupsReached: "\u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442 \u043B\u0438\u043C\u0438\u0442 \u0432 100 \u0433\u0440\u0443\u043F\u043F",
+    lblSprintGoal: "\u{1F3AF} \u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    phSprintGoal: "\u0427\u0442\u043E \u043A\u043E\u043C\u0430\u043D\u0434\u0430 \u0445\u043E\u0447\u0435\u0442 \u0434\u043E\u0441\u0442\u0438\u0447\u044C \u043A \u043A\u043E\u043D\u0446\u0443 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    hintSprintGoal: "\u041E\u0434\u043D\u0430-\u0434\u0432\u0435 \u0441\u0442\u0440\u043E\u043A\u0438. \u041D\u0435 \xAB\u0441\u043F\u0438\u0441\u043E\u043A \u0437\u0430\u0434\u0430\u0447\xBB, \u0430 outcome.",
+    errSprintGoalTooLong: "\u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0434\u043B\u0438\u043D\u043D\u0435\u0435 500 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432",
+    toastSprintGoalMissing: "\u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430 \u2014 \u0440\u0435\u043A\u043E\u043C\u0435\u043D\u0434\u0443\u0435\u043C \u0437\u0430\u043F\u043E\u043B\u043D\u0438\u0442\u044C",
+    dialogConfirmGoalTitle: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u0440\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442\u0430 \u0441\u043F\u0440\u0438\u043D\u0442\u0430",
+    lblGoalOutcome: "\u0420\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442 \u043F\u043E \u0446\u0435\u043B\u0438",
+    optGoalAchieved: "\u2705 \u0414\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442\u0430",
+    optGoalPartial: "\u2696 \u0427\u0430\u0441\u0442\u0438\u0447\u043D\u043E",
+    optGoalMissed: "\u274C \u041D\u0435 \u0434\u043E\u0441\u0442\u0438\u0433\u043D\u0443\u0442\u0430",
+    lblGoalRetroNote: "\u0417\u0430\u043C\u0435\u0442\u043A\u0430 \u0440\u0435\u0442\u0440\u043E\u0441\u043F\u0435\u043A\u0442\u0438\u0432\u044B (\u043E\u043F\u0446\u0438\u043E\u043D\u0430\u043B\u044C\u043D\u043E)",
+    phGoalRetroNote: "\u0427\u0442\u043E \u0441\u0440\u0430\u0431\u043E\u0442\u0430\u043B\u043E / \u043D\u0435 \u0441\u0440\u0430\u0431\u043E\u0442\u0430\u043B\u043E \u0434\u043B\u044F \u0434\u043E\u0441\u0442\u0438\u0436\u0435\u043D\u0438\u044F \u0446\u0435\u043B\u0438",
+    errGoalRetroNoteTooLong: "\u0417\u0430\u043C\u0435\u0442\u043A\u0430 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0431\u044B\u0442\u044C \u0434\u043B\u0438\u043D\u043D\u0435\u0435 1000 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432",
+    btnConfirmGoal: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C \u0441\u043F\u0440\u0438\u043D\u0442",
+    btnCancelGoal: "\u041E\u0442\u043C\u0435\u043D\u0430",
+    histGoalLabel: "\u{1F3AF} \u0426\u0435\u043B\u044C",
+    histOutcomeLabel: "\u0420\u0435\u0437\u0443\u043B\u044C\u0442\u0430\u0442",
+    histRetroLabel: "\u{1F4DD} \u0420\u0435\u0442\u0440\u043E",
+    histGoalNotSet: "\u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043D\u0435 \u0431\u044B\u043B\u0430 \u0437\u0430\u0434\u0430\u043D\u0430",
+    planningLevelStandup: "\u{1F5E3} Stand-up",
+    cardStandupSettings: "\u{1F5E3} Stand-up assist",
+    lblStandupDoneStates: "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F \xABDone\xBB \u0434\u043B\u044F Stand-up",
+    hintStandupDoneStates: "\u0417\u0430\u0434\u0430\u0447\u0438 \u0432 \u044D\u0442\u0438\u0445 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F\u0445 \u043F\u043E\u043F\u0430\u0434\u0430\u044E\u0442 \u0432 bucket \xABDone\xBB. \u0415\u0441\u043B\u0438 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u043E \u2014 \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u044E\u0442\u0441\u044F \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 2 \u043F\u043E\u0437\u0438\u0446\u0438\u0438 \xAB\u041F\u043E\u0440\u044F\u0434\u043A\u0430 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0439\xBB \u0438\u0437 State Rollup.",
+    standupRoleLabel: "\u0420\u043E\u043B\u044C:",
+    btnStandupRefresh: "\u{1F504} \u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C",
+    toastStandupRefreshed: "Stand-up \u043E\u0431\u043D\u043E\u0432\u043B\u0451\u043D",
+    standupBucketDone: "\u2705 Done",
+    standupBucketInflight: "\u{1F504} \u0412 \u0440\u0430\u0431\u043E\u0442\u0435",
+    standupBucketNotStarted: "\u{1F4CB} \u041D\u0435 \u043D\u0430\u0447\u0430\u0442\u043E",
+    standupNoSprint: "\u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0441\u043F\u0440\u0438\u043D\u0442 \u0432 \u0448\u0430\u043F\u043A\u0435 \u0438\u043B\u0438 \u0441\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043D\u043E\u0432\u044B\u0439.",
+    standupEmptyRole: "\u0421\u043E\u0441\u0442\u0430\u0432 \u0440\u043E\u043B\u0438 \u043F\u0443\u0441\u0442 \u2014 \u0434\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u0437\u0430\u0434\u0430\u0447\u0438 \u0432 \xAB\u0420\u043E\u043B\u0438\xBB.",
+    standupGoalLabel: "\u{1F3AF} \u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430:",
+    standupGoalMissing: "\u0426\u0435\u043B\u044C \u0441\u043F\u0440\u0438\u043D\u0442\u0430 \u043D\u0435 \u0437\u0430\u0434\u0430\u043D\u0430. \u0414\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u0432 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0435 \xAB\u0412\u0432\u043E\u0434\u043D\u044B\u0435 \u0434\u0430\u043D\u043D\u044B\u0435\xBB.",
+    standupNoDoneStatesHint: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u0441\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u044F \xABDone\xBB \u0432 \u0440\u0430\u0437\u0434\u0435\u043B\u0435 \u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u2192 Stand-up."
   };
 
   // widgets/main/src/i18n/languages.js
@@ -2271,7 +2339,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.8.5";
+    var APP_VERSION = "1.9.0";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -4506,6 +4574,37 @@
           diag("planning people render err: " + e, "err");
         }
       }
+      if (level === "standup") {
+        _populateStandupRoleSel();
+        try {
+          renderStandupView();
+        } catch (e) {
+          diag("standup render err: " + e, "err");
+        }
+      }
+    }
+    function _populateStandupRoleSel() {
+      var sel = document.getElementById("standupRoleSel");
+      if (!sel) return;
+      var activeRoles = getActiveRoles();
+      sel.innerHTML = "";
+      activeRoles.forEach(function(r) {
+        var o = document.createElement("option");
+        o.value = r.key;
+        o.textContent = r.label;
+        sel.appendChild(o);
+      });
+      if (_activeSubtab && activeRoles.some(function(r) {
+        return r.key === _activeSubtab;
+      })) {
+        sel.value = _activeSubtab;
+      }
+      sel.onchange = function() {
+        try {
+          renderStandupView();
+        } catch (_) {
+        }
+      };
     }
     document.querySelectorAll(".planning-level-btn").forEach(function(btn) {
       btn.addEventListener("click", function() {
@@ -5043,6 +5142,172 @@
         sel.appendChild(o);
       });
     }
+    function _fillStandupDoneStatesSel(bundleStates, currentDone) {
+      var sel = document.getElementById("standupDoneStatesList");
+      if (!sel) return;
+      sel.innerHTML = "";
+      (bundleStates || []).forEach(function(name) {
+        var o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        if ((currentDone || []).indexOf(name) >= 0) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    function _stateRollupFallbackDone() {
+      var order = _settings && Array.isArray(_settings.stateRollupOrder) ? _settings.stateRollupOrder : [];
+      return order.length >= 2 ? order.slice(-2) : order.length === 1 ? order.slice(-1) : [];
+    }
+    function _classifyStandupBuckets(taskAssignmentsMap, doneStates) {
+      var done = [], inflight = [], notStarted = [];
+      Object.keys(taskAssignmentsMap || {}).forEach(function(issueId) {
+        var a = taskAssignmentsMap[issueId];
+        if (!a) return;
+        var state = (a.state || "").trim();
+        var isDone = doneStates.length > 0 && doneStates.indexOf(state) >= 0;
+        if (isDone) {
+          done.push(issueId);
+          return;
+        }
+        var factSum = 0;
+        Object.keys(a).forEach(function(k) {
+          if (/^fact_/.test(k)) factSum += a[k] || 0;
+        });
+        if (factSum > 0 || a.inclusionStatus === "IN_PROGRESS") {
+          inflight.push(issueId);
+        } else {
+          notStarted.push(issueId);
+        }
+      });
+      return { done, inflight, notStarted };
+    }
+    function _renderStandupBucket(containerId, titleKey, issueIds, rk) {
+      var el = document.getElementById(containerId);
+      if (!el) return;
+      var pp = _sprint && _sprint.personalPlanning && _sprint.personalPlanning[rk];
+      var assignments = pp && pp.taskAssignments || {};
+      var roleItems = _roleItems && _roleItems[rk] || [];
+      el.innerHTML = "";
+      var hdr = document.createElement("div");
+      hdr.style.cssText = "font-weight:600;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border,#e0e0e0)";
+      hdr.textContent = T(titleKey) + " (" + issueIds.length + ")";
+      el.appendChild(hdr);
+      if (!issueIds.length) {
+        var emp = document.createElement("div");
+        emp.style.cssText = "font-size:11px;color:var(--muted,#888);text-align:center;padding:12px 0";
+        emp.textContent = "\u2014";
+        el.appendChild(emp);
+        return;
+      }
+      issueIds.forEach(function(issueId) {
+        var a = assignments[issueId] || {};
+        var item = roleItems.find(function(i) {
+          return i.issueId === issueId;
+        });
+        var title = item && item.title || issueId;
+        var url = item && item.url || "";
+        var factSum = 0;
+        Object.keys(a).forEach(function(k) {
+          if (/^fact_/.test(k)) factSum += a[k] || 0;
+        });
+        var planH = a["estimate_" + rk] || item && item["estimate_" + rk] || 0;
+        var row = document.createElement("div");
+        row.style.cssText = "padding:5px 0;border-bottom:1px solid var(--border,#e0e0e0);font-size:12px;";
+        var idHtml = url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" style="font-weight:600;color:var(--primary)">' + esc(issueId) + "</a>" : '<span style="font-weight:600">' + esc(issueId) + "</span>";
+        var titleTrunc = title.length > 60 ? title.substring(0, 57) + "\u2026" : title;
+        var hoursHtml = planH ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + "/" + fmtHours(planH) + "</span>" : factSum ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + "</span>" : "";
+        var assignee = a.assignee || item && item.assignee || "";
+        var assigneeHtml = assignee ? '<div style="font-size:11px;color:var(--muted,#888);margin-top:2px">@' + esc(assignee) + "</div>" : "";
+        row.innerHTML = hoursHtml + idHtml + ' <span title="' + esc(title) + '" style="color:var(--text)">' + esc(titleTrunc) + "</span>" + assigneeHtml;
+        el.appendChild(row);
+      });
+    }
+    function renderStandupView() {
+      var noSprint = document.getElementById("standupNoSprint");
+      var emptyRole = document.getElementById("standupEmptyRole");
+      var buckets = document.getElementById("standupBuckets");
+      var noDoneHint = document.getElementById("standupNoDoneStatesHint");
+      var goalBanner = document.getElementById("standupGoalBanner");
+      var goalMissing = document.getElementById("standupGoalMissingHint");
+      var goalText = document.getElementById("standupGoalText");
+      if (!_sprint) {
+        if (noSprint) noSprint.classList.remove("hidden");
+        if (emptyRole) emptyRole.classList.add("hidden");
+        if (buckets) buckets.style.display = "none";
+        if (noDoneHint) noDoneHint.style.display = "none";
+        if (goalBanner) goalBanner.style.display = "none";
+        if (goalMissing) goalMissing.style.display = "none";
+        return;
+      }
+      if (noSprint) noSprint.classList.add("hidden");
+      var sel = document.getElementById("standupRoleSel");
+      var rk = sel ? sel.value : _activeSubtab || "";
+      if (!rk) {
+        var activeRoles = getActiveRoles();
+        rk = activeRoles.length ? activeRoles[0].key : "";
+      }
+      if (_sprint.sprintGoal) {
+        if (goalBanner) {
+          goalBanner.style.display = "";
+          if (goalText) goalText.textContent = _sprint.sprintGoal;
+        }
+        if (goalMissing) goalMissing.style.display = "none";
+      } else {
+        if (goalBanner) goalBanner.style.display = "none";
+        if (goalMissing) goalMissing.style.display = "";
+      }
+      var pp = _sprint.personalPlanning && _sprint.personalPlanning[rk];
+      var assignments = pp && pp.taskAssignments || {};
+      var hasItems = Object.keys(assignments).length > 0;
+      var roleItems = _roleItems && _roleItems[rk] || [];
+      if (!hasItems && !roleItems.length) {
+        if (emptyRole) emptyRole.classList.remove("hidden");
+        if (buckets) buckets.style.display = "none";
+        if (noDoneHint) noDoneHint.style.display = "none";
+        return;
+      }
+      if (emptyRole) emptyRole.classList.add("hidden");
+      if (buckets) buckets.style.display = "";
+      var doneStates = _settings && Array.isArray(_settings.standupDoneStates) && _settings.standupDoneStates.length ? _settings.standupDoneStates : _stateRollupFallbackDone();
+      if (noDoneHint) noDoneHint.style.display = doneStates.length ? "none" : "";
+      var unifiedMap = {};
+      roleItems.forEach(function(item) {
+        unifiedMap[item.issueId] = { state: item.state, inclusionStatus: item.inclusionStatus };
+        Object.keys(item).forEach(function(k) {
+          if (/^(fact_|estimate_|alloc_)/.test(k)) unifiedMap[item.issueId][k] = item[k];
+        });
+      });
+      Object.keys(assignments).forEach(function(id) {
+        if (!unifiedMap[id]) unifiedMap[id] = {};
+        var a = assignments[id];
+        if (a.state) unifiedMap[id].state = a.state;
+        if (a.assignee) unifiedMap[id].assignee = a.assignee;
+      });
+      var classified = _classifyStandupBuckets(unifiedMap, doneStates);
+      _renderStandupBucket("standupBucketDone", "standupBucketDone", classified.done, rk);
+      _renderStandupBucket("standupBucketInflight", "standupBucketInflight", classified.inflight, rk);
+      _renderStandupBucket("standupBucketNotStarted", "standupBucketNotStarted", classified.notStarted, rk);
+    }
+    function doStandupRefresh() {
+      if (!_sprint) return;
+      var btn = document.getElementById("standupRefreshBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = T("toastSaving");
+      }
+      apiPost("refresh-assignees", { sprintId: _sprint.sprintId }).then(function(res) {
+        if (res && res.sprint) _sprint = res.sprint;
+        renderStandupView();
+        toast(T("toastStandupRefreshed"), "success");
+      }).catch(function(e) {
+        diag("standup refresh err: " + e, "err");
+      }).finally(function() {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = T("btnStandupRefresh");
+        }
+      });
+    }
     function _fillStateRollupFloorSel(orderArray, currentFloor) {
       var sel = document.getElementById("stateRollupFloorSel");
       if (!sel) return;
@@ -5225,6 +5490,7 @@
         _fillStateRollupResolvedSel(bundleStates, srResolved);
         _fillStateRollupFloorSel(srOrder, srFloor);
         _refreshStateRollupValidation();
+        _fillStandupDoneStatesSel(bundleStates, _settings && Array.isArray(_settings.standupDoneStates) ? _settings.standupDoneStates : []);
       });
       _bindStateRollupButtons();
       var defLangSel = document.getElementById("defaultLangSel");
@@ -5468,6 +5734,14 @@
         /* v6.1.0 D82 (F5) — assigner-роль (variant b: assignee + start/end-dates). */
         assignerGroups: _assignerGroupsState.ids.slice(),
         assignerGroupNames: _assignerGroupsState.names.slice(),
+        /* v1.9.0 D132 — Stand-up done states: selected options from multi-select. */
+        standupDoneStates: function() {
+          var sel = document.getElementById("standupDoneStatesList");
+          if (!sel) return [];
+          return Array.from(sel.selectedOptions).map(function(o) {
+            return o.value;
+          });
+        }(),
         savedAt: Date.now()
       };
       ALL_ROLES.forEach(function(role) {
@@ -6574,6 +6848,8 @@
       document.getElementById("sprintName").value = _sprint.name || "";
       document.getElementById("dateStart").value = toDateIn(_sprint.dateStart);
       document.getElementById("dateEnd").value = toDateIn(_sprint.dateEnd);
+      var goalEl = document.getElementById("sprintGoal");
+      if (goalEl) goalEl.value = _sprint.sprintGoal || "";
       var resEl = document.getElementById("res_" + rk);
       var role = ALL_ROLES.find(function(r) {
         return r.key === rk;
@@ -6705,6 +6981,9 @@
       var versionFv = document.getElementById("versionFieldVal");
       if (sprintFv) _sprint.sprintFieldVal = sprintFv.value || null;
       if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
+      var _goalEl = document.getElementById("sprintGoal");
+      var _goalVal = _goalEl ? (_goalEl.value || "").trim() : "";
+      _sprint.sprintGoal = _goalVal || void 0;
       _sprint.updatedAt = Date.now();
       _sprint.updatedBy = _currentUser ? _currentUser.login : null;
       var btn = document.getElementById("saveHeaderBtn_" + rk);
@@ -6802,6 +7081,9 @@
       var versionFv = document.getElementById("versionFieldVal");
       if (sprintFv) _sprint.sprintFieldVal = sprintFv.value || null;
       if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
+      var _goalElI = document.getElementById("sprintGoal");
+      var _goalValI = _goalElI ? (_goalElI.value || "").trim() : "";
+      _sprint.sprintGoal = _goalValI || void 0;
       _sprint.updatedAt = Date.now();
       _sprint.updatedBy = _currentUser ? _currentUser.login : null;
       var btn = document.getElementById("saveSprintIntroBtn");
@@ -6819,6 +7101,11 @@
           btn.textContent = origLabel || T("btnSaveSprintIntro");
         }
         toast(T("toastSprintSaved"), "success");
+        if (!_goalValI) {
+          setTimeout(function() {
+            toast(T("toastSprintGoalMissing"), "warn");
+          }, 400);
+        }
         if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
           _currentSprintId = _sprint.sprintId;
           var _uiNew = _draftGet("ui") || {};
@@ -6839,6 +7126,95 @@
         toast(T("toastSaveError") + ": " + (err && err.message ? err.message : err));
       });
     }
+    function openConfirmGoalDialog(rk) {
+      return new Promise(function(resolve) {
+        var overlay = document.getElementById("confirmGoalOverlay");
+        if (!overlay) {
+          resolve({ goalOutcome: "achieved", goalRetroNote: "" });
+          return;
+        }
+        var goalDisplay = document.getElementById("confirmGoalDisplay");
+        var goalNotSet = document.getElementById("confirmGoalNotSet");
+        var goalText = document.getElementById("confirmGoalText");
+        var goalVal = _sprint && _sprint.sprintGoal;
+        if (goalVal) {
+          if (goalDisplay) {
+            goalDisplay.style.display = "";
+          }
+          if (goalNotSet) {
+            goalNotSet.style.display = "none";
+          }
+          if (goalText) {
+            goalText.textContent = goalVal;
+          }
+        } else {
+          if (goalDisplay) {
+            goalDisplay.style.display = "none";
+          }
+          if (goalNotSet) {
+            goalNotSet.style.display = "";
+          }
+        }
+        var radios = overlay.querySelectorAll('input[name="goalOutcomeRadio"]');
+        radios.forEach(function(r) {
+          r.checked = false;
+        });
+        var retroEl = document.getElementById("goalRetroNote");
+        if (retroEl) retroEl.value = "";
+        var okBtn = document.getElementById("confirmGoalOk");
+        if (okBtn) okBtn.disabled = true;
+        if (retroEl) retroEl.placeholder = T("phGoalRetroNote");
+        function onRadioChange() {
+          if (okBtn) okBtn.disabled = !Array.from(radios).some(function(r) {
+            return r.checked;
+          });
+        }
+        radios.forEach(function(r) {
+          r.addEventListener("change", onRadioChange);
+        });
+        var cancelBtn = document.getElementById("confirmGoalCancel");
+        function cleanup() {
+          overlay.classList.add("hidden");
+          radios.forEach(function(r) {
+            r.removeEventListener("change", onRadioChange);
+          });
+          if (okBtn) okBtn.removeEventListener("click", onOk);
+          if (cancelBtn) cancelBtn.removeEventListener("click", onCancel);
+        }
+        function onOk() {
+          var chosen = Array.from(radios).find(function(r) {
+            return r.checked;
+          });
+          if (!chosen) return;
+          var retroVal = retroEl ? (retroEl.value || "").trim() : "";
+          cleanup();
+          resolve({ goalOutcome: chosen.value, goalRetroNote: retroVal || void 0 });
+        }
+        function onCancel() {
+          cleanup();
+          resolve(null);
+        }
+        if (okBtn) okBtn.addEventListener("click", onOk);
+        if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
+        overlay.classList.remove("hidden");
+      });
+    }
+    (function bindStandupRefreshHandler() {
+      function bind() {
+        var btn = document.getElementById("standupRefreshBtn");
+        if (btn && !btn.dataset.bound) {
+          btn.dataset.bound = "1";
+          btn.addEventListener("click", function() {
+            doStandupRefresh();
+          });
+        }
+      }
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", bind);
+      } else {
+        bind();
+      }
+    })();
     (function bindSaveSprintIntroHandler() {
       function bind() {
         var btn = document.getElementById("saveSprintIntroBtn");
@@ -7411,7 +7787,13 @@
               }
             });
           }
-          return saveRoleHistorySnapshot(rk);
+          return openConfirmGoalDialog(rk).then(function(goalFields) {
+            if (!goalFields) {
+              _sprint.status = STATUS.PLANNING;
+              return;
+            }
+            return saveRoleHistorySnapshot(rk, void 0, goalFields);
+          });
         }).then(function() {
           var _diagSnap = _history.find(function(h) {
             return h && h.sprintId === _sprint.sprintId + "_" + rk;
@@ -7459,7 +7841,7 @@
         toast(T("toastCheckError"));
       });
     }
-    function saveRoleHistorySnapshot(rk, overrideIdx) {
+    function saveRoleHistorySnapshot(rk, overrideIdx, goalFields) {
       var role = ALL_ROLES.find(function(r) {
         return r.key === rk;
       });
@@ -7508,6 +7890,11 @@
       });
       var ppToSnap = isActiveSprintRecord(_currentSprintRoleRec) && _currentRolePP ? _currentRolePP : _sprint.personalPlanning || null;
       snap.personalPlanning = deepClone(ppToSnap);
+      if (_sprint.sprintGoal) snap.sprintGoal = _sprint.sprintGoal;
+      if (goalFields) {
+        if (goalFields.goalOutcome) snap.goalOutcome = goalFields.goalOutcome;
+        if (goalFields.goalRetroNote) snap.goalRetroNote = goalFields.goalRetroNote;
+      }
       var snapKey = snap.sprintId;
       if (overrideIdx === void 0 && _activeWorkingDraftKey === snapKey && _workingDrafts[snapKey]) {
         var draft = _workingDrafts[snapKey];
@@ -7942,7 +8329,17 @@
       }
       var sprintNameInline = rec.name ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerName") + '</span><span class="spoiler__mv" style="font-weight:600">' + esc(rec.name) + "</span></div>" : "";
       var roleInline = rec.roleLabel ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRole") + '</span><span class="spoiler__mv">' + esc(rec.roleLabel) + "</span></div>" : "";
-      meta.innerHTML = sprintNameInline + roleInline + '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStart") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateStart) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerEnd") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateEnd) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStatus") + '</span><span class="spoiler__mv"><span class="s-badge ' + badgeClass + '"' + (badgeTitle ? ' title="' + esc(badgeTitle) + '"' : "") + ">" + esc(statusLabel(rec.status)) + "</span>" + (rec.isOverLimit ? '<span class="overlimit-tag">' + T("overlimitTag") + "</span>" : "") + wcPill + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerTasks") + '</span><span class="spoiler__mv">' + (rec.items ? rec.items.length : 0) + "</span></div>" + (remVal !== void 0 && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRem") + '</span><span class="spoiler__mv" style="color:' + (remVal < 0 ? "var(--error)" : "var(--success)") + '">' + fmtHours(remVal) + "</span></div>" : "");
+      var outcomeInline = "";
+      if (rec.goalOutcome) {
+        var _outMap = { achieved: T("optGoalAchieved"), partial: T("optGoalPartial"), missed: T("optGoalMissed") };
+        outcomeInline = '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histOutcomeLabel") + '</span><span class="spoiler__mv">' + esc(_outMap[rec.goalOutcome] || rec.goalOutcome) + "</span></div>";
+      }
+      var goalHeadInline = "";
+      if (rec.sprintGoal) {
+        var _truncGoal = rec.sprintGoal.length > 80 ? rec.sprintGoal.substring(0, 77) + "\u2026" : rec.sprintGoal;
+        goalHeadInline = '<div class="spoiler__mi" title="' + esc(rec.sprintGoal) + '"><span class="spoiler__ml">' + T("histGoalLabel") + '</span><span class="spoiler__mv" style="font-style:italic">' + esc(_truncGoal) + "</span></div>";
+      }
+      meta.innerHTML = sprintNameInline + roleInline + outcomeInline + goalHeadInline + '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStart") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateStart) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerEnd") + '</span><span class="spoiler__mv">' + fmtDate(rec.dateEnd) + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerStatus") + '</span><span class="spoiler__mv"><span class="s-badge ' + badgeClass + '"' + (badgeTitle ? ' title="' + esc(badgeTitle) + '"' : "") + ">" + esc(statusLabel(rec.status)) + "</span>" + (rec.isOverLimit ? '<span class="overlimit-tag">' + T("overlimitTag") + "</span>" : "") + wcPill + '</span></div><div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerTasks") + '</span><span class="spoiler__mv">' + (rec.items ? rec.items.length : 0) + "</span></div>" + (remVal !== void 0 && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">' + T("histSpoilerRem") + '</span><span class="spoiler__mv" style="color:' + (remVal < 0 ? "var(--error)" : "var(--success)") + '">' + fmtHours(remVal) + "</span></div>" : "");
       var ctrl = document.createElement("div");
       ctrl.style.cssText = "display:flex;align-items:center;gap:6px;flex-shrink:0;";
       var xlsBtn = document.createElement("button");
@@ -8045,6 +8442,23 @@
         if (rec.sprintFieldVal) sfDiv.innerHTML += "<span><b>" + T("histSprintLabel") + ":</b> " + esc(rec.sprintFieldVal) + "</span>";
         if (rec.versionFieldVal) sfDiv.innerHTML += "<span><b>" + T("histVersionLabel") + ":</b> " + esc(rec.versionFieldVal) + "</span>";
         body.appendChild(sfDiv);
+      }
+      if (rec.sprintGoal || rec.goalOutcome) {
+        var _goalCard = document.createElement("div");
+        _goalCard.style.cssText = "margin:10px 16px 0;padding:10px 12px;background:var(--surface-light,#f5f5f5);border-radius:6px;font-size:12px;line-height:1.5;";
+        var _goalCardHtml = "";
+        if (rec.sprintGoal) {
+          _goalCardHtml += '<div style="margin-bottom:' + (rec.goalOutcome ? "8px" : "0") + '"><span style="color:var(--muted,#888);font-size:11px;display:block">' + esc(T("histGoalLabel")) + '</span><span style="font-weight:500">' + esc(rec.sprintGoal) + "</span></div>";
+        }
+        if (rec.goalOutcome) {
+          var _outMapB = { achieved: T("optGoalAchieved"), partial: T("optGoalPartial"), missed: T("optGoalMissed") };
+          _goalCardHtml += '<div style="margin-bottom:' + (rec.goalRetroNote ? "8px" : "0") + '"><span style="color:var(--muted,#888);font-size:11px;display:block">' + esc(T("histOutcomeLabel")) + "</span>" + esc(_outMapB[rec.goalOutcome] || rec.goalOutcome) + "</div>";
+        }
+        if (rec.goalRetroNote) {
+          _goalCardHtml += '<div><span style="color:var(--muted,#888);font-size:11px;display:block">' + esc(T("histRetroLabel")) + '</span><span style="font-style:italic">' + esc(rec.goalRetroNote) + "</span></div>";
+        }
+        _goalCard.innerHTML = _goalCardHtml;
+        body.appendChild(_goalCard);
       }
       var conf = document.createElement("div");
       conf.className = "spoiler__confirmed";

@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.8.5",
+  "version": "1.9.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.8.5 — UX polish, two changes bundled. (1) New 'Save sprint parameters' button in the 'Sprint intro' card on the Planning tab — explicit save entry point for the shared fields (sprint name, dates, optional Sprint/Version); the per-role 'Save parameters' button inside role accordions is unchanged and continues to save shared fields plus the role's resource. One new i18n key in 15 locales. (2) Click-anchored toast positioning — the YouTrack widget runs in a sandboxed iframe where `position:fixed` pins to the iframe frame rather than the parent viewport and `window.parent.document` is cross-origin blocked, which caused toasts to disappear off-screen or render as a vertical block. Toasts now capture the last user click coordinates and render ~280px above the click on the opposite X-side, guaranteeing visibility without overlapping the just-clicked button. Single-line `nowrap+ellipsis` rendering replaces the previous multi-line block. No schema impact, no breaking changes, 209 unit tests pass. See CHANGELOG.md.",
+  "changeNotes": "v1.9.0 — Sprint goals + Stand-up assist. Two new per-role features closing daily-standup and sprint-review Scrum ceremonies. (1) Sprint goal field: a shared optional text field (≤500 chars) in the Sprint Intro card — the goal is displayed at the top of the Planning tab and frozen into history snapshots at confirm time. At validation/confirm, a dialog prompts for outcome (Achieved / Partial / Missed) and an optional retro note; both are stored per-role in the history snapshot and shown in the collapsed and expanded History view. Soft-warn toast if goal is not filled before save. (2) Stand-up assist view: a new '🗣 Stand-up' sub-tab in Planning that classifies sprint tasks into Done / In flight / Not started buckets, per-role, based on the last refreshed snapshot. Done states are admin-configurable in Settings → Stand-up (multi-select from the project state bundle) with automatic fallback to the last 2 positions of State Rollup order. Includes role switcher, sprint goal banner, and a Refresh button. No schema breaking changes; all new fields are optional/additive. 217 unit tests pass. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",
