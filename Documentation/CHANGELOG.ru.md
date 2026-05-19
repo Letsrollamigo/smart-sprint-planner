@@ -8,6 +8,23 @@
 
 ---
 
+## [1.9.2] — 2026-05-19
+
+> **Хотфикс — скролл viewport для диалога outcome.** В некоторых layout'ах YouTrack-iframe диалог подтверждения результата (добавленный в v1.9.1) корректно вставлялся в DOM, но открывался за пределами видимой части parent-viewport — пользователь воспринимал это как «модалка не появилась» при нажатии «Завершить спринт». Диалог теперь открывается через общий helper `_showOverlay()`, который используют все остальные модальные окна плагина — единая логика iframe-скролла и z-index stacking.
+
+### Исправлено
+- **`openConfirmGoalDialog()` теперь скроллит iframe в parent-viewport.** Раньше функция вызывала `overlay.classList.remove('hidden')` напрямую. Общий helper `_showOverlay(idOrEl)` дополнительно сбрасывает остатки inline-позиционирования (D102 v6.3.0) и вызывает `_scrollFrameIntoView()` — дважды (сразу + через 80 мс, чтобы обработать race с smooth-scroll анимацией). Без этого скролла диалог мог монтироваться ниже сгиба iframe, неотличимо от «никакой модалки не появилось».
+- Обёрнуто в `try { _showOverlay(overlay); } catch(_) { overlay.classList.remove('hidden'); }` — catch-ветка сохраняет старое поведение v1.9.1 как safety fallback.
+
+### Обратная совместимость
+- Изменений схемы нет, whitelist'ы без правок, миграции нет — чистый runtime-фикс.
+- Все storage-формы v1.9.1 валидны (217 unit-тестов проходят; assertion `CURRENT_PLUGIN_VERSION` обновлён до `1.9.2`).
+
+### Прочее
+- 6-точечный version bump (manifest, package.json, APP\_VERSION, CURRENT\_PLUGIN\_VERSION, endpoint `app-version`, имя zip-файла).
+
+---
+
 ## [1.9.1] — 2026-05-19
 
 > **Багфикс: диалог outcome спринта перенесён на «Завершить спринт».**

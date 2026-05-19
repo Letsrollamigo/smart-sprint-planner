@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.2] — 2026-05-19
+
+> **Hotfix — viewport scroll for outcome dialog.** In some YouTrack iframe layouts the outcome confirmation dialog (introduced in v1.9.1) opened correctly in DOM but landed outside the visible parent viewport, so users perceived «nothing happened» when finishing a sprint. The dialog is now opened via the shared `_showOverlay()` helper used by every other modal in the plugin — same iframe-scroll handling, same z-index stacking.
+
+### Fixed
+- **`openConfirmGoalDialog()` now scrolls into the parent viewport.** Previously the function called `overlay.classList.remove('hidden')` directly. The shared `_showOverlay(idOrEl)` helper additionally resets inline-positioning leftovers from D102 v6.3.0 and calls `_scrollFrameIntoView()` (twice — once immediately, once after 80 ms to handle smooth-scroll race conditions). Without that scroll the dialog could mount below the iframe fold, indistinguishable from «no dialog appeared at all».
+- Wrapped in `try { _showOverlay(overlay); } catch(_) { overlay.classList.remove('hidden'); }` — the catch branch keeps the v1.9.1 behaviour as a safety fallback in case the helper is unavailable for any reason.
+
+### Backward compatibility
+- No schema change, no whitelist change, no migration — pure runtime fix.
+- All v1.9.1 storage shapes remain valid (217 unit tests pass; `CURRENT_PLUGIN_VERSION` assertion bumped to `1.9.2`).
+
+### Other
+- 6-point version bump (manifest, package.json, APP\_VERSION, CURRENT\_PLUGIN\_VERSION, `app-version` endpoint, zip filename).
+
+---
+
 ## [1.9.1] — 2026-05-19
 
 > **Bugfix: sprint outcome dialog moved to «Finish sprint».**

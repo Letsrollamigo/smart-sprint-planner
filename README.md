@@ -3,16 +3,30 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.7.1-brightgreen.svg)](Documentation/CHANGELOG.md)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v1.9.2-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v1.8.4-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
+
+> 🎉 **Smart Sprint Planner is now on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **1.8.4** was approved and published by the JetBrains review team. From here onward, the marketplace listing is the canonical install path for teams who want vetted, stable releases.
 
 > 💎 **Like this project?** If it helped your team and you'd like to support
 > its development, donations in any amount are welcome on TON:
 > `UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
 
 Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles in one widget — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, differentiated time accounting, parent ← child cascade aggregation, and parent.State ← min(children) state rollup.
+
+## Release channels
+
+The plugin ships through two parallel channels — pick the one that matches your team's tolerance for change:
+
+| Channel | Current | Cadence | Who it's for |
+|---|---|---|---|
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v1.8.4** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v1.9.2** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (221 unit tests + Playwright) but ships ahead of marketplace review. |
+
+GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
 ## Features
 
@@ -31,10 +45,21 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 
 ## Installation
 
-1. Download `Smart-Sprint-Planner-v1.7.1.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
+Pick one of the two channels (see **Release channels** above):
+
+### Option A — JetBrains Marketplace (recommended, stable)
+
+1. In YouTrack: **Administration → Apps → Marketplace** → search for **«Smart Sprint Planner»** → **Install**.
+2. Open any project and add the **Smart Sprint Planner** widget to its settings page.
+3. Click **⚙ Plugin settings** in the widget header. The first save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.
+
+YouTrack will auto-update the plugin as new marketplace versions are approved.
+
+### Option B — GitHub Release (bleeding-edge)
+
+1. Download the latest `Smart-Sprint-Planner-vX.Y.Z.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
 2. In YouTrack: **Project Settings → Apps → Install from file** → upload the zip.
-3. Open any project and add the **Smart Sprint Planner** widget to its settings page.
-4. Click **⚙ Plugin settings** in the widget header. The first save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.
+3. Same widget + settings steps as above.
 
 For detailed configuration, see [USER-GUIDE.md](Documentation/USER-GUIDE.md). For team-lead / Scrum master perspective on how the plugin maps onto Scrum ceremonies and capacity planning, see [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md).
 

@@ -2339,7 +2339,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.1";
+    var APP_VERSION = "1.9.2";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -7196,7 +7196,11 @@
         }
         if (okBtn) okBtn.addEventListener("click", onOk);
         if (cancelBtn) cancelBtn.addEventListener("click", onCancel);
-        overlay.classList.remove("hidden");
+        try {
+          _showOverlay(overlay);
+        } catch (_) {
+          overlay.classList.remove("hidden");
+        }
       });
     }
     (function bindStandupRefreshHandler() {

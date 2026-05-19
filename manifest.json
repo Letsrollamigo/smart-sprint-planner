@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.1",
+  "version": "1.9.2",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.1 — Bugfix: sprint outcome dialog now appears at 'Finish sprint' (History view), not at role validation. Outcome (Achieved/Partial/Missed) and retro note are recorded once per sprint at the moment the sprint is closed — the semantically correct point to assess goal achievement. Re-finishing a sprint pre-selects the previously recorded outcome. No schema changes; 217 unit tests pass. See CHANGELOG.md.",
+  "changeNotes": "v1.9.2 — Hotfix: viewport scroll for outcome dialog. In v1.9.1 the sprint outcome dialog at 'Finish sprint' opened correctly in DOM but in some YouTrack iframe layouts landed outside the visible parent viewport, so users perceived 'nothing happened'. The dialog is now opened via the shared `_showOverlay()` helper used by every other modal in the plugin — same iframe-scroll handling, same z-index stacking. Pure runtime fix; no schema changes; 221 unit tests pass. Includes all of v1.9.1 (outcome dialog moved to Finish sprint) and v1.9.0 (Sprint goals + Stand-up assist). See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",
