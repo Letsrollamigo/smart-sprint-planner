@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.1] — 2026-05-19
+
+> **Bugfix: sprint outcome dialog moved to «Finish sprint».**
+
+### Fixed
+
+- **Sprint outcome dialog timing** — the *Confirm sprint outcome* modal (goal outcome + retro note) was incorrectly triggered at role **validation**, which could fire up to 9 times (once per role). It now appears exactly once, at **«Finish sprint»** in the History view — the semantically correct moment to assess whether the sprint goal was achieved.
+- **Cancel behaviour** — cancelling the outcome dialog now leaves the sprint in its pre-finish state (no status change). Previously (in v1.9.0) a cancel during validate would still write a CONFIRMED snapshot without goal fields.
+- **Re-finish pre-selection** — if a sprint record already has a `goalOutcome` from a previous finish attempt, the dialog pre-selects it and enables the Confirm button immediately.
+
+### Changed
+
+- `openConfirmGoalDialog` now accepts `(sprintGoalText, existingOutcome)` instead of reading from `_sprint`. Goal text is sourced from the frozen `rec.sprintGoal` on the history record.
+
+### Backward compatibility
+
+- No schema changes. All 217 unit tests pass.
+
+---
+
 ## [1.9.0] — 2026-05-19
 
 > **Etap Г — Sprint goals + Stand-up assist.** Two additive features closing Scrum-ceremonies (daily standup + sprint review). No breaking changes; all new fields are optional. 217 unit tests pass.

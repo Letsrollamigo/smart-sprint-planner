@@ -2339,7 +2339,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.0";
+    var APP_VERSION = "1.9.1";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -7126,7 +7126,7 @@
         toast(T("toastSaveError") + ": " + (err && err.message ? err.message : err));
       });
     }
-    function openConfirmGoalDialog(rk) {
+    function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
       return new Promise(function(resolve) {
         var overlay = document.getElementById("confirmGoalOverlay");
         if (!overlay) {
@@ -7136,7 +7136,7 @@
         var goalDisplay = document.getElementById("confirmGoalDisplay");
         var goalNotSet = document.getElementById("confirmGoalNotSet");
         var goalText = document.getElementById("confirmGoalText");
-        var goalVal = _sprint && _sprint.sprintGoal;
+        var goalVal = sprintGoalText;
         if (goalVal) {
           if (goalDisplay) {
             goalDisplay.style.display = "";
@@ -7157,12 +7157,12 @@
         }
         var radios = overlay.querySelectorAll('input[name="goalOutcomeRadio"]');
         radios.forEach(function(r) {
-          r.checked = false;
+          r.checked = existingOutcome ? r.value === existingOutcome : false;
         });
         var retroEl = document.getElementById("goalRetroNote");
         if (retroEl) retroEl.value = "";
         var okBtn = document.getElementById("confirmGoalOk");
-        if (okBtn) okBtn.disabled = true;
+        if (okBtn) okBtn.disabled = !existingOutcome;
         if (retroEl) retroEl.placeholder = T("phGoalRetroNote");
         function onRadioChange() {
           if (okBtn) okBtn.disabled = !Array.from(radios).some(function(r) {
@@ -7787,13 +7787,7 @@
               }
             });
           }
-          return openConfirmGoalDialog(rk).then(function(goalFields) {
-            if (!goalFields) {
-              _sprint.status = STATUS.PLANNING;
-              return;
-            }
-            return saveRoleHistorySnapshot(rk, void 0, goalFields);
-          });
+          return saveRoleHistorySnapshot(rk);
         }).then(function() {
           var _diagSnap = _history.find(function(h) {
             return h && h.sprintId === _sprint.sprintId + "_" + rk;
@@ -8664,11 +8658,17 @@
       var idx = _pendingFinishHist;
       _pendingFinishHist = -1;
       if (!_history[idx]) return;
-      _history[idx].status = STATUS.FINISHED;
-      _history[idx].finishedAt = Date.now();
-      apiPost("history", { history: _history }).then(function() {
-        renderHistory();
-        toast(T("toastSprintFinished"), "success");
+      var rec = _history[idx];
+      openConfirmGoalDialog(rec.sprintGoal, rec.goalOutcome).then(function(goalFields) {
+        if (!goalFields) return;
+        rec.status = STATUS.FINISHED;
+        rec.finishedAt = Date.now();
+        if (goalFields.goalOutcome) rec.goalOutcome = goalFields.goalOutcome;
+        if (goalFields.goalRetroNote) rec.goalRetroNote = goalFields.goalRetroNote;
+        apiPost("history", { history: _history }).then(function() {
+          renderHistory();
+          toast(T("toastSprintFinished"), "success");
+        });
       });
     });
     document.getElementById("delHistNo").addEventListener("click", function() {

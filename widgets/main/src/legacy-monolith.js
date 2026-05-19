@@ -918,7 +918,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.0';
+  var APP_VERSION = '1.9.1';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5950,11 +5950,12 @@
     });
   }
 
-  /* v1.9.0 D132 — Диалог подтверждения результата спринта.
-     Показывает #confirmGoalOverlay, возвращает Promise<{goalOutcome, goalRetroNote}|null>.
-     null — пользователь нажал Отмена (confirm flow прерывается).
-     Пре-заполняет поле goal-display из _sprint.sprintGoal. */
-  function openConfirmGoalDialog(rk) {
+  /* v1.9.1 D133 — Диалог подтверждения результата спринта при завершении (Finish sprint).
+     sprintGoalText — текст цели из history-записи (rec.sprintGoal).
+     existingOutcome — pre-select radio если outcome уже был записан ранее (re-finish flow).
+     Возвращает Promise<{goalOutcome, goalRetroNote}|null>.
+     null — пользователь нажал Отмена (спринт не завершается). */
+  function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
     return new Promise(function(resolve) {
       var overlay = document.getElementById('confirmGoalOverlay');
       if (!overlay) { resolve({ goalOutcome: 'achieved', goalRetroNote: '' }); return; }
@@ -5962,7 +5963,7 @@
       var goalDisplay = document.getElementById('confirmGoalDisplay');
       var goalNotSet  = document.getElementById('confirmGoalNotSet');
       var goalText    = document.getElementById('confirmGoalText');
-      var goalVal     = _sprint && _sprint.sprintGoal;
+      var goalVal     = sprintGoalText;
       if (goalVal) {
         if (goalDisplay) { goalDisplay.style.display = ''; }
         if (goalNotSet)  { goalNotSet.style.display  = 'none'; }
@@ -5971,13 +5972,13 @@
         if (goalDisplay) { goalDisplay.style.display = 'none'; }
         if (goalNotSet)  { goalNotSet.style.display  = ''; }
       }
-      // Сбросить radio + retro note
+      // Сбросить radio + retro note; pre-select existingOutcome если задан (re-finish flow)
       var radios = overlay.querySelectorAll('input[name="goalOutcomeRadio"]');
-      radios.forEach(function(r){ r.checked = false; });
+      radios.forEach(function(r){ r.checked = existingOutcome ? r.value === existingOutcome : false; });
       var retroEl = document.getElementById('goalRetroNote');
       if (retroEl) retroEl.value = '';
       var okBtn = document.getElementById('confirmGoalOk');
-      if (okBtn) okBtn.disabled = true;
+      if (okBtn) okBtn.disabled = !existingOutcome;
       // i18n placeholder
       if (retroEl) retroEl.placeholder = T('phGoalRetroNote');
       // Radio → enable OK
@@ -6609,14 +6610,7 @@
               }
             });
           }
-          /* v1.9.0 D132 — Перед сохранением снимка — диалог outcome спринта. */
-          return openConfirmGoalDialog(rk).then(function(goalFields) {
-            if (!goalFields) {
-              _sprint.status = STATUS.PLANNING;
-              return;
-            }
-            return saveRoleHistorySnapshot(rk, undefined, goalFields);
-          });
+          return saveRoleHistorySnapshot(rk);
         }).then(function() {
         /* Диаг после snapshot: что в _history для этой роли? */
         var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
@@ -7495,11 +7489,20 @@
     if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); _pendingFinishHist = -1; return; }
     var idx = _pendingFinishHist; _pendingFinishHist = -1;
     if (!_history[idx]) return;
-    _history[idx].status = STATUS.FINISHED;
-    _history[idx].finishedAt = Date.now();
-    apiPost('history', { history: _history }).then(function() {
-      renderHistory();
-      toast(T('toastSprintFinished'), 'success');
+    var rec = _history[idx];
+    /* v1.9.1 D133 — Диалог outcome перед финальным завершением спринта.
+       Показывает цель из rec.sprintGoal (уже заморожена в snapshot при validate).
+       Pre-select existingOutcome если роль уже получала outcome ранее (re-finish). */
+    openConfirmGoalDialog(rec.sprintGoal, rec.goalOutcome).then(function(goalFields) {
+      if (!goalFields) return; // Отмена — спринт НЕ завершается
+      rec.status = STATUS.FINISHED;
+      rec.finishedAt = Date.now();
+      if (goalFields.goalOutcome)   rec.goalOutcome   = goalFields.goalOutcome;
+      if (goalFields.goalRetroNote) rec.goalRetroNote = goalFields.goalRetroNote;
+      apiPost('history', { history: _history }).then(function() {
+        renderHistory();
+        toast(T('toastSprintFinished'), 'success');
+      });
     });
   });
 
