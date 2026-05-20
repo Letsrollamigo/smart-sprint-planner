@@ -70,7 +70,7 @@ jobs:
           zip -r "$ZIP_NAME" . \
             -x '*.DS_Store' '*/.DS_Store' \
                '.claude/*' '.roadmap-source/*' \
-               'CLAUDE.md' 'REFACTORING_PLAN.md' 'REFACTORING_PLAN_STAGE_6.md' 'REFACTORING_PLAN_STAGE_6_v1.6.0.md' 'STATE_ROLLUP_SPEC.md' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' \
+               'CLAUDE.md' 'Spec/*' 'Spec' 'RoadMap/*' 'RoadMap' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' \
                'Documentation/*' 'Documentation' \
                'published/*' 'published' \
                'MP publication/*' 'MP publication' \
