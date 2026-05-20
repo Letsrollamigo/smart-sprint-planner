@@ -8,6 +8,32 @@
 
 ---
 
+## [1.9.3] — 2026-05-20
+
+> **Хотфикс — два бага кросс-ролевой контаминации**, тянущиеся с v1.6.x. Диагностированы через параллельную сессию сравнения с proprietary-версией (фиксы v7.3.1/v7.3.2). Оба бага были скрыты в активном виджете (фикс per-role бейджа из v1.8.1 маскировал один из них), но проявлялись downstream — испорченные снимки попадали в History, экспорт в Excel и сценарий «Открыть на правку».
+
+### Исправлено
+
+- **BUG-О.1 — Кросс-ролевая контаминация статуса в `saveRoleHistorySnapshot`.** Раньше каждый snapshot, записанный через `saveRoleHistorySnapshot(rk)`, получал `status: _sprint.status || STATUS.PLANNING`. После того как `doValidateRole(rkA)` глобально выставлял `_sprint.status = CONFIRMED`, любой последующий save другой роли rkB (refresh, commit рабочей копии, «Сохранить параметры») писал в History снимок с CONFIRMED для rkB — хотя rkB не валидировалась. Фикс v1.8.1 `renderRoleStatusBadge` маскировал это в активной вкладке Планирования (бейдж читал per-role напрямую из `_history`), но сам snapshot оставался испорченным — и **в spoiler'е History и в экспорте Excel показывался неверный статус**. Cherry-pick из proprietary v7.3.1 «Этап О.1»: добавлен параметр `wasValidated` для `saveRoleHistorySnapshot` (только вызов из `doValidateRole` передаёт `true`); во всех остальных call-sites статус резолвится per-role из существующего `_history` snapshot (preserve) или `PLANNING` (для нового). Без архитектурного deep-refactor.
+
+- **BUG-О.2/П.2 — Stale `_roleItems[otherRk]` при «Открыть на правку» из History.** Раньше `resumeWorkingDraft(key, idx)` грузил только `_roleItems[rk]` для редактируемой роли; для всех остальных `_roleItems[otherRk]` оставался от предыдущего контекста (другой спринт или другая роль). Симптом: при редактировании спринта А роли X из History после работы над спринтом Б — в Planning спойлеры ролей Y и Z показывали составы из спринта Б (а не А). Cherry-pick из proprietary v7.3.2 «Этап П.2»: после загрузки активной роли из working draft, `resumeWorkingDraft` теперь проходит по `ALL_ROLES` и грузит каждый `_roleItems[otherRk]` из соответствующего snapshot'а `_history` того же `sprintId` (либо пустой массив, если snapshot'а для этой роли нет).
+
+### Обратная совместимость
+
+- **Изменений схемы нет, whitelist'ы без правок, миграции нет** — оба фикса исправляют runtime-сборку in-memory state. Добавлена no-op запись `SCHEMA_MIGRATIONS` `{from:'1.9.0', to:'1.9.3'}` для audit-trail в `migrationLog`.
+- **Все storage-формы v1.9.2 валидны** (**225 unit-тестов проходят**, +4 fixture-теста для baseline `1.9.3/`).
+- **Самовосстановление для ранее испорченных history-записей**: snapshots, которые были неверно записаны с CONFIRMED в прошлых сессиях, будут перезаписаны корректным per-role статусом при следующем save этой же роли (ветка preserve-from-existing оценивает `_history` в этот момент).
+
+### Прочее
+
+- Новый baseline `tests/fixtures/snapshots/1.9.3/` (byte-identical к `1.9.0/` кроме `pluginVersion: "1.9.3"`).
+- `tests/unit/snapshot-migration.test.js`: `SCHEMA_MIGRATIONS.length === 4`.
+- `tests/unit/external-ticket-id.test.js`: `CURRENT_PLUGIN_VERSION is 1.9.3`.
+- 6-точечный version bump (manifest, package.json, APP\_VERSION, CURRENT\_PLUGIN\_VERSION, endpoint `app-version`, имя zip-файла).
+- Размер бандла: 550.9 КБ (+1.1 КБ за per-role логику).
+
+---
+
 ## [1.9.2] — 2026-05-19
 
 > **Хотфикс — скролл viewport для диалога outcome.** В некоторых layout'ах YouTrack-iframe диалог подтверждения результата (добавленный в v1.9.1) корректно вставлялся в DOM, но открывался за пределами видимой части parent-viewport — пользователь воспринимал это как «модалка не появилась» при нажатии «Завершить спринт». Диалог теперь открывается через общий helper `_showOverlay()`, который используют все остальные модальные окна плагина — единая логика iframe-скролла и z-index stacking.

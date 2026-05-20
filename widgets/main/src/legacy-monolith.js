@@ -918,7 +918,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.2';
+  var APP_VERSION = '1.9.3';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -1377,6 +1377,36 @@
       var copy = {};
       Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
       return copy;
+    });
+    /* v1.9.3 D134 — Etap О.2/П.2 fix: контаминация составов других ролей.
+       До v1.9.3 _roleItems[otherRk] оставался от предыдущего контекста (другой
+       спринт / роль), потому что resumeWorkingDraft грузил из draft только
+       активную rk. Симптом: открываешь на правку спринт А роль X → состав X
+       корректный (из draft), но спойлеры ролей Y и Z в Planning показывали
+       составы из спринта Б (что было активно до).
+
+       Источник истины для других ролей при открытии исторического спринта на
+       правку — последний history snapshot этого же sprintId для каждой роли.
+       Если snapshot отсутствует (роль никогда не редактировалась в спринте) —
+       пустой массив (а не stale данные предыдущего контекста).
+
+       Cherry-pick из proprietary v7.3.2 Этап П.2. */
+    var _sprintIdForOthers = _sprint.sprintId;
+    ALL_ROLES.forEach(function(r) {
+      if (r.key === rk) return; // активную роль уже загрузили выше из draft
+      var otherSnapId = _sprintIdForOthers + '_' + r.key;
+      var otherSnap = Array.isArray(_history)
+        ? _history.find(function(h){ return h && h.sprintId === otherSnapId; })
+        : null;
+      if (otherSnap && Array.isArray(otherSnap.items)) {
+        _roleItems[r.key] = otherSnap.items.map(function(it){
+          var copy = {};
+          Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
+          return copy;
+        });
+      } else {
+        _roleItems[r.key] = [];
+      }
     });
     if (draft.personalPlanning) _sprint.personalPlanning = deepClone(draft.personalPlanning);
     if (draft.gantt)            _sprint.gantt            = deepClone(draft.gantt);
@@ -6612,7 +6642,11 @@
               }
             });
           }
-          return saveRoleHistorySnapshot(rk);
+          /* v1.9.3 D134 — Etap О.1: передаём wasValidated=true чтобы snapshot
+             получил CONFIRMED. Все остальные call-sites saveRoleHistorySnapshot
+             (refresh, working-copy commit, manual save) — без флага → per-role
+             preserve existing status или PLANNING для нового snap. */
+          return saveRoleHistorySnapshot(rk, undefined, undefined, /* wasValidated */ true);
         }).then(function() {
         /* Диаг после snapshot: что в _history для этой роли? */
         var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
@@ -6645,7 +6679,7 @@
     });
   }
 
-  function saveRoleHistorySnapshot(rk, overrideIdx, goalFields) {
+  function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated) {
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
     if (!role || !_sprint) return Promise.resolve();
     var items = getRoleItemsArr(rk);
@@ -6653,10 +6687,28 @@
     var rem = calcRemForRole(rk);
     var isOverLimit = rem < 0;
 
-    /* v5.0.3 — статус берём из текущего _sprint, а не хардкодим CONFIRMED.
-       Это позволяет вести историю динамически, начиная со статуса PLANNING.
-       Поле confirmedAt теперь — "последнее обновление" (last touch);
-       confirmedBy — кто последний модифицировал. */
+    /* v1.9.3 D134 — Etap О.1 fix: per-role status в snapshot, не глобальный _sprint.status.
+       До v1.9.3 snapshot ЛЮБОЙ роли получал status = _sprint.status. После
+       doValidateRole(rk1) → _sprint.status = CONFIRMED, и при ближайшем save другой
+       роли rk2 (refresh / save header / commit working copy / etc.) её snapshot
+       получал status = CONFIRMED — хотя rk2 не валидировалась. Контаминация была
+       визуально скрыта v1.8.1 фиксом renderRoleStatusBadge (читает per-role из
+       _history), но снимок в _history оставался поражённым → History spoiler и
+       Excel export показывали неверный статус.
+
+       Cherry-pick из proprietary v7.3.1 Этап О.1: добавлен параметр wasValidated
+       (true только при вызове из doValidateRole), статус резолвится per-role:
+         - wasValidated=true → CONFIRMED (single source of truth для validate)
+         - иначе → existing snap.status из _history (preserve) ИЛИ PLANNING для нового
+       Архитектурно правильное решение (deep refactor на _sprint.statusByRole[rk])
+       отложено; quick fix через explicit param достаточен для всех known call-sites. */
+    var resolvedStatus;
+    if (wasValidated === true) {
+      resolvedStatus = STATUS.CONFIRMED;
+    } else {
+      var existingSnap = _history.find(function(s){ return s && s.sprintId === (_sprint.sprintId + '_' + rk); });
+      resolvedStatus = (existingSnap && existingSnap.status) ? existingSnap.status : STATUS.PLANNING;
+    }
     var snap = {
       sprintId:     _sprint.sprintId + '_' + rk,
       roleKey:      rk,
@@ -6664,7 +6716,7 @@
       dateStart:    _sprint.dateStart,
       dateEnd:      _sprint.dateEnd,
       name:         _sprint.name || null,
-      status:       _sprint.status || STATUS.PLANNING,
+      status:       resolvedStatus,
       confirmedAt:  Date.now(),
       confirmedBy:  _currentUser ? (_currentUser.fullName || _currentUser.login) : null,
       isOverLimit:  isOverLimit,

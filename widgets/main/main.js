@@ -2339,7 +2339,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.2";
+    var APP_VERSION = "1.9.3";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -2774,6 +2774,25 @@
           copy[k] = it[k];
         });
         return copy;
+      });
+      var _sprintIdForOthers = _sprint.sprintId;
+      ALL_ROLES.forEach(function(r) {
+        if (r.key === rk) return;
+        var otherSnapId = _sprintIdForOthers + "_" + r.key;
+        var otherSnap = Array.isArray(_history) ? _history.find(function(h) {
+          return h && h.sprintId === otherSnapId;
+        }) : null;
+        if (otherSnap && Array.isArray(otherSnap.items)) {
+          _roleItems[r.key] = otherSnap.items.map(function(it) {
+            var copy = {};
+            Object.keys(it).forEach(function(k) {
+              copy[k] = it[k];
+            });
+            return copy;
+          });
+        } else {
+          _roleItems[r.key] = [];
+        }
       });
       if (draft.personalPlanning) _sprint.personalPlanning = deepClone(draft.personalPlanning);
       if (draft.gantt) _sprint.gantt = deepClone(draft.gantt);
@@ -7791,7 +7810,13 @@
               }
             });
           }
-          return saveRoleHistorySnapshot(rk);
+          return saveRoleHistorySnapshot(
+            rk,
+            void 0,
+            void 0,
+            /* wasValidated */
+            true
+          );
         }).then(function() {
           var _diagSnap = _history.find(function(h) {
             return h && h.sprintId === _sprint.sprintId + "_" + rk;
@@ -7839,7 +7864,7 @@
         toast(T("toastCheckError"));
       });
     }
-    function saveRoleHistorySnapshot(rk, overrideIdx, goalFields) {
+    function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated) {
       var role = ALL_ROLES.find(function(r) {
         return r.key === rk;
       });
@@ -7850,6 +7875,15 @@
       });
       var rem = calcRemForRole(rk);
       var isOverLimit = rem < 0;
+      var resolvedStatus;
+      if (wasValidated === true) {
+        resolvedStatus = STATUS.CONFIRMED;
+      } else {
+        var existingSnap = _history.find(function(s) {
+          return s && s.sprintId === _sprint.sprintId + "_" + rk;
+        });
+        resolvedStatus = existingSnap && existingSnap.status ? existingSnap.status : STATUS.PLANNING;
+      }
       var snap = {
         sprintId: _sprint.sprintId + "_" + rk,
         roleKey: rk,
@@ -7857,7 +7891,7 @@
         dateStart: _sprint.dateStart,
         dateEnd: _sprint.dateEnd,
         name: _sprint.name || null,
-        status: _sprint.status || STATUS.PLANNING,
+        status: resolvedStatus,
         confirmedAt: Date.now(),
         confirmedBy: _currentUser ? _currentUser.fullName || _currentUser.login : null,
         isOverLimit,

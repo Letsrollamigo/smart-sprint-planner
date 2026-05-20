@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.3] — 2026-05-20
+
+> **Hotfix — two cross-role contamination bugs** carried since v1.6.x. Diagnosed via parallel-session comparison with the proprietary version's v7.3.1/v7.3.2 fix releases. Both bugs were silent in the active widget (per-role badge fix from v1.8.1 masked one of them) but visible downstream — corrupted snapshots reached History view, Excel export, and «Open for editing» workflows.
+
+### Fixed
+
+- **BUG-О.1 — Per-role status contamination in `saveRoleHistorySnapshot`.** Previously every snapshot written by `saveRoleHistorySnapshot(rk)` got `status: _sprint.status || STATUS.PLANNING`. After `doValidateRole(rkA)` set the global `_sprint.status = CONFIRMED`, any subsequent save of another role rkB (refresh, working-copy commit, manual «Save parameters») wrote a CONFIRMED snapshot to history for rkB — although rkB was never validated. The v1.8.1 `renderRoleStatusBadge` fix made this invisible in the active planning view (badge read per-role from `_history` directly), but the underlying snapshot was poisoned and **History spoiler + Excel export still showed the wrong status**. Cherry-picked from proprietary v7.3.1 «Этап О.1»: added a `wasValidated` parameter to `saveRoleHistorySnapshot` (only the `doValidateRole` call site passes `true`); status is now resolved per-role from the existing `_history` snapshot (preserve) or `PLANNING` (new snapshot) for every other call site. No architectural deep-refactor required.
+
+- **BUG-О.2/П.2 — Stale `_roleItems[otherRk]` on «Open for editing» from History.** Previously `resumeWorkingDraft(key, idx)` loaded only `_roleItems[rk]` for the role being edited; for all other roles `_roleItems[otherRk]` remained from the previous context (different sprint or different role). Symptom: when editing sprint A role X from History after working on sprint B, the role accordions for Y and Z in Planning showed compositions from sprint B (not A). Cherry-picked from proprietary v7.3.2 «Этап П.2»: after loading the active role from the working draft, `resumeWorkingDraft` now iterates `ALL_ROLES` and loads each `_roleItems[otherRk]` from its corresponding `_history` snapshot of the same `sprintId` (or empty array if no snapshot exists for that role).
+
+### Backward compatibility
+
+- **No schema changes, no whitelist changes, no migration impact** — both fixes are pure runtime corrections to in-memory state assembly. A no-op `SCHEMA_MIGRATIONS` entry `{from:'1.9.0', to:'1.9.3'}` is added for audit-trail in `migrationLog`.
+- **All v1.9.2 storage shapes remain valid** (**225 unit tests pass**, +4 fixture-tests for the new `1.9.3/` baseline).
+- **Self-healing for previously contaminated history records**: snapshots that were incorrectly written with CONFIRMED in past sessions will be rewritten with the correct per-role status on the next save of that role (preserve-from-existing branch evaluates `_history` at that moment).
+
+### Other
+
+- New `tests/fixtures/snapshots/1.9.3/` baseline (byte-identical to `1.9.0/` except `pluginVersion: "1.9.3"`).
+- `tests/unit/snapshot-migration.test.js` updated: `SCHEMA_MIGRATIONS.length === 4`.
+- `tests/unit/external-ticket-id.test.js` updated: `CURRENT_PLUGIN_VERSION is 1.9.3`.
+- 6-point version bump (manifest, package.json, APP\_VERSION, CURRENT\_PLUGIN\_VERSION, `app-version` endpoint, zip filename).
+- Bundle size: 550.9 KB (+1.1 KB for the per-role logic).
+
+---
+
 ## [1.9.2] — 2026-05-19
 
 > **Hotfix — viewport scroll for outcome dialog.** In some YouTrack iframe layouts the outcome confirmation dialog (introduced in v1.9.1) opened correctly in DOM but landed outside the visible parent viewport, so users perceived «nothing happened» when finishing a sprint. The dialog is now opened via the shared `_showOverlay()` helper used by every other modal in the plugin — same iframe-scroll handling, same z-index stacking.

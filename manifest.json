@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.2",
+  "version": "1.9.3",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.2 — Hotfix: viewport scroll for outcome dialog. In v1.9.1 the sprint outcome dialog at 'Finish sprint' opened correctly in DOM but in some YouTrack iframe layouts landed outside the visible parent viewport, so users perceived 'nothing happened'. The dialog is now opened via the shared `_showOverlay()` helper used by every other modal in the plugin — same iframe-scroll handling, same z-index stacking. Pure runtime fix; no schema changes; 221 unit tests pass. Includes all of v1.9.1 (outcome dialog moved to Finish sprint) and v1.9.0 (Sprint goals + Stand-up assist). See CHANGELOG.md.",
+  "changeNotes": "v1.9.3 — Hotfix two cross-role contamination bugs diagnosed via parallel-session comparison. BUG-О.1: saveRoleHistorySnapshot wrote global _sprint.status to every snapshot, so after validating role A any subsequent save of role B (refresh, working-copy commit, manual save) poisoned role B's history with CONFIRMED status — visible in History spoiler + Excel export. Fixed via new wasValidated parameter: only doValidateRole sets CONFIRMED; all other call-sites preserve existing per-role status from _history or default to PLANNING. BUG-О.2: resumeWorkingDraft loaded only _roleItems[rk] for the role being edited; _roleItems for all other roles remained from the previous context, causing stale role compositions in Planning after «Open for editing» from History. Fixed by iterating ALL_ROLES and loading each _roleItems[otherRk] from its corresponding _history snapshot. Pure runtime fixes; no schema changes. Includes everything from v1.9.0-1.9.2 (Sprint goals + Stand-up assist + dialog timing + viewport scroll). 225 unit tests pass. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

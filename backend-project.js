@@ -215,7 +215,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.9.2';
+var CURRENT_PLUGIN_VERSION = '1.9.3';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -366,6 +366,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.8.0', to: '1.9.0',
     migrate: function (snap) { /* no-op: all goal/standup fields are optional additive */ },
     note: 'v1.9.0: Added optional sprintGoal (_sprint + _history) + goalOutcome/goalRetroNote (_history) + standupDoneStates (settings) — Etap Г'
+  },
+  /* v1.9.3 D134 — Hotfix Etap О.1 + О.2/П.2: per-role status в saveRoleHistorySnapshot
+     (cross-role contamination в History/Excel) + resumeWorkingDraft грузит _roleItems
+     для всех ролей из их history snapshot (не только активную из draft). Cherry-pick
+     из proprietary v7.3.1 + v7.3.2. Schema без изменений — no-op entry для registry. */
+  { from: '1.9.0', to: '1.9.3',
+    migrate: function (snap) { /* no-op: pure runtime fixes, no schema impact */ },
+    note: 'v1.9.3: Hotfix per-role status contamination (О.1) + stale _roleItems on edit (О.2/П.2) — schema unchanged'
   }
 ];
 
@@ -1879,7 +1887,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.9.2' });
+        ctx.response.json({ version: '1.9.3' });
       }
     },
 
