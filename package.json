@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build:whitelists": "node scripts/sync-backend-whitelists.js",
-    "build": "npm run build:whitelists && esbuild widgets/main/src/index.js --bundle --format=iife --target=es2017 --outfile=widgets/main/main.js",
+    "build:icons": "node scripts/build-icons.js",
+    "build": "npm run build:whitelists && npm run build:icons && esbuild widgets/main/src/index.js --bundle --format=iife --target=es2017 --outfile=widgets/main/main.js",
     "build:check": "npm run build:whitelists && node --check widgets/main/main.js && node --check backend-project.js && node --check workflow-dta-aggregation.js && node --check workflow-cascade-aggregation.js && node --check workflow-forbid-container.js && node --check workflow-state-rollup.js",
     "fixtures:generate": "node tests/fixtures/generate-baseline.js",
     "test": "playwright test && node --test tests/unit/*.test.js",
@@ -13,6 +14,7 @@
     "zip": "npm run build && npm run build:check && cd .. && rm -f 'Realises SSP/Smart-Sprint-Planner-v1.9.4.zip' && zip -r 'Realises SSP/Smart-Sprint-Planner-v1.9.4.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/Spec/*' '*/Spec' '*/RoadMap/*' '*/RoadMap' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts'"
   },
   "devDependencies": {
+    "@jetbrains/icons": "^5.22.0",
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",
     "@playwright/test": "^1.59.1",
     "esbuild": "^0.21.5"

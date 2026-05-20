@@ -5,6 +5,25 @@
       __defProp(target, name, { get: all[name], enumerable: true });
   };
 
+  // widgets/main/src/icons.generated.js
+  if (typeof window !== "undefined") {
+    window.__SSP_ICONS = {
+      "add": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7.632.375c.346 0 .625.28.625.625v12.8a.625.625 0 1 1-1.25 0V1c0-.345.28-.625.625-.625Z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M1.002 7.625c0-.345.28-.625.625-.625h12.204a.625.625 0 1 1 0 1.25H1.627a.625.625 0 0 1-.625-.625Z" clip-rule="evenodd"/></svg>',
+      "bars": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2.271 1.645a.625.625 0 1 0-1.25 0V14.37a.625.625 0 1 0 1.25 0V1.645Zm9.376 1.977c0 .345-.28.625-.625.625H3.64a.625.625 0 1 1 0-1.25h7.383c.345 0 .625.28.625.625Zm3.321 3.01c0 .346-.28.626-.625.626H3.64a.625.625 0 1 1 0-1.25h10.704c.345 0 .625.28.625.625Zm-5.633 3.63a.625.625 0 1 0 0-1.25H3.64a.625.625 0 1 0 0 1.25h5.696Zm2.6 2.37c0 .345-.28.625-.625.625H3.64a.625.625 0 1 1 0-1.25h7.67c.345 0 .625.28.625.625Z" clip-rule="evenodd"/></svg>',
+      "checkmark": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M14.853 3.149c.248.24.254.636.014.884l-8.541 8.816a.625.625 0 0 1-.863.033L1.177 9.085a.625.625 0 0 1 .83-.936l3.837 3.401 8.125-8.387a.625.625 0 0 1 .884-.014Z" clip-rule="evenodd"/></svg>',
+      "close": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M13.442 2.558a.625.625 0 0 1 0 .884L8.883 8.006l4.546 4.552a.625.625 0 1 1-.884.884L8 8.89l-4.545 4.55a.625.625 0 0 1-.884-.883l4.546-4.552-4.56-4.564a.625.625 0 1 1 .885-.884L8 7.122l4.558-4.564a.625.625 0 0 1 .884 0Z" clip-rule="evenodd"/></svg>',
+      "comment": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.825 3.84c0-.321-.286-.665-.742-.665H3.917c-.456 0-.742.344-.742.666v4.818c0 .322.286.666.742.666v1.3l-.209-.01c-.961-.094-1.725-.83-1.822-1.756l-.011-.2V3.841c0-1.018.804-1.856 1.833-1.956l.209-.01h8.166c1.127 0 2.042.88 2.042 1.966v9.792l-.006.075c-.052.34-.451.524-.759.35l-.064-.041-4.275-3.392H3.917v-1.3h5.104l.109.005a1.3 1.3 0 0 1 .7.276l2.995 2.377V3.841Z"/></svg>',
+      "group": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M6.006 6.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5ZM4.912 8.588A6.512 6.512 0 0 1 6.003 8.5h.003c.394 0 .757.031 1.093.088 2.694.46 3.59 2.6 3.886 3.9.125.548-.317 1.012-.88 1.012H1.907c-.561 0-1.004-.463-.88-1.01.295-1.3 1.188-3.444 3.885-3.902Zm.128-1.281c.297.124.622.193.963.193h.003a2.5 2.5 0 1 0-.966-.194Zm3.748 3.491c-.515-.552-1.342-1.048-2.785-1.048s-2.269.496-2.782 1.048c-.405.435-.665.96-.83 1.452h7.23c-.166-.492-.428-1.017-.833-1.452Zm3.021 2.702h2.283c.563 0 1.005-.464.88-1.012-.297-1.3-1.193-3.44-3.887-3.9A6.51 6.51 0 0 0 9.993 8.5H9.99c-.146 0-.288.004-.426.013.326.224.615.477.87.751.169.181.32.369.457.56.906.157 1.488.549 1.884.974.405.435.667.96.833 1.452h-1.652l.004.015a1.75 1.75 0 0 1-.151 1.235ZM8.752 7.17a2.492 2.492 0 0 0 1.238.33h.003a2.5 2.5 0 1 0-1.241-4.67c.258.325.46.698.589 1.104a1.25 1.25 0 1 1 0 2.133c-.13.405-.331.778-.59 1.104Z" clip-rule="evenodd"/></svg>',
+      "history": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><g><path d="M15,0H7.3V7.42a.8.8,0,0,0,.51.75.81.81,0,0,0,.31.06A.85.85,0,0,0,8.7,8l2-2-1-1-1,1V2.45a5.6,5.6,0,1,1-2.4.22V1.22a7,7,0,1,0,4,.18H15Z"/></g></svg>',
+      "loader": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
+      "settings": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M9.67 1.449a.781.781 0 0 0-.56-.372 8.014 8.014 0 0 0-2.22 0 .781.781 0 0 0-.56.372L5.404 2.99a.84.84 0 0 1-.731.397l-1.887-.02a.804.804 0 0 0-.623.269 6.901 6.901 0 0 0-1.112 1.802.693.693 0 0 0 .064.64l.962 1.525a.736.736 0 0 1 0 .792L1.115 9.92a.693.693 0 0 0-.064.64 6.9 6.9 0 0 0 1.112 1.802c.15.177.382.271.623.269l1.887-.02a.84.84 0 0 1 .731.396l.926 1.543a.781.781 0 0 0 .56.372 8.008 8.008 0 0 0 2.22 0 .782.782 0 0 0 .56-.372l.925-1.543a.845.845 0 0 1 .732-.396l1.887.02a.804.804 0 0 0 .623-.269 6.903 6.903 0 0 0 1.112-1.802.693.693 0 0 0-.064-.64l-.962-1.525a.736.736 0 0 1 0-.792l.962-1.525a.693.693 0 0 0 .064-.64 6.901 6.901 0 0 0-1.112-1.802.804.804 0 0 0-.623-.269l-1.887.02a.84.84 0 0 1-.732-.397L9.67 1.45Zm0 0-.002.001-.02.012.02-.012.002-.001Zm-.022.013-.002.001ZM5.445 3.016l1.031.619A2.09 2.09 0 0 1 4.66 4.638L2.973 4.62a5.66 5.66 0 0 0-.648 1.035l.809 1.281a1.986 1.986 0 0 1 0 2.128l-.81 1.281c.178.366.395.712.649 1.035l1.687-.018a2.09 2.09 0 0 1 1.816 1.003l-1.072.643 1.072-.643.809 1.347a6.797 6.797 0 0 0 1.43 0l.809-1.347a2.09 2.09 0 0 1 1.816-1.003l1.687.018a5.64 5.64 0 0 0 .648-1.035l-.809-1.281a1.986 1.986 0 0 1 0-2.128l.81-1.281a5.66 5.66 0 0 0-.649-1.035l-1.687.018a2.09 2.09 0 0 1-1.816-1.003l-.809-1.347a6.788 6.788 0 0 0-1.43 0l-.809 1.347-1.031-.62Z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M5.019 8a2.981 2.981 0 1 1 5.962 0 2.981 2.981 0 0 1-5.962 0ZM8 6.27a1.731 1.731 0 1 0 0 3.462A1.731 1.731 0 0 0 8 6.27Z" clip-rule="evenodd"/></svg>',
+      "task": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><g class="task"><path fill-rule="evenodd" d="M11.343 2.25H4.657c-.66 0-1.08.001-1.4.027-.303.025-.403.066-.441.086-.195.1-.354.258-.453.453-.02.038-.061.138-.086.442-.026.318-.027.738-.027 1.4v6.685c0 .66.001 1.08.027 1.4.025.303.066.403.086.441.1.195.258.354.453.453.038.02.138.061.442.086.318.026.738.027 1.4.027h6.685c.66 0 1.08-.001 1.4-.027.303-.025.403-.066.441-.086.195-.1.354-.258.453-.453.02-.038.061-.138.086-.442.026-.318.027-.739.027-1.4V4.658c0-.66-.001-1.08-.027-1.4-.025-.303-.066-.403-.086-.441a1.036 1.036 0 0 0-.453-.453c-.038-.02-.138-.061-.442-.086-.318-.026-.739-.027-1.4-.027ZM1.249 2.248C1 2.737 1 3.377 1 4.658v6.685c0 1.28 0 1.92.25 2.409.218.43.568.78.998.999.489.249 1.129.249 2.41.249h6.685c1.28 0 1.92 0 2.409-.25.43-.218.78-.568.999-.998.249-.489.249-1.129.249-2.41V4.658c0-1.28 0-1.92-.25-2.409a2.278 2.278 0 0 0-.998-.999C13.263 1 12.623 1 11.342 1H4.658c-1.28 0-1.92 0-2.409.25-.43.218-.78.568-.999.998Z" class="Icon" clip-rule="evenodd"/><path fill-rule="evenodd" d="M11.369 4.995c.278.204.34.595.136.874l-3.577 4.896a.625.625 0 0 1-.952.068l-2.17-2.217a.625.625 0 0 1 .894-.874l1.654 1.69 3.141-4.3a.625.625 0 0 1 .874-.137Z" class="Icon (Stroke)" clip-rule="evenodd"/></g></svg>',
+      "trash": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z" clip-rule="evenodd"/></svg>',
+      "update": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="m4.257 7.086-.818.819a4.562 4.562 0 0 1 7.05-3.73.625.625 0 1 0 .682-1.047 5.812 5.812 0 0 0-8.982 4.779l-.82-.82a.625.625 0 0 0-.885.883l1.887 1.886c.244.245.64.245.884 0L5.14 7.97a.625.625 0 0 0-.884-.884Zm1.255 4.739a4.562 4.562 0 0 0 7.05-3.73l-.82.818a.625.625 0 1 1-.883-.884l1.886-1.886a.625.625 0 0 1 .884 0l1.886 1.886a.625.625 0 0 1-.883.884l-.82-.82a5.812 5.812 0 0 1-8.983 4.779.625.625 0 0 1 .683-1.047Z" clip-rule="evenodd"/></svg>',
+      "user": '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.527 12.77h8.947c-.164-.647-.461-1.394-.988-2.015C10.864 10.02 9.838 9.359 8 9.359c-1.837 0-2.863.661-3.486 1.396-.526.62-.823 1.368-.987 2.015Zm-1.336.273c.292-1.68 1.424-4.934 5.81-4.934 4.385 0 5.516 3.254 5.808 4.934.093.536-.34.977-.883.977H3.074c-.544 0-.977-.441-.884-.977ZM8 5.742a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5Zm0 1.25a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>'
+    };
+  }
+
   // widgets/main/src/i18n/loader.js
   var loader_exports = {};
   __export(loader_exports, {
@@ -1636,6 +1655,91 @@
         }
       }
       return key;
+    }
+    var ICONS = typeof window !== "undefined" && window.__SSP_ICONS || {};
+    function icon(name, ariaLabel, opts) {
+      opts = opts || {};
+      var svg = ICONS[name];
+      if (!svg) {
+        console.warn("[ssp] missing icon: " + name);
+        var empty = document.createElement("span");
+        empty.className = "ssp-icon ssp-icon--missing";
+        empty.setAttribute("data-icon-name", name);
+        return empty;
+      }
+      var wrap = document.createElement("span");
+      wrap.className = "ssp-icon" + (opts.size ? " ssp-icon--" + opts.size : "") + (opts.cls ? " " + opts.cls : "");
+      wrap.innerHTML = svg;
+      if (ariaLabel) {
+        wrap.setAttribute("role", "img");
+        wrap.setAttribute("aria-label", ariaLabel);
+      } else {
+        wrap.setAttribute("aria-hidden", "true");
+      }
+      return wrap;
+    }
+    function applyIcons() {
+      document.querySelectorAll("[data-icon]").forEach(function(el) {
+        var iconName = el.getAttribute("data-icon");
+        var ariaKey = el.getAttribute("data-aria-label-key");
+        var ariaLabel = ariaKey ? T(ariaKey) : el.getAttribute("aria-label") || "";
+        var iconNode = icon(iconName, "", { cls: "btn-icon" });
+        var firstChild = el.firstChild;
+        if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent.trim()) {
+          el.insertBefore(iconNode, firstChild);
+          el.insertBefore(document.createTextNode("\xA0"), firstChild);
+        } else {
+          el.insertBefore(iconNode, el.firstChild);
+        }
+        if (ariaLabel) el.setAttribute("aria-label", ariaLabel);
+        el.removeAttribute("data-icon");
+        el.removeAttribute("data-aria-label-key");
+      });
+    }
+    function withLoader(btn, asyncFn) {
+      var origDisabled = btn.disabled;
+      btn.disabled = true;
+      var origIcon = btn.querySelector(".ssp-icon");
+      var loader = document.createElement("span");
+      loader.className = "ssp-loader";
+      loader.innerHTML = ICONS["loader"] || "";
+      if (origIcon) {
+        origIcon.replaceWith(loader);
+        var restore = function() {
+          loader.replaceWith(origIcon);
+          btn.disabled = origDisabled;
+        };
+      } else {
+        var prevSib = document.createTextNode("\xA0");
+        btn.appendChild(prevSib);
+        btn.appendChild(loader);
+        var restore = function() {
+          prevSib.remove();
+          loader.remove();
+          btn.disabled = origDisabled;
+        };
+      }
+      return asyncFn().finally(restore);
+    }
+    var _initialLoadTimer = null;
+    function startInitialLoad() {
+      _initialLoadTimer = setTimeout(function() {
+        var panel = document.querySelector(".tab-panel.active");
+        if (!panel || panel.querySelector(".ssp-initial-loader")) return;
+        var wrap = document.createElement("div");
+        wrap.className = "ssp-initial-loader";
+        wrap.style.cssText = "text-align:center;padding:40px;color:var(--muted);";
+        var loaderEl = icon("loader", T("aria.loading"), { size: "20" });
+        loaderEl.classList.add("ssp-loader", "ssp-loader--20");
+        wrap.appendChild(loaderEl);
+        panel.appendChild(wrap);
+      }, 500);
+    }
+    function finishInitialLoad() {
+      clearTimeout(_initialLoadTimer);
+      document.querySelectorAll(".ssp-initial-loader").forEach(function(el) {
+        el.remove();
+      });
     }
     function applyI18N() {
       document.querySelectorAll("[data-i18n]").forEach(function(el) {

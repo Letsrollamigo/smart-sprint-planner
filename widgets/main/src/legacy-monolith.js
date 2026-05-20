@@ -231,6 +231,99 @@
     return key;
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     ICONS — Ring UI ярус 1 (v1.9.6). SVG-иконки из @jetbrains/icons +
+     наш loader.svg. Поставлены через window.__SSP_ICONS (аналог i18n-bridge).
+     icon(name, ariaLabel, opts) → HTMLSpanElement с инлайн-SVG.
+  ═══════════════════════════════════════════════════════════ */
+  var ICONS = (typeof window !== 'undefined' && window.__SSP_ICONS) || {};
+
+  function icon(name, ariaLabel, opts) {
+    opts = opts || {};
+    var svg = ICONS[name];
+    if (!svg) {
+      console.warn('[ssp] missing icon: ' + name);
+      var empty = document.createElement('span');
+      empty.className = 'ssp-icon ssp-icon--missing';
+      empty.setAttribute('data-icon-name', name);
+      return empty;
+    }
+    var wrap = document.createElement('span');
+    wrap.className = 'ssp-icon' +
+      (opts.size ? ' ssp-icon--' + opts.size : '') +
+      (opts.cls  ? ' ' + opts.cls : '');
+    wrap.innerHTML = svg;
+    if (ariaLabel) {
+      wrap.setAttribute('role', 'img');
+      wrap.setAttribute('aria-label', ariaLabel);
+    } else {
+      wrap.setAttribute('aria-hidden', 'true');
+    }
+    return wrap;
+  }
+
+  /** Sweep по элементам с data-icon="..." — вставляет SVG-иконку и проставляет aria-label.
+   *  Вызывается один раз при init после DOMContentLoaded. */
+  function applyIcons() {
+    document.querySelectorAll('[data-icon]').forEach(function(el) {
+      var iconName = el.getAttribute('data-icon');
+      var ariaKey  = el.getAttribute('data-aria-label-key');
+      var ariaLabel = ariaKey ? T(ariaKey) : (el.getAttribute('aria-label') || '');
+      var iconNode = icon(iconName, '', { cls: 'btn-icon' });
+      var firstChild = el.firstChild;
+      if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent.trim()) {
+        el.insertBefore(iconNode, firstChild);
+        el.insertBefore(document.createTextNode(' '), firstChild);
+      } else {
+        el.insertBefore(iconNode, el.firstChild);
+      }
+      if (ariaLabel) el.setAttribute('aria-label', ariaLabel);
+      el.removeAttribute('data-icon');
+      el.removeAttribute('data-aria-label-key');
+    });
+  }
+
+  /** Обёртка для async-действий кнопки: показывает spinner, блокирует повторный клик,
+   *  восстанавливает исходное состояние через .finally(). */
+  function withLoader(btn, asyncFn) {
+    var origDisabled = btn.disabled;
+    btn.disabled = true;
+    var origIcon = btn.querySelector('.ssp-icon');
+    var loader = document.createElement('span');
+    loader.className = 'ssp-loader';
+    loader.innerHTML = ICONS['loader'] || '';
+    if (origIcon) {
+      origIcon.replaceWith(loader);
+      var restore = function() { loader.replaceWith(origIcon); btn.disabled = origDisabled; };
+    } else {
+      var prevSib = document.createTextNode(' ');
+      btn.appendChild(prevSib);
+      btn.appendChild(loader);
+      var restore = function() { prevSib.remove(); loader.remove(); btn.disabled = origDisabled; };
+    }
+    return asyncFn().finally(restore);
+  }
+
+  /** Initial mount spinner — показываем если первая загрузка занимает >500ms. */
+  var _initialLoadTimer = null;
+  function startInitialLoad() {
+    _initialLoadTimer = setTimeout(function() {
+      var panel = document.querySelector('.tab-panel.active');
+      if (!panel || panel.querySelector('.ssp-initial-loader')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'ssp-initial-loader';
+      wrap.style.cssText = 'text-align:center;padding:40px;color:var(--muted);';
+      var loaderEl = icon('loader', T('aria.loading'), { size: '20' });
+      loaderEl.classList.add('ssp-loader', 'ssp-loader--20');
+      wrap.appendChild(loaderEl);
+      panel.appendChild(wrap);
+    }, 500);
+  }
+  function finishInitialLoad() {
+    clearTimeout(_initialLoadTimer);
+    document.querySelectorAll('.ssp-initial-loader').forEach(function(el) { el.remove(); });
+  }
+
   /** Обходит все элементы с data-i18n и обновляет их текст/плейсхолдер */
   function applyI18N() {
     document.querySelectorAll('[data-i18n]').forEach(function(el) {

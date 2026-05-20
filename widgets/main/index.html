@@ -19,7 +19,7 @@
       --surface2:  var(--ring-secondary-background-color, #eef2f5);
       --border:    var(--ring-line-color, #dbe2e7);
       --text:      var(--ring-text-color, #1f2326);
-      --muted:     var(--ring-secondary-color, #6e7682);
+      --muted:     var(--ring-secondary-color, #4a5260);
       --primary:   var(--ring-main-color, #1976d2);
       --primary-h: var(--ring-link-hover-color, #1565c0);
       --error:     var(--ring-error-color, #d32f2f);
@@ -28,6 +28,16 @@
       --radius:    6px;
       --radius-lg: 10px;
       --shadow:    0 2px 8px rgba(0, 0, 0, 0.08);
+      /* v1.9.6 — focus-ring (WCAG 2.4.7) */
+      --focus-ring:        0 0 0 2px var(--ring-border-hover-color, rgba(91, 124, 250, 0.4));
+      --focus-ring-offset: 2px;
+      /* v1.9.6 — z-index scale. Никаких hardcoded чисел в селекторах ниже. */
+      --z-sticky:   10;
+      --z-dropdown: 100;
+      --z-popover:  500;
+      --z-dialog:   1000;
+      --z-overlay:  1100;
+      --z-toast:    2000;
     }
 
     /* Принудительный override под тёмную тему YouTrack */
@@ -72,6 +82,33 @@
       line-height: 1.5;
       min-height: 100vh;
     }
+
+    /* ── Ring UI icons v1.9.6 ── */
+    .ssp-icon {
+      display: inline-block;
+      width: 16px; height: 16px;
+      vertical-align: middle;
+      flex-shrink: 0;
+      line-height: 0;
+    }
+    .ssp-icon svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+    .ssp-icon--12 { width: 12px; height: 12px; }
+    .ssp-icon--20 { width: 20px; height: 20px; }
+    .ssp-icon--missing { background: rgba(224,90,106,.3); border: 1px dashed var(--error); }
+
+    /* ── Loader spinner v1.9.6 ── */
+    .ssp-loader {
+      display: inline-block;
+      width: 16px; height: 16px;
+      animation: ssp-spin 1s linear infinite;
+      color: var(--primary);
+      vertical-align: middle;
+      line-height: 0;
+    }
+    .ssp-loader--20 { width: 20px; height: 20px; }
+    .ssp-loader svg { width: 100%; height: 100%; }
+    @keyframes ssp-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .ssp-loader { animation: none; opacity: 0.6; } }
 
     /* ── Обёртка страницы ── */
     .page {
@@ -229,6 +266,7 @@
       padding-right: 32px;
     }
     .field input:focus, .field select:focus { border-color: var(--primary); }
+    .field input:focus-visible, .field select:focus-visible { box-shadow: var(--focus-ring); }
     .field input::placeholder { color: var(--muted); }
     .field input[readonly] { opacity: .6; cursor: default; }
     .field-err { font-size: 11px; color: var(--error); display: block; margin-top: 4px; min-height: 1em; }
@@ -326,7 +364,7 @@
       color: #fff; font-size: 11px; font-weight: 400;
       padding: 4px 8px; border-radius: 4px;
       pointer-events: none;
-      z-index: 9999;
+      z-index: var(--z-overlay);
     }
     [data-tooltip]:hover::after { display: block; }
     /* v5.1.0 — длинные многострочные tooltip для чекбоксов настроек */
@@ -422,6 +460,7 @@
       color: var(--text); font-size: 13px; outline: none;
       appearance: none; -webkit-appearance: none;
     }
+    .status-row select:focus-visible { box-shadow: var(--focus-ring); }
 
     /* ── Таблица ── */
     .tbl-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
@@ -463,6 +502,7 @@
       color: var(--text); font-size: 12px; outline: none;
       appearance: none; -webkit-appearance: none;
     }
+    .tbl td select:focus-visible { box-shadow: var(--focus-ring); }
     .tbl td input[type="text"] {
       width: 100%; min-width: 80px;
       padding: 5px 8px;
@@ -472,6 +512,7 @@
       transition: border-color .15s;
     }
     .tbl td input[type="text"]:focus { border-color: var(--primary); }
+    .tbl td input[type="text"]:focus-visible { box-shadow: var(--focus-ring); }
     .td-num { text-align: left; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .td-id  { white-space: nowrap; }
 
@@ -490,7 +531,7 @@
       min-height: 100vh;
       background: rgba(0,0,0,.65);
       display: flex; align-items: flex-start; justify-content: center;
-      z-index: 9000; padding: 24px 16px;
+      z-index: var(--z-dialog); padding: 24px 16px;
     }
     .overlay.hidden { display: none; }
     .modal {
@@ -523,6 +564,7 @@
       color: var(--text); font-size: 13px; outline: none;
     }
     .search-row input:focus { border-color: var(--primary); }
+    .search-row input:focus-visible { box-shadow: var(--focus-ring); }
     .search-row input::placeholder { color: var(--muted); }
 
     /* ── Confirm ──
@@ -574,7 +616,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      box-shadow: var(--shadow); z-index: 9999;
+      box-shadow: var(--shadow); z-index: var(--z-toast);
       opacity: 0; transform: translateY(-10px);
       transition: opacity .2s, transform .2s;
       pointer-events: none;
@@ -658,6 +700,7 @@
       color: var(--text); font-size: 13px;
       padding: 2px 0;
     }
+    .grp-ms__input:focus-visible { box-shadow: var(--focus-ring); border-radius: 2px; }
     .grp-ms__input::placeholder { color: var(--muted); }
     .grp-ms__dropdown {
       display: none;
@@ -668,7 +711,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      z-index: 500;
+      z-index: var(--z-popover);
       max-height: 280px;
       overflow-y: auto;
     }
@@ -735,7 +778,7 @@
       bottom: 0; left: 0; right: 0;
       background: var(--bg);
       border-top: 1px solid var(--border);
-      z-index: 51;
+      z-index: var(--z-dropdown);
       box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, .15);
     }
     .save-row__inner {
@@ -954,7 +997,7 @@
       background: rgba(0,0,0,.65);
       display: flex; align-items: flex-start; justify-content: center;
       padding: 24px 16px;
-      z-index: 9100;
+      z-index: var(--z-dialog);
     }
     .dyn-modal-overlay.hidden { display: none; }
     .dyn-modal-box {
@@ -976,12 +1019,14 @@
       border-radius: var(--radius); color: var(--text); font-size: 13px; outline: none;
     }
     .dyn-modal-input:focus { border-color: var(--primary); }
+    .dyn-modal-input:focus-visible { box-shadow: var(--focus-ring); }
     .dyn-modal-select {
       width: 100%; padding: 8px 12px; margin-bottom: 16px;
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: var(--radius); color: var(--text); font-size: 13px; outline: none;
       appearance: none;
     }
+    .dyn-modal-select:focus-visible { box-shadow: var(--focus-ring); }
 
     /* v6.3.1 D112 — sortable headers: явный visual + крупная иконка + hover. */
     th.sortable {
@@ -1013,7 +1058,7 @@
       top: 0; right: 0; bottom: 0; left: 0;
       background: var(--bg);
       overflow-y: auto;
-      z-index: 50;
+      z-index: var(--z-dialog);
       animation: settingsFadeIn .15s ease-out;
     }
     .settings-overlay.hidden { display: none !important; }
@@ -1073,7 +1118,7 @@
     /* v5.1.0 — Sticky navigation (anchored chips) для overlay настроек */
     /* v6.3.1 D117 — settings-nav: закругления по углам + рамка как у settings-card. */
     .settings-nav {
-      position: sticky; top: 0; z-index: 10;
+      position: sticky; top: 0; z-index: var(--z-sticky);
       background: var(--surface);
       display: flex; gap: 8px; flex-wrap: wrap;
       padding: 10px 14px; margin: 0 0 14px;
@@ -1285,11 +1330,8 @@
       color: var(--text);
       cursor: pointer;
     }
-    .planning-people-roleSel select:hover,
-    .planning-people-roleSel select:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(74,144,226,0.2);
-    }
+    .planning-people-roleSel select:hover { outline: none; }
+    .planning-people-roleSel select:focus-visible { outline: none; box-shadow: var(--focus-ring); }
     .empty-state {
       display: flex; flex-direction: column; align-items: center; gap: 10px;
       padding: 36px 20px; border: 1px dashed var(--border); border-radius: var(--radius);
