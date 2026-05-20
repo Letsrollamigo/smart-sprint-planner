@@ -8,6 +8,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.6] — 2026-05-21
+
+> **Ring UI tier 1 — UI polish + accessibility.** Replaces all emoji across toolbar/tabs/buttons with JetBrains SVG icons, adds unified focus-ring system, z-index scale, WCAG AA contrast fix, and 17 `aria.*` label keys. No backend or schema changes. 241 unit tests pass.
+
+### Added
+
+- **JetBrains SVG icon system** — 12 icons from `@jetbrains/icons@5.22.0` (Apache-2.0) + custom `loader.svg`. Build-time generation via `scripts/build-icons.js` → `icons.generated.js`. `icon()` helper returns `<span class="ssp-icon">` with inline SVG.
+- **`NOTICE.md`** — Apache-2.0 third-party attribution for `@jetbrains/icons`.
+- **CSS design tokens**: `--focus-ring`, `--focus-ring-offset`, `--z-sticky/dropdown/popover/dialog/overlay/toast` in `:root`.
+- **17 `aria.*` i18n keys** — EN+RU full; 13 other locales get `[v1.9.6]` placeholder (full translations in v1.9.7 patch).
+- **Loader spinner** — `loader.svg` + `.ssp-loader` CSS + `withLoader()` async helper; shown on reload/save buttons and initial mount (>500ms).
+- **`SCHEMA_MIGRATIONS` entry** `1.9.4 → 1.9.6` (no-op; UI-only change). Fixtures `1.9.4/` and `1.9.6/` frozen.
+
+### Changed
+
+- **All emoji replaced** with JetBrains SVG icons: toolbar (🧹⚙), tabs (📋📈🕑), level-buttons (👥👤🗣), action-buttons (✔🔄➕🗑✕). Save buttons (💾) become text-only per Ring pattern.
+- **`--muted` fallback** `#6e7682` → `#4a5260` (WCAG AA contrast improvement on white).
+- **All hardcoded `z-index` numbers** replaced with `var(--z-*)` tokens (8 selectors).
+- **10 interactive elements** gain `:focus-visible { box-shadow: var(--focus-ring); }` (WCAG 2.4.7).
+- **`applyI18N()`** preserves `.ssp-icon` children on language switch.
+- **`npm run build`** runs `build:icons` pre-step before esbuild.
+
+### Internal
+
+- Version bumped to `1.9.6` in 6 points (`1.9.5` reserved for marketplace hotfix if needed).
+- `snapshot-migration.test.js`: 5 → 6 SCHEMA_MIGRATIONS entries. `external-ticket-id.test.js` version assertion updated.
+
+---
+
 ## [1.9.4] — 2026-05-20
 
 > **Visual refresh** — new app icon. Replaces the previous logo with a Gantt-cascade mark in light + dark variants. Pure asset update — no code, schema, or behaviour changes.
