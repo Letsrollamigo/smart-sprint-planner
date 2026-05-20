@@ -324,7 +324,8 @@
     document.querySelectorAll('.ssp-initial-loader').forEach(function(el) { el.remove(); });
   }
 
-  /** Обходит все элементы с data-i18n и обновляет их текст/плейсхолдер */
+  /** Обходит все элементы с data-i18n и обновляет их текст/плейсхолдер.
+   *  v1.9.6: сохраняет .ssp-icon дочерние узлы при обновлении textContent (смена языка). */
   function applyI18N() {
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
@@ -334,7 +335,18 @@
       } else if (el.hasAttribute('data-i18n-html')) {
         el.innerHTML = val;
       } else {
-        el.textContent = val;
+        var iconChild = el.querySelector('.ssp-icon');
+        if (iconChild) {
+          // Обновляем только текстовый узел, сохраняя icon span
+          var textNode = null;
+          for (var i = 0; i < el.childNodes.length; i++) {
+            if (el.childNodes[i].nodeType === Node.TEXT_NODE) { textNode = el.childNodes[i]; break; }
+          }
+          if (textNode) { textNode.textContent = ' ' + val; }
+          else { el.appendChild(document.createTextNode(' ' + val)); }
+        } else {
+          el.textContent = val;
+        }
       }
     });
     document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
@@ -348,6 +360,19 @@
       el.setAttribute('data-tooltip', T(el.getAttribute('data-i18n-tooltip')));
     });
     /* v5.10.0 — удалён мёртвый guard на renderDistribPanel + tab-distrib (оба удалены в v5.6.0). */
+  }
+
+  /** v1.9.6 — icon-aware text setter: обновляет только текстовый узел кнопки, сохраняя .ssp-icon. */
+  function setButtonText(btn, text) {
+    var iconEl = btn.querySelector('.ssp-icon');
+    if (!iconEl) { btn.textContent = text; return; }
+    for (var i = 0; i < btn.childNodes.length; i++) {
+      if (btn.childNodes[i].nodeType === Node.TEXT_NODE) {
+        btn.childNodes[i].textContent = ' ' + text;
+        return;
+      }
+    }
+    btn.appendChild(document.createTextNode(' ' + text));
   }
 
   /** Переключить язык. Если для языка нет inline-словаря (то есть это не EN/RU),
@@ -2276,7 +2301,7 @@
       }
     }
     if (btn) {
-      btn.textContent     = T('btnClearDraft');
+      setButtonText(btn, T('btnClearDraft'));
       btn.title           = T('btnClearDraftTitle');
       if (meta) btn.classList.remove('hidden'); else btn.classList.add('hidden');
     }
@@ -2751,6 +2776,7 @@
       }
     }
     applyI18N();
+    applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     /* v5.0.3 — обновить индикатор черновика ПОСЛЕ applyI18N (иначе applyI18N
        не затрагивает текст бейджа без data-i18n, но переключение языка
        должно перенарисовать локализованную подпись с актуальным timestamp). */
@@ -6404,7 +6430,7 @@
         '<td><select class="inc-sel" data-iid="'+iidAttr+'" data-rk="'+rk+'">'+
           Object.values(INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
         '</select></td>'+
-        '<td><button class="btn btn--icon del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'">🗑</button></td>';
+        '<td><button class="btn btn--icon del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button></td>';
       tbody.appendChild(tr);
     });
 
@@ -7360,7 +7386,7 @@
       finBtn.addEventListener('click', (function(r,i){ return function(e){ e.stopPropagation(); finishHistorySprint(r, i); }; })(rec, idx));
       ctrl.appendChild(finBtn);
     }
-    var del = document.createElement('button'); del.className = 'btn btn--icon'; del.title = T('btnDeleteTitle'); del.textContent = '🗑';
+    var del = document.createElement('button'); del.className = 'btn btn--icon'; del.title = T('btnDeleteTitle'); del.setAttribute('aria-label', T('aria.btnDeleteRow')); del.appendChild(icon('trash', T('aria.btnDeleteRow')));
     del.addEventListener('click', (function(i){ return function(e){ e.stopPropagation(); _pendingDelHist = i; _showOverlay('delHistOverlay'); }; })(idx));
     var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶';
     ctrl.appendChild(xlsBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
@@ -8986,7 +9012,7 @@
         byProjCellHtml +
         '<td class="td-num" style="color:'+(remain<0?'var(--error)':'var(--success)')+'" id="currentRole_rem_'+encodeLogin(login)+'">' + round2(remain) + '</td>' +
         '<td style="text-align:center">' +
-          '<button class="btn btn--icon currentRole-del-assignee" data-login="'+esc(login)+'" title="'+T('confirmDelAssignee').replace('?','')+'" style="font-size:14px;padding:2px 6px">🗑</button>' +
+          '<button class="btn btn--icon currentRole-del-assignee" data-login="'+esc(login)+'" title="'+T('confirmDelAssignee').replace('?','')+'" aria-label="'+T('aria.btnDeleteRow')+'" style="font-size:14px;padding:2px 6px">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' +
         '</td>';
       tbody.appendChild(tr);
     });

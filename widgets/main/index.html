@@ -1405,11 +1405,13 @@
            consistency с динамическим бейджем; data-i18n не используется по тем же
            причинам, что и для #dirtyBadge. -->
       <button id="clearDraftBtn" class="btn btn--sm hidden"
-              style="background:transparent;border-color:var(--warn);color:var(--warn)">🧹 Очистить черновик</button>
+              data-icon="update" data-aria-label-key="aria.btnClearDraft"
+              style="background:transparent;border-color:var(--warn);color:var(--warn)">Очистить черновик</button>
       <!-- Кнопка перехода в виджет настроек (видимость определяется серверной проверкой) -->
       <button id="openSettingsBtn" class="btn btn--sm" style="display:none"
+              data-icon="settings" data-aria-label-key="aria.btnSettings"
               data-i18n="btnOpenSettings"
-              data-i18n-title="btnOpenSettingsTitle">⚙ Настройки плагина</button>
+              data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
          target="_blank" rel="noopener noreferrer" class="btn btn--sm" style="background:transparent;border-color:var(--border);color:var(--text)">
         <span data-i18n="linkGuide">📖 Руководство пользователя</span>
@@ -1448,7 +1450,7 @@
     </span>
     <button id="widgetNewSprintBtn"
             class="btn btn--sm btn--primary widget-header__new editor-btn"
-            data-i18n="btnNewSprintWidget">➕ Новый спринт</button>
+            data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Новый спринт</button>
     <!-- v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. -->
   </div>
 
@@ -1481,9 +1483,9 @@
 
   <!-- Вкладки первого уровня: Планирование / Диаграмма Ганта / История. Settings — overlay. -->
   <div class="tabs">
-    <button class="tab-btn active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning">📋 Планирование</button>
-    <button class="tab-btn" id="tabBtnGantt"    data-tab="gantt"    data-i18n="tabGantt">📈 Диаграмма Ганта</button>
-    <button class="tab-btn"        data-tab="history"  data-i18n="tabHistory">🕑 История спринтов</button>
+    <button class="tab-btn active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning" data-icon="task" data-aria-label-key="aria.tabPlanning">Планирование</button>
+    <button class="tab-btn" id="tabBtnGantt"    data-tab="gantt"    data-i18n="tabGantt"     data-icon="bars" data-aria-label-key="aria.tabGantt">Диаграмма Ганта</button>
+    <button class="tab-btn"        data-tab="history"  data-i18n="tabHistory"  data-icon="history" data-aria-label-key="aria.tabHistory">История спринтов</button>
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
@@ -1508,7 +1510,7 @@
       </span>
       <span id="wcBannerLevelPill" class="wc-banner__pill wc-banner__pill--meta" title="">—</span>
       <button id="wcBannerDiffBtn"  type="button" class="wc-banner__action" data-i18n="wcShowDiff">Показать различия</button>
-      <button id="wcBannerCloseBtn" type="button" class="wc-banner__close" data-i18n-title="wcCloseHide" title="Свернуть">✕</button>
+      <button id="wcBannerCloseBtn" type="button" class="wc-banner__close" data-i18n-title="wcCloseHide" title="Свернуть" data-icon="close" data-aria-label-key="aria.btnClose"></button>
     </div>
     <div id="bannerPlanner" class="banner hidden" data-i18n="bannerNoSettings" data-i18n-html>
       ⚠️ Настройки плагина не заполнены. Откройте виджет «Smart Sprint Planner: настройки» через кнопку «⚙ Настройки плагина» в шапке (доступна участникам группы управления настройками).
@@ -1573,16 +1575,16 @@
            Дублирует часть doSaveRoleHeader, отвечающую только за _sprint.name/dateStart/dateEnd/sprintFieldVal/versionFieldVal,
            без записи в _sprint[role.resKey]. Per-role кнопка «Сохранить параметры» внутри ролей остаётся как было. -->
       <div class="sprint-intro-actions" style="margin-top:14px">
-        <button id="saveSprintIntroBtn" class="btn btn--primary editor-btn" data-i18n="btnSaveSprintIntro">💾 Сохранить параметры спринта</button>
+        <button id="saveSprintIntroBtn" class="btn btn--primary editor-btn" data-i18n="btnSaveSprintIntro" aria-label="">Сохранить параметры спринта</button>
         <span class="field-err" id="errSprintIntro"></span>
       </div>
     </div>
     <div class="planning-levels" role="tablist">
       <!-- v5.6.0 — Этап 4: сегмент «Гант» удалён, Гант переехал на верхний уровень (#tab-gantt) -->
-      <button class="planning-level-btn active" data-level="roles"   data-i18n="planningLevelRoles">👥 Аллокация общего ресурса</button>
-      <button class="planning-level-btn"        data-level="people"  data-i18n="planningLevelPeople">👤 Распределение по исполнителям</button>
+      <button class="planning-level-btn active" data-level="roles"   data-i18n="planningLevelRoles"   data-icon="group"   data-aria-label-key="aria.levelRoles">Аллокация общего ресурса</button>
+      <button class="planning-level-btn"        data-level="people"  data-i18n="planningLevelPeople"  data-icon="user"    data-aria-label-key="aria.levelPeople">Распределение по исполнителям</button>
       <!-- v1.9.0 D132 — Stand-up assist view -->
-      <button class="planning-level-btn"        data-level="standup" data-i18n="planningLevelStandup">🗣 Stand-up</button>
+      <button class="planning-level-btn"        data-level="standup" data-i18n="planningLevelStandup" data-icon="comment" data-aria-label-key="aria.levelStandup">Stand-up</button>
     </div>
     <div id="planning-level-roles"  class="planning-level-pane">
       <div id="planningRolesNoSprint" class="empty hidden" data-i18n="planningRolesNoSprint">Выберите спринт в шапке виджета или создайте новый.</div>
@@ -1596,10 +1598,10 @@
       </div>
       <div id="planningPeopleNoSprint" class="empty hidden" data-i18n="planningPeopleNoSprint">Выберите спринт в шапке виджета или создайте новый.</div>
       <div id="planningPeopleEmpty" class="empty-state hidden">
-        <div class="empty-state__icon">👥</div>
+        <div class="empty-state__icon" aria-hidden="true">👥</div>
         <div class="empty-state__title" id="planningPeopleEmptyTitle">—</div>
         <div class="empty-state__desc" data-i18n="planningPeopleEmptyDesc">Нажмите кнопку ниже, чтобы загрузить актуальный список исполнителей из бандла поля Assignee.</div>
-        <button id="planningPeopleEmptyCta" class="btn btn--primary editor-btn" data-i18n="btnPickAssignees">➕ Подобрать исполнителей</button>
+        <button id="planningPeopleEmptyCta" class="btn btn--primary editor-btn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
       </div>
       <!-- DOM-id этой секции: currentRoleNkcSel, currentRoleTotalResource/Remain, currentRoleCalcBtn,
            currentRoleSaveParamsBtn, currentRoleValidateBtn, currentRoleAssigneeTable/Body,
@@ -1628,9 +1630,9 @@
               </div>
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn--primary editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource">⚙ Рассчитать ресурс</button>
-              <button class="btn btn--primary editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">💾 Сохранить параметры</button>
-              <button class="btn editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole">✔ Валидировать распределение</button>
+              <button class="btn btn--primary editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
+              <button class="btn btn--primary editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
+              <button class="btn editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
             </div>
           </div>
         </div>
@@ -1638,10 +1640,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <div class="card-title" style="margin-bottom:0" data-i18n="cardAssignees">Ресурсы по исполнителям</div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn--sm btn--primary editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees">➕ Подобрать исполнителей</button>
-              <button class="btn btn--sm editor-btn" id="currentRoleClearAssigneesBtn" style="border-color:var(--error);color:var(--error)" data-i18n="btnClearAssignees">✕ Очистить</button>
+              <button class="btn btn--sm btn--primary editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
+              <button class="btn btn--sm editor-btn" id="currentRoleClearAssigneesBtn" style="border-color:var(--error);color:var(--error)" data-i18n="btnClearAssignees" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="btn btn--sm" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt">🔄 Обновить из задач</button>
+              <button class="btn btn--sm" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
             </div>
           </div>
           <div class="tbl-wrap">
@@ -1688,7 +1690,7 @@
       <div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px">
         <label for="standupRoleSel" data-i18n="standupRoleLabel" style="font-size:12px;font-weight:600;white-space:nowrap">Роль:</label>
         <select id="standupRoleSel" class="app-select" style="flex:1;min-width:140px;max-width:260px"></select>
-        <button id="standupRefreshBtn" class="btn btn--sm" data-i18n="btnStandupRefresh" style="margin-left:auto">🔄 Обновить</button>
+        <button id="standupRefreshBtn" class="btn btn--sm" data-i18n="btnStandupRefresh" data-icon="update" data-aria-label-key="aria.btnRefresh" style="margin-left:auto">Обновить</button>
       </div>
       <!-- Цель спринта (read-only над bucket'ами) -->
       <div id="standupGoalBanner" class="card" style="display:none;padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5">
@@ -1720,7 +1722,7 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack на Ганте. -->
-      <button id="ganttSyncFromYtBtn" class="btn" data-i18n="btnSyncFromYt">🔄 Обновить из задач</button>
+      <button id="ganttSyncFromYtBtn" class="btn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
       <button id="ganttUpdateBtn" class="btn editor-btn" data-i18n="btnUpdateGantt">Обновить Гант</button>
     </div>
     <div id="ganttContainer"></div>
@@ -1728,7 +1730,7 @@
 
 <div class="tab-panel" id="tab-history">
     <div style="display:flex;justify-content:flex-end;padding:0 0 10px 0">
-      <button class="btn btn--sm" id="clearAllHistoryBtn" style="background:transparent;border-color:var(--error,#e05a6a);color:var(--error,#e05a6a)" data-i18n="btnClearHistory">🗑 Очистить всю историю</button>
+      <button class="btn btn--sm" id="clearAllHistoryBtn" style="background:transparent;border-color:var(--error,#e05a6a);color:var(--error,#e05a6a)" data-i18n="btnClearHistory" data-icon="trash" data-aria-label-key="aria.btnClearHistory">Очистить всю историю</button>
     </div>
     <div id="historyList"><div class="empty" data-i18n="emptyHistory">Нет сохранённых спринтов</div></div>
     <div class="pagination" id="histPag" style="display:none">
@@ -1790,7 +1792,7 @@
   <div class="modal">
     <div class="modal__head">
       <span id="pickModalTitle" data-i18n="pickModalTitle">Подбор задач в спринт</span>
-      <button class="btn btn--icon" id="closePickModal">✕</button>
+      <button class="btn btn--icon" id="closePickModal" data-icon="close" data-aria-label-key="aria.btnClose" aria-label="Закрыть"></button>
     </div>
     <div class="modal__body">
       <div class="search-row">
@@ -2025,7 +2027,8 @@
       <div class="settings-overlay__title" id="settingsOverlayTitle" data-i18n="appTitleSettings">Smart Sprint Planner: настройки</div>
       <button type="button" class="settings-overlay__close" id="closeSettingsBtn"
               data-i18n="btnCloseSettings"
-              data-i18n-title="btnCloseSettingsTitle">✕ Закрыть</button>
+              data-i18n-title="btnCloseSettingsTitle"
+              data-icon="close" data-aria-label-key="aria.btnClose">Закрыть</button>
     </div>
 
     <!-- Баннеры доступа -->
@@ -2055,7 +2058,7 @@
         <button type="button" class="settings-nav__chip" data-target="secDta"    data-i18n="secDta">Differentiated time tracking</button>
         <button type="button" class="settings-nav__chip" data-target="secCascade" data-i18n="secCascade">Cascade aggregation</button>
         <button type="button" class="settings-nav__chip" data-target="secStateRollup" data-i18n="cardStateRollup">State rollup parent ← children</button>
-        <button type="button" class="settings-nav__chip" data-target="secStandup" data-i18n="cardStandupSettings">🗣 Stand-up assist</button>
+        <button type="button" class="settings-nav__chip" data-target="secStandup" data-i18n="cardStandupSettings" data-icon="comment" data-aria-label-key="aria.levelStandup">Stand-up assist</button>
         <button type="button" class="settings-nav__chip" data-target="secMisc"   data-i18n="secMisc">Прочее</button>
       </nav>
 
@@ -2448,7 +2451,7 @@
                   <div style="display:flex;gap:4px;margin-top:4px">
                     <button type="button" class="btn btn--sm" id="stateRollupUpBtn" data-i18n="btnStateRollupUp">↑ Up</button>
                     <button type="button" class="btn btn--sm" id="stateRollupDownBtn" data-i18n="btnStateRollupDown">↓ Down</button>
-                    <button type="button" class="btn btn--sm" id="stateRollupRemoveBtn" data-i18n="btnStateRollupRemove">✕ Remove</button>
+                    <button type="button" class="btn btn--sm" id="stateRollupRemoveBtn" data-i18n="btnStateRollupRemove" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Remove</button>
                   </div>
                 </div>
               </div>
@@ -2505,7 +2508,7 @@
       <!-- v1.9.0 D132 — Stand-up assist settings -->
       <section class="settings-section" id="secStandup">
         <details class="card settings-card" id="cardStandupWrap">
-          <summary data-i18n="cardStandupSettings">🗣 Stand-up assist</summary>
+          <summary data-i18n="cardStandupSettings" data-icon="comment">Stand-up assist</summary>
           <div class="form-grid form-grid--2">
             <div class="field" style="grid-column:1 / -1">
               <label for="standupDoneStatesList" data-i18n="lblStandupDoneStates">Состояния «Done» для Stand-up</label>

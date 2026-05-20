@@ -1750,7 +1750,23 @@
         } else if (el.hasAttribute("data-i18n-html")) {
           el.innerHTML = val;
         } else {
-          el.textContent = val;
+          var iconChild = el.querySelector(".ssp-icon");
+          if (iconChild) {
+            var textNode = null;
+            for (var i = 0; i < el.childNodes.length; i++) {
+              if (el.childNodes[i].nodeType === Node.TEXT_NODE) {
+                textNode = el.childNodes[i];
+                break;
+              }
+            }
+            if (textNode) {
+              textNode.textContent = " " + val;
+            } else {
+              el.appendChild(document.createTextNode(" " + val));
+            }
+          } else {
+            el.textContent = val;
+          }
         }
       });
       document.querySelectorAll("[data-i18n-title]").forEach(function(el) {
@@ -1762,6 +1778,20 @@
       document.querySelectorAll("[data-i18n-tooltip]").forEach(function(el) {
         el.setAttribute("data-tooltip", T(el.getAttribute("data-i18n-tooltip")));
       });
+    }
+    function setButtonText(btn, text) {
+      var iconEl = btn.querySelector(".ssp-icon");
+      if (!iconEl) {
+        btn.textContent = text;
+        return;
+      }
+      for (var i = 0; i < btn.childNodes.length; i++) {
+        if (btn.childNodes[i].nodeType === Node.TEXT_NODE) {
+          btn.childNodes[i].textContent = " " + text;
+          return;
+        }
+      }
+      btn.appendChild(document.createTextNode(" " + text));
     }
     function setLang2(lang) {
       var prev = _lang;
@@ -3713,7 +3743,7 @@
         }
       }
       if (btn) {
-        btn.textContent = T("btnClearDraft");
+        setButtonText(btn, T("btnClearDraft"));
         btn.title = T("btnClearDraftTitle");
         if (meta) btn.classList.remove("hidden");
         else btn.classList.add("hidden");
@@ -4200,6 +4230,7 @@
         }
       }
       applyI18N();
+      applyIcons();
       refreshDirtyIndicator();
       var openBtn = document.getElementById("openSettingsBtn");
       var closeBtn = document.getElementById("closeSettingsBtn");
@@ -7547,7 +7578,7 @@
         (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : "") + /* v1.8.1 — System / XPriority cells показываются только если поле настроено. */
         (_settings && _settings.fieldSystem ? systemCell : "") + priorityCell + (_settings && _settings.fieldXPriority ? xpriorityCell : "") + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-iid="' + iidAttr + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
           return '<option value="' + v + '"' + (item.inclusionStatus === v ? " selected" : "") + ">" + esc(incLabel(v)) + "</option>";
-        }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '">\u{1F5D1}</button></td>';
+        }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '" aria-label="' + T("aria.btnDeleteRow") + '">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
         tbody.appendChild(tr);
       });
       function _findIdxByIid(rkx, iidx) {
@@ -8539,7 +8570,8 @@
       var del = document.createElement("button");
       del.className = "btn btn--icon";
       del.title = T("btnDeleteTitle");
-      del.textContent = "\u{1F5D1}";
+      del.setAttribute("aria-label", T("aria.btnDeleteRow"));
+      del.appendChild(icon("trash", T("aria.btnDeleteRow")));
       del.addEventListener("click", /* @__PURE__ */ function(i) {
         return function(e) {
           e.stopPropagation();
@@ -9975,7 +10007,7 @@
         tr.innerHTML = "<td>" + esc(entry.assigneeName || login) + '</td><td><select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' + GRADES_LOCAL.map(function(g) {
           var currentGrade = _migrateGrade(entry.grade);
           return '<option value="' + g + '"' + (currentGrade === g ? " selected" : "") + ">" + esc(T("grade" + g)) + "</option>";
-        }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" style="font-size:14px;padding:2px 6px">\u{1F5D1}</button></td>';
+        }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" aria-label="' + T("aria.btnDeleteRow") + '" style="font-size:14px;padding:2px 6px">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-grade-sel").forEach(function(sel) {
