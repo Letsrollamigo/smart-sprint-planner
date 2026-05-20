@@ -215,7 +215,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.9.3';
+var CURRENT_PLUGIN_VERSION = '1.9.4';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -374,6 +374,12 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.9.0', to: '1.9.3',
     migrate: function (snap) { /* no-op: pure runtime fixes, no schema impact */ },
     note: 'v1.9.3: Hotfix per-role status contamination (О.1) + stale _roleItems on edit (О.2/П.2) — schema unchanged'
+  },
+  /* v1.9.4 D135 — Visual refresh: new Gantt-cascade app icon (light + dark).
+     Pure asset swap — no schema, no runtime behaviour changes. */
+  { from: '1.9.3', to: '1.9.4',
+    migrate: function (snap) { /* no-op: icon-only asset update, no schema impact */ },
+    note: 'v1.9.4: Visual refresh — new app icon (light + dark) — schema unchanged'
   }
 ];
 
@@ -1887,7 +1893,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.9.3' });
+        ctx.response.json({ version: '1.9.4' });
       }
     },
 

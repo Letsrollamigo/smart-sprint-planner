@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.3",
+  "version": "1.9.4",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.3 — Hotfix two cross-role contamination bugs diagnosed via parallel-session comparison. BUG-О.1: saveRoleHistorySnapshot wrote global _sprint.status to every snapshot, so after validating role A any subsequent save of role B (refresh, working-copy commit, manual save) poisoned role B's history with CONFIRMED status — visible in History spoiler + Excel export. Fixed via new wasValidated parameter: only doValidateRole sets CONFIRMED; all other call-sites preserve existing per-role status from _history or default to PLANNING. BUG-О.2: resumeWorkingDraft loaded only _roleItems[rk] for the role being edited; _roleItems for all other roles remained from the previous context, causing stale role compositions in Planning after «Open for editing» from History. Fixed by iterating ALL_ROLES and loading each _roleItems[otherRk] from its corresponding _history snapshot. Pure runtime fixes; no schema changes. Includes everything from v1.9.0-1.9.2 (Sprint goals + Stand-up assist + dialog timing + viewport scroll). 225 unit tests pass. See CHANGELOG.md.",
+  "changeNotes": "v1.9.4 — Visual refresh: new Gantt-cascade app icon (light + dark variants) replacing the previous logo. Pure asset update — no code, schema, or behaviour changes. Includes everything from v1.9.0–v1.9.3 (Sprint goals + Stand-up assist + dialog timing + viewport scroll + cross-role contamination hotfix). 225 unit tests pass. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

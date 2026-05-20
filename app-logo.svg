@@ -1,34 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Smart Sprint Planner">
-  <title>Smart Sprint Planner</title>
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1565C0;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#0D47A1;stop-opacity:1"/>
-    </linearGradient>
-    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#00000040"/>
-    </filter>
-  </defs>
-
-  <!-- Background rounded square -->
-  <rect width="64" height="64" rx="12" ry="12" fill="url(#bgGrad)" filter="url(#shadow)"/>
-
-  <!-- Accent stripe top -->
-  <rect x="0" y="0" width="64" height="4" rx="2" fill="#1E88E5" opacity="0.5"/>
-
-  <!-- Letters SSP — центрированы по обеим осям -->
-  <text
-    x="32"
-    y="32"
-    text-anchor="middle"
-    dominant-baseline="central"
-    font-family="'Segoe UI', 'Arial', sans-serif"
-    font-size="24"
-    font-weight="800"
-    fill="#E53935"
-    letter-spacing="-1.5"
-  >SSP</text>
-
-  <!-- Underline accent (центрирован под текстом) -->
-  <rect x="16" y="52" width="32" height="3" rx="1.5" fill="#E53935" opacity="0.7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="ssp-gantt-l-t">
+  <title id="ssp-gantt-l-t">Smart Sprint Planner — Gantt cascade</title>
+  <rect width="64" height="64" rx="14" fill="#F2F0EA"></rect>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#1B2A4E" stroke-width="2"></rect>
+  <rect x="10" y="14" width="22" height="6" rx="3" fill="#1B2A4E"></rect>
+  <rect x="20" y="24" width="26" height="6" rx="3" fill="#1B2A4E"></rect>
+  <rect x="14" y="34" width="20" height="6" rx="3" fill="#1B2A4E" opacity="0.55"></rect>
+  <rect x="26" y="44" width="24" height="6" rx="3" fill="#FF6A3D"></rect>
 </svg>

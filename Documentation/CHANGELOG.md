@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.4] — 2026-05-20
+
+> **Visual refresh** — new app icon. Replaces the previous logo with a Gantt-cascade mark in light + dark variants. Pure asset update — no code, schema, or behaviour changes.
+
+### Changed
+
+- **App icon** (`app-logo.svg` + `app-logo-dark.svg`) — redesigned as a Gantt-cascade mark. Light variant uses ivory `#F2F0EA` background with navy `#1B2A4E` bars and an accent orange `#FF6A3D` bar; dark variant uses deep-blue `#0F1320` background with off-white `#E5E7F2` bars and `#FF7A50` accent. SVG-only, 64×64 viewBox, accessible `<title>` element preserved.
+
+### Internal
+
+- Bumped version in 7 places (manifest.json, package.json `version` + `zip` script, backend-project.js `CURRENT_PLUGIN_VERSION` + `app-version` endpoint literal, widgets/main/src/legacy-monolith.js `APP_VERSION`).
+- Added no-op `SCHEMA_MIGRATIONS` entry `1.9.3 → 1.9.4` (icon-only swap, schema unchanged).
+
+---
+
 ## [1.9.3] — 2026-05-20
 
 > **Hotfix — two cross-role contamination bugs** carried since v1.6.x. Diagnosed via parallel-session comparison with the proprietary version's v7.3.1/v7.3.2 fix releases. Both bugs were silent in the active widget (per-role badge fix from v1.8.1 masked one of them) but visible downstream — corrupted snapshots reached History view, Excel export, and «Open for editing» workflows.

@@ -2339,7 +2339,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.3";
+    var APP_VERSION = "1.9.4";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
