@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.4",
+  "version": "1.9.6",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.4 — Visual refresh: new Gantt-cascade app icon (light + dark variants) replacing the previous logo. Pure asset update — no code, schema, or behaviour changes. Includes everything from v1.9.0–v1.9.3 (Sprint goals + Stand-up assist + dialog timing + viewport scroll + cross-role contamination hotfix). 225 unit tests pass. See CHANGELOG.md.",
+  "changeNotes": "v1.9.6 — Ring UI tier 1 polish: JB SVG icons replace emoji across all buttons/tabs, unified z-index scale, WCAG focus-ring on all inputs, WCAG AA contrast fix, 17 aria-label keys. No schema changes. Includes v1.9.4 visual refresh (new app icon) and v1.9.3 hotfixes (role contamination + viewport scroll). See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

@@ -599,5 +599,22 @@
   "standupEmptyRole": "No tasks in this role. Add tasks in «Roles».",
   "standupGoalLabel": "🎯 Sprint goal:",
   "standupGoalMissing": "Sprint goal is not set. Add it in the Sprint Intro card.",
-  "standupNoDoneStatesHint": "Configure Done states in Settings → Stand-up to populate the Done bucket."
+  "standupNoDoneStatesHint": "Configure Done states in Settings → Stand-up to populate the Done bucket.",
+  "aria.btnClearDraft": "Reset draft to server version",
+  "aria.btnSettings": "Open plugin settings",
+  "aria.btnSave": "Save changes",
+  "aria.btnValidate": "Validate before save",
+  "aria.btnRefresh": "Refresh from server",
+  "aria.btnAddAssignee": "Add assignee row",
+  "aria.btnDeleteRow": "Delete row",
+  "aria.btnClose": "Close",
+  "aria.btnClearHistory": "Clear history snapshot",
+  "aria.tabPlanning": "Planning tab",
+  "aria.tabGantt": "Gantt chart tab",
+  "aria.tabHistory": "History tab",
+  "aria.levelRoles": "Roles allocation level",
+  "aria.levelPeople": "People distribution level",
+  "aria.levelStandup": "Daily standup view",
+  "aria.dynEnumCell": "Change value (Enter to edit)",
+  "aria.loading": "Loading"
 }

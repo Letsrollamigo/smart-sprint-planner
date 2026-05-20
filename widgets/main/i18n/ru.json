@@ -599,5 +599,22 @@
   "standupEmptyRole": "Состав роли пуст — добавьте задачи в «Роли».",
   "standupGoalLabel": "🎯 Цель спринта:",
   "standupGoalMissing": "Цель спринта не задана. Добавьте в карточке «Вводные данные».",
-  "standupNoDoneStatesHint": "Настройте состояния «Done» в разделе Настройки → Stand-up."
+  "standupNoDoneStatesHint": "Настройте состояния «Done» в разделе Настройки → Stand-up.",
+  "aria.btnClearDraft": "Сбросить черновик к серверной версии",
+  "aria.btnSettings": "Открыть настройки плагина",
+  "aria.btnSave": "Сохранить изменения",
+  "aria.btnValidate": "Проверить перед сохранением",
+  "aria.btnRefresh": "Обновить с сервера",
+  "aria.btnAddAssignee": "Добавить строку исполнителя",
+  "aria.btnDeleteRow": "Удалить строку",
+  "aria.btnClose": "Закрыть",
+  "aria.btnClearHistory": "Очистить запись истории",
+  "aria.tabPlanning": "Вкладка Планирование",
+  "aria.tabGantt": "Вкладка Диаграмма Ганта",
+  "aria.tabHistory": "Вкладка История",
+  "aria.levelRoles": "Уровень: Состав ролей",
+  "aria.levelPeople": "Уровень: Распределение по людям",
+  "aria.levelStandup": "Вьюха для дейли-стендапа",
+  "aria.dynEnumCell": "Изменить значение (Enter для редактирования)",
+  "aria.loading": "Загрузка"
 }
