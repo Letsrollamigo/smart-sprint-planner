@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - **App icon** (`app-logo.svg` + `app-logo-dark.svg`) — redesigned as a Gantt-cascade mark. Light variant uses ivory `#F2F0EA` background with navy `#1B2A4E` bars and an accent orange `#FF6A3D` bar; dark variant uses deep-blue `#0F1320` background with off-white `#E5E7F2` bars and `#FF7A50` accent. SVG-only, 64×64 viewBox, accessible `<title>` element preserved.
+- **Widget header logo** — the `SSP` text plate in the main widget header and in the Settings overlay header is replaced with the same inline Gantt-cascade SVG (light + dark variants, switched in sync with `body.theme-dark` / `[data-theme="dark"]` / system `prefers-color-scheme`).
 
 ### Internal
 
