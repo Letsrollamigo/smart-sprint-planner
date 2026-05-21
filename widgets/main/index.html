@@ -348,6 +348,17 @@
     .btn--sm { padding: 5px 12px; font-size: 12px; }
     .btn--icon { padding: 5px 8px; background: transparent; border: none; }
     .btn--icon:hover { background: var(--surface2); border-radius: var(--radius); }
+    /* v1.9.6 — focus-ring for keyboard nav on all buttons (WCAG 2.4.7). */
+    .btn:focus-visible, .btn--icon:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tab-btn:focus-visible, .planning-level-btn:focus-visible,
+    .settings-nav__chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+    /* v1.9.6 — Icon+text flex layout for non-.btn containers (consistent gap). */
+    .tab-btn, .planning-level-btn, .settings-nav__chip {
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    /* summary keeps native disclosure marker — flex unsafe, использует margin-right на иконке. */
+    summary .ssp-icon { margin-right: 6px; }
 
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 

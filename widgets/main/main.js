@@ -1718,13 +1718,7 @@
         var ariaKey = el.getAttribute("data-aria-label-key");
         var ariaLabel = ariaKey ? T(ariaKey) : el.getAttribute("aria-label") || "";
         var iconNode = icon(iconName, "", { cls: "btn-icon" });
-        var firstChild = el.firstChild;
-        if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent.trim()) {
-          el.insertBefore(iconNode, firstChild);
-          el.insertBefore(document.createTextNode("\xA0"), firstChild);
-        } else {
-          el.insertBefore(iconNode, el.firstChild);
-        }
+        el.insertBefore(iconNode, el.firstChild);
         if (ariaLabel) el.setAttribute("aria-label", ariaLabel);
         el.removeAttribute("data-icon");
         el.removeAttribute("data-aria-label-key");
@@ -1744,7 +1738,7 @@
           btn.disabled = origDisabled;
         };
       } else {
-        var prevSib = document.createTextNode("\xA0");
+        var prevSib = document.createTextNode(" ");
         btn.appendChild(prevSib);
         btn.appendChild(loader);
         var restore = function() {

@@ -270,13 +270,8 @@
       var ariaKey  = el.getAttribute('data-aria-label-key');
       var ariaLabel = ariaKey ? T(ariaKey) : (el.getAttribute('aria-label') || '');
       var iconNode = icon(iconName, '', { cls: 'btn-icon' });
-      var firstChild = el.firstChild;
-      if (firstChild && firstChild.nodeType === Node.TEXT_NODE && firstChild.textContent.trim()) {
-        el.insertBefore(iconNode, firstChild);
-        el.insertBefore(document.createTextNode(' '), firstChild);
-      } else {
-        el.insertBefore(iconNode, el.firstChild);
-      }
+      // v1.9.6 polish: spacing icon<->text via flex gap (parent) or summary margin-right.
+      el.insertBefore(iconNode, el.firstChild);
       if (ariaLabel) el.setAttribute('aria-label', ariaLabel);
       el.removeAttribute('data-icon');
       el.removeAttribute('data-aria-label-key');
@@ -296,7 +291,7 @@
       origIcon.replaceWith(loader);
       var restore = function() { loader.replaceWith(origIcon); btn.disabled = origDisabled; };
     } else {
-      var prevSib = document.createTextNode(' ');
+      var prevSib = document.createTextNode(' ');
       btn.appendChild(prevSib);
       btn.appendChild(loader);
       var restore = function() { prevSib.remove(); loader.remove(); btn.disabled = origDisabled; };
