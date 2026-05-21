@@ -1307,11 +1307,6 @@
       border-left: 4px solid var(--primary, #4a90e2);
       background: var(--surface-2, rgba(74,144,226,0.06));
     }
-    .planning-people-roleSel::before {
-      content: '👥';
-      font-size: 20px;
-      margin-right: 2px;
-    }
     .planning-people-roleSel label {
       font-weight: 600;
       font-size: 14px;
@@ -1338,7 +1333,8 @@
       background: var(--surface); text-align: center;
     }
     .empty-state.hidden { display: none; }
-    .empty-state__icon { font-size: 32px; }
+    .empty-state__icon { font-size: 32px; color: var(--muted); }
+    .empty-state__icon .ssp-icon { width: 32px; height: 32px; }
     .empty-state__title { font-size: 15px; font-weight: 600; }
     .empty-state__desc  { font-size: 12px; color: var(--muted); max-width: 480px; }
     .planning-people-summary {
@@ -1414,11 +1410,11 @@
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
          target="_blank" rel="noopener noreferrer" class="btn btn--sm" style="background:transparent;border-color:var(--border);color:var(--text)">
-        <span data-i18n="linkGuide">📖 Руководство пользователя</span>
+        <span data-i18n="linkGuide">Руководство пользователя</span>
       </a>
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/issues"
          target="_blank" rel="noopener noreferrer" class="btn btn--sm">
-        <span data-i18n="linkFeedback">💬 Обратная связь</span>
+        <span data-i18n="linkFeedback">Обратная связь</span>
       </a>
       <!-- Переключатель языка -->
       <select id="langSel" class="btn btn--sm" style="cursor:pointer;padding:5px 8px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);appearance:none;-webkit-appearance:none;" title="Language / Язык">
@@ -1598,7 +1594,7 @@
       </div>
       <div id="planningPeopleNoSprint" class="empty hidden" data-i18n="planningPeopleNoSprint">Выберите спринт в шапке виджета или создайте новый.</div>
       <div id="planningPeopleEmpty" class="empty-state hidden">
-        <div class="empty-state__icon" aria-hidden="true">👥</div>
+        <div class="empty-state__icon" data-icon="group" aria-hidden="true"></div>
         <div class="empty-state__title" id="planningPeopleEmptyTitle">—</div>
         <div class="empty-state__desc" data-i18n="planningPeopleEmptyDesc">Нажмите кнопку ниже, чтобы загрузить актуальный список исполнителей из бандла поля Assignee.</div>
         <button id="planningPeopleEmptyCta" class="btn btn--primary editor-btn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
