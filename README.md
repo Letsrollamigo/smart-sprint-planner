@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v1.9.6-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v1.9.7-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v1.9.3-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
@@ -24,7 +24,7 @@ The plugin ships through two parallel channels — pick the one that matches you
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v1.9.3** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v1.9.6** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (241 unit tests + Playwright) but ships ahead of marketplace review. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v1.9.7** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (249 unit tests + Playwright) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
@@ -71,7 +71,7 @@ cd smart-sprint-planner
 npm install
 npm run build:check    # syntax-validates bundle + workflow files
 npm test               # Playwright suite (36 specs)
-node --test tests/unit/*.test.js   # unit suite (241 specs)
+node --test tests/unit/*.test.js   # unit suite (249 specs)
 ```
 
 Requirements: Node.js 18+. A YouTrack 2024.3+ instance is needed for end-to-end manual verification; the Playwright suite uses a mock backend.
