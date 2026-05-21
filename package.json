@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@jetbrains/icons": "^5.22.0",
+    "@jetbrains/ring-ui-built": "~7.0.108",
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",
     "@playwright/test": "^1.59.1",
     "esbuild": "^0.21.5"
