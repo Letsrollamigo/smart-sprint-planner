@@ -1,12 +1,4 @@
 {
-  "_meta": {
-    "lang": "en",
-    "name": "English",
-    "auto_translated": false,
-    "source": "Original (extracted from legacy-monolith.js I18N.en in v1.1.0)",
-    "review_status": "human_authored",
-    "version": "1.1.0-rc"
-  },
   "appTitle": "Smart Sprint Planner",
   "linkGuide": "User Guide",
   "linkFeedback": "Feedback",
@@ -616,5 +608,22 @@
   "aria.levelPeople": "People distribution level",
   "aria.levelStandup": "Daily standup view",
   "aria.dynEnumCell": "Change value (Enter to edit)",
-  "aria.loading": "Loading"
+  "aria.loading": "Loading",
+  "role.analysis": "Analysis",
+  "role.testing": "Testing",
+  "role.devPlatform": "Platform development",
+  "role.devBack": "Dev Back",
+  "role.devFront": "Dev Front",
+  "role.devIos": "Dev iOS",
+  "role.devAndroid": "Dev Android",
+  "role.devFs": "Dev FullStack",
+  "role.devDb": "Dev DB",
+  "_meta": {
+    "lang": "en",
+    "name": "English",
+    "auto_translated": false,
+    "source": "Original (extracted from legacy-monolith.js I18N.en in v1.1.0)",
+    "review_status": "human_authored",
+    "version": "1.1.0-rc"
+  }
 }

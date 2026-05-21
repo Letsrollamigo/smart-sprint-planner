@@ -1,12 +1,4 @@
 {
-  "_meta": {
-    "lang": "ru",
-    "name": "Русский",
-    "auto_translated": false,
-    "source": "Оригинал (извлечён из legacy-monolith.js I18N.ru в v1.1.0)",
-    "review_status": "human_authored",
-    "version": "1.1.0-rc"
-  },
   "appTitle": "Smart Sprint Planner",
   "linkGuide": "Руководство пользователя",
   "linkFeedback": "Обратная связь",
@@ -616,5 +608,22 @@
   "aria.levelPeople": "Уровень: Распределение по людям",
   "aria.levelStandup": "Вьюха для дейли-стендапа",
   "aria.dynEnumCell": "Изменить значение (Enter для редактирования)",
-  "aria.loading": "Загрузка"
+  "aria.loading": "Загрузка",
+  "role.analysis": "Анализ",
+  "role.testing": "Тестирование",
+  "role.devPlatform": "Платформенная разработка",
+  "role.devBack": "Разработка Back",
+  "role.devFront": "Разработка Front",
+  "role.devIos": "Разработка IOS",
+  "role.devAndroid": "Разработка Android",
+  "role.devFs": "Разработка FullStack",
+  "role.devDb": "Разработка СУБД",
+  "_meta": {
+    "lang": "ru",
+    "name": "Русский",
+    "auto_translated": false,
+    "source": "Оригинал (извлечён из legacy-monolith.js I18N.ru в v1.1.0)",
+    "review_status": "human_authored",
+    "version": "1.1.0-rc"
+  }
 }

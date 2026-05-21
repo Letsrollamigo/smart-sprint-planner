@@ -97,10 +97,10 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1)', function () {
+test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations)', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 6,
-    'Registry should have 6 entries; update this test when next entry is added');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 7,
+    'Registry should have 7 entries; update this test when next entry is added');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
   /* v1.8.0 D130 — second entry: external ticket ID (no-op additive migration). */
@@ -118,6 +118,9 @@ test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 Exter
   /* v1.9.6 — sixth entry: Ring UI tier 1 (UI-only polish, no shape change). */
   assert.strictEqual(SCHEMA_MIGRATIONS[5].to, '1.9.6');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[5].migrate, 'function');
+  /* v1.9.7 — seventh entry: aria translations (i18n-only, no shape change). */
+  assert.strictEqual(SCHEMA_MIGRATIONS[6].to, '1.9.7');
+  assert.strictEqual(typeof SCHEMA_MIGRATIONS[6].migrate, 'function');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {

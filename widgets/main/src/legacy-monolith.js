@@ -21,9 +21,11 @@
     return T('inc_' + code) || code;
   }
   /** v5.0.1 — локализованная подпись роли. Storage оперирует role.key (латинским),
-   *  отображение — labelEn для EN, иначе label. */
+   *  отображение — через i18n T('role.<key>'); fallback на labelEn/label для совместимости. */
   function roleLabel(role) {
     if (!role) return '';
+    var t = T('role.' + role.key);
+    if (t !== 'role.' + role.key) return t;
     return (_lang === 'en' && role.labelEn) ? role.labelEn : (role.label || role.key);
   }
 
@@ -1031,7 +1033,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.6';
+  var APP_VERSION = '1.9.7';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая

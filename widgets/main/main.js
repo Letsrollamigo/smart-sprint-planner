@@ -39,14 +39,6 @@
 
   // widgets/main/i18n/en.json
   var en_default = {
-    _meta: {
-      lang: "en",
-      name: "English",
-      auto_translated: false,
-      source: "Original (extracted from legacy-monolith.js I18N.en in v1.1.0)",
-      review_status: "human_authored",
-      version: "1.1.0-rc"
-    },
     appTitle: "Smart Sprint Planner",
     linkGuide: "User Guide",
     linkFeedback: "Feedback",
@@ -656,19 +648,28 @@
     "aria.levelPeople": "People distribution level",
     "aria.levelStandup": "Daily standup view",
     "aria.dynEnumCell": "Change value (Enter to edit)",
-    "aria.loading": "Loading"
+    "aria.loading": "Loading",
+    "role.analysis": "Analysis",
+    "role.testing": "Testing",
+    "role.devPlatform": "Platform development",
+    "role.devBack": "Dev Back",
+    "role.devFront": "Dev Front",
+    "role.devIos": "Dev iOS",
+    "role.devAndroid": "Dev Android",
+    "role.devFs": "Dev FullStack",
+    "role.devDb": "Dev DB",
+    _meta: {
+      lang: "en",
+      name: "English",
+      auto_translated: false,
+      source: "Original (extracted from legacy-monolith.js I18N.en in v1.1.0)",
+      review_status: "human_authored",
+      version: "1.1.0-rc"
+    }
   };
 
   // widgets/main/i18n/ru.json
   var ru_default = {
-    _meta: {
-      lang: "ru",
-      name: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
-      auto_translated: false,
-      source: "\u041E\u0440\u0438\u0433\u0438\u043D\u0430\u043B (\u0438\u0437\u0432\u043B\u0435\u0447\u0451\u043D \u0438\u0437 legacy-monolith.js I18N.ru \u0432 v1.1.0)",
-      review_status: "human_authored",
-      version: "1.1.0-rc"
-    },
     appTitle: "Smart Sprint Planner",
     linkGuide: "\u0420\u0443\u043A\u043E\u0432\u043E\u0434\u0441\u0442\u0432\u043E \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F",
     linkFeedback: "\u041E\u0431\u0440\u0430\u0442\u043D\u0430\u044F \u0441\u0432\u044F\u0437\u044C",
@@ -1278,7 +1279,24 @@
     "aria.levelPeople": "\u0423\u0440\u043E\u0432\u0435\u043D\u044C: \u0420\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u043E \u043B\u044E\u0434\u044F\u043C",
     "aria.levelStandup": "\u0412\u044C\u044E\u0445\u0430 \u0434\u043B\u044F \u0434\u0435\u0439\u043B\u0438-\u0441\u0442\u0435\u043D\u0434\u0430\u043F\u0430",
     "aria.dynEnumCell": "\u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0435 (Enter \u0434\u043B\u044F \u0440\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u044F)",
-    "aria.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430"
+    "aria.loading": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430",
+    "role.analysis": "\u0410\u043D\u0430\u043B\u0438\u0437",
+    "role.testing": "\u0422\u0435\u0441\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435",
+    "role.devPlatform": "\u041F\u043B\u0430\u0442\u0444\u043E\u0440\u043C\u0435\u043D\u043D\u0430\u044F \u0440\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430",
+    "role.devBack": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 Back",
+    "role.devFront": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 Front",
+    "role.devIos": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 IOS",
+    "role.devAndroid": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 Android",
+    "role.devFs": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 FullStack",
+    "role.devDb": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u043A\u0430 \u0421\u0423\u0411\u0414",
+    _meta: {
+      lang: "ru",
+      name: "\u0420\u0443\u0441\u0441\u043A\u0438\u0439",
+      auto_translated: false,
+      source: "\u041E\u0440\u0438\u0433\u0438\u043D\u0430\u043B (\u0438\u0437\u0432\u043B\u0435\u0447\u0451\u043D \u0438\u0437 legacy-monolith.js I18N.ru \u0432 v1.1.0)",
+      review_status: "human_authored",
+      version: "1.1.0-rc"
+    }
   };
 
   // widgets/main/src/i18n/languages.js
@@ -1506,6 +1524,8 @@
     }
     function roleLabel(role) {
       if (!role) return "";
+      var t = T("role." + role.key);
+      if (t !== "role." + role.key) return t;
       return _lang === "en" && role.labelEn ? role.labelEn : role.label || role.key;
     }
     var STATUS_MIGRATION = {
@@ -2501,7 +2521,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.6";
+    var APP_VERSION = "1.9.7";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",

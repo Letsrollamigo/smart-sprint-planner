@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.7] — 2026-05-21
+
+> **i18n completeness patch.** Completes native translations for all 17 `aria.*` screen-reader keys across 13 languages, and fixes role names showing in Russian for non-RU/EN locales in the settings UI. No schema changes. 249 unit tests pass.
+
+### Fixed
+
+- **Role names in settings UI** showing in Russian for all non-EN locales (de, cs, fr, etc.) — `roleLabel()` now uses `T('role.<key>')` backed by 9 new `role.*` i18n keys in all 15 locale files. Mixed translation style: Analysis/Testing/Platform localized; Dev Back/Front/iOS/Android/FullStack/DB kept as universal tech terms.
+
+### Changed
+
+- **34 sprint-goal and stand-up keys** (`lblSprintGoal`, `cardStandupSettings`, `standupBucket*`, `optGoal*`, etc.) translated from `[v1.9.0]` placeholder to native strings in 13 locales. These keys were introduced in v1.9.0 but never fully translated.
+- **17 `aria.*` i18n keys** translated from `[v1.9.6]` placeholder to native strings in 13 locales: cs, de, es, fr, hu, it, ja, ko, nl, pl, pt, tr, zh. EN and RU were already complete since v1.9.6.
+- **`_meta.source`** in 13 locale files — removed AI-tool reference, replaced with neutral baseline attribution.
+
+### Internal
+
+- `SCHEMA_MIGRATIONS` entry `1.9.6 → 1.9.7` (no-op; i18n-only change). Fixtures `1.9.7/` frozen from `1.9.6/`.
+- Version bumped to `1.9.7` in 6 points.
+- `snapshot-migration.test.js`: 6 → 7 SCHEMA_MIGRATIONS entries. `external-ticket-id.test.js` version assertion updated.
+
+---
+
 ## [1.9.6] — 2026-05-21
 
 > **Ring UI tier 1 — UI polish + accessibility.** Replaces all emoji across toolbar/tabs/buttons with JetBrains SVG icons, adds unified focus-ring system, z-index scale, WCAG AA contrast fix, and 17 `aria.*` label keys. No backend or schema changes. 241 unit tests pass.
