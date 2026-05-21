@@ -3,13 +3,13 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v1.9.3-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
-[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v1.8.4-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v1.9.6-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v1.9.3-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
 
-> 🎉 **Smart Sprint Planner is now on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **1.8.4** was approved and published by the JetBrains review team. From here onward, the marketplace listing is the canonical install path for teams who want vetted, stable releases.
+> 🎉 **Smart Sprint Planner is now on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **1.9.3** is the latest approved release. From here onward, the marketplace listing is the canonical install path for teams who want vetted, stable releases.
 
 > 💎 **Like this project?** If it helped your team and you'd like to support
 > its development, donations in any amount are welcome on TON:
@@ -23,8 +23,8 @@ The plugin ships through two parallel channels — pick the one that matches you
 
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v1.8.4** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v1.9.3** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (225 unit tests + Playwright) but ships ahead of marketplace review. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v1.9.3** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v1.9.6** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (241 unit tests + Playwright) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
@@ -71,7 +71,7 @@ cd smart-sprint-planner
 npm install
 npm run build:check    # syntax-validates bundle + workflow files
 npm test               # Playwright suite (36 specs)
-node --test tests/unit/*.test.js   # unit suite (152 specs)
+node --test tests/unit/*.test.js   # unit suite (241 specs)
 ```
 
 Requirements: Node.js 18+. A YouTrack 2024.3+ instance is needed for end-to-end manual verification; the Playwright suite uses a mock backend.
