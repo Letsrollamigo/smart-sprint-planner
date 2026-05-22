@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.10.0] — 2026-05-22
+
+> **Sort tasks by assignee column (B-23).** Click the «Assignee» column header in the role planning table (Planning → People sub-tab) to sort rows alphabetically by assignee name. Empty/unassigned tasks always sort to the end. Tie-breakers: xpriority → priority → issue ID. Toggle off by clicking the active column. The history-spoiler tasks table intentionally keeps its frozen snapshot order — sorting only applies to the live planning view. No schema changes. 407 unit tests pass (375 → 407, +32).
+
+### Added
+
+- **`assignee` sort key** in the multi-key sort cycle. Joins the existing keys (`xpriority`, `priority`, `id`, `system`, `externalTicketId`) without breaking their behaviour.
+- **Clickable sort header** for the Assignee column in `renderCurrentRoleTaskTable` (Planning → People sub-tab). Scope intentionally limited to the live planning view — the history spoiler keeps frozen snapshot order.
+- **Empty-assignee policy**: tasks without an assignee always render at the end of the sort, regardless of toggle direction. This keeps the active assignees visually grouped at the top.
+- **Pure helpers** in `widgets/main/src/sort-pure.js`: `compareAssignee`, `nextSortKey`, `isValidSortKey`, plus re-exported helpers (`xpRank`, `prRank`, `idCmp`) and the frozen `SORT_KEYS_CYCLE` / `PRIORITY_RANK_MAP` constants. Unit-tested in isolation.
+- **24 new unit tests** for sort-pure helpers (alphabetical compare, empty-to-end policy, null/undefined safety, tie-breakers, sort-key cycle navigation).
+- **4 fixture round-trip tests** for the v1.10.0 baseline (`tests/fixtures/snapshots/1.10.0/`).
+- **4 compat-prev-release tests** against v1.10.0.
+- `SCHEMA_MIGRATIONS` no-op entry `1.9.11 → 1.10.0` (frontend-only change, schema unchanged).
+
+### Notes
+
+- No new i18n keys required — the existing universal `thSortClickHint` tooltip applies to the new Assignee column too.
+- The Gantt chart already groups tasks by assignee visually; this release does **not** change Gantt grouping logic. Gantt remains a grouping view; the new sort applies only to the tabular task lists.
+- Marketplace upload skipped per defer-pivot strategy — consolidated submission planned for v2.0.0 after Ring UI tier 3.
+
+---
+
 ## [1.9.11] — 2026-05-22
 
 > **Modal and toast UX overhaul (B-32) plus Ring UI tier 2 polish (B-31).** All 18 modal dialogs gain focus trap, body scroll lock, ARIA roles, and opt-in backdrop dismiss. Toast system rebuilt: bottom-right stack, queue limit 3, per-type auto-dismiss, screen-reader live region. Sprint goal and retro note textareas align with Ring UI input style; modal footer buttons gain equal width; destructive-with-restore operations shift from danger red to warn orange. No schema changes. 375 unit tests pass (315 → 375, +60).

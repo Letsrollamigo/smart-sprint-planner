@@ -99,6 +99,6 @@ test('validateItem accepts long URL as externalTicketId (> 200 chars, within 100
   assert.strictEqual(validateItem(item), true);
 });
 
-test('CURRENT_PLUGIN_VERSION is 1.9.11', function () {
-  assert.strictEqual(CURRENT_PLUGIN_VERSION, '1.9.11');
+test('CURRENT_PLUGIN_VERSION is 1.10.0', function () {
+  assert.strictEqual(CURRENT_PLUGIN_VERSION, '1.10.0');
 });

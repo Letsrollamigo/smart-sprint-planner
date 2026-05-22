@@ -75,7 +75,7 @@
      в YT iframe — get/setItem молча падают с SecurityError, get возвращает null,
      getSortKey всегда даёт 'off' → визуально «сортировка не работает». Memo
      гарантирует консистентность state в пределах сессии независимо от storage. */
-  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId'];
+  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee'];
   var _sortKeyMemo = null;
   function getSortKey() {
     if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -126,6 +126,20 @@
         var ce = extA < extB ? -1 : (extA > extB ? 1 : 0);
         if (ce !== 0) return ce;
         return _idCmp(a.issueId, b.issueId);
+      }
+      /* v1.10.0 — assignee: lexicographic по lowercase fullName/login, пустые в конец.
+         Tie-breaker: xpriority desc → priority desc → id asc. */
+      if (primary === 'assignee') {
+        var asA = String(a.assignee || '').toLowerCase();
+        var asB = String(b.assignee || '').toLowerCase();
+        /* Пустые assignee — в конец списка независимо от направления. */
+        if (asA === '' && asB !== '') return 1;
+        if (asB === '' && asA !== '') return -1;
+        var ca = asA < asB ? -1 : (asA > asB ? 1 : 0);
+        if (ca !== 0) return ca;
+        return (_xpRank(a.xpriority) - _xpRank(b.xpriority))
+            || (_prRank(a.priority)  - _prRank(b.priority))
+            || _idCmp(a.issueId, b.issueId);
       }
       // 'xpriority' (default)
       var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
@@ -1437,7 +1451,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.11';
+  var APP_VERSION = '1.10.0';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -9620,7 +9634,8 @@
         (_settings && _settings.fieldSystem
           ? '<th class="sortable'+(_sk==='system'?' sortable--active':'')+'" data-sort-key="system" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thSystem')+_sortIc(_sk==='system')+'</th>'
           : '')+
-        '<th style="min-width:160px">'+T('thAssignee')+'</th>'+
+        /* v1.10.0 B-23 — assignee column sortable (clickable header toggles sort on/off). */
+        '<th class="sortable'+(_sk==='assignee'?' sortable--active':'')+'" data-sort-key="assignee" title="'+esc(T('thSortClickHint'))+'" style="min-width:160px">'+T('thAssignee')+_sortIc(_sk==='assignee')+'</th>'+
         '<th style="min-width:130px">'+T('thStart')+'</th>'+
         '<th style="min-width:130px">'+T('thFinish')+'</th>'+
         '</tr>';

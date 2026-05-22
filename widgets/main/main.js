@@ -262,6 +262,77 @@
     }
   });
 
+  // widgets/main/src/sort-pure.js
+  var require_sort_pure = __commonJS({
+    "widgets/main/src/sort-pure.js"(exports, module) {
+      "use strict";
+      var SORT_KEYS_CYCLE = Object.freeze([
+        "off",
+        "xpriority",
+        "priority",
+        "id",
+        "system",
+        "externalTicketId",
+        "assignee"
+      ]);
+      var PRIORITY_RANK_MAP = Object.freeze({
+        "Show-stopper": 0,
+        "Critical": 1,
+        "Major": 2,
+        "Normal": 3,
+        "Minor": 4
+      });
+      function xpRank(xp) {
+        const m = String(xp == null ? "" : xp).match(/(\d+)/);
+        return m ? parseInt(m[1], 10) : 1e6;
+      }
+      function prRank(p) {
+        const k = String(p == null ? "" : p);
+        return Object.prototype.hasOwnProperty.call(PRIORITY_RANK_MAP, k) ? PRIORITY_RANK_MAP[k] : 1e6;
+      }
+      function idCmp(a, b) {
+        return String(a == null ? "" : a).localeCompare(
+          String(b == null ? "" : b),
+          void 0,
+          { numeric: true }
+        );
+      }
+      function compareAssignee(a, b) {
+        const asA = String(a && a.assignee != null ? a.assignee : "").toLowerCase();
+        const asB = String(b && b.assignee != null ? b.assignee : "").toLowerCase();
+        if (asA === "" && asB !== "") return 1;
+        if (asB === "" && asA !== "") return -1;
+        if (asA < asB) return -1;
+        if (asA > asB) return 1;
+        return xpRank(a && a.xpriority) - xpRank(b && b.xpriority) || prRank(a && a.priority) - prRank(b && b.priority) || idCmp(a && a.issueId, b && b.issueId);
+      }
+      function nextSortKey(currentKey, clickedKey) {
+        if (SORT_KEYS_CYCLE.indexOf(clickedKey) < 0) return currentKey || "off";
+        return currentKey === clickedKey ? "off" : clickedKey;
+      }
+      function isValidSortKey(key) {
+        return SORT_KEYS_CYCLE.indexOf(key) >= 0;
+      }
+      var api = {
+        SORT_KEYS_CYCLE,
+        PRIORITY_RANK_MAP,
+        xpRank,
+        prRank,
+        idCmp,
+        compareAssignee,
+        nextSortKey,
+        isValidSortKey
+      };
+      if (typeof window !== "undefined") {
+        try {
+          window.__SSP_SORT_PURE = api;
+        } catch (_) {
+        }
+      }
+      module.exports = api;
+    }
+  });
+
   // widgets/main/src/icons.generated.js
   if (typeof window !== "undefined") {
     window.__SSP_ICONS = {
@@ -1765,6 +1836,7 @@
   var import_ring_class_helpers = __toESM(require_ring_class_helpers());
   var import_toast_pure = __toESM(require_toast_pure());
   var import_modal_pure = __toESM(require_modal_pure());
+  var import_sort_pure = __toESM(require_sort_pure());
 
   // widgets/main/src/legacy-monolith.js
   (function() {
@@ -1838,7 +1910,7 @@
         }
       }
     };
-    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id", "system", "externalTicketId"];
+    var SORT_KEYS_CYCLE = ["off", "xpriority", "priority", "id", "system", "externalTicketId", "assignee"];
     var _sortKeyMemo = null;
     function getSortKey() {
       if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -1898,6 +1970,15 @@
           var ce = extA < extB ? -1 : extA > extB ? 1 : 0;
           if (ce !== 0) return ce;
           return _idCmp(a.issueId, b.issueId);
+        }
+        if (primary === "assignee") {
+          var asA = String(a.assignee || "").toLowerCase();
+          var asB = String(b.assignee || "").toLowerCase();
+          if (asA === "" && asB !== "") return 1;
+          if (asB === "" && asA !== "") return -1;
+          var ca = asA < asB ? -1 : asA > asB ? 1 : 0;
+          if (ca !== 0) return ca;
+          return _xpRank(a.xpriority) - _xpRank(b.xpriority) || _prRank(a.priority) - _prRank(b.priority) || _idCmp(a.issueId, b.issueId);
         }
         var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
         if (c2 !== 0) return c2;
@@ -3085,7 +3166,7 @@
     } catch (_) {
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.11";
+    var APP_VERSION = "1.10.0";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -10780,7 +10861,8 @@
         thead.innerHTML = '<tr><th class="td-id sortable' + (_sk === "id" ? " sortable--active" : "") + '" data-sort-key="id" title="' + esc(T("thSortClickHint")) + '">' + T("thId") + _sortIc(_sk === "id") + "</th>" + /* v1.8.0 D130 — externalTicketId column (2nd position, right after issue ID link). */
         (_settings && _settings.fieldExternalTicketId ? '<th class="sortable' + (_sk === "externalTicketId" ? " sortable--active" : "") + '" data-sort-key="externalTicketId" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap;min-width:120px">' + T("thExternalTicketId") + _sortIc(_sk === "externalTicketId") + "</th>" : "") + "<th>" + T("thTitle") + '</th><th class="sortable' + (_sk === "priority" ? " sortable--active" : "") + '" data-sort-key="priority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thPriority") + _sortIc(_sk === "priority") + "</th>" + /* v1.8.1 — XPriority опциональна. */
         (_settings && _settings.fieldXPriority ? '<th class="sortable' + (_sk === "xpriority" ? " sortable--active" : "") + '" data-sort-key="xpriority" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thXpriority") + _sortIc(_sk === "xpriority") + "</th>" : "") + '<th style="white-space:nowrap">' + T("thAllocH") + "</th>" + /* v1.4.0 — System column (read-only, sortable). v1.8.1 — опциональна. */
-        (_settings && _settings.fieldSystem ? '<th class="sortable' + (_sk === "system" ? " sortable--active" : "") + '" data-sort-key="system" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thSystem") + _sortIc(_sk === "system") + "</th>" : "") + '<th style="min-width:160px">' + T("thAssignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
+        (_settings && _settings.fieldSystem ? '<th class="sortable' + (_sk === "system" ? " sortable--active" : "") + '" data-sort-key="system" title="' + esc(T("thSortClickHint")) + '" style="white-space:nowrap">' + T("thSystem") + _sortIc(_sk === "system") + "</th>" : "") + /* v1.10.0 B-23 — assignee column sortable (clickable header toggles sort on/off). */
+        '<th class="sortable' + (_sk === "assignee" ? " sortable--active" : "") + '" data-sort-key="assignee" title="' + esc(T("thSortClickHint")) + '" style="min-width:160px">' + T("thAssignee") + _sortIc(_sk === "assignee") + '</th><th style="min-width:130px">' + T("thStart") + '</th><th style="min-width:130px">' + T("thFinish") + "</th></tr>";
         _bindSortHeaders(thead);
       }
       var extColInc = _settings && _settings.fieldExternalTicketId ? 1 : 0;
