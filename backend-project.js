@@ -1287,6 +1287,10 @@ function isSettingsManagerConfigured(ctx) {
  * savedGroupIds — массив id групп.
  * savedGroupNames — массив имён групп (lowercase).
  * Возвращает true если пользователь входит хотя бы в одну из групп.
+ *
+ * v1.9.10: walks up the parent chain of each user group (up to 10 levels).
+ * Handles aggregate groups: user in X.A gets access when settings saved X (parent).
+ * Gracefully degrades if SDK does not populate g.parent (no-op, same as before).
  */
 function userInGroups(ctx, savedGroupIds, savedGroupNames) {
   try {
@@ -1305,6 +1309,22 @@ function userInGroups(ctx, savedGroupIds, savedGroupNames) {
         savedGroupNames.forEach(function(n) {
           if ((n || '').trim().toLowerCase() === gname && gname !== '') found = true;
         });
+      }
+      // Walk up parent chain: user in X.A gets access if settings saved parent X.
+      // YT App SDK lazily resolves g.parent from DB; if unavailable, loop skips.
+      var depth = 0;
+      var parent = g.parent;
+      while (parent && !found && depth < 10) {
+        var pid   = parent.id || '';
+        var pname = (parent.name || '').trim().toLowerCase();
+        if (savedGroupIds && savedGroupIds.indexOf(pid) >= 0) { found = true; break; }
+        if (savedGroupNames) {
+          savedGroupNames.forEach(function(n) {
+            if ((n || '').trim().toLowerCase() === pname && pname !== '') found = true;
+          });
+        }
+        parent = parent.parent;
+        depth++;
       }
     });
     return found;
@@ -2551,5 +2571,7 @@ if (typeof module !== 'undefined' && module.exports) {
     ALLOWED_KPE_KEYS:             ALLOWED_KPE_KEYS,
     validateItem:                 validateItem,
     validateSettings:             validateSettings,
+    // Auth helpers (test-only)
+    userInGroups:                 userInGroups,
   });
 }

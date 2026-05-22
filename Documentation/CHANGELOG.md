@@ -16,10 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Group search visibility** — `loadProjectGroups()` now requests up to 5 000 YouTrack groups from the REST API (previously 200). In instances with many groups, newly created groups could fall past the 200-item cap and never appear in the dropdown.
 - **Stale in-memory group list** — multiselect dropdown now triggers a background refresh of `_projectGroups` every time it is opened. Previously the list was fetched only once at widget init; groups created after that were invisible until the user manually reloaded the plugin page.
+- **Aggregate group access (hierarchy)** — `userInGroups()` now walks the parent chain of each user group (up to 10 levels). Users in a child group `X.A` now get access when settings saved the parent group `X`. Gracefully degrades if the YouTrack App SDK does not populate `group.parent`.
 
 ### Internal
 
 - `SCHEMA_MIGRATIONS`: no-op entry `1.9.9 → 1.9.10` added (frontend-only change, schema unchanged).
+- `userInGroups()` now exported for unit tests; 12 new tests covering direct membership, parent-chain traversal, graceful fallback, and circular reference safety.
 
 ---
 
