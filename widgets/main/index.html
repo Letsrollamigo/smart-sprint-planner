@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Smart Sprint Planner</title>
+  <link rel="stylesheet" href="./ring-subset.css"/>
   <style>
     /* ═══════════════════════════════════════════════════════════
        Дизайн: тёмная тема в стиле VK Teams Notifier
@@ -240,8 +241,26 @@
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
 
+    /* v1.9.9 — усиление видимости hover для Ring кнопок с заполненным фоном
+       (primary, danger, success). Базовая Ring hover-разница в светлой теме почти
+       не видна для заполненных кнопок — добавляем filter:brightness как универсальный
+       cue, работающий в любой теме. Для outline-кнопок (.ring-button-button без
+       primaryBlock/danger/success) Ring hover хорошо виден из коробки — туда не лезем. */
+    .ring-button-primaryBlock:hover,
+    .ring-button-button.ring-button-danger:hover,
+    .ring-button-button.ring-button-success:hover {
+      filter: brightness(0.92);
+      transition: filter .15s, background-color .15s, border-color .15s;
+    }
+    .ring-button-primaryBlock:active,
+    .ring-button-button.ring-button-danger:active,
+    .ring-button-button.ring-button-success:active {
+      filter: brightness(0.85);
+    }
+
     /* v6.3.1 D116 — исключить чекбоксы/радио из стиля text-input. */
-    .field input:not([type="checkbox"]):not([type="radio"]), .field select {
+    /* v1.9.9 — исключить ring-input-input (Ring UI Tier 2) — Ring CSS управляет border/radius/bg */
+    .field input:not([type="checkbox"]):not([type="radio"]):not(.ring-input-input), .field select:not(.ring-select-button) {
       width: 100%;
       padding: 8px 12px;
       background: var(--surface2);
@@ -259,16 +278,17 @@
       accent-color: var(--primary, #1976d2);
       cursor: pointer;
     }
-    .field select {
+    .field select:not(.ring-select-button) {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238888aa'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 12px center;
       padding-right: 32px;
     }
-    .field input:focus, .field select:focus { border-color: var(--primary); }
-    .field input:focus-visible, .field select:focus-visible { box-shadow: var(--focus-ring); }
-    .field input::placeholder { color: var(--muted); }
-    .field input[readonly] { opacity: .6; cursor: default; }
+    .field input:not(.ring-input-input):focus, .field select:focus { border-color: var(--primary); }
+    .field input:not(.ring-input-input):focus-visible, .field select:focus-visible { box-shadow: var(--focus-ring); }
+    .field input:not(.ring-input-input)::placeholder { color: var(--muted); }
+    .field input:not(.ring-input-input)[readonly] { opacity: .6; cursor: default; }
+    .field .ring-input-input { width: 100%; }
     .field-err { font-size: 11px; color: var(--error); display: block; margin-top: 4px; min-height: 1em; }
     /* v1.8.2 — inline error highlight на input при validation fail. */
     .field input.field-err-input { border-color: var(--error) !important; box-shadow: 0 0 0 2px rgba(224,90,106,.18); }
@@ -568,15 +588,16 @@
       padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0;
     }
     .search-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .search-row input {
+    .search-row input:not(.ring-input-input) {
       flex: 1; padding: 8px 12px;
       background: var(--surface2);
       border: 1px solid var(--border); border-radius: var(--radius);
       color: var(--text); font-size: 13px; outline: none;
     }
-    .search-row input:focus { border-color: var(--primary); }
-    .search-row input:focus-visible { box-shadow: var(--focus-ring); }
-    .search-row input::placeholder { color: var(--muted); }
+    .search-row .ring-input-input { flex: 1; }
+    .search-row input:not(.ring-input-input):focus { border-color: var(--primary); }
+    .search-row input:not(.ring-input-input):focus-visible { box-shadow: var(--focus-ring); }
+    .search-row input:not(.ring-input-input)::placeholder { color: var(--muted); }
 
     /* ── Confirm ──
        v6.3.2 D123 — `margin: auto` в flex-контейнере с `align-items: flex-start`
@@ -1168,17 +1189,18 @@
     /* v6.1.0 D74 — общий стиль dropdown'ов плагина (баг #5/#11.3: planningRoleSel и
        ganttRoleSel выглядели как голый browser-default). .widget-header__select наследует
        app-select + добавляет width-constraint специфичный для шапки виджета. */
-    .app-select {
+    .app-select:not(.ring-select-button) {
       background: var(--surface2); color: var(--text);
       border: 1px solid var(--border); border-radius: var(--radius);
       padding: 5px 8px; font-size: 13px;
       font-family: inherit;
     }
-    .widget-header__select { min-width: 280px; max-width: 480px; flex: 1;
+    .widget-header__select:not(.ring-select-button) { min-width: 280px; max-width: 480px; flex: 1;
       background: var(--surface2); color: var(--text);
       border: 1px solid var(--border); border-radius: var(--radius);
       padding: 5px 8px; font-size: 13px;
     }
+    .widget-header__select.ring-select-button { flex: 1; min-width: 280px; max-width: 480px; }
     /* v1.8.2 — гарантированный wrap бейджей статусов независимо от количества ролей (до 9).
        Раньше: при 9 ролях бейджи уходили в горизонтальный скролл (родитель не мог shrink).
        Теперь: явно width:100% + max-width:100% + min-width:0 + overflow:hidden на контейнере;
@@ -1373,7 +1395,12 @@
     .gantt-role-selector label { white-space: nowrap; }
     .gantt-role-selector select { flex: 0 0 240px; }
     .readonly-mode #ganttUpdateBtn { display: none; }
-    .readonly-mode .gantt-cell    { pointer-events: none; }
+    /* v1.9.9 — было: .readonly-mode .gantt-cell { pointer-events: none; }
+       Снято: pointer-events:none блокировало event-targeting → браузер обходил
+       cell и доставлял click на <table>; страдал также dblclick (color-toggle),
+       который по дизайну работает в любом режиме (локальная UI-маркировка).
+       Reassign-блокировка в read-only обеспечивается JS-gate в click-handler
+       (`if (ganttPanel.classList.contains('readonly-mode')) → warn-toast + return`). */
     /* v1.4.0 — «Аллокации по проектам» (renderCurrentRoleAssigneeTable). */
     .td-alloc-by-sys { vertical-align: middle; min-width: 180px; }
     .alloc-by-sys-row { white-space: nowrap; font-size: 11px; line-height: 1.4; }
@@ -1411,11 +1438,11 @@
            черновика (meta в localStorage). Текст и title ставятся скриптом, чтобы
            consistency с динамическим бейджем; data-i18n не используется по тем же
            причинам, что и для #dirtyBadge. -->
-      <button id="clearDraftBtn" class="btn btn--sm hidden"
+      <button id="clearDraftBtn" class="ring-button-button ring-button-block ring-button-heightS hidden"
               data-icon="update" data-aria-label-key="aria.btnClearDraft"
               style="background:transparent;border-color:var(--warn);color:var(--warn)">Очистить черновик</button>
       <!-- Кнопка перехода в виджет настроек (видимость определяется серверной проверкой) -->
-      <button id="openSettingsBtn" class="btn btn--sm" style="display:none"
+      <button id="openSettingsBtn" class="ring-button-button ring-button-block ring-button-heightS" style="display:none"
               data-icon="settings" data-aria-label-key="aria.btnSettings"
               data-i18n="btnOpenSettings"
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
@@ -1439,7 +1466,7 @@
   <div class="widget-header" id="widgetHeader">
     <div class="widget-header__sprint">
       <label for="widgetSprintSel" data-i18n="lblCurrentSprint">Текущий спринт</label>
-      <select id="widgetSprintSel" class="widget-header__select">
+      <select id="widgetSprintSel" class="widget-header__select ring-select-button">
         <option value="" disabled data-i18n="phNoSprintsActive">— нет активных спринтов —</option>
       </select>
     </div>
@@ -1456,7 +1483,7 @@
       <span class="widget-header__wc-label" data-i18n="lblHasWorkingCopy">Рабочая копия</span>
     </span>
     <button id="widgetNewSprintBtn"
-            class="btn btn--sm btn--primary widget-header__new editor-btn"
+            class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText widget-header__new editor-btn"
             data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Новый спринт</button>
     <!-- v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. -->
   </div>
@@ -1531,7 +1558,7 @@
       <span data-i18n="bannerOrphanGanttColorsText">⚠ Найдены назначения только в Ганте:</span>
       <span id="bannerOrphanGanttList"></span>.
       <span data-i18n="bannerOrphanGanttColorsHint">Назначьте их вручную в режиме «Люди».</span>
-      <button id="bannerOrphanGanttDismissBtn" class="btn btn-ghost" type="button" data-i18n="btnDismiss" style="margin-left:8px">Скрыть</button>
+      <button id="bannerOrphanGanttDismissBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-ghost ring-button-flat" type="button" data-i18n="btnDismiss" style="margin-left:8px">Скрыть</button>
     </div>
     <!-- Вводные данные по спринту (общие для всех ролей) -->
     <div class="card">
@@ -1539,7 +1566,7 @@
       <div class="sprint-intro-grid">
         <div class="field">
           <label for="sprintName" data-i18n="lblSprintName">Название спринта</label>
-          <input type="text" id="sprintName" maxlength="60" data-i18n-ph="phSprintName" placeholder="напр. Спринт 1 — апрель 2026"/>
+          <input type="text" id="sprintName" class="ring-input-input" maxlength="60" data-i18n-ph="phSprintName" placeholder="напр. Спринт 1 — апрель 2026"/>
           <span class="field-err" id="errName"></span>
         </div>
         <div class="sprint-intro-dates">
@@ -1558,11 +1585,11 @@
       <div class="sprint-intro-extra" id="sprintExtraFields" style="margin-top:14px;display:none">
         <div class="field" id="fieldSprintVal" style="min-width:200px;display:none">
           <label for="sprintFieldVal" data-i18n="lblSprintField">Спринт</label>
-          <select id="sprintFieldVal" class="app-select"><option value="">— не выбрано —</option></select>
+          <select id="sprintFieldVal" class="app-select ring-select-button"><option value="">— не выбрано —</option></select>
         </div>
         <div class="field" id="fieldVersionVal" style="min-width:200px;display:none">
           <label for="versionFieldVal" data-i18n="lblVersionField">Версия</label>
-          <select id="versionFieldVal" class="app-select"><option value="">— не выбрано —</option></select>
+          <select id="versionFieldVal" class="app-select ring-select-button"><option value="">— не выбрано —</option></select>
         </div>
       </div>
       <!-- v1.9.0 D132 — Цель спринта (sprint goal). Опциональное поле, soft-required.
@@ -1571,10 +1598,10 @@
       <div class="field" style="margin-top:14px">
         <label for="sprintGoal" data-i18n="lblSprintGoal">🎯 Цель спринта</label>
         <textarea id="sprintGoal" maxlength="500" rows="2"
-                  class="app-textarea"
+                  class="ring-input-input"
                   data-i18n-placeholder="phSprintGoal"
                   placeholder="Что команда хочет достичь к концу спринта"
-                  style="width:100%;resize:vertical"></textarea>
+                  style="width:100%;resize:vertical;overflow:auto"></textarea>
         <span class="field-err" id="errSprintGoal" style="display:none"></span>
         <small class="hint" data-i18n="hintSprintGoal" style="color:var(--muted,#888);font-size:11px">Одна-две строки. Не «список задач», а outcome.</small>
       </div>
@@ -1582,7 +1609,7 @@
            Дублирует часть doSaveRoleHeader, отвечающую только за _sprint.name/dateStart/dateEnd/sprintFieldVal/versionFieldVal,
            без записи в _sprint[role.resKey]. Per-role кнопка «Сохранить параметры» внутри ролей остаётся как было. -->
       <div class="sprint-intro-actions" style="margin-top:14px">
-        <button id="saveSprintIntroBtn" class="btn btn--primary editor-btn" data-i18n="btnSaveSprintIntro" aria-label="">Сохранить параметры спринта</button>
+        <button id="saveSprintIntroBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnSaveSprintIntro" aria-label="">Сохранить параметры спринта</button>
         <span class="field-err" id="errSprintIntro"></span>
       </div>
     </div>
@@ -1601,14 +1628,14 @@
     <div id="planning-level-people" class="planning-level-pane hidden">
       <div class="card planning-people-roleSel">
         <label for="planningRoleSel" data-i18n="lblPlanningRole">Роль:</label>
-        <select id="planningRoleSel" class="app-select"></select>
+        <select id="planningRoleSel" class="app-select ring-select-button"></select>
       </div>
       <div id="planningPeopleNoSprint" class="empty hidden" data-i18n="planningPeopleNoSprint">Выберите спринт в шапке виджета или создайте новый.</div>
       <div id="planningPeopleEmpty" class="empty-state hidden">
         <div class="empty-state__icon" data-icon="group" aria-hidden="true"></div>
         <div class="empty-state__title" id="planningPeopleEmptyTitle">—</div>
         <div class="empty-state__desc" data-i18n="planningPeopleEmptyDesc">Нажмите кнопку ниже, чтобы загрузить актуальный список исполнителей из бандла поля Assignee.</div>
-        <button id="planningPeopleEmptyCta" class="btn btn--primary editor-btn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
+        <button id="planningPeopleEmptyCta" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
       </div>
       <!-- DOM-id этой секции: currentRoleNkcSel, currentRoleTotalResource/Remain, currentRoleCalcBtn,
            currentRoleSaveParamsBtn, currentRoleValidateBtn, currentRoleAssigneeTable/Body,
@@ -1619,7 +1646,7 @@
           <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:0">
             <div class="field" style="min-width:180px">
               <label for="currentRoleNkcSel" data-i18n="lblSelectNkc">Выбрать норму часов</label>
-              <select id="currentRoleNkcSel" class="app-select">
+              <select id="currentRoleNkcSel" class="app-select ring-select-button">
                 <option value="january" data-i18n="nkcJanuary">Норма часов: январь</option>
                 <option value="may" data-i18n="nkcMay">Норма часов: май</option>
                 <option value="other" selected data-i18n="nkcOther">Норма часов: другие месяцы</option>
@@ -1637,9 +1664,9 @@
               </div>
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn--primary editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
-              <button class="btn btn--primary editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
-              <button class="btn editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
             </div>
           </div>
         </div>
@@ -1647,10 +1674,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <div class="card-title" style="margin-bottom:0" data-i18n="cardAssignees">Ресурсы по исполнителям</div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn--sm btn--primary editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
-              <button class="btn btn--sm editor-btn" id="currentRoleClearAssigneesBtn" style="border-color:var(--error);color:var(--error)" data-i18n="btnClearAssignees" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Очистить</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn" id="currentRoleClearAssigneesBtn" data-i18n="btnClearAssignees" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="btn btn--sm" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
             </div>
           </div>
           <div class="tbl-wrap">
@@ -1696,8 +1723,8 @@
       <!-- Шапка: роль-switcher + кнопка Refresh -->
       <div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;margin-bottom:12px">
         <label for="standupRoleSel" data-i18n="standupRoleLabel" style="font-size:12px;font-weight:600;white-space:nowrap">Роль:</label>
-        <select id="standupRoleSel" class="app-select" style="flex:1;min-width:140px;max-width:260px"></select>
-        <button id="standupRefreshBtn" class="btn btn--sm" data-i18n="btnStandupRefresh" data-icon="update" data-aria-label-key="aria.btnRefresh" style="margin-left:auto">Обновить</button>
+        <select id="standupRoleSel" class="app-select ring-select-button" style="flex:1;min-width:140px;max-width:260px"></select>
+        <button id="standupRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS" data-i18n="btnStandupRefresh" data-icon="update" data-aria-label-key="aria.btnRefresh" style="margin-left:auto">Обновить</button>
       </div>
       <!-- Цель спринта (read-only над bucket'ами) -->
       <div id="standupGoalBanner" class="card" style="display:none;padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5">
@@ -1724,26 +1751,26 @@
   <div class="tab-panel" id="tab-gantt">
     <div class="card gantt-role-selector">
       <label for="ganttRoleSel" data-i18n="lblGanttRole">Роль:</label>
-      <select id="ganttRoleSel" class="app-select"></select>
+      <select id="ganttRoleSel" class="app-select ring-select-button"></select>
     </div>
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack на Ганте. -->
-      <button id="ganttSyncFromYtBtn" class="btn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
-      <button id="ganttUpdateBtn" class="btn editor-btn" data-i18n="btnUpdateGantt">Обновить Гант</button>
+      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
+      <button id="ganttUpdateBtn" class="ring-button-button ring-button-block ring-button-heightM editor-btn" data-i18n="btnUpdateGantt">Обновить Гант</button>
     </div>
     <div id="ganttContainer"></div>
   </div>
 
 <div class="tab-panel" id="tab-history">
     <div style="display:flex;justify-content:flex-end;padding:0 0 10px 0">
-      <button class="btn btn--sm" id="clearAllHistoryBtn" style="background:transparent;border-color:var(--error,#e05a6a);color:var(--error,#e05a6a)" data-i18n="btnClearHistory" data-icon="trash" data-aria-label-key="aria.btnClearHistory">Очистить всю историю</button>
+      <button class="ring-button-button ring-button-block ring-button-heightS ring-button-danger" id="clearAllHistoryBtn" data-i18n="btnClearHistory" data-icon="trash" data-aria-label-key="aria.btnClearHistory">Очистить всю историю</button>
     </div>
     <div id="historyList"><div class="empty" data-i18n="emptyHistory">Нет сохранённых спринтов</div></div>
     <div class="pagination" id="histPag" style="display:none">
-      <button class="btn btn--sm" id="histPrev">‹</button>
+      <button class="ring-button-button ring-button-block ring-button-heightS" id="histPrev">‹</button>
       <span id="histPageInfo"></span>
-      <button class="btn btn--sm" id="histNext">›</button>
+      <button class="ring-button-button ring-button-block ring-button-heightS" id="histNext">›</button>
     </div>
   </div>
 
@@ -1753,8 +1780,8 @@
     <details>
       <summary style="cursor:pointer;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:6px 0;">
         🔍 <span data-i18n="diagPanelTitle">Диагностический лог (для разбора инцидентов)</span>
-        <button id="diagClearBtn" type="button" class="btn btn--sm" style="margin-left:8px;font-size:10px;padding:2px 6px;" data-i18n="btnClear">Очистить</button>
-        <button id="diagExportBtn" type="button" class="btn btn--sm" style="margin-left:4px;font-size:10px;padding:2px 6px;" data-i18n="btnExportLog">Экспорт TXT</button>
+        <button id="diagClearBtn" type="button" class="ring-button-button ring-button-block ring-button-heightS" style="margin-left:8px;font-size:10px;padding:2px 6px;" data-i18n="btnClear">Очистить</button>
+        <button id="diagExportBtn" type="button" class="ring-button-button ring-button-block ring-button-heightS" style="margin-left:4px;font-size:10px;padding:2px 6px;" data-i18n="btnExportLog">Экспорт TXT</button>
       </summary>
       <div id="diagLog" style="font-family:'SF Mono','Menlo','Consolas',monospace;font-size:11px;color:var(--muted);background:var(--surface,#f7f9fa);border:1px solid var(--border,#dbe2e7);border-radius:4px;padding:8px 10px;max-height:280px;overflow-y:auto;line-height:1.55;margin-top:6px;"></div>
     </details>
@@ -1773,8 +1800,8 @@
       <p id="clearDraftMetaInfo" style="margin-top:8px;font-size:12px;color:var(--muted)"></p>
     </div>
     <div class="modal__foot">
-      <button class="btn" id="clearDraftNo" data-i18n="btnCancel">Отмена</button>
-      <button class="btn btn--danger" id="clearDraftYes" data-i18n="btnYesClearDraft">Да, очистить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearDraftNo" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearDraftYes" data-i18n="btnYesClearDraft">Да, очистить</button>
     </div>
   </div>
 </div>
@@ -1788,8 +1815,8 @@
       <p style="margin-top:8px;font-size:13px;color:var(--muted)" data-i18n="clearAllHistInfo">Данные хранятся в YouTrack и не восстанавливаются. Продолжить?</p>
     </div>
     <div class="modal__foot">
-      <button class="btn" id="clearAllHistNo" data-i18n="btnCancel">Отмена</button>
-      <button class="btn btn--danger" id="clearAllHistYes" data-i18n="btnYesClearAll">Да, очистить всё</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearAllHistNo" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearAllHistYes" data-i18n="btnYesClearAll">Да, очистить всё</button>
     </div>
   </div>
 </div>
@@ -1799,23 +1826,23 @@
   <div class="modal">
     <div class="modal__head">
       <span id="pickModalTitle" data-i18n="pickModalTitle">Подбор задач в спринт</span>
-      <button class="btn btn--icon" id="closePickModal" data-icon="close" data-aria-label-key="aria.btnClose" aria-label="Закрыть"></button>
+      <button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly" id="closePickModal" data-icon="close" data-aria-label-key="aria.btnClose" aria-label="Закрыть"></button>
     </div>
     <div class="modal__body">
       <div class="search-row">
-        <input type="text" id="pickQuery" data-i18n-ph="phPickQuery" placeholder="Запрос YouTrack (напр. Приоритет: Критичный #unresolved)"/>
-        <button class="btn btn--primary" id="pickSearchBtn" data-i18n="btnFind">Найти</button>
+        <input type="text" id="pickQuery" class="ring-input-input" data-i18n-ph="phPickQuery" placeholder="Запрос YouTrack (напр. Приоритет: Критичный #unresolved)"/>
+        <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="pickSearchBtn" data-i18n="btnFind">Найти</button>
       </div>
       <div id="pickResults"><div class="empty" data-i18n="emptyPickResults">Введите запрос и нажмите «Найти»</div></div>
       <div class="pagination" id="pickPag" style="display:none">
-        <button class="btn btn--sm" id="pickPrev">‹</button>
+        <button class="ring-button-button ring-button-block ring-button-heightS" id="pickPrev">‹</button>
         <span id="pickPageInfo"></span>
-        <button class="btn btn--sm" id="pickNext">›</button>
+        <button class="ring-button-button ring-button-block ring-button-heightS" id="pickNext">›</button>
       </div>
     </div>
     <div class="modal__foot">
-      <button class="btn" id="cancelPickBtn" data-i18n="btnClose">Закрыть</button>
-      <button class="btn btn--primary" id="addPickedBtn" data-i18n="btnAddPicked">Добавить выбранные</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="cancelPickBtn" data-i18n="btnClose">Закрыть</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="addPickedBtn" data-i18n="btnAddPicked">Добавить выбранные</button>
     </div>
   </div>
 </div>
@@ -1825,8 +1852,8 @@
   <div class="confirm-box">
     <p data-i18n="confirmClearTask">Удалить все задачи из состава текущего спринта (роли)?</p>
     <div class="confirm-btns">
-      <button class="btn" id="clearNo" data-i18n="btnNo">Нет</button>
-      <button class="btn btn--danger" id="clearYes" data-i18n="btnYesClear">Да, очистить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearNo" data-i18n="btnNo">Нет</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearYes" data-i18n="btnYesClear">Да, очистить</button>
     </div>
   </div>
 </div>
@@ -1836,8 +1863,8 @@
   <div class="confirm-box">
     <p id="delAssigneeMsg" data-i18n="confirmDelAssignee">Удалить исполнителя?</p>
     <div class="confirm-btns">
-      <button class="btn" id="delAssigneeNo" data-i18n="btnCancel">Отмена</button>
-      <button class="btn btn--danger" id="delAssigneeYes" data-i18n="btnYesDelete">Да, удалить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="delAssigneeNo" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="delAssigneeYes" data-i18n="btnYesDelete">Да, удалить</button>
     </div>
   </div>
 </div>
@@ -1847,8 +1874,8 @@
   <div class="confirm-box">
     <p data-i18n="confirmClearAssignees">Очистить весь список исполнителей? Назначения задач сохранятся.</p>
     <div class="confirm-btns">
-      <button class="btn" id="clearAssigneesNo" data-i18n="btnCancel">Отмена</button>
-      <button class="btn btn--danger" id="clearAssigneesYes" data-i18n="btnYesClear">Да, очистить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearAssigneesNo" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearAssigneesYes" data-i18n="btnYesClear">Да, очистить</button>
     </div>
   </div>
 </div>
@@ -1858,8 +1885,8 @@
   <div class="confirm-box">
     <p data-i18n="confirmDelHist">Удалить запись истории? При следующей валидации она будет восстановлена.</p>
     <div class="confirm-btns">
-      <button class="btn" id="delHistNo" data-i18n="btnNo">Нет</button>
-      <button class="btn btn--danger" id="delHistYes" data-i18n="btnYesDelete">Да, удалить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="delHistNo" data-i18n="btnNo">Нет</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="delHistYes" data-i18n="btnYesDelete">Да, удалить</button>
     </div>
   </div>
 </div>
@@ -1869,8 +1896,8 @@
   <div class="confirm-box">
     <p id="overlimitOverlayBody" data-i18n="overlimitModalBody">Текущая аллокация превышает доступный ресурс. Чтобы исправить, уменьшите аллокации или увеличьте ресурс. Если оставить как есть — статус спринта будет понижен до Черновика и потребуется повторная валидация.</p>
     <div class="confirm-btns">
-      <button class="btn btn--warn" id="overlimitDowngrade" data-i18n="overlimitModalDowngrade">Понизить статус и продолжить</button>
-      <button class="btn btn--primary" id="overlimitCancel" data-i18n="overlimitModalCancel">Отменить — я исправлю</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="overlimitDowngrade" data-i18n="overlimitModalDowngrade">Понизить статус и продолжить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="overlimitCancel" data-i18n="overlimitModalCancel">Отменить — я исправлю</button>
     </div>
   </div>
 </div>
@@ -1881,7 +1908,7 @@
     <h3 id="wcDiffTitle" data-i18n="wcDiffTitle">Различия рабочей копии</h3>
     <div id="wcDiffBody" class="wc-diff-body"></div>
     <div class="confirm-btns">
-      <button class="btn btn--primary" id="wcDiffCloseBtn" data-i18n="btnClose">Закрыть</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcDiffCloseBtn" data-i18n="btnClose">Закрыть</button>
     </div>
   </div>
 </div>
@@ -1891,9 +1918,9 @@
     <h3 data-i18n="wcConflictTitle">Конфликт версий</h3>
     <p id="wcConflictBody">—</p>
     <div class="confirm-btns">
-      <button class="btn btn--warn"    id="wcConflictOverwriteBtn" data-i18n="wcConflictOverwrite">Перезаписать своими изменениями</button>
-      <button class="btn"              id="wcConflictExportBtn"    data-i18n="wcConflictExportBoth">Скачать обе версии в Excel</button>
-      <button class="btn btn--primary" id="wcConflictCancelBtn"    data-i18n="wcConflictCancel">Отменить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="wcConflictOverwriteBtn" data-i18n="wcConflictOverwrite">Перезаписать своими изменениями</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="wcConflictExportBtn"    data-i18n="wcConflictExportBoth">Скачать обе версии в Excel</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcConflictCancelBtn"    data-i18n="wcConflictCancel">Отменить</button>
     </div>
   </div>
 </div>
@@ -1908,10 +1935,10 @@
       <span data-i18n="modalReassignBody">Выберите ответственного для задачи</span>
       <strong id="reassignIssueId"></strong>:
     </p>
-    <select id="reassignSelect" class="app-select" style="width:100%;margin:8px 0"></select>
+    <select id="reassignSelect" class="app-select ring-select-button" style="width:100%;margin:8px 0"></select>
     <div class="confirm-btns">
-      <button class="btn btn--primary" id="reassignApplyBtn"  data-i18n="btnApply">Применить</button>
-      <button class="btn"              id="reassignCancelBtn" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="reassignApplyBtn"  data-i18n="btnApply">Применить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="reassignCancelBtn" data-i18n="btnCancel">Отмена</button>
     </div>
   </div>
 </div>
@@ -1921,8 +1948,8 @@
     <h3 data-i18n="wcMultiTabTitle">Открыто в другой вкладке</h3>
     <p id="wcMultiTabBody" data-i18n="wcMultiTabBody">Эта рабочая копия уже редактируется в другой вкладке. Продолжить здесь?</p>
     <div class="confirm-btns">
-      <button class="btn btn--primary" id="wcMultiTabContinueBtn" data-i18n="wcMultiTabContinue">Продолжить здесь</button>
-      <button class="btn"              id="wcMultiTabReadonlyBtn" data-i18n="wcMultiTabReadonly">Открыть только для просмотра</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcMultiTabContinueBtn" data-i18n="wcMultiTabContinue">Продолжить здесь</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="wcMultiTabReadonlyBtn" data-i18n="wcMultiTabReadonly">Открыть только для просмотра</button>
     </div>
   </div>
 </div>
@@ -1932,8 +1959,8 @@
     <h3 id="wcDiscardTitle" data-i18n="wcDiscardConfirmTitle">Отменить правку?</h3>
     <p id="wcDiscardBody" data-i18n="wcDiscardConfirmBody">Все несохранённые изменения рабочей копии будут потеряны. Базовая запись истории не пострадает.</p>
     <div class="confirm-btns">
-      <button class="btn btn--warn"    id="wcDiscardConfirmBtn" data-i18n="wcDiscard">Отменить правку</button>
-      <button class="btn btn--primary" id="wcDiscardCancelBtn"  data-i18n="btnNo">Назад</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="wcDiscardConfirmBtn" data-i18n="wcDiscard">Отменить правку</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcDiscardCancelBtn"  data-i18n="btnNo">Назад</button>
     </div>
   </div>
 </div>
@@ -1944,8 +1971,8 @@
     <h3 data-i18n="wcCloseTitle">Закрыть рабочую копию?</h3>
     <p data-i18n="wcCloseBody">У вас есть незавершённая правка по выбранному спринту/роли. Изменения уже сохранены автоматически — вы сможете продолжить позже из Истории.</p>
     <div class="confirm-btns">
-      <button class="btn"              id="closeWcCancel"  data-i18n="btnCancel">Отмена</button>
-      <button class="btn btn--primary" id="closeWcConfirm" data-i18n="wcCloseConfirm">Закрыть и переключить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="closeWcCancel"  data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="closeWcConfirm" data-i18n="wcCloseConfirm">Закрыть и переключить</button>
     </div>
   </div>
 </div>
@@ -1955,8 +1982,8 @@
   <div class="confirm-box">
     <p data-i18n="confirmFinishSprint">Перевести спринт в статус «Завершён»? Это действие необратимо.</p>
     <div class="confirm-btns">
-      <button class="btn" id="finishHistNo" data-i18n="btnNo">Нет</button>
-      <button class="btn btn--primary" id="finishHistYes" data-i18n="btnYesFinish">Да, завершить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="finishHistNo" data-i18n="btnNo">Нет</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="finishHistYes" data-i18n="btnYesFinish">Да, завершить</button>
     </div>
   </div>
 </div>
@@ -1991,15 +2018,15 @@
     <div style="margin-bottom:14px">
       <label for="goalRetroNote" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px" data-i18n="lblGoalRetroNote">Заметка ретроспективы (опционально)</label>
       <textarea id="goalRetroNote" maxlength="1000" rows="3"
-                class="app-textarea"
+                class="ring-input-input"
                 data-i18n-placeholder="phGoalRetroNote"
                 placeholder="Что сработало / не сработало для достижения цели"
-                style="width:100%;resize:vertical"></textarea>
+                style="width:100%;resize:vertical;overflow:auto"></textarea>
       <span class="field-err" id="errGoalRetroNote" style="display:none"></span>
     </div>
     <div class="confirm-btns">
-      <button class="btn" id="confirmGoalCancel" data-i18n="btnCancelGoal">Отмена</button>
-      <button class="btn btn--primary" id="confirmGoalOk" disabled data-i18n="btnConfirmGoal">Подтвердить спринт</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="confirmGoalCancel" data-i18n="btnCancelGoal">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="confirmGoalOk" disabled data-i18n="btnConfirmGoal">Подтвердить спринт</button>
     </div>
   </div>
 </div>
@@ -2012,8 +2039,8 @@
     <select id="dynFieldSelect" class="dyn-modal-select" style="display:none"></select>
     <input type="text" id="dynFieldInput" class="dyn-modal-input" style="display:none" data-i18n-ph="phDynInput" placeholder="напр. 2д 4ч"/>
     <div class="dyn-modal-btns">
-      <button class="btn" id="dynFieldNo" data-i18n="btnNo">Нет</button>
-      <button class="btn btn--primary" id="dynFieldYes" data-i18n="btnYesUpdate">Да, обновить</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="dynFieldNo" data-i18n="btnNo">Нет</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="dynFieldYes" data-i18n="btnYesUpdate">Да, обновить</button>
     </div>
   </div>
 </div>
@@ -2251,42 +2278,42 @@
             <div class="form-grid form-grid--3" style="margin-bottom:14px">
               <div class="field">
                 <label for="s_nkc_january" data-i18n="lblNkcJanuary">Норма часов: январь (ч)</label>
-                <input type="number" id="s_nkc_january" min="0" step="0.5" value="105" placeholder="105"/>
+                <input type="number" id="s_nkc_january" class="ring-input-input" min="0" step="0.5" value="105" placeholder="105"/>
               </div>
               <div class="field">
                 <label for="s_nkc_may" data-i18n="lblNkcMay">Норма часов: май (ч)</label>
-                <input type="number" id="s_nkc_may" min="0" step="0.5" value="119" placeholder="119"/>
+                <input type="number" id="s_nkc_may" class="ring-input-input" min="0" step="0.5" value="119" placeholder="119"/>
               </div>
               <div class="field">
                 <label for="s_nkc_other" data-i18n="lblNkcOther">Норма часов: другие месяцы (ч)</label>
-                <input type="number" id="s_nkc_other" min="0" step="0.5" value="145" placeholder="145"/>
+                <input type="number" id="s_nkc_other" class="ring-input-input" min="0" step="0.5" value="145" placeholder="145"/>
               </div>
               <div class="field">
                 <label for="s_rate" data-i18n="lblRate">Ставка</label>
-                <input type="number" id="s_rate" min="0" max="2" step="0.01" value="1" placeholder="1"/>
+                <input type="number" id="s_rate" class="ring-input-input" min="0" max="2" step="0.01" value="1" placeholder="1"/>
               </div>
               <div class="field">
                 <label for="s_participation" data-i18n="lblParticipation">% участия (0–1)</label>
-                <input type="number" id="s_participation" min="0" max="1" step="0.01" value="1" placeholder="1"/>
+                <input type="number" id="s_participation" class="ring-input-input" min="0" max="1" step="0.01" value="1" placeholder="1"/>
               </div>
             </div>
             <div class="card-title" style="margin-top:4px;margin-bottom:10px" data-i18n="cardKpe">КПЕ по грейдам</div>
             <div class="form-grid form-grid--3">
               <div class="field">
                 <label for="s_kpe_intern" data-i18n="lblKpeIntern">КПЕ Стажёр</label>
-                <input type="number" id="s_kpe_intern" min="0" max="2" step="0.01" value="0" placeholder="0"/>
+                <input type="number" id="s_kpe_intern" class="ring-input-input" min="0" max="2" step="0.01" value="0" placeholder="0"/>
               </div>
               <div class="field">
                 <label for="s_kpe_jun" data-i18n="lblKpeJun">КПЕ Джун</label>
-                <input type="number" id="s_kpe_jun" min="0" max="2" step="0.01" value="0.5" placeholder="0.5"/>
+                <input type="number" id="s_kpe_jun" class="ring-input-input" min="0" max="2" step="0.01" value="0.5" placeholder="0.5"/>
               </div>
               <div class="field">
                 <label for="s_kpe_mid" data-i18n="lblKpeMid">КПЕ Мидл</label>
-                <input type="number" id="s_kpe_mid" min="0" max="2" step="0.01" value="0.65" placeholder="0.65"/>
+                <input type="number" id="s_kpe_mid" class="ring-input-input" min="0" max="2" step="0.01" value="0.65" placeholder="0.65"/>
               </div>
               <div class="field">
                 <label for="s_kpe_senior" data-i18n="lblKpeSenior">КПЕ Синьор</label>
-                <input type="number" id="s_kpe_senior" min="0" max="2" step="0.01" value="0.75" placeholder="0.75"/>
+                <input type="number" id="s_kpe_senior" class="ring-input-input" min="0" max="2" step="0.01" value="0.75" placeholder="0.75"/>
               </div>
             </div>
           </div>
@@ -2365,7 +2392,7 @@
                 </thead>
                 <tbody id="dtaMappingBody"></tbody>
               </table>
-              <button type="button" class="btn btn--sm" id="dtaAddRowBtn" style="margin-top:6px" data-i18n="btnDtaAddRow">+ Add mapping</button>
+              <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="dtaAddRowBtn" style="margin-top:6px" data-i18n="btnDtaAddRow">+ Add mapping</button>
               <div class="hint" id="dtaErrHint" style="display:none;font-size:11px;color:var(--error);margin-top:4px" data-i18n="dtaErrDuplicate">A work item type cannot be mapped to two different roles. Remove the duplicate row before saving.</div>
             </div>
           </div>
@@ -2411,11 +2438,11 @@
             </div>
             <div class="field">
               <label for="cascadeLinkInwardInput" data-i18n="lblCascadeLinkInward">Parent link — inward (child → parent)</label>
-              <input type="text" id="cascadeLinkInwardInput" class="input" data-i18n-ph="phCascadeLinkInward" placeholder="subtask of"/>
+              <input type="text" id="cascadeLinkInwardInput" class="ring-input-input" data-i18n-ph="phCascadeLinkInward" placeholder="subtask of"/>
             </div>
             <div class="field">
               <label for="cascadeLinkOutwardInput" data-i18n="lblCascadeLinkOutward">Parent link — outward (parent → child)</label>
-              <input type="text" id="cascadeLinkOutwardInput" class="input" data-i18n-ph="phCascadeLinkOutward" placeholder="parent for"/>
+              <input type="text" id="cascadeLinkOutwardInput" class="ring-input-input" data-i18n-ph="phCascadeLinkOutward" placeholder="parent for"/>
             </div>
             <div class="field" style="grid-column:1 / -1">
               <div class="hint" style="font-size:11px;color:var(--muted)" data-i18n="hintCascadeLinks">Defaults match the built-in YouTrack «Subtask» link type (inward «subtask of», outward «parent for»). Override only if your project uses a custom relation. Both directions must be filled.</div>
@@ -2450,15 +2477,15 @@
                 <div style="flex:1;min-width:0">
                   <label for="stateRollupBundleSel" style="font-size:11px;color:var(--muted)" data-i18n="lblStateRollupBundle">Available states (from project bundle)</label>
                   <select id="stateRollupBundleSel" multiple size="6" style="width:100%"></select>
-                  <button type="button" class="btn btn--sm" id="stateRollupAddBtn" data-i18n="btnStateRollupAdd" style="margin-top:4px">→ Add to order</button>
+                  <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="stateRollupAddBtn" data-i18n="btnStateRollupAdd" style="margin-top:4px">→ Add to order</button>
                 </div>
                 <div style="flex:1;min-width:0">
                   <label for="stateRollupOrderList" style="font-size:11px;color:var(--muted)" data-i18n="lblStateRollupOrderList">Ordered (drag-free; use buttons)</label>
                   <select id="stateRollupOrderList" size="6" style="width:100%"></select>
                   <div style="display:flex;gap:4px;margin-top:4px">
-                    <button type="button" class="btn btn--sm" id="stateRollupUpBtn" data-i18n="btnStateRollupUp">↑ Up</button>
-                    <button type="button" class="btn btn--sm" id="stateRollupDownBtn" data-i18n="btnStateRollupDown">↓ Down</button>
-                    <button type="button" class="btn btn--sm" id="stateRollupRemoveBtn" data-i18n="btnStateRollupRemove" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Remove</button>
+                    <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="stateRollupUpBtn" data-i18n="btnStateRollupUp">↑ Up</button>
+                    <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="stateRollupDownBtn" data-i18n="btnStateRollupDown">↓ Down</button>
+                    <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="stateRollupRemoveBtn" data-i18n="btnStateRollupRemove" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Remove</button>
                   </div>
                 </div>
               </div>
@@ -2499,7 +2526,7 @@
                 title=""
                 data-i18n-title="stateRollupRescanDeferred"
                 style="display:inline-block;cursor:not-allowed">
-                <button type="button" class="btn btn--sm" id="stateRollupRescanBtn" disabled
+                <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="stateRollupRescanBtn" disabled
                   style="pointer-events:none"
                   data-i18n="btnStateRollupRescan">⟳ Rescan all containers now</button>
               </span>
@@ -2559,7 +2586,7 @@
 
       <div class="save-row">
         <div class="save-row__inner">
-          <button type="button" class="btn btn--primary" id="saveSettingsBtn" data-i18n="btnSaveSettings">Сохранить настройки</button>
+          <button type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="saveSettingsBtn" data-i18n="btnSaveSettings">Сохранить настройки</button>
           <span class="save-hint" id="saveSettingsHint"></span>
         </div>
       </div>

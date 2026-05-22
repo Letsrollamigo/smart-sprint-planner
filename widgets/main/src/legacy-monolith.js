@@ -264,6 +264,27 @@
     return wrap;
   }
 
+  /** v1.9.9 — Ring UI Tier 2: applies ring-variables_dark-dark to <html> to enable
+   *  Ring CSS dark-mode vars. Mirrors body.theme-dark / data-theme="dark" detection.
+   *  Called once on init and watched for dynamic theme switches. */
+  function applyRingTheme() {
+    var isDark = document.body.classList.contains('theme-dark') ||
+                 document.body.getAttribute('data-theme') === 'dark' ||
+                 (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('ring-variables_dark-dark');
+    } else {
+      document.documentElement.classList.remove('ring-variables_dark-dark');
+    }
+  }
+  if (typeof MutationObserver !== 'undefined') {
+    var _ringThemeObserver = new MutationObserver(applyRingTheme);
+    _ringThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+  }
+  if (window.matchMedia) {
+    try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyRingTheme); } catch (_) {}
+  }
+
   /** Sweep по элементам с data-icon="..." — вставляет SVG-иконку и проставляет aria-label.
    *  Вызывается один раз при init после DOMContentLoaded. */
   function applyIcons() {
@@ -1033,7 +1054,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.7';
+  var APP_VERSION = '1.9.9';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2774,6 +2795,7 @@
     }
     applyI18N();
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
+    applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
     /* v5.0.3 — обновить индикатор черновика ПОСЛЕ applyI18N (иначе applyI18N
        не затрагивает текст бейджа без data-i18n, но переключение языка
        должно перенарисовать локализованную подпись с актуальным timestamp). */
@@ -2798,12 +2820,14 @@
         var target = document.getElementById(targetId);
         if (!target) return;
         /* v1.7.1: все секции collapse-by-default. При клике на nav-chip
-           разворачиваем все <details class="settings-card"> внутри target секции,
-           чтобы пользователь сразу видел контент без дополнительного клика. */
+           разворачиваем target секцию, чтобы пользователь сразу видел контент.
+           v1.9.9: в связке с accordion-логикой (см. openSettingsOverlay) — открываем
+           только ПЕРВЫЙ details внутри target. Accordion-toggle закроет все
+           остальные details за пределами target. Это даёт предсказуемый результат:
+           «click nav-chip → видишь верхнюю секцию выбранной области, остальные свёрнуты». */
         try {
-          target.querySelectorAll('details.settings-card').forEach(function(d) {
-            d.open = true;
-          });
+          var firstDetails = target.querySelector('details.settings-card');
+          if (firstDetails) firstDetails.open = true;
         } catch (_) {}
         if (typeof target.scrollIntoView === 'function') {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2818,11 +2842,33 @@
     }
     /* v5.0.3 — bind кнопок локального черновика */
     bindClearDraftHandlers();
-    /* v5.0.1 — Esc для закрытия overlay */
+    /* v5.0.1 — Esc для закрытия overlay
+       v1.9.9 — расширено: ловит любой visible .overlay, не только settingsOverlay.
+       Алгоритм: ищет topmost (последний в DOM) visible .overlay → пытается кликнуть
+       его cancel/close-кнопку по id-паттерну → fallback на classList.add('hidden').
+       Кнопка cancel/close нужна, чтобы вызвались существующие handler'ы (state cleanup). */
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') {
-        var ov = document.getElementById('settingsOverlay');
-        if (ov && !ov.classList.contains('hidden')) closeSettingsOverlay();
+      if (e.key !== 'Escape') return;
+      var settingsOv = document.getElementById('settingsOverlay');
+      if (settingsOv && !settingsOv.classList.contains('hidden')) {
+        closeSettingsOverlay();
+        return;
+      }
+      // Topmost visible overlay (последний по порядку в DOM = верхний по z-index в нашей раскладке)
+      var overlays = document.querySelectorAll('.overlay:not(.hidden)');
+      if (!overlays.length) return;
+      var topOv = overlays[overlays.length - 1];
+      // Ищем кнопку отмены/закрытия в этом overlay
+      var cancelBtn = topOv.querySelector(
+        'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], ' +
+        'button[id$="CloseBtn"], button[id$="Close"], button[id^="close"], ' +
+        'button[id="cancelPickBtn"], button[id="closePickModal"], ' +
+        'button[id="wcMultiTabReadonlyBtn"]'
+      );
+      if (cancelBtn) {
+        try { cancelBtn.click(); } catch(_) { topOv.classList.add('hidden'); }
+      } else {
+        topOv.classList.add('hidden');
       }
     });
 
@@ -2892,6 +2938,25 @@
 
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
+
+    /* v1.9.9 — при каждом открытии Settings все спойлеры свёрнуты по умолчанию.
+       Пользователь может развернуть конкретные секции через nav-chip быстрого
+       доступа сверху, либо вручную кликом по <summary>. Accordion-поведение
+       (закрытие остальных при открытии одного) реализовано через toggle-listener
+       ниже — навешивается один раз через .dataset.sspAccordionBound. */
+    try {
+      overlay.querySelectorAll('details.settings-card').forEach(function(d) {
+        d.open = false;
+        if (d.dataset.sspAccordionBound) return;
+        d.dataset.sspAccordionBound = '1';
+        d.addEventListener('toggle', function() {
+          if (!d.open) return;
+          overlay.querySelectorAll('details.settings-card').forEach(function(other) {
+            if (other !== d && other.open) other.open = false;
+          });
+        });
+      });
+    } catch(_) {}
 
     /* v5.0.3 (итерация 5) — lazy-load project groups при открытии overlay
        (раньше грузились в init Promise.all, что замедляло холодный старт). */
@@ -3671,7 +3736,7 @@
             +   '</select>'
             + '</td>'
             + '<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center">'
-            +   '<button type="button" class="btn btn--sm dta-del-row" data-dta-idx="' + idx + '" '
+            +   '<button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly dta-del-row" data-dta-idx="' + idx + '" '
             +     'title="' + esc(T('btnDtaRemoveRow')) + '" '
             +     'style="padding:2px 8px;font-size:14px;line-height:1">×</button>'
             + '</td>'
@@ -4851,7 +4916,7 @@
       /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
          В C4 (4d) сюда монтируется полный editable buildRolePanel(role). */
       +     '<div class="planning-role-body__actions">'
-      +       '<button class="btn btn--sm btn--primary planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
+      +       '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
       +     '</div>'
       +   '</div>'
       + '</div>';
@@ -5568,13 +5633,13 @@
     statusBadge.textContent = statusLabel(STATUS.PLANNING);
 
     var newSprintBtn = document.createElement('button');
-    newSprintBtn.className = 'btn btn--sm new-sprint-btn';
+    newSprintBtn.className = 'ring-button-button ring-button-block ring-button-heightS new-sprint-btn';
     newSprintBtn.id = 'newSprintBtn_'+role.key;
     newSprintBtn.style.display = 'none';
     newSprintBtn.textContent = T('btnNewSprint');
 
     var saveHeaderBtn = document.createElement('button');
-    saveHeaderBtn.className = 'btn btn--primary save-header-btn';
+    saveHeaderBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn';
     saveHeaderBtn.id = 'saveHeaderBtn_'+role.key;
     saveHeaderBtn.textContent = T('btnSaveParams');
 
@@ -5624,27 +5689,27 @@
     toolbar.style.marginBottom = '14px';
 
     var pickBtn = document.createElement('button');
-    pickBtn.className = 'btn btn--primary editor-btn';
+    pickBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn';
     pickBtn.id = 'pickBtn_'+role.key;
     pickBtn.textContent = T('btnPickTasks');
 
     var refreshBtn = null;
     if (!dynEdit) {
       refreshBtn = document.createElement('button');
-      refreshBtn.className = 'btn btn--sm editor-btn';
+      refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
       refreshBtn.id = 'refreshBtn_'+role.key;
       refreshBtn.disabled = true;
       refreshBtn.textContent = T('btnRefreshTasks');
     }
 
     var recalcBtn = document.createElement('button');
-    recalcBtn.className = 'btn btn--sm editor-btn';
+    recalcBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
     recalcBtn.id = 'recalcBtn_'+role.key;
     recalcBtn.disabled = true;
     recalcBtn.textContent = T('btnRecalc');
 
     var clearBtn = document.createElement('button');
-    clearBtn.className = 'btn btn--sm btn--danger editor-btn';
+    clearBtn.className = 'ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn';
     clearBtn.id = 'clearBtn_'+role.key;
     clearBtn.disabled = true;
     clearBtn.textContent = T('btnClear');
@@ -5653,7 +5718,7 @@
     spacer.style.flex = '1';
 
     var validateBtn = document.createElement('button');
-    validateBtn.className = 'btn btn--primary validate-btn';
+    validateBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText validate-btn';
     validateBtn.id = 'validateBtn_'+role.key;
     validateBtn.textContent = T('btnValidate');
 
@@ -5685,9 +5750,9 @@
     pag.className = 'pagination';
     pag.id = 'planPag_'+role.key;
     pag.style.display = 'none';
-    pag.innerHTML = '<button class="btn btn--sm" id="planPrev_'+role.key+'">‹</button>'+
+    pag.innerHTML = '<button class="ring-button-button ring-button-block ring-button-heightS" id="planPrev_'+role.key+'">‹</button>'+
       '<span id="planPageInfo_'+role.key+'"></span>'+
-      '<button class="btn btn--sm" id="planNext_'+role.key+'">›</button>';
+      '<button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_'+role.key+'">›</button>';
     compCard.appendChild(pag);
     frag.appendChild(compCard);
 
@@ -6427,7 +6492,7 @@
         '<td><select class="inc-sel" data-iid="'+iidAttr+'" data-rk="'+rk+'">'+
           Object.values(INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
         '</select></td>'+
-        '<td><button class="btn btn--icon del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button></td>';
+        '<td><button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button></td>';
       tbody.appendChild(tr);
     });
 
@@ -7383,7 +7448,7 @@
       finBtn.addEventListener('click', (function(r,i){ return function(e){ e.stopPropagation(); finishHistorySprint(r, i); }; })(rec, idx));
       ctrl.appendChild(finBtn);
     }
-    var del = document.createElement('button'); del.className = 'btn btn--icon'; del.title = T('btnDeleteTitle'); del.setAttribute('aria-label', T('aria.btnDeleteRow')); del.appendChild(icon('trash', T('aria.btnDeleteRow')));
+    var del = document.createElement('button'); del.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly'; del.title = T('btnDeleteTitle'); del.setAttribute('aria-label', T('aria.btnDeleteRow')); del.appendChild(icon('trash', T('aria.btnDeleteRow')));
     del.addEventListener('click', (function(i){ return function(e){ e.stopPropagation(); _pendingDelHist = i; _showOverlay('delHistOverlay'); }; })(idx));
     var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶';
     ctrl.appendChild(xlsBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
@@ -9009,7 +9074,7 @@
         byProjCellHtml +
         '<td class="td-num" style="color:'+(remain<0?'var(--error)':'var(--success)')+'" id="currentRole_rem_'+encodeLogin(login)+'">' + round2(remain) + '</td>' +
         '<td style="text-align:center">' +
-          '<button class="btn btn--icon currentRole-del-assignee" data-login="'+esc(login)+'" title="'+T('confirmDelAssignee').replace('?','')+'" aria-label="'+T('aria.btnDeleteRow')+'" style="font-size:14px;padding:2px 6px">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' +
+          '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" data-login="'+esc(login)+'" title="'+T('confirmDelAssignee').replace('?','')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' +
         '</td>';
       tbody.appendChild(tr);
     });
@@ -9602,7 +9667,8 @@
     /* v5.7.0 — Этап 5 (D46): dblclick по бару открывает модал переназначения,
        а не toggle цвета. Старая модель _currentRoleGantt.tasks[].color на запись не используется
        (на чтение остаётся для backward-compat при rollback). */
-    container.querySelectorAll('.gantt-cell[data-inbar="1"]').forEach(function(cell) {
+    var _ganttCells = container.querySelectorAll('.gantt-cell[data-inbar="1"]');
+    _ganttCells.forEach(function(cell) {
       var _clickTimer = null;
       cell.addEventListener('click', function() {
         if (_clickTimer) return;
@@ -9631,7 +9697,9 @@
         if (_clickTimer) { clearTimeout(_clickTimer); _clickTimer = null; }
         /* v6.3.1 D114 — color-toggle (`userColorOverride`) персистится только в
            personalPlanning frontend, без YouTrack writeback. inline-edit gating
-           снят: это локальная UI-маркировка, не требует update-issue-field. */
+           снят: это локальная UI-маркировка, не требует update-issue-field.
+           v1.9.9 — color-toggle работает в любом режиме (active + historical),
+           т.к. CSS `.readonly-mode .gantt-cell { pointer-events: none }` снято. */
         var issueId = cell.getAttribute('data-issue');
         toggleGanttCellColor(issueId);
       });

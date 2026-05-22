@@ -1,9 +1,147 @@
 (() => {
+  var __create = Object.create;
   var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __getProtoOf = Object.getPrototypeOf;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
   };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+    // If the importer is in node compatibility mode or this is not an ESM
+    // file that has been converted to a CommonJS file using a Babel-
+    // compatible transform (i.e. "__esModule" has not been set), then set
+    // "default" to the CommonJS "module.exports" for node compatibility.
+    isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+    mod
+  ));
+
+  // widgets/main/src/ring-class-helpers.js
+  var require_ring_class_helpers = __commonJS({
+    "widgets/main/src/ring-class-helpers.js"(exports, module) {
+      "use strict";
+      function escapeHtml(str) {
+        if (str == null) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      }
+      function ringButtonClass(opts) {
+        opts = opts || {};
+        const {
+          primary,
+          secondary,
+          ghost,
+          danger,
+          success,
+          height,
+          iconOnly,
+          inline,
+          disabled,
+          active,
+          short
+        } = opts;
+        const h = height || "M";
+        const classes = ["ring-button-button"];
+        classes.push(inline ? "ring-button-inline" : "ring-button-block");
+        classes.push("ring-button-height" + h);
+        if (primary) classes.push("ring-button-primaryBlock", "ring-button-flat", "ring-button-whiteText");
+        else if (ghost) classes.push("ring-button-ghost", "ring-button-flat");
+        else if (secondary) classes.push("ring-button-secondary", "ring-button-flat");
+        else if (danger) classes.push("ring-button-danger");
+        else if (success) classes.push("ring-button-success");
+        if (iconOnly) classes.push("ring-button-iconOnly");
+        if (disabled) classes.push("ring-button-disabled");
+        if (active) classes.push("ring-button-active");
+        if (short) classes.push("ring-button-short");
+        return classes.join(" ");
+      }
+      function ringInputClass(opts) {
+        opts = opts || {};
+        const { size, height, empty, error, withIcon } = opts;
+        const s = size || "M";
+        const h = height || "M";
+        const classes = ["ring-input-outerContainer", "ring-input-size" + s, "ring-input-height" + h];
+        if (empty) classes.push("ring-input-empty");
+        if (error) classes.push("ring-input-error");
+        if (withIcon) classes.push("ring-input-withIcon");
+        return classes.join(" ");
+      }
+      function ringInputTemplate(opts) {
+        opts = opts || {};
+        const {
+          id,
+          value,
+          placeholder,
+          size,
+          height,
+          error,
+          disabled,
+          extraAttrs,
+          type
+        } = opts;
+        const outerClass = ringInputClass({
+          size,
+          height,
+          empty: value == null || value === "",
+          error
+        });
+        const inputType = type || "text";
+        const val = escapeHtml(value == null ? "" : value);
+        const ph = escapeHtml(placeholder || "");
+        const extra = extraAttrs || "";
+        const disabledAttr = disabled ? " disabled" : "";
+        return '<span class="' + outerClass + '"><span class="ring-input-container"><input id="' + escapeHtml(id || "") + '" type="' + inputType + '" class="ring-input-input" value="' + val + '" placeholder="' + ph + '"' + disabledAttr + (extra ? " " + extra : "") + "/></span></span>";
+      }
+      function ringSelectButtonClass(opts) {
+        opts = opts || {};
+        const { height, empty, open, disabled, size } = opts;
+        const classes = ["ring-select-button"];
+        if (height === "S") classes.push("ring-select-heightS");
+        else if (height === "L") classes.push("ring-select-heightL");
+        if (size === "S") classes.push("ring-select-sizeS");
+        else if (size === "L") classes.push("ring-select-sizeL");
+        else if (size === "FULL") classes.push("ring-select-sizeFULL");
+        else classes.push("ring-select-sizeM");
+        if (empty) classes.push("ring-select-buttonValueEmpty");
+        if (open) classes.push("ring-select-open");
+        if (disabled) classes.push("ring-select-disabled");
+        return classes.join(" ");
+      }
+      function ringCheckboxClass(opts) {
+        opts = opts || {};
+        return "ring-checkbox-cell";
+      }
+      function ringIconClass(opts) {
+        opts = opts || {};
+        const { color, loading } = opts;
+        const classes = ["ring-icon-icon"];
+        if (color) classes.push("ring-icon-" + color);
+        if (loading) classes.push("ring-icon-loading");
+        return classes.join(" ");
+      }
+      module.exports = {
+        escapeHtml,
+        ringButtonClass,
+        ringInputClass,
+        ringInputTemplate,
+        ringSelectButtonClass,
+        ringCheckboxClass,
+        ringIconClass
+      };
+    }
+  });
 
   // widgets/main/src/icons.generated.js
   if (typeof window !== "undefined") {
@@ -1504,6 +1642,9 @@
     window.__SSP_I18N_PLURAL__ = plural_exports;
   }
 
+  // widgets/main/src/index.js
+  var import_ring_class_helpers = __toESM(require_ring_class_helpers());
+
   // widgets/main/src/legacy-monolith.js
   (function() {
     "use strict";
@@ -1731,6 +1872,24 @@
         wrap.setAttribute("aria-hidden", "true");
       }
       return wrap;
+    }
+    function applyRingTheme() {
+      var isDark = document.body.classList.contains("theme-dark") || document.body.getAttribute("data-theme") === "dark" || window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (isDark) {
+        document.documentElement.classList.add("ring-variables_dark-dark");
+      } else {
+        document.documentElement.classList.remove("ring-variables_dark-dark");
+      }
+    }
+    if (typeof MutationObserver !== "undefined") {
+      var _ringThemeObserver = new MutationObserver(applyRingTheme);
+      _ringThemeObserver.observe(document.body, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    }
+    if (window.matchMedia) {
+      try {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyRingTheme);
+      } catch (_) {
+      }
     }
     function applyIcons() {
       document.querySelectorAll("[data-icon]").forEach(function(el) {
@@ -2521,7 +2680,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.7";
+    var APP_VERSION = "1.9.9";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -4279,6 +4438,7 @@
       }
       applyI18N();
       applyIcons();
+      applyRingTheme();
       refreshDirtyIndicator();
       var openBtn = document.getElementById("openSettingsBtn");
       var closeBtn = document.getElementById("closeSettingsBtn");
@@ -4301,9 +4461,8 @@
           var target = document.getElementById(targetId);
           if (!target) return;
           try {
-            target.querySelectorAll("details.settings-card").forEach(function(d) {
-              d.open = true;
-            });
+            var firstDetails = target.querySelector("details.settings-card");
+            if (firstDetails) firstDetails.open = true;
           } catch (_) {
           }
           if (typeof target.scrollIntoView === "function") {
@@ -4321,9 +4480,26 @@
       }
       bindClearDraftHandlers();
       document.addEventListener("keydown", function(e) {
-        if (e.key === "Escape") {
-          var ov = document.getElementById("settingsOverlay");
-          if (ov && !ov.classList.contains("hidden")) closeSettingsOverlay();
+        if (e.key !== "Escape") return;
+        var settingsOv = document.getElementById("settingsOverlay");
+        if (settingsOv && !settingsOv.classList.contains("hidden")) {
+          closeSettingsOverlay();
+          return;
+        }
+        var overlays = document.querySelectorAll(".overlay:not(.hidden)");
+        if (!overlays.length) return;
+        var topOv = overlays[overlays.length - 1];
+        var cancelBtn = topOv.querySelector(
+          'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], button[id$="CloseBtn"], button[id$="Close"], button[id^="close"], button[id="cancelPickBtn"], button[id="closePickModal"], button[id="wcMultiTabReadonlyBtn"]'
+        );
+        if (cancelBtn) {
+          try {
+            cancelBtn.click();
+          } catch (_) {
+            topOv.classList.add("hidden");
+          }
+        } else {
+          topOv.classList.add("hidden");
         }
       });
       if (typeof _loadAppVersion === "function") {
@@ -4369,6 +4545,20 @@
       if (details) details.textContent = "";
       overlay.classList.remove("hidden");
       overlay.setAttribute("aria-hidden", "false");
+      try {
+        overlay.querySelectorAll("details.settings-card").forEach(function(d) {
+          d.open = false;
+          if (d.dataset.sspAccordionBound) return;
+          d.dataset.sspAccordionBound = "1";
+          d.addEventListener("toggle", function() {
+            if (!d.open) return;
+            overlay.querySelectorAll("details.settings-card").forEach(function(other) {
+              if (other !== d && other.open) other.open = false;
+            });
+          });
+        });
+      } catch (_) {
+      }
       if (typeof loadProjectGroups === "function" && !window._sspGroupsLoaded) {
         window._sspGroupsLoaded = true;
         loadProjectGroups().catch(function(e) {
@@ -5060,7 +5250,7 @@
           var sel = r.key === row.role ? " selected" : "";
           roleOpts += '<option value="' + esc(r.key) + '"' + sel + ">" + esc(roleLabel(r)) + "</option>";
         });
-        html += '<tr data-dta-idx="' + idx + '"><td style="padding:4px 8px;border-bottom:1px solid var(--border)"><input type="text" class="btn btn--sm dta-type-input" data-dta-idx="' + idx + '" value="' + esc(row.type || "") + '" maxlength="200" placeholder="' + esc(T("dtaTypePlaceholder")) + '" style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius)"/></td><td style="padding:4px 8px;border-bottom:1px solid var(--border)"><select class="btn btn--sm dta-role-sel" data-dta-idx="' + idx + '" style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);cursor:pointer">' + roleOpts + '</select></td><td style="padding:4px;border-bottom:1px solid var(--border);text-align:center"><button type="button" class="btn btn--sm dta-del-row" data-dta-idx="' + idx + '" title="' + esc(T("btnDtaRemoveRow")) + '" style="padding:2px 8px;font-size:14px;line-height:1">\xD7</button></td></tr>';
+        html += '<tr data-dta-idx="' + idx + '"><td style="padding:4px 8px;border-bottom:1px solid var(--border)"><input type="text" class="btn btn--sm dta-type-input" data-dta-idx="' + idx + '" value="' + esc(row.type || "") + '" maxlength="200" placeholder="' + esc(T("dtaTypePlaceholder")) + '" style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius)"/></td><td style="padding:4px 8px;border-bottom:1px solid var(--border)"><select class="btn btn--sm dta-role-sel" data-dta-idx="' + idx + '" style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);cursor:pointer">' + roleOpts + '</select></td><td style="padding:4px;border-bottom:1px solid var(--border);text-align:center"><button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly dta-del-row" data-dta-idx="' + idx + '" title="' + esc(T("btnDtaRemoveRow")) + '" style="padding:2px 8px;font-size:14px;line-height:1">\xD7</button></td></tr>';
       });
       if (!_dtaRows.length) {
         html = '<tr><td colspan="3" class="empty" style="padding:8px;text-align:center;color:var(--muted);font-size:12px">' + esc(T("dtaEmptyTable")) + "</td></tr>";
@@ -6139,7 +6329,7 @@
       var label = typeof roleLabel === "function" ? roleLabel(role) : role.label || rk;
       var resStr = _formatHoursLight(stats.resource);
       var allocStr = _formatHoursLight(stats.totalAlloc);
-      var html = '<div class="planning-role-card' + (expanded ? " expanded" : "") + '" data-role-key="' + rk + '"><button class="planning-role-toggle" type="button" data-role-key="' + rk + '"><span class="planning-role-chevron">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="planning-role-name">' + esc(label) + '</span><span class="planning-role-stat">' + esc(T("planningRoleStatResource")) + ': <span class="planning-role-stat__num">' + esc(resStr) + "</span> " + esc(T("planningRoleStatHourSuffix")) + '</span><span class="planning-role-stat">' + esc(T("planningRoleStatAlloc")) + ': <span class="planning-role-stat__num">' + esc(allocStr) + " / " + esc(resStr) + "</span> " + esc(T("planningRoleStatHourSuffix")) + '</span><span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + "</span> " + esc(T("planningRoleStatTasks")) + "</span>" + (stats.overlimit ? '<span class="planning-role-warn" title="' + esc(T("planningRoleStatOverlimit")) + '">\u26A0</span>' : "") + '</button><div class="planning-role-body" data-role-body="' + rk + '"><div class="planning-role-body__actions"><button class="btn btn--sm btn--primary planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T("btnJumpToPeople")) + "</button></div></div></div>";
+      var html = '<div class="planning-role-card' + (expanded ? " expanded" : "") + '" data-role-key="' + rk + '"><button class="planning-role-toggle" type="button" data-role-key="' + rk + '"><span class="planning-role-chevron">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="planning-role-name">' + esc(label) + '</span><span class="planning-role-stat">' + esc(T("planningRoleStatResource")) + ': <span class="planning-role-stat__num">' + esc(resStr) + "</span> " + esc(T("planningRoleStatHourSuffix")) + '</span><span class="planning-role-stat">' + esc(T("planningRoleStatAlloc")) + ': <span class="planning-role-stat__num">' + esc(allocStr) + " / " + esc(resStr) + "</span> " + esc(T("planningRoleStatHourSuffix")) + '</span><span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + "</span> " + esc(T("planningRoleStatTasks")) + "</span>" + (stats.overlimit ? '<span class="planning-role-warn" title="' + esc(T("planningRoleStatOverlimit")) + '">\u26A0</span>' : "") + '</button><div class="planning-role-body" data-role-body="' + rk + '"><div class="planning-role-body__actions"><button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T("btnJumpToPeople")) + "</button></div></div></div>";
       return html;
     }
     function _updateRoleAccordionStats(rk) {
@@ -6819,12 +7009,12 @@
       statusBadge.className = "s-badge s-badge--planning";
       statusBadge.textContent = statusLabel(STATUS.PLANNING);
       var newSprintBtn = document.createElement("button");
-      newSprintBtn.className = "btn btn--sm new-sprint-btn";
+      newSprintBtn.className = "ring-button-button ring-button-block ring-button-heightS new-sprint-btn";
       newSprintBtn.id = "newSprintBtn_" + role.key;
       newSprintBtn.style.display = "none";
       newSprintBtn.textContent = T("btnNewSprint");
       var saveHeaderBtn = document.createElement("button");
-      saveHeaderBtn.className = "btn btn--primary save-header-btn";
+      saveHeaderBtn.className = "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn";
       saveHeaderBtn.id = "saveHeaderBtn_" + role.key;
       saveHeaderBtn.textContent = T("btnSaveParams");
       statusRow.appendChild(statusBadge);
@@ -6862,31 +7052,31 @@
       toolbar.className = "toolbar";
       toolbar.style.marginBottom = "14px";
       var pickBtn = document.createElement("button");
-      pickBtn.className = "btn btn--primary editor-btn";
+      pickBtn.className = "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn";
       pickBtn.id = "pickBtn_" + role.key;
       pickBtn.textContent = T("btnPickTasks");
       var refreshBtn = null;
       if (!dynEdit) {
         refreshBtn = document.createElement("button");
-        refreshBtn.className = "btn btn--sm editor-btn";
+        refreshBtn.className = "ring-button-button ring-button-block ring-button-heightS editor-btn";
         refreshBtn.id = "refreshBtn_" + role.key;
         refreshBtn.disabled = true;
         refreshBtn.textContent = T("btnRefreshTasks");
       }
       var recalcBtn = document.createElement("button");
-      recalcBtn.className = "btn btn--sm editor-btn";
+      recalcBtn.className = "ring-button-button ring-button-block ring-button-heightS editor-btn";
       recalcBtn.id = "recalcBtn_" + role.key;
       recalcBtn.disabled = true;
       recalcBtn.textContent = T("btnRecalc");
       var clearBtn = document.createElement("button");
-      clearBtn.className = "btn btn--sm btn--danger editor-btn";
+      clearBtn.className = "ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn";
       clearBtn.id = "clearBtn_" + role.key;
       clearBtn.disabled = true;
       clearBtn.textContent = T("btnClear");
       var spacer = document.createElement("div");
       spacer.style.flex = "1";
       var validateBtn = document.createElement("button");
-      validateBtn.className = "btn btn--primary validate-btn";
+      validateBtn.className = "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText validate-btn";
       validateBtn.id = "validateBtn_" + role.key;
       validateBtn.textContent = T("btnValidate");
       toolbar.appendChild(pickBtn);
@@ -6915,7 +7105,7 @@
       pag.className = "pagination";
       pag.id = "planPag_" + role.key;
       pag.style.display = "none";
-      pag.innerHTML = '<button class="btn btn--sm" id="planPrev_' + role.key + '">\u2039</button><span id="planPageInfo_' + role.key + '"></span><button class="btn btn--sm" id="planNext_' + role.key + '">\u203A</button>';
+      pag.innerHTML = '<button class="ring-button-button ring-button-block ring-button-heightS" id="planPrev_' + role.key + '">\u2039</button><span id="planPageInfo_' + role.key + '"></span><button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_' + role.key + '">\u203A</button>';
       compCard.appendChild(pag);
       frag.appendChild(compCard);
       setTimeout(function() {
@@ -7626,7 +7816,7 @@
         (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : "") + /* v1.8.1 — System / XPriority cells показываются только если поле настроено. */
         (_settings && _settings.fieldSystem ? systemCell : "") + priorityCell + (_settings && _settings.fieldXPriority ? xpriorityCell : "") + stateCell + '<td class="td-title">' + esc(item.title || "") + "</td>" + resCell + '<td><select class="inc-sel" data-iid="' + iidAttr + '" data-rk="' + rk + '">' + Object.values(INC).map(function(v) {
           return '<option value="' + v + '"' + (item.inclusionStatus === v ? " selected" : "") + ">" + esc(incLabel(v)) + "</option>";
-        }).join("") + '</select></td><td><button class="btn btn--icon del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '" aria-label="' + T("aria.btnDeleteRow") + '">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
+        }).join("") + '</select></td><td><button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="' + iidAttr + '" data-rk="' + rk + '" title="' + T("btnDeleteTitle") + '" aria-label="' + T("aria.btnDeleteRow") + '">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
         tbody.appendChild(tr);
       });
       function _findIdxByIid(rkx, iidx) {
@@ -8616,7 +8806,7 @@
         ctrl.appendChild(finBtn);
       }
       var del = document.createElement("button");
-      del.className = "btn btn--icon";
+      del.className = "ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly";
       del.title = T("btnDeleteTitle");
       del.setAttribute("aria-label", T("aria.btnDeleteRow"));
       del.appendChild(icon("trash", T("aria.btnDeleteRow")));
@@ -10055,7 +10245,7 @@
         tr.innerHTML = "<td>" + esc(entry.assigneeName || login) + '</td><td><select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' + GRADES_LOCAL.map(function(g) {
           var currentGrade = _migrateGrade(entry.grade);
           return '<option value="' + g + '"' + (currentGrade === g ? " selected" : "") + ">" + esc(T("grade" + g)) + "</option>";
-        }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="btn btn--icon currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" aria-label="' + T("aria.btnDeleteRow") + '" style="font-size:14px;padding:2px 6px">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
+        }).join("") + "</select></td>" + resCellHtml + byProjCellHtml + '<td class="td-num" style="color:' + (remain < 0 ? "var(--error)" : "var(--success)") + '" id="currentRole_rem_' + encodeLogin(login) + '">' + round2(remain) + '</td><td style="text-align:center"><button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" data-login="' + esc(login) + '" title="' + T("confirmDelAssignee").replace("?", "") + '" aria-label="' + T("aria.btnDeleteRow") + '">' + icon("trash", T("aria.btnDeleteRow")).outerHTML + "</button></td>";
         tbody.appendChild(tr);
       });
       tbody.querySelectorAll(".currentRole-grade-sel").forEach(function(sel) {
@@ -10539,7 +10729,8 @@
       });
       html += "</tbody></table>";
       container.innerHTML = html;
-      container.querySelectorAll('.gantt-cell[data-inbar="1"]').forEach(function(cell) {
+      var _ganttCells = container.querySelectorAll('.gantt-cell[data-inbar="1"]');
+      _ganttCells.forEach(function(cell) {
         var _clickTimer = null;
         cell.addEventListener("click", function() {
           if (_clickTimer) return;

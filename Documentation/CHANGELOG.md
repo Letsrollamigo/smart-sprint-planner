@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.9] — 2026-05-21
+
+> **Ring UI Tier 2 — CSS classes without React.** Applies Ring UI visual language to buttons, inputs, and selects across the entire widget. Ships `ring-subset.css` (69.5 KB raw / 10.4 KB gzip), a tree-shaken subset of `@jetbrains/ring-ui-built`. No schema changes. 295 unit tests pass.
+
+### Added
+
+- **`widgets/main/ring-subset.css`** — tree-shaken Ring UI CSS subset (69.5 KB raw, 10.4 KB gzip). Extracted by `scripts/extract-ring-subset.js` from `@jetbrains/ring-ui-built@~7.0.108`. Includes only button, input, select, checkbox, icon, form, and CSS-variable rules.
+- **`widgets/main/src/ring-class-helpers.js`** — pure JS class-composition utilities (`ringButtonClass`, `ringInputClass`, `ringInputTemplate`, `ringSelectButtonClass`, `ringCheckboxClass`, `ringIconClass`, `escapeHtml`). 38 unit tests.
+- **`scripts/extract-ring-subset.js`** — idempotent Node tree-shaker script; `npm run build:ring-css` step added to `npm run build`.
+- **`applyRingTheme()`** — detects `body.theme-dark` / `data-theme="dark"` / `prefers-color-scheme: dark` and adds `ring-variables_dark-dark` to `<html>` for Ring's dark-mode CSS variables. Watches for dynamic switches via `MutationObserver`.
+
+### Changed
+
+- **All ~60 action buttons** across `index.html` and `legacy-monolith.js` migrated from custom `.btn*` classes to `.ring-button-button` class composition. Variants: primary, secondary/neutral, danger, ghost, iconOnly; heights S/M. Selector classes (`.editor-btn`, `.planning-role-jumpPeople`, `.dta-del-row`, `.del-item-btn`, `.currentRole-del-assignee`, etc.) preserved for JS compatibility.
+- **13 form inputs** (`sprintName`, `pickQuery`, settings number fields `s_nkc_*`, `s_rate`, `s_participation`, `s_kpe_*`, cascade link inputs) gain `ring-input-input` class. CSS exclusion selectors (`:not(.ring-input-input)`) added to `.field input` and `.search-row input` rules so Ring controls border/radius/background.
+- **8 single-select dropdowns** (`widgetSprintSel`, `planningRoleSel`, `standupRoleSel`, `ganttRoleSel`, `sprintFieldVal`, `versionFieldVal`, `currentRoleNkcSel`, `reassignSelect`) gain `ring-select-button` class. CSS exclusion `:not(.ring-select-button)` added to `.app-select` and `.widget-header__select` rules.
+- **Date inputs** (`dateStart`, `dateEnd`) and **tab/level buttons** (`tab-btn`, `planning-level-btn`) left unchanged — custom logic depends on exact class selectors (SC-2, SC-3 from plan).
+- **Checkbox/radio** DOM restructure deferred to tier 3 — Ring requires 5-level nested DOM with sibling selectors, incompatible with current markup without React.
+
+### Internal
+
+- `SCHEMA_MIGRATIONS` entry `1.9.7 → 1.9.9` (no-op; frontend-only). Fixtures `1.9.9/` frozen from `1.9.7/`.
+- Version bumped to `1.9.9` in 8 points (manifest, package, APP_VERSION, CURRENT_PLUGIN_VERSION, app-version endpoint, zip filename, SCHEMA_MIGRATIONS, fixtures).
+- `snapshot-migration.test.js`: 7 → 8 SCHEMA_MIGRATIONS entries. `external-ticket-id.test.js` version assertion updated.
+
+---
+
 ## [1.9.7] — 2026-05-21
 
 > **i18n completeness patch.** Completes native translations for all 17 `aria.*` screen-reader keys across 13 languages, and fixes role names showing in Russian for non-RU/EN locales in the settings UI. No schema changes. 249 unit tests pass.

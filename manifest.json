@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.7",
+  "version": "1.9.9",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.7 — i18n completeness: (1) 17 aria-label keys translated in 13 languages; (2) role names in settings UI now display in active language instead of Russian for non-RU/EN locales. No schema changes. See CHANGELOG.md.",
+  "changeNotes": "v1.9.9 — Ring UI Tier 2: buttons, inputs, and dropdowns now use Ring UI CSS classes for visual consistency with native YouTrack UI. Ships tree-shaken ring-subset.css (10 KB gzip). Dark-mode support via automatic theme detection. No schema changes. Also includes v1.9.7 i18n completeness (17 aria keys + role labels in 13 languages). See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

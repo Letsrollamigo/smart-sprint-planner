@@ -8,6 +8,33 @@
 
 ---
 
+## [1.9.9] — 2026-05-21
+
+> **Ring UI Ярус 2 — CSS-классы без React.** Применяет визуальный язык Ring UI к кнопкам, инпутам и селектам по всему виджету. Поставляет `ring-subset.css` (69.5 KB raw / 10.4 KB gzip) — tree-shaken подмножество `@jetbrains/ring-ui-built`. Изменений в схеме нет. 295 unit-тестов проходит.
+
+### Добавлено
+
+- **`widgets/main/ring-subset.css`** — tree-shaken подмножество Ring UI CSS (69.5 KB raw, 10.4 KB gzip). Извлечено `scripts/extract-ring-subset.js` из `@jetbrains/ring-ui-built@~7.0.108`. Включает только правила для button, input, select, checkbox, icon, form и CSS-переменных.
+- **`widgets/main/src/ring-class-helpers.js`** — чистые JS-функции композиции классов (`ringButtonClass`, `ringInputClass`, `ringInputTemplate`, `ringSelectButtonClass`, `ringCheckboxClass`, `ringIconClass`, `escapeHtml`). 38 unit-тестов.
+- **`scripts/extract-ring-subset.js`** — идемпотентный Node tree-shaker; шаг `npm run build:ring-css` добавлен в `npm run build`.
+- **`applyRingTheme()`** — определяет `body.theme-dark` / `data-theme="dark"` / `prefers-color-scheme: dark` и добавляет `ring-variables_dark-dark` на `<html>` для Ring dark-mode CSS-переменных. Отслеживает динамические переключения через `MutationObserver`.
+
+### Изменено
+
+- **~60 кнопок** по `index.html` и `legacy-monolith.js` перенесены с `.btn*` классов на `.ring-button-button` композицию. Варианты: primary, secondary/neutral, danger, ghost, iconOnly; высоты S/M. Selector-классы (`.editor-btn`, `.planning-role-jumpPeople`, `.dta-del-row`, `.del-item-btn` и др.) сохранены для JS-совместимости.
+- **13 form-инпутов** (`sprintName`, `pickQuery`, настроечные числовые поля `s_nkc_*`, `s_rate`, `s_participation`, `s_kpe_*`, cascade link inputs) получают класс `ring-input-input`. CSS-exclusion-селекторы (`:not(.ring-input-input)`) добавлены в `.field input` и `.search-row input` — теперь Ring управляет border/radius/background.
+- **8 single-select дропдаунов** (`widgetSprintSel`, `planningRoleSel`, `standupRoleSel`, `ganttRoleSel`, `sprintFieldVal`, `versionFieldVal`, `currentRoleNkcSel`, `reassignSelect`) получают класс `ring-select-button`. CSS-exclusion `:not(.ring-select-button)` добавлен в `.app-select` и `.widget-header__select`.
+- **Date-инпуты** (`dateStart`, `dateEnd`) и **tab/level-кнопки** (`tab-btn`, `planning-level-btn`) оставлены без изменений — custom-логика завязана на точные class-селекторы (SC-2, SC-3 из плана).
+- **Checkbox/radio** реструктура DOM отложена на ярус 3 — Ring требует 5-уровневую вложенность с sibling-селекторами, несовместимую с текущей разметкой без React.
+
+### Внутреннее
+
+- `SCHEMA_MIGRATIONS` entry `1.9.7 → 1.9.9` (no-op; только фронтенд). Фикстуры `1.9.9/` заморожены из `1.9.7/`.
+- Версия обновлена до `1.9.9` в 8 точках (manifest, package, APP_VERSION, CURRENT_PLUGIN_VERSION, endpoint, zip, SCHEMA_MIGRATIONS, fixtures).
+- `snapshot-migration.test.js`: 7 → 8 entries. `external-ticket-id.test.js` assertion обновлён.
+
+---
+
 ## [1.9.7] — 2026-05-21
 
 > **Патч полноты i18n.** Завершены нативные переводы всех 17 `aria.*` ключей для скринридеров в 13 языках. Исправлено отображение названий ролей на русском для всех не-RU/EN локалей в настройках плагина. Изменений в схеме нет. 249 unit-тестов проходит.

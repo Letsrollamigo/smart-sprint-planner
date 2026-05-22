@@ -11,4 +11,5 @@
 
 import './icons.generated.js';
 import './i18n-bridge.js';
+import './ring-class-helpers.js';
 import './legacy-monolith.js';
