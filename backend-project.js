@@ -200,6 +200,7 @@ var ALLOWED_WORKING_DRAFT_KEYS = [
   'items',
   'personalPlanning',
   'revisions',
+  'gantt',
   'pluginVersion'
 ];
 // AUTOGEN:WHITELISTS END
@@ -215,7 +216,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.9.10';
+var CURRENT_PLUGIN_VERSION = '1.9.11';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -396,6 +397,10 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.9.9', to: '1.9.10',
     migrate: function (snap) { return snap; }, /* no-op: group search fix is frontend-only, no schema change */
     note: 'v1.9.10: Group search visibility hotfix ($top: 5000 + auto-refresh on dropdown open) — schema unchanged'
+  },
+  { from: '1.9.10', to: '1.9.11',
+    migrate: function (snap) { return snap; }, /* no-op: modal/toast UX overhaul is frontend-only, no schema change */
+    note: 'v1.9.11: Modal+toast UX overhaul (B-32) + B-31 polish (textarea/buttons) — schema unchanged'
   }
 ];
 
@@ -1929,7 +1934,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.9.10' });
+        ctx.response.json({ version: '1.9.11' });
       }
     },
 

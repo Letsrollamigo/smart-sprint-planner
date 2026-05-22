@@ -8,6 +8,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.11] — 2026-05-22
+
+> **Modal and toast UX overhaul (B-32) plus Ring UI tier 2 polish (B-31).** All 18 modal dialogs gain focus trap, body scroll lock, ARIA roles, and opt-in backdrop dismiss. Toast system rebuilt: bottom-right stack, queue limit 3, per-type auto-dismiss, screen-reader live region. Sprint goal and retro note textareas align with Ring UI input style; modal footer buttons gain equal width; destructive-with-restore operations shift from danger red to warn orange. No schema changes. 375 unit tests pass (315 → 375, +60).
+
+### Changed
+
+#### B-32 — Modal and toast UX
+
+- **Toast system rebuilt.** New `window.__SSP_TOAST.{info,warn,error,success}` API replaces the legacy click-anchored toast (v1.8.5 D131). Bottom-right fixed stack with queue limit 3; per-type auto-dismiss (info/success 4 s, warn 6 s, error persistent); FIFO eviction skips persistent error entries; `aria-live="polite"` on the container, `role="alert"` + `aria-live="assertive"` on error toasts. Path A (parent doc host) preserved for cross-origin-friendly placements. Backward-compat global `toast(msg, type)` remains for 100+ existing call sites.
+- **All 18 modal dialogs receive UX baseline.** ARIA `role="dialog"` (or `alertdialog` for destructive confirms), `aria-modal="true"`, `aria-labelledby="<title-id>"`. Focus trap via Tab cycling inside content. Body scroll lock while any modal is open. Backdrop click dismiss opt-in via `data-dismiss-on-backdrop="true"` (currently enabled for `pickOverlay`, `wcDiffOverlay`, `settingsOverlay`). Blocking modals (`wcMultiTabOverlay`) carry `data-no-escape="true"` to prevent accidental Escape dismissal.
+- **Escape handler is now stack-aware.** Uses an internal `_modalStack` of open overlays; falls back to DOM-order topmost only when the stack is empty (covers legacy open paths). Skips overlays with `data-no-escape="true"`.
+- **MutationObserver on overlay `class` attribute.** Existing `el.classList.add('hidden')` and `classList.remove('hidden')` close/open paths are now wired to the new focus-trap / scroll-lock lifecycle automatically, without rewriting 100+ legacy call sites.
+
+#### B-31 — Ring UI tier 2 polish
+
+- **Textarea consistency.** `sprintGoal` and `goalRetroNote` adopt `ring-input-input ring-input-input--multiline` — Ring UI border/padding/focus styles with `overflow:auto` + `resize:vertical`. Subclass overrides the `ring-subset.css` default `resize:none` (correct for single-line inputs, wrong for multi-line user content).
+- **Equal-width action buttons in modal footers.** `.confirm-btns`, `.modal__foot`, `.dyn-modal-btns`: `flex: 1 1 0` + `min-width: 100px`. Planning + Assignee toolbars (`.editor-btn`): unified `min-width: 140px` for visual symmetry without overstretching three-button rows.
+- **Button color hierarchy refresh.** `currentRoleClearAssigneesBtn`, `clearAssigneesYes`, `clearYes` (clearOverlay), `delHistYes` switched from `ring-button-danger` (red) to `btn--warn` (orange) because each operation is destructive-with-restore (re-pick assignees, re-compose sprint, re-validate history snapshot). Hard-destructive operations (`clearAllHistYes`, `delAssigneeYes`, `clearDraftYes`) remain danger.
+
+### Added
+
+- `widgets/main/src/toast-pure.js` — pure helpers (`computeToastDuration`, `selectToastToEvict`, `normaliseToastText`); unit-tested in isolation.
+- `widgets/main/src/modal-pure.js` — pure helpers (`findCancelButtonId`, `topmostFromStack`, `pushUnique`, `popItem`, `isBackdropClick`, `parseBackdropOptIn`); DOM-free.
+- `tests/unit/toast-pure.test.js` — 22 tests.
+- `tests/unit/modal-pure.test.js` — 30 tests.
+- `tests/fixtures/snapshots/1.9.11/` — baseline storage snapshot frozen for next-release fixture validation.
+- `SCHEMA_MIGRATIONS` no-op entry `1.9.10 → 1.9.11` (UX-only changes, no shape change).
+
+### Removed
+
+- Legacy click-anchored single-toast positioning replaced by the new stack. `_lastClickY` tracking retained — repurposed as the **anchor point for the stack itself** so toasts stay in the user's visible region even when the YouTrack widget iframe is stretched to a long content height (where `position: fixed; bottom` pins to the bottom of the iframe document, not the visible viewport).
+
+### Fixed (post-smoke)
+
+- **Toast viewport visibility in long widget pages.** Round 1 / round 2 attempts (`position:fixed; bottom`, then `position:absolute; top = scrollY + innerHeight - h`) both failed in the YouTrack iframe context — the iframe has no own scroll, `window.scrollY` is always 0, `innerHeight` is the content height. Round 3 ships click-anchored positioning: stack top = max(8, lastClickY - stackHeight - 24). Confirmed visible after spoilers are expanded.
+- **Body scroll lock removed.** Both `position:fixed` (round 1) and `overflow:hidden` (round 2) variants risked interfering with click handlers in the iframe. In the YouTrack widget context the page scroll lives in the parent document (cross-origin), so any iframe-side lock is a no-op anyway — the reference counter is kept for the API contract, but no DOM mutation happens.
+- **Working-draft schema: `gantt` accepted.** The frontend has been serialising `gantt` into the working-draft snapshot since the v5.x baseline (`createWorkingDraft()` line 1847), but the field was missing from `ALLOWED_WORKING_DRAFT_KEYS`. Strict validation rejected every draft flush with `invalid_working_draft:<key>`. Added `gantt` to the whitelist — purely additive (no shape change, no migration step needed).
+
+### Internal
+
+- All snapshots from v1.0.0 baseline through v1.9.10 continue to load without migration steps; the v1.9.11 migration step is a no-op.
+- Test count: 315 → 375 (+60 = 52 new toast/modal helper tests + 4 fixture round-trip tests for the v1.9.11 baseline + 4 compat-prev-release tests against 1.9.11).
+
+---
+
 ## [1.9.10] — 2026-05-22
 
 > **Hotfix: group search visibility in rights settings.** Newly-created YouTrack groups now appear in the multiselect dropdowns of the plugin rights configuration. No schema changes. 303 unit tests pass.

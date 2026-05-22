@@ -913,30 +913,31 @@
   function fmtDate(ts)   { return ts ? new Date(ts).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; }
   function fmtDT(ts)     { return ts ? new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'; }
 
-  /* v1.8.5 D131 — Click-anchored toast (cherry-pick из proprietary v7.2.8 К.1 v5).
-     После серии итераций в proprietary (CSS-fixed bottom-right, frameElement bottom-pin,
-     frameElement top-pin + line-clamp, parent/top document host) единственный надёжный
-     способ показать toast в visible поле YT-iframe — позиционирование относительно
-     последнего mousedown. YT widget = sandboxed iframe: position:fixed пинит к раме,
-     не к visible parent viewport; window.parent.document cross-origin блокируется.
-     Iframe не имеет собственного scroll'а (растянут на content, scroll живёт в parent),
-     поэтому iframe-doc координаты клика совпадают с visible координатами в parent
-     viewport. Toast рисуется ~280px выше клика на противоположной X-стороне —
-     гарантированно в видимой области, не перекрывая нажатую кнопку.
-     Capture-фаза (third arg = true) обязательна — иначе stopPropagation'ы на конкретных
-     handler'ах прячут event от document-level listener'а. */
-  var _lastClickX = 0, _lastClickY = 0;
-  try {
-    document.addEventListener('mousedown', function(e) {
-      if (typeof e.clientY === 'number' && !isNaN(e.clientY)) {
-        _lastClickX = e.clientX;
-        _lastClickY = e.clientY;
-      }
-    }, true);
-  } catch(_){}
-  /* Best-effort попытка прицепить toast-host к window.top или window.parent document
-     (если когда-нибудь YT снимет sandboxing). На production YT обычно cross-origin
-     блокируется — тогда возвращаем null и используем local fallback в toast(). */
+  /* v1.9.11 — UX-нормализация toast'ов (UX-сессия B-32):
+     - Единое API: toastApi.{info,warn,error,success}(text, opts?). Backward-compat
+       глобальный toast(msg, type) сохранён для 107 существующих call-sites.
+     - Очередь до TOAST_LIMIT=3, FIFO-evict при переполнении (persistent error
+       не выбрасывается).
+     - Path A (parent/top doc host) сохранён для cross-origin-friendly сценариев,
+       но переведён на тот же DOM-контракт (toast-stack + .toast__text + .toast__close).
+     - Path B (local iframe) — теперь не click-anchored, а bottom-right fixed
+       через #toastStack контейнер в index.html. _lastClickX/_lastClickY удалены.
+     - ARIA: контейнер role="status" aria-live="polite" (один анонс per toast).
+       Error переопределяет на role="alert" aria-live="assertive" на самом toast'е.
+     - prefers-reduced-motion: убираем translateX, только opacity (CSS-level). */
+
+  /* Pure helpers live in widgets/main/src/toast-pure.js — unit-tested там, бридж
+     через window.__SSP_TOAST_PURE (паттерн как window.__SSP_ICONS). */
+  var TOAST_PURE = (typeof window !== 'undefined' && window.__SSP_TOAST_PURE) || {};
+  var computeToastDuration = TOAST_PURE.computeToastDuration || function(t, c){ return typeof c === 'number' ? c : 4000; };
+  var selectToastToEvict   = TOAST_PURE.selectToastToEvict   || function(){ return -1; };
+  var TOAST_LIMIT = TOAST_PURE.TOAST_LIMIT || 3;
+  var _toastQueue = [];
+  var _toastSeq = 0;
+
+  /* Best-effort попытка прицепить toast-stack к window.top или window.parent document
+     (если YT не блокирует cross-origin). На production YT обычно блокируется —
+     тогда возвращаем null и используем local #toastStack в widget iframe. */
   function _ensureParentToastHost() {
     var candidates = [];
     try { if (window.top    && window.top    !== window) candidates.push(window.top); } catch(_){}
@@ -950,13 +951,19 @@
         if (existing) return existing;
         var host = d.createElement('div');
         host.id = 'ssp-parent-toast-host';
+        host.setAttribute('role', 'status');
+        host.setAttribute('aria-live', 'polite');
+        host.setAttribute('aria-atomic', 'false');
         host.style.cssText = [
-          'position:fixed', 'top:24px', 'right:24px',
+          'position:fixed', 'bottom:16px', 'right:16px',
           'z-index:2147483647',
           'pointer-events:none',
-          'display:flex', 'flex-direction:column', 'gap:8px',
-          'max-width:50vw', 'max-height:50vh',
-          'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif'
+          'display:flex', 'flex-direction:column-reverse', 'gap:8px',
+          'max-width:min(480px,calc(100vw - 32px))',
+          'max-height:calc(100vh - 32px)',
+          'overflow-y:auto', 'overflow-x:hidden',
+          'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif',
+          'font-size:13px', 'line-height:1.4'
         ].join(';');
         d.body.appendChild(host);
         return host;
@@ -964,80 +971,456 @@
     }
     return null;
   }
-  function toast(msg, type) {
-    var text = String(msg == null ? '' : msg).replace(/\n+/g, ' · ');
-    var t = type || 'error';
-    /* Path A — parent/top document host (если cross-origin позволил). */
-    var host = _ensureParentToastHost();
-    if (host) {
-      try {
-        var pDoc = host.ownerDocument || (host.parentNode && host.parentNode.ownerDocument);
-        if (!pDoc) throw new Error('host has no ownerDocument');
-        var item = pDoc.createElement('div');
-        var colors = {
-          error:   { bg: '#e05a6a', fg: '#fff' },
-          success: { bg: '#5cb368', fg: '#fff' },
-          warn:    { bg: '#e09a3a', fg: '#fff' },
-          info:    { bg: '#5b7cfa', fg: '#fff' },
-          err:     { bg: '#e05a6a', fg: '#fff' }
-        };
-        var c = colors[t] || colors.error;
-        item.style.cssText = [
-          'background:'+c.bg, 'color:'+c.fg,
-          'padding:10px 16px', 'border-radius:8px',
-          'font-size:13px', 'font-weight:500', 'line-height:1.4',
-          'box-shadow:0 4px 12px rgba(0,0,0,0.18)',
-          'opacity:0', 'transform:translateY(-8px)',
-          'transition:opacity .2s,transform .2s',
-          'pointer-events:none', 'max-width:100%',
-          'overflow-wrap:break-word', 'word-wrap:break-word',
-          'white-space:pre-wrap'
-        ].join(';');
-        item.textContent = text;
-        host.appendChild(item);
-        setTimeout(function(){ item.style.opacity = '1'; item.style.transform = 'translateY(0)'; }, 10);
-        setTimeout(function(){ item.style.opacity = '0'; item.style.transform = 'translateY(-8px)'; }, 4500);
-        setTimeout(function(){ if (item && item.parentNode) item.parentNode.removeChild(item); }, 4900);
-        return;
-      } catch(_){}
-    }
-    /* Path B — local iframe fallback с click-anchored позиционированием. */
-    var el = document.getElementById('toast');
-    if (!el) return;
-    el.textContent = text;
-    el.className = 'toast toast--' + t;
-    /* Reset потенциальных предыдущих overrides. */
-    el.style.whiteSpace = 'pre-wrap';
-    el.style.overflow = 'visible';
-    el.style.textOverflow = '';
-    el.style.maxWidth = '420px';
-    el.style.maxHeight = '40vh';
-    el.style.overflowY = 'auto';
-    el.style.position = 'absolute';
-    el.style.pointerEvents = 'none';
-    el.style.bottom = '';
-    /* Y: ~280px выше клика. Если клик в верхней части (≤300px) — фиксируем top=8px. */
-    var anchorY = _lastClickY > 0 ? _lastClickY : 300;
-    var pageOff = window.pageYOffset || 0;
-    var toastTop = Math.max(8, anchorY + pageOff - 280);
-    el.style.top = toastTop + 'px';
-    /* X: противоположная сторона от клика — не перекрываем нажатую кнопку. */
-    var iframeWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
-    if (_lastClickX > iframeWidth / 2) {
-      el.style.left = '24px';
-      el.style.right = '';
-    } else {
-      el.style.right = '24px';
-      el.style.left = '';
-    }
-    void el.offsetWidth; el.classList.add('show');
-    setTimeout(function(){
-      el.classList.remove('show');
-      el.style.position = ''; el.style.top = ''; el.style.right = ''; el.style.left = '';
-      el.style.whiteSpace = ''; el.style.overflow = ''; el.style.maxHeight = '';
-      el.style.overflowY = ''; el.style.maxWidth = '';
-    }, 4500);
+
+  /* v1.9.11 post-smoke fix v2 — click-anchored positioning (возврат D131-логики
+     из v1.8.5, поверх нового stack). Причина: в YT widget iframe `window.scrollY`
+     всегда 0 (iframe не имеет собственного scroll'а — scroll живёт в parent doc),
+     `window.innerHeight` == content-height iframe'а (растянутого на весь content).
+     Поэтому scroll-aware positioning не работает в iframe.
+     Решение: track последний mousedown через capture-listener (D131); при показе
+     toast'а ставить top = max(8, _lastClickY - stackH - 24) — стак растёт ВВЕРХ
+     от точки клика, гарантированно в visible region (т.к. user только что туда
+     кликнул и нажатие было в visible viewport).
+     Fallback: если кликов ещё не было — 50% высоты iframe (приблизительный центр). */
+  var _lastClickX = 0, _lastClickY = 0;
+  try {
+    document.addEventListener('mousedown', function(e) {
+      if (typeof e.clientY === 'number' && !isNaN(e.clientY)) {
+        _lastClickX = e.clientX;
+        _lastClickY = e.clientY;
+      }
+    }, true);
+  } catch(_){}
+
+  function _positionToastStack() {
+    var stack = document.getElementById('toastStack');
+    if (!stack || stack.children.length === 0) return;
+    try {
+      var stackH = stack.offsetHeight || 100;
+      var iframeH = window.innerHeight || document.documentElement.clientHeight || 600;
+      var anchorY = _lastClickY > 0 ? _lastClickY : Math.floor(iframeH * 0.5);
+      var pageOff = window.pageYOffset || 0;
+      /* anchorY — координата клика в iframe-doc. Toast рисуем ~24px выше клика,
+         стак растёт вверх (column-reverse в CSS). Гарантия visible region. */
+      var top = Math.max(8, anchorY + pageOff - stackH - 24);
+      stack.style.top = top + 'px';
+    } catch(_) {}
   }
+  var _toastReposScheduled = false;
+  function _scheduleToastReposition() {
+    if (_toastReposScheduled) return;
+    _toastReposScheduled = true;
+    var raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : function(cb){ setTimeout(cb, 16); };
+    raf(function() {
+      _toastReposScheduled = false;
+      _positionToastStack();
+    });
+  }
+  /* resize слушаем — при изменении viewport стак повторно позиционируется
+     относительно нового anchor (last click). scroll listener бесполезен в iframe
+     где scrollY всегда 0, но добавляем на всякий случай (parent doc может его
+     прокинуть в будущем). */
+  try {
+    window.addEventListener('resize', _scheduleToastReposition, { passive: true });
+    window.addEventListener('scroll', _scheduleToastReposition, { passive: true });
+  } catch(_) {
+    try {
+      window.addEventListener('resize', _scheduleToastReposition);
+      window.addEventListener('scroll', _scheduleToastReposition);
+    } catch(__){}
+  }
+
+  /* Возвращает { stackEl, ownerDoc } для DOM-операций.
+     Path A: parent doc host (cross-origin позволил).
+     Path B: local widget iframe #toastStack. */
+  function _resolveToastStack() {
+    var parentHost = _ensureParentToastHost();
+    if (parentHost) {
+      var pDoc = parentHost.ownerDocument || (parentHost.parentNode && parentHost.parentNode.ownerDocument);
+      if (pDoc) return { stackEl: parentHost, ownerDoc: pDoc, isParent: true };
+    }
+    var localEl = document.getElementById('toastStack');
+    if (localEl) return { stackEl: localEl, ownerDoc: document, isParent: false };
+    return null;
+  }
+
+  /* Строит toast DOM-элемент. Inline-styles только для Path A (parent doc не имеет
+     наших CSS-классов); для Path B используем CSS из index.html. */
+  function _buildToastEl(spec, owner) {
+    var doc = owner.ownerDoc;
+    var isParent = owner.isParent;
+    var el = doc.createElement('div');
+    el.className = 'toast toast--' + spec.type;
+    if (spec.type === 'error') {
+      el.setAttribute('role', 'alert');
+      el.setAttribute('aria-live', 'assertive');
+    } else {
+      el.setAttribute('role', 'status');
+    }
+    var textEl = doc.createElement('div');
+    textEl.className = 'toast__text';
+    textEl.textContent = spec.text;
+    var closeBtn = doc.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'toast__close';
+    /* Локализуем через T() если доступен; в Path A (parent doc) T() может вернуть
+       ключ как fallback — это OK, screen reader всё равно будет читать. */
+    var closeAria = (typeof T === 'function') ? T('aria.btnClose') : 'Close';
+    closeBtn.setAttribute('aria-label', closeAria);
+    closeBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M12.5 3.5L8 8l4.5 4.5-.5.5L7.5 8.5 3 13l-.5-.5L7 8 2.5 3.5l.5-.5L7.5 7.5 12 3z"/></svg>';
+    el.appendChild(textEl);
+    el.appendChild(closeBtn);
+
+    if (isParent) {
+      /* Path A — parent doc, наших CSS-классов нет, применяем inline-стили. */
+      var colors = {
+        error:   { border: '#e05a6a' },
+        success: { border: '#5cb368' },
+        warn:    { border: '#e09a3a' },
+        info:    { border: '#5b7cfa' }
+      };
+      var c = colors[spec.type] || colors.info;
+      el.style.cssText = [
+        'pointer-events:auto',
+        'min-width:240px', 'max-width:100%', 'max-height:30vh', 'overflow-y:auto',
+        'padding:10px 12px',
+        'border-radius:6px',
+        'background:#fff', 'color:#1f2326',
+        'border:1px solid #dbe2e7',
+        'border-left:3px solid '+c.border,
+        'box-shadow:0 2px 8px rgba(0,0,0,0.08)',
+        'display:flex', 'align-items:flex-start', 'gap:8px',
+        'font-size:13px', 'line-height:1.4',
+        'opacity:0', 'transform:translateX(120%)',
+        'transition:transform 200ms ease,opacity 200ms ease'
+      ].join(';');
+      textEl.style.cssText = 'flex:1;min-width:0;word-break:break-word;white-space:pre-wrap';
+      closeBtn.style.cssText = 'flex:0 0 auto;background:none;border:none;color:#6e7682;cursor:pointer;padding:2px;margin:-2px;display:inline-flex;align-items:center;border-radius:4px';
+    }
+    return el;
+  }
+
+  function _dismissToast(t) {
+    if (t._dismissed) return;
+    t._dismissed = true;
+    if (t._timeout) { clearTimeout(t._timeout); t._timeout = null; }
+    if (t.el && t.el.parentNode) {
+      t.el.classList.remove('toast--in');
+      t.el.classList.add('toast--out');
+      if (t._isParent) {
+        t.el.style.transform = 'translateX(120%)';
+        t.el.style.opacity = '0';
+      }
+      setTimeout(function(){
+        if (t.el && t.el.parentNode) t.el.parentNode.removeChild(t.el);
+        /* После remove — стак стал короче, перепозиционировать. */
+        if (!t._isParent) _positionToastStack();
+      }, 250);
+    }
+    var idx = _toastQueue.indexOf(t);
+    if (idx >= 0) _toastQueue.splice(idx, 1);
+  }
+
+  function _enqueueToast(spec) {
+    var owner = _resolveToastStack();
+    if (!owner) return null; // нет ни parent host, ни local #toastStack — невозможно показать
+    var t = { id: ++_toastSeq, type: spec.type, text: spec.text };
+    t.el = _buildToastEl(spec, owner);
+    t._isParent = owner.isParent;
+    owner.stackEl.appendChild(t.el);
+
+    /* Evict до push'а — иначе превысим лимит на 1 toast на время transition'а. */
+    var evictIdx = selectToastToEvict(_toastQueue, TOAST_LIMIT);
+    if (evictIdx >= 0) _dismissToast(_toastQueue[evictIdx]);
+
+    _toastQueue.push(t);
+
+    /* Click на toast — dismiss (но клик по close-кнопке также dismiss'ит через bubble). */
+    t.el.addEventListener('click', function(e) {
+      _dismissToast(t);
+      e.stopPropagation();
+    });
+
+    /* Repos сначала, чтобы при первом показе стак уже был на правильной высоте
+       (Path B; для Path A position:fixed работает в parent doc — пропускаем). */
+    if (!t._isParent) _positionToastStack();
+
+    /* Trigger animation in next frame. */
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function(){
+        t.el.classList.add('toast--in');
+        if (t._isParent) {
+          t.el.style.transform = 'translateX(0)';
+          t.el.style.opacity = '1';
+        }
+        if (!t._isParent) _positionToastStack(); // повторная попытка после layout
+      });
+    } else {
+      setTimeout(function(){
+        t.el.classList.add('toast--in');
+        if (!t._isParent) _positionToastStack();
+      }, 10);
+    }
+
+    var duration = computeToastDuration(spec.type, spec.duration);
+    if (duration > 0) {
+      t._timeout = setTimeout(function(){ _dismissToast(t); }, duration);
+    }
+    return t.id;
+  }
+
+  var toastApi = {
+    info:    function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'info',    duration: opts && opts.duration }); },
+    warn:    function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'warn',    duration: opts && opts.duration }); },
+    error:   function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'error',   duration: opts && opts.duration }); },
+    success: function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'success', duration: opts && opts.duration }); },
+    dismissAll: function() {
+      var snapshot = _toastQueue.slice();
+      for (var i = 0; i < snapshot.length; i++) _dismissToast(snapshot[i]);
+    }
+  };
+  var _toastText = TOAST_PURE.normaliseToastText || function(msg) {
+    return String(msg == null ? '' : msg).replace(/\n+/g, ' · ');
+  };
+
+  /* Backward-compat для 107 существующих call-sites toast(msg, type). */
+  function toast(msg, type) {
+    var t = (type || 'info');
+    var fn = toastApi[t] || toastApi.info;
+    return fn(msg);
+  }
+
+  /* Public namespace (паттерн window.__SSP_ICONS): даёт доступ из консоли + других
+     модулей без breaking change существующего глобального toast(). */
+  try { window.__SSP_TOAST = toastApi; } catch(_) {}
+
+  /* ═══════════════════════════════════════════════════════════
+     v1.9.11 — Modal stack, focus trap, scroll lock, backdrop (B-32)
+     ═══════════════════════════════════════════════════════════
+     Pure helpers — widgets/main/src/modal-pure.js (window.__SSP_MODAL_PURE).
+     В IIFE — DOM-bound обёртки: _appModalOpen() / _appModalClose() / Escape handler.
+     Backward-compat: _showOverlay() остаётся, _appModalOpen внутри вызывает его. */
+  var MODAL_PURE = (typeof window !== 'undefined' && window.__SSP_MODAL_PURE) || {};
+  var _modalStack = []; // массив overlay DOM-элементов, last = topmost
+  var _bodyLockCount = 0;
+  var _savedScrollY = 0;
+  var CANCEL_SELECTOR = (MODAL_PURE.CANCEL_BUTTON_SELECTOR) ||
+    'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], ' +
+    'button[id$="CloseBtn"], button[id$="Close"], button[id^="close"]';
+
+  /* Возвращает массив focusable элементов внутри container — visible и не disabled. */
+  function _getFocusable(container) {
+    if (!container) return [];
+    var sel = 'a[href]:not([disabled]), button:not([disabled]), ' +
+              'input:not([disabled]):not([type="hidden"]), select:not([disabled]), ' +
+              'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    var nodes = container.querySelectorAll(sel);
+    var out = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.hidden) continue;
+      /* offsetParent === null означает display:none у self или предка
+         (исключение: position:fixed элементы — у них offsetParent всегда null
+         даже когда visible, поэтому проверяем computed display отдельно). */
+      var visible = el.offsetParent !== null;
+      if (!visible) {
+        try {
+          var cs = window.getComputedStyle(el);
+          visible = cs && cs.display !== 'none' && cs.visibility !== 'hidden';
+        } catch(_) {}
+      }
+      if (visible) out.push(el);
+    }
+    return out;
+  }
+
+  /* Создаёт focus trap для container. Возвращает { activate, deactivate }. */
+  function _createFocusTrap(container) {
+    var prevActive = (typeof document !== 'undefined') ? document.activeElement : null;
+
+    function onKeydown(e) {
+      if (e.key !== 'Tab') return;
+      var focusable = _getFocusable(container);
+      if (focusable.length === 0) { e.preventDefault(); return; }
+      var first = focusable[0];
+      var last  = focusable[focusable.length - 1];
+      var active = document.activeElement;
+      if (e.shiftKey && (active === first || !container.contains(active))) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (active === last || !container.contains(active))) {
+        e.preventDefault(); first.focus();
+      }
+    }
+
+    return {
+      activate: function() {
+        container.addEventListener('keydown', onKeydown);
+        /* setTimeout(0) даёт браузеру отрендерить overlay перед focus() — иначе
+           focus может уйти на скрытый элемент (display:none → flex transition). */
+        setTimeout(function() {
+          var focusable = _getFocusable(container);
+          var target = focusable[0] || container;
+          try { target.focus(); } catch(_) {}
+        }, 0);
+        container.__sspReturnFocus = prevActive;
+      },
+      deactivate: function() {
+        container.removeEventListener('keydown', onKeydown);
+      }
+    };
+  }
+
+  /* Body scroll lock — отключён в v1.9.11 post-smoke fix v2.
+     В YT widget iframe-контексте body lock не имеет смысла: iframe не имеет
+     собственного scroll'а (scroll живёт в parent doc, который мы не контролируем
+     из-за cross-origin), iframe растянут на content. Любые попытки lock'а
+     (position:fixed или overflow:hidden) либо no-op, либо потенциально интерферят
+     с click handlers в iframe (наблюдалось в smoke v1.9.11 round 1+2 —
+     «Очистить черновик» не запускал handler).
+     Reference counting остаётся как защита от рекурсии — но action no-op. */
+  function _bodyScrollLock(lock) {
+    if (lock) _bodyLockCount++;
+    else _bodyLockCount = Math.max(0, _bodyLockCount - 1);
+    /* no-op в iframe-контексте — но оставляем функцию для contract'а и testability */
+  }
+
+  /* Backdrop click handler — закрывает overlay только если клик строго по backdrop'у. */
+  function _onBackdropMousedown(e) {
+    var isBackdrop = MODAL_PURE.isBackdropClick
+      ? MODAL_PURE.isBackdropClick(e.target, e.currentTarget)
+      : (e.target === e.currentTarget);
+    if (!isBackdrop) return;
+    var overlay = e.currentTarget;
+    var cancelBtn = overlay.querySelector(CANCEL_SELECTOR);
+    if (cancelBtn) {
+      try { cancelBtn.click(); } catch(_) { _appModalClose(overlay); }
+    } else {
+      _appModalClose(overlay);
+    }
+  }
+
+  /* Идемпотентная attach-логика — ставит ARIA, stack, scroll lock, focus trap, backdrop.
+     Вызывается из _showOverlay() (после classList.remove('hidden')) автоматически — это
+     позволяет существующим 100+ call-sites _showOverlay() / classList.remove('hidden')
+     получить новую UX без переписывания каждого. */
+  function _modalAutoAttach(el) {
+    if (!el || el.__sspTrap) return;
+
+    /* ARIA-defaults (если в HTML не выставлены явно). */
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'dialog');
+    if (!el.hasAttribute('aria-modal')) el.setAttribute('aria-modal', 'true');
+
+    /* Idempotent stack push. */
+    if (MODAL_PURE.pushUnique) MODAL_PURE.pushUnique(_modalStack, el);
+    else if (_modalStack.indexOf(el) === -1) _modalStack.push(el);
+
+    /* Body scroll lock — на момент первой модалки. */
+    if (_modalStack.length === 1) _bodyScrollLock(true);
+
+    /* Focus trap. */
+    el.__sspTrap = _createFocusTrap(el);
+    el.__sspTrap.activate();
+
+    /* Backdrop click — opt-in через data-dismiss-on-backdrop="true". */
+    var dataVal = el.getAttribute('data-dismiss-on-backdrop');
+    var dismissOnBackdrop = MODAL_PURE.parseBackdropOptIn
+      ? MODAL_PURE.parseBackdropOptIn(dataVal)
+      : (dataVal === 'true');
+    if (dismissOnBackdrop && !el.__sspBackdropBound) {
+      el.addEventListener('mousedown', _onBackdropMousedown);
+      el.__sspBackdropBound = true;
+    }
+  }
+
+  /* Снимает focus trap, lock, listeners, восстанавливает фокус. Вызывается из
+     MutationObserver при добавлении .hidden класса — т.е. автоматически при
+     existing legacy `el.classList.add('hidden')` close-сайтах. */
+  function _modalAutoDetach(el) {
+    if (!el || !el.__sspTrap) return;
+
+    el.__sspTrap.deactivate();
+    el.__sspTrap = null;
+
+    if (el.__sspBackdropBound) {
+      el.removeEventListener('mousedown', _onBackdropMousedown);
+      el.__sspBackdropBound = false;
+    }
+
+    if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
+    else {
+      var idx = _modalStack.indexOf(el);
+      if (idx >= 0) _modalStack.splice(idx, 1);
+    }
+
+    if (_modalStack.length === 0) _bodyScrollLock(false);
+
+    if (el.__sspReturnFocus && document.body.contains(el.__sspReturnFocus)) {
+      try { el.__sspReturnFocus.focus(); } catch(_) {}
+      el.__sspReturnFocus = null;
+    }
+  }
+
+  /* Открывает overlay (public API). Backward-compat: _showOverlay вызывается внутри,
+     auto-attach срабатывает там — здесь только idempotent guard + return. */
+  function _appModalOpen(idOrEl, opts) {
+    opts = opts || {};
+    var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
+    if (!el) return null;
+    _showOverlay(el); // вызывает _modalAutoAttach автоматически
+    /* opts.dismissOnBackdrop override (программный) — поверх data-attribute. */
+    if (opts.dismissOnBackdrop === true && !el.__sspBackdropBound) {
+      el.addEventListener('mousedown', _onBackdropMousedown);
+      el.__sspBackdropBound = true;
+    }
+    return el;
+  }
+
+  /* Закрывает overlay (public API). Добавляет .hidden — MutationObserver вызовет detach. */
+  function _appModalClose(idOrEl) {
+    var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
+    if (!el) return;
+    el.classList.add('hidden'); // detach сработает через observer
+  }
+
+  /* Глобальный observer — наблюдает за добавлением .hidden класса на overlay-элементы.
+     Это даёт authokativnaya точку detach без необходимости менять 100+ legacy close-сайтов
+     (el.classList.add('hidden')). Вызывается из init flow (см. ниже DOMContentLoaded path). */
+  var _modalObserver = null;
+  function _initModalCloseObserver() {
+    if (_modalObserver || typeof MutationObserver !== 'function') return;
+    _modalObserver = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type !== 'attributes' || m.attributeName !== 'class') continue;
+        var el = m.target;
+        if (!el) continue;
+        var isHidden = el.classList.contains('hidden');
+        if (isHidden && el.__sspTrap) {
+          /* .hidden добавлен на видимую модалку — close path. */
+          _modalAutoDetach(el);
+        } else if (!isHidden && !el.__sspTrap) {
+          /* .hidden снят с скрытой модалки — legacy open path (например, через
+             o.classList.remove('hidden')). Auto-attach UX-helpers. */
+          _modalAutoAttach(el);
+        }
+      }
+    });
+    /* Наблюдаем все известные типы overlay'ев. Idempotent — повторный init no-op. */
+    var overlays = document.querySelectorAll('.overlay, .settings-overlay, .dyn-modal-overlay');
+    for (var i = 0; i < overlays.length; i++) {
+      _modalObserver.observe(overlays[i], { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
+  /* Public namespace для консоли + других модулей. */
+  try {
+    window.__SSP_MODAL = {
+      open:  _appModalOpen,
+      close: _appModalClose,
+      stack: _modalStack,
+      getFocusable: _getFocusable
+    };
+  } catch(_) {}
 
   /* ═══════════════════════════════════════════════════════════
      v5.0.3 — Локальный черновик в localStorage
@@ -1054,7 +1437,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.9.10';
+  var APP_VERSION = '1.9.11';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -1987,6 +2370,11 @@
     _scrollFrameIntoView();
     /* (3) Повторный scroll через 80ms — на случай smooth-race / lazy mount. */
     setTimeout(_scrollFrameIntoView, 80);
+    /* v1.9.11 (B-32) — auto-attach UX-helpers (focus trap / scroll lock / backdrop / ARIA).
+       Idempotent: повторный show уже visible overlay не дублирует state. */
+    if (typeof _modalAutoAttach === 'function') {
+      try { _modalAutoAttach(el); } catch(_){}
+    }
   }
   function openReassignModal(issueId) {
     if (!_currentRolePP) {
@@ -2796,6 +3184,7 @@
     applyI18N();
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
+    _initModalCloseObserver(); // v1.9.11 (B-32) — auto-detach focus trap / scroll lock при classList.add('hidden')
     /* v5.0.3 — обновить индикатор черновика ПОСЛЕ applyI18N (иначе applyI18N
        не затрагивает текст бейджа без data-i18n, но переключение языка
        должно перенарисовать локализованную подпись с актуальным timestamp). */
@@ -2844,31 +3233,43 @@
     bindClearDraftHandlers();
     /* v5.0.1 — Esc для закрытия overlay
        v1.9.9 — расширено: ловит любой visible .overlay, не только settingsOverlay.
-       Алгоритм: ищет topmost (последний в DOM) visible .overlay → пытается кликнуть
-       его cancel/close-кнопку по id-паттерну → fallback на classList.add('hidden').
-       Кнопка cancel/close нужна, чтобы вызвались существующие handler'ы (state cleanup). */
+       v1.9.11 (B-32) — переписано на _modalStack-aware: предпочитаем стак (надёжнее
+       чем DOM-order assumption), fallback на querySelectorAll если в стаке пусто
+       (например, overlay открыт legacy-путём без _appModalOpen). Уважаем
+       data-no-escape="true" для блокирующих модалок (wcMultiTab). */
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
+
+      /* settingsOverlay сохраняет специальный путь close (cleanup state, save hint). */
       var settingsOv = document.getElementById('settingsOverlay');
       if (settingsOv && !settingsOv.classList.contains('hidden')) {
         closeSettingsOverlay();
         return;
       }
-      // Topmost visible overlay (последний по порядку в DOM = верхний по z-index в нашей раскладке)
-      var overlays = document.querySelectorAll('.overlay:not(.hidden)');
-      if (!overlays.length) return;
-      var topOv = overlays[overlays.length - 1];
-      // Ищем кнопку отмены/закрытия в этом overlay
-      var cancelBtn = topOv.querySelector(
-        'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], ' +
-        'button[id$="CloseBtn"], button[id$="Close"], button[id^="close"], ' +
-        'button[id="cancelPickBtn"], button[id="closePickModal"], ' +
-        'button[id="wcMultiTabReadonlyBtn"]'
-      );
+
+      /* 1) Прежде всего смотрим в _modalStack — он содержит модалки, открытые
+            через _appModalOpen(). Top = последняя пушнутая. */
+      var topOv = null;
+      if (_modalStack && _modalStack.length) {
+        topOv = _modalStack[_modalStack.length - 1];
+        /* Если top уже скрыта (что-то закрыло иначе) — пропадает из стака на следующий цикл. */
+        if (topOv && topOv.classList.contains('hidden')) topOv = null;
+      }
+      /* 2) Fallback на DOM-обход — для overlay'ев, открытых старым путём. */
+      if (!topOv) {
+        var overlays = document.querySelectorAll('.overlay:not(.hidden)');
+        if (!overlays.length) return;
+        topOv = overlays[overlays.length - 1];
+      }
+
+      /* Блокирующие модалки (например, wcMultiTab) — пропускаем Escape. */
+      if (topOv.dataset && topOv.dataset.noEscape === 'true') return;
+
+      var cancelBtn = topOv.querySelector(CANCEL_SELECTOR);
       if (cancelBtn) {
-        try { cancelBtn.click(); } catch(_) { topOv.classList.add('hidden'); }
+        try { cancelBtn.click(); } catch(_) { _appModalClose(topOv); }
       } else {
-        topOv.classList.add('hidden');
+        _appModalClose(topOv);
       }
     });
 

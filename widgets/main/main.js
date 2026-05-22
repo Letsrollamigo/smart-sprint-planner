@@ -143,6 +143,125 @@
     }
   });
 
+  // widgets/main/src/toast-pure.js
+  var require_toast_pure = __commonJS({
+    "widgets/main/src/toast-pure.js"(exports, module) {
+      "use strict";
+      var TOAST_DEFAULTS = Object.freeze({
+        info: 4e3,
+        warn: 6e3,
+        success: 4e3,
+        error: 0
+      });
+      var TOAST_LIMIT = 3;
+      function computeToastDuration(type, customDuration) {
+        if (typeof customDuration === "number") return customDuration;
+        return TOAST_DEFAULTS[type] != null ? TOAST_DEFAULTS[type] : TOAST_DEFAULTS.info;
+      }
+      function selectToastToEvict(queue, limit) {
+        if (!Array.isArray(queue) || queue.length < limit) return -1;
+        for (let i = 0; i < queue.length; i++) {
+          if (queue[i] && queue[i].type !== "error") return i;
+        }
+        return -1;
+      }
+      function normaliseToastText(msg) {
+        return String(msg == null ? "" : msg).replace(/\n+/g, " \xB7 ");
+      }
+      var api = {
+        computeToastDuration,
+        selectToastToEvict,
+        normaliseToastText,
+        TOAST_DEFAULTS,
+        TOAST_LIMIT
+      };
+      if (typeof window !== "undefined") {
+        try {
+          window.__SSP_TOAST_PURE = api;
+        } catch (_) {
+        }
+      }
+      module.exports = api;
+    }
+  });
+
+  // widgets/main/src/modal-pure.js
+  var require_modal_pure = __commonJS({
+    "widgets/main/src/modal-pure.js"(exports, module) {
+      "use strict";
+      var CANCEL_BUTTON_SELECTOR = [
+        'button[id$="Cancel"]',
+        'button[id$="CancelBtn"]',
+        'button[id$="No"]',
+        'button[id$="CloseBtn"]',
+        'button[id$="Close"]',
+        'button[id^="close"]',
+        'button[id="cancelPickBtn"]',
+        'button[id="closePickModal"]',
+        'button[id="wcMultiTabReadonlyBtn"]'
+      ].join(", ");
+      var CANCEL_ID_SUFFIXES = ["Cancel", "CancelBtn", "No", "CloseBtn", "Close"];
+      var CANCEL_ID_PREFIXES = ["close"];
+      var CANCEL_ID_EXACT = ["cancelPickBtn", "closePickModal", "wcMultiTabReadonlyBtn"];
+      function findCancelButtonId(ids) {
+        if (!Array.isArray(ids)) return null;
+        for (let i = 0; i < ids.length; i++) {
+          const id = ids[i];
+          if (typeof id !== "string" || !id) continue;
+          if (CANCEL_ID_EXACT.indexOf(id) !== -1) return id;
+          for (let s = 0; s < CANCEL_ID_SUFFIXES.length; s++) {
+            if (id.endsWith(CANCEL_ID_SUFFIXES[s])) return id;
+          }
+          for (let p = 0; p < CANCEL_ID_PREFIXES.length; p++) {
+            if (id.startsWith(CANCEL_ID_PREFIXES[p])) return id;
+          }
+        }
+        return null;
+      }
+      function topmostFromStack(stack) {
+        if (!Array.isArray(stack) || stack.length === 0) return null;
+        return stack[stack.length - 1];
+      }
+      function pushUnique(stack, item) {
+        if (!Array.isArray(stack)) return 0;
+        if (stack.indexOf(item) === -1) stack.push(item);
+        return stack.length;
+      }
+      function popItem(stack, item) {
+        if (!Array.isArray(stack)) return 0;
+        const idx = stack.indexOf(item);
+        if (idx >= 0) stack.splice(idx, 1);
+        return stack.length;
+      }
+      function isBackdropClick(target, currentTarget) {
+        if (target == null || currentTarget == null) return false;
+        return target === currentTarget;
+      }
+      function parseBackdropOptIn(dataValue) {
+        return dataValue === "true";
+      }
+      var api = {
+        findCancelButtonId,
+        topmostFromStack,
+        pushUnique,
+        popItem,
+        isBackdropClick,
+        parseBackdropOptIn,
+        CANCEL_BUTTON_SELECTOR,
+        CANCEL_ID_SUFFIXES,
+        CANCEL_ID_PREFIXES,
+        CANCEL_ID_EXACT
+      };
+      if (typeof window !== "undefined") {
+        try {
+          window.__SSP_MODAL_PURE = api;
+        } catch (_) {
+        }
+      }
+      module.exports = api;
+    }
+  });
+
   // widgets/main/src/icons.generated.js
   if (typeof window !== "undefined") {
     window.__SSP_ICONS = {
@@ -1644,6 +1763,8 @@
 
   // widgets/main/src/index.js
   var import_ring_class_helpers = __toESM(require_ring_class_helpers());
+  var import_toast_pure = __toESM(require_toast_pure());
+  var import_modal_pure = __toESM(require_modal_pure());
 
   // widgets/main/src/legacy-monolith.js
   (function() {
@@ -2538,16 +2659,16 @@
     function fmtDT(ts) {
       return ts ? new Date(ts).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "\u2014";
     }
-    var _lastClickX = 0, _lastClickY = 0;
-    try {
-      document.addEventListener("mousedown", function(e) {
-        if (typeof e.clientY === "number" && !isNaN(e.clientY)) {
-          _lastClickX = e.clientX;
-          _lastClickY = e.clientY;
-        }
-      }, true);
-    } catch (_) {
-    }
+    var TOAST_PURE = typeof window !== "undefined" && window.__SSP_TOAST_PURE || {};
+    var computeToastDuration = TOAST_PURE.computeToastDuration || function(t, c) {
+      return typeof c === "number" ? c : 4e3;
+    };
+    var selectToastToEvict = TOAST_PURE.selectToastToEvict || function() {
+      return -1;
+    };
+    var TOAST_LIMIT = TOAST_PURE.TOAST_LIMIT || 3;
+    var _toastQueue = [];
+    var _toastSeq = 0;
     function _ensureParentToastHost() {
       var candidates = [];
       try {
@@ -2567,18 +2688,25 @@
           if (existing) return existing;
           var host = d.createElement("div");
           host.id = "ssp-parent-toast-host";
+          host.setAttribute("role", "status");
+          host.setAttribute("aria-live", "polite");
+          host.setAttribute("aria-atomic", "false");
           host.style.cssText = [
             "position:fixed",
-            "top:24px",
-            "right:24px",
+            "bottom:16px",
+            "right:16px",
             "z-index:2147483647",
             "pointer-events:none",
             "display:flex",
-            "flex-direction:column",
+            "flex-direction:column-reverse",
             "gap:8px",
-            "max-width:50vw",
-            "max-height:50vh",
-            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif'
+            "max-width:min(480px,calc(100vw - 32px))",
+            "max-height:calc(100vh - 32px)",
+            "overflow-y:auto",
+            "overflow-x:hidden",
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif',
+            "font-size:13px",
+            "line-height:1.4"
           ].join(";");
           d.body.appendChild(host);
           return host;
@@ -2587,100 +2715,377 @@
       }
       return null;
     }
+    var _lastClickX = 0, _lastClickY = 0;
+    try {
+      document.addEventListener("mousedown", function(e) {
+        if (typeof e.clientY === "number" && !isNaN(e.clientY)) {
+          _lastClickX = e.clientX;
+          _lastClickY = e.clientY;
+        }
+      }, true);
+    } catch (_) {
+    }
+    function _positionToastStack() {
+      var stack = document.getElementById("toastStack");
+      if (!stack || stack.children.length === 0) return;
+      try {
+        var stackH = stack.offsetHeight || 100;
+        var iframeH = window.innerHeight || document.documentElement.clientHeight || 600;
+        var anchorY = _lastClickY > 0 ? _lastClickY : Math.floor(iframeH * 0.5);
+        var pageOff = window.pageYOffset || 0;
+        var top = Math.max(8, anchorY + pageOff - stackH - 24);
+        stack.style.top = top + "px";
+      } catch (_) {
+      }
+    }
+    var _toastReposScheduled = false;
+    function _scheduleToastReposition() {
+      if (_toastReposScheduled) return;
+      _toastReposScheduled = true;
+      var raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : function(cb) {
+        setTimeout(cb, 16);
+      };
+      raf(function() {
+        _toastReposScheduled = false;
+        _positionToastStack();
+      });
+    }
+    try {
+      window.addEventListener("resize", _scheduleToastReposition, { passive: true });
+      window.addEventListener("scroll", _scheduleToastReposition, { passive: true });
+    } catch (_) {
+      try {
+        window.addEventListener("resize", _scheduleToastReposition);
+        window.addEventListener("scroll", _scheduleToastReposition);
+      } catch (__) {
+      }
+    }
+    function _resolveToastStack() {
+      var parentHost = _ensureParentToastHost();
+      if (parentHost) {
+        var pDoc = parentHost.ownerDocument || parentHost.parentNode && parentHost.parentNode.ownerDocument;
+        if (pDoc) return { stackEl: parentHost, ownerDoc: pDoc, isParent: true };
+      }
+      var localEl = document.getElementById("toastStack");
+      if (localEl) return { stackEl: localEl, ownerDoc: document, isParent: false };
+      return null;
+    }
+    function _buildToastEl(spec, owner) {
+      var doc = owner.ownerDoc;
+      var isParent = owner.isParent;
+      var el = doc.createElement("div");
+      el.className = "toast toast--" + spec.type;
+      if (spec.type === "error") {
+        el.setAttribute("role", "alert");
+        el.setAttribute("aria-live", "assertive");
+      } else {
+        el.setAttribute("role", "status");
+      }
+      var textEl = doc.createElement("div");
+      textEl.className = "toast__text";
+      textEl.textContent = spec.text;
+      var closeBtn = doc.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "toast__close";
+      var closeAria = typeof T === "function" ? T("aria.btnClose") : "Close";
+      closeBtn.setAttribute("aria-label", closeAria);
+      closeBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M12.5 3.5L8 8l4.5 4.5-.5.5L7.5 8.5 3 13l-.5-.5L7 8 2.5 3.5l.5-.5L7.5 7.5 12 3z"/></svg>';
+      el.appendChild(textEl);
+      el.appendChild(closeBtn);
+      if (isParent) {
+        var colors = {
+          error: { border: "#e05a6a" },
+          success: { border: "#5cb368" },
+          warn: { border: "#e09a3a" },
+          info: { border: "#5b7cfa" }
+        };
+        var c = colors[spec.type] || colors.info;
+        el.style.cssText = [
+          "pointer-events:auto",
+          "min-width:240px",
+          "max-width:100%",
+          "max-height:30vh",
+          "overflow-y:auto",
+          "padding:10px 12px",
+          "border-radius:6px",
+          "background:#fff",
+          "color:#1f2326",
+          "border:1px solid #dbe2e7",
+          "border-left:3px solid " + c.border,
+          "box-shadow:0 2px 8px rgba(0,0,0,0.08)",
+          "display:flex",
+          "align-items:flex-start",
+          "gap:8px",
+          "font-size:13px",
+          "line-height:1.4",
+          "opacity:0",
+          "transform:translateX(120%)",
+          "transition:transform 200ms ease,opacity 200ms ease"
+        ].join(";");
+        textEl.style.cssText = "flex:1;min-width:0;word-break:break-word;white-space:pre-wrap";
+        closeBtn.style.cssText = "flex:0 0 auto;background:none;border:none;color:#6e7682;cursor:pointer;padding:2px;margin:-2px;display:inline-flex;align-items:center;border-radius:4px";
+      }
+      return el;
+    }
+    function _dismissToast(t) {
+      if (t._dismissed) return;
+      t._dismissed = true;
+      if (t._timeout) {
+        clearTimeout(t._timeout);
+        t._timeout = null;
+      }
+      if (t.el && t.el.parentNode) {
+        t.el.classList.remove("toast--in");
+        t.el.classList.add("toast--out");
+        if (t._isParent) {
+          t.el.style.transform = "translateX(120%)";
+          t.el.style.opacity = "0";
+        }
+        setTimeout(function() {
+          if (t.el && t.el.parentNode) t.el.parentNode.removeChild(t.el);
+          if (!t._isParent) _positionToastStack();
+        }, 250);
+      }
+      var idx = _toastQueue.indexOf(t);
+      if (idx >= 0) _toastQueue.splice(idx, 1);
+    }
+    function _enqueueToast(spec) {
+      var owner = _resolveToastStack();
+      if (!owner) return null;
+      var t = { id: ++_toastSeq, type: spec.type, text: spec.text };
+      t.el = _buildToastEl(spec, owner);
+      t._isParent = owner.isParent;
+      owner.stackEl.appendChild(t.el);
+      var evictIdx = selectToastToEvict(_toastQueue, TOAST_LIMIT);
+      if (evictIdx >= 0) _dismissToast(_toastQueue[evictIdx]);
+      _toastQueue.push(t);
+      t.el.addEventListener("click", function(e) {
+        _dismissToast(t);
+        e.stopPropagation();
+      });
+      if (!t._isParent) _positionToastStack();
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(function() {
+          t.el.classList.add("toast--in");
+          if (t._isParent) {
+            t.el.style.transform = "translateX(0)";
+            t.el.style.opacity = "1";
+          }
+          if (!t._isParent) _positionToastStack();
+        });
+      } else {
+        setTimeout(function() {
+          t.el.classList.add("toast--in");
+          if (!t._isParent) _positionToastStack();
+        }, 10);
+      }
+      var duration = computeToastDuration(spec.type, spec.duration);
+      if (duration > 0) {
+        t._timeout = setTimeout(function() {
+          _dismissToast(t);
+        }, duration);
+      }
+      return t.id;
+    }
+    var toastApi = {
+      info: function(text, opts) {
+        return _enqueueToast({ text: _toastText(text), type: "info", duration: opts && opts.duration });
+      },
+      warn: function(text, opts) {
+        return _enqueueToast({ text: _toastText(text), type: "warn", duration: opts && opts.duration });
+      },
+      error: function(text, opts) {
+        return _enqueueToast({ text: _toastText(text), type: "error", duration: opts && opts.duration });
+      },
+      success: function(text, opts) {
+        return _enqueueToast({ text: _toastText(text), type: "success", duration: opts && opts.duration });
+      },
+      dismissAll: function() {
+        var snapshot = _toastQueue.slice();
+        for (var i = 0; i < snapshot.length; i++) _dismissToast(snapshot[i]);
+      }
+    };
+    var _toastText = TOAST_PURE.normaliseToastText || function(msg) {
+      return String(msg == null ? "" : msg).replace(/\n+/g, " \xB7 ");
+    };
     function toast(msg, type) {
-      var text = String(msg == null ? "" : msg).replace(/\n+/g, " \xB7 ");
-      var t = type || "error";
-      var host = _ensureParentToastHost();
-      if (host) {
-        try {
-          var pDoc = host.ownerDocument || host.parentNode && host.parentNode.ownerDocument;
-          if (!pDoc) throw new Error("host has no ownerDocument");
-          var item = pDoc.createElement("div");
-          var colors = {
-            error: { bg: "#e05a6a", fg: "#fff" },
-            success: { bg: "#5cb368", fg: "#fff" },
-            warn: { bg: "#e09a3a", fg: "#fff" },
-            info: { bg: "#5b7cfa", fg: "#fff" },
-            err: { bg: "#e05a6a", fg: "#fff" }
-          };
-          var c = colors[t] || colors.error;
-          item.style.cssText = [
-            "background:" + c.bg,
-            "color:" + c.fg,
-            "padding:10px 16px",
-            "border-radius:8px",
-            "font-size:13px",
-            "font-weight:500",
-            "line-height:1.4",
-            "box-shadow:0 4px 12px rgba(0,0,0,0.18)",
-            "opacity:0",
-            "transform:translateY(-8px)",
-            "transition:opacity .2s,transform .2s",
-            "pointer-events:none",
-            "max-width:100%",
-            "overflow-wrap:break-word",
-            "word-wrap:break-word",
-            "white-space:pre-wrap"
-          ].join(";");
-          item.textContent = text;
-          host.appendChild(item);
-          setTimeout(function() {
-            item.style.opacity = "1";
-            item.style.transform = "translateY(0)";
-          }, 10);
-          setTimeout(function() {
-            item.style.opacity = "0";
-            item.style.transform = "translateY(-8px)";
-          }, 4500);
-          setTimeout(function() {
-            if (item && item.parentNode) item.parentNode.removeChild(item);
-          }, 4900);
+      var t = type || "info";
+      var fn = toastApi[t] || toastApi.info;
+      return fn(msg);
+    }
+    try {
+      window.__SSP_TOAST = toastApi;
+    } catch (_) {
+    }
+    var MODAL_PURE = typeof window !== "undefined" && window.__SSP_MODAL_PURE || {};
+    var _modalStack = [];
+    var _bodyLockCount = 0;
+    var _savedScrollY = 0;
+    var CANCEL_SELECTOR = MODAL_PURE.CANCEL_BUTTON_SELECTOR || 'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], button[id$="CloseBtn"], button[id$="Close"], button[id^="close"]';
+    function _getFocusable(container) {
+      if (!container) return [];
+      var sel = 'a[href]:not([disabled]), button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      var nodes = container.querySelectorAll(sel);
+      var out = [];
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (el.hidden) continue;
+        var visible = el.offsetParent !== null;
+        if (!visible) {
+          try {
+            var cs = window.getComputedStyle(el);
+            visible = cs && cs.display !== "none" && cs.visibility !== "hidden";
+          } catch (_) {
+          }
+        }
+        if (visible) out.push(el);
+      }
+      return out;
+    }
+    function _createFocusTrap(container) {
+      var prevActive = typeof document !== "undefined" ? document.activeElement : null;
+      function onKeydown(e) {
+        if (e.key !== "Tab") return;
+        var focusable = _getFocusable(container);
+        if (focusable.length === 0) {
+          e.preventDefault();
           return;
-        } catch (_) {
+        }
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        var active = document.activeElement;
+        if (e.shiftKey && (active === first || !container.contains(active))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (active === last || !container.contains(active))) {
+          e.preventDefault();
+          first.focus();
         }
       }
-      var el = document.getElementById("toast");
-      if (!el) return;
-      el.textContent = text;
-      el.className = "toast toast--" + t;
-      el.style.whiteSpace = "pre-wrap";
-      el.style.overflow = "visible";
-      el.style.textOverflow = "";
-      el.style.maxWidth = "420px";
-      el.style.maxHeight = "40vh";
-      el.style.overflowY = "auto";
-      el.style.position = "absolute";
-      el.style.pointerEvents = "none";
-      el.style.bottom = "";
-      var anchorY = _lastClickY > 0 ? _lastClickY : 300;
-      var pageOff = window.pageYOffset || 0;
-      var toastTop = Math.max(8, anchorY + pageOff - 280);
-      el.style.top = toastTop + "px";
-      var iframeWidth = window.innerWidth || document.documentElement.clientWidth || 1200;
-      if (_lastClickX > iframeWidth / 2) {
-        el.style.left = "24px";
-        el.style.right = "";
+      return {
+        activate: function() {
+          container.addEventListener("keydown", onKeydown);
+          setTimeout(function() {
+            var focusable = _getFocusable(container);
+            var target = focusable[0] || container;
+            try {
+              target.focus();
+            } catch (_) {
+            }
+          }, 0);
+          container.__sspReturnFocus = prevActive;
+        },
+        deactivate: function() {
+          container.removeEventListener("keydown", onKeydown);
+        }
+      };
+    }
+    function _bodyScrollLock(lock) {
+      if (lock) _bodyLockCount++;
+      else _bodyLockCount = Math.max(0, _bodyLockCount - 1);
+    }
+    function _onBackdropMousedown(e) {
+      var isBackdrop = MODAL_PURE.isBackdropClick ? MODAL_PURE.isBackdropClick(e.target, e.currentTarget) : e.target === e.currentTarget;
+      if (!isBackdrop) return;
+      var overlay = e.currentTarget;
+      var cancelBtn = overlay.querySelector(CANCEL_SELECTOR);
+      if (cancelBtn) {
+        try {
+          cancelBtn.click();
+        } catch (_) {
+          _appModalClose(overlay);
+        }
       } else {
-        el.style.right = "24px";
-        el.style.left = "";
+        _appModalClose(overlay);
       }
-      void el.offsetWidth;
-      el.classList.add("show");
-      setTimeout(function() {
-        el.classList.remove("show");
-        el.style.position = "";
-        el.style.top = "";
-        el.style.right = "";
-        el.style.left = "";
-        el.style.whiteSpace = "";
-        el.style.overflow = "";
-        el.style.maxHeight = "";
-        el.style.overflowY = "";
-        el.style.maxWidth = "";
-      }, 4500);
+    }
+    function _modalAutoAttach(el) {
+      if (!el || el.__sspTrap) return;
+      if (!el.hasAttribute("role")) el.setAttribute("role", "dialog");
+      if (!el.hasAttribute("aria-modal")) el.setAttribute("aria-modal", "true");
+      if (MODAL_PURE.pushUnique) MODAL_PURE.pushUnique(_modalStack, el);
+      else if (_modalStack.indexOf(el) === -1) _modalStack.push(el);
+      if (_modalStack.length === 1) _bodyScrollLock(true);
+      el.__sspTrap = _createFocusTrap(el);
+      el.__sspTrap.activate();
+      var dataVal = el.getAttribute("data-dismiss-on-backdrop");
+      var dismissOnBackdrop = MODAL_PURE.parseBackdropOptIn ? MODAL_PURE.parseBackdropOptIn(dataVal) : dataVal === "true";
+      if (dismissOnBackdrop && !el.__sspBackdropBound) {
+        el.addEventListener("mousedown", _onBackdropMousedown);
+        el.__sspBackdropBound = true;
+      }
+    }
+    function _modalAutoDetach(el) {
+      if (!el || !el.__sspTrap) return;
+      el.__sspTrap.deactivate();
+      el.__sspTrap = null;
+      if (el.__sspBackdropBound) {
+        el.removeEventListener("mousedown", _onBackdropMousedown);
+        el.__sspBackdropBound = false;
+      }
+      if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
+      else {
+        var idx = _modalStack.indexOf(el);
+        if (idx >= 0) _modalStack.splice(idx, 1);
+      }
+      if (_modalStack.length === 0) _bodyScrollLock(false);
+      if (el.__sspReturnFocus && document.body.contains(el.__sspReturnFocus)) {
+        try {
+          el.__sspReturnFocus.focus();
+        } catch (_) {
+        }
+        el.__sspReturnFocus = null;
+      }
+    }
+    function _appModalOpen(idOrEl, opts) {
+      opts = opts || {};
+      var el = typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
+      if (!el) return null;
+      _showOverlay(el);
+      if (opts.dismissOnBackdrop === true && !el.__sspBackdropBound) {
+        el.addEventListener("mousedown", _onBackdropMousedown);
+        el.__sspBackdropBound = true;
+      }
+      return el;
+    }
+    function _appModalClose(idOrEl) {
+      var el = typeof idOrEl === "string" ? document.getElementById(idOrEl) : idOrEl;
+      if (!el) return;
+      el.classList.add("hidden");
+    }
+    var _modalObserver = null;
+    function _initModalCloseObserver() {
+      if (_modalObserver || typeof MutationObserver !== "function") return;
+      _modalObserver = new MutationObserver(function(mutations) {
+        for (var i2 = 0; i2 < mutations.length; i2++) {
+          var m = mutations[i2];
+          if (m.type !== "attributes" || m.attributeName !== "class") continue;
+          var el = m.target;
+          if (!el) continue;
+          var isHidden = el.classList.contains("hidden");
+          if (isHidden && el.__sspTrap) {
+            _modalAutoDetach(el);
+          } else if (!isHidden && !el.__sspTrap) {
+            _modalAutoAttach(el);
+          }
+        }
+      });
+      var overlays = document.querySelectorAll(".overlay, .settings-overlay, .dyn-modal-overlay");
+      for (var i = 0; i < overlays.length; i++) {
+        _modalObserver.observe(overlays[i], { attributes: true, attributeFilter: ["class"] });
+      }
+    }
+    try {
+      window.__SSP_MODAL = {
+        open: _appModalOpen,
+        close: _appModalClose,
+        stack: _modalStack,
+        getFocusable: _getFocusable
+      };
+    } catch (_) {
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.10";
+    var APP_VERSION = "1.9.11";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -3592,6 +3997,12 @@
       el.classList.remove("hidden");
       _scrollFrameIntoView();
       setTimeout(_scrollFrameIntoView, 80);
+      if (typeof _modalAutoAttach === "function") {
+        try {
+          _modalAutoAttach(el);
+        } catch (_) {
+        }
+      }
     }
     function openReassignModal(issueId) {
       if (!_currentRolePP) {
@@ -4439,6 +4850,7 @@
       applyI18N();
       applyIcons();
       applyRingTheme();
+      _initModalCloseObserver();
       refreshDirtyIndicator();
       var openBtn = document.getElementById("openSettingsBtn");
       var closeBtn = document.getElementById("closeSettingsBtn");
@@ -4486,20 +4898,26 @@
           closeSettingsOverlay();
           return;
         }
-        var overlays = document.querySelectorAll(".overlay:not(.hidden)");
-        if (!overlays.length) return;
-        var topOv = overlays[overlays.length - 1];
-        var cancelBtn = topOv.querySelector(
-          'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], button[id$="CloseBtn"], button[id$="Close"], button[id^="close"], button[id="cancelPickBtn"], button[id="closePickModal"], button[id="wcMultiTabReadonlyBtn"]'
-        );
+        var topOv = null;
+        if (_modalStack && _modalStack.length) {
+          topOv = _modalStack[_modalStack.length - 1];
+          if (topOv && topOv.classList.contains("hidden")) topOv = null;
+        }
+        if (!topOv) {
+          var overlays = document.querySelectorAll(".overlay:not(.hidden)");
+          if (!overlays.length) return;
+          topOv = overlays[overlays.length - 1];
+        }
+        if (topOv.dataset && topOv.dataset.noEscape === "true") return;
+        var cancelBtn = topOv.querySelector(CANCEL_SELECTOR);
         if (cancelBtn) {
           try {
             cancelBtn.click();
           } catch (_) {
-            topOv.classList.add("hidden");
+            _appModalClose(topOv);
           }
         } else {
-          topOv.classList.add("hidden");
+          _appModalClose(topOv);
         }
       });
       if (typeof _loadAppVersion === "function") {

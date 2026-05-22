@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.10",
+  "version": "1.9.11",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.10 — Hotfix: groups multiselect in plugin settings now loads up to 5000 YouTrack groups (was 200) and refreshes automatically on dropdown open. Fixes newly-created groups not appearing in rights configuration. No schema changes. See CHANGELOG.md.",
+  "changeNotes": "v1.9.11 — Modal and toast UX overhaul. New toast system: bottom-right stack (queue ≤3), distinct auto-dismiss timers per type, screen-reader live region. All 18 modal dialogs: focus trap, body scroll lock, ARIA role/aria-modal/aria-labelledby, opt-in backdrop dismiss for read-only/selection/form modals, no-escape guard for blocking modals. Stack-aware Escape handler. Polish: ring-input style for sprint goal and retro note textareas, equal-width action buttons in modal footers, color hierarchy refresh for destructive-with-restore operations. No schema changes. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

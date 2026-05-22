@@ -22,7 +22,7 @@
   "ALLOWED_WORKING_DRAFT_KEYS": [
     "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",
     "createdAt", "updatedAt", "editorLogin", "editorTabToken",
-    "sprint", "items", "personalPlanning", "revisions",
+    "sprint", "items", "personalPlanning", "revisions", "gantt",
     "pluginVersion"
   ]
 }

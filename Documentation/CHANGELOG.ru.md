@@ -8,6 +8,51 @@
 
 ---
 
+## [1.9.11] — 2026-05-22
+
+> **UX-нормализация модалок и тостов (B-32) + Ring UI tier 2 polish (B-31).** Все 18 модальных окон получают focus trap, body scroll lock, ARIA-роли и opt-in закрытие по клику на бэкдропе. Toast-система переписана: стак справа-снизу, очередь до 3 одновременно, разные auto-dismiss таймеры на каждый тип, live region для screen reader'ов. Textarea «Цель спринта» и «Заметка ретро» приведены к Ring UI стилю; кнопки в footer'ах модалок — равная ширина; destructive-with-restore операции переведены с danger (красный) на warn (оранжевый). Изменений в схеме нет. 375 unit-тестов проходят (315 → 375, +60).
+
+### Изменено
+
+#### B-32 — UX модалок и тостов
+
+- **Toast-система переписана.** Новый API `window.__SSP_TOAST.{info,warn,error,success}` заменяет legacy click-anchored toast (v1.8.5 D131). Фиксированный стак справа-снизу с лимитом 3; auto-dismiss per type (info/success 4 с, warn 6 с, error persistent); FIFO-eviction пропускает persistent error; `aria-live="polite"` на контейнере, `role="alert"` + `aria-live="assertive"` на error-toast'ах. Path A (parent doc host) сохранён для cross-origin-friendly размещений. Backward-compat: глобальный `toast(msg, type)` остаётся для 100+ существующих call-sites.
+- **Все 18 модалок получают UX baseline.** ARIA `role="dialog"` (или `alertdialog` для destructive-confirm'ов), `aria-modal="true"`, `aria-labelledby="<title-id>"`. Focus trap через Tab внутри content'а. Body scroll lock пока хотя бы одна модалка открыта. Закрытие по клику на бэкдропе — opt-in через `data-dismiss-on-backdrop="true"` (включено для `pickOverlay`, `wcDiffOverlay`, `settingsOverlay`). Блокирующие модалки (`wcMultiTabOverlay`) — `data-no-escape="true"` для защиты от случайного Escape.
+- **Escape handler стал stack-aware.** Использует внутренний `_modalStack` открытых overlay'ев; fallback на DOM-order topmost только если стак пуст (legacy open paths). Пропускает overlay'и с `data-no-escape="true"`.
+- **MutationObserver на `class` атрибуте overlay'ев.** Existing `el.classList.add('hidden')` и `classList.remove('hidden')` close/open пути автоматически подключаются к новому focus-trap / scroll-lock lifecycle, без переписывания 100+ legacy call-sites.
+
+#### B-31 — Ring UI tier 2 polish
+
+- **Единообразие textarea.** `sprintGoal` и `goalRetroNote` получают `ring-input-input ring-input-input--multiline` — Ring UI border/padding/focus стили с `overflow:auto` + `resize:vertical`. Subclass переопределяет дефолт `ring-subset.css` `resize:none` (корректный для single-line, неуместный для многострочного user-контента).
+- **Равная ширина action-кнопок в footer'ах модалок.** `.confirm-btns`, `.modal__foot`, `.dyn-modal-btns`: `flex: 1 1 0` + `min-width: 100px`. Planning + Assignee toolbar'ы (`.editor-btn`): унифицированный `min-width: 140px` для визуальной симметрии без перерастягивания трёх-кнопочных линий.
+- **Обновлена цветовая иерархия кнопок.** `currentRoleClearAssigneesBtn`, `clearAssigneesYes`, `clearYes` (clearOverlay), `delHistYes` переведены с `ring-button-danger` (красный) на `btn--warn` (оранжевый) потому что каждая операция — destructive-with-restore (повторный подбор исполнителей, пересоставление спринта, восстановление при следующей валидации). Hard-destructive операции (`clearAllHistYes`, `delAssigneeYes`, `clearDraftYes`) остаются danger.
+
+### Добавлено
+
+- `widgets/main/src/toast-pure.js` — pure helpers (`computeToastDuration`, `selectToastToEvict`, `normaliseToastText`); unit-тесты в изоляции.
+- `widgets/main/src/modal-pure.js` — pure helpers (`findCancelButtonId`, `topmostFromStack`, `pushUnique`, `popItem`, `isBackdropClick`, `parseBackdropOptIn`); DOM-free.
+- `tests/unit/toast-pure.test.js` — 22 теста.
+- `tests/unit/modal-pure.test.js` — 30 тестов.
+- `tests/fixtures/snapshots/1.9.11/` — baseline-snapshot заморожен для backward-compat валидации в следующих релизах.
+- `SCHEMA_MIGRATIONS` no-op запись `1.9.10 → 1.9.11` (UX-only, без изменения shape).
+
+### Удалено
+
+- Legacy single-toast click-anchored позиционирование заменено новым стаком. `_lastClickY` tracking **сохранён** — переиспользован как **anchor для самого стака**, чтобы тосты оставались в visible viewport даже когда YT widget iframe растянут на длинный content (где `position:fixed; bottom` пинит к bottom iframe-document'а, а не к visible viewport).
+
+### Исправлено (post-smoke)
+
+- **Видимость toast в длинных страницах виджета.** Round 1 (`position:fixed; bottom`) и round 2 (`position:absolute; top = scrollY + innerHeight - h`) не работали в YT iframe-контексте — у iframe нет своего scroll'а, `window.scrollY` всегда 0, `innerHeight` = content-height. Round 3 ship'ит click-anchored позиционирование: stack top = max(8, lastClickY - stackHeight - 24). Проверено visible после раскрытия спойлеров.
+- **Body scroll lock убран.** И `position:fixed` (round 1), и `overflow:hidden` (round 2) варианты рискуют интерферить с click handlers в iframe. В контексте YT widget'а scroll живёт в parent doc (cross-origin), поэтому любой iframe-side lock — no-op в любом случае. Reference counter остался для API contract'а, но DOM-мутаций не происходит.
+- **Working-draft schema: `gantt` принимается.** Frontend сериализует `gantt` в working-draft snapshot с v5.x baseline (`createWorkingDraft()` line 1847), но поле отсутствовало в `ALLOWED_WORKING_DRAFT_KEYS`. Strict-валидация reject'ила каждый draft flush c `invalid_working_draft:<key>`. Добавлено `gantt` в whitelist — чисто additive (без изменения shape, без миграционного шага).
+
+### Внутреннее
+
+- Все snapshot'ы от v1.0.0 baseline до v1.9.10 продолжают грузиться без миграционных шагов; миграция v1.9.11 — no-op.
+- Test count: 315 → 375 (+60 = 52 новых toast/modal pure helper теста + 4 fixture round-trip теста для baseline v1.9.11 + 4 compat-prev-release теста против 1.9.11).
+
+---
+
 ## [1.9.10] — 2026-05-22
 
 > **Hotfix: видимость групп в настройках прав.** Свежесозданные группы YouTrack теперь отображаются в multiselect-выпадашках в разделе прав плагина. Изменений в схеме нет. 303 unit-теста проходят.
