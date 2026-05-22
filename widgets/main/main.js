@@ -2680,7 +2680,7 @@
       }, 4500);
     }
     var DRAFT_VERSION = 1;
-    var APP_VERSION = "1.9.9";
+    var APP_VERSION = "1.9.10";
     var ASSIGNEE_PALETTE = [
       "#5b7de8",
       "#e05a6a",
@@ -4674,7 +4674,7 @@
     }
     function loadProjectGroups() {
       return _host.fetchYouTrack("groups", {
-        query: { fields: "id,name", $top: 200 }
+        query: { fields: "id,name", $top: 5e3 }
       }).then(function(g) {
         var raw = Array.isArray(g) ? g : [];
         _projectGroups = raw.filter(function(gr) {
@@ -6018,6 +6018,7 @@
           dropdown.classList.add("open");
           input.focus();
           rerender();
+          loadProjectGroups().then(rerender);
         });
         document.addEventListener("click", function(e) {
           if (!ms.contains(e.target)) dropdown.classList.remove("open");

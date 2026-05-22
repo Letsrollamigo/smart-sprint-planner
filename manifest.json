@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "1.9.9",
+  "version": "1.9.10",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.9.9 — Ring UI Tier 2: buttons, inputs, and dropdowns now use Ring UI CSS classes for visual consistency with native YouTrack UI. Ships tree-shaken ring-subset.css (10 KB gzip). Dark-mode support via automatic theme detection. No schema changes. Also includes v1.9.7 i18n completeness (17 aria keys + role labels in 13 languages). See CHANGELOG.md.",
+  "changeNotes": "v1.9.10 — Hotfix: groups multiselect in plugin settings now loads up to 5000 YouTrack groups (was 200) and refreshes automatically on dropdown open. Fixes newly-created groups not appearing in rights configuration. No schema changes. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

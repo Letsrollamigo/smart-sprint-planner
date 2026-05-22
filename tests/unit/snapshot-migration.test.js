@@ -97,10 +97,10 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2)', function () {
+test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix)', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 8,
-    'Registry should have 8 entries; update this test when next entry is added');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 9,
+    'Registry should have 9 entries; update this test when next entry is added');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
   /* v1.8.0 D130 — second entry: external ticket ID (no-op additive migration). */
@@ -124,6 +124,9 @@ test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 Exter
   /* v1.9.9 — eighth entry: Ring UI tier 2 (CSS classes, frontend-only, no shape change). */
   assert.strictEqual(SCHEMA_MIGRATIONS[7].to, '1.9.9');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[7].migrate, 'function');
+  /* v1.9.10 — ninth entry: group search visibility hotfix (frontend-only, no shape change). */
+  assert.strictEqual(SCHEMA_MIGRATIONS[8].to, '1.9.10');
+  assert.strictEqual(typeof SCHEMA_MIGRATIONS[8].migrate, 'function');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {

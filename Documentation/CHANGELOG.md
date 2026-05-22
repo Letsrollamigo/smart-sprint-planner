@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.9.10] — 2026-05-22
+
+> **Hotfix: group search visibility in rights settings.** Newly-created YouTrack groups now appear in the multiselect dropdowns of the plugin rights configuration. No schema changes. 303 unit tests pass.
+
+### Fixed
+
+- **Group search visibility** — `loadProjectGroups()` now requests up to 5 000 YouTrack groups from the REST API (previously 200). In instances with many groups, newly created groups could fall past the 200-item cap and never appear in the dropdown.
+- **Stale in-memory group list** — multiselect dropdown now triggers a background refresh of `_projectGroups` every time it is opened. Previously the list was fetched only once at widget init; groups created after that were invisible until the user manually reloaded the plugin page.
+
+### Internal
+
+- `SCHEMA_MIGRATIONS`: no-op entry `1.9.9 → 1.9.10` added (frontend-only change, schema unchanged).
+
+---
+
 ## [1.9.9] — 2026-05-21
 
 > **Ring UI Tier 2 — CSS classes without React.** Applies Ring UI visual language to buttons, inputs, and selects across the entire widget. Ships `ring-subset.css` (69.5 KB raw / 10.4 KB gzip), a tree-shaken subset of `@jetbrains/ring-ui-built`. No schema changes. 295 unit tests pass.
