@@ -1350,7 +1350,23 @@
      MutationObserver при добавлении .hidden класса — т.е. автоматически при
      existing legacy `el.classList.add('hidden')` close-сайтах. */
   function _modalAutoDetach(el) {
-    if (!el || !el.__sspTrap) return;
+    if (!el) return;
+    /* v2.0.0 — cleanup iframe-aware positioner listeners + inline styles. */
+    if (el.__sspPositioner) {
+      try { window.removeEventListener('scroll', el.__sspPositioner, true); } catch(_){}
+      try { window.removeEventListener('resize', el.__sspPositioner); } catch(_){}
+      if (el.__sspPositionInterval) {
+        clearInterval(el.__sspPositionInterval);
+        el.__sspPositionInterval = null;
+      }
+      el.__sspPositioner = null;
+      try {
+        el.style.position = ''; el.style.top = ''; el.style.left = '';
+        el.style.right = ''; el.style.minHeight = ''; el.style.height = '';
+        el.style.alignItems = '';
+      } catch(_){}
+    }
+    if (!el.__sspTrap) return;
 
     el.__sspTrap.deactivate();
     el.__sspTrap = null;
@@ -1374,14 +1390,69 @@
     }
   }
 
-  /* Открывает overlay (public API). Backward-compat: _showOverlay вызывается внутри,
-     auto-attach срабатывает там — здесь только idempotent guard + return. */
+  /* Открывает overlay (public API). v2.0.0: .overlay/.dyn-modal-overlay → Ring Dialog bridge.
+     Legacy: .settings-overlay и не-overlay элементы идут через _showOverlay как раньше. */
   function _appModalOpen(idOrEl, opts) {
     opts = opts || {};
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return null;
-    _showOverlay(el); // вызывает _modalAutoAttach автоматически
-    /* opts.dismissOnBackdrop override (программный) — поверх data-attribute. */
+
+    /* pickOverlay has complex content (data table, pagination, large form) — keep on
+       legacy .overlay rendering. settingsOverlay also legacy. Other 15 modals use Ring Dialog. */
+    var isRingTarget = window.__SSP_DIALOG &&
+      el.id !== 'pickOverlay' &&
+      (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay'));
+
+    if (isRingTarget) {
+      var labelElId = el.getAttribute('aria-labelledby');
+      var labelEl = labelElId ? document.getElementById(labelElId) : null;
+      var label = labelEl ? labelEl.textContent.trim() : (el.getAttribute('aria-label') || el.id);
+      var dismissOnBackdrop = el.getAttribute('data-dismiss-on-backdrop') === 'true' || opts.dismissOnBackdrop === true;
+      var blockEscape = el.getAttribute('data-no-escape') === 'true';
+
+      /* Убираем .hidden чтобы MutationObserver мог поймать последующий classList.add('hidden')
+         от кнопок отмены. .ssp-dialog-host делает элемент невидимым через CSS. */
+      el.classList.remove('hidden');
+      el.classList.add('ssp-dialog-host');
+
+      /* _modalStack для Escape-handler совместимости. */
+      if (MODAL_PURE.pushUnique) MODAL_PURE.pushUnique(_modalStack, el);
+      else if (_modalStack.indexOf(el) === -1) _modalStack.push(el);
+
+      /* Per-overlay observer: кнопки отмены делают classList.add('hidden') → закрываем Ring Dialog. */
+      var closeObserver = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+          if (mutations[i].attributeName === 'class' && el.classList.contains('hidden')) {
+            closeObserver.disconnect();
+            el._sspCloseObserver = null;
+            el.classList.remove('ssp-dialog-host');
+            if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
+            else { var idx2 = _modalStack.indexOf(el); if (idx2 >= 0) _modalStack.splice(idx2, 1); }
+            window.__SSP_DIALOG.close(el.id);
+            return;
+          }
+        }
+      });
+      closeObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
+      el._sspCloseObserver = closeObserver;
+
+      window.__SSP_DIALOG.open(el.id, {
+        label: label,
+        dismissOnBackdrop: dismissOnBackdrop,
+        blockEscape: blockEscape,
+        onClose: function() { _appModalClose(el); }
+      });
+      /* v2.0.0 — scroll outer YT page to bring iframe into view so Ring Dialog (position:fixed
+         inside iframe) is visible regardless of where user was scrolled. */
+      if (typeof _scrollFrameIntoView === 'function') {
+        try { _scrollFrameIntoView(); } catch(_){}
+        setTimeout(function(){ try { _scrollFrameIntoView(); } catch(_){} }, 80);
+      }
+      return el;
+    }
+
+    /* Legacy path: .settings-overlay, non-overlay elements, pre-bridge fallback. */
+    _showOverlay(el);
     if (opts.dismissOnBackdrop === true && !el.__sspBackdropBound) {
       el.addEventListener('mousedown', _onBackdropMousedown);
       el.__sspBackdropBound = true;
@@ -1389,11 +1460,22 @@
     return el;
   }
 
-  /* Закрывает overlay (public API). Добавляет .hidden — MutationObserver вызовет detach. */
+  /* Закрывает overlay (public API). v2.0.0: Ring Dialog path через per-overlay observer. */
   function _appModalClose(idOrEl) {
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return;
-    el.classList.add('hidden'); // detach сработает через observer
+    if (window.__SSP_DIALOG && el._sspCloseObserver) {
+      /* Disconnect до classList.add('hidden') — предотвращает re-entry через observer. */
+      el._sspCloseObserver.disconnect();
+      el._sspCloseObserver = null;
+      el.classList.remove('ssp-dialog-host');
+      el.classList.add('hidden');
+      if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
+      else { var idx = _modalStack.indexOf(el); if (idx >= 0) _modalStack.splice(idx, 1); }
+      window.__SSP_DIALOG.close(el.id);
+      return;
+    }
+    el.classList.add('hidden'); /* Legacy path — MutationObserver вызовет _modalAutoDetach. */
   }
 
   /* Глобальный observer — наблюдает за добавлением .hidden класса на overlay-элементы.
@@ -2374,6 +2456,13 @@
   function _showOverlay(idOrEl) {
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return;
+    /* v2.0.0: .overlay/.dyn-modal-overlay → Ring Dialog (если bridge активен).
+       pickOverlay исключён — у него сложный контент, идёт по legacy-пути. */
+    if (window.__SSP_DIALOG && el.id !== 'pickOverlay' &&
+        (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay'))) {
+      _appModalOpen(el);
+      return;
+    }
     /* Очищаем inline-style остатки от старого _positionOverlayInView (D102 v6.3.0). */
     try {
       el.style.position = ''; el.style.top = ''; el.style.left = '';
@@ -2388,6 +2477,37 @@
        Idempotent: повторный show уже visible overlay не дублирует state. */
     if (typeof _modalAutoAttach === 'function') {
       try { _modalAutoAttach(el); } catch(_){}
+    }
+    /* v2.0.0 — iframe-aware overlay positioning (legacy path, e.g. pickOverlay).
+       Computes user's actually visible iframe portion and positions overlay there,
+       same pattern as Ring Dialog repositioning + v1.9.11 click-anchored toast. */
+    if (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay') || el.classList.contains('settings-overlay')) {
+      var positionOverlay = function() {
+        var visibleTop = 0;
+        var visibleHeight = window.innerHeight;
+        try {
+          if (window.parent && window.parent !== window && window.frameElement) {
+            var iframeRect = window.frameElement.getBoundingClientRect();
+            var parentVH = window.parent.innerHeight || document.documentElement.clientHeight;
+            visibleTop = Math.max(0, -iframeRect.top);
+            var visibleBottom = Math.min(iframeRect.height, parentVH - iframeRect.top);
+            visibleHeight = Math.max(300, visibleBottom - visibleTop);
+          }
+        } catch(_){}
+        el.style.position = 'absolute';
+        el.style.top = visibleTop + 'px';
+        el.style.left = '0';
+        el.style.right = '0';
+        el.style.minHeight = visibleHeight + 'px';
+        el.style.height = visibleHeight + 'px';
+        el.style.alignItems = 'center';
+      };
+      requestAnimationFrame(positionOverlay);
+      var positionInterval = setInterval(positionOverlay, 100);
+      el.__sspPositioner = positionOverlay;
+      el.__sspPositionInterval = positionInterval;
+      window.addEventListener('scroll', positionOverlay, true);
+      window.addEventListener('resize', positionOverlay);
     }
   }
   function openReassignModal(issueId) {
@@ -3253,6 +3373,10 @@
        data-no-escape="true" для блокирующих модалок (wcMultiTab). */
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
+
+      /* v2.0.0: Ring Dialog обрабатывает Escape для .overlay/.dyn-modal-overlay через onCloseAttempt.
+         IIFE handler пропускает — иначе двойное закрытие. */
+      if (window.__SSP_DIALOG && _modalStack && _modalStack.length) return;
 
       /* settingsOverlay сохраняет специальный путь close (cleanup state, save hint). */
       var settingsOv = document.getElementById('settingsOverlay');

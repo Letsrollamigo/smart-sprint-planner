@@ -573,6 +573,165 @@
       z-index: var(--z-dialog); padding: 24px 16px;
     }
     .overlay.hidden { display: none; }
+    /* v2.0.0 Phase D2: overlay acting as Ring Dialog content-host — stay invisible */
+    .overlay.ssp-dialog-host,
+    .dyn-modal-overlay.ssp-dialog-host { opacity: 0 !important; pointer-events: none !important; }
+    /* ═════════════ Phase D2 — Ring Dialog uniform sizing & centering ═════════════
+       All small confirm-style dialogs share a COMMON fixed size (480px).
+       Text and content centered both H+V within the fixed frame.
+       Ring Island = visual frame; inner containers = transparent layout shells.
+       pickOverlay & settingsOverlay use legacy path (excluded from Ring Dialog). */
+
+    /* 1. Strip visual from inner containers */
+    .ssp-dialog-inner > *,
+    .ssp-dialog-inner .modal,
+    .ssp-dialog-inner .confirm-box,
+    .ssp-dialog-inner .dyn-modal-box {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      max-height: none !important;
+    }
+
+    /* 2. COMMON FIXED SIZE for all dialogs — width 480px, min-height 240px. */
+    .ssp-dialog-inner > .modal,
+    .ssp-dialog-inner > .confirm-box,
+    .ssp-dialog-inner > .dyn-modal-box {
+      width: 480px !important;
+      max-width: 92vw !important;
+      min-height: 240px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 3. confirm-box / dyn-modal-box: text at TOP, buttons pushed to BOTTOM via auto margin */
+    .ssp-dialog-inner > .confirm-box,
+    .ssp-dialog-inner > .dyn-modal-box {
+      padding: 24px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: flex-start !important;
+      align-items: stretch !important;
+      gap: 14px !important;
+    }
+
+    /* 4. .modal — natural flex column (modal__body has flex:1, foot stays at bottom) */
+    .ssp-dialog-inner > .modal {
+      padding: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    /* 5. X-axis only centering — text horizontally centered, NO vertical centering */
+    .ssp-dialog-inner > .confirm-box > *,
+    .ssp-dialog-inner > .dyn-modal-box > *,
+    .ssp-dialog-inner > .modal > .modal__head,
+    .ssp-dialog-inner > .modal > .modal__body,
+    .ssp-dialog-inner > .modal > .modal__body * {
+      text-align: center !important;
+    }
+    .ssp-dialog-inner > .confirm-box > p,
+    .ssp-dialog-inner > .confirm-box > h3,
+    .ssp-dialog-inner > .dyn-modal-box > p,
+    .ssp-dialog-inner > .dyn-modal-box > h3 {
+      margin: 0 !important;
+    }
+    .ssp-dialog-inner > .modal > .modal__head {
+      justify-content: center !important;
+    }
+
+    /* 6. Buttons pushed to BOTTOM with INSET separator above (no edge overflow) */
+    .ssp-dialog-inner > .confirm-box > .confirm-btns,
+    .ssp-dialog-inner > .dyn-modal-box > .dyn-modal-btns {
+      margin-top: auto !important;
+      padding-top: 16px !important;
+      border-top: none !important;
+      position: relative;
+    }
+    .ssp-dialog-inner > .confirm-box > .confirm-btns::before,
+    .ssp-dialog-inner > .dyn-modal-box > .dyn-modal-btns::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    /* .modal head/foot separators — replace full-width border with inset pseudo-element */
+    .ssp-dialog-inner > .modal > .modal__head {
+      border-bottom: none !important;
+      position: relative;
+    }
+    .ssp-dialog-inner > .modal > .modal__head::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    .ssp-dialog-inner > .modal > .modal__foot {
+      border-top: none !important;
+      position: relative;
+    }
+    .ssp-dialog-inner > .modal > .modal__foot::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    /* 7. UNIFIED FONT SIZES across all dialogs */
+    .ssp-dialog-inner > .modal,
+    .ssp-dialog-inner > .modal *,
+    .ssp-dialog-inner > .confirm-box,
+    .ssp-dialog-inner > .confirm-box *,
+    .ssp-dialog-inner > .dyn-modal-box,
+    .ssp-dialog-inner > .dyn-modal-box * {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .ssp-dialog-inner > .modal > .modal__head,
+    .ssp-dialog-inner > .confirm-box > h3,
+    .ssp-dialog-inner > .dyn-modal-box > h3 {
+      font-size: 16px !important;
+      font-weight: 600 !important;
+    }
+
+    /* 7. Buttons centered, natural width, unified ordering */
+    .ssp-dialog-inner .confirm-btns,
+    .ssp-dialog-inner .dyn-modal-btns,
+    .ssp-dialog-inner .modal__foot {
+      justify-content: center !important;
+    }
+    .ssp-dialog-inner .confirm-btns > .ring-button-block,
+    .ssp-dialog-inner .dyn-modal-btns > .ring-button-block,
+    .ssp-dialog-inner .modal__foot > .ring-button-block {
+      flex: 0 0 auto !important;
+      min-width: 140px;
+    }
+    /* Unified button visual order: cancel/no LEFT, action/yes RIGHT */
+    .ssp-dialog-inner .confirm-btns > button,
+    .ssp-dialog-inner .dyn-modal-btns > button,
+    .ssp-dialog-inner .modal__foot > button {
+      order: 2;
+    }
+    .ssp-dialog-inner .confirm-btns > button[id$="Cancel"],
+    .ssp-dialog-inner .confirm-btns > button[id$="CancelBtn"],
+    .ssp-dialog-inner .confirm-btns > button[id$="No"],
+    .ssp-dialog-inner .confirm-btns > button[id$="Close"],
+    .ssp-dialog-inner .confirm-btns > button[id$="CloseBtn"],
+    .ssp-dialog-inner .confirm-btns > button[id^="close"],
+    .ssp-dialog-inner .dyn-modal-btns > button[id$="No"],
+    .ssp-dialog-inner .modal__foot > button[id$="Cancel"],
+    .ssp-dialog-inner .modal__foot > button[id$="CancelBtn"],
+    .ssp-dialog-inner .modal__foot > button[id$="No"],
+    .ssp-dialog-inner .modal__foot > button[id$="Close"],
+    .ssp-dialog-inner .modal__foot > button[id$="CloseBtn"] {
+      order: 1;
+    }
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -1891,7 +2050,7 @@
 
 <!-- ── Модалка: Подбор задач ── -->
 <div id="pickOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pickModalTitle" data-dismiss-on-backdrop="true">
-  <div class="modal">
+  <div class="modal" style="max-width:900px;width:90vw;max-height:calc(100vh - 64px)">
     <div class="modal__head">
       <span id="pickModalTitle" data-i18n="pickModalTitle">Подбор задач в спринт</span>
       <button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly" id="closePickModal" data-icon="close" data-aria-label-key="aria.btnClose" aria-label="Закрыть"></button>

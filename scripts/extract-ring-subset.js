@@ -29,16 +29,19 @@ const KEEP_PATTERNS = [
   'ring-control-help',
   'ring-loader',
   'ring-global',      // utility resets, font helpers
+  // v2.0.0 Phase D2: Ring Dialog mount-points
+  'ring-dialog',      // dialog wrapper, backdrop, focus trap
+  'ring-island',      // AdaptiveIsland — visual container for Dialog content
+  'ring-popup',       // popup positioning used by Dialog overlay
+  'ring-shortcuts',   // keyboard shortcut scope used by Dialog Escape handling
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
 // (avoids dragging in .ring-list-* inside compound button selectors etc.)
 const EXCLUDE_PATTERNS = [
-  'ring-dialog',
   'ring-date-picker',
   'ring-table',
   'ring-data-list',
-  'ring-popup',
   'ring-dropdown',
   'ring-tooltip',
   'ring-tags',
@@ -49,7 +52,6 @@ const EXCLUDE_PATTERNS = [
   'ring-badge',
   'ring-breadcrumb',
   'ring-calendar',
-  'ring-island',
   'ring-link',
   'ring-list',
   'ring-multi',
@@ -60,7 +62,7 @@ const EXCLUDE_PATTERNS = [
   'ring-query',
   'ring-spin-',      // avoid matching .ring-input (no overlap but be safe)
   'ring-status',
-  'ring-tag',        // covers ring-tags too (already covered) + ring-tag-input
+  'ring-tag',        // covers ring-tags too + ring-tag-input
   'ring-toolbar',
   'ring-tree',
   'ring-upload',
@@ -68,7 +70,7 @@ const EXCLUDE_PATTERNS = [
   'ring-code',
   'ring-header',
   'ring-sidebar',
-  'ring-tabs',       // ring-tabs are out of scope for tier 2 (decided SC-3)
+  'ring-tabs',       // Phase D6 — added then
   'ring-message',
   'ring-collapsible',
   'ring-heading',
