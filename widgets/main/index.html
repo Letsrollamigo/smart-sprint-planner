@@ -732,6 +732,22 @@
     .ssp-dialog-inner .modal__foot > button[id$="CloseBtn"] {
       order: 1;
     }
+
+    /* v2.0.0 R2 fix — подавить native Ring Island artifacts которые рисуют
+       линии шире нашего .confirm-box content area (видны как линии-разделители,
+       вылетающие за правую границу dialog frame на скриншоте смок-теста D3-r2).
+       Native artifacts:
+       1) .ring-island-header { border-bottom: 1px solid ... } — рисуется на full island width
+       2) .ring-island-contentWithTopFade::before — gradient fade на overflow
+       3) .ring-island-contentWithBottomFade::after — то же снизу
+       Подавляем все три внутри Ring Dialog (мы используем кастомный layout). */
+    .ring-dialog .ring-island-header {
+      border-bottom: none !important;
+    }
+    .ring-dialog .ring-island-contentWithTopFade::before,
+    .ring-dialog .ring-island-contentWithBottomFade::after {
+      display: none !important;
+    }
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);

@@ -19,28 +19,40 @@ function SspDialog({ overlayId, label, dismissOnBackdrop, blockEscape, onClose }
 
     while (overlayEl.firstChild) container.appendChild(overlayEl.firstChild);
 
-    /* Iframe-aware repositioning: Ring Dialog uses position:fixed which centers within
-       the IFRAME viewport (potentially 3000px+ tall in YT context).
-       Poll-based for reliability — parent-doc scroll events are cross-origin blocked,
-       and React may re-apply Ring Dialog styles. 100ms interval is cheap and bullet-proof. */
+    /* v2.0.0 R2 fix (D3-r6): manual focus с preventScroll вместо Ring trapFocus auto-focus.
+       Ring trapFocus={false} (см. JSX ниже) — Ring не auto-focus'ит first focusable, мы делаем
+       это сами с {preventScroll:true}. Без этого browser auto-scroll'ит iframe чтобы focused
+       element был visible → таблица/Гант откидываются к верху. */
+    const focusTimer = setTimeout(() => {
+      const focusables = container.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      const target = focusables[0] || container;
+      try { target.focus({ preventScroll: true }); } catch (_) {
+        try { target.focus(); } catch (__) {}
+      }
+    }, 0);
+
+    /* v2.0.0 R2 fix (D3-r5) — Click-anchored positioning через padding-top на
+       container, БЕЗ override position/height. Это сохраняет:
+       - Container `position: fixed; inset: 0` (Ring default) → backdrop покрывает
+         весь iframe (4000+ px) с semi-transparent overlay
+       - Dialog box (Ring Island) внутри container — flex-positioned через
+         alignItems:flex-start + paddingTop. Y = anchorY - dialogH/2.
+       Polling сохранён — Ring может re-apply container styles после React updates,
+       и dialog height может меняться (lazy load content). */
     const reposition = () => {
       const ringContainer = document.querySelector('.ring-dialog-container');
       if (!ringContainer) return;
-      let visibleTop = 0;
-      let visibleHeight = window.innerHeight;
-      try {
-        if (window.parent && window.parent !== window && window.frameElement) {
-          const iframeRect = window.frameElement.getBoundingClientRect();
-          const parentVH = window.parent.innerHeight || document.documentElement.clientHeight;
-          visibleTop = Math.max(0, -iframeRect.top);
-          const visibleBottom = Math.min(iframeRect.height, parentVH - iframeRect.top);
-          visibleHeight = Math.max(300, visibleBottom - visibleTop);
-        }
-      } catch (_) { /* cross-origin — fallback */ }
-      ringContainer.style.position = 'absolute';
-      ringContainer.style.top = visibleTop + 'px';
-      ringContainer.style.bottom = 'auto';
-      ringContainer.style.height = visibleHeight + 'px';
+      /* Найти actual dialog box (Ring Island) чтобы измерить высоту */
+      const island = ringContainer.querySelector('.ring-island-island');
+      const dialogH = island ? island.offsetHeight : (ringContainer.offsetHeight || 300);
+      const anchorY = (window.__SSP_MODAL_ANCHOR && window.__SSP_MODAL_ANCHOR.getCenterY())
+        || (window.innerHeight / 2);
+      const padTop = Math.max(20, anchorY - dialogH / 2);
+      /* НЕ трогать position/top/height/bottom — оставить Ring defaults для backdrop */
+      ringContainer.style.alignItems = 'flex-start';
+      ringContainer.style.paddingTop = padTop + 'px';
     };
     requestAnimationFrame(reposition);
     const pollInterval = setInterval(reposition, 100);
@@ -48,9 +60,13 @@ function SspDialog({ overlayId, label, dismissOnBackdrop, blockEscape, onClose }
     window.addEventListener('resize', reposition);
 
     return () => {
+      clearTimeout(focusTimer);
       clearInterval(pollInterval);
       window.removeEventListener('scroll', reposition, true);
       window.removeEventListener('resize', reposition);
+      /* v2.0.0 R2 D3-r5: cleanup click-anchored container styles (Ring может reuse container) */
+      const rc = document.querySelector('.ring-dialog-container');
+      if (rc) { rc.style.alignItems = ''; rc.style.paddingTop = ''; }
       const el2 = document.getElementById(overlayId);
       if (!el2) return;
       while (container.firstChild) el2.appendChild(container.firstChild);
@@ -64,7 +80,7 @@ function SspDialog({ overlayId, label, dismissOnBackdrop, blockEscape, onClose }
       show={true}
       label={label}
       onCloseAttempt={blockEscape ? noop : onClose}
-      trapFocus={true}
+      trapFocus={false}
       showCloseButton={false}
       preventBodyScroll={false}
       onOverlayClick={dismissOnBackdrop ? onClose : noop}

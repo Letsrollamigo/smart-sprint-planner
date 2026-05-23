@@ -1285,11 +1285,17 @@
       activate: function() {
         container.addEventListener('keydown', onKeydown);
         /* setTimeout(0) даёт браузеру отрендерить overlay перед focus() — иначе
-           focus может уйти на скрытый элемент (display:none → flex transition). */
+           focus может уйти на скрытый элемент (display:none → flex transition).
+           v2.0.0 R2 fix (D3-r6): {preventScroll:true} — БЕЗ него browser auto-scroll'ит
+           iframe чтобы focused element был visible, что в cross-origin sandbox YT widget
+           проявляется как «откидывание таблицы/Ганта к верху» при открытии любой модалки
+           (modal mounted at default top, focus moves there, iframe scrolls to expose). */
         setTimeout(function() {
           var focusable = _getFocusable(container);
           var target = focusable[0] || container;
-          try { target.focus(); } catch(_) {}
+          try { target.focus({ preventScroll: true }); } catch(_) {
+            try { target.focus(); } catch(__) {}   /* fallback для старых browsers */
+          }
         }, 0);
         container.__sspReturnFocus = prevActive;
       },
@@ -1379,6 +1385,7 @@
         el.style.position = ''; el.style.top = ''; el.style.left = '';
         el.style.right = ''; el.style.minHeight = ''; el.style.height = '';
         el.style.alignItems = '';
+        el.style.paddingTop = '';   /* v2.0.0 R2 D3-r5: cleanup click-anchored padding */
       } catch(_){}
     }
     if (!el.__sspTrap) return;
@@ -1400,7 +1407,11 @@
     if (_modalStack.length === 0) _bodyScrollLock(false);
 
     if (el.__sspReturnFocus && document.body.contains(el.__sspReturnFocus)) {
-      try { el.__sspReturnFocus.focus(); } catch(_) {}
+      /* v2.0.0 R2 fix (D3-r6): preventScroll чтобы close модала не скроллил iframe
+         обратно к кнопке-открывателю (которая может быть вне visible portion). */
+      try { el.__sspReturnFocus.focus({ preventScroll: true }); } catch(_) {
+        try { el.__sspReturnFocus.focus(); } catch(__) {}
+      }
       el.__sspReturnFocus = null;
     }
   }
@@ -1457,12 +1468,11 @@
         blockEscape: blockEscape,
         onClose: function() { _appModalClose(el); }
       });
-      /* v2.0.0 — scroll outer YT page to bring iframe into view so Ring Dialog (position:fixed
-         inside iframe) is visible regardless of where user was scrolled. */
-      if (typeof _scrollFrameIntoView === 'function') {
-        try { _scrollFrameIntoView(); } catch(_){}
-        setTimeout(function(){ try { _scrollFrameIntoView(); } catch(_){} }, 80);
-      }
+      /* v2.0.0 R2 fix (D3-r5) — НЕ вызываем _scrollFrameIntoView():
+         в cross-origin sandbox iframe parent/frameElement BLOCKED, остаётся только
+         window.scrollTo(0,0) который скроллит сам iframe к верху → таблицы / Гант
+         теряют scroll position при открытии модала. Click-anchored positioning сам
+         ставит модал в visible portion outer viewport, scroll-в-нулевую-точку лишний. */
       return el;
     }
 
@@ -2485,37 +2495,29 @@
       el.style.height = '';
     } catch(_){}
     el.classList.remove('hidden');
-    _scrollFrameIntoView();
-    /* (3) Повторный scroll через 80ms — на случай smooth-race / lazy mount. */
-    setTimeout(_scrollFrameIntoView, 80);
+    /* v2.0.0 R2 fix (D3-r5) — _scrollFrameIntoView убран: см. _appModalOpen для деталей. */
     /* v1.9.11 (B-32) — auto-attach UX-helpers (focus trap / scroll lock / backdrop / ARIA).
        Idempotent: повторный show уже visible overlay не дублирует state. */
     if (typeof _modalAutoAttach === 'function') {
       try { _modalAutoAttach(el); } catch(_){}
     }
-    /* v2.0.0 — iframe-aware overlay positioning (legacy path, e.g. pickOverlay).
-       Computes user's actually visible iframe portion and positions overlay there,
-       same pattern as Ring Dialog repositioning + v1.9.11 click-anchored toast. */
+    /* v2.0.0 R2 fix (D3-r5) — Click-anchored overlay positioning через padding-top.
+       Сохраняет overlay в native size (CSS: position fixed; inset:0; backdrop) → backdrop
+       покрывает весь iframe. Content (.modal/.confirm-box/.dyn-modal-box) сдвигается через
+       align-items:flex-start + paddingTop = anchorY - contentH/2.
+       Old D2 logic читало parent + frameElement (BLOCKED в cross-origin sandbox YT iframe) и
+       fallback'ился на iframe auto-grow 4000+ px → overlay min-height=4000px → content в Y=2000+. */
     if (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay') || el.classList.contains('settings-overlay')) {
       var positionOverlay = function() {
-        var visibleTop = 0;
-        var visibleHeight = window.innerHeight;
-        try {
-          if (window.parent && window.parent !== window && window.frameElement) {
-            var iframeRect = window.frameElement.getBoundingClientRect();
-            var parentVH = window.parent.innerHeight || document.documentElement.clientHeight;
-            visibleTop = Math.max(0, -iframeRect.top);
-            var visibleBottom = Math.min(iframeRect.height, parentVH - iframeRect.top);
-            visibleHeight = Math.max(300, visibleBottom - visibleTop);
-          }
-        } catch(_){}
-        el.style.position = 'absolute';
-        el.style.top = visibleTop + 'px';
-        el.style.left = '0';
-        el.style.right = '0';
-        el.style.minHeight = visibleHeight + 'px';
-        el.style.height = visibleHeight + 'px';
-        el.style.alignItems = 'center';
+        /* Найти actual content (modal/confirm-box/dyn-modal-box) внутри overlay для measure */
+        var content = el.querySelector('.modal, .confirm-box, .dyn-modal-box');
+        var contentH = content ? content.offsetHeight : (el.offsetHeight || 300);
+        var anchorY = (window.__SSP_MODAL_ANCHOR && window.__SSP_MODAL_ANCHOR.getCenterY())
+          || (window.innerHeight / 2);
+        var padTop = Math.max(20, anchorY - contentH / 2);
+        /* НЕ трогать position/top/height/inset overlay — оставить CSS defaults для backdrop */
+        el.style.alignItems = 'flex-start';
+        el.style.paddingTop = padTop + 'px';
       };
       requestAnimationFrame(positionOverlay);
       var positionInterval = setInterval(positionOverlay, 100);
@@ -3949,7 +3951,9 @@
      В v5.6.0 сегмент «Гант» удалён — Гант переехал на отдельную верхнюю вкладку #tab-gantt
      (см. tab-btn handler ветка 'gantt' и refreshGanttForCurrentSprint). */
   function _renderPlanningLevel(level) {
-    if (level !== 'roles' && level !== 'people') level = 'roles';
+    /* v2.0.0 R1 fix: 'standup' добавлен в whitelist. Pre-existing bug с v1.9.0 D132 —
+       Stand-up button никогда не работал, level тихо сбрасывался на 'roles'. */
+    if (level !== 'roles' && level !== 'people' && level !== 'standup') level = 'roles';
     _planningLevel = level;
     document.querySelectorAll('.planning-level-btn').forEach(function(b){
       b.classList.toggle('active', b.dataset.level === level);

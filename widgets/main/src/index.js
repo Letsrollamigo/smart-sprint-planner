@@ -9,6 +9,7 @@
    v1.9.6: icons bridge (icons.generated.js) follows the same pattern — sets window.__SSP_ICONS
    before the monolith IIFE reads it via `var ICONS = window.__SSP_ICONS || {}`. */
 
+import './click-anchor.js';
 import './icons.generated.js';
 import './i18n-bridge.js';
 import './ring-class-helpers.js';
