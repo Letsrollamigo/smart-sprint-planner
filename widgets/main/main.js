@@ -1838,6 +1838,102 @@
   var import_modal_pure = __toESM(require_modal_pure());
   var import_sort_pure = __toESM(require_sort_pure());
 
+  // widgets/main/src/react/shims/react.js
+  var react_exports = {};
+  __export(react_exports, {
+    Children: () => Children,
+    Component: () => Component,
+    Fragment: () => Fragment,
+    PureComponent: () => PureComponent,
+    StrictMode: () => StrictMode,
+    Suspense: () => Suspense,
+    cloneElement: () => cloneElement,
+    createContext: () => createContext,
+    createElement: () => createElement,
+    createRef: () => createRef,
+    default: () => react_default,
+    forwardRef: () => forwardRef,
+    isValidElement: () => isValidElement,
+    memo: () => memo,
+    startTransition: () => startTransition,
+    useCallback: () => useCallback,
+    useContext: () => useContext,
+    useDebugValue: () => useDebugValue,
+    useDeferredValue: () => useDeferredValue,
+    useEffect: () => useEffect,
+    useId: () => useId,
+    useImperativeHandle: () => useImperativeHandle,
+    useInsertionEffect: () => useInsertionEffect,
+    useLayoutEffect: () => useLayoutEffect,
+    useMemo: () => useMemo,
+    useReducer: () => useReducer,
+    useRef: () => useRef,
+    useState: () => useState,
+    useSyncExternalStore: () => useSyncExternalStore,
+    useTransition: () => useTransition
+  });
+  var __R = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.React || {};
+  var useState = __R.useState;
+  var useEffect = __R.useEffect;
+  var useLayoutEffect = __R.useLayoutEffect;
+  var useRef = __R.useRef;
+  var useCallback = __R.useCallback;
+  var useMemo = __R.useMemo;
+  var useContext = __R.useContext;
+  var useReducer = __R.useReducer;
+  var useId = __R.useId;
+  var useTransition = __R.useTransition;
+  var useDeferredValue = __R.useDeferredValue;
+  var useInsertionEffect = __R.useInsertionEffect;
+  var useImperativeHandle = __R.useImperativeHandle;
+  var useDebugValue = __R.useDebugValue;
+  var useSyncExternalStore = __R.useSyncExternalStore;
+  var createContext = __R.createContext;
+  var forwardRef = __R.forwardRef;
+  var memo = __R.memo;
+  var Fragment = __R.Fragment;
+  var createElement = __R.createElement;
+  var cloneElement = __R.cloneElement;
+  var createRef = __R.createRef;
+  var isValidElement = __R.isValidElement;
+  var Component = __R.Component;
+  var PureComponent = __R.PureComponent;
+  var Children = __R.Children;
+  var Suspense = __R.Suspense;
+  var StrictMode = __R.StrictMode;
+  var startTransition = __R.startTransition;
+  var react_default = __R;
+
+  // widgets/main/src/react/shims/react-dom-client.js
+  var __RD = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.ReactDOMClient || {};
+  var createRoot = __RD.createRoot;
+  var hydrateRoot = __RD.hydrateRoot;
+
+  // widgets/main/src/react/portal.jsx
+  var _rootPool = /* @__PURE__ */ new Map();
+  function getOrCreateRoot(mountPointId) {
+    if (_rootPool.has(mountPointId)) return _rootPool.get(mountPointId);
+    const portalEl = document.getElementById("ssp-react-portal");
+    if (!portalEl) throw new Error("ssp-react-portal div not found in index.html");
+    const container = document.createElement("div");
+    container.dataset.sspMount = mountPointId;
+    portalEl.appendChild(container);
+    const root = createRoot(container);
+    _rootPool.set(mountPointId, { container, root });
+    return { container, root };
+  }
+  window.__SSP_REACT = {
+    mount(id, element) {
+      const { root } = getOrCreateRoot(id);
+      root.render(element);
+    },
+    unmount(id) {
+      const entry = _rootPool.get(id);
+      if (entry) entry.root.render(null);
+    },
+    _React: react_exports
+  };
+
   // widgets/main/src/legacy-monolith.js
   (function() {
     "use strict";

@@ -2669,6 +2669,11 @@
      Error-тип переопределяет на role="alert" + aria-live="assertive" на самом элементе. -->
 <div id="toastStack" class="toast-stack" role="status" aria-live="polite" aria-atomic="false"></div>
 
+<!-- v2.0.0 D125 — React portal host. Phase D1..D7 mount-points render here.
+     aria-hidden: screenreaders reach dialogs/etc. via ARIA roles on the rendered components. -->
+<div id="ssp-react-portal" aria-hidden="true"></div>
+
+<script src="vendored-react.chunk.js"></script>
 <script src="main.js"></script>
 </body>
 </html>

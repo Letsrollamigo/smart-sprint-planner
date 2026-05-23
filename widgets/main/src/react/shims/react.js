@@ -1,0 +1,33 @@
+/* v2.0.0 D125 — React shim. Reads from SSP_VENDORED set by vendored-react.chunk.js.
+   --alias:react=./shims/react.js in esbuild resolves all `import ... from 'react'` here. */
+var __R = (globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.React) || {};
+export var useState = __R.useState;
+export var useEffect = __R.useEffect;
+export var useLayoutEffect = __R.useLayoutEffect;
+export var useRef = __R.useRef;
+export var useCallback = __R.useCallback;
+export var useMemo = __R.useMemo;
+export var useContext = __R.useContext;
+export var useReducer = __R.useReducer;
+export var useId = __R.useId;
+export var useTransition = __R.useTransition;
+export var useDeferredValue = __R.useDeferredValue;
+export var useInsertionEffect = __R.useInsertionEffect;
+export var useImperativeHandle = __R.useImperativeHandle;
+export var useDebugValue = __R.useDebugValue;
+export var useSyncExternalStore = __R.useSyncExternalStore;
+export var createContext = __R.createContext;
+export var forwardRef = __R.forwardRef;
+export var memo = __R.memo;
+export var Fragment = __R.Fragment;
+export var createElement = __R.createElement;
+export var cloneElement = __R.cloneElement;
+export var createRef = __R.createRef;
+export var isValidElement = __R.isValidElement;
+export var Component = __R.Component;
+export var PureComponent = __R.PureComponent;
+export var Children = __R.Children;
+export var Suspense = __R.Suspense;
+export var StrictMode = __R.StrictMode;
+export var startTransition = __R.startTransition;
+export default __R;
