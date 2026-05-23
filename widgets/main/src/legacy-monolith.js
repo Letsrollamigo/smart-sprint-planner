@@ -315,9 +315,17 @@
     });
   }
 
-  /** Обёртка для async-действий кнопки: показывает spinner, блокирует повторный клик,
-   *  восстанавливает исходное состояние через .finally(). */
+  /** Обёртка для async-действий кнопки: показывает Ring LoaderInline, блокирует повторный клик,
+   *  восстанавливает исходное состояние через .finally().
+   *  v2.0.0 D125 Phase D3: делегирует в window.__SSP_LOADER (Ring LoaderInline).
+   *  Fallback на legacy SVG-spinner оставлен на случай если React-bridge не успел инициализироваться. */
   function withLoader(btn, asyncFn) {
+    if (!btn) return asyncFn();
+    var bridge = window.__SSP_LOADER;
+    if (bridge && typeof bridge.attach === 'function') {
+      bridge.attach(btn);
+      return asyncFn().finally(function() { bridge.detach(btn); });
+    }
     var origDisabled = btn.disabled;
     btn.disabled = true;
     var origIcon = btn.querySelector('.ssp-icon');
@@ -781,6 +789,13 @@
   var _projectDisplayName = '';
   /* v6.1.0 D82 (F5) — assigner-роль (variant b: assignee + start/end-dates). */
   var _isAssigner = false;
+  /* v2.0.0 Phase D3 — Singleton promise для async permission checks.
+     Решает race condition: critical click-handlers (Gantt reassign и т.п.) могут
+     выстрелить до того как checkXxxNow().then() обновит _isEditor/_isValidator/_isAssigner.
+     Pre-existing baseline: D2 baseline тоже подвержен race, но +1.4KB LoaderInline в D3
+     сдвинул timing и сделал race наблюдаемой. Future-proof для D4-D7 яруса 3. */
+  var _permissionsCheckPromise = null;
+  var _permissionsReady = false;
   var _valGroups = new Set(), _editGroups = new Set();
   var _histPage = 1;
   var _pickPage = 1, _pickResults = [], _selectedIds = new Set(), _pickHasMore = false;
@@ -4055,6 +4070,29 @@
     });
   }
 
+  /* v2.0.0 Phase D3 — Singleton permission check.
+     Запускает все 3 async permission checks одним батчем, кэширует Promise.
+     Повторные вызовы возвращают тот же Promise (no duplicate API calls).
+     Critical click-handlers могут .then() для guard'ов без race. */
+  function _startPermissionsCheck() {
+    if (_permissionsCheckPromise) return _permissionsCheckPromise;
+    var validator = (typeof checkValidatorNow === 'function')
+      ? checkValidatorNow().then(function(ok){ _isValidator = ok; })
+      : Promise.resolve();
+    var editor = (typeof checkEditorRightsNow === 'function')
+      ? checkEditorRightsNow().then(function(ok){ _isEditor = ok; })
+      : Promise.resolve();
+    var assigner = (typeof checkAssignerRightsNow === 'function')
+      ? checkAssignerRightsNow().then(function(ok){ _isAssigner = ok; })
+      : Promise.resolve();
+    _permissionsCheckPromise = Promise.all([validator, editor, assigner]).then(function() {
+      _permissionsReady = true;
+      try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch(_){}
+      if (typeof applyEditorRightsToUI === 'function') { try { applyEditorRightsToUI(); } catch(_){} }
+    });
+    return _permissionsCheckPromise;
+  }
+
   /* Применить права редактора к кнопкам активной подвкладки.
      v5.6.0 — Этап 4 (4d): legacy #subtab-panel-<rk> удалён, panel теперь — раскрытая
      accordion-карточка `.planning-role-card.expanded[data-role-key=<rk>] .planning-role-body`
@@ -4742,17 +4780,17 @@
   }
 
   function doStandupRefresh() {
-    if (!_sprint) return;
+    if (!_sprint) return Promise.resolve();
     var btn = document.getElementById('standupRefreshBtn');
-    if (btn) { btn.disabled = true; btn.textContent = T('toastSaving'); }
-    apiPost('refresh-assignees', { sprintId: _sprint.sprintId })
-      .then(function(res) {
-        if (res && res.sprint) _sprint = res.sprint;
-        renderStandupView();
-        toast(T('toastStandupRefreshed'), 'success');
-      })
-      .catch(function(e){ diag('standup refresh err: ' + e, 'err'); })
-      .finally(function(){ if (btn) { btn.disabled = false; btn.textContent = T('btnStandupRefresh'); } });
+    return withLoader(btn, function() {
+      return apiPost('refresh-assignees', { sprintId: _sprint.sprintId })
+        .then(function(res) {
+          if (res && res.sprint) _sprint = res.sprint;
+          renderStandupView();
+          toast(T('toastStandupRefreshed'), 'success');
+        })
+        .catch(function(e){ diag('standup refresh err: ' + e, 'err'); });
+    });
   }
 
   function _fillStateRollupFloorSel(orderArray, currentFloor) {
@@ -5357,27 +5395,10 @@
     if (typeof renderPlanningRoles === 'function') {
       try { renderPlanningRoles(); } catch(e){ diag('renderPlanningRoles err: '+e,'err'); }
     }
-    /* Async checks — права редактора/валидатора (не зависят от того какой подвкладкой пользуется) */
-    if (typeof checkValidatorNow === 'function') {
-      checkValidatorNow().then(function(ok){
-        _isValidator = ok;
-        if (typeof applyEditorRightsToUI === 'function') try { applyEditorRightsToUI(); } catch(_){}
-      });
-    }
-    if (typeof checkEditorRightsNow === 'function') {
-      checkEditorRightsNow().then(function(ok){
-        _isEditor = ok;
-        if (typeof applyEditorRightsToUI === 'function') try { applyEditorRightsToUI(); } catch(_){}
-      });
-    }
-    /* v6.1.0 D82 (F5) — assigner-роль (variant b). */
-    if (typeof checkAssignerRightsNow === 'function') {
-      checkAssignerRightsNow().then(function (ok) {
-        _isAssigner = ok;
-        try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch (_) {}
-        if (typeof applyEditorRightsToUI === 'function') try { applyEditorRightsToUI(); } catch (_) {}
-      });
-    }
+    /* v2.0.0 Phase D3 — Async checks через singleton (раньше 3 отдельных then'а).
+       _startPermissionsCheck() кэширует Promise и применяет applyEditorRightsToUI
+       единожды по завершении всего батча. Race-protected для D4-D7 яруса 3. */
+    _startPermissionsCheck();
   }
 
   /* ═══ v5.5.0 — Этап 3b: accordion для уровня «Роли» в единой вкладке «Планирование» ═══
@@ -6591,28 +6612,27 @@
     _sprint.updatedBy = _currentUser ? _currentUser.login : null;
 
     var btn = document.getElementById('saveHeaderBtn_'+rk);
-    if (btn) { btn.disabled = true; btn.textContent = T('toastSaving'); }
     /* v5.0.3 — пометить dirty + записать в localStorage. apiPost-успех снимет dirty. */
     _markDirty('sprint');
     _draftSet('sprint', _sprint);
     _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    apiPost('sprint-data', { sprint: _sprint }).then(function() {
-      updateRoleRemaining(rk);
-      renderRoleStatusBadge(rk);
-      if (btn) { btn.disabled = false; btn.textContent = T('btnSaveParams'); }
-      toast(T('toastSprintSaved'), 'success');
-      /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты
-         сразу после сохранения параметров. Раньше изменения подхватывались только после
-         перезахода на вкладку. Дополнительно: убеждаемся что _currentSprintId указывает
-         на _sprint.sprintId (для свежесозданного спринта). */
-      if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
-        _currentSprintId = _sprint.sprintId;
-        var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
-      }
-      if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-    }).catch(function(e) {
-      if (btn) { btn.disabled = false; btn.textContent = T('btnSaveParams'); }
-      toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
+    return withLoader(btn, function() {
+      return apiPost('sprint-data', { sprint: _sprint }).then(function() {
+        updateRoleRemaining(rk);
+        renderRoleStatusBadge(rk);
+        toast(T('toastSprintSaved'), 'success');
+        /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты
+           сразу после сохранения параметров. Раньше изменения подхватывались только после
+           перезахода на вкладку. Дополнительно: убеждаемся что _currentSprintId указывает
+           на _sprint.sprintId (для свежесозданного спринта). */
+        if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+          _currentSprintId = _sprint.sprintId;
+          var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
+        }
+        if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
+      }).catch(function(e) {
+        toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
+      });
     });
   }
 
@@ -7332,71 +7352,68 @@
 
   /* ── Валидация роли ── */
   function doValidateRole(rk) {
-    if (!_settings) { toast(T('toastFillSettings')); return; }
-    if (!_sprint || !_sprint.dateStart || !_sprint.dateEnd) { toast(T('toastFillDates')); return; }
+    if (!_settings) { toast(T('toastFillSettings')); return Promise.resolve(); }
+    if (!_sprint || !_sprint.dateStart || !_sprint.dateEnd) { toast(T('toastFillDates')); return Promise.resolve(); }
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return;
-    if (!(_sprint[role.resKey] > 0)) { toast(T('toastFillResource')); return; }
+    if (!role) return Promise.resolve();
+    if (!(_sprint[role.resKey] > 0)) { toast(T('toastFillResource')); return Promise.resolve(); }
     var active = getRoleItemsArr(rk).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    if (!active.length) { toast(T('toastNoActiveTasks')); return; }
+    if (!active.length) { toast(T('toastNoActiveTasks')); return Promise.resolve(); }
 
     var btn = document.getElementById('validateBtn_'+rk);
-    if (btn) { btn.disabled = true; btn.textContent = T('toastChecking'); }
-    checkValidatorNow().then(function(ok) {
-      _isValidator = ok;
-      if (btn) { btn.disabled = false; btn.textContent = T('btnValidate'); }
-      if (!ok) { toast(T('toastNoValidRights')); return; }
-      _sprint.status = STATUS.CONFIRMED;
-      diag('[VALIDATE-COMPOSITION] role='+rk+' set _sprint.status='+_sprint.status+' wcKey='+_activeWorkingDraftKey, 'info');
-      // v5.0 — отправляем с ?action=validate + полный sprint+roleItems,
-      // чтобы сервер мог посчитать overlimit и вернуть warnings.
-      apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }, { action: 'validate' })
-        .then(function(resp) {
-          // Server-side warn: показываем все полученные warnings (например, overlimit:devPlatform)
-          if (resp && Array.isArray(resp.warnings) && resp.warnings.length) {
-            resp.warnings.forEach(function(w) {
-              if (typeof w === 'string' && w.indexOf('overlimit:') === 0) {
-                var rkw = w.split(':')[1] || '';
-                var roleW = ALL_ROLES.find(function(r){ return r.key === rkw; });
-                var label = roleW ? (roleW.label) : rkw;
-                toast(T('overlimitWarnSrv').replace('{role}', label), 'err');
-              }
-            });
-          }
-          /* v1.9.3 D134 — Etap О.1: передаём wasValidated=true чтобы snapshot
-             получил CONFIRMED. Все остальные call-sites saveRoleHistorySnapshot
-             (refresh, working-copy commit, manual save) — без флага → per-role
-             preserve existing status или PLANNING для нового snap. */
-          return saveRoleHistorySnapshot(rk, undefined, undefined, /* wasValidated */ true);
-        }).then(function() {
-        /* Диаг после snapshot: что в _history для этой роли? */
-        var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
-        diag('[VALIDATE-COMPOSITION] role='+rk+' after snap: _history.status='+(_diagSnap?_diagSnap.status:'NOT_FOUND')+' _sprint.status='+_sprint.status, 'info');
-        /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
-           Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
-        if (_sprint) {
-          _sprint.editingFromHistory = false;
-          delete _sprint.historyIdx;
-        }
-        _activeWorkingDraftKey = null;
-        if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-        var editBanner = document.getElementById('editHistBanner');
-        if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
-        renderRoleStatusBadge(rk);
-        if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-        var ss = document.getElementById('sprintStatus_'+rk);
-        if (ss) ss.style.display = 'none';
-        var newBtn = document.getElementById('newSprintBtn_'+rk);
-        if (newBtn) newBtn.style.display = '';
-        if (btn) { btn.disabled = false; btn.textContent = T('btnValidate'); }
-        toast(T('toastSprintConfirmed').replace('{role}', roleLabel(role)), 'success');
-      }).catch(function(e) {
-        if (btn) { btn.disabled = false; btn.textContent = T('btnValidate'); }
-        toast(T('toastSaveError')+': '+(e&&e.message?e.message:String(e)), 'error');
+    return withLoader(btn, function() {
+      return checkValidatorNow().then(function(ok) {
+        _isValidator = ok;
+        if (!ok) { toast(T('toastNoValidRights')); return; }
+        _sprint.status = STATUS.CONFIRMED;
+        diag('[VALIDATE-COMPOSITION] role='+rk+' set _sprint.status='+_sprint.status+' wcKey='+_activeWorkingDraftKey, 'info');
+        // v5.0 — отправляем с ?action=validate + полный sprint+roleItems,
+        // чтобы сервер мог посчитать overlimit и вернуть warnings.
+        return apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }, { action: 'validate' })
+          .then(function(resp) {
+            // Server-side warn: показываем все полученные warnings (например, overlimit:devPlatform)
+            if (resp && Array.isArray(resp.warnings) && resp.warnings.length) {
+              resp.warnings.forEach(function(w) {
+                if (typeof w === 'string' && w.indexOf('overlimit:') === 0) {
+                  var rkw = w.split(':')[1] || '';
+                  var roleW = ALL_ROLES.find(function(r){ return r.key === rkw; });
+                  var label = roleW ? (roleW.label) : rkw;
+                  toast(T('overlimitWarnSrv').replace('{role}', label), 'err');
+                }
+              });
+            }
+            /* v1.9.3 D134 — Etap О.1: передаём wasValidated=true чтобы snapshot
+               получил CONFIRMED. Все остальные call-sites saveRoleHistorySnapshot
+               (refresh, working-copy commit, manual save) — без флага → per-role
+               preserve existing status или PLANNING для нового snap. */
+            return saveRoleHistorySnapshot(rk, undefined, undefined, /* wasValidated */ true);
+          }).then(function() {
+            /* Диаг после snapshot: что в _history для этой роли? */
+            var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
+            diag('[VALIDATE-COMPOSITION] role='+rk+' after snap: _history.status='+(_diagSnap?_diagSnap.status:'NOT_FOUND')+' _sprint.status='+_sprint.status, 'info');
+            /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
+               Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
+            if (_sprint) {
+              _sprint.editingFromHistory = false;
+              delete _sprint.historyIdx;
+            }
+            _activeWorkingDraftKey = null;
+            if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
+            var editBanner = document.getElementById('editHistBanner');
+            if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
+            renderRoleStatusBadge(rk);
+            if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
+            var ss = document.getElementById('sprintStatus_'+rk);
+            if (ss) ss.style.display = 'none';
+            var newBtn = document.getElementById('newSprintBtn_'+rk);
+            if (newBtn) newBtn.style.display = '';
+            toast(T('toastSprintConfirmed').replace('{role}', roleLabel(role)), 'success');
+          }).catch(function(e) {
+            toast(T('toastSaveError')+': '+(e&&e.message?e.message:String(e)), 'error');
+          });
+      }).catch(function() {
+        toast(T('toastCheckError'));
       });
-    }).catch(function() {
-      if (btn) { btn.disabled = false; btn.textContent = T('btnValidate'); }
-      toast(T('toastCheckError'));
     });
   }
 
@@ -10216,22 +10233,27 @@
         var issueId = cell.getAttribute('data-issue');
         _clickTimer = setTimeout(function() {
           _clickTimer = null;
-          /* v6.3.0 D106 — при выключенном inline-редактировании YouTrack-полей Гант
-             reassign отключён (writeback требует update-issue-field). */
-          if (!(_settings && _settings.dynEditEnabled)) {
-            try { toast(T('ganttReassignDisabledByInlineEdit'), 'warn'); } catch(_){}
-            return;
-          }
-          if (typeof _isEditor !== 'undefined' && _isEditor === false) {
-            try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
-            return;
-          }
-          var ganttPanel = document.getElementById('tab-gantt');
-          if (ganttPanel && ganttPanel.classList.contains('readonly-mode')) {
-            try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
-            return;
-          }
-          if (typeof openReassignModal === 'function') openReassignModal(issueId);
+          /* v2.0.0 Phase D3 — race protection: ждём завершения permission checks
+             перед guard'ами. Без этого при быстром 1-ом клике после init
+             _isEditor === false (initial) → false-negative toast «нет прав». */
+          _startPermissionsCheck().then(function() {
+            /* v6.3.0 D106 — при выключенном inline-редактировании YouTrack-полей Гант
+               reassign отключён (writeback требует update-issue-field). */
+            if (!(_settings && _settings.dynEditEnabled)) {
+              try { toast(T('ganttReassignDisabledByInlineEdit'), 'warn'); } catch(_){}
+              return;
+            }
+            if (typeof _isEditor !== 'undefined' && _isEditor === false) {
+              try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
+              return;
+            }
+            var ganttPanel = document.getElementById('tab-gantt');
+            if (ganttPanel && ganttPanel.classList.contains('readonly-mode')) {
+              try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
+              return;
+            }
+            if (typeof openReassignModal === 'function') openReassignModal(issueId);
+          });
         }, 250);
       });
       cell.addEventListener('dblclick', function() {

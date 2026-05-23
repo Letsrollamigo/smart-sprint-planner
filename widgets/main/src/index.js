@@ -17,4 +17,5 @@ import './modal-pure.js';
 import './sort-pure.js';
 import './react/portal.jsx';
 import './react/dialog-mount.jsx';
+import './react/loader-mount.jsx';
 import './legacy-monolith.js';
