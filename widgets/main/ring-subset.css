@@ -294,6 +294,86 @@ textarea.ring-input-input{box-sizing:border-box;overflow:hidden;resize:none}
 .ring-select-popup-message{display:inline-block;margin:var(--ring-unit) 0;padding:0 calc(var(--ring-unit)*2)}
 .ring-select-popup-selectAll{align-items:baseline;display:flex;justify-content:space-between;padding:8px 16px 0}
 :host,:root{--ring-date-picker-hover-color:var(--ring-border-hover-color)}
+.ring-date-picker-container{display:inline-block}
+.ring-date-picker-hoverable{cursor:pointer;transition:color .2s ease-out 0s}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-date-picker-hoverable:hover{color:var(--ring-link-hover-color);transition:none}}
+.ring-date-picker-datePicker.ring-date-picker-datePicker{padding-right:var(--ring-unit)}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-inline{padding:0}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-sizeS{width:calc(var(--ring-unit)*12)}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-sizeM{width:calc(var(--ring-unit)*30)}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-sizeL{width:calc(var(--ring-unit)*50)}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-sizeFULL{width:100%}
+.ring-date-picker-datePicker.ring-date-picker-datePicker.ring-date-picker-sizeAUTO{max-width:100%}
+.ring-date-picker-displayDate{display:inline-block;min-width:calc(var(--ring-unit)*11);text-align:left}
+.ring-date-picker-displayDate.ring-date-picker-displayRange{min-width:calc(var(--ring-unit)*22)}
+.ring-date-picker-clear{cursor:pointer;opacity:.3;transition:opacity var(--ring-ease)}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-date-picker-datePicker:hover .ring-date-picker-clear{opacity:.5}.ring-date-picker-datePicker .ring-date-picker-clear:hover{opacity:1;transition:none}}
+.ring-date-picker-datePopup{--ring-date-picker-cell-size:calc(var(--ring-unit)*3);--ring-date-picker-cal-height:calc(var(--ring-unit)*36);--ring-date-picker-cal-width:calc(var(--ring-unit)*37);--ring-date-picker-year-height:calc(var(--ring-unit)*4);--ring-date-picker-year-width:calc(var(--ring-unit)*6);color:var(--ring-text-color);text-align:left;-webkit-user-select:none;-moz-user-select:none;user-select:none;width:-moz-min-content;width:min-content}
+.ring-date-picker-datePopup *{box-sizing:border-box}
+.ring-date-picker-filterWrapper{display:flex;padding-left:calc(var(--ring-unit)*2)}
+.ring-date-picker-calendarIcon{color:var(--ring-secondary-color);margin-right:calc(var(--ring-unit)/2)}
+.ring-date-picker-anchor{padding:0 var(--ring-unit);text-align:start;white-space:nowrap;width:100%}
+.ring-date-picker-inline .ring-date-picker-anchor{cursor:pointer;min-width:0;min-width:auto;padding:0}
+.ring-date-picker-anchorContent{align-items:baseline;display:flex}
+.ring-date-picker-chevronDownIcon{color:var(--ring-secondary-color);margin-left:auto}
+.ring-date-picker-fromInput{flex-basis:calc(var(--ring-unit)*13);flex-grow:0;flex-shrink:0;position:relative}
+.ring-date-picker-fromInputWithDivider:after{content:"—";line-height:calc(var(--ring-unit)*4 - 2px);position:absolute;right:var(--ring-unit);top:0}
+.ring-date-picker-toInput{flex-basis:calc(var(--ring-unit)*13);flex-grow:1;flex-shrink:0;width:calc(var(--ring-unit)*13)}
+.ring-date-picker-dateInput{flex-basis:calc(var(--ring-unit)*11);flex-grow:1;flex-shrink:0}
+.ring-date-picker-timeInputWithDivider{position:relative}
+.ring-date-picker-timeInputWithDivider:before{content:",";left:calc(var(--ring-unit)*-1);line-height:calc(var(--ring-unit)*4 - 3px);position:absolute}
+.ring-date-picker-weekdays{color:var(--ring-secondary-color);height:calc(var(--ring-unit)*4);padding:5px calc(var(--ring-unit)*2) 0}
+.ring-date-picker-weekday.ring-date-picker-weekday{display:inline-block;text-align:center;text-transform:capitalize;width:var(--ring-date-picker-cell-size)}
+.ring-date-picker-weekend.ring-date-picker-weekend{color:var(--ring-error-color)}
+.ring-date-picker-calendar{box-shadow:0 -1px var(--ring-line-color);height:var(--ring-date-picker-cal-height);overflow:hidden;position:relative;width:var(--ring-date-picker-cal-width)}
+.ring-date-picker-months.ring-date-picker-months{bottom:0;left:0;overflow-x:hidden;overflow-y:scroll;overscroll-behavior-y:none;position:absolute;scrollbar-width:none;top:0}
+.ring-date-picker-months.ring-date-picker-months::-webkit-scrollbar{display:none}
+.ring-date-picker-month.ring-date-picker-month{display:flex;flex-wrap:wrap;margin:calc(var(--ring-unit)*2);width:calc(var(--ring-unit)*21)}
+.ring-date-picker-month.ring-date-picker-month>*{flex-shrink:0;height:var(--ring-date-picker-cell-size);line-height:var(--ring-date-picker-cell-size)}
+.ring-date-picker-monthTitle{font-weight:var(--ring-font-weight-bold);padding-left:calc(var(--ring-unit)*.5);text-align:left;text-transform:capitalize;width:calc(var(--ring-unit)*12)}
+@supports (flex-basis:1px){.ring-date-picker-monthTitle{flex-basis:calc(var(--ring-unit)*12);width:auto}}
+.ring-date-picker-day.ring-date-picker-day{cursor:pointer;flex-basis:var(--ring-date-picker-cell-size);margin:0;position:relative;text-align:center;transition:background-color var(--ring-ease),color var(--ring-ease)}
+.ring-date-picker-day.ring-date-picker-day:after,.ring-date-picker-day.ring-date-picker-day:before{pointer-events:none}
+.ring-date-picker-between.ring-date-picker-between{background-color:var(--ring-selected-background-color);transition:none}
+.ring-date-picker-activeBetween.ring-date-picker-activeBetween{background-color:var(--ring-date-picker-hover-color);transition:none}
+.ring-date-picker-current.ring-date-picker-current{background-color:var(--ring-main-color);border-radius:var(--ring-border-radius);color:var(--ring-white-text-color)}
+.ring-date-picker-active.ring-date-picker-active{background-color:var(--ring-date-picker-hover-color);border-radius:var(--ring-border-radius);color:var(--ring-text-color);transition:none}
+.ring-date-picker-disabled.ring-date-picker-disabled{color:var(--ring-disabled-color);cursor:not-allowed}
+.ring-date-picker-from.ring-date-picker-from{border-radius:var(--ring-border-radius) 0 0 var(--ring-border-radius)}
+.ring-date-picker-to.ring-date-picker-to{border-radius:0 var(--ring-border-radius) var(--ring-border-radius) 0}
+.ring-date-picker-from.ring-date-picker-to{border-radius:var(--ring-border-radius)}
+.ring-date-picker-Day1{position:relative}
+.ring-date-picker-Day1:after,.ring-date-picker-Day1:before{content:"";height:100%;position:absolute;transition:background-color var(--ring-ease);width:calc(var(--ring-unit)*2)}
+.ring-date-picker-Day1:before{right:100%}
+.ring-date-picker-Day1:after{bottom:100%;left:700%}
+.ring-date-picker-Day1.ring-date-picker-spread:after,.ring-date-picker-Day1.ring-date-picker-spread:before{background-color:var(--ring-selected-background-color);transition:none}
+.ring-date-picker-Day1.ring-date-picker-activeSpread:after,.ring-date-picker-Day1.ring-date-picker-activeSpread:before{background-color:var(--ring-date-picker-hover-color);transition:none}
+.ring-date-picker-first{position:relative}
+.ring-date-picker-first:after,.ring-date-picker-first:before{content:"";height:calc(var(--ring-unit)*8);position:absolute;transition:background-color var(--ring-ease);width:calc(var(--ring-unit)*23);z-index:var(--ring-invisible-element-z-index)}
+.ring-date-picker-first:before{bottom:0;right:100%}
+.ring-date-picker-first:after{bottom:100%;left:0}
+.ring-date-picker-first.ring-date-picker-Day1:after{height:calc(var(--ring-unit)*5)}
+.ring-date-picker-first+.ring-date-picker-Day2{position:relative}
+:is(.ring-date-picker-first+.ring-date-picker-Day2):before{content:"";height:100%;left:600%;position:absolute;top:calc(var(--ring-unit)*-8);transition:background-color var(--ring-ease);width:calc(var(--ring-unit)*2);z-index:var(--ring-invisible-element-z-index)}
+:is(.ring-date-picker-Day5,.ring-date-picker-Day6,.ring-date-picker-Day7):after,:is(.ring-date-picker-Day5,.ring-date-picker-Day6,.ring-date-picker-Day7):before{height:calc(var(--ring-unit)*5)}
+.ring-date-picker-spread+.ring-date-picker-Day2:before,.ring-date-picker-spread:after,.ring-date-picker-spread:before{background-color:var(--ring-selected-background-color);transition:none}
+.ring-date-picker-activeSpread+.ring-date-picker-Day2:before,.ring-date-picker-activeSpread:after,.ring-date-picker-activeSpread:before{background-color:var(--ring-date-picker-hover-color);transition:none}
+.ring-date-picker-empty.ring-date-picker-empty{opacity:0;pointer-events:none}
+.ring-date-picker-today.ring-date-picker-today{font-weight:var(--ring-font-weight-bold);position:relative}
+.ring-date-picker-today:before{content:"•";font-size:var(--ring-font-size-smaller);left:calc(var(--ring-unit)*.5);position:absolute;top:0}
+.ring-date-picker-day>.ring-date-picker-today:before{left:0;text-align:center;top:4px;width:100%}
+.ring-date-picker-year.ring-date-picker-today:before{left:2px;top:-1px}
+.ring-date-picker-monthNames{background-color:var(--ring-content-background-color);box-shadow:-1px 0 var(--ring-line-color),1px 0 var(--ring-line-color);margin-right:1px;position:absolute;right:var(--ring-date-picker-year-width);top:0;width:calc(var(--ring-unit)*6 - 1px)}
+.ring-date-picker-monthName.ring-date-picker-monthName{height:var(--ring-date-picker-cell-size);line-height:var(--ring-date-picker-cell-size);padding-left:calc(var(--ring-unit)*1.5);text-transform:capitalize;width:100%}
+.ring-date-picker-monthSlider.ring-date-picker-monthSlider{background-color:var(--ring-main-color);cursor:grab;height:calc(var(--ring-unit)*6);left:-1px;opacity:.17;position:absolute;right:0;touch-action:none;width:calc(100% + 2px);z-index:var(--ring-fixed-z-index)}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-date-picker-monthSlider:hover{opacity:.3}}
+.ring-date-picker-dragging{cursor:grabbing;opacity:.35}
+.ring-date-picker-range{background-color:var(--ring-main-color);left:0;position:absolute;width:2px}
+.ring-date-picker-years{background-color:var(--ring-content-background-color);box-shadow:-1px 0 var(--ring-line-color);font-size:var(--ring-font-size-smaller);height:100%;overflow-y:scroll;overscroll-behavior-y:none;position:absolute;right:0;scrollbar-width:none;top:0;width:var(--ring-date-picker-year-width)}
+.ring-date-picker-years::-webkit-scrollbar{display:none}
+.ring-date-picker-year.ring-date-picker-year{color:var(--ring-secondary-color);height:var(--ring-date-picker-year-height);line-height:var(--ring-date-picker-year-height);position:relative;text-align:center;width:100%}
+.ring-date-picker-currentYear.ring-date-picker-currentYear{color:var(--ring-text-color);cursor:auto;transition:none}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-date-picker-currentYear:hover{color:var(--ring-text-color)}}
 :host,:root{--ring-header-link-color:var(--ring-link-color)}
 :root{--ring-loader-color-1:#3bea62;--ring-loader-color-2:#6b57ff;--ring-loader-color-3:#07c3f2}
 @keyframes ring-loader-rotation-keyframes{to{transform:rotate(1turn)}}

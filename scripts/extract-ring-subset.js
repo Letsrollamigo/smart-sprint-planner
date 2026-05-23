@@ -34,12 +34,14 @@ const KEEP_PATTERNS = [
   'ring-island',      // AdaptiveIsland — visual container for Dialog content
   'ring-popup',       // popup positioning used by Dialog overlay
   'ring-shortcuts',   // keyboard shortcut scope used by Dialog Escape handling
+  // v2.0.0 Phase D4: Ring DatePicker — все calendar/month/day/year классы под единым префиксом
+  'ring-date-picker',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
 // (avoids dragging in .ring-list-* inside compound button selectors etc.)
 const EXCLUDE_PATTERNS = [
-  'ring-date-picker',
+  /* v2.0.0 D4 — ring-date-picker moved to KEEP_PATTERNS */
   'ring-table',
   'ring-data-list',
   'ring-dropdown',
@@ -213,8 +215,8 @@ function run() {
   const output = kept.join('\n');
   const outSize = Buffer.byteLength(output, 'utf8');
 
-  // Hard limit enforcement
-  const HARD_LIMIT = 80 * 1024; // 80 KB
+  // Hard limit enforcement — v2.0.0 D4: 80 → 100 KB (Ring DatePicker adds ~10 KB)
+  const HARD_LIMIT = 100 * 1024; // 100 KB
   if (outSize > HARD_LIMIT) {
     console.error(`[ring-subset] ERROR: Output ${(outSize / 1024).toFixed(1)} KB exceeds hard limit of 80 KB!`);
     console.error('[ring-subset] Review KEEP_PATTERNS and narrow the allowlist.');

@@ -221,6 +221,8 @@
     if (I18N.ru && I18N.ru[key] !== undefined) return I18N.ru[key];
     return key;
   }
+  /* v2.0.0 D125 D4 — expose T to React mount-points (datepicker translations etc.). */
+  try { window.__SSP_T = T; } catch(_) {}
 
   /** Plural-форматирование через CLDR-engine (Intl.PluralRules внутри). Если plural-engine
      не доступен — возвращает строку как есть. */
@@ -9754,6 +9756,11 @@
   function renderCurrentRoleTaskTable() {
     var tbody = document.getElementById('currentRoleTaskBody');
     if (!tbody) return;
+    /* v2.0.0 D125 D4 — unmount Ring DatePicker roots перед перерисовкой tbody.
+       Без этого React roots утекут на каждом re-render таблицы. */
+    if (window.__SSP_DATEPICKER) {
+      try { window.__SSP_DATEPICKER.unmountAll(tbody); } catch(_) {}
+    }
     /* v6.2.1 D98 — пере-генерация thead со sortable headers (ID/Priority/XPriority).
        Раньше thead был статикой в HTML — sort-кнопки на «Люди» отсутствовали. */
     var ttable = document.getElementById('currentRoleTaskTable');
@@ -9861,8 +9868,12 @@
         /* v1.4.0 — System cell (read-only). v1.8.1 — опциональна. */
         (_settings && _settings.fieldSystem    ? '<td class="td-system">'+esc(item.system||'—')+'</td>' : '')+
         '<td>'+assigneeSel+'</td>'+
-        '<td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-start assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>'+
-        '<td><input type="text" readonly data-ssp-datepicker class="currentRole-task-date currentRole-task-end   assigner-btn" data-issue="'+esc(issueId)+'" value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" min="'+sprintStartDate+'" max="'+sprintEndDate+'" style="width:130px;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);cursor:pointer"/></td>';
+        /* v2.0.0 D125 D4 — Ring DatePicker mount-points. Host wrapper preserves
+           legacy contract (.currentRole-task-date + .currentRole-task-start/.end
+           + data-issue) so the existing change handler keeps working. Picker
+           writes YYYY-MM-DD to host.dataset.value + dispatches `change`. */
+        '<td><span data-ssp-datepicker-host class="currentRole-task-date currentRole-task-start" data-issue="'+esc(issueId)+'" data-value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" data-min="'+sprintStartDate+'" data-max="'+sprintEndDate+'"></span></td>'+
+        '<td><span data-ssp-datepicker-host class="currentRole-task-date currentRole-task-end"   data-issue="'+esc(issueId)+'" data-value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" data-min="'+sprintStartDate+'" data-max="'+sprintEndDate+'"></span></td>';
       tbody.appendChild(tr);
     });
 
@@ -9898,28 +9909,37 @@
       });
     });
 
-    // Обработчики дат
-    tbody.querySelectorAll('.currentRole-task-date').forEach(function(inp) {
-      inp.addEventListener('change', function() {
-        var issueId = inp.getAttribute('data-issue');
+    /* v2.0.0 D125 D4 — Обработчики дат. Хост — span[data-ssp-datepicker-host]
+       вместо bare input. Значение хранится в host.dataset.value, change event
+       диспатчится Ring DatePicker'ом через __SSP_DATEPICKER. */
+    tbody.querySelectorAll('.currentRole-task-date').forEach(function(host) {
+      host.addEventListener('change', function() {
+        var issueId = host.getAttribute('data-issue');
         if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
         if (!_currentRolePP.taskAssignments[issueId]) _currentRolePP.taskAssignments[issueId] = {};
-        var isStart = inp.classList.contains('currentRole-task-start');
-        var ts = inp.value ? new Date(inp.value).getTime() : null;
+        var isStart = host.classList.contains('currentRole-task-start');
+        var raw = host.dataset.value || '';
+        var ts = raw ? new Date(raw).getTime() : null;
         if (isStart) {
           _currentRolePP.taskAssignments[issueId].dateStart = ts;
         } else {
           _currentRolePP.taskAssignments[issueId].dateEnd = ts;
         }
-        // Проверка диапазона
+        // Проверка диапазона — visual feedback на хост
         var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
         var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
         var outOfRange = (ts && isStart && sprintStart && ts < sprintStart) ||
                          (ts && !isStart && sprintEnd && ts > sprintEnd);
-        inp.style.borderColor = outOfRange ? 'var(--error)' : '';
+        host.style.outline = outOfRange ? '1px solid var(--error)' : '';
+        host.style.borderRadius = outOfRange ? '4px' : '';
         saveCurrentRoleState();
       });
     });
+    /* Mount Ring DatePicker в каждый host. Делается после addEventListener чтобы
+       initial render не выстреливал change handler в момент mount'а. */
+    if (window.__SSP_DATEPICKER) {
+      window.__SSP_DATEPICKER.mountAllIn(tbody);
+    }
   }
 
   function toDateIn(ts) {
