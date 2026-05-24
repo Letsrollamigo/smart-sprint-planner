@@ -1813,11 +1813,15 @@
     </span>
   </div>
 
-  <!-- Вкладки первого уровня: Планирование / Диаграмма Ганта / История. Settings — overlay. -->
+  <!-- Вкладки первого уровня: Планирование / Диаграмма Ганта / История. Settings — overlay.
+       v2.0.0 D6 — Ring Tabs визуальный driver; hidden state-tracker buttons остаются для
+       backward-compat callsites (`.tab-btn[data-tab="X"].active` queries). onSelect callback
+       вызывает programmatic .click() на нужном tracker — это запускает существующий handler. -->
   <div class="tabs">
-    <button class="tab-btn active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning" data-icon="task" data-aria-label-key="aria.tabPlanning">Планирование</button>
-    <button class="tab-btn" id="tabBtnGantt"    data-tab="gantt"    data-i18n="tabGantt"     data-icon="bars" data-aria-label-key="aria.tabGantt">Диаграмма Ганта</button>
-    <button class="tab-btn"        data-tab="history"  data-i18n="tabHistory"  data-icon="history" data-aria-label-key="aria.tabHistory">История спринтов</button>
+    <span id="sspTabsHost" data-ssp-tabs-host data-selected="planning" data-tabs-json="[]" style="display:block;width:100%"></span>
+    <button class="tab-btn tab-state-tracker active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning" aria-hidden="true" tabindex="-1" style="display:none">Планирование</button>
+    <button class="tab-btn tab-state-tracker" id="tabBtnGantt" data-tab="gantt" data-i18n="tabGantt" aria-hidden="true" tabindex="-1" style="display:none">Диаграмма Ганта</button>
+    <button class="tab-btn tab-state-tracker" data-tab="history" data-i18n="tabHistory" aria-hidden="true" tabindex="-1" style="display:none">История спринтов</button>
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->

@@ -22,4 +22,5 @@ import './react/loader-mount.jsx';
 import './react/datepicker-mount.jsx';
 import './react/checkbox-mount.jsx';
 import './react/radio-mount.jsx';
+import './react/tabs-mount.jsx';
 import './legacy-monolith.js';

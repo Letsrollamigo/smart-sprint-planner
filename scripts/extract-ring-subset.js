@@ -37,6 +37,11 @@ const KEEP_PATTERNS = [
   'ring-shortcuts',   // keyboard shortcut scope used by Dialog Escape handling
   // v2.0.0 Phase D4: Ring DatePicker — все calendar/month/day/year классы под единым префиксом
   'ring-date-picker',
+  // v2.0.0 Phase D6: Ring Tabs — реальные классы это ring-tabs-* (с 's'),
+  // ring-dumb-tabs (root), ring-tab (single tab item).
+  'ring-tab',
+  'ring-tabs',
+  'ring-dumb-tabs',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
@@ -73,7 +78,8 @@ const EXCLUDE_PATTERNS = [
   'ring-code',
   'ring-header',
   'ring-sidebar',
-  'ring-tabs',       // Phase D6 — added then
+  /* v2.0.0 Phase D6 — 'ring-tabs' moved to KEEP_PATTERNS (this is the actual
+     dumb-tabs container + tab-title classes that Ring renders). */
   'ring-message',
   'ring-collapsible',
   'ring-heading',

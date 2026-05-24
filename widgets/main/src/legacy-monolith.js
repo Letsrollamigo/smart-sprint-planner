@@ -682,6 +682,8 @@
 
   function _doFullRerender() {
     applyI18N();
+    /* v2.0.0 D6 — refresh Ring Tabs labels на смене языка. */
+    try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch (_) {}
     _updateProjectNameLabel();
     /* v1.3.1 — после applyI18N status-bar показывает локализованный
        on/off лейбл для своих 4 chip'ов. */
@@ -3340,6 +3342,8 @@
       }
     }
     applyI18N();
+    /* v2.0.0 D6 — Ring Tabs mount (idempotent) после первой applyI18N в init. */
+    try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch (_) {}
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
     _initModalCloseObserver(); // v1.9.11 (B-32) — auto-detach focus trap / scroll lock при classList.add('hidden')
@@ -3890,6 +3894,37 @@
     if (!wrap) return;
     var hide = !!(_settings && _settings.hideDiagLogUi);
     wrap.style.display = hide ? 'none' : '';
+  }
+
+  /* v2.0.0 D6 — Ring Tabs visual driver поверх hidden tab-btn state-trackers.
+     При смене языка / init собирает свежие T() лейблы, перерисовывает host.
+     onSelect → programmatic click на скрытый .tab-btn — это запускает существующий
+     handler ниже без изменений (toggle .active, show/hide panels, side-effects). */
+  function _mountTabsAndSync() {
+    var host = document.getElementById('sspTabsHost');
+    if (!host) return;
+    host.dataset.tabsJson = JSON.stringify([
+      { id: 'planning', title: T('tabPlanning') || 'Планирование' },
+      { id: 'gantt',    title: T('tabGantt')    || 'Диаграмма Ганта' },
+      { id: 'history',  title: T('tabHistory')  || 'История спринтов' }
+    ]);
+    /* Sync selected from active tracker (если кто-то уже выбрал tab до mount). */
+    var activeTracker = document.querySelector('.tab-btn.tab-state-tracker.active');
+    if (activeTracker && activeTracker.dataset.tab) {
+      host.dataset.selected = activeTracker.dataset.tab;
+    }
+    if (!host._sspTabsChangeBound) {
+      host._sspTabsChangeBound = true;
+      host.addEventListener('change', function() {
+        var sel = host.dataset.selected;
+        if (!sel) return;
+        var tracker = document.querySelector('.tab-btn.tab-state-tracker[data-tab="' + sel + '"]');
+        if (tracker) tracker.click();
+      });
+    }
+    if (window.__SSP_TABS && typeof window.__SSP_TABS.mountAt === 'function') {
+      window.__SSP_TABS.mountAt(host);
+    }
   }
 
   /* ═══ Вкладки первого уровня ══════════════════════════════ */

@@ -6,6 +6,8 @@ import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/load
 import DatePicker from '@jetbrains/ring-ui-built/components/date-picker/date-picker';
 import Checkbox from '@jetbrains/ring-ui-built/components/checkbox/checkbox';
 import Radio from '@jetbrains/ring-ui-built/components/radio/radio';
+import Tabs from '@jetbrains/ring-ui-built/components/tabs/dumb-tabs';
+import Tab from '@jetbrains/ring-ui-built/components/tabs/tab';
 import { enUS } from 'date-fns/locale/en-US';
 import { ru } from 'date-fns/locale/ru';
 import { fr } from 'date-fns/locale/fr';
@@ -22,4 +24,4 @@ import { pt } from 'date-fns/locale/pt';
 import { hu } from 'date-fns/locale/hu';
 import { es } from 'date-fns/locale/es';
 const DateFnsLocales = { en: enUS, ru, fr, de, 'zh-CN': zhCN, it, pl, tr, ja, ko, cs, nl, pt, hu, es };
-globalThis.SSP_VENDORED = { React, ReactDOMClient, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, DateFnsLocales };
+globalThis.SSP_VENDORED = { React, ReactDOMClient, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, DateFnsLocales };
