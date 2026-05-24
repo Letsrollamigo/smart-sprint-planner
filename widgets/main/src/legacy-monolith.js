@@ -7857,12 +7857,24 @@
     }
   }
 
+  /* v2.1.0 E3 — Ring Table for pick task overlay. Hybrid controlled-mode:
+     Ring renders 5 cols (master Ring Checkbox in header / per-row Ring
+     Checkbox / id / state / title / priority). Master pickAll lives in
+     column.getHeaderValue returning { __html: '<span data-ssp-checkbox-host>'};
+     per-row checkboxes are { __html } cells. After mount, Ring Checkbox
+     mountAllIn binds React roots on the fresh host-spans. change events
+     are not intercepted by Ring Table (unlike click), so the existing
+     host-level change listener on #pickResults works. */
   function renderPickResults() {
     var container = document.getElementById('pickResults');
     /* v2.0.0 D5-C — unmount Ring Checkbox roots внутри контейнера до тотальной перерисовки
        (innerHTML = ... оставляет React root в WeakMap без host'а → memory leak). */
     if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.unmountAllIn === 'function') {
       window.__SSP_CHECKBOX.unmountAllIn(container);
+    }
+    /* Unmount Ring Table inside container before re-render. */
+    if (window.__SSP_TABLE && typeof window.__SSP_TABLE.unmountAllIn === 'function') {
+      window.__SSP_TABLE.unmountAllIn(container);
     }
     if (!_pickResults.length) {
       container.innerHTML = '<div class="empty">'+T('tasksNotFound')+'</div>';
@@ -7871,80 +7883,141 @@
     }
     var rk = _currentPickRole;
     var existingInRole = new Set((getRoleItemsArr(rk)).map(function(i){ return i.issueId; }));
+
+    /* Replace container content with Ring Table host. */
+    container.innerHTML = '';
     var wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
-    var tbl = document.createElement('table'); tbl.className = 'tbl';
-    /* v2.0.0 D5-C — Ring Checkbox host-span вместо native input.
-       pickAll получает data-indeterminate; .pick-cb — data-id для wire к _selectedIds. */
-    tbl.innerHTML = '<thead><tr>'+
-      '<th style="width:36px"><span id="pickAll" data-ssp-checkbox-host data-checked="0" data-indeterminate="0" title="'+esc(T('titlePickAll'))+'"></span></th>'+
-      '<th>ID</th><th>'+T('thState')+'</th>'+
-      '<th style="min-width:220px">'+T('thTitle')+'</th><th>'+T('thPriority')+'</th>'+
-      '</tr></thead><tbody></tbody>';
-    var tbody = tbl.querySelector('tbody');
-    _pickResults.forEach(function(issue) {
-      var isAdded = existingInRole.has(issue.idReadable);
-      var tr = document.createElement('tr');
-      if (isAdded) tr.style.opacity = '.5';
-      tr.innerHTML =
-        '<td style="text-align:center"><span class="pick-cb" data-ssp-checkbox-host data-id="'+esc(issue.idReadable)+'" data-checked="'+(_selectedIds.has(issue.idReadable) ? '1' : '0')+'"'+
-        (isAdded ? ' data-disabled="1" title="'+esc(T('alreadyInSprint'))+'"' : '')+'></span></td>'+
-        '<td class="td-id"><span style="color:var(--primary);font-weight:600">'+esc(issue.idReadable)+'</span></td>'+
-        '<td style="font-size:12px">'+esc(issue.state && issue.state.name ? issue.state.name : '—')+'</td>'+
-        '<td class="td-title">'+esc(issue.summary || issue.idReadable || '')+'</td>'+
-        '<td>'+(issue.priority ? esc(issue.priority) : '—')+'</td>';
-      tbody.appendChild(tr);
+    var host = document.createElement('div');
+    host.id = 'pickResultsHost';
+    host.setAttribute('data-ssp-table-host', '');
+    wrap.appendChild(host);
+    container.appendChild(wrap);
+
+    var items = _pickResults.map(function(issue) {
+      return {
+        idReadable: issue.idReadable,
+        isAdded: existingInRole.has(issue.idReadable),
+        state: issue.state && issue.state.name ? issue.state.name : '—',
+        summary: issue.summary || issue.idReadable || '',
+        priority: issue.priority || '',
+      };
     });
-    wrap.appendChild(tbl); container.innerHTML = ''; container.appendChild(wrap);
-    /* v2.0.0 D5-C — mount Ring Checkboxes на свежие host-spans (idempotent). */
-    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
-      window.__SSP_CHECKBOX.mountAllIn(container);
+
+    var columns = [
+      {
+        id: 'checkbox', sortable: false,
+        getHeaderValue: function() {
+          /* Master pickAll Ring Checkbox host-span. */
+          return { __html:
+            '<span id="pickAll" data-ssp-checkbox-host data-checked="0" data-indeterminate="0" title="'+esc(T('titlePickAll'))+'"></span>'
+          };
+        },
+        getValue: function(item) {
+          return { __html:
+            '<span class="pick-cb" data-ssp-checkbox-host data-id="'+esc(item.idReadable)+'" '+
+              'data-checked="'+(_selectedIds.has(item.idReadable) ? '1' : '0')+'"'+
+              (item.isAdded ? ' data-disabled="1" title="'+esc(T('alreadyInSprint'))+'"' : '')+
+            '></span>'
+          };
+        }
+      },
+      {
+        id: 'id', title: 'ID', sortable: false, className: 'td-id',
+        getValue: function(item) {
+          return { __html: '<span style="color:var(--primary);font-weight:600">'+esc(item.idReadable)+'</span>' };
+        }
+      },
+      {
+        id: 'state', title: T('thState'), sortable: false,
+        getValue: function(item) { return esc(item.state); }
+      },
+      {
+        id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
+        getValue: function(item) { return esc(item.summary); }
+      },
+      {
+        id: 'priority', title: T('thPriority'), sortable: false,
+        getValue: function(item) { return item.priority ? esc(item.priority) : '—'; }
+      },
+    ];
+
+    if (window.__SSP_TABLE) {
+      window.__SSP_TABLE.mountAt(host, {
+        items: items,
+        columns: columns,
+        sortKey: 'off',
+        onSort: function() {},
+        getItemKey: function(item) { return item.idReadable; },
+        stickyHeader: true,
+        emptyText: T('tasksNotFound'),
+      });
     }
-    tbl.querySelectorAll('.pick-cb').forEach(function(cb) {
-      cb.addEventListener('change', function(e) {
-        /* host-span dispatch — читаем dataset.checked, не e.target.checked. */
-        var host = e.currentTarget;
-        if (host.dataset.checked === '1') _selectedIds.add(host.dataset.id);
-        else _selectedIds.delete(host.dataset.id);
-        updatePickAllIndicator();
-      });
-    });
-    /* v5.0.3 → v2.0.0 D5-C — master-checkbox: select-all across all pages.
-       Read state из host.dataset.checked. */
-    document.getElementById('pickAll').addEventListener('change', function(e) {
-      var pickAll = e.currentTarget;
-      var wantSelectAll = pickAll.dataset.checked === '1';
-      if (_pickAllInFlight) {
-        // revert toggle, не запускать второй раз
-        window.__SSP_CHECKBOX.setChecked(pickAll, !wantSelectAll, false);
-        return;
+
+    /* Mount Ring Checkboxes on the fresh host-spans inside Ring Table cells +
+       header. mountAllIn is idempotent. Re-bind via MutationObserver — Ring
+       Table re-renders may replace cells (e.g. on page change). */
+    function _mountPickCheckboxes() {
+      if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
+        window.__SSP_CHECKBOX.mountAllIn(container);
       }
-      if (!wantSelectAll) {
-        /* uncheck — снять выбор по всем известным id текущего запроса */
-        _pickAllResults.forEach(function(_, id){ _selectedIds.delete(id); });
-        renderPickResults();
-        return;
-      }
-      _pickAllInFlight = true;
-      pickAll.dataset.disabled = '1';
-      window.__SSP_CHECKBOX.setChecked(pickAll, true, false);
-      toast(T('toastPickAllLoading'), 'info');
-      loadAllPickPages().then(function(res){
-        var existingInRole = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){return i.issueId;}));
-        _pickAllResults.forEach(function(_, id){
-          if (!existingInRole.has(id)) _selectedIds.add(id);
-        });
-        _pickAllInFlight = false;
-        pickAll.dataset.disabled = '0';
-        renderPickResults();
-        if (res.capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
-        else            toast(T('toastPickAllLoaded').replace('{n}', String(_selectedIds.size)), 'success');
-      }).catch(function(e){
-        _pickAllInFlight = false;
-        pickAll.dataset.disabled = '0';
-        window.__SSP_CHECKBOX.setChecked(pickAll, false, false);
-        toast(T('toastPickAllErr')+': '+(e&&e.message?e.message:e), 'error');
+    }
+    _mountPickCheckboxes();
+    if (!container.__sspPickMutObs) {
+      container.__sspPickMutObs = new MutationObserver(_mountPickCheckboxes);
+      container.__sspPickMutObs.observe(container, { childList: true, subtree: true });
+    }
+
+    /* Host-level change delegation — Ring Table does not intercept change
+       events (only clicks). Idempotent flag on container. */
+    if (!container.__sspPickChangeBound) {
+      container.__sspPickChangeBound = true;
+      container.addEventListener('change', function(e) {
+        var hostEl = e.target;
+        if (!hostEl || !hostEl.dataset) return;
+        /* Per-row Ring Checkbox change */
+        if (hostEl.classList && hostEl.classList.contains('pick-cb')) {
+          if (hostEl.dataset.checked === '1') _selectedIds.add(hostEl.dataset.id);
+          else _selectedIds.delete(hostEl.dataset.id);
+          updatePickAllIndicator();
+          return;
+        }
+        /* Master pickAll change */
+        if (hostEl.id === 'pickAll') {
+          var wantSelectAll = hostEl.dataset.checked === '1';
+          if (_pickAllInFlight) {
+            window.__SSP_CHECKBOX.setChecked(hostEl, !wantSelectAll, false);
+            return;
+          }
+          if (!wantSelectAll) {
+            _pickAllResults.forEach(function(_, id){ _selectedIds.delete(id); });
+            renderPickResults();
+            return;
+          }
+          _pickAllInFlight = true;
+          hostEl.dataset.disabled = '1';
+          window.__SSP_CHECKBOX.setChecked(hostEl, true, false);
+          toast(T('toastPickAllLoading'), 'info');
+          loadAllPickPages().then(function(res){
+            var existingInRoleSet = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){return i.issueId;}));
+            _pickAllResults.forEach(function(_, id){
+              if (!existingInRoleSet.has(id)) _selectedIds.add(id);
+            });
+            _pickAllInFlight = false;
+            hostEl.dataset.disabled = '0';
+            renderPickResults();
+            if (res.capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
+            else            toast(T('toastPickAllLoaded').replace('{n}', String(_selectedIds.size)), 'success');
+          }).catch(function(err){
+            _pickAllInFlight = false;
+            hostEl.dataset.disabled = '0';
+            window.__SSP_CHECKBOX.setChecked(hostEl, false, false);
+            toast(T('toastPickAllErr')+': '+(err&&err.message?err.message:err), 'error');
+          });
+          return;
+        }
       });
-    });
+    }
+
     var pag = document.getElementById('pickPag');
     pag.style.display = 'flex';
     document.getElementById('pickPageInfo').textContent = T('pageOf') + _pickPage;

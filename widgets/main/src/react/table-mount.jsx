@@ -134,8 +134,14 @@ function SspTable({ host }) {
     };
   };
 
-  /* Ring expects columns[].getValue to return ReactNode. Wrap IIFE-provided
-     getValue results so HTML strings work too. */
+  /* Ring expects columns[].getValue / getHeaderValue to return ReactNode.
+     Wrap IIFE-provided callbacks so they may return { __html }, { __type },
+     plain strings, or already-ReactNode values. Lesson #30 (E3): pickOverlay
+     master checkbox lives in column header and must support { __html }. */
+  const wrapHeaderFn = (fn) => {
+    if (typeof fn !== 'function') return null;
+    return () => renderCellValue(fn());
+  };
   const columns = rawColumns.map((col) => ({
     id: col.id,
     title: col.title,
@@ -143,7 +149,7 @@ function SspTable({ host }) {
     className: col.className || null,
     headerClassName: col.headerClassName || null,
     rightAlign: !!col.rightAlign,
-    getHeaderValue: col.getHeaderValue || autoBrHeader(col.title),
+    getHeaderValue: wrapHeaderFn(col.getHeaderValue) || autoBrHeader(col.title),
     getValue: (item, column) => renderCellValue(
       typeof col.getValue === 'function' ? col.getValue(item, column) : ''
     ),
