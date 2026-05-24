@@ -4338,42 +4338,102 @@
      собирается в collectSettings из этого state'а. */
   var _dtaRows = [];
 
+  /* v2.1.0 E2 — Ring Table for DTA mapping. Hybrid controlled-mode:
+     Ring renders visual layer; IIFE owns _dtaRows state and all handlers.
+     Cell renderers return native HTML via { __html } for input/select;
+     delete button gets DOM Level 0 .onclick attached after each render via
+     MutationObserver (same pattern as E1 — Ring's row-selection swallows
+     click events at cell level in both bubble and capture phases). */
   function _renderDtaMapping() {
-    var tbody = document.getElementById('dtaMappingBody');
-    if (!tbody) return;
+    var host = document.getElementById('dtaMappingHost');
+    if (!host) return;
     var active = (typeof getActiveRoles === 'function') ? getActiveRoles() : ALL_ROLES;
-    var html = '';
-    _dtaRows.forEach(function(row, idx) {
-      var roleOpts = '<option value=""' + (row.role ? '' : ' selected') + '></option>';
-      active.forEach(function(r) {
-        var sel = (r.key === row.role) ? ' selected' : '';
-        roleOpts += '<option value="' + esc(r.key) + '"' + sel + '>' + esc(roleLabel(r)) + '</option>';
-      });
-      html += '<tr data-dta-idx="' + idx + '">'
-            + '<td style="padding:4px 8px;border-bottom:1px solid var(--border)">'
-            +   '<input type="text" class="btn btn--sm dta-type-input" data-dta-idx="' + idx + '" '
-            +     'value="' + esc(row.type || '') + '" maxlength="200" '
-            +     'placeholder="' + esc(T('dtaTypePlaceholder')) + '" '
-            +     'style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius)"/>'
-            + '</td>'
-            + '<td style="padding:4px 8px;border-bottom:1px solid var(--border)">'
-            +   '<select class="btn btn--sm dta-role-sel" data-dta-idx="' + idx + '" '
-            +     'style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);cursor:pointer">'
-            +     roleOpts
-            +   '</select>'
-            + '</td>'
-            + '<td style="padding:4px;border-bottom:1px solid var(--border);text-align:center">'
-            +   '<button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly dta-del-row" data-dta-idx="' + idx + '" '
-            +     'title="' + esc(T('btnDtaRemoveRow')) + '" '
-            +     'style="padding:2px 8px;font-size:14px;line-height:1">×</button>'
-            + '</td>'
-            + '</tr>';
-    });
+
     if (!_dtaRows.length) {
-      html = '<tr><td colspan="3" class="empty" style="padding:8px;text-align:center;color:var(--muted);font-size:12px">'
-           + esc(T('dtaEmptyTable')) + '</td></tr>';
+      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
+      host.innerHTML = '<div class="empty" style="padding:8px;text-align:center;color:var(--muted);font-size:12px">'+esc(T('dtaEmptyTable'))+'</div>';
+      _validateDtaMapping();
+      return;
     }
-    tbody.innerHTML = html;
+
+    var items = _dtaRows.map(function(row, idx) {
+      return { idx: idx, type: row.type || '', role: row.role || '' };
+    });
+
+    var columns = [];
+    columns.push({
+      id: 'type', title: T('dtaColType'), sortable: false,
+      getValue: function(item) {
+        return { __html:
+          '<input type="text" class="btn btn--sm dta-type-input" data-dta-idx="'+item.idx+'" '+
+            'value="'+esc(item.type)+'" maxlength="200" '+
+            'placeholder="'+esc(T('dtaTypePlaceholder'))+'" '+
+            'style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius)"/>'
+        };
+      }
+    });
+    columns.push({
+      id: 'role', title: T('dtaColRole'), sortable: false,
+      getValue: function(item) {
+        var roleOpts = '<option value=""'+(item.role ? '' : ' selected')+'></option>';
+        active.forEach(function(r) {
+          var sel = (r.key === item.role) ? ' selected' : '';
+          roleOpts += '<option value="'+esc(r.key)+'"'+sel+'>'+esc(roleLabel(r))+'</option>';
+        });
+        return { __html:
+          '<select class="btn btn--sm dta-role-sel" data-dta-idx="'+item.idx+'" '+
+            'style="width:100%;padding:4px 6px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);cursor:pointer">'+
+            roleOpts+
+          '</select>'
+        };
+      }
+    });
+    columns.push({
+      id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
+      getValue: function(item) {
+        return { __html:
+          '<button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly dta-del-row" '+
+            'data-dta-idx="'+item.idx+'" '+
+            'title="'+esc(T('btnDtaRemoveRow'))+'" '+
+            'style="padding:2px 8px;font-size:14px;line-height:1">×</button>'
+        };
+      }
+    });
+
+    if (window.__SSP_TABLE) {
+      window.__SSP_TABLE.mountAt(host, {
+        items: items,
+        columns: columns,
+        sortKey: 'off',
+        onSort: function() {},
+        getItemKey: function(item) { return String(item.idx); },
+        stickyHeader: false,
+        emptyText: T('dtaEmptyTable'),
+      });
+    }
+
+    /* Direct DOM Level 0 onclick on each delete button after Ring render.
+       Re-bind via MutationObserver — Ring re-creates buttons on every update.
+       See E1 / lesson #27 in RoadMap/REFACTORING_PLAN_v2.1.0.md. */
+    function _bindDtaDelButtons() {
+      host.querySelectorAll('button.dta-del-row[data-dta-idx]').forEach(function(btn) {
+        if (btn.__sspDtaDelBound) return;
+        btn.__sspDtaDelBound = true;
+        btn.onclick = function(ev) {
+          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+          var idx = parseInt(btn.getAttribute('data-dta-idx'), 10);
+          if (!isFinite(idx) || idx < 0) return;
+          _dtaRows.splice(idx, 1);
+          _renderDtaMapping();
+        };
+      });
+    }
+    _bindDtaDelButtons();
+    if (!host.__sspDtaDelMutObs) {
+      host.__sspDtaDelMutObs = new MutationObserver(_bindDtaDelButtons);
+      host.__sspDtaDelMutObs.observe(host, { childList: true, subtree: true });
+    }
+
     _validateDtaMapping();
   }
 
@@ -4381,7 +4441,8 @@
      v1.3.1: больше не трогает saveBtn.disabled напрямую — это координирует
      _recomputeSaveBtnState (см. ниже). */
   function _validateDtaMapping() {
-    var rows = document.querySelectorAll('#dtaMappingBody tr[data-dta-idx]');
+    /* v2.1.0 E2 — inputs live inside Ring Table cells; lookup by data-dta-idx
+       directly. No more per-row <tr> wrappers. */
     var counts = {};
     _dtaRows.forEach(function(r) {
       var t = (r.type || '').trim();
@@ -4389,10 +4450,9 @@
       counts[t] = (counts[t] || 0) + 1;
     });
     var hasDup = false;
-    rows.forEach(function(tr) {
-      var idx = parseInt(tr.getAttribute('data-dta-idx'), 10);
-      var input = tr.querySelector('.dta-type-input');
-      if (!input) return;
+    var inputs = document.querySelectorAll('#dtaMappingHost input.dta-type-input[data-dta-idx]');
+    inputs.forEach(function(input) {
+      var idx = parseInt(input.getAttribute('data-dta-idx'), 10);
       var t = (_dtaRows[idx] && _dtaRows[idx].type || '').trim();
       var dup = t && counts[t] > 1;
       input.style.borderColor = dup ? 'var(--error)' : 'var(--border)';
@@ -4473,11 +4533,15 @@
   }
 
   function _bindDtaMappingEvents() {
-    var tbody = document.getElementById('dtaMappingBody');
+    /* v2.1.0 E2 — input/change events bound on host. Ring Table does not
+       intercept input/change (only click), so host delegation works for
+       text inputs and role selects. Delete buttons are wired via direct
+       btn.onclick inside _renderDtaMapping (see lesson #27). */
+    var host = document.getElementById('dtaMappingHost');
     var addBtn = document.getElementById('dtaAddRowBtn');
-    if (tbody && !tbody._sspDtaBound) {
-      tbody._sspDtaBound = true;
-      tbody.addEventListener('input', function(e) {
+    if (host && !host._sspDtaBound) {
+      host._sspDtaBound = true;
+      host.addEventListener('input', function(e) {
         var t = e.target;
         if (!t || !t.classList) return;
         if (t.classList.contains('dta-type-input')) {
@@ -4486,19 +4550,11 @@
           _validateDtaMapping();
         }
       });
-      tbody.addEventListener('change', function(e) {
+      host.addEventListener('change', function(e) {
         var t = e.target;
         if (t && t.classList && t.classList.contains('dta-role-sel')) {
           var idx = parseInt(t.getAttribute('data-dta-idx'), 10);
           if (_dtaRows[idx]) { _dtaRows[idx].role = t.value || ''; }
-        }
-      });
-      tbody.addEventListener('click', function(e) {
-        var t = e.target;
-        if (t && t.classList && t.classList.contains('dta-del-row')) {
-          var idx = parseInt(t.getAttribute('data-dta-idx'), 10);
-          _dtaRows.splice(idx, 1);
-          _renderDtaMapping();
         }
       });
     }
@@ -4509,7 +4565,7 @@
         _renderDtaMapping();
         // фокус на новый input
         setTimeout(function() {
-          var rows = document.querySelectorAll('#dtaMappingBody .dta-type-input');
+          var rows = document.querySelectorAll('#dtaMappingHost input.dta-type-input');
           var last = rows[rows.length - 1];
           if (last && typeof last.focus === 'function') last.focus();
         }, 0);

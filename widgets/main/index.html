@@ -2677,16 +2677,10 @@
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintDtaWarnings">When enabled, the workflow emits per-role plan-vs-fact progress messages on each work-item logging: under 90% — informational ratio, 90-100% — warning that less than 10% of the plan remains, over 100% — overrun alert. The role label and advice text are localised. Disable this checkbox if you only need the silent fact-field aggregation.</div>
             </div>
             <div class="field" style="grid-column:1 / -1" id="dtaMappingWrap">
-              <table id="dtaMappingTable" class="dta-mapping" style="width:100%;border-collapse:collapse">
-                <thead>
-                  <tr>
-                    <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;width:50%" data-i18n="dtaColType">Work item type (exact name)</th>
-                    <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;width:42%" data-i18n="dtaColRole">Role</th>
-                    <th style="width:32px;border-bottom:1px solid var(--border)"></th>
-                  </tr>
-                </thead>
-                <tbody id="dtaMappingBody"></tbody>
-              </table>
+              <!-- v2.1.0 E2 — Ring Table host. Native <table> + <thead> + <tbody> removed;
+                   Ring Table renders its own structure inside this host via
+                   _renderDtaMapping() → window.__SSP_TABLE.mountAt. -->
+              <div id="dtaMappingHost" data-ssp-table-host></div>
               <button type="button" class="ring-button-button ring-button-block ring-button-heightS" id="dtaAddRowBtn" style="margin-top:6px" data-i18n="btnDtaAddRow">+ Add mapping</button>
               <div class="hint" id="dtaErrHint" style="display:none;font-size:11px;color:var(--error);margin-top:4px" data-i18n="dtaErrDuplicate">A work item type cannot be mapped to two different roles. Remove the duplicate row before saving.</div>
             </div>
