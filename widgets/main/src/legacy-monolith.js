@@ -7740,7 +7740,8 @@
     return loop().then(function(){ return { totalLoaded: _pickAllResults.size, capped: capped }; });
   }
 
-  /* v5.0.3 — синхронизация состояния master-checkbox с реальным выбором по всему кэшу запроса */
+  /* v5.0.3 → v2.0.0 D5-C — master-checkbox state на host-span dataset.
+     Ring Checkbox реагирует на data-checked / data-indeterminate через MutationObserver. */
   function updatePickAllIndicator() {
     var pickAll = document.getElementById('pickAll');
     if (!pickAll) return;
@@ -7752,14 +7753,26 @@
       enabledTotal++;
       if (_selectedIds.has(id)) enabledChecked++;
     });
-    if (enabledTotal === 0)                       { pickAll.checked = false; pickAll.indeterminate = false; }
-    else if (enabledChecked === 0)                { pickAll.checked = false; pickAll.indeterminate = false; }
-    else if (enabledChecked === enabledTotal)     { pickAll.checked = true;  pickAll.indeterminate = false; }
-    else                                          { pickAll.checked = false; pickAll.indeterminate = true;  }
+    var checked = false, indeterminate = false;
+    if      (enabledTotal === 0)                  { /* defaults */ }
+    else if (enabledChecked === 0)                { /* defaults */ }
+    else if (enabledChecked === enabledTotal)     { checked = true; }
+    else                                          { indeterminate = true; }
+    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.setChecked === 'function') {
+      window.__SSP_CHECKBOX.setChecked(pickAll, checked, indeterminate);
+    } else {
+      pickAll.dataset.checked = checked ? '1' : '0';
+      pickAll.dataset.indeterminate = indeterminate ? '1' : '0';
+    }
   }
 
   function renderPickResults() {
     var container = document.getElementById('pickResults');
+    /* v2.0.0 D5-C — unmount Ring Checkbox roots внутри контейнера до тотальной перерисовки
+       (innerHTML = ... оставляет React root в WeakMap без host'а → memory leak). */
+    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.unmountAllIn === 'function') {
+      window.__SSP_CHECKBOX.unmountAllIn(container);
+    }
     if (!_pickResults.length) {
       container.innerHTML = '<div class="empty">'+T('tasksNotFound')+'</div>';
       document.getElementById('pickPag').style.display = 'none';
@@ -7769,8 +7782,10 @@
     var existingInRole = new Set((getRoleItemsArr(rk)).map(function(i){ return i.issueId; }));
     var wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
     var tbl = document.createElement('table'); tbl.className = 'tbl';
+    /* v2.0.0 D5-C — Ring Checkbox host-span вместо native input.
+       pickAll получает data-indeterminate; .pick-cb — data-id для wire к _selectedIds. */
     tbl.innerHTML = '<thead><tr>'+
-      '<th style="width:36px"><input type="checkbox" id="pickAll" title="'+esc(T('titlePickAll'))+'"/></th>'+
+      '<th style="width:36px"><span id="pickAll" data-ssp-checkbox-host data-checked="0" data-indeterminate="0" title="'+esc(T('titlePickAll'))+'"></span></th>'+
       '<th>ID</th><th>'+T('thState')+'</th>'+
       '<th style="min-width:220px">'+T('thTitle')+'</th><th>'+T('thPriority')+'</th>'+
       '</tr></thead><tbody></tbody>';
@@ -7780,9 +7795,8 @@
       var tr = document.createElement('tr');
       if (isAdded) tr.style.opacity = '.5';
       tr.innerHTML =
-        '<td style="text-align:center"><input type="checkbox" class="pick-cb" data-id="'+esc(issue.idReadable)+'"'+
-        (_selectedIds.has(issue.idReadable) ? ' checked' : '')+
-        (isAdded ? ' disabled title="'+T('alreadyInSprint')+'"' : '')+'/></td>'+
+        '<td style="text-align:center"><span class="pick-cb" data-ssp-checkbox-host data-id="'+esc(issue.idReadable)+'" data-checked="'+(_selectedIds.has(issue.idReadable) ? '1' : '0')+'"'+
+        (isAdded ? ' data-disabled="1" title="'+esc(T('alreadyInSprint'))+'"' : '')+'></span></td>'+
         '<td class="td-id"><span style="color:var(--primary);font-weight:600">'+esc(issue.idReadable)+'</span></td>'+
         '<td style="font-size:12px">'+esc(issue.state && issue.state.name ? issue.state.name : '—')+'</td>'+
         '<td class="td-title">'+esc(issue.summary || issue.idReadable || '')+'</td>'+
@@ -7790,18 +7804,29 @@
       tbody.appendChild(tr);
     });
     wrap.appendChild(tbl); container.innerHTML = ''; container.appendChild(wrap);
+    /* v2.0.0 D5-C — mount Ring Checkboxes на свежие host-spans (idempotent). */
+    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
+      window.__SSP_CHECKBOX.mountAllIn(container);
+    }
     tbl.querySelectorAll('.pick-cb').forEach(function(cb) {
       cb.addEventListener('change', function(e) {
-        if (e.target.checked) _selectedIds.add(e.target.dataset.id);
-        else _selectedIds.delete(e.target.dataset.id);
+        /* host-span dispatch — читаем dataset.checked, не e.target.checked. */
+        var host = e.currentTarget;
+        if (host.dataset.checked === '1') _selectedIds.add(host.dataset.id);
+        else _selectedIds.delete(host.dataset.id);
         updatePickAllIndicator();
       });
     });
-    /* v5.0.3 — master-checkbox: select-all across all pages с подгрузкой через backend */
+    /* v5.0.3 → v2.0.0 D5-C — master-checkbox: select-all across all pages.
+       Read state из host.dataset.checked. */
     document.getElementById('pickAll').addEventListener('change', function(e) {
-      var pickAll = e.target;
-      var wantSelectAll = pickAll.checked;
-      if (_pickAllInFlight) { pickAll.checked = !wantSelectAll; return; }
+      var pickAll = e.currentTarget;
+      var wantSelectAll = pickAll.dataset.checked === '1';
+      if (_pickAllInFlight) {
+        // revert toggle, не запускать второй раз
+        window.__SSP_CHECKBOX.setChecked(pickAll, !wantSelectAll, false);
+        return;
+      }
       if (!wantSelectAll) {
         /* uncheck — снять выбор по всем известным id текущего запроса */
         _pickAllResults.forEach(function(_, id){ _selectedIds.delete(id); });
@@ -7809,8 +7834,8 @@
         return;
       }
       _pickAllInFlight = true;
-      pickAll.disabled = true;
-      pickAll.indeterminate = false;
+      pickAll.dataset.disabled = '1';
+      window.__SSP_CHECKBOX.setChecked(pickAll, true, false);
       toast(T('toastPickAllLoading'), 'info');
       loadAllPickPages().then(function(res){
         var existingInRole = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){return i.issueId;}));
@@ -7818,14 +7843,14 @@
           if (!existingInRole.has(id)) _selectedIds.add(id);
         });
         _pickAllInFlight = false;
-        pickAll.disabled = false;
+        pickAll.dataset.disabled = '0';
         renderPickResults();
         if (res.capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
         else            toast(T('toastPickAllLoaded').replace('{n}', String(_selectedIds.size)), 'success');
       }).catch(function(e){
         _pickAllInFlight = false;
-        pickAll.disabled = false;
-        pickAll.checked = false;
+        pickAll.dataset.disabled = '0';
+        window.__SSP_CHECKBOX.setChecked(pickAll, false, false);
         toast(T('toastPickAllErr')+': '+(e&&e.message?e.message:e), 'error');
       });
     });
@@ -7932,6 +7957,10 @@
     _histPage = Math.min(_histPage, total);
     var start = (_histPage - 1) * HIST_PAGE;
     var page  = sorted.slice(start, start + HIST_PAGE);
+    /* v2.0.0 D5-D — unmount Ring Radio roots внутри spoiler'ов перед innerHTML replace. */
+    if (window.__SSP_RADIO && typeof window.__SSP_RADIO.unmountAllIn === 'function') {
+      window.__SSP_RADIO.unmountAllIn(container);
+    }
     container.innerHTML = '';
     page.forEach(function(rec, li) { container.appendChild(buildSpoiler(rec, start + li)); });
     var pag = document.getElementById('histPag');
@@ -8105,17 +8134,22 @@
     var noticeEl = null;
     var itemsSlot = document.createElement('div');
     if (wcDraftForToggle) {
+      /* v2.0.0 D5-D — Ring Radio host вместо 2 native radios. */
       var toggleWrap = document.createElement('div');
       toggleWrap.className = 'wc-spoiler-toggle';
       toggleWrap.style.cssText = 'display:flex;gap:14px;align-items:center;padding:6px 16px 0;font-size:12px;';
-      var radioName = 'wc-source-' + esc(rec.sprintId);
-      toggleWrap.innerHTML =
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;">' +
-          '<input type="radio" name="'+radioName+'" value="snap" checked>' +
-          '<span>'+esc(T('wcSourceSnapshot'))+'</span></label>' +
-        '<label style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;">' +
-          '<input type="radio" name="'+radioName+'" value="wc">' +
-          '<span>'+esc(T('wcSourceWorkingCopy'))+'</span></label>';
+      var wcRadioOpts = [
+        { value: 'snap', label: T('wcSourceSnapshot') },
+        { value: 'wc',   label: T('wcSourceWorkingCopy') }
+      ];
+      var wcHost = document.createElement('span');
+      wcHost.setAttribute('data-ssp-radio-host', '');
+      wcHost.dataset.name = 'wc-source-' + rec.sprintId;
+      wcHost.dataset.value = 'snap';
+      wcHost.dataset.optionsJson = JSON.stringify(wcRadioOpts);
+      wcHost.style.display = 'inline-flex';
+      wcHost.style.gap = '14px';
+      toggleWrap.appendChild(wcHost);
       body.appendChild(toggleWrap);
       noticeEl = document.createElement('div');
       noticeEl.className = 'wc-spoiler-notice hidden';
@@ -8192,27 +8226,34 @@
     /* Первичный рендер — снимок */
     __renderHistoryItemsBlock(rec.items, rec.roleKey);
 
-    /* Listener тоггла — переключаем источник */
+    /* Listener тоггла — переключаем источник.
+       v2.0.0 D5-D — change-event bubbles из Ring Radio host span (dataset.value updated). */
     if (wcDraftForToggle) {
-      var radios = body.querySelectorAll('.wc-spoiler-toggle input[type="radio"]');
-      Array.prototype.forEach.call(radios, function(rb) {
-        rb.addEventListener('change', function(ev){
+      var wcHostEl = body.querySelector('[data-ssp-radio-host]');
+      if (wcHostEl) {
+        wcHostEl.addEventListener('change', function(ev) {
           ev.stopPropagation();
-          if (rb.value === 'wc' && rb.checked) {
+          var v = wcHostEl.dataset.value;
+          if (v === 'wc') {
             __renderHistoryItemsBlock(wcDraftForToggle.items || [], rec.roleKey);
             if (noticeEl) noticeEl.classList.remove('hidden');
-          } else if (rb.value === 'snap' && rb.checked) {
+          } else if (v === 'snap') {
             __renderHistoryItemsBlock(rec.items, rec.roleKey);
             if (noticeEl) noticeEl.classList.add('hidden');
           }
         });
-      });
+      }
       /* Клики по toggle не должны сворачивать спойлер */
       var ws = body.querySelector('.wc-spoiler-toggle');
       if (ws) ws.addEventListener('click', function(ev){ ev.stopPropagation(); });
     }
 
     wrap.appendChild(head); wrap.appendChild(body);
+    /* v2.0.0 D5-D — mount Ring Radio для wc-toggle если есть. Делаем после append'а
+       в body чтобы createRoot работал на attached node (React 19 best practice). */
+    if (wcDraftForToggle && window.__SSP_RADIO && typeof window.__SSP_RADIO.mountAllIn === 'function') {
+      window.__SSP_RADIO.mountAllIn(wrap);
+    }
     return wrap;
   }
 
