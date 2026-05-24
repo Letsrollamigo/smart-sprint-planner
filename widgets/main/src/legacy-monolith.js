@@ -401,6 +401,11 @@
     document.querySelectorAll('[data-i18n-tooltip]').forEach(function(el) {
       el.setAttribute('data-tooltip', T(el.getAttribute('data-i18n-tooltip')));
     });
+    /* v2.0.0 D5-B — i18n для Ring Checkbox/Radio host-spans: пишет в dataset.label,
+       MutationObserver в checkbox-mount.jsx подхватит и перерендерит метку. */
+    document.querySelectorAll('[data-i18n-label]').forEach(function(el) {
+      el.dataset.label = T(el.getAttribute('data-i18n-label'));
+    });
     /* v5.10.0 — удалён мёртвый guard на renderDistribPanel + tab-distrib (оба удалены в v5.6.0). */
   }
 
@@ -3544,6 +3549,10 @@
         applySettingsUI();
         bindSettingsFormHandlers();
         applyI18N();
+        // v2.0.0 D5-B — после applyI18N data-label на host-spans заполнен; mount Ring Checkboxes (idempotent).
+        if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
+          window.__SSP_CHECKBOX.mountAllIn(overlay);
+        }
         _settingsLoaded = true;
         if (form) form.classList.remove('hidden');
       } catch (renderErr) {
@@ -4551,11 +4560,10 @@
      - cascade=on && forbid=off → опасная комбинация (warnCascadeWithoutForbid);
      - level2 ∩ level3 непуст → warnCascadeLevelsOverlap. */
   function _refreshCascadeWarning() {
-    var cascadeChk = document.getElementById('cascadeAggregationCheck');
-    var forbidChk = document.getElementById('forbidContainerWorkItemsCheck');
     var warn = document.getElementById('warnCascadeWithoutForbid');
     if (warn) {
-      var dangerous = !!(cascadeChk && cascadeChk.checked) && !(forbidChk && forbidChk.checked);
+      // v2.0.0 D5-B — Ring host-span: читаем через getCheck().
+      var dangerous = getCheck('cascadeAggregationCheck') && !getCheck('forbidContainerWorkItemsCheck');
       warn.style.display = dangerous ? '' : 'none';
     }
     var lvl2 = _cascadeMultiSelectValues(document.getElementById('cascadeLevel2Sel'));
@@ -4837,10 +4845,10 @@
     if (warn) warn.style.display = (order.length > 0 && order.length < 2) ? '' : 'none';
     var lvl2 = (_settings && Array.isArray(_settings.cascadeLevel2Values)) ? _settings.cascadeLevel2Values : [];
     var lvl3 = (_settings && Array.isArray(_settings.cascadeLevel3Values)) ? _settings.cascadeLevel3Values : [];
-    var enabledChk = document.getElementById('stateRollupEnabledCheck');
     var hint = document.getElementById('hintStateRollupNoHierarchy');
-    if (hint && enabledChk) {
-      hint.style.display = (enabledChk.checked && !lvl2.length && !lvl3.length) ? '' : 'none';
+    if (hint) {
+      // v2.0.0 D5-B — Ring host-span.
+      hint.style.display = (getCheck('stateRollupEnabledCheck') && !lvl2.length && !lvl3.length) ? '' : 'none';
     }
   }
 
@@ -4955,16 +4963,13 @@
     setCheck('personalPlanningCheck',       !!(_settings && _settings.personalPlanningEnabled));
     /* v1.4.0 — manual per-assignee resource. */
     setCheck('manualPersonalResourceCheck', !!(_settings && _settings.manualPersonalResource));
-    /* v6.3.0 D110 — нативный input checkbox (а не button-toggle), отдельная установка. */
-    var hideDiagLogChk = document.getElementById('hideDiagLogUiCheck');
-    if (hideDiagLogChk) hideDiagLogChk.checked = !!(_settings && _settings.hideDiagLogUi);
+    /* v6.3.0 D110 → v2.0.0 D5-B — Ring Checkbox host-span, унифицированный setCheck. */
+    setCheck('hideDiagLogUiCheck', !!(_settings && _settings.hideDiagLogUi));
     /* v1.2.0 DTA — checkbox + mapping table. workItemTypeMapping хранится в settings
        как object<typeName, roleKey>; UI-state — массив строк, чтобы поддержать
        пустые/невалидные промежуточные состояния редактирования. */
-    var dtaChk = document.getElementById('dtaEnabledCheck');
-    if (dtaChk) dtaChk.checked = !!(_settings && _settings.dtaEnabled);
-    var dtaWarnChk = document.getElementById('dtaWarningsCheck');
-    if (dtaWarnChk) dtaWarnChk.checked = !!(_settings && _settings.dtaWarningsEnabled);
+    setCheck('dtaEnabledCheck',    !!(_settings && _settings.dtaEnabled));
+    setCheck('dtaWarningsCheck',   !!(_settings && _settings.dtaWarningsEnabled));
     _dtaRows = [];
     var mapping = (_settings && _settings.workItemTypeMapping) || {};
     Object.keys(mapping).forEach(function(t) {
@@ -4975,10 +4980,8 @@
     /* v1.3.0 Cascade — load 7 ключей в form.
        kindField — single-select из всех enum-полей проекта.
        level2/3 — multi-select из bundle-values текущего kindField. */
-    var cascadeChk = document.getElementById('cascadeAggregationCheck');
-    if (cascadeChk) cascadeChk.checked = !!(_settings && _settings.cascadeAggregationEnabled);
-    var forbidChk = document.getElementById('forbidContainerWorkItemsCheck');
-    if (forbidChk) forbidChk.checked = !!(_settings && _settings.forbidContainerWorkItems);
+    setCheck('cascadeAggregationCheck',     !!(_settings && _settings.cascadeAggregationEnabled));
+    setCheck('forbidContainerWorkItemsCheck', !!(_settings && _settings.forbidContainerWorkItems));
     /* kind-field select: enum-fields проекта. Если в settings было записано имя
        поля, которого больше нет в _projectFields, fillFieldSelect добавит
        его placeholder с пометкой ⚠. */
@@ -4999,8 +5002,7 @@
     _bindCascadeWarning();
     _refreshCascadeWarning();
     /* v1.7.0 D128 — State Rollup: load 7 ключей в form. */
-    var srEnabledChk = document.getElementById('stateRollupEnabledCheck');
-    if (srEnabledChk) srEnabledChk.checked = !!(_settings && _settings.stateRollupEnabled);
+    setCheck('stateRollupEnabledCheck', !!(_settings && _settings.stateRollupEnabled));
     var srOrder    = (_settings && Array.isArray(_settings.stateRollupOrder))         ? _settings.stateRollupOrder         : [];
     var srResolved = (_settings && Array.isArray(_settings.stateRollupResolvedStates)) ? _settings.stateRollupResolvedStates : [];
     var srFloor    = (_settings && typeof _settings.stateRollupFloor === 'string')     ? _settings.stateRollupFloor         : '';
@@ -5056,7 +5058,28 @@
   function setCheck(id, on) {
     var el = document.getElementById(id);
     if (!el) return;
+    // v2.0.0 D5-B — три варианта элемента под одним id:
+    //   (1) .role-check div-toggle (исторический ярус 2 паттерн) — classList active/idle;
+    //   (2) <span data-ssp-checkbox-host> Ring Checkbox mount-point — dataset.checked '0'/'1';
+    //   (3) native <input type="checkbox"> — .checked = bool.
+    if (el.hasAttribute && el.hasAttribute('data-ssp-checkbox-host')) {
+      el.dataset.checked = on ? '1' : '0';
+      return;
+    }
+    if (el.tagName === 'INPUT') {
+      el.checked = !!on;
+      return;
+    }
     if (on) el.classList.add('active'); else el.classList.remove('active');
+  }
+  function getCheck(id) {
+    var el = document.getElementById(id);
+    if (!el) return false;
+    if (el.hasAttribute && el.hasAttribute('data-ssp-checkbox-host')) {
+      return el.dataset.checked === '1' || el.dataset.checked === 'true';
+    }
+    if (el.tagName === 'INPUT') return !!el.checked;
+    return el.classList.contains('active');
   }
   function setVal(id, v) {
     var el = document.getElementById(id);
@@ -5219,14 +5242,14 @@
       usePersonalForResource:  document.getElementById('usePersonalForResourceCheck').classList.contains('active'),
       /* v1.4.0 — ручной ввод ресурса по исполнителям; дочерний к personalPlanning. */
       manualPersonalResource:  document.getElementById('manualPersonalResourceCheck').classList.contains('active'),
-      /* v6.3.0 D110 — нативный input.checked. */
-      hideDiagLogUi:           !!(document.getElementById('hideDiagLogUiCheck') && document.getElementById('hideDiagLogUiCheck').checked),
+      /* v6.3.0 D110 → v2.0.0 D5-B — унифицированный getCheck (Ring host-span). */
+      hideDiagLogUi:           getCheck('hideDiagLogUiCheck'),
       /* v1.2.0 DTA — feature flag + mapping. Mapping собирается из _dtaRows;
          пустые type-name строки скипаются. Дубликаты фильтруются на уровне
          object-shape (последний выигрывает); UI-валидация блокирует save при
          duplicate, поэтому до этого места не доходим если duplicate exists. */
-      dtaEnabled:              !!(document.getElementById('dtaEnabledCheck') && document.getElementById('dtaEnabledCheck').checked),
-      dtaWarningsEnabled:      !!(document.getElementById('dtaWarningsCheck') && document.getElementById('dtaWarningsCheck').checked),
+      dtaEnabled:              getCheck('dtaEnabledCheck'),
+      dtaWarningsEnabled:      getCheck('dtaWarningsCheck'),
       workItemTypeMapping:     (function() {
         var out = {};
         (Array.isArray(_dtaRows) ? _dtaRows : []).forEach(function(r) {
@@ -5241,8 +5264,8 @@
          на null, чтобы backend assertStr принял (он допускает null). Empty
          arrays для level-values — отправляем как пустой массив (== «cascade
          выключен по факту, нет container-kinds»), валидация isStrArr допускает 0. */
-      cascadeAggregationEnabled: !!(document.getElementById('cascadeAggregationCheck') && document.getElementById('cascadeAggregationCheck').checked),
-      forbidContainerWorkItems:  !!(document.getElementById('forbidContainerWorkItemsCheck') && document.getElementById('forbidContainerWorkItemsCheck').checked),
+      cascadeAggregationEnabled: getCheck('cascadeAggregationCheck'),
+      forbidContainerWorkItems:  getCheck('forbidContainerWorkItemsCheck'),
       cascadeKindField:          _cascadeStrOrNull(document.getElementById('cascadeKindFieldSel')),
       cascadeLevel2Values:       _cascadeMultiSelectValues(document.getElementById('cascadeLevel2Sel')),
       cascadeLevel3Values:       _cascadeMultiSelectValues(document.getElementById('cascadeLevel3Sel')),
@@ -5250,7 +5273,7 @@
       cascadeParentLinkOutward:  _cascadeStrOrNull(document.getElementById('cascadeLinkOutwardInput')),
       /* v1.7.0 D128 — State Rollup. rescanRequested/At не сохраняем здесь
          (управляются кнопкой Rescan; в v1.7.0 кнопка disabled — ключи не трогаем). */
-      stateRollupEnabled:       !!(document.getElementById('stateRollupEnabledCheck') && document.getElementById('stateRollupEnabledCheck').checked),
+      stateRollupEnabled:       getCheck('stateRollupEnabledCheck'),
       stateRollupOrder:         _stateRollupCurrentOrder(),
       stateRollupResolvedStates: _stateRollupCurrentResolved(),
       stateRollupFloor:         (function() { var v = document.getElementById('stateRollupFloorSel'); return (v && v.value) ? v.value : null; })(),
@@ -6749,34 +6772,47 @@
         if (goalDisplay) { goalDisplay.style.display = 'none'; }
         if (goalNotSet)  { goalNotSet.style.display  = ''; }
       }
-      // Сбросить radio + retro note; pre-select existingOutcome если задан (re-finish flow)
-      var radios = overlay.querySelectorAll('input[name="goalOutcomeRadio"]');
-      radios.forEach(function(r){ r.checked = existingOutcome ? r.value === existingOutcome : false; });
+      // v2.0.0 D5-A — outcome radio через Ring Radio mount-point.
+      // Host-span хранит value в data-value; options пересобираются из T() при каждом open
+      // (чтобы applyI18N после открытия не понадобился — мы уже взяли актуальные labels).
+      var radioHost = document.getElementById('goalOutcomeRadioHost');
+      if (radioHost) {
+        radioHost.dataset.optionsJson = JSON.stringify([
+          { value: 'achieved', label: T('optGoalAchieved') || '✅ Достигнута' },
+          { value: 'partial',  label: T('optGoalPartial')  || '⚖ Частично' },
+          { value: 'missed',   label: T('optGoalMissed')   || '❌ Не достигнута' }
+        ]);
+        radioHost.dataset.value = existingOutcome || '';
+        if (window.__SSP_RADIO && typeof window.__SSP_RADIO.mountGroupAt === 'function') {
+          window.__SSP_RADIO.mountGroupAt(radioHost); // idempotent
+        }
+      }
       var retroEl = document.getElementById('goalRetroNote');
       if (retroEl) retroEl.value = '';
       var okBtn = document.getElementById('confirmGoalOk');
       if (okBtn) okBtn.disabled = !existingOutcome;
       // i18n placeholder
       if (retroEl) retroEl.placeholder = T('phGoalRetroNote');
-      // Radio → enable OK
+      // Radio → enable OK (через bubbling change-event с host-span)
       function onRadioChange() {
-        if (okBtn) okBtn.disabled = !Array.from(radios).some(function(r){ return r.checked; });
+        var v = radioHost ? (radioHost.dataset.value || '') : '';
+        if (okBtn) okBtn.disabled = !v;
       }
-      radios.forEach(function(r){ r.addEventListener('change', onRadioChange); });
+      if (radioHost) radioHost.addEventListener('change', onRadioChange);
       // Кнопки
       var cancelBtn = document.getElementById('confirmGoalCancel');
       function cleanup() {
         overlay.classList.add('hidden');
-        radios.forEach(function(r){ r.removeEventListener('change', onRadioChange); });
+        if (radioHost) radioHost.removeEventListener('change', onRadioChange);
         if (okBtn) okBtn.removeEventListener('click', onOk);
         if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
       }
       function onOk() {
-        var chosen = Array.from(radios).find(function(r){ return r.checked; });
+        var chosen = radioHost ? (radioHost.dataset.value || '') : '';
         if (!chosen) return;
         var retroVal = retroEl ? (retroEl.value || '').trim() : '';
         cleanup();
-        resolve({ goalOutcome: chosen.value, goalRetroNote: retroVal || undefined });
+        resolve({ goalOutcome: chosen, goalRetroNote: retroVal || undefined });
       }
       function onCancel() {
         cleanup();

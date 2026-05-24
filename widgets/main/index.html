@@ -240,6 +240,17 @@
 
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    /* v2.0.0 D5 — Ring Checkbox/Radio host-spans рендерят свой <label class="ring-*-cell">
+       внутри .field. Глобальное правило выше делает их uppercase/grey/tiny — переопределяем
+       к нормальному виду метки рядом с control'ом. */
+    .field [data-ssp-checkbox-host] label,
+    .field [data-ssp-radio-host] label {
+      text-transform: none;
+      font-size: 13px;
+      font-weight: normal;
+      color: var(--text);
+      letter-spacing: normal;
+    }
 
     /* v1.9.9 — усиление видимости hover для Ring кнопок с заполненным фоном
        (primary, danger, success). Базовая Ring hover-разница в светлой теме почти
@@ -2285,21 +2296,10 @@
       <span id="confirmGoalText" style="font-weight:500"></span>
     </div>
     <div id="confirmGoalNotSet" style="background:var(--surface-light,#f5f5f5);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--muted,#888);display:none" data-i18n="histGoalNotSet">Цель спринта не была задана</div>
-    <!-- Outcome radio -->
+    <!-- Outcome radio (v2.0.0 D5-A — Ring Radio mount-point; populated by openConfirmGoalDialog) -->
     <div style="margin-bottom:12px">
       <label style="font-size:12px;font-weight:600;display:block;margin-bottom:8px" data-i18n="lblGoalOutcome">Результат по цели</label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">
-        <input type="radio" name="goalOutcomeRadio" value="achieved" style="cursor:pointer">
-        <span data-i18n="optGoalAchieved">✅ Достигнута</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">
-        <input type="radio" name="goalOutcomeRadio" value="partial" style="cursor:pointer">
-        <span data-i18n="optGoalPartial">⚖ Частично</span>
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">
-        <input type="radio" name="goalOutcomeRadio" value="missed" style="cursor:pointer">
-        <span data-i18n="optGoalMissed">❌ Не достигнута</span>
-      </label>
+      <span id="goalOutcomeRadioHost" data-ssp-radio-host data-name="goalOutcomeRadio" data-value="" data-options-json="[]" style="display:block"></span>
     </div>
     <!-- Retro note -->
     <div style="margin-bottom:14px">
@@ -2655,17 +2655,11 @@
           <summary data-i18n="cardDta">Differentiated Time Accounting</summary>
           <div class="form-grid form-grid--2" style="grid-column:1 / -1">
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="dtaEnabledCheck"/>
-                <span data-i18n="lblDtaEnabled">Enable differentiated time accounting</span>
-              </label>
+              <span id="dtaEnabledCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblDtaEnabled" data-label="Enable differentiated time accounting" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintDta">When enabled, the bundled workflow rule aggregates issue work items by type and writes the result into per-role fact-fields according to the mapping below. Each work item type may be mapped to a single role only.</div>
             </div>
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="dtaWarningsCheck"/>
-                <span data-i18n="lblDtaWarnings">Enable plan/fact ratio control notifications</span>
-              </label>
+              <span id="dtaWarningsCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblDtaWarnings" data-label="Enable plan/fact ratio control notifications" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintDtaWarnings">When enabled, the workflow emits per-role plan-vs-fact progress messages on each work-item logging: under 90% — informational ratio, 90-100% — warning that less than 10% of the plan remains, over 100% — overrun alert. The role label and advice text are localised. Disable this checkbox if you only need the silent fact-field aggregation.</div>
             </div>
             <div class="field" style="grid-column:1 / -1" id="dtaMappingWrap">
@@ -2694,17 +2688,11 @@
           <summary data-i18n="cardCascade">Cascade aggregation of work hours</summary>
           <div class="form-grid form-grid--2" style="grid-column:1 / -1">
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="cascadeAggregationCheck"/>
-                <span data-i18n="lblCascadeEnabled">Enable cascade aggregation parent ← child</span>
-              </label>
+              <span id="cascadeAggregationCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblCascadeEnabled" data-label="Enable cascade aggregation parent ← child" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintCascade">When enabled, the bundled workflow rule sums per-role plan/fact fields (derived from DTA Fields → Estimate/Fact mapping) from child issues into their level-2/level-3 parents along the configured parent link. Hierarchy max 2 levels (task → level-2 → level-3).</div>
             </div>
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="forbidContainerWorkItemsCheck"/>
-                <span data-i18n="lblForbidContainer">Forbid direct work-item logging on container issues</span>
-              </label>
+              <span id="forbidContainerWorkItemsCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblForbidContainer" data-label="Forbid direct work-item logging on container issues" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintForbidContainer">When enabled, saves are rejected if a user tries to add or edit work items on issues whose kind matches a level-2 or level-3 container value. Time logging must happen on leaf child issues only.</div>
               <div class="hint" id="warnCascadeWithoutForbid" style="display:none;font-size:11px;color:var(--error);margin-top:6px;font-weight:500" data-i18n="warnCascadeWithoutForbid">⚠ Cascade is on while forbid is off: any direct work-item logged on a container issue will be overwritten by the next cascade aggregation. Enable «Forbid direct logging» to keep aggregated values consistent.</div>
             </div>
@@ -2749,10 +2737,7 @@
 
             <!-- Master toggle -->
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="stateRollupEnabledCheck"/>
-                <span data-i18n="lblStateRollupEnabled">Enable state rollup parent ← min(children)</span>
-              </label>
+              <span id="stateRollupEnabledCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblStateRollupEnabled" data-label="Enable state rollup parent ← min(children)" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintStateRollup">When enabled, the bundled workflow rule recomputes container State (Story / Epic) as the least-progressed state across child issues whenever any child State changes. Reuses the hierarchy config from «Cascade aggregation» above. Disable if you have custom state-propagation workflows.</div>
               <div class="hint" id="hintStateRollupNoHierarchy" style="display:none;font-size:11px;color:var(--error);margin-top:6px;font-weight:500" data-i18n="hintStateRollupNoHierarchy">⚠ Rollup needs hierarchy config from «Cascade aggregation» above (kind field + level-2 / level-3 values). Fill that section first.</div>
             </div>
@@ -2859,12 +2844,9 @@
                 <option value="">— inherit from user —</option>
               </select>
             </div>
-            <!-- v6.3.0 D110 — чекбокс скрытия панели диагностического лога. -->
+            <!-- v6.3.0 D110 → v2.0.0 D5-B — Ring Checkbox host-span. -->
             <div class="field" style="grid-column:1 / -1">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                <input type="checkbox" id="hideDiagLogUiCheck"/>
-                <span data-i18n="lblHideDiagLogUi">Скрыть панель диагностического лога из UI</span>
-              </label>
+              <span id="hideDiagLogUiCheck" data-ssp-checkbox-host data-checked="0" data-i18n-label="lblHideDiagLogUi" data-label="Скрыть панель диагностического лога из UI" style="display:inline-block"></span>
               <div class="hint" style="font-size:11px;color:var(--muted);margin-top:4px" data-i18n="hintHideDiagLogUi">При установленном флаге блок «Диагностический лог» в нижней части виджета скрывается. Сами события продолжают записываться в память и доступны через экспорт TXT после снятия флага.</div>
             </div>
           </div>

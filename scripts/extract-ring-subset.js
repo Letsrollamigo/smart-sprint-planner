@@ -21,8 +21,9 @@ const KEEP_PATTERNS = [
   'ring-input',
   'ring-select',
   'ring-checkbox',
-  'ring-radio-btn',
-  'ring-radio-container',
+  // v2.0.0 Phase D5: Ring Radio uses .ring-radio-circle/focus/input/label/radio/btn — wide prefix to cover all.
+  // Old KEEP entries 'ring-radio-btn' + 'ring-radio-container' missed 5 of 6 classes.
+  'ring-radio',
   'ring-icon',
   'ring-form',
   'ring-control-label',
