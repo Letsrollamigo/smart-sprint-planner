@@ -42,13 +42,17 @@ const KEEP_PATTERNS = [
   'ring-tab',
   'ring-tabs',
   'ring-dumb-tabs',
+  // v2.0.0 Phase D7: Ring Table — 29 классов на одном префиксе ring-table-*
+  // (cell, headerCell, headerCellSortable, sorter, sortedUp, row, rowFocused,
+  // rowSelected, tableHead, tableWrapper, stickyHeader, etc.)
+  'ring-table',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
 // (avoids dragging in .ring-list-* inside compound button selectors etc.)
 const EXCLUDE_PATTERNS = [
   /* v2.0.0 D4 — ring-date-picker moved to KEEP_PATTERNS */
-  'ring-table',
+  /* v2.0.0 D7 — ring-table moved to KEEP_PATTERNS */
   'ring-data-list',
   'ring-dropdown',
   'ring-tooltip',

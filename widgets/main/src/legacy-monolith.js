@@ -8200,6 +8200,11 @@
        Используется как для базового снимка (rec.items), так и для working copy
        (draft.items). Принимает items+roleKey, рендерит в itemsSlot. */
     function __renderHistoryItemsBlock(items, rk) {
+      /* v2.0.0 D128 D7 — read-only Ring Table replaces native <table>.
+         Unmount prior Ring roots before clearing slot (lesson D5 #21). */
+      if (window.__SSP_TABLE) {
+        try { window.__SSP_TABLE.unmountAllIn(itemsSlot); } catch(_) {}
+      }
       itemsSlot.innerHTML = '';
       if (items && items.length) {
         var sumDiv = document.createElement('div'); sumDiv.className = 'spoiler__summary';
@@ -8209,53 +8214,102 @@
       }
       var tw = document.createElement('div'); tw.className = 'tbl-wrap';
       if (!items || !items.length) {
-        tw.innerHTML = '<div class="empty">'+T('histNoTasks')+'</div>';
-      } else {
-        /* v1.8.0 D130 — externalTicketId column in history (visible if setting configured).
-           v1.8.1 — XPriority column в истории тоже опциональна. */
-        var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
-        var hasXPri      = !!(_settings && _settings.fieldXPriority);
-        var tbl = document.createElement('table'); tbl.className = 'tbl';
-        tbl.innerHTML = '<thead><tr>'+
-          '<th style="min-width:90px">'+T('histColNum')+'</th>'+
-          /* 2nd position, right after issue ID. */
-          (hasExtTicket ? '<th style="min-width:120px">'+T('thExternalTicketId')+'</th>' : '')+
-          '<th style="min-width:120px">'+T('histColTitle')+'</th>'+
-          '<th style="min-width:80px">'+T('histColPriority')+'</th>'+
-          (hasXPri ? '<th class="th-dev">'+T('histColXpriority')+'</th>' : '')+
-          '<th style="min-width:80px">'+T('histColState')+'</th>'+
-          '<th style="min-width:120px">'+T('histColIncStatus')+'</th>'+
-          '<th class="td-num th-dev">'+fmtThLabel(rec.roleLabel||rk)+'</th>'+
-          '</tr></thead><tbody></tbody>';
-        var tb = tbl.querySelector('tbody');
-        items.forEach(function(item) {
+        tw.innerHTML = '<div class="empty">'+esc(T('histNoTasks'))+'</div>';
+        itemsSlot.appendChild(tw);
+        return;
+      }
+      /* v1.8.0 D130 — externalTicketId column visible if setting configured.
+         v1.8.1 — XPriority column в истории тоже опциональна. */
+      var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
+      var hasXPri      = !!(_settings && _settings.fieldXPriority);
+
+      function _renderExternalTicketInner(val) {
+        if (!val) return '<span style="color:var(--muted)">—</span>';
+        var safe = esc(String(val));
+        var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
+        if (/^https?:\/\//i.test(val)) {
+          return '<span '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
+        }
+        return '<span '+style+' title="'+safe+'">'+safe+'</span>';
+      }
+      function histDelta(v) {
+        if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
+        var s = fmtHoursOnly(Math.abs(v));
+        return v < 0 ? '<span class="delta-neg">−'+s+'</span>' : s;
+      }
+
+      var cols = [];
+      cols.push({
+        id: 'id', title: T('histColNum'), sortable: false, className: 'td-id',
+        getValue: function(item) {
+          return { __html: '<a href="'+safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a>' };
+        }
+      });
+      if (hasExtTicket) {
+        cols.push({
+          id: 'externalTicketId', title: T('thExternalTicketId'), sortable: false,
+          getValue: function(item) { return { __html: _renderExternalTicketInner(item.externalTicketId) }; }
+        });
+      }
+      cols.push({
+        id: 'title', title: T('histColTitle'), sortable: false, className: 'td-title',
+        getValue: function(item) { return esc(item.title || ''); }
+      });
+      cols.push({
+        id: 'priority', title: T('histColPriority'), sortable: false,
+        getValue: function(item) { return esc(localizeEnumVal(item.priority) || '—'); }
+      });
+      if (hasXPri) {
+        cols.push({
+          id: 'xpriority', title: T('histColXpriority'), sortable: false,
+          getValue: function(item) { return esc(localizeEnumVal(item.xpriority) || '—'); }
+        });
+      }
+      cols.push({
+        id: 'state', title: T('histColState'), sortable: false,
+        getValue: function(item) { return esc(localizeEnumVal(item.state) || '—'); }
+      });
+      cols.push({
+        id: 'incStatus', title: T('histColIncStatus'), sortable: false,
+        getValue: function(item) { return esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : '—'); }
+      });
+      /* fmtThLabel returns 'Ресурс<br>{label}'. table-mount.jsx auto-detects
+         <br> in column.title and generates getHeaderValue with React <br/>
+         elements (lesson #26). */
+      cols.push({
+        id: 'delta',
+        title: fmtThLabel(rec.roleLabel || rk),
+        sortable: false,
+        className: 'td-num',
+        getValue: function(item) {
           var est  = item['estimate_'+rk];
           var fact = item['fact_'+rk];
           var delta = (est !== null && est !== undefined)
             ? (fact !== null && fact !== undefined ? (est||0)-(fact||0) : (est||0))
             : null;
-          function histDelta(v) {
-            if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
-            var s = fmtHoursOnly(Math.abs(v));
-            return v < 0 ? '<span class="delta-neg">−'+s+'</span>' : s;
-          }
-          var tr = document.createElement('tr');
-          tr.innerHTML =
-            '<td class="td-id"><a href="'+safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a></td>'+
-            /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
-            (hasExtTicket ? _renderExternalTicketCell(item.externalTicketId) : '')+
-            '<td class="td-title">'+esc(item.title||'')+'</td>'+
-            '<td>'+esc(localizeEnumVal(item.priority)||'—')+'</td>'+
-            /* v1.8.1 — XPriority cell in history (optional). */
-            (hasXPri ? '<td>'+esc(localizeEnumVal(item.xpriority)||'—')+'</td>' : '')+
-            '<td>'+esc(localizeEnumVal(item.state)||'—')+'</td>'+
-            '<td>'+esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : '—')+'</td>'+
-            '<td class="td-num">'+histDelta(delta)+'</td>';
-          tb.appendChild(tr);
-        });
-        tw.appendChild(tbl);
-      }
+          return { __html: histDelta(delta) };
+        }
+      });
+
+      /* Internal host div для Ring Table. Уникальный (per spoiler instance). */
+      var host = document.createElement('div');
+      host.setAttribute('data-ssp-table-host', '');
+      tw.appendChild(host);
       itemsSlot.appendChild(tw);
+
+      if (window.__SSP_TABLE) {
+        window.__SSP_TABLE.mountAt(host, {
+          items: items.slice(),
+          columns: cols,
+          sortKey: 'off',
+          onSort: function() { /* no-op — history is read-only, headers not sortable */ },
+          getItemKey: function(item) { return item.issueId; },
+          stickyHeader: false,
+          emptyText: T('histNoTasks'),
+        });
+      } else {
+        host.innerHTML = '<div class="empty">'+esc(T('histNoTasks'))+'</div>';
+      }
     }
 
     /* Первичный рендер — снимок */
@@ -9670,58 +9724,78 @@
     return rows;
   }
 
+  /* v2.1.0 E1 — Hybrid controlled-mode Ring Table.
+     Ring Table renders inside host #currentRoleAssigneeHost. IIFE owns state
+     (_currentRolePP.resourcesByAssignee, manualMode/showByProj flags, all
+     change/click handlers); Ring Table is visual only. Cell renderers return
+     HTML strings via { __html } so legacy CSS-classes and data-attrs
+     (.currentRole-grade-sel, .currentRole-manual-res, .currentRole-del-assignee)
+     are preserved. Cell handlers — single event-delegated listener on host,
+     bound idempotently on first render. */
   function renderCurrentRoleAssigneeTable() {
-    var tbody = document.getElementById('currentRoleAssigneeBody');
-    if (!tbody) return;
-    /* v1.4.0 — флаги для colspan/render. */
-    var manualMode  = !!(_settings && _settings.manualPersonalResource);
-    var showByProj  = !!(_settings && _settings.fieldSystem && _settings.personalPlanningEnabled);
-    var colCount    = showByProj ? 6 : 5;
-    /* v1.4.0 — динамический thead (раньше был статикой в HTML); добавляем «Аллокации по проектам». */
-    var ttable = document.getElementById('currentRoleAssigneeTable');
-    var thead = ttable ? ttable.querySelector('thead') : null;
-    if (thead) {
-      thead.innerHTML = '<tr>'+
-        '<th>'+T('thTeamMember')+'</th>'+
-        '<th>'+T('thGrade')+'</th>'+
-        '<th class="td-num">'+T('thResourceH')+'</th>'+
-        (showByProj ? '<th>'+T('thAllocByProject')+'</th>' : '')+
-        '<th class="td-num">'+T('thRemainH')+'</th>'+
-        '<th style="width:36px"></th>'+
-        '</tr>';
-    }
+    var host = document.getElementById('currentRoleAssigneeHost');
+    if (!host) return;
+    var manualMode = !!(_settings && _settings.manualPersonalResource);
+    var showByProj = !!(_settings && _settings.fieldSystem && _settings.personalPlanningEnabled);
+
     if (!_currentRolePP || !Object.keys(_currentRolePP.resourcesByAssignee || {}).length) {
-      tbody.innerHTML = '<tr><td colspan="'+colCount+'" class="empty">'+T('emptyAssignees')+'</td></tr>';
+      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_) {} }
+      host.innerHTML = '<div class="empty">'+esc(T('emptyAssignees'))+'</div>';
       return;
     }
-    tbody.innerHTML = '';
-    Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-      var entry = _currentRolePP.resourcesByAssignee[login];
+
+    /* Build items array — pre-computed derived values to keep cell renderers cheap. */
+    var items = Object.keys(_currentRolePP.resourcesByAssignee).map(function(login) {
+      var entry  = _currentRolePP.resourcesByAssignee[login];
       var used   = calcAssigneeUsed(login);
       var remain = Math.round((entry.resource - used) * 100) / 100;
-      var tr = document.createElement('tr');
-      /* v1.4.0 — ресурс: при manualMode — <input>; иначе — read-only span. */
-      var resCellHtml;
-      if (manualMode) {
-        var manualVal = (typeof entry.manualResource === 'number') ? entry.manualResource
-                       : (typeof entry.resource === 'number' ? entry.resource : 0);
-        resCellHtml =
-          '<td class="td-num" id="currentRole_res_'+encodeLogin(login)+'">'+
-            '<input type="number" min="0" step="0.25" class="currentRole-manual-res" '+
-              'data-login="'+esc(login)+'" '+
-              'value="'+round2(manualVal)+'" '+
-              'style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/>'+
-          '</td>';
-      } else {
-        resCellHtml = '<td class="td-num" id="currentRole_res_'+encodeLogin(login)+'">' + round2(entry.resource) + '</td>';
+      return {
+        login: login,
+        entry: entry,
+        used: used,
+        remain: remain,
+      };
+    });
+
+    var columns = [];
+    columns.push({
+      id: 'assigneeName', title: T('thTeamMember'), sortable: false,
+      getValue: function(item) { return esc(item.entry.assigneeName || item.login); }
+    });
+    columns.push({
+      id: 'grade', title: T('thGrade'), sortable: false,
+      getValue: function(item) {
+        var currentGrade = _migrateGrade(item.entry.grade);
+        var html = '<select class="currentRole-grade-sel" data-login="'+esc(item.login)+'" style="width:100%;font-size:12px">'+
+          GRADES_LOCAL.map(function(g){
+            return '<option value="'+g+'"'+(currentGrade===g?' selected':'')+'>'+esc(T('grade'+g))+'</option>';
+          }).join('')+
+          '</select>';
+        return { __html: html };
       }
-      /* v1.4.0 — «Аллокации по проектам» (если showByProj). */
-      var byProjCellHtml = '';
-      if (showByProj) {
-        var rows = calcAssigneeAllocByProject(login);
-        if (!rows.length) {
-          byProjCellHtml = '<td class="td-alloc-by-sys"><span style="color:var(--muted)">—</span></td>';
-        } else {
+    });
+    columns.push({
+      id: 'resource', title: T('thResourceH'), sortable: false, className: 'td-num',
+      getValue: function(item) {
+        if (manualMode) {
+          var manualVal = (typeof item.entry.manualResource === 'number') ? item.entry.manualResource
+                         : (typeof item.entry.resource === 'number' ? item.entry.resource : 0);
+          return { __html:
+            '<input type="number" min="0" step="0.25" class="currentRole-manual-res" '+
+              'data-login="'+esc(item.login)+'" '+
+              'value="'+round2(manualVal)+'" '+
+              'style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/>'
+          };
+        }
+        return round2(item.entry.resource);
+      }
+    });
+    if (showByProj) {
+      columns.push({
+        id: 'allocByProject', title: T('thAllocByProject'), sortable: false, className: 'td-alloc-by-sys',
+        getValue: function(item) {
+          var rows = calcAssigneeAllocByProject(item.login);
+          if (!rows.length) return { __html: '<span style="color:var(--muted)">—</span>' };
           var hSuf = T('hourShort');
           var rowsHtml = rows.map(function(r) {
             var sysLabel = r.system === '__none__' ? T('allocBySysNoProject') : r.system;
@@ -9732,85 +9806,119 @@
                       (r.system === '__none__' ? ' alloc-by-sys-row--nosys' : '');
             return '<div class="'+cls+'">'+esc(sysLabel)+' · '+round2(r.hours)+hSuf+pctStr+(over?' ⚠':'')+'</div>';
           }).join('');
-          byProjCellHtml = '<td class="td-alloc-by-sys">'+rowsHtml+'</td>';
+          return { __html: rowsHtml };
         }
+      });
+    }
+    columns.push({
+      id: 'remain', title: T('thRemainH'), sortable: false, className: 'td-num',
+      getValue: function(item) {
+        var color = item.remain < 0 ? 'var(--error)' : 'var(--success)';
+        return { __html: '<span style="color:'+color+'">'+round2(item.remain)+'</span>' };
       }
-      tr.innerHTML =
-        '<td>' + esc(entry.assigneeName || login) + '</td>' +
-        '<td>' +
-          '<select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' +
-          GRADES_LOCAL.map(function(g){
-            var currentGrade = _migrateGrade(entry.grade);
-            return '<option value="'+g+'"'+(currentGrade===g?' selected':'')+'>'+esc(T('grade'+g))+'</option>';
-          }).join('') +
-          '</select>' +
-        '</td>' +
-        resCellHtml +
-        byProjCellHtml +
-        '<td class="td-num" style="color:'+(remain<0?'var(--error)':'var(--success)')+'" id="currentRole_rem_'+encodeLogin(login)+'">' + round2(remain) + '</td>' +
-        '<td style="text-align:center">' +
-          '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" data-login="'+esc(login)+'" title="'+T('confirmDelAssignee').replace('?','')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' +
-        '</td>';
-      tbody.appendChild(tr);
+    });
+    columns.push({
+      id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
+      getValue: function(item) {
+        return { __html:
+          '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" '+
+            'data-login="'+esc(item.login)+'" '+
+            'title="'+esc(T('confirmDelAssignee').replace('?',''))+'" '+
+            'aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+
+            icon('trash', T('aria.btnDeleteRow')).outerHTML+
+          '</button>'
+        };
+      }
     });
 
-    // Грейд
-    tbody.querySelectorAll('.currentRole-grade-sel').forEach(function(sel) {
-      sel.addEventListener('change', function() {
-        var login = sel.getAttribute('data-login');
-        if (!_currentRolePP.resourcesByAssignee[login]) return;
-        _currentRolePP.resourcesByAssignee[login].grade = sel.value;
-        /* v1.4.0 — в manualMode грейд информативен; ресурс не пересчитывается. */
-        if (!manualMode) {
-          var nkc2  = getCurrentRoleNkcHours();
-          var kpeMap = _migrateKpeObject(_settings.kpe || {});
-          var kpe   = (kpeMap[sel.value] !== undefined) ? kpeMap[sel.value] : (KPE_DEFAULTS_LOCAL[sel.value] || 0.65);
-          var rate  = _settings.rate !== undefined ? _settings.rate : 1;
-          var parti = _settings.participation !== undefined ? _settings.participation : 1;
-          _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;
-          var resEl = document.getElementById('currentRole_res_'+encodeLogin(login));
-          if (resEl) resEl.textContent = round2(_currentRolePP.resourcesByAssignee[login].resource);
-          var used2 = calcAssigneeUsed(login);
-          var rem2  = Math.round((_currentRolePP.resourcesByAssignee[login].resource - used2) * 100) / 100;
-          var remEl = document.getElementById('currentRole_rem_'+encodeLogin(login));
-          if (remEl) { remEl.textContent = round2(rem2); remEl.style.color = rem2 < 0 ? 'var(--error)' : 'var(--success)'; }
-          updateCurrentRoleTotals();
+    if (window.__SSP_TABLE) {
+      window.__SSP_TABLE.mountAt(host, {
+        items: items,
+        columns: columns,
+        sortKey: 'off',
+        onSort: function() {},
+        getItemKey: function(item) { return item.login; },
+        stickyHeader: true,
+        emptyText: T('emptyAssignees'),
+      });
+    }
+
+    /* Event delegation — idempotent. Bind ONCE on host for change events;
+       bind ONCE on document for click events (Ring Table's row click handlers
+       intercept bubbling, so host-level click delegation does not fire — same
+       pattern as _bindSortHeaders / _bindCheckboxEvents). */
+    if (!host.__sspAssigneeHandlersBound) {
+      host.__sspAssigneeHandlersBound = true;
+
+      host.addEventListener('change', function(ev) {
+        var t = ev.target;
+        if (!t || !t.matches) return;
+        /* Grade select change */
+        if (t.matches('select.currentRole-grade-sel[data-login]')) {
+          var login = t.getAttribute('data-login');
+          if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
+          _currentRolePP.resourcesByAssignee[login].grade = t.value;
+          var mm = !!(_settings && _settings.manualPersonalResource);
+          if (!mm) {
+            var nkc2  = getCurrentRoleNkcHours();
+            var kpeMap = _migrateKpeObject(_settings.kpe || {});
+            var kpe   = (kpeMap[t.value] !== undefined) ? kpeMap[t.value] : (KPE_DEFAULTS_LOCAL[t.value] || 0.65);
+            var rate  = _settings.rate !== undefined ? _settings.rate : 1;
+            var parti = _settings.participation !== undefined ? _settings.participation : 1;
+            _currentRolePP.resourcesByAssignee[login].resource = nkc2 * kpe * rate * parti;
+            renderCurrentRoleAssigneeTable();
+            updateCurrentRoleTotals();
+          }
+          saveCurrentRoleState();
+          return;
         }
-        saveCurrentRoleState();
+        /* Manual resource input change */
+        if (t.matches('input.currentRole-manual-res[data-login]')) {
+          var login2 = t.getAttribute('data-login');
+          if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login2]) return;
+          var v = parseFloat(t.value);
+          if (!isFinite(v) || v < 0) v = 0;
+          _currentRolePP.resourcesByAssignee[login2].manualResource = v;
+          _currentRolePP.resourcesByAssignee[login2].resource = v;
+          renderCurrentRoleAssigneeTable();
+          updateCurrentRoleTotals();
+          saveCurrentRoleState();
+          return;
+        }
       });
-    });
+    }
 
-    /* v1.4.0 — ручной ввод ресурса. entry.manualResource — источник правды;
-       entry.resource синхронизируется (используется в calcAssigneeUsed и total). */
-    tbody.querySelectorAll('.currentRole-manual-res').forEach(function(inp) {
-      inp.addEventListener('change', function() {
-        var login = inp.getAttribute('data-login');
-        if (!_currentRolePP.resourcesByAssignee[login]) return;
-        var v = parseFloat(inp.value);
-        if (!isFinite(v) || v < 0) v = 0;
-        _currentRolePP.resourcesByAssignee[login].manualResource = v;
-        _currentRolePP.resourcesByAssignee[login].resource = v;
-        var used2 = calcAssigneeUsed(login);
-        var rem2  = Math.round((v - used2) * 100) / 100;
-        var remEl = document.getElementById('currentRole_rem_'+encodeLogin(login));
-        if (remEl) { remEl.textContent = round2(rem2); remEl.style.color = rem2 < 0 ? 'var(--error)' : 'var(--success)'; }
-        updateCurrentRoleTotals();
-        /* v1.4.0 — пересобрать «Аллокации по проектам» (percent зависит от resource). */
-        if (showByProj) renderCurrentRoleAssigneeTable();
-        saveCurrentRoleState();
+    /* Direct DOM property-assignment handler (btn.onclick = ...) attached
+       after each Ring Table render. Document/host event delegation cannot
+       reach our buttons because Ring Table's React-root intercepts clicks
+       in row selection logic; inline onclick="" attributes are stripped by
+       Ring's dangerouslySetInnerHTML reconciliation. Direct .onclick on the
+       button bypasses both — it is a DOM Level 0 handler invoked by the
+       browser without going through React's synthetic system.
+       MutationObserver rebinds after every Ring re-render. Direct delete
+       without confirm overlay (legacy behaviour). */
+    function _bindDeleteButtons() {
+      host.querySelectorAll('button.currentRole-del-assignee[data-login]').forEach(function(btn) {
+        if (btn.__sspDelBound) return;
+        btn.__sspDelBound = true;
+        btn.onclick = function(ev) {
+          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+          var login = btn.getAttribute('data-login');
+          if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
+          delete _currentRolePP.resourcesByAssignee[login];
+          renderCurrentRoleAssigneeTable();
+          updateCurrentRoleTotals();
+          saveCurrentRoleState();
+        };
       });
-    });
-
-    // Корзинка — удаление исполнителя
-    tbody.querySelectorAll('.currentRole-del-assignee').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var login = btn.getAttribute('data-login');
-        var name  = (_currentRolePP.resourcesByAssignee[login] || {}).assigneeName || login;
-        _pendingDelAssigneeLogin = login;
-        document.getElementById('delAssigneeMsg').textContent = T('confirmDelAssignee').replace('?','') + ' «' + name + '» ' + T('fromList') + '?';
-        _showOverlay('delAssigneeOverlay');
-      });
-    });
+    }
+    /* Immediate bind for buttons already in DOM. */
+    _bindDeleteButtons();
+    /* Re-bind after Ring Table re-renders (React replaces children on update). */
+    if (!host.__sspDelMutObs) {
+      host.__sspDelMutObs = new MutationObserver(_bindDeleteButtons);
+      host.__sspDelMutObs.observe(host, { childList: true, subtree: true });
+    }
   }
 
   function encodeLogin(login) { return (login || '').replace(/[^a-zA-Z0-9_]/g, '_'); }
@@ -9865,53 +9973,22 @@
   }
 
   /* ── Таблица задач ── */
+  /* v2.0.0 D128 D7 — Hybrid controlled-mode Ring Table.
+     Ring Table renders inside host #currentRoleTaskHost. IIFE owns state
+     (getSortKey, _currentRolePP, save handlers); Ring Table is visual only.
+     Cell renderers return HTML strings via { __html } so legacy CSS-classes
+     and data-attrs (.currentRole-task-assignee, data-ssp-datepicker-host)
+     are preserved. Cell change handlers — single event-delegated listener
+     on host, bound idempotently on first render. */
   function renderCurrentRoleTaskTable() {
-    var tbody = document.getElementById('currentRoleTaskBody');
-    if (!tbody) return;
-    /* v2.0.0 D125 D4 — unmount Ring DatePicker roots перед перерисовкой tbody.
-       Без этого React roots утекут на каждом re-render таблицы. */
-    if (window.__SSP_DATEPICKER) {
-      try { window.__SSP_DATEPICKER.unmountAll(tbody); } catch(_) {}
-    }
-    /* v6.2.1 D98 — пере-генерация thead со sortable headers (ID/Priority/XPriority).
-       Раньше thead был статикой в HTML — sort-кнопки на «Люди» отсутствовали. */
-    var ttable = document.getElementById('currentRoleTaskTable');
-    var thead = ttable ? ttable.querySelector('thead') : null;
-    if (thead) {
-      var _sk = getSortKey();
-      /* v6.3.1 D112 — крупные явные sort-иконки через .sort-icon обёртку. */
-      function _sortIc(active) { return '<span class="sort-icon">'+(active?'▼':'↕')+'</span>'; }
-      thead.innerHTML = '<tr>'+
-        '<th class="td-id sortable'+(_sk==='id'?' sortable--active':'')+'" data-sort-key="id" title="'+esc(T('thSortClickHint'))+'">'+T('thId')+_sortIc(_sk==='id')+'</th>'+
-        /* v1.8.0 D130 — externalTicketId column (2nd position, right after issue ID link). */
-        (_settings && _settings.fieldExternalTicketId
-          ? '<th class="sortable'+(_sk==='externalTicketId'?' sortable--active':'')+'" data-sort-key="externalTicketId" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap;min-width:120px">'+T('thExternalTicketId')+_sortIc(_sk==='externalTicketId')+'</th>'
-          : '')+
-        '<th>'+T('thTitle')+'</th>'+
-        '<th class="sortable'+(_sk==='priority'?' sortable--active':'')+'" data-sort-key="priority" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thPriority')+_sortIc(_sk==='priority')+'</th>'+
-        /* v1.8.1 — XPriority опциональна. */
-        (_settings && _settings.fieldXPriority
-          ? '<th class="sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thXpriority')+_sortIc(_sk==='xpriority')+'</th>'
-          : '')+
-        '<th style="white-space:nowrap">'+T('thAllocH')+'</th>'+
-        /* v1.4.0 — System column (read-only, sortable). v1.8.1 — опциональна. */
-        (_settings && _settings.fieldSystem
-          ? '<th class="sortable'+(_sk==='system'?' sortable--active':'')+'" data-sort-key="system" title="'+esc(T('thSortClickHint'))+'" style="white-space:nowrap">'+T('thSystem')+_sortIc(_sk==='system')+'</th>'
-          : '')+
-        /* v1.10.0 B-23 — assignee column sortable (clickable header toggles sort on/off). */
-        '<th class="sortable'+(_sk==='assignee'?' sortable--active':'')+'" data-sort-key="assignee" title="'+esc(T('thSortClickHint'))+'" style="min-width:160px">'+T('thAssignee')+_sortIc(_sk==='assignee')+'</th>'+
-        '<th style="min-width:130px">'+T('thStart')+'</th>'+
-        '<th style="min-width:130px">'+T('thFinish')+'</th>'+
-        '</tr>';
-      _bindSortHeaders(thead);
-    }
-    /* v1.8.1 — colspan для empty-state с учётом опциональных колонок. */
-    var extColInc = (_settings && _settings.fieldExternalTicketId) ? 1 : 0;
-    var sysColInc = (_settings && _settings.fieldSystem)            ? 1 : 0;
-    var xpColInc  = (_settings && _settings.fieldXPriority)         ? 1 : 0;
-    var peopleBase = 7; // ID + Title + Priority + AllocH + Assignee + Start + Finish
+    var host = document.getElementById('currentRoleTaskHost');
+    if (!host) return;
+    /* DatePicker mount/unmount lifecycle is owned by SspDatePickerCell (React
+       useEffect cleanup). NO manual __SSP_DATEPICKER.unmountAll / mountAllIn
+       calls here — that would double-mount or strip stable roots. */
     if (!_currentSprintRoleRec) {
-      tbody.innerHTML = '<tr><td colspan="'+(peopleBase+extColInc+sysColInc+xpColInc)+'" class="empty">'+T('emptyTaskCurrentRole')+'</td></tr>';
+      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_) {} }
+      host.innerHTML = '<div class="empty">'+esc(T('emptyTaskCurrentRole'))+'</div>';
       return;
     }
     var rec = _currentSprintRoleRec;
@@ -9920,138 +9997,217 @@
        из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
     var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
     var active = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    /* v6.1.0 D81 (F4) — multi-key sort на «Люди». */
+    /* v6.1.0 D81 (F4) — multi-key sort на «Люди». Ring Table получает items
+       уже отсортированными; sortKey/sortOrder только для header affordance. */
     if (typeof multiKeySort === 'function') active = multiKeySort(active);
     if (!active.length) {
-      tbody.innerHTML = '<tr><td colspan="'+(peopleBase+extColInc+sysColInc+xpColInc)+'" class="empty">'+T('currentRoleNoTasks')+'</td></tr>';
+      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_) {} }
+      host.innerHTML = '<div class="empty">'+esc(T('currentRoleNoTasks'))+'</div>';
       return;
     }
 
     var ta  = (_currentRolePP && _currentRolePP.taskAssignments) ? _currentRolePP.taskAssignments : {};
     var rba = (_currentRolePP && _currentRolePP.resourcesByAssignee) ? _currentRolePP.resourcesByAssignee : {};
     var assigneeOptions = Object.keys(rba);
+    var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
+    var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
+    var sprintStartDate = sprintStart ? toDateIn(sprintStart) : '';
+    var sprintEndDate   = sprintEnd   ? toDateIn(sprintEnd)   : '';
 
-    tbody.innerHTML = '';
-    active.forEach(function(item, idx) {
-      var issueId = item.issueId;
-      var ta_entry = ta[issueId] || {};
-      var alloc = item['alloc_'+rk];
-      var est   = item['estimate_'+rk];
-      var fact  = item['fact_'+rk];
-      var allocVal = (alloc !== null && alloc !== undefined)
-        ? alloc
-        : Math.max(0, (est||0) - (fact||0));
-      var allocH = (allocVal / 60).toFixed(2);
-
-      var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
-      var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
-
-      // Проверка дат за пределами спринта
-      var ta_start = ta_entry.dateStart || null;
-      var ta_end   = ta_entry.dateEnd   || null;
-      var outOfRange = (ta_start && sprintStart && ta_start < sprintStart) ||
-                       (ta_end   && sprintEnd   && ta_end   > sprintEnd);
-
-      var tr = document.createElement('tr');
-      if (outOfRange) tr.style.background = 'rgba(224,90,106,.08)';
-
-      /* v6.1.0 D82 (F5) — assigner-btn: editor⊃assigner. Поля включаются и для
-         assigner-role-юзеров (без полных editor-прав). */
-      var assigneeSel = '<select class="currentRole-task-assignee assigner-btn" data-issue="'+esc(issueId)+'" style="width:100%;font-size:12px">'+
-        '<option value="">'+T('phNotAssigned')+'</option>'+
-        assigneeOptions.map(function(login){
-          var entry = rba[login];
-          return '<option value="'+esc(login)+'"'+(ta_entry.assignee===login?' selected':'')+'>'+esc(entry.assigneeName||login)+'</option>';
-        }).join('')+
-        '</select>';
-
-      var sprintStartDate = sprintStart ? toDateIn(sprintStart) : '';
-      var sprintEndDate   = sprintEnd   ? toDateIn(sprintEnd)   : '';
-
-      tr.innerHTML =
-        '<td class="td-id"><a href="'+safeUrl(item.url||'')+'" target="_blank" class="link">'+esc(issueId)+'</a></td>'+
-        /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
-        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : '')+
-        '<td class="td-title">'+esc(item.title||'')+(outOfRange?'<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ вне диапазона</span>':'')+'</td>'+
-        /* v6.1.0 D79 (F2) — read-only Priority. v1.8.1 — XPriority опциональна. */
-        '<td class="td-priority">'+esc(item.priority || '—')+'</td>'+
-        (_settings && _settings.fieldXPriority ? '<td class="td-xpriority">'+esc(item.xpriority || '—')+'</td>' : '')+
-        '<td class="td-num">'+allocH+'</td>'+
-        /* v1.4.0 — System cell (read-only). v1.8.1 — опциональна. */
-        (_settings && _settings.fieldSystem    ? '<td class="td-system">'+esc(item.system||'—')+'</td>' : '')+
-        '<td>'+assigneeSel+'</td>'+
-        /* v2.0.0 D125 D4 — Ring DatePicker mount-points. Host wrapper preserves
-           legacy contract (.currentRole-task-date + .currentRole-task-start/.end
-           + data-issue) so the existing change handler keeps working. Picker
-           writes YYYY-MM-DD to host.dataset.value + dispatches `change`. */
-        '<td><span data-ssp-datepicker-host class="currentRole-task-date currentRole-task-start" data-issue="'+esc(issueId)+'" data-value="'+(ta_start ? toDateIn(ta_start) : sprintStartDate)+'" data-min="'+sprintStartDate+'" data-max="'+sprintEndDate+'"></span></td>'+
-        '<td><span data-ssp-datepicker-host class="currentRole-task-date currentRole-task-end"   data-issue="'+esc(issueId)+'" data-value="'+(ta_end   ? toDateIn(ta_end)   : sprintEndDate)  +'" data-min="'+sprintStartDate+'" data-max="'+sprintEndDate+'"></span></td>';
-      tbody.appendChild(tr);
-    });
-
-    // Обработчики исполнителей
-    tbody.querySelectorAll('.currentRole-task-assignee').forEach(function(sel) {
-      sel.addEventListener('change', function() {
-        var issueId = sel.getAttribute('data-issue');
-        if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-        if (!_currentRolePP.taskAssignments[issueId]) _currentRolePP.taskAssignments[issueId] = {};
-        var login = sel.value;
-        _currentRolePP.taskAssignments[issueId].assignee = login;
-        _currentRolePP.taskAssignments[issueId].assigneeName = login ? ((rba[login] && rba[login].assigneeName) || login) : '';
-        /* v5.7.0 — Этап 5: cross-section sync — invalidate ganttColor cache;
-           если #tab-gantt видим — ре-рендер бара немедленно. Если скрыт — следующий
-           refreshGanttForCurrentSprint подхватит свежий assignee из _currentRolePP. */
-        delete _currentRolePP.taskAssignments[issueId].ganttColor;
-        var ganttTab = document.getElementById('tab-gantt');
-        if (ganttTab && !ganttTab.classList.contains('hidden')
-            && typeof renderGanttChart === 'function') {
-          try { renderGanttChart(); } catch(e){ diag('renderGanttChart sync err: '+e,'err'); }
-        }
-        updateCurrentRoleTotals();
-        updateCurrentRoleAssigneeRemain();
-        /* v1.4.0 — при включённой колонке «Аллокации по проектам» reassign меняет
-           распределение по системам у двух исполнителей; полный re-render проще,
-           чем точечно патчить ячейки. */
-        if (_settings && _settings.fieldSystem && _settings.personalPlanningEnabled) {
-          try { renderCurrentRoleAssigneeTable(); } catch(_){}
-        }
-        saveCurrentRoleState();
-        // Обновить поле исполнителя в YouTrack если настроено
-        updateIssueAssigneeField(issueId, login, rec.roleKey);
-      });
-    });
-
-    /* v2.0.0 D125 D4 — Обработчики дат. Хост — span[data-ssp-datepicker-host]
-       вместо bare input. Значение хранится в host.dataset.value, change event
-       диспатчится Ring DatePicker'ом через __SSP_DATEPICKER. */
-    tbody.querySelectorAll('.currentRole-task-date').forEach(function(host) {
-      host.addEventListener('change', function() {
-        var issueId = host.getAttribute('data-issue');
-        if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-        if (!_currentRolePP.taskAssignments[issueId]) _currentRolePP.taskAssignments[issueId] = {};
-        var isStart = host.classList.contains('currentRole-task-start');
-        var raw = host.dataset.value || '';
-        var ts = raw ? new Date(raw).getTime() : null;
-        if (isStart) {
-          _currentRolePP.taskAssignments[issueId].dateStart = ts;
-        } else {
-          _currentRolePP.taskAssignments[issueId].dateEnd = ts;
-        }
-        // Проверка диапазона — visual feedback на хост
-        var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
-        var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
-        var outOfRange = (ts && isStart && sprintStart && ts < sprintStart) ||
-                         (ts && !isStart && sprintEnd && ts > sprintEnd);
-        host.style.outline = outOfRange ? '1px solid var(--error)' : '';
-        host.style.borderRadius = outOfRange ? '4px' : '';
-        saveCurrentRoleState();
-      });
-    });
-    /* Mount Ring DatePicker в каждый host. Делается после addEventListener чтобы
-       initial render не выстреливал change handler в момент mount'а. */
-    if (window.__SSP_DATEPICKER) {
-      window.__SSP_DATEPICKER.mountAllIn(tbody);
+    function _renderExternalTicketInner(val) {
+      if (!val) return '<span style="color:var(--muted)">—</span>';
+      var safe = esc(String(val));
+      var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
+      if (/^https?:\/\//i.test(val)) {
+        return '<span '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
+      }
+      return '<span '+style+' title="'+safe+'">'+safe+'</span>';
     }
+
+    var columns = [];
+    columns.push({
+      id: 'id', title: T('thId'), sortable: true, className: 'td-id',
+      getValue: function(item) {
+        return { __html: '<a href="'+safeUrl(item.url||'')+'" target="_blank" class="link">'+esc(item.issueId)+'</a>' };
+      }
+    });
+    if (_settings && _settings.fieldExternalTicketId) {
+      columns.push({
+        id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true,
+        getValue: function(item) { return { __html: _renderExternalTicketInner(item.externalTicketId) }; }
+      });
+    }
+    columns.push({
+      /* min-width keeps task titles legible (default Ring cell collapses to text wrap on every word). */
+      id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
+      getValue: function(item) {
+        var taEntry = ta[item.issueId] || {};
+        var ts = taEntry.dateStart || null;
+        var te = taEntry.dateEnd   || null;
+        var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
+        var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ '+esc(T('outOfRangeWarn') || 'вне диапазона')+'</span>' : '';
+        return { __html: esc(item.title||'') + warn };
+      }
+    });
+    columns.push({
+      id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority',
+      getValue: function(item) { return esc(item.priority || '—'); }
+    });
+    if (_settings && _settings.fieldXPriority) {
+      columns.push({
+        id: 'xpriority', title: T('thXpriority'), sortable: true, className: 'td-xpriority',
+        getValue: function(item) { return esc(item.xpriority || '—'); }
+      });
+    }
+    columns.push({
+      id: 'allocH', title: T('thAllocH'), sortable: false, className: 'td-num',
+      getValue: function(item) {
+        var alloc = item['alloc_'+rk];
+        var est = item['estimate_'+rk];
+        var fact = item['fact_'+rk];
+        var allocVal = (alloc !== null && alloc !== undefined) ? alloc : Math.max(0, (est||0) - (fact||0));
+        return (allocVal / 60).toFixed(2);
+      }
+    });
+    if (_settings && _settings.fieldSystem) {
+      columns.push({
+        id: 'system', title: T('thSystem'), sortable: true, className: 'td-system',
+        getValue: function(item) { return esc(item.system || '—'); }
+      });
+    }
+    /* v1.10.0 B-23 — assignee sortable. compareAssignee применён в multiKeySort
+       выше; здесь sortable: true только для header affordance + onSort callback. */
+    columns.push({
+      id: 'assignee', title: T('thAssignee'), sortable: true,
+      getValue: function(item) {
+        var taEntry = ta[item.issueId] || {};
+        var html = '<select class="currentRole-task-assignee assigner-btn" data-issue="'+esc(item.issueId)+'" style="width:100%;font-size:12px">'+
+          '<option value="">'+esc(T('phNotAssigned'))+'</option>'+
+          assigneeOptions.map(function(login){
+            var entry = rba[login];
+            return '<option value="'+esc(login)+'"'+(taEntry.assignee===login?' selected':'')+'>'+esc(entry.assigneeName||login)+'</option>';
+          }).join('')+
+          '</select>';
+        return { __html: html };
+      }
+    });
+    columns.push({
+      id: 'dateStart', title: T('thStart'), sortable: false,
+      getValue: function(item) {
+        var taEntry = ta[item.issueId] || {};
+        var ts = taEntry.dateStart || null;
+        /* __type: 'datepicker' marker → SspDatePickerCell preserves DatePicker
+           React root across Ring Table row re-renders (focus changes). HTML
+           string would tear the inner mount down — see D7 lesson #24. */
+        return {
+          __type: 'datepicker',
+          issue: item.issueId,
+          className: 'currentRole-task-date currentRole-task-start',
+          dateValue: ts ? toDateIn(ts) : sprintStartDate,
+          min: sprintStartDate,
+          max: sprintEndDate,
+        };
+      }
+    });
+    columns.push({
+      id: 'dateEnd', title: T('thFinish'), sortable: false,
+      getValue: function(item) {
+        var taEntry = ta[item.issueId] || {};
+        var te = taEntry.dateEnd || null;
+        return {
+          __type: 'datepicker',
+          issue: item.issueId,
+          className: 'currentRole-task-date currentRole-task-end',
+          dateValue: te ? toDateIn(te) : sprintEndDate,
+          min: sprintStartDate,
+          max: sprintEndDate,
+        };
+      }
+    });
+
+    if (window.__SSP_TABLE) {
+      window.__SSP_TABLE.mountAt(host, {
+        items: active,
+        columns: columns,
+        sortKey: getSortKey(),
+        onSort: function(nextKey) {
+          /* IIFE owns sort state. nextKey is already cycled (off↔active) by table-mount. */
+          setSortKey(nextKey);
+          if (typeof _rerenderAllSortableTables === 'function') {
+            _rerenderAllSortableTables();
+          } else {
+            renderCurrentRoleTaskTable();
+          }
+        },
+        getItemKey: function(item) { return item.issueId; },
+        stickyHeader: true,
+        emptyText: T('currentRoleNoTasks'),
+      });
+    }
+
+    /* Event delegation для cell handlers — idempotent. Bind ONCE per host.
+       Survives Ring Table re-renders (rows might be recreated by React). */
+    if (!host.__sspHandlersBound) {
+      host.__sspHandlersBound = true;
+      host.addEventListener('change', function(ev) {
+        var t = ev.target;
+        if (!t) return;
+        /* Assignee select change */
+        var sel = (t.matches && t.matches('select.currentRole-task-assignee[data-issue]')) ? t : null;
+        if (sel) {
+          var issueId = sel.getAttribute('data-issue');
+          if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
+          if (!_currentRolePP.taskAssignments[issueId]) _currentRolePP.taskAssignments[issueId] = {};
+          var login = sel.value;
+          var rba2 = (_currentRolePP.resourcesByAssignee) || {};
+          _currentRolePP.taskAssignments[issueId].assignee = login;
+          _currentRolePP.taskAssignments[issueId].assigneeName = login
+            ? ((rba2[login] && rba2[login].assigneeName) || login)
+            : '';
+          /* v5.7.0 — cross-section sync — invalidate ganttColor cache */
+          delete _currentRolePP.taskAssignments[issueId].ganttColor;
+          var ganttTab = document.getElementById('tab-gantt');
+          if (ganttTab && !ganttTab.classList.contains('hidden')
+              && typeof renderGanttChart === 'function') {
+            try { renderGanttChart(); } catch(e){ diag('renderGanttChart sync err: '+e,'err'); }
+          }
+          updateCurrentRoleTotals();
+          updateCurrentRoleAssigneeRemain();
+          if (_settings && _settings.fieldSystem && _settings.personalPlanningEnabled) {
+            try { renderCurrentRoleAssigneeTable(); } catch(_){}
+          }
+          saveCurrentRoleState();
+          var rkNow = _currentSprintRoleRec && _currentSprintRoleRec.roleKey;
+          updateIssueAssigneeField(issueId, login, rkNow);
+          return;
+        }
+        /* DatePicker host change — target is the host span itself (Ring DatePicker
+           dispatches change на host через __SSP_DATEPICKER). */
+        var dateHost = (t.closest) ? t.closest('span.currentRole-task-date[data-issue]') : null;
+        if (dateHost) {
+          var issueIdD = dateHost.getAttribute('data-issue');
+          if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
+          if (!_currentRolePP.taskAssignments[issueIdD]) _currentRolePP.taskAssignments[issueIdD] = {};
+          var isStart = dateHost.classList.contains('currentRole-task-start');
+          var raw = dateHost.dataset.value || '';
+          var tsv = raw ? new Date(raw).getTime() : null;
+          if (isStart) {
+            _currentRolePP.taskAssignments[issueIdD].dateStart = tsv;
+          } else {
+            _currentRolePP.taskAssignments[issueIdD].dateEnd = tsv;
+          }
+          var ss = (_currentSprintRoleRec && _currentSprintRoleRec.dateStart) || (_sprint && _sprint.dateStart);
+          var se = (_currentSprintRoleRec && _currentSprintRoleRec.dateEnd)   || (_sprint && _sprint.dateEnd);
+          var oor = (tsv && isStart && ss && tsv < ss) || (tsv && !isStart && se && tsv > se);
+          dateHost.style.outline = oor ? '1px solid var(--error)' : '';
+          dateHost.style.borderRadius = oor ? '4px' : '';
+          saveCurrentRoleState();
+        }
+      });
+    }
+
+    /* No manual DatePicker mount here — SspDatePickerCell handles its own
+       lifecycle inside React (useEffect). */
   }
 
   function toDateIn(ts) {
@@ -10062,15 +10218,12 @@
     return d.getFullYear()+'-'+mm+'-'+dd;
   }
 
+  /* v2.1.0 E1 — Ring Table is React-owned: per-row remain cells no longer have
+     stable IDs to mutate directly. Re-render through Ring Table mountAt (cheap:
+     items array rebuild + React reconciliation), then update totals. */
   function updateCurrentRoleAssigneeRemain() {
     if (!_currentRolePP) return;
-    Object.keys(_currentRolePP.resourcesByAssignee || {}).forEach(function(login) {
-      var used = calcAssigneeUsed(login);
-      var res  = _currentRolePP.resourcesByAssignee[login].resource || 0;
-      var rem  = Math.round((res - used) * 100) / 100;
-      var el = document.getElementById('currentRole_rem_'+encodeLogin(login));
-      if (el) { el.textContent = round2(rem); el.style.color = rem < 0 ? 'var(--error)' : 'var(--success)'; }
-    });
+    renderCurrentRoleAssigneeTable();
     updateCurrentRoleTotals();
   }
 

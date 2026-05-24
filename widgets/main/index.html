@@ -96,6 +96,16 @@
     .ssp-icon--12 { width: 12px; height: 12px; }
     .ssp-icon--20 { width: 20px; height: 20px; }
     .ssp-icon--missing { background: rgba(224,90,106,.3); border: 1px dashed var(--error); }
+    /* v2.0.0 D7 r4 — center SVG icons vertically inside Ring buttons.
+       `vertical-align: middle` aligns to font middle, which for Ring's
+       button line-height visually pushes the icon ~2px above text baseline.
+       Tiny negative tweak + 6px gap matches Ring native icon-button look. */
+    .ring-button-button .ssp-icon,
+    .btn .ssp-icon,
+    button .ssp-icon {
+      vertical-align: -3px;
+      margin-right: 6px;
+    }
 
     /* ── Loader spinner v1.9.6 ── */
     .ssp-loader {
@@ -541,6 +551,14 @@
     .tbl tbody tr:hover td { background: var(--surface2); }
     .tbl tr.row-invalid td { background: rgba(224,90,106,.07); }
     .td-title { max-width: 200px; word-break: break-word; white-space: normal; }
+
+    /* v2.0.0 D7 — Ring Table CSS tweaks for legacy column behaviour parity. */
+    [data-ssp-table-host] .ring-table-table { min-width: 600px; }
+    [data-ssp-table-host] .ring-table-cell.ssp-col-title { min-width: 240px; max-width: 360px; word-break: break-word; white-space: normal; }
+    [data-ssp-table-host] .ring-table-cell select { width: 100%; min-width: 150px; }
+    /* Vertical-center cells содержащие DatePicker mount hosts and selects so the
+       Ring DatePicker button + native select align with text rows. */
+    [data-ssp-table-host] .ring-table-cell { vertical-align: middle; }
 
     .tbl td select {
       width: 100%; min-width: 150px;
@@ -1098,18 +1116,25 @@
     .empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }
     .link  { color: var(--primary); text-decoration: none; }
     .link:hover { text-decoration: underline; }
-    /* v1.7.1 — fixed-position save-row: кнопка сохранения ВСЕГДА видна
-       внизу viewport'а независимо от скролла или высоты контента (раньше
-       sticky-вариант v1.3.1 ломался при определённых layout-условиях).
-       Inner-wrapper центрирует контент в width виджета (max 1600px),
-       background + backdrop-blur показывают что под полосой есть прокрутка. */
+    /* v2.0.0 D7 — settings save row uses position: sticky inside the overlay
+       scroll container. Previous `position: fixed; bottom: 0` was anchored to
+       the iframe document — in the YT widget iframe (auto-grow to 2000-3000px)
+       the bar slid far below the outer viewport and disappeared. Sticky inside
+       .settings-overlay (overflow-y: auto) keeps the bar pinned to the visible
+       scroll bottom regardless of inner content height. Same root cause as D2
+       iframe-aware dialog positioning fix (lesson #9). */
     .save-row {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
+      position: sticky;
+      bottom: 0;
       background: var(--bg);
       border-top: 1px solid var(--border);
       z-index: var(--z-dropdown);
       box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, .15);
+      margin-top: 20px;
+      /* compensate .settings-overlay__inner horizontal padding (24px) so the
+         sticky bar spans the full overlay width. */
+      margin-left: -24px;
+      margin-right: -24px;
     }
     .save-row__inner {
       max-width: 1600px;
@@ -1402,8 +1427,9 @@
       max-width: 1600px;
       width: 100%;
       margin: 0 auto;
-      /* v1.7.1: bottom padding учитывает высоту fixed .save-row (~52 px) + запас. */
-      padding: 20px 24px 90px;
+      /* v2.0.0 D7 — bottom padding reduced from 90 → 20: .save-row is now sticky
+         (in-flow), no need to clear space for a fixed bar. */
+      padding: 20px 24px 20px;
       box-sizing: border-box;
     }
     .settings-overlay__header {
@@ -1982,40 +2008,24 @@
               <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
             </div>
           </div>
+          <!-- v2.1.0 E1 — Ring Table host. Native <table> + <thead> + <tbody> removed;
+               Ring Table renders its own structure inside this host via
+               renderCurrentRoleAssigneeTable() → window.__SSP_TABLE.mountAt. -->
           <div class="tbl-wrap">
-            <table class="tbl" id="currentRoleAssigneeTable">
-              <thead><tr>
-                <th data-i18n="thTeamMember">Член команды</th>
-                <th data-i18n="thGrade">Грейд</th>
-                <th data-i18n="thResourceH">Ресурс (ч)</th>
-                <th data-i18n="thRemainH">Остаток (ч)</th>
-                <th style="width:36px"></th>
-              </tr></thead>
-              <tbody id="currentRoleAssigneeBody">
-                <tr><td colspan="5" class="empty" data-i18n="emptyAssignees">Выберите спринт и нажмите «Подобрать исполнителей»</td></tr>
-              </tbody>
-            </table>
+            <div id="currentRoleAssigneeHost" data-ssp-table-host>
+              <div class="empty" data-i18n="emptyAssignees">Выберите спринт и нажмите «Подобрать исполнителей»</div>
+            </div>
           </div>
         </div>
         <div class="card">
           <div class="card-title" data-i18n="cardTaskCurrentRole">Распределение задач</div>
+          <!-- v2.0.0 D7 — Ring Table host. Native <table> + <thead> + <tbody> removed;
+               Ring Table renders its own table structure inside this host. The IIFE
+               function renderCurrentRoleTaskTable() mounts via window.__SSP_TABLE.mountAt. -->
           <div class="tbl-wrap">
-            <table class="tbl" id="currentRoleTaskTable">
-              <thead><tr>
-                <th class="td-id" data-i18n="thId">ID</th>
-                <th data-i18n="thTitle">Название</th>
-                <!-- v6.1.0 D79 (F2) — read-only Priority + XPriority на «Люди». -->
-                <th style="white-space:nowrap" data-i18n="thPriority">Приоритет</th>
-                <th style="white-space:nowrap" data-i18n="thXpriority">Сквозной<br>приоритет</th>
-                <th style="white-space:nowrap" data-i18n="thAllocH">Аллокация (ч)</th>
-                <th style="min-width:160px" data-i18n="thAssignee">Исполнитель</th>
-                <th style="min-width:130px" data-i18n="thStart">Старт</th>
-                <th style="min-width:130px" data-i18n="thFinish">Финиш</th>
-              </tr></thead>
-              <tbody id="currentRoleTaskBody">
-                <tr><td colspan="8" class="empty" data-i18n="emptyTaskCurrentRole">Выберите спринт</td></tr>
-              </tbody>
-            </table>
+            <div id="currentRoleTaskHost" data-ssp-table-host>
+              <div class="empty" data-i18n="emptyTaskCurrentRole">Выберите спринт</div>
+            </div>
           </div>
         </div>
       </div>
