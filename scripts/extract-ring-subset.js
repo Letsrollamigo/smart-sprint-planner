@@ -46,6 +46,10 @@ const KEEP_PATTERNS = [
   // (cell, headerCell, headerCellSortable, sorter, sortedUp, row, rowFocused,
   // rowSelected, tableHead, tableWrapper, stickyHeader, etc.)
   'ring-table',
+  /* v2.1.0 F1+F2+F3 — Ring Input + Select + Collapse mount-points */
+  'ring-collapse',     // dumb collapsible from @jetbrains/ring-ui-built/components/collapse
+  'ring-list',         // options list rendered by Ring Select dropdown
+  'ring-dropdown',     // popup anchor used by Ring Select
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
@@ -54,7 +58,7 @@ const EXCLUDE_PATTERNS = [
   /* v2.0.0 D4 — ring-date-picker moved to KEEP_PATTERNS */
   /* v2.0.0 D7 — ring-table moved to KEEP_PATTERNS */
   'ring-data-list',
-  'ring-dropdown',
+  /* v2.1.0 F2 — 'ring-dropdown' moved to KEEP_PATTERNS (Ring Select uses it). */
   'ring-tooltip',
   'ring-tags',
   'ring-auth',
@@ -65,7 +69,7 @@ const EXCLUDE_PATTERNS = [
   'ring-breadcrumb',
   'ring-calendar',
   'ring-link',
-  'ring-list',
+  /* v2.1.0 F2 — 'ring-list' moved to KEEP_PATTERNS (Select dropdown options). */
   'ring-multi',
   'ring-navigation',
   'ring-pager',
@@ -85,7 +89,7 @@ const EXCLUDE_PATTERNS = [
   /* v2.0.0 Phase D6 — 'ring-tabs' moved to KEEP_PATTERNS (this is the actual
      dumb-tabs container + tab-title classes that Ring renders). */
   'ring-message',
-  'ring-collapsible',
+  /* v2.1.0 F3 — 'ring-collapse' moved to KEEP_PATTERNS (Settings accordion). */
   'ring-heading',
 ];
 
@@ -227,7 +231,10 @@ function run() {
   const outSize = Buffer.byteLength(output, 'utf8');
 
   // Hard limit enforcement — v2.0.0 D4: 80 → 100 KB (Ring DatePicker adds ~10 KB)
-  const HARD_LIMIT = 100 * 1024; // 100 KB
+  /* v2.1.0 F1+F2+F3 — limit raised 100→130 KB to accommodate ring-input,
+     ring-select, ring-popup (extended for Select dropdown), ring-list
+     (Select options), ring-dropdown, ring-collapse classes. */
+  const HARD_LIMIT = 130 * 1024; // 130 KB
   if (outSize > HARD_LIMIT) {
     console.error(`[ring-subset] ERROR: Output ${(outSize / 1024).toFixed(1)} KB exceeds hard limit of 80 KB!`);
     console.error('[ring-subset] Review KEEP_PATTERNS and narrow the allowlist.');

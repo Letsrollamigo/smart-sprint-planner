@@ -97,10 +97,10 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix + v1.9.11 modal/toast UX overhaul + v1.10.0 sort by assignee)', function () {
+test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix + v1.9.11 modal/toast UX overhaul + v1.10.0 sort by assignee + v2.1.0 Ring UI tier 3)', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 11,
-    'Registry should have 11 entries; update this test when next entry is added');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 12,
+    'Registry should have 12 entries; update this test when next entry is added');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
   /* v1.8.0 D130 — second entry: external ticket ID (no-op additive migration). */
@@ -133,6 +133,10 @@ test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 Exter
   /* v1.10.0 — eleventh entry: sort tasks by assignee column (B-23, frontend-only, no shape change). */
   assert.strictEqual(SCHEMA_MIGRATIONS[10].to, '1.10.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[10].migrate, 'function');
+  /* v2.1.0 — twelfth entry: Ring UI ярус 3 — full Ring Table migration + Ring Input
+     mount-points + visual unification (frontend-only, no shape change). */
+  assert.strictEqual(SCHEMA_MIGRATIONS[11].to, '2.1.0');
+  assert.strictEqual(typeof SCHEMA_MIGRATIONS[11].migrate, 'function');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {

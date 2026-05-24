@@ -8,6 +8,40 @@
 
 ---
 
+## [2.1.0] — 2026-05-25
+
+> **Ring UI ярус 3 — полная миграция на React Ring-компоненты.** Финальный этап трёхступенчатой миграции на Ring UI, начатой в v1.9.6. Все основные UI-элементы через React mount-points (Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Table). Плюс Ring Input mount-points для самых заметных text/number/textarea полей. Бандл 1224 KB raw (в рамках ~1.25 MB ceiling, +58 KB к v1.10.0). 415 unit-тестов проходят.
+
+### Added
+
+- **Ring Table** для всех 5 табличных layout'ов через `window.__SSP_TABLE.mountAt` hybrid controlled-mode мост: распределение задач, ресурсы по исполнителям, DTA mapping (Настройки), pickOverlay поиск задач, состав ролей. Sortable headers + внешняя pagination + DatePicker / Checkbox / select ячейки сохранены.
+- **Ring Input** mount-points (`window.__SSP_INPUT`) для 7 main-view текстовых/числовых/textarea полей: `sprintName`, `sprintGoal`, `pickQuery`, `goalRetroNote`, `dynFieldInput`, `cascadeLinkInwardInput`, `cascadeLinkOutwardInput`. Uncontrolled mode (defaultValue) сохраняет legacy `getElementById('X').value = Y` write семантику.
+- **Расширение моста**: `wrapHeaderFn` в `table-mount.jsx` позволяет `column.getHeaderValue` возвращать `{__html}` / `{__type}` / строки / ReactNode (паритет с `getValue`). Открывает Ring Checkbox в column header pickOverlay.
+- **Единая высота form-полей** (36px min-height) для всех `.field` и `.settings-card` inputs / selects / textareas — native поля и Ring Input mount-hosts визуально консистентны.
+- **SCHEMA_MIGRATIONS** запись `{ from: '1.10.0', to: '2.1.0', migrate: identity, note: 'Ring UI ярус 3 — full Ring Table migration + Ring Input mount-points + visual unification' }`. Backward-compat fixture snapshot заморожен в `tests/fixtures/snapshots/2.1.0/`.
+
+### Changed
+
+- **`buildRolePanel`** host swap — native `<table id="compTable_<rk>">` / `<thead>` / `<tbody>` удалены, заменены на `<div id="compHost_<rk>" data-ssp-table-host>`. Pagination (`#planPag_<rk>`) остаётся внешним sibling'ом.
+- **`updateAllocOverlimitUI`** адаптирован под Ring Table — overlimit подсветка через `host.querySelectorAll('input.alloc-input[data-iid]')` border-color; блокировка кнопки validate + overlimit модалка сохранены через `checkAllocOverlimit(rk)` global check.
+- **Bundle limit поднят**: `ring-subset.css` HARD_LIMIT 100 → 130 KB для размещения ring-input / ring-select / ring-popup / ring-list / ring-dropdown / ring-collapse классов. Итог `ring-subset.css` 106 KB.
+- **`vendored-react.chunk.js`** 650 KB → 697 KB (+47 KB на Ring Input/Select/Collapse импорты).
+
+### Fixed
+
+- **Регрессия шапки виджета + кнопок + модалок** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` бросал null-deref после миграции на host-span, обрывая весь init IIFE и оставляя sprint-selector + new-sprint button + clear-history button + modal-positioning без обработчиков. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain. (Урок #31.)
+- **Тёмный фон native `<input>` в Ring Table ячейках** (E4): native `<input>` в Ring Table ячейках наследует Ring's cell background. Fix: явные inline `background:var(--surface) + color:var(--text) + border + padding` для `.alloc-input` и `.dyn-period-input`.
+
+### Уроки (для следующих миграций)
+
+- **#27**: Ring Table перехватывает клики на уровне ячейки — используйте прямой `btn.onclick = fn` + `MutationObserver` rebind.
+- **#28**: Сверяйте ожидаемое UX с пользователем до debug — ложно-положительные «баги» тратят итерации.
+- **#29**: `mcp__chrome-devtools__click` через CDP не запускает DOM Level 0 `.onclick` внутри Ring Table ячеек — manual user click для per-row button smoke.
+- **#30**: Native `<input>` в Ring Table ячейке наследует фон ячейки — обязательны явные inline `background:var(--surface)`.
+- **#31**: Миграция `<input id="X">` → host-span требует grep `getElementById('X')` callsites в init-time IIFE — null-throw блокирует **всю последующую** привязку обработчиков.
+
+---
+
 ## [1.10.0] — 2026-05-22
 
 > **Сортировка задач по колонке «Исполнитель» (B-23).** Клик по заголовку колонки «Исполнитель» в таблице планирования роли (Планирование → подвкладка «Люди») сортирует строки по имени исполнителя по алфавиту. Задачи без исполнителя всегда уходят в конец списка. Tie-breaker'ы: xpriority → priority → ID задачи. Повторный клик по активной колонке выключает сортировку. Таблица истории спринта внутри спойлера намеренно сохраняет исходный порядок snapshot'а — сортировка применяется только к live planning view. Изменений в схеме нет. 407 unit-тестов проходят (375 → 407, +32).

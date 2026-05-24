@@ -216,7 +216,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. CLAUDE.md → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '1.10.0';
+var CURRENT_PLUGIN_VERSION = '2.1.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -405,6 +405,10 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.9.11', to: '1.10.0',
     migrate: function (snap) { return snap; }, /* no-op: sort-by-assignee is frontend-only, no schema change */
     note: 'v1.10.0: Sort tasks by assignee column (B-23) — schema unchanged'
+  },
+  { from: '1.10.0', to: '2.1.0',
+    migrate: function (snap) { return snap; }, /* no-op: Ring UI ярус 3 + Ring Input mount-points are frontend-only, no schema change */
+    note: 'v2.1.0: Ring UI ярус 3 — full Ring Table migration + Ring Input mount-points для main-view text/number/textarea fields + visual unification'
   }
 ];
 
@@ -1938,7 +1942,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '1.10.0' });
+        ctx.response.json({ version: '2.1.0' });
       }
     },
 

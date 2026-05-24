@@ -684,6 +684,10 @@
     applyI18N();
     /* v2.0.0 D6 — refresh Ring Tabs labels на смене языка. */
     try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch (_) {}
+    /* v2.1.0 F1+F2+F3 — mount Ring Input/Select/Collapse hosts (idempotent). */
+    try { if (window.__SSP_INPUT)    window.__SSP_INPUT.mountAllIn(document); } catch (_) {}
+    try { if (window.__SSP_SELECT)   window.__SSP_SELECT.mountAllIn(document); } catch (_) {}
+    try { if (window.__SSP_COLLAPSE) window.__SSP_COLLAPSE.mountAllIn(document); } catch (_) {}
     _updateProjectNameLabel();
     /* v1.3.1 — после applyI18N status-bar показывает локализованный
        on/off лейбл для своих 4 chip'ов. */
@@ -1567,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '1.10.0';
+  var APP_VERSION = '2.1.0';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3344,6 +3348,12 @@
     applyI18N();
     /* v2.0.0 D6 — Ring Tabs mount (idempotent) после первой applyI18N в init. */
     try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch (_) {}
+    /* v2.1.0 F1+F2+F3 — initial mount of Ring Input/Select/Collapse host-spans
+       AFTER applyI18N (placeholder attribute is set there). Idempotent — safe
+       to call again on language switch / dynamic re-render. */
+    try { if (window.__SSP_INPUT)    window.__SSP_INPUT.mountAllIn(document); } catch (_) {}
+    try { if (window.__SSP_SELECT)   window.__SSP_SELECT.mountAllIn(document); } catch (_) {}
+    try { if (window.__SSP_COLLAPSE) window.__SSP_COLLAPSE.mountAllIn(document); } catch (_) {}
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
     _initModalCloseObserver(); // v1.9.11 (B-32) — auto-detach focus trap / scroll lock при classList.add('hidden')
@@ -7769,9 +7779,14 @@
   document.getElementById('pickSearchBtn').addEventListener('click', function() {
     _pickPage = 1; doPickSearch();
   });
-  document.getElementById('pickQuery').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { _pickPage = 1; doPickSearch(); }
-  });
+  /* v2.1.0 F1 — pickQuery may be a host-span (data-ssp-input-host) before
+     Ring Input mounts; querySelector resolves both forms. keydown bubbles
+     from the inner Ring native input to the host span. */
+  (document.getElementById('pickQuery') ||
+   document.querySelector('[data-ssp-input-host][data-input-id="pickQuery"]'))
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { _pickPage = 1; doPickSearch(); }
+    });
 
   /* v5.0.3 — построение query + fingerprint для кэша */
   function _buildPickQuery() {
@@ -10696,12 +10711,7 @@
         var issueId = cell.getAttribute('data-issue');
         _clickTimer = setTimeout(function() {
           _clickTimer = null;
-          /* v2.0.0 Phase D3 — race protection: ждём завершения permission checks
-             перед guard'ами. Без этого при быстром 1-ом клике после init
-             _isEditor === false (initial) → false-negative toast «нет прав». */
           _startPermissionsCheck().then(function() {
-            /* v6.3.0 D106 — при выключенном inline-редактировании YouTrack-полей Гант
-               reassign отключён (writeback требует update-issue-field). */
             if (!(_settings && _settings.dynEditEnabled)) {
               try { toast(T('ganttReassignDisabledByInlineEdit'), 'warn'); } catch(_){}
               return;

@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.0] — 2026-05-25
+
+> **Ring UI ярус 3 — полная миграция на React Ring компоненты.** Final tier of the three-tier Ring UI migration started in v1.9.6. All major UI elements via React mount-points (Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Table). Plus Ring Input mount-points for the most visible text/number/textarea fields. Bundle 1224 KB raw (within ~1.25 MB ceiling, +58 KB vs v1.10.0). 415 unit tests pass.
+
+### Added
+
+- **Ring Table** for all 5 table layouts via `window.__SSP_TABLE.mountAt` hybrid controlled-mode bridge: task assignment, assignee resources, DTA mapping (Settings), pickOverlay task search, role composition. Sortable headers + external pagination + DatePicker / Checkbox / select cells preserved.
+- **Ring Input** mount-points (`window.__SSP_INPUT`) for 7 main-view text/number/textarea fields: `sprintName`, `sprintGoal`, `pickQuery`, `goalRetroNote`, `dynFieldInput`, `cascadeLinkInwardInput`, `cascadeLinkOutwardInput`. Uncontrolled mode (defaultValue) preserves legacy `getElementById('X').value = Y` write semantics.
+- **Bridge extension**: `wrapHeaderFn` in `table-mount.jsx` allows `column.getHeaderValue` to return `{__html}` / `{__type}` / strings / ReactNode (parity with `getValue`). Enables Ring Checkbox in pickOverlay column header.
+- **Form field unified height** (36px min-height) for all `.field` and `.settings-card` inputs / selects / textareas — native fields and Ring Input mount-hosts align consistently.
+- **SCHEMA_MIGRATIONS** entry `{ from: '1.10.0', to: '2.1.0', migrate: identity, note: 'Ring UI ярус 3 — full Ring Table migration + Ring Input mount-points + visual unification' }`. Backward-compat fixture snapshot frozen at `tests/fixtures/snapshots/2.1.0/`.
+
+### Changed
+
+- **`buildRolePanel`** host swap — native `<table id="compTable_<rk>">` / `<thead>` / `<tbody>` removed, replaced with `<div id="compHost_<rk>" data-ssp-table-host>`. Pagination (`#planPag_<rk>`) stays external sibling.
+- **`updateAllocOverlimitUI`** adapted to Ring Table — overlimit highlight via `host.querySelectorAll('input.alloc-input[data-iid]')` border-color; validate button disabling + overlimit modal preserved via `checkAllocOverlimit(rk)` global check.
+- **Bundle limit raised**: `ring-subset.css` HARD_LIMIT 100 → 130 KB to accommodate ring-input / ring-select / ring-popup / ring-list / ring-dropdown / ring-collapse classes. Final `ring-subset.css` 106 KB.
+- **`vendored-react.chunk.js`** 650 KB → 697 KB (+47 KB on Ring Input/Select/Collapse imports).
+
+### Fixed
+
+- **Sprint header + buttons + modals regression** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` threw null-deref after migration to host-span, aborting the entire init IIFE and leaving sprint-selector + new-sprint button + clear-history button + modal-positioning broken. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain. (Lesson #31.)
+- **Native `<input>` background dark in Ring Table cells** (E4): native `<input>` in Ring Table cells inherits Ring's cell background. Fix: explicit inline `background:var(--surface) + color:var(--text) + border + padding` for `.alloc-input` and `.dyn-period-input`.
+
+### Lessons learned (for next migrations)
+
+- **#27**: Ring Table swallows click events at cell level — use direct `btn.onclick = fn` + `MutationObserver` rebind.
+- **#28**: Verify expected UX with the user before debugging — false-positive «bug» chasing wastes iterations.
+- **#29**: `mcp__chrome-devtools__click` through CDP does not trigger DOM Level 0 `.onclick` inside Ring Table cells — manual user click for per-row button smoke.
+- **#30**: Native `<input>` in Ring Table cell inherits cell background — explicit inline `background:var(--surface)` required.
+- **#31**: Migrating `<input id="X">` → host-span requires grepping `getElementById('X')` callsites in init-time IIFE — null-throw blocks **all subsequent** event-binding.
+
+---
+
 ## [1.10.0] — 2026-05-22
 
 > **Sort tasks by assignee column (B-23).** Click the «Assignee» column header in the role planning table (Planning → People sub-tab) to sort rows alphabetically by assignee name. Empty/unassigned tasks always sort to the end. Tie-breakers: xpriority → priority → issue ID. Toggle off by clicking the active column. The history-spoiler tasks table intentionally keeps its frozen snapshot order — sorting only applies to the live planning view. No schema changes. 407 unit tests pass (375 → 407, +32).

@@ -552,6 +552,35 @@
     .tbl tr.row-invalid td { background: rgba(224,90,106,.07); }
     .td-title { max-width: 200px; word-break: break-word; white-space: normal; }
 
+    /* v2.1.0 F1 — Ring Input mount-host full-width: Ring's outer container is
+       inline-block by default; opt-in to block layout so width:100% on the host
+       cascades down to the actual <input>/<textarea>. */
+    [data-ssp-input-host] { display: block; width: 100%; }
+    [data-ssp-input-host] .ring-input-outerContainer { display: block; width: 100%; }
+    [data-ssp-input-host] .ring-input { width: 100%; }
+    [data-ssp-input-host] .ring-input-input { width: 100%; box-sizing: border-box; }
+    /* v2.1.0 F1 — unified form-field height for `.field`-wrapped form blocks
+       (sprint params, Settings rows). Scope intentionally NARROW — global
+       `select { min-height: ... }` breaks native select shadow rendering
+       (text inside browser-drawn select becomes clipped). */
+    .field input[type="text"],
+    .field input[type="number"],
+    .field input[type="email"],
+    .field input[type="password"],
+    .field input[type="search"],
+    .field input[type="tel"],
+    .field input[type="url"],
+    .field textarea,
+    .field select,
+    .field [data-ssp-input-host] .ring-input-input,
+    .settings-card input[type="text"],
+    .settings-card input[type="number"],
+    .settings-card textarea,
+    .settings-card select,
+    .settings-card [data-ssp-input-host] .ring-input-input {
+      min-height: 36px; box-sizing: border-box;
+    }
+
     /* v2.0.0 D7 — Ring Table CSS tweaks for legacy column behaviour parity. */
     [data-ssp-table-host] .ring-table-table { min-width: 600px; }
     [data-ssp-table-host] .ring-table-cell.ssp-col-title { min-width: 240px; max-width: 360px; word-break: break-word; white-space: normal; }
@@ -1925,11 +1954,14 @@
            Одна-две строки. Не «список задач», а outcome — что команда хочет достичь. -->
       <div class="field" style="margin-top:14px">
         <label for="sprintGoal" data-i18n="lblSprintGoal">🎯 Цель спринта</label>
-        <textarea id="sprintGoal" maxlength="500" rows="2"
-                  class="ring-input-input ring-input-input--multiline"
-                  data-i18n-placeholder="phSprintGoal"
-                  placeholder="Что команда хочет достичь к концу спринта"
-                  style="width:100%"></textarea>
+        <!-- v2.1.0 F1 — Ring Input mount-point. Inner native <textarea>
+             receives id="sprintGoal" (data-input-id) so getElementById('sprintGoal').value
+             keeps working for legacy save/load callsites. -->
+        <span data-ssp-input-host data-input-id="sprintGoal"
+              data-multiline="1" data-rows="2" data-maxlength="500"
+              data-i18n-placeholder="phSprintGoal"
+              placeholder="Что команда хочет достичь к концу спринта"
+              style="width:100%;display:block"></span>
         <span class="field-err" id="errSprintGoal" style="display:none"></span>
         <small class="hint" data-i18n="hintSprintGoal" style="color:var(--muted,#888);font-size:11px">Одна-две строки. Не «список задач», а outcome.</small>
       </div>
@@ -2142,7 +2174,10 @@
     </div>
     <div class="modal__body">
       <div class="search-row">
-        <input type="text" id="pickQuery" class="ring-input-input" data-i18n-ph="phPickQuery" placeholder="Запрос YouTrack (напр. Приоритет: Критичный #unresolved)"/>
+        <!-- v2.1.0 F1 — Ring Input mount-host. -->
+        <span data-ssp-input-host data-input-id="pickQuery"
+              data-i18n-ph="phPickQuery"
+              placeholder="Запрос YouTrack (напр. Приоритет: Критичный #unresolved)"></span>
         <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="pickSearchBtn" data-i18n="btnFind">Найти</button>
       </div>
       <div id="pickResults"><div class="empty" data-i18n="emptyPickResults">Введите запрос и нажмите «Найти»</div></div>
@@ -2318,11 +2353,12 @@
     <!-- Retro note -->
     <div style="margin-bottom:14px">
       <label for="goalRetroNote" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px" data-i18n="lblGoalRetroNote">Заметка ретроспективы (опционально)</label>
-      <textarea id="goalRetroNote" maxlength="1000" rows="3"
-                class="ring-input-input ring-input-input--multiline"
-                data-i18n-placeholder="phGoalRetroNote"
-                placeholder="Что сработало / не сработало для достижения цели"
-                style="width:100%"></textarea>
+      <!-- v2.1.0 F1 — Ring Input mount-host (multiline). -->
+      <span data-ssp-input-host data-input-id="goalRetroNote"
+            data-multiline="1" data-rows="3" data-maxlength="1000"
+            data-i18n-placeholder="phGoalRetroNote"
+            placeholder="Что сработало / не сработало для достижения цели"
+            style="width:100%;display:block"></span>
       <span class="field-err" id="errGoalRetroNote" style="display:none"></span>
     </div>
     <div class="confirm-btns">
@@ -2338,7 +2374,9 @@
     <h3 id="dynFieldTitle" data-i18n="dynModalTitle">Обновить значение поля</h3>
     <p id="dynFieldDesc"></p>
     <select id="dynFieldSelect" class="dyn-modal-select" style="display:none"></select>
-    <input type="text" id="dynFieldInput" class="dyn-modal-input" style="display:none" data-i18n-ph="phDynInput" placeholder="напр. 2д 4ч"/>
+    <!-- v2.1.0 F1 — Ring Input mount-host (toggled via `style.display` by caller). -->
+    <span data-ssp-input-host data-input-id="dynFieldInput" style="display:none"
+          data-i18n-ph="phDynInput" placeholder="напр. 2д 4ч"></span>
     <div class="dyn-modal-btns">
       <button class="ring-button-button ring-button-block ring-button-heightM" id="dynFieldNo" data-i18n="btnNo">Нет</button>
       <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="dynFieldYes" data-i18n="btnYesUpdate">Да, обновить</button>
@@ -2721,11 +2759,13 @@
             </div>
             <div class="field">
               <label for="cascadeLinkInwardInput" data-i18n="lblCascadeLinkInward">Parent link — inward (child → parent)</label>
-              <input type="text" id="cascadeLinkInwardInput" class="ring-input-input" data-i18n-ph="phCascadeLinkInward" placeholder="subtask of"/>
+              <span data-ssp-input-host data-input-id="cascadeLinkInwardInput"
+                    data-i18n-ph="phCascadeLinkInward" placeholder="subtask of"></span>
             </div>
             <div class="field">
               <label for="cascadeLinkOutwardInput" data-i18n="lblCascadeLinkOutward">Parent link — outward (parent → child)</label>
-              <input type="text" id="cascadeLinkOutwardInput" class="ring-input-input" data-i18n-ph="phCascadeLinkOutward" placeholder="parent for"/>
+              <span data-ssp-input-host data-input-id="cascadeLinkOutwardInput"
+                    data-i18n-ph="phCascadeLinkOutward" placeholder="parent for"></span>
             </div>
             <div class="field" style="grid-column:1 / -1">
               <div class="hint" style="font-size:11px;color:var(--muted)" data-i18n="hintCascadeLinks">Defaults match the built-in YouTrack «Subtask» link type (inward «subtask of», outward «parent for»). Override only if your project uses a custom relation. Both directions must be filled.</div>
