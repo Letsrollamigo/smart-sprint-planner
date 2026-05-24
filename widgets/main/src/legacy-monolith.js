@@ -6411,20 +6411,16 @@
     toolbar.appendChild(validateBtn);
     compCard.appendChild(toolbar);
 
+    /* v2.1.0 E4 — Ring Table host (replaces native <table>/<thead>/<tbody>).
+       renderRoleComposition() mounts Ring Table via window.__SSP_TABLE.mountAt
+       with columns built from buildRoleCompositionColumns(role, dynEdit). */
     var tblWrap = document.createElement('div');
     tblWrap.className = 'tbl-wrap';
-    var tbl = document.createElement('table');
-    tbl.className = 'tbl';
-    tbl.id = 'compTable_'+role.key;
-    var thead = document.createElement('thead');
-    thead.id = 'compHead_'+role.key;
-    var tbody = document.createElement('tbody');
-    tbody.id = 'compBody_'+role.key;
-    buildRoleTableHeader(thead, role, dynEdit);
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">'+T('compEmpty')+'</td></tr>';
-    tbl.appendChild(thead);
-    tbl.appendChild(tbody);
-    tblWrap.appendChild(tbl);
+    var host = document.createElement('div');
+    host.id = 'compHost_'+role.key;
+    host.setAttribute('data-ssp-table-host', '');
+    host.innerHTML = '<div class="empty">'+esc(T('compEmpty'))+'</div>';
+    tblWrap.appendChild(host);
     compCard.appendChild(tblWrap);
 
     var pag = document.createElement('div');
@@ -7023,6 +7019,16 @@
     }
     return '<td '+style+' title="'+safe+'">'+safe+'</td>';
   }
+  /* v2.1.0 E4 — inner-only variant for Ring Table cell (without <td> wrapper). */
+  function _renderExternalTicketInnerHtml(val) {
+    if (!val) return '<span style="color:var(--muted)">—</span>';
+    var safe = esc(String(val));
+    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
+    if (/^https?:\/\//i.test(val)) {
+      return '<span '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
+    }
+    return '<span '+style+' title="'+safe+'">'+safe+'</span>';
+  }
 
   /* ── Таблица состава для роли ── */
   function getRoleItemsArr(rk) {
@@ -7030,12 +7036,20 @@
     return _roleItems[rk];
   }
 
+  /* v2.1.0 E4 — Hybrid controlled-mode Ring Table for renderRoleComposition.
+     Ring renders 8-13 dynamic cols (base + optional externalTicketId / system
+     / xpriority). IIFE owns sort state (getSortKey / multiKeySort) and all
+     edit handlers. Cell renderers return { __html } for native HTML; per-row
+     delete buttons and dyn-enum cells wired via DOM Level 0 .onclick after
+     each Ring re-render (MutationObserver — lesson #27).
+     Sort: Ring header click → onSort callback → setSortKey → _rerenderAllSortableTables.
+     Pagination: external #planPag_<rk> div (sibling of host), unchanged. */
   function renderRoleComposition(rk) {
-    var tbody = document.getElementById('compBody_'+rk);
-    if (!tbody) { diag('renderRoleComposition('+rk+'): tbody NOT FOUND','err'); return; }
+    var host = document.getElementById('compHost_'+rk);
+    if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
     var items = getRoleItemsArr(rk);
     var has = items.length > 0;
-    diag('renderRoleComposition('+rk+'): items.length='+items.length+' tbody=yes has='+has, 'info');
+    diag('renderRoleComposition('+rk+'): items.length='+items.length+' host=yes has='+has, 'info');
     var clearBtn  = document.getElementById('clearBtn_'+rk);
     var recalcBtn = document.getElementById('recalcBtn_'+rk);
     var refreshBtn = document.getElementById('refreshBtn_'+rk);
@@ -7044,25 +7058,11 @@
     if (refreshBtn) refreshBtn.disabled = !has;
 
     if (!has) {
-      /* v1.8.0 D130 + v1.8.1 — динамический colspan с учётом опциональных колонок:
-         база = 8 (без dynEdit) или 10 (с dynEdit); +1 за каждую активную опциональную колонку. */
-      var extColInc = (_settings && _settings.fieldExternalTicketId) ? 1 : 0;
-      var sysColInc = (_settings && _settings.fieldSystem)            ? 1 : 0;
-      var xpColInc  = (_settings && _settings.fieldXPriority)         ? 1 : 0;
-      var baseCount = (_settings && _settings.dynEditEnabled) ? 10 : 8;
-      var colCount = baseCount + extColInc + sysColInc + xpColInc;
-      tbody.innerHTML = '<tr><td colspan="'+colCount+'" class="empty">'+T('compSprintEmpty')+'</td></tr>';
-      var pagEl = document.getElementById('planPag_'+rk);
-      if (pagEl) pagEl.style.display = 'none';
+      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
+      host.innerHTML = '<div class="empty">'+esc(T('compSprintEmpty'))+'</div>';
+      var pagElEmpty = document.getElementById('planPag_'+rk);
+      if (pagElEmpty) pagElEmpty.style.display = 'none';
       return;
-    }
-
-    /* v6.2.1 D98 — sort-indicators в thead + bind click handlers через общий helper. */
-    var thead = document.getElementById('compHead_'+rk);
-    var _roleForHead = thead ? ALL_ROLES.find(function(r){ return r.key === rk; }) : null;
-    if (thead && _roleForHead) {
-      buildRoleTableHeader(thead, _roleForHead, _settings && _settings.dynEditEnabled);
-      _bindSortHeaders(thead);
     }
 
     var pageNum = items._page || 1;
@@ -7083,8 +7083,10 @@
       return s;
     }
 
-    tbody.innerHTML = '';
-    /* v5.0.3 — серверный snapshot для сравнения и подсветки tr--dirty-row */
+    /* v5.0.3 — серверный snapshot для сравнения и подсветки dirty rows.
+       Ring Table per-row className via column.className isn't per-cell; we
+       wrap each cell in a span carrying tr--dirty-row class for visual.
+       Lock+dirty visual semantics moved to td-level span wrappers. */
     var snapItems = (_serverSnapshotRoleItems && _serverSnapshotRoleItems[rk]) || [];
     var snapByIssue = {};
     snapItems.forEach(function(it){ if (it && it.issueId) snapByIssue[it.issueId] = it; });
@@ -7093,101 +7095,149 @@
        статус в PLANNING → lock автоматически снимается). Полная working-copy логика — v5.3.0. */
     var isLocked = !!(_sprint && _sprint.status === STATUS.ALLOCATED);
     var roAttr = isLocked ? ' readonly="readonly" tabindex="-1"' : '';
-    page.forEach(function(item, li) {
-      var gi = start + li;
+    var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
+
+    /* Pre-compute per-item derived data so cell renderers stay cheap. */
+    var pageData = page.map(function(item) {
       var est  = item['estimate_'+rk];
       var fact = item['fact_'+rk];
       var delta = (est !== null && est !== undefined)
         ? ((fact !== null && fact !== undefined) ? ((est||0) - (fact||0)) : (est||0))
         : null;
-      var tr = document.createElement('tr');
-      /* v5.0.3 — пометить как «грязная строка», если значимые поля отличаются от snapshot */
-      var snap = snapByIssue[item.issueId];
-      if (!snap || JSON.stringify({a:item['alloc_'+rk], i:item.inclusionStatus, e:item['estimate_'+rk], f:item['fact_'+rk]})
-                !== JSON.stringify({a:snap['alloc_'+rk], i:snap.inclusionStatus, e:snap['estimate_'+rk], f:snap['fact_'+rk]})) {
-        tr.classList.add('tr--dirty-row');
-        tr.setAttribute('title', T('tooltipDirtyRow'));
-      }
-      if (isLocked) {
-        tr.classList.add('tr--locked');
-        tr.setAttribute('title', T('tooltipRowLocked'));
-      }
-
-      // Ячейки оценки/факта/ресурса/аллокации — зависят от dynEdit
-      // dynEdit: [Оценка-редакт.] [Факт-ro] [Ресурс-ro=дельта] [Аллокация-редакт.]
-      // normal:  [Ресурс-ro=дельта] [Аллокация-редакт.]
       var alloc = item['alloc_'+rk];
-      // По умолчанию аллокация = дельта max(0, est-fact)
       var allocDefault = (delta !== null && delta !== undefined) ? Math.max(0, delta) : null;
       var allocVal = (alloc !== null && alloc !== undefined) ? alloc : allocDefault;
       var allocDisplay = allocVal !== null && allocVal !== undefined ? fmtPeriod(allocVal) : '';
-      /* v1.6.2 D127 — bug fix: per-row interactive elements address the item by stable
-         issueId (data-iid) instead of by numeric position (data-gi). The previous data-gi
-         was the index in the sorted+paginated view, but handlers indexed the unsorted
-         _roleItems[rk] array — clicking Delete/Exclude under an active sort affected the
-         wrong row. */
-      var iidAttr = esc(item.issueId || '');
-      var allocCell = '<td class="td-num">'+
-        '<input type="text" class="alloc-input" data-iid="'+iidAttr+'" data-rk="'+rk+'" value="'+esc(allocDisplay)+'" placeholder="—"'+roAttr+'/>'+
-        '</td>';
-
-      var resCell;
-      if (dynEdit) {
-        var estDisplay = est !== null && est !== undefined ? fmtPeriod(est) : '';
-        var factDisplay = fact !== null && fact !== undefined ? fmtHoursOnly(fact) : '<span style="color:var(--muted)">—</span>';
-        resCell =
-          '<td class="td-num"><input type="text" class="dyn-period-input" data-iid="'+iidAttr+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="—" style="min-width:70px"'+roAttr+'/></td>'+
-          '<td class="td-num">'+factDisplay+'</td>'+
-          '<td class="td-num">'+fmtDelta(delta)+'</td>'+
-          allocCell;
-      } else {
-        resCell = '<td class="td-num">'+fmtDelta(delta)+'</td>' + allocCell;
-      }
-
-      // Поле состояния: обычное или редактируемое
-      var stateCell;
-      if (dynEdit && _settings && _settings.fieldState) {
-        stateCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldState" style="cursor:pointer;text-decoration:underline dotted;color:var(--primary)">'+esc(localizeEnumVal(item.state)||'—')+'</span></td>';
-      } else {
-        stateCell = '<td>'+esc(localizeEnumVal(item.state)||'—')+'</td>';
-      }
-
-      // Bug 4 fix: ячейки System/Priority/XPriority тоже редактируемые в dynEdit режиме
-      var systemCell, priorityCell, xpriorityCell;
-      var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
-      if (dynEdit && _settings && _settings.fieldSystem) {
-        systemCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span></td>';
-      } else {
-        systemCell = '<td>'+esc(item.system||'—')+'</td>';
-      }
-      if (dynEdit && _settings && _settings.fieldPriority) {
-        priorityCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.priority)||'—')+'</span></td>';
-      } else {
-        priorityCell = '<td>'+esc(localizeEnumVal(item.priority)||'—')+'</td>';
-      }
-      if (dynEdit && _settings && _settings.fieldXPriority) {
-        xpriorityCell = '<td><span class="dyn-enum-cell" data-iid="'+iidAttr+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(item.xpriority)||'—')+'</span></td>';
-      } else {
-        xpriorityCell = '<td>'+esc(localizeEnumVal(item.xpriority)||'—')+'</td>';
-      }
-
-      tr.innerHTML =
-        '<td class="td-id"><a href="'+safeUrl(item.url)+'" target="_blank" class="link">'+esc(item.issueId)+'</a></td>'+
-        /* v1.8.0 D130 — externalTicketId cell (2nd position, right after issue ID link). */
-        (_settings && _settings.fieldExternalTicketId ? _renderExternalTicketCell(item.externalTicketId) : '')+
-        /* v1.8.1 — System / XPriority cells показываются только если поле настроено. */
-        (_settings && _settings.fieldSystem    ? systemCell    : '')+
-        priorityCell+
-        (_settings && _settings.fieldXPriority ? xpriorityCell : '')+
-        stateCell+
-        '<td class="td-title">'+esc(item.title||'')+'</td>'+
-        resCell+
-        '<td><select class="inc-sel" data-iid="'+iidAttr+'" data-rk="'+rk+'">'+
-          Object.values(INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
-        '</select></td>'+
-        '<td><button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+iidAttr+'" data-rk="'+rk+'" title="'+T('btnDeleteTitle')+'" aria-label="'+T('aria.btnDeleteRow')+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button></td>';
-      tbody.appendChild(tr);
+      var snap = snapByIssue[item.issueId];
+      var isDirty = !snap || JSON.stringify({a:item['alloc_'+rk], i:item.inclusionStatus, e:item['estimate_'+rk], f:item['fact_'+rk]})
+                          !== JSON.stringify({a:snap['alloc_'+rk], i:snap.inclusionStatus, e:snap['estimate_'+rk], f:snap['fact_'+rk]});
+      return {
+        item: item, est: est, fact: fact, delta: delta,
+        allocDisplay: allocDisplay, isDirty: isDirty, iid: item.issueId,
+      };
     });
+
+    var columns = [];
+    columns.push({
+      id: 'id', title: T('thId'), sortable: true, className: 'td-id',
+      getValue: function(row) {
+        return { __html: '<a href="'+safeUrl(row.item.url)+'" target="_blank" class="link">'+esc(row.iid)+'</a>' };
+      }
+    });
+    if (_settings && _settings.fieldExternalTicketId) {
+      columns.push({
+        id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true,
+        getValue: function(row) { return { __html: _renderExternalTicketInnerHtml(row.item.externalTicketId) }; }
+      });
+    }
+    if (_settings && _settings.fieldSystem) {
+      columns.push({
+        id: 'system', title: T('thSystem'), sortable: false,
+        getValue: function(row) {
+          if (dynEdit) {
+            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(row.item.system||'—')+'</span>' };
+          }
+          return esc(row.item.system||'—');
+        }
+      });
+    }
+    columns.push({
+      id: 'priority', title: T('thPriority'), sortable: true,
+      getValue: function(row) {
+        if (dynEdit && _settings && _settings.fieldPriority) {
+          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.priority)||'—')+'</span>' };
+        }
+        return esc(localizeEnumVal(row.item.priority)||'—');
+      }
+    });
+    if (_settings && _settings.fieldXPriority) {
+      columns.push({
+        id: 'xpriority', title: T('thXpriority'), sortable: true,
+        getValue: function(row) {
+          if (dynEdit) {
+            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.xpriority)||'—')+'</span>' };
+          }
+          return esc(localizeEnumVal(row.item.xpriority)||'—');
+        }
+      });
+    }
+    columns.push({
+      id: 'state', title: T('thState'), sortable: false,
+      getValue: function(row) {
+        if (dynEdit && _settings && _settings.fieldState) {
+          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.state)||'—')+'</span>' };
+        }
+        return esc(localizeEnumVal(row.item.state)||'—');
+      }
+    });
+    columns.push({
+      id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
+      getValue: function(row) { return esc(row.item.title||''); }
+    });
+    if (dynEdit) {
+      columns.push({
+        id: 'estimate', title: T('thEstimate'), sortable: false, className: 'td-num',
+        getValue: function(row) {
+          var estDisplay = row.est !== null && row.est !== undefined ? fmtPeriod(row.est) : '';
+          /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
+             have their own background and native inputs inherit it (looking
+             black in dark theme). Force surface/text vars on inputs. */
+          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="—" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+        }
+      });
+      columns.push({
+        id: 'fact', title: T('thFact'), sortable: false, className: 'td-num',
+        getValue: function(row) {
+          return { __html: row.fact !== null && row.fact !== undefined ? fmtHoursOnly(row.fact) : '<span style="color:var(--muted)">—</span>' };
+        }
+      });
+      columns.push({
+        id: 'resource', title: T('thResource'), sortable: false, className: 'td-num',
+        getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
+      });
+    } else {
+      columns.push({
+        id: 'resource', title: fmtThLabel(roleLabel(ALL_ROLES.find(function(r){return r.key===rk;}) || {key:rk,labelKey:rk})), sortable: false, className: 'td-num',
+        getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
+      });
+    }
+    columns.push({
+      id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num',
+      getValue: function(row) {
+        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="—" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+      }
+    });
+    columns.push({
+      id: 'incStatus', title: T('thIncStatus'), sortable: false,
+      getValue: function(row) {
+        var html = '<select class="inc-sel" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'">'+
+          Object.values(INC).map(function(v){return '<option value="'+v+'"'+(row.item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
+          '</select>';
+        return { __html: html };
+      }
+    });
+    columns.push({
+      id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
+      getValue: function(row) {
+        return { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
+      }
+    });
+
+    if (window.__SSP_TABLE) {
+      window.__SSP_TABLE.mountAt(host, {
+        items: pageData,
+        columns: columns,
+        sortKey: (typeof getSortKey === 'function') ? getSortKey() : 'off',
+        onSort: function(nextKey) {
+          if (typeof setSortKey === 'function') setSortKey(nextKey);
+          if (typeof _rerenderAllSortableTables === 'function') _rerenderAllSortableTables();
+          else renderRoleComposition(rk);
+        },
+        getItemKey: function(row) { return row.iid; },
+        stickyHeader: true,
+        emptyText: T('compSprintEmpty'),
+      });
+    }
 
     /* v1.6.2 D127 — стабильный lookup по issueId; индекс в _roleItems[rk] не совпадает
        с позицией в DOM-таблице, когда применена сортировка через multiKeySort. */
@@ -7200,116 +7250,127 @@
     }
 
     // Навесить события
-    tbody.querySelectorAll('.inc-sel').forEach(function(sel) {
-      sel.addEventListener('change', function(e) {
-        var rk2 = e.target.dataset.rk;
-        var iid = e.target.dataset.iid;
+    /* Event delegation on host (idempotent). Ring Table does not intercept
+       change / focusout events — only clicks. Inputs/selects work via host
+       delegation; delete buttons + dyn-enum spans use direct DOM Level 0
+       .onclick via MutationObserver rebind (lesson #27). focusout bubbles
+       (unlike blur) and gives us the same semantics as legacy blur handlers. */
+    if (!host.__sspCompHandlersBound) {
+      host.__sspCompHandlersBound = true;
+
+      host.addEventListener('change', function(ev) {
+        var t = ev.target;
+        if (!t || !t.matches || !t.matches('select.inc-sel[data-iid]')) return;
+        var rk2 = t.dataset.rk;
+        var iid = t.dataset.iid;
         var idx = _findIdxByIid(rk2, iid);
         if (idx < 0) { diag('inc-sel change: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-        getRoleItemsArr(rk2)[idx].inclusionStatus = e.target.value;
+        getRoleItemsArr(rk2)[idx].inclusionStatus = t.value;
         updateRoleRemaining(rk2);
-        /* v5.0.3 — draft */
         _markDirty('roleItems');
         _draftSaveDebounced('roleItems', function(){ return _roleItems; });
         apiPost('sprint-data', { roleItems: _roleItems });
       });
-    });
 
-    tbody.querySelectorAll('.del-item-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var rk2 = btn.dataset.rk;
-        var iid = btn.dataset.iid;
-        var idx = _findIdxByIid(rk2, iid);
-        if (idx < 0) { diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-        getRoleItemsArr(rk2).splice(idx, 1);
-        renderRoleComposition(rk2);
-        updateRoleRemaining(rk2);
-        /* v5.0.3 — draft */
-        _markDirty('roleItems');
-        _draftSaveDebounced('roleItems', function(){ return _roleItems; });
-        apiPost('sprint-data', { roleItems: _roleItems });
-      });
-    });
-
-    // ── Аллокация: blur-обработчик (работает в обоих режимах) ──
-    tbody.querySelectorAll('.alloc-input').forEach(function(inp) {
-      inp.addEventListener('blur', function() {
-        if (inp.readOnly) return; // v5.2.0 — locked после ALLOCATED
-        var rk2  = inp.dataset.rk;
-        var iid  = inp.dataset.iid;
-        var idx  = _findIdxByIid(rk2, iid);
-        if (idx < 0) { diag('alloc-input blur: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-        var item = getRoleItemsArr(rk2)[idx];
-        if (!item) return;
-        var newVal = parsePeriod(inp.value);
-        var oldVal = item['alloc_'+rk2];
-        // Если поле очищено — сбросить в null (вернуться к дельте по умолчанию)
-        if (inp.value.trim() === '') newVal = null;
-        if (newVal === oldVal) return;
-        item['alloc_'+rk2] = newVal;
-        // Обновить отображение (подставить вычисленное значение если null)
-        if (newVal === null) {
-          var est  = item['estimate_'+rk2];
-          var fact = item['fact_'+rk2];
-          var delta = (est !== null && est !== undefined)
-            ? Math.max(0, (est||0)-(fact||0))
-            : null;
-          inp.value = delta !== null ? fmtPeriod(delta) : '';
-        } else {
-          inp.value = fmtPeriod(newVal);
-        }
-        updateRoleRemaining(rk2);
-        /* v5.0.3 — draft */
-        _markDirty('roleItems');
-        _draftSaveDebounced('roleItems', function(){ return _roleItems; });
-        apiPost('sprint-data', { roleItems: _roleItems });
-      });
-    });
-
-    if (dynEdit) {
-      // Поля period — динамическое обновление при blur
-      tbody.querySelectorAll('.dyn-period-input').forEach(function(inp) {
-        inp.addEventListener('blur', function() {
-          if (inp.readOnly) return; // v5.2.0 — locked после ALLOCATED
-          var rk2 = inp.dataset.rk;
-          var iid = inp.dataset.iid;
-          var idx = _findIdxByIid(rk2, iid);
-          if (idx < 0) { diag('dyn-period-input blur: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-          var newVal = parsePeriod(inp.value);
+      host.addEventListener('focusout', function(ev) {
+        var t = ev.target;
+        if (!t || !t.matches) return;
+        if (t.readOnly) return;
+        /* Аллокация: blur-обработчик (оба режима) */
+        if (t.matches('input.alloc-input[data-iid]')) {
+          var rk2  = t.dataset.rk;
+          var iid  = t.dataset.iid;
+          var idx  = _findIdxByIid(rk2, iid);
+          if (idx < 0) { diag('alloc-input focusout: item iid='+iid+' not found in role '+rk2,'warn'); return; }
           var item = getRoleItemsArr(rk2)[idx];
-          var oldVal = item['estimate_'+rk2];
+          if (!item) return;
+          var newVal = parsePeriod(t.value);
+          var oldVal = item['alloc_'+rk2];
+          if (t.value.trim() === '') newVal = null;
           if (newVal === oldVal) return;
+          item['alloc_'+rk2] = newVal;
+          if (newVal === null) {
+            var est  = item['estimate_'+rk2];
+            var fact = item['fact_'+rk2];
+            var delta = (est !== null && est !== undefined)
+              ? Math.max(0, (est||0)-(fact||0))
+              : null;
+            t.value = delta !== null ? fmtPeriod(delta) : '';
+          } else {
+            t.value = fmtPeriod(newVal);
+          }
+          updateRoleRemaining(rk2);
+          _markDirty('roleItems');
+          _draftSaveDebounced('roleItems', function(){ return _roleItems; });
+          apiPost('sprint-data', { roleItems: _roleItems });
+          return;
+        }
+        /* dynEdit: оценка-period blur */
+        if (t.matches('input.dyn-period-input[data-iid]')) {
+          var rk3 = t.dataset.rk;
+          var iid3 = t.dataset.iid;
+          var idx3 = _findIdxByIid(rk3, iid3);
+          if (idx3 < 0) { diag('dyn-period-input focusout: item iid='+iid3+' not found in role '+rk3,'warn'); return; }
+          var newVal3 = parsePeriod(t.value);
+          var item3 = getRoleItemsArr(rk3)[idx3];
+          var oldVal3 = item3['estimate_'+rk3];
+          if (newVal3 === oldVal3) return;
+          var inpEl = t;
           showDynFieldConfirm(
             T('dynModalTitle'),
-            T('dynConfirmEst') + ' ' + item.issueId + ' ' + T('dynConfirmEstTo') + fmtPeriod(newVal) + '»?',
+            T('dynConfirmEst') + ' ' + item3.issueId + ' ' + T('dynConfirmEstTo') + fmtPeriod(newVal3) + '»?',
             null, null,
             function(confirmed) {
               if (confirmed) {
-                item['estimate_'+rk2] = newVal;
-                updateIssueField(item.issueId, _settings[ALL_ROLES.find(function(r){return r.key===rk2;}).fieldEst], newVal, 'period');
-                updateRoleRemaining(rk2);
-                renderRoleComposition(rk2); // обновить ячейки Факт и Ресурс
-                apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rk2); });
+                item3['estimate_'+rk3] = newVal3;
+                updateIssueField(item3.issueId, _settings[ALL_ROLES.find(function(r){return r.key===rk3;}).fieldEst], newVal3, 'period');
+                updateRoleRemaining(rk3);
+                renderRoleComposition(rk3);
+                apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rk3); });
               } else {
-                inp.value = oldVal !== null && oldVal !== undefined ? fmtPeriod(oldVal) : '';
+                inpEl.value = oldVal3 !== null && oldVal3 !== undefined ? fmtPeriod(oldVal3) : '';
               }
             }
           );
-        });
+          return;
+        }
       });
+    }
 
-      // Поля enum (Состояние) — клик
-      tbody.querySelectorAll('.dyn-enum-cell').forEach(function(cell) {
-        cell.addEventListener('click', (function(c) { return function() {
-          var rk2      = c.dataset.rk;
-          var iid      = c.dataset.iid;
-          var idx      = _findIdxByIid(rk2, iid);
+    /* Per-render: rebind delete buttons + dyn-enum spans via direct .onclick
+       (Ring Table swallows clicks at cell level — lesson #27). MutationObserver
+       on host rebinds after every Ring re-render. */
+    function _bindCompHostClickHandlers() {
+      host.querySelectorAll('button.del-item-btn[data-iid]').forEach(function(btn) {
+        if (btn.__sspDelBound) return;
+        btn.__sspDelBound = true;
+        btn.onclick = function(ev) {
+          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+          var rk2 = btn.dataset.rk;
+          var iid = btn.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
+          if (idx < 0) { diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+          getRoleItemsArr(rk2).splice(idx, 1);
+          renderRoleComposition(rk2);
+          updateRoleRemaining(rk2);
+          _markDirty('roleItems');
+          _draftSaveDebounced('roleItems', function(){ return _roleItems; });
+          apiPost('sprint-data', { roleItems: _roleItems });
+        };
+      });
+      host.querySelectorAll('span.dyn-enum-cell[data-iid]').forEach(function(cell) {
+        if (cell.__sspEnumBound) return;
+        cell.__sspEnumBound = true;
+        cell.onclick = function(ev) {
+          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+          var rk2 = cell.dataset.rk;
+          var iid = cell.dataset.iid;
+          var idx = _findIdxByIid(rk2, iid);
           if (idx < 0) { diag('dyn-enum-cell click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-          var dataField = c.dataset.field;   // 'fieldState' | 'fieldPriority' | 'fieldXPriority' | 'fieldSystem'
+          var dataField = cell.dataset.field;
           var item     = getRoleItemsArr(rk2)[idx];
           var fieldName = _settings && _settings[dataField];
           if (!fieldName) return;
-          // Универсальный обработчик: грузим бандл и определяем текущее значение из итема
           var fieldTitleMap = { fieldState: T('dynFieldState'), fieldPriority: T('dynFieldPriority'), fieldXPriority: T('dynFieldXpriority'), fieldSystem: T('dynFieldSystem') };
           var itemKeyMap  = { fieldState: 'state', fieldPriority: 'priority', fieldXPriority: 'xpriority', fieldSystem: 'system' };
           var fieldTitle  = fieldTitleMap[dataField] || dataField;
@@ -7323,15 +7384,20 @@
               function(confirmed, newVal) {
                 if (confirmed && newVal !== null) {
                   item[itemKey] = newVal;
-                  c.textContent = localizeEnumVal(newVal) || newVal;
+                  cell.textContent = localizeEnumVal(newVal) || newVal;
                   updateIssueField(item.issueId, fieldName, newVal, 'enum');
                   apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rk2); });
                 }
               }
             );
           });
-        }; })(cell));
+        };
       });
+    }
+    _bindCompHostClickHandlers();
+    if (!host.__sspCompClickMutObs) {
+      host.__sspCompClickMutObs = new MutationObserver(_bindCompHostClickHandlers);
+      host.__sspCompClickMutObs.observe(host, { childList: true, subtree: true });
     }
 
     // Пагинация
@@ -8879,55 +8945,43 @@
    * Вызывается после каждого изменения аллокации.
    */
   function updateAllocOverlimitUI(rk) {
-    var tbody = document.getElementById('compBody_'+rk);
-    if (!tbody) return;
-    var items    = getRoleItemsArr(rk);
-    var pageNum  = items._page || 1;
-    var start    = (pageNum - 1) * PAGE_SIZE;
-
+    /* v2.1.0 E4 — Ring Table owns DOM; per-row <tr data-alloc-gi> is gone.
+       We look up alloc inputs directly by data-iid and apply the visual to
+       the input border. Per-row overlimit badge on title cell is degraded
+       (Ring Table cells have no stable per-row container we can append into
+       without disturbing React reconciliation). Validate button disabling
+       and the overlimit modal still work via checkAllocOverlimit(rk). */
+    var host = document.getElementById('compHost_'+rk);
+    var items = getRoleItemsArr(rk);
     var anyOverlimit = false;
 
-    var rows = tbody.querySelectorAll('tr[data-alloc-gi]');
-    rows.forEach(function(tr) {
-      var gi  = parseInt(tr.getAttribute('data-alloc-gi'));
-      var item = items[gi];
-      if (!item) return;
-      if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) {
-        tr.removeAttribute('data-overlimit');
-        var badge = tr.querySelector('.overlimit-badge');
-        if (badge) badge.remove();
-        return;
-      }
-      var alloc = item['alloc_'+rk];
-      var est   = item['estimate_'+rk];
-      var fact  = item['fact_'+rk];
-      var delta    = Math.max(0, (est||0) - (fact||0));  // ресурс строки задачи
-      var allocVal = (alloc !== null && alloc !== undefined)
-        ? alloc
-        : delta;
-      // Строка: превышение если аллокация задачи > дельта (ресурс) этой же задачи
-      var isOver = delta > 0 && allocVal > delta;
-      if (isOver) anyOverlimit = true;
-      tr.setAttribute('data-overlimit', isOver ? '1' : '0');
-      var allocCell = tr.querySelector('.alloc-input');
-      if (allocCell) {
-        allocCell.style.borderColor = isOver ? 'var(--error)' : '';
-      }
-      var existBadge = tr.querySelector('.overlimit-badge');
-      if (isOver && !existBadge) {
-        var badgeEl = document.createElement('span');
-        badgeEl.className = 'overlimit-badge';
-        badgeEl.textContent = T('overlimitBadge');
-        badgeEl.style.cssText = 'display:inline-block;margin-left:6px;font-size:11px;font-weight:600;color:var(--error);background:rgba(224,90,106,.12);border:1px solid rgba(224,90,106,.4);border-radius:4px;padding:1px 6px;vertical-align:middle;';
-        var titleCell = tr.querySelector('.td-title');
-        if (titleCell) titleCell.appendChild(badgeEl);
-      } else if (!isOver && existBadge) {
-        existBadge.remove();
-      }
-    });
+    if (host) {
+      var allocInputs = host.querySelectorAll('input.alloc-input[data-iid]');
+      allocInputs.forEach(function(inp) {
+        var iid = inp.getAttribute('data-iid');
+        var item = null;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i] && items[i].issueId === iid) { item = items[i]; break; }
+        }
+        if (!item) return;
+        if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) {
+          inp.style.borderColor = '';
+          return;
+        }
+        var alloc = item['alloc_'+rk];
+        var est   = item['estimate_'+rk];
+        var fact  = item['fact_'+rk];
+        var delta    = Math.max(0, (est||0) - (fact||0));
+        var allocVal = (alloc !== null && alloc !== undefined) ? alloc : delta;
+        var isOver = delta > 0 && allocVal > delta;
+        if (isOver) anyOverlimit = true;
+        inp.style.borderColor = isOver ? 'var(--error)' : '';
+      });
+    }
 
-    // Если нет data-alloc-gi — вычислим глобально по задачам
-    if (!rows.length) {
+    /* Fallback global check — host may not be visible yet (collapsed role
+       card), but validate button state still needs to reflect overlimit. */
+    if (!anyOverlimit) {
       anyOverlimit = checkAllocOverlimit(rk).length > 0;
     }
 
@@ -8997,21 +9051,12 @@
     safeLs.set('ssp_allocLockHintShown', '1');
   }
 
-  /* Патч: добавить data-alloc-gi к строкам таблицы при рендере.
-     Вешаем пост-хук на renderRoleComposition */
+  /* v2.1.0 E4 — Ring Table owns row DOM; data-alloc-gi tagging is gone.
+     Post-render hook now only triggers overlimit check (input border + validate
+     button + modal). */
   var _origRenderRoleComposition = renderRoleComposition;
   renderRoleComposition = function(rk) {
     _origRenderRoleComposition(rk);
-    // После рендера — пометить строки и проверить лимиты
-    var tbody = document.getElementById('compBody_'+rk);
-    if (!tbody) return;
-    var items = getRoleItemsArr(rk);
-    var pageNum = items._page || 1;
-    var start = (pageNum - 1) * PAGE_SIZE;
-    var trs = tbody.querySelectorAll('tr');
-    trs.forEach(function(tr, i) {
-      tr.setAttribute('data-alloc-gi', start + i);
-    });
     updateAllocOverlimitUI(rk);
   };
 
