@@ -8,6 +8,33 @@
 
 ---
 
+## [2.1.7] — 2026-05-25
+
+> **Парити-точка с corp full-rebuild lineage.** 8 UX/CSS-фиксов консолидированы из corp v2.1.1→v2.1.7 (приватный fork, full-rebuild итерация). Modal click-anchor jump root cause + Ring Table CSS-module silent-noop селекторы + defensive multiline textarea sizing + Ring font-size 13px scoped override. Без schema-изменений. 424 unit-теста проходят.
+
+### Fixed
+
+- **Модалка перепрыгивает к клику** (Bug #1). `dialog-mount.jsx` `setInterval(reposition, 100ms)` непрерывно re-position'ит Ring Dialog container к `__SSP_MODAL_ANCHOR.getCenterY()`. `click-anchor.js` document-capture listener обновлял `lastY` на **любой** click — включая клики **внутри открытой модалки** — что заставляло модалку прыгать к клику на следующем 100ms tick. Симптомы: pagination в pickOverlay уезжала, textarea в confirmGoal модалке collapse'ила при focus. Fix: новый helper `_isClickInsideOpenModal(target)` проверяет `closest('.ring-dialog-container, .ssp-dialog-host, .ssp-dialog-inner, .overlay:not(.hidden), .settings-overlay:not(.hidden), .dyn-modal-overlay:not(.hidden)')`; и click, и keydown listener'ы делают early-return когда target внутри открытой модалки. Клики **вне** модалки продолжают обновлять anchor (чтобы следующая модалка открылась в правильной позиции).
+- **CSS-токен `--surface-hover` не определён на light theme** (Bug A). `.alloc-input` и `.dyn-period-input` используют `var(--surface-hover, #2a2a3a)` с захардкоженным dark fallback — на light theme fallback `#2a2a3a` отрисовывал чёрный фон в колонке «Статус включения». Token определён явно для `:root` (light, белый фон), `body.theme-dark` / `[data-theme="dark"]` (`#3a3a4d`), и `@media (prefers-color-scheme: dark)` блока (`#3a3a4d`).
+- **Селекторы ячеек Ring Table — silent-noop** (Bug C). CSS-правила `[data-ssp-table-host] .ring-table-cell.*` никогда не matchили потому что Ring Table рендерит ячейки с CSS-module hashed class (например `table_a3f9__cell`), а не литералом `.ring-table-cell`. Селекторы упрощены до `[data-ssp-table-host] .td-*` (свои собственные классы, выставляемые через `column.className`) + явные `width:` объявления рядом с `min-width`/`max-width` для стабильного column layout. `vertical-align: middle` переписан на `td, [role="cell"]` напрямую.
+- **Multiline textarea collapse'ит в одну строку** в confirmGoal модалке (Bug D). Defensive `min-height: 72px` + `resize: vertical` для `[data-ssp-input-host][data-multiline="1"] textarea` и `.ring-input-input` — защита если Ring textarea не получает `--multiline` modifier от текущей версии Ring.
+- **Ring controls font-size 14px вместо corp baseline 13px** (Bug #3). Ring native `--ring-font-size: 14px` каскадился в widget UI делая controls больше окружающего масштаба. CSS-переменные `--ring-font-size: 13px`, `--ring-font-size-smaller: 11px`, `--ring-line-height: 18px`, `--ring-line-height-lower: 16px` scope'нуты к widget root (`.page`, `[data-ssp-table-host]`, `[data-ssp-input-host]`, `.ring-select-popup`, `.ring-popup`, `.ring-dialog`, `.ssp-dialog-host`, `.ssp-dialog-inner`). Defensive direct `font-size: 13px !important` для Ring popup option items (portal-rendered, variables могут не каскадиться).
+- **Колонки таблицы «Состав спринта» — broken proportions** (Bug #4). 12 колонок делили ширину равномерно — «Название» / External ID получали слишком узкую ширину. Явные `min-width` / `max-width` / `width` объявления для `.td-id` (100px), `.td-priority` (90px), `.td-xpriority` (80px), `.td-system` (100px), `.td-num` (80px, right-aligned). Таблица `min-width: 600px → 1100px` для предотвращения collapse.
+- **Inputs в ячейках Ring Table — font-size 14px** (polish 3). `.dyn-period-input`, `.dyn-enum-cell`, `.inc-sel`, `.currentRole-task-date`, и любые `input`/`select` внутри `[data-ssp-table-host]` теперь используют `font-size: 13px !important; line-height: 18px;`. Direct styling (background, border, radius, color, padding) для `.dyn-period-input` и `.inc-sel` — visual consistency с `.alloc-input`.
+- **Колонки Финиш/Старт растягиваются в distribution table** (polish 4). Колонки `dateStart` и `dateEnd` теперь поставляются с `className: 'td-date td-start'` и `'td-date td-end'` соответственно; matching CSS `[data-ssp-table-host] .td-date { min-width: 130px; max-width: 160px; width: 140px; white-space: nowrap; }` предотвращает растягивание последней колонки на остаток ширины строки.
+
+### Changed
+
+- **Версия в 6 точках** по правилу CLAUDE.md: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — все bump'нуты `2.1.0 → 2.1.7` одним коммитом.
+
+### Notes
+
+- **Без schema-изменений.** `CURRENT_PLUGIN_VERSION` bump'нут для forward-stamping консистентности; shape snapshot'а не изменился. Существующие v2.1.0 снимки загружаются через `migrateSnap` без проблем (валидируется через `compat-prev-release.test.js` против `tests/fixtures/snapshots/2.1.0/`).
+- **Контекст parity gate:** corp `Sprint Planer for MultiTeams` (приватный fork) выполнил full-rebuild на community v2.1.0 codebase (2026-05-25) и накопил 8 hotfix'ов во время smoke-итераций v2.1.1→v2.1.7. Этот релиз back-port'ит 8 общих UX/CSS fixes из corp lineage, чтобы community имел тот же UX baseline. Corp-специфичные коммиты (namespace renames, `BASELINE_ASSUMED` bridge, `scbt-state-toolkit`, `settings.json` `type:string` выбор, `SSP_VENDORED→SCBT_VENDORED` cleanup, hardcoded `/app-version '2.1.0'` corp bug) **НЕ** back-port'ятся — см. `Youtrack APPS/Shared Docks/DIFF_MAP.md` и `PARALLEL_DEV_STRATEGY.md §7`.
+- После parity gate оба репозитория сходятся на `v2.1.7` и далее продолжают как синхронные параллельные ветки согласно `SYNC_PROTOCOL.md`.
+
+---
+
 ## [2.1.0] — 2026-05-25
 
 > **Ring UI ярус 3 — полная миграция на React Ring-компоненты.** Финальный этап трёхступенчатой миграции на Ring UI, начатой в v1.9.6. Все основные UI-элементы через React mount-points (Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Table). Плюс Ring Input mount-points для самых заметных text/number/textarea полей. Бандл 1224 KB raw (в рамках ~1.25 MB ceiling, +58 KB к v1.10.0). 415 unit-тестов проходят.
