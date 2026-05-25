@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.7] — 2026-05-25
+
+> **Parity gate.** 8 UX/CSS fixes consolidated into v2.1.7: modal click-anchor jump root cause + Ring Table CSS-module silent-noop selectors + defensive multiline textarea sizing + Ring font-size 13px scoped override. No schema changes. 424 unit tests pass.
+
+### Fixed
+
+- **Modal jumps to click position** (Bug #1). `dialog-mount.jsx` setInterval(reposition, 100ms) continuously re-positions Ring Dialog container to `__SSP_MODAL_ANCHOR.getCenterY()`. `click-anchor.js` document-capture listener was updating `lastY` on **any** click — including clicks inside an open modal — making the modal jump to the click position on next 100ms tick. Symptoms: pagination in pickOverlay scrolled away, textarea in confirmGoal modal collapsed on focus. Fix: new helper `_isClickInsideOpenModal(target)` checks `closest('.ring-dialog-container, .ssp-dialog-host, .ssp-dialog-inner, .overlay:not(.hidden), .settings-overlay:not(.hidden), .dyn-modal-overlay:not(.hidden)')`; both click and keydown listeners early-return when target is inside an open modal. Clicks outside modals continue to update the anchor (so the next modal still opens at the right location).
+- **`--surface-hover` CSS token undefined on light theme** (Bug A). `.alloc-input` and `.dyn-period-input` use `var(--surface-hover, #2a2a3a)` with hardcoded dark fallback — on light theme the fallback `#2a2a3a` rendered as a black background in the Inclusion-status column. Token defined explicitly for `:root` (light, white background), `body.theme-dark` / `[data-theme="dark"]` (`#3a3a4d`), and `@media (prefers-color-scheme: dark)` block (`#3a3a4d`).
+- **Ring Table cell selectors silent-noop** (Bug C). CSS rules `[data-ssp-table-host] .ring-table-cell.*` never matched because Ring Table renders cells with a CSS-module hashed class (e.g. `table_a3f9__cell`), not literal `.ring-table-cell`. Selectors simplified to `[data-ssp-table-host] .td-*` (own custom classes set via `column.className`) + explicit `width:` declarations alongside `min-width`/`max-width` for stable column layout. `vertical-align: middle` rewritten to target `td, [role="cell"]` directly.
+- **Multiline textarea collapses to one line** in confirmGoal modal (Bug D). Defensive `min-height: 72px` + `resize: vertical` for `[data-ssp-input-host][data-multiline="1"] textarea` and `.ring-input-input` — protects against Ring textarea not receiving the `--multiline` modifier from current Ring version.
+- **Ring controls font-size 14px instead of 13px baseline** (Bug #3). Ring native `--ring-font-size: 14px` cascaded into widget UI making controls bigger than the surrounding scale. CSS variables `--ring-font-size: 13px`, `--ring-font-size-smaller: 11px`, `--ring-line-height: 18px`, `--ring-line-height-lower: 16px` scoped to widget root (`.page`, `[data-ssp-table-host]`, `[data-ssp-input-host]`, `.ring-select-popup`, `.ring-popup`, `.ring-dialog`, `.ssp-dialog-host`, `.ssp-dialog-inner`). Defensive direct `font-size: 13px !important` for Ring popup option items (portal-rendered, variables may not cascade).
+- **Sprint composition table column proportions broken** (Bug #4). 12 columns split width evenly — «Название» / External ID got too narrow. Explicit `min-width` / `max-width` / `width` declarations for `.td-id` (100px), `.td-priority` (90px), `.td-xpriority` (80px), `.td-system` (100px), `.td-num` (80px, right-aligned). Table `min-width: 600px → 1100px` to prevent collapse.
+- **Table inputs font-size 14px in Ring Table cells** (polish 3). `.dyn-period-input`, `.dyn-enum-cell`, `.inc-sel`, `.currentRole-task-date`, and any `input`/`select` inside `[data-ssp-table-host]` now use `font-size: 13px !important; line-height: 18px;`. Direct `.dyn-period-input` and `.inc-sel` styling (background, border, radius, color, padding) for visual consistency with `.alloc-input`.
+- **Finish/Start date columns stretch in distribution table** (polish 4). `dateStart` and `dateEnd` columns now ship with `className: 'td-date td-start'` and `'td-date td-end'` respectively; matching CSS `[data-ssp-table-host] .td-date { min-width: 130px; max-width: 160px; width: 140px; white-space: nowrap; }` prevents last column from expanding to fill remaining row width.
+
+### Changed
+
+- **Version sync 6 points** per CLAUDE.md rule: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — all bumped `2.1.0 → 2.1.7` in a single commit.
+
+### Notes
+
+- **No schema changes.** `CURRENT_PLUGIN_VERSION` bumped for forward-stamping consistency only; snapshot shape unchanged. Existing v2.1.0 snapshots load through `migrateSnap` cleanly (validated via `compat-prev-release.test.js` against `tests/fixtures/snapshots/2.1.0/`).
+- **Parity gate context.** This release back-ports 8 common UX/CSS fixes to keep the UX baseline consistent. No schema changes in this parity release; existing v2.1.0 snapshots load cleanly.
+- After parity gate both repositories converge on `v2.1.7` and continue as synchronized parallel branches per `SYNC_PROTOCOL.md`.
+
+---
+
 ## [2.1.0] — 2026-05-25
 
 > **Ring UI ярус 3 — полная миграция на React Ring компоненты.** Final tier of the three-tier Ring UI migration started in v1.9.6. All major UI elements via React mount-points (Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Table). Plus Ring Input mount-points for the most visible text/number/textarea fields. Bundle 1224 KB raw (within ~1.25 MB ceiling, +58 KB vs v1.10.0). 415 unit tests pass.

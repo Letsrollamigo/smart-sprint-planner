@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.0",
+  "version": "2.1.7",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v1.10.0 — Sort tasks by assignee column. Click the «Assignee» column header in the role planning table or in the history-spoiler tasks table to sort rows alphabetically by assignee. Empty assignee always sorts to the end; ties break by xpriority → priority → issue ID. Toggle on/off by clicking the active column. No schema changes. See CHANGELOG.md.",
+  "changeNotes": "v2.1.7 — Parity gate (2026-05-25). 8 UX/CSS fixes consolidated from v2.1.1→v2.1.7: defensive `--surface-hover` token in light/dark/media blocks (Bug A), Ring CSS-module selectors replaced with `.td-*` + explicit widths (Bug C), textarea defensive `min-height:72px` on multiline input-hosts (Bug D), modal click-anchor fix to ignore clicks inside open modals (Bug #1 — fixes pagination jump + textarea collapse in confirmGoal flow), Ring font-size 13px scoped override (Bug #3), table column-widths min/max balance + table min-width 600→1100px (Bug #4), table inputs font-size:13px (polish), dateStart/dateEnd column min/max-width with `td-date td-start|end` className (polish). No schema changes. See CHANGELOG.md.",
   "widgets": [
     {
       "key": "ssp-main",

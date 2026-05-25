@@ -12,7 +12,25 @@
   var lastX = null;
   var lastT = 0;
 
+  /* v2.1.6 — Bug #1 fix: НЕ обновлять lastX/Y если click внутри открытой модалки/dialog.
+     Иначе dialog-mount.jsx setInterval(reposition, 100ms) поймает свежий lastY и
+     перепрыгнет modal к месту click'а. Симптомы: pagination в pick modal съезжает,
+     textarea в confirmGoal collapse'ит. Click outside (для open следующей modal) —
+     OK, anchor обновляется как раньше. */
+  function _isClickInsideOpenModal(target) {
+    if (!target || !target.closest) return false;
+    return !!target.closest(
+      '.ring-dialog-container, ' +              // Ring Dialog wrapper
+      '.ssp-dialog-host, ' +                    // legacy overlay → Ring Dialog content host
+      '.ssp-dialog-inner, ' +                   // inner content container
+      '.overlay:not(.hidden):not(.ssp-dialog-host), ' +    // pure legacy overlay (pickOverlay/settingsOverlay)
+      '.settings-overlay:not(.hidden):not(.ssp-dialog-host), ' +
+      '.dyn-modal-overlay:not(.hidden):not(.ssp-dialog-host)'
+    );
+  }
+
   document.addEventListener('click', function(e) {
+    if (_isClickInsideOpenModal(e.target)) return;  // ignore in-modal clicks
     lastY = e.pageY;
     lastX = e.pageX;
     lastT = Date.now();
@@ -24,6 +42,7 @@
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var el = document.activeElement;
     if (!el || el === document.body || !el.getBoundingClientRect) return;
+    if (_isClickInsideOpenModal(el)) return;  // ignore keyboard activation inside open modal
     try {
       var r = el.getBoundingClientRect();
       lastY = (window.scrollY || 0) + r.top + r.height / 2;

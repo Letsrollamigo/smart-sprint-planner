@@ -26,6 +26,7 @@
       --error:     var(--ring-error-color, #d32f2f);
       --warn:      var(--ring-warning-color, #f57c00);
       --success:   var(--ring-success-color, #2e7d32);
+      --surface-hover: var(--ring-content-background-color, #ffffff);
       --radius:    6px;
       --radius-lg: 10px;
       --shadow:    0 2px 8px rgba(0, 0, 0, 0.08);
@@ -46,6 +47,7 @@
       --bg:        #1e1e2e;
       --surface:   #2a2a3d;
       --surface2:  #313149;
+      --surface-hover: #3a3a4d;
       --border:    #3e3e5a;
       --text:      #e0e0f0;
       --muted:     #8888aa;
@@ -63,6 +65,7 @@
         --bg:        #1e1e2e;
         --surface:   #2a2a3d;
         --surface2:  #313149;
+        --surface-hover: #3a3a4d;
         --border:    #3e3e5a;
         --text:      #e0e0f0;
         --muted:     #8888aa;
@@ -164,6 +167,25 @@
     .page-header__sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .page-header__links { margin-left: auto; flex-shrink: 0; white-space: nowrap; display:flex; gap:8px; align-items:center; }
     .alloc-input { width:70px; box-sizing:border-box; background:var(--surface-hover,#2a2a3a); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:2px 6px; font-size:13px; text-align:right; cursor:text; }
+    /* v2.1.6+v2.1.7 UI fix — baseline font-size 13px для всех inputs/selects внутри Ring Table cells.
+       Ring native cell typography 14px → inputs inherit → mismatch с scale.
+       v2.1.7 — снят `.ring-table-cell` префикс (silent-noop, Ring CSS-module). */
+    .dyn-period-input, .dyn-enum-cell, .inc-sel, .currentRole-task-date,
+    [data-ssp-table-host] input,
+    [data-ssp-table-host] select,
+    [data-ssp-table-host] .dyn-enum-cell {
+      font-size: 13px !important;
+      line-height: 18px;
+    }
+    .dyn-period-input {
+      width: 70px; box-sizing: border-box; background: var(--surface-hover,#2a2a3a);
+      border: 1px solid var(--border); border-radius: 4px; color: var(--text);
+      padding: 2px 6px; text-align: right; cursor: text;
+    }
+    .inc-sel {
+      background: var(--surface-hover,#2a2a3a); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text); padding: 2px 6px;
+    }
 
     /* ── Вкладки первого уровня ── */
     .tabs {
@@ -559,6 +581,18 @@
     [data-ssp-input-host] .ring-input-outerContainer { display: block; width: 100%; }
     [data-ssp-input-host] .ring-input { width: 100%; }
     [data-ssp-input-host] .ring-input-input { width: 100%; box-sizing: border-box; }
+    /* v2.1.7 — defensive min-height для multiline mount-host'ов. Если Ring native
+       textarea не получает modifier `--multiline` от current Ring version,
+       fallback на data-multiline атрибут host'а. Bug D fix (confirmGoal retro
+       textarea «съелась» — Ring textarea без min-height collapsed до 1 line). */
+    [data-ssp-input-host][data-multiline="1"] textarea,
+    [data-ssp-input-host][data-multiline="true"] textarea,
+    [data-ssp-input-host][data-multiline="1"] .ring-input-input,
+    [data-ssp-input-host][data-multiline="true"] .ring-input-input {
+      min-height: 72px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
     /* v2.1.0 F1 — unified form-field height for `.field`-wrapped form blocks
        (sprint params, Settings rows). Scope intentionally NARROW — global
        `select { min-height: ... }` breaks native select shadow rendering
@@ -582,12 +616,53 @@
     }
 
     /* v2.0.0 D7 — Ring Table CSS tweaks for legacy column behaviour parity. */
-    [data-ssp-table-host] .ring-table-table { min-width: 600px; }
-    [data-ssp-table-host] .ring-table-cell.ssp-col-title { min-width: 240px; max-width: 360px; word-break: break-word; white-space: normal; }
-    [data-ssp-table-host] .ring-table-cell select { width: 100%; min-width: 150px; }
+    [data-ssp-table-host] .ring-table-table { min-width: 1100px; }
+    [data-ssp-table-host] .ssp-col-title { min-width: 240px; max-width: 360px; word-break: break-word; white-space: normal; }
+    [data-ssp-table-host] select { width: 100%; min-width: 150px; }
     /* Vertical-center cells содержащие DatePicker mount hosts and selects so the
        Ring DatePicker button + native select align with text rows. */
-    [data-ssp-table-host] .ring-table-cell { vertical-align: middle; }
+    [data-ssp-table-host] td, [data-ssp-table-host] [role="cell"] { vertical-align: middle; }
+    /* v2.1.5 UI fix #4 — Состав спринта table column widths.
+       Без этих min/max widths Ring Table делит ширину равномерно среди 12 колонок,
+       и Название/External ID съедают friction в visually-broken proportions.
+       v2.1.7 — селекторы упрощены (убран промежуточный `.ring-table-cell` —
+       Ring рендерит ячейки с CSS-module hashed class, `.ring-table-cell` не
+       существует и rules были silent noop). */
+    [data-ssp-table-host] .td-id        { min-width: 90px;  max-width: 140px; width: 100px; white-space: nowrap; }
+    [data-ssp-table-host] .td-priority  { min-width: 80px;  max-width: 110px; width: 90px;  white-space: nowrap; }
+    [data-ssp-table-host] .td-xpriority { min-width: 70px;  max-width: 100px; width: 80px;  white-space: nowrap; }
+    [data-ssp-table-host] .td-system    { min-width: 80px;  max-width: 140px; width: 100px; white-space: nowrap; }
+    [data-ssp-table-host] .td-num       { min-width: 70px;  max-width: 100px; width: 80px;  text-align: right; }
+    /* v2.1.6/v2.1.7 — fixed width для date columns (Start/Финиш) чтобы last column
+       не растягивалась на остаток ширины строки в людях-distribution table. */
+    [data-ssp-table-host] .td-date      { min-width: 130px; max-width: 160px; width: 140px; white-space: nowrap; }
+
+    /* v2.1.5 UI fix #3 — baseline font-size 13px override для Ring controls.
+       Ring native --ring-font-size: 14px которое крупнее scale (13px).
+       Scoping через widget root container — не трогать YT shell typography. */
+    .page,
+    [data-ssp-table-host],
+    [data-ssp-input-host],
+    .ring-select-popup,
+    .ring-popup,
+    .ring-dialog,
+    .ssp-dialog-host,
+    .ssp-dialog-inner {
+      --ring-font-size: 13px;
+      --ring-font-size-smaller: 11px;
+      --ring-line-height: 18px;
+      --ring-line-height-lower: 16px;
+    }
+    /* Ring popup options (dropdowns/select lists) — defensive direct font-size в случае
+       если CSS variables не каскадятся в Ring portal-rendered popups. */
+    .ring-popup .ring-tags-list,
+    .ring-popup .ring-tags-tag,
+    .ring-popup [class*="optionItem"],
+    .ring-select-popup [class*="item"],
+    .ring-select-popup [class*="label"] {
+      font-size: 13px !important;
+      line-height: 18px !important;
+    }
 
     .tbl td select {
       width: 100%; min-width: 150px;

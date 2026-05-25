@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.0';
+  var APP_VERSION = '2.1.7';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -10281,7 +10281,7 @@
       }
     });
     columns.push({
-      id: 'dateStart', title: T('thStart'), sortable: false,
+      id: 'dateStart', title: T('thStart'), sortable: false, className: 'td-date td-start',
       getValue: function(item) {
         var taEntry = ta[item.issueId] || {};
         var ts = taEntry.dateStart || null;
@@ -10299,7 +10299,7 @@
       }
     });
     columns.push({
-      id: 'dateEnd', title: T('thFinish'), sortable: false,
+      id: 'dateEnd', title: T('thFinish'), sortable: false, className: 'td-date td-end',
       getValue: function(item) {
         var taEntry = ta[item.issueId] || {};
         var te = taEntry.dateEnd || null;
