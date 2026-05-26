@@ -617,7 +617,7 @@
 
     /* v2.0.0 D7 — Ring Table CSS tweaks for legacy column behaviour parity. */
     [data-ssp-table-host] .ring-table-table { min-width: 1100px; }
-    [data-ssp-table-host] .ssp-col-title { min-width: 240px; max-width: 360px; word-break: break-word; white-space: normal; }
+    [data-ssp-table-host] .ssp-col-title { min-width: 240px; max-width: none; flex: 1 0 240px; word-break: break-word; white-space: normal; }
     [data-ssp-table-host] select { width: 100%; min-width: 150px; }
     /* Vertical-center cells содержащие DatePicker mount hosts and selects so the
        Ring DatePicker button + native select align with text rows. */
