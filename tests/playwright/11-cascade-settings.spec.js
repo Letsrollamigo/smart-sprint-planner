@@ -7,6 +7,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock } from '../fixtures/youtrack-api-mock.js';
+import { ringCheckbox } from '../fixtures/tab-helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await setupApiMock(page, {
@@ -37,8 +38,8 @@ async function openCascadeBlock(page) {
 
 test('cascade block renders 7 controls (mix of selects + text inputs)', async ({ page }) => {
   await openCascadeBlock(page);
-  await expect(page.locator('#cascadeAggregationCheck')).toBeChecked();
-  await expect(page.locator('#forbidContainerWorkItemsCheck')).not.toBeChecked();
+  await expect(ringCheckbox(page, 'cascadeAggregationCheck')).toBeChecked();
+  await expect(ringCheckbox(page, 'forbidContainerWorkItemsCheck')).not.toBeChecked();
   /* kindField — single-select из enum-полей проекта (mock возвращает empty list,
      поэтому options ограничены сохранённым значением как fallback). */
   await expect(page.locator('#cascadeKindFieldSel')).toBeVisible();
@@ -54,10 +55,10 @@ test('warning visible when cascade=on, forbid=off; hidden when forbid toggled on
   /* Initial state из fixture: cascade=on, forbid=off — warning должен быть видим. */
   await expect(page.locator('#warnCascadeWithoutForbid')).toBeVisible();
   /* Включаем forbid — warning скрывается. */
-  await page.locator('#forbidContainerWorkItemsCheck').check();
+  await ringCheckbox(page, 'forbidContainerWorkItemsCheck').check();
   await expect(page.locator('#warnCascadeWithoutForbid')).toBeHidden();
   /* Выключаем cascade — warning остаётся скрытым (нет опасной комбинации). */
-  await page.locator('#cascadeAggregationCheck').uncheck();
+  await ringCheckbox(page, 'cascadeAggregationCheck').uncheck();
   await expect(page.locator('#warnCascadeWithoutForbid')).toBeHidden();
 });
 
