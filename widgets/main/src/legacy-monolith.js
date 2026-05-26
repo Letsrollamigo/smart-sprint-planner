@@ -96,7 +96,7 @@
   function _prRank(p) { var k = String(p || ''); return (k in _PRIORITY_RANK_MAP) ? _PRIORITY_RANK_MAP[k] : 1e6; }
   function _idCmp(a, b) { return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true }); }
   /* Multi-key sort с настраиваемым primary key. Вторичные ключи всегда по убыванию приоритета. */
-  function multiKeySort(items, primary) {
+  function multiKeySort(items, primary, taMap) {
     if (!Array.isArray(items)) return items;
     primary = primary || getSortKey();
     if (primary === 'off') return items;
@@ -130,8 +130,8 @@
       /* v1.10.0 — assignee: lexicographic по lowercase fullName/login, пустые в конец.
          Tie-breaker: xpriority desc → priority desc → id asc. */
       if (primary === 'assignee') {
-        var asA = String(a.assignee || '').toLowerCase();
-        var asB = String(b.assignee || '').toLowerCase();
+        var asA = String((taMap && taMap[a.issueId] && taMap[a.issueId].assignee) || '').toLowerCase();
+        var asB = String((taMap && taMap[b.issueId] && taMap[b.issueId].assignee) || '').toLowerCase();
         /* Пустые assignee — в конец списка независимо от направления. */
         if (asA === '' && asB !== '') return 1;
         if (asB === '' && asA !== '') return -1;
@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.7';
+  var APP_VERSION = '2.1.8';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -7673,7 +7673,7 @@
     };
     snap[role.resKey] = _sprint[role.resKey] || 0;
     snap[role.remKey] = rem;
-    snap.items = activeItems.map(function(i) {
+    snap.items = items.map(function(i) {
       var obj = {
         issueId:  i.issueId,
         url:      i.url,
@@ -8418,7 +8418,7 @@
       itemsSlot.innerHTML = '';
       if (items && items.length) {
         var sumDiv = document.createElement('div'); sumDiv.className = 'spoiler__summary';
-        var sD = items.reduce(function(s,i){ return s+(i['estimate_'+rk]||0); }, 0);
+        var sD = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; }).reduce(function(s,i){ return s+(i['estimate_'+rk]||0); }, 0);
         sumDiv.innerHTML = '<span><b>'+esc(rec.roleLabel||rk)+':</b> '+fmtPeriod(sD)+'</span>';
         itemsSlot.appendChild(sumDiv);
       }
@@ -8462,7 +8462,7 @@
         });
       }
       cols.push({
-        id: 'title', title: T('histColTitle'), sortable: false, className: 'td-title',
+        id: 'title', title: T('histColTitle'), sortable: false, className: 'td-title ssp-col-title',
         getValue: function(item) { return esc(item.title || ''); }
       });
       cols.push({
@@ -8891,16 +8891,17 @@
       return row;
     });
 
+    var _activeSnap = (rec.items || []).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
     var totalsBase = ['', T('excelTotal'), '', '', '', '', '',
-      Math.round((rec.items || []).reduce(function(s, i) { return s + (i['estimate_' + rk] || 0); }, 0) / 60 * 100) / 100,
+      Math.round(_activeSnap.reduce(function(s, i) { return s + (i['estimate_' + rk] || 0); }, 0) / 60 * 100) / 100,
       /* v6.1.0 D78 (F1) — итог по колонке «Факт». */
-      Math.round((rec.items || []).reduce(function(s, i) { return s + (i['fact_' + rk] || 0); }, 0) / 60 * 100) / 100,
-      Math.round((rec.items || []).reduce(function(s, i) {
+      Math.round(_activeSnap.reduce(function(s, i) { return s + (i['fact_' + rk] || 0); }, 0) / 60 * 100) / 100,
+      Math.round(_activeSnap.reduce(function(s, i) {
         var est  = i['estimate_' + rk] || 0;
         var fact = i['fact_'     + rk] || 0;
         return s + Math.max(0, est - fact);
       }, 0) / 60 * 100) / 100,
-      Math.round((rec.items || []).reduce(function(s, i) {
+      Math.round(_activeSnap.reduce(function(s, i) {
         var est  = i['estimate_' + rk] || 0;
         var fact = i['fact_'     + rk] || 0;
         var raw  = i['alloc_'    + rk];
@@ -10186,16 +10187,16 @@
        из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
     var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
     var active = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
+    /* ta defined before sort so multiKeySort can resolve assignee from task-assignments. */
+    var ta  = (_currentRolePP && _currentRolePP.taskAssignments) ? _currentRolePP.taskAssignments : {};
     /* v6.1.0 D81 (F4) — multi-key sort на «Люди». Ring Table получает items
        уже отсортированными; sortKey/sortOrder только для header affordance. */
-    if (typeof multiKeySort === 'function') active = multiKeySort(active);
+    if (typeof multiKeySort === 'function') active = multiKeySort(active, undefined, ta);
     if (!active.length) {
       if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_) {} }
       host.innerHTML = '<div class="empty">'+esc(T('currentRoleNoTasks'))+'</div>';
       return;
     }
-
-    var ta  = (_currentRolePP && _currentRolePP.taskAssignments) ? _currentRolePP.taskAssignments : {};
     var rba = (_currentRolePP && _currentRolePP.resourcesByAssignee) ? _currentRolePP.resourcesByAssignee : {};
     var assigneeOptions = Object.keys(rba);
     var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
@@ -10557,10 +10558,9 @@
        из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
     var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
     var active = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
-    if (typeof multiKeySort === 'function') active = multiKeySort(active);
-
     var ta  = (_currentRolePP.taskAssignments || {});
+    /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
+    if (typeof multiKeySort === 'function') active = multiKeySort(active, undefined, ta);
     var gt  = (_currentRoleGantt && _currentRoleGantt.tasks) ? _currentRoleGantt.tasks : {};
     /* v5.7.0 — Этап 5 (D47): allLogins для round-robin палитры цветов.
        Стабильная сортировка: тот же логин получает один и тот же цвет независимо от состава. */

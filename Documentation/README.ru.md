@@ -3,7 +3,7 @@
 > 🇬🇧 [Read in English](../README.md) · 🇷🇺 По-русски
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v2.1.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v2.1.8-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v1.9.3-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](../tests/)
@@ -24,7 +24,7 @@
 | Канал | Текущая версия | Каденс | Кому подходит |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v1.9.3** | Стабильные релизы, проверены JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая новая выгрузка проходит модерацию JetBrains marketplace (1–3 рабочих дня) перед публикацией. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.1.0** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз здесь полностью протестирован (415 unit-тестов + Playwright), но выходит раньше прохождения marketplace-модерации. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.1.8** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз здесь полностью протестирован (415 unit-тестов + Playwright), но выходит раньше прохождения marketplace-модерации. |
 
 GitHub Releases — авторитетный источник: каждая marketplace-выгрузка собирается из тегированного GitHub-релиза. Если вы видите фичу в этом README, которой ещё нет в marketplace-версии — значит, очередной цикл модерации ещё не завершён.
 
@@ -40,7 +40,9 @@ GitHub Releases — авторитетный источник: каждая mark
 - **15 языков UI** — чешский, немецкий, английский, испанский, французский, венгерский, итальянский, японский, корейский, нидерландский, польский, португальский, русский, турецкий, китайский (упрощённый). Авто-детект по браузеру, ручное переключение, fallback на английский.
 - **Дифференцированный учёт трудозатрат (DTA)** — маппинг типа work-item → роль, агрегация факта по ролям обратно в custom-поля задачи, обязательная валидация типа работы, опциональные уведомления о соотношении план/факт.
 - **Каскадная агрегация parent ← child** — поля плана и факта в контейнерной задаче считаются как сумма прямых детей, оценки и факт сворачиваются автоматически. Контейнерные задачи можно блокировать от прямых списаний work-item.
-- **Каскад состояний parent ← min(children)** *(v1.7.0)* — State контейнерной задачи автоматически следует за наименее продвинутым state'ом дочерних (стратегия min). Настраиваемый порядок состояний, guard от реоткрытия резолвнутых контейнеров, опциональное минимальное состояние (floor). По умолчанию выключено; переиспользует cascade-иерархию.
+- **Каскад состояний parent ← min(children)** — State контейнерной задачи автоматически следует за наименее продвинутым state'ом дочерних (стратегия min). Настраиваемый порядок состояний, guard от реоткрытия резолвнутых контейнеров, опциональное минимальное состояние (floor). По умолчанию выключено; переиспользует cascade-иерархию.
+- **Цели спринта** — структурированные цели к каждому спринту: название, описание, метрика успеха, ответственный. Отображаются на оверлее стендапа, чтобы цели оставались на виду во время ежедневного митинга.
+- **Ассистент стендапа** — полноэкранный оверлей ежедневного стендапа с per-роль списками задач (Сделано вчера / Делаю сегодня / Заблокировано), таймером и режимом подсветки блокеров. Работает напрямую на данных текущего спринта.
 - **Server-side авторизация** на каждом мутирующем эндпоинте через проектные настройки `ssp_settings`. Deny-by-default до настройки `settingsManagerGroup`.
 
 ## Установка
