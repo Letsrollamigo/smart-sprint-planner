@@ -56,16 +56,8 @@
 
 ### Fixed
 
-- **Регрессия шапки виджета + кнопок + модалок** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` бросал null-deref после миграции на host-span, обрывая весь init IIFE и оставляя sprint-selector + new-sprint button + clear-history button + modal-positioning без обработчиков. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain. (Урок #31.)
+- **Регрессия шапки виджета + кнопок + модалок** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` бросал null-deref после миграции на host-span, обрывая весь init IIFE и оставляя sprint-selector + new-sprint button + clear-history button + modal-positioning без обработчиков. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain.
 - **Тёмный фон native `<input>` в Ring Table ячейках** (E4): native `<input>` в Ring Table ячейках наследует Ring's cell background. Fix: явные inline `background:var(--surface) + color:var(--text) + border + padding` для `.alloc-input` и `.dyn-period-input`.
-
-### Уроки (для следующих миграций)
-
-- **#27**: Ring Table перехватывает клики на уровне ячейки — используйте прямой `btn.onclick = fn` + `MutationObserver` rebind.
-- **#28**: Сверяйте ожидаемое UX с пользователем до debug — ложно-положительные «баги» тратят итерации.
-- **#29**: `mcp__chrome-devtools__click` через CDP не запускает DOM Level 0 `.onclick` внутри Ring Table ячеек — manual user click для per-row button smoke.
-- **#30**: Native `<input>` в Ring Table ячейке наследует фон ячейки — обязательны явные inline `background:var(--surface)`.
-- **#31**: Миграция `<input id="X">` → host-span требует grep `getElementById('X')` callsites в init-time IIFE — null-throw блокирует **всю последующую** привязку обработчиков.
 
 ---
 
