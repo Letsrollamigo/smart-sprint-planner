@@ -14,7 +14,7 @@
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.8 — 3 hotfixes from prod feedback: (B) history sprint table layout — title column collapsed to single-char rows due to missing min-width in Ring Table host; (C) sort by assignee did nothing — multiKeySort read a non-existent field on item, now reads from taskAssignments map; (D) sprint confirmation snapshot only saved PLANNED/UNPLANNED tasks, all others were lost — now all items are saved. No schema changes.",
+  "changeNotes": "<b>Major upgrade since v1.9.4</b><br/><br/><b>🎨 Native Ring UI Design</b> — All buttons, inputs, tables, checkboxes, date pickers, and tabs now use JetBrains Ring UI components. The plugin looks and feels like a native part of YouTrack.<br/><br/><b>↕ Sort by Assignee</b> — Click the Assignee column header in Planning view to sort by team member and see everyone's workload at a glance.<br/><br/><b>📋 Complete Sprint History</b> — Sprint snapshots now capture all tasks regardless of status (In Progress, Done, Cancelled — not just Planned). Your history tells the full story.<br/><br/><b>💬 Polished Modals &amp; Notifications</b> — Consistent focus management, ARIA accessibility, backdrop support, and a clean bottom-right toast notification stack across all 18 dialogs.<br/><br/><b>🌍 Fully Localized</b> — 50+ new UI strings across all 13 supported languages covering role labels, standup assistant, and sprint goal fields.<br/><br/><b>🐛 Reliability Fixes</b> — Correct assignee sort order, fixed history table column layout, group permission hierarchy lookup, and several modal positioning edge cases.",
   "widgets": [
     {
       "key": "ssp-main",
