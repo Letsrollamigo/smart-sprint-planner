@@ -8491,6 +8491,7 @@
         title: fmtThLabel(rec.roleLabel || rk),
         sortable: false,
         className: 'td-num',
+        headerClassName: 'td-num',
         getValue: function(item) {
           var est  = item['estimate_'+rk];
           var fact = item['fact_'+rk];
