@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.7",
+  "version": "2.1.8",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.7 — Parity gate (2026-05-25). 8 UX/CSS fixes consolidated from v2.1.1→v2.1.7: defensive `--surface-hover` token in light/dark/media blocks (Bug A), Ring CSS-module selectors replaced with `.td-*` + explicit widths (Bug C), textarea defensive `min-height:72px` on multiline input-hosts (Bug D), modal click-anchor fix to ignore clicks inside open modals (Bug #1 — fixes pagination jump + textarea collapse in confirmGoal flow), Ring font-size 13px scoped override (Bug #3), table column-widths min/max balance + table min-width 600→1100px (Bug #4), table inputs font-size:13px (polish), dateStart/dateEnd column min/max-width with `td-date td-start|end` className (polish). No schema changes. See CHANGELOG.md.",
+  "changeNotes": "v2.1.8 — 3 hotfixes from prod feedback: (B) history sprint table layout — title column collapsed to single-char rows due to missing min-width in Ring Table host; (C) sort by assignee did nothing — multiKeySort read a non-existent field on item, now reads from taskAssignments map; (D) sprint confirmation snapshot only saved PLANNED/UNPLANNED tasks, all others were lost — now all items are saved. No schema changes.",
   "widgets": [
     {
       "key": "ssp-main",

@@ -38,9 +38,15 @@ function idCmp(a, b) {
 //   1. Empty/null/undefined assignee always sorts to the end (regardless of direction).
 //   2. Non-empty values compare lexicographically (lowercase).
 //   3. Tie-breaker: xpriority asc, then priority asc, then id asc (natural sort).
-function compareAssignee(a, b) {
-  const asA = String(a && a.assignee != null ? a.assignee : '').toLowerCase();
-  const asB = String(b && b.assignee != null ? b.assignee : '').toLowerCase();
+// taMap: optional { [issueId]: { assignee: string } } — used when assignee is stored
+//   in a separate task-assignments map rather than directly on the item (e.g. people tab).
+function compareAssignee(a, b, taMap) {
+  const rawA = (taMap && taMap[a && a.issueId] && taMap[a.issueId].assignee) != null
+    ? taMap[a.issueId].assignee : (a && a.assignee != null ? a.assignee : '');
+  const rawB = (taMap && taMap[b && b.issueId] && taMap[b.issueId].assignee) != null
+    ? taMap[b.issueId].assignee : (b && b.assignee != null ? b.assignee : '');
+  const asA = String(rawA).toLowerCase();
+  const asB = String(rawB).toLowerCase();
   if (asA === '' && asB !== '') return 1;
   if (asB === '' && asA !== '') return -1;
   if (asA < asB) return -1;

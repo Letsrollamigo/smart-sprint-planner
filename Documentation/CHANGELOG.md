@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.8] — 2026-05-26
+
+> **Hotfix — 3 production bugs** (history table layout, assignee sort, sprint snapshot). No schema changes. 419 tests pass.
+
+### Fixed
+
+- **[B] History sprint table — «Title» column collapsed.** Ring Table host had no `min-width` on `.td-title`; the column shrunk to a character strip. History title column now carries class `ssp-col-title` (`min-width: 240px; word-break: break-word; white-space: normal;`).
+- **[C] Sort by assignee produced wrong order.** `multiKeySort` and `compareAssignee` read `item.assignee` which is absent on task objects — assignee lives in `taskAssignments`. Both functions gained an optional `taMap` parameter; callers (`renderCurrentRoleTaskTable`, `renderGanttChart`) pass `taskAssignments` as the third argument.
+- **[D] Sprint confirm snapshot lost non-active tasks.** `saveRoleHistorySnapshot` applied `ACTIVE_INC` filter (PLANNED/UNPLANNED only) when building `snap.items`, silently dropping tasks in other states (IN_PROGRESS, DONE, CANCELLED, etc.). Snapshot now includes all role tasks. History display totals and Excel export still aggregate ACTIVE_INC only (intentional).
+
+---
+
 ## [2.1.7] — 2026-05-25
 
 > **Parity gate.** 8 UX/CSS fixes consolidated into v2.1.7: modal click-anchor jump root cause + Ring Table CSS-module silent-noop selectors + defensive multiline textarea sizing + Ring font-size 13px scoped override. No schema changes. 424 unit tests pass.
