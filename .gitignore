@@ -8,3 +8,6 @@ Thumbs.db
 *.swp
 *.swo
 *.log
+# Playwright auth state — session cookies, never commit
+playwright/.auth/user.json
+playwright/.auth/*.json
