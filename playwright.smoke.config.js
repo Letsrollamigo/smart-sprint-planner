@@ -18,7 +18,8 @@ import { defineConfig } from '@playwright/test';
 
 const BASE_URL   = process.env.YOUTRACK_URL     || 'https://youtrack.example.com';
 const PROJECT    = process.env.YOUTRACK_PROJECT  || 'DEMO';
-const APP_ID     = process.env.SSP_APP_ID        || '145-463';
+const APP_NAME   = process.env.SSP_APP_NAME      || 'smart-sprint-planner';
+const APP_TITLE  = process.env.SSP_APP_TITLE     || 'Smart Sprint Planner';
 
 export default defineConfig({
   testDir: './tests/playwright-smoke',
@@ -50,4 +51,4 @@ export default defineConfig({
 });
 
 // Re-export constants so spec files can import from config
-export { BASE_URL, PROJECT, APP_ID };
+export { BASE_URL, PROJECT, APP_NAME, APP_TITLE };
