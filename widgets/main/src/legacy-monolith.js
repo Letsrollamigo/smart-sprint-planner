@@ -8457,7 +8457,7 @@
       });
       if (hasExtTicket) {
         cols.push({
-          id: 'externalTicketId', title: T('thExternalTicketId'), sortable: false,
+          id: 'externalTicketId', title: T('thExternalTicketId'), sortable: false, className: 'td-hist-ext',
           getValue: function(item) { return { __html: _renderExternalTicketInner(item.externalTicketId) }; }
         });
       }
@@ -8466,21 +8466,21 @@
         getValue: function(item) { return esc(item.title || ''); }
       });
       cols.push({
-        id: 'priority', title: T('histColPriority'), sortable: false,
+        id: 'priority', title: T('histColPriority'), sortable: false, className: 'td-hist-narrow',
         getValue: function(item) { return esc(localizeEnumVal(item.priority) || '—'); }
       });
       if (hasXPri) {
         cols.push({
-          id: 'xpriority', title: T('histColXpriority'), sortable: false,
+          id: 'xpriority', title: T('histColXpriority'), sortable: false, className: 'td-hist-narrow',
           getValue: function(item) { return esc(localizeEnumVal(item.xpriority) || '—'); }
         });
       }
       cols.push({
-        id: 'state', title: T('histColState'), sortable: false,
+        id: 'state', title: T('histColState'), sortable: false, className: 'td-hist-narrow',
         getValue: function(item) { return esc(localizeEnumVal(item.state) || '—'); }
       });
       cols.push({
-        id: 'incStatus', title: T('histColIncStatus'), sortable: false,
+        id: 'incStatus', title: T('histColIncStatus'), sortable: false, className: 'td-hist-inc',
         getValue: function(item) { return esc(item.inclusionStatus ? incLabel(item.inclusionStatus) : '—'); }
       });
       /* fmtThLabel returns 'Ресурс<br>{label}'. table-mount.jsx auto-detects
