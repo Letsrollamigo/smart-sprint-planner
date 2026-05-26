@@ -1,60 +1,48 @@
 /**
  * Navigation helpers for live smoke tests against youtrack.example.com.
  *
- * YouTrack widget topology:
- *   Project settings page → widget rendered in <iframe srcdoc="..."> → index.html
+ * YouTrack widget URL pattern (discovered 2026-05-26):
+ *   /projects/{projectId}?tab={appName}:{appTitle}
  *
- * The outer page URL pattern:
- *   /projects/{project}/settings?tabId=extensions  (or similar)
+ * Examples:
+ *   community: /projects/DEMO?tab=smart-sprint-planner:Smart Sprint Planner
+ *   corp:      /projects/DEMO?tab=smart-sprint-planner:Smart Sprint Planner
  *
- * The widget iframe is identified via the appResources URL injected into srcdoc.
+ * The widget renders in an about:srcdoc iframe (no src attribute).
+ * Playwright handles srcdoc frames natively via frameLocator('iframe').
  */
 
-const BASE_URL  = process.env.YOUTRACK_URL     || 'https://youtrack.example.com';
-const PROJECT   = process.env.YOUTRACK_PROJECT  || 'DEMO';
-const APP_ID    = process.env.SSP_APP_ID        || '145-463';
+const BASE_URL  = process.env.YOUTRACK_URL    || 'https://youtrack.example.com';
+const PROJECT   = process.env.YOUTRACK_PROJECT || 'DEMO';
+const APP_NAME  = process.env.SSP_APP_NAME    || 'smart-sprint-planner';
+const APP_TITLE = process.env.SSP_APP_TITLE   || 'Smart Sprint Planner';
 
 /**
- * Navigate to the YouTrack project page that hosts the SSP widget.
- * Returns the outer page — use getWidgetFrame() to enter the iframe.
+ * Navigate directly to the widget tab page.
  */
 export async function navigateToWidget(page) {
-  // YouTrack 2024.3 project settings with extensions
-  await page.goto(`${BASE_URL}/projects/${PROJECT}/settings`);
-  // Wait for project page to load
+  const tab = encodeURIComponent(`${APP_NAME}:${APP_TITLE}`);
+  await page.goto(`${BASE_URL}/projects/${PROJECT}?tab=${tab}`);
   await page.waitForLoadState('networkidle', { timeout: 20_000 });
 }
 
 /**
- * Returns a FrameLocator pointing to the SSP widget iframe.
- * Ring UI tier 3 renders into an about:srcdoc iframe — Playwright handles
- * this natively via frameLocator (unlike chrome-devtools CDP which blocks
- * cross-origin access to about:srcdoc contentDocument).
+ * Returns a FrameLocator pointing to the widget iframe.
+ * YouTrack renders the widget in an about:srcdoc iframe — no src attribute.
+ * We use the first iframe on the page (widget tab has exactly one).
  */
 export function getWidgetFrame(page) {
-  // Widget iframe is identified by the appResources URL in its src/srcdoc
-  return page.frameLocator(`iframe[src*="${APP_ID}"], iframe[srcdoc*="${APP_ID}"]`);
+  return page.frameLocator('iframe').first();
 }
 
 /**
  * Full setup: navigate to widget page + return frame locator.
- * Waits for the widget header to confirm the widget is loaded.
+ * Waits for the widget header to confirm the widget JS has initialized.
  */
 export async function openWidget(page) {
   await navigateToWidget(page);
-
-  // Find and click the extension link if needed
-  const extLink = page.locator(`a[href*="${APP_ID}"], [data-app-id="${APP_ID}"]`).first();
-  if (await extLink.isVisible({ timeout: 5_000 }).catch(() => false)) {
-    await extLink.click();
-    await page.waitForLoadState('networkidle', { timeout: 15_000 });
-  }
-
   const frame = getWidgetFrame(page);
-
-  // Wait for widget header — confirms widget JS has initialized
-  await frame.locator('#widgetHeader, .widget-header').waitFor({ timeout: 20_000 });
-
+  await frame.locator('#widgetHeader, .widget-header').waitFor({ timeout: 25_000 });
   return frame;
 }
 
@@ -71,4 +59,4 @@ export async function clickWidgetTab(frame, tabId) {
   await frame.locator(`#tab-${tabId}.active, [data-tab-panel="${tabId}"]`).waitFor({ timeout: 8_000 }).catch(() => {});
 }
 
-export { BASE_URL, PROJECT, APP_ID };
+export { BASE_URL, PROJECT, APP_NAME, APP_TITLE };
