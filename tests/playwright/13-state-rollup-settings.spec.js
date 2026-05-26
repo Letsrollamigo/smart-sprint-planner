@@ -10,6 +10,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock } from '../fixtures/youtrack-api-mock.js';
+import { ringCheckbox } from '../fixtures/tab-helpers.js';
 
 const BUNDLE_STATES = ['Open', 'In Progress', 'In Review', 'Done', 'Cancelled'];
 
@@ -71,7 +72,7 @@ test('1a. secStateRollup renders with all required controls', async ({ page }) =
 
   // Master toggle — loaded from settings (stateRollupEnabled: false)
   await expect(page.locator('#stateRollupEnabledCheck')).toBeVisible();
-  await expect(page.locator('#stateRollupEnabledCheck')).not.toBeChecked();
+  await expect(ringCheckbox(page, 'stateRollupEnabledCheck')).not.toBeChecked();
 
   // State order builder: bundle select + ordered list + buttons
   await expect(page.locator('#stateRollupBundleSel')).toBeVisible();

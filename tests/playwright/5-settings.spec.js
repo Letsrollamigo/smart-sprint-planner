@@ -5,6 +5,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock } from '../fixtures/youtrack-api-mock.js';
+import { clickTab } from '../fixtures/tab-helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await setupApiMock(page);
@@ -33,11 +34,11 @@ test('settings overlay closes on cancel', async ({ page }) => {
     }
   }
   // Widget is still functional
-  await expect(page.locator('.tabs')).toBeVisible();
+  await expect(page.locator('#sspTabsHost')).toBeVisible();
 });
 
 test('Gantt tab loads without crash', async ({ page }) => {
-  await page.locator('#tabBtnGantt').click();
+  await clickTab(page, 'gantt');
   // Gantt tab becomes visible
   await expect(page.locator('#tab-gantt')).toBeVisible({ timeout: 5000 });
 });

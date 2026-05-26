@@ -4,6 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock, makeHistorySnap } from '../fixtures/youtrack-api-mock.js';
+import { clickTab } from '../fixtures/tab-helpers.js';
 
 const CONFIRMED_SNAP = makeHistorySnap({
   sprintId: 'sprint-jun-2026',
@@ -22,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Planning tab shows Roles and People segmented control', async ({ page }) => {
-  await page.locator('#tabBtnPlanning').click();
+  await clickTab(page, 'planning');
   const rolesBtn = page.locator('.planning-level-btn[data-level="roles"]');
   const peopleBtn = page.locator('.planning-level-btn[data-level="people"]');
   await expect(rolesBtn).toBeVisible();
@@ -30,7 +31,7 @@ test('Planning tab shows Roles and People segmented control', async ({ page }) =
 });
 
 test('switching to People level shows role selector', async ({ page }) => {
-  await page.locator('#tabBtnPlanning').click();
+  await clickTab(page, 'planning');
   await page.locator('.planning-level-btn[data-level="people"]').click();
   await expect(page.locator('#planningRoleSel')).toBeVisible({ timeout: 5000 });
 });

@@ -5,6 +5,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock, makeHistorySnap } from '../fixtures/youtrack-api-mock.js';
+import { clickTab } from '../fixtures/tab-helpers.js';
 
 const SNAP = makeHistorySnap({
   sprintId: 'sprint-apr-2026',
@@ -23,7 +24,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('Excel export button is present in Planning tab', async ({ page }) => {
-  await page.locator('#tabBtnPlanning').click();
+  await clickTab(page, 'planning');
   // Excel export button lives inside the planning/composition panel
   const excelBtn = page.locator('#excelExportBtn, button:has-text("Excel"), button:has-text("Скачать")').first();
   // Just verify the widget doesn't crash and the tab loads
@@ -31,6 +32,6 @@ test('Excel export button is present in Planning tab', async ({ page }) => {
 });
 
 test('History tab shows export button for validated sprint', async ({ page }) => {
-  await page.locator('.tab-btn[data-tab="history"]').click();
+  await clickTab(page, 'history');
   await expect(page.locator('#histList, .history-list, [id*="hist"]').first()).toBeVisible({ timeout: 5000 });
 });

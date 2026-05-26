@@ -4,6 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock, makeHistorySnap } from '../fixtures/youtrack-api-mock.js';
+import { clickTab } from '../fixtures/tab-helpers.js';
 
 const DISTRIBUTED_SNAP = makeHistorySnap({
   sprintId: 'sprint-may-2026',
@@ -22,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('History tab renders sprint list', async ({ page }) => {
-  await page.locator('.tab-btn[data-tab="history"]').click();
+  await clickTab(page, 'history');
   // History list should have at least one entry
   await expect(page.locator('#histList, .history-list, [id*="hist"]').first()).toBeVisible({ timeout: 5000 });
 });

@@ -4,6 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { setupApiMock } from '../fixtures/youtrack-api-mock.js';
+import { clickTab } from '../fixtures/tab-helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await setupApiMock(page, {
@@ -39,8 +40,7 @@ test('create sprint and reach COMPOSITION_AGREED', async ({ page }) => {
   }
 
   // Select role (frontend)
-  const planningTab = page.locator('#tabBtnPlanning, .tab-btn[data-tab="planning"]');
-  await planningTab.click();
+  await clickTab(page, 'planning');
 
   // Expand or select frontend role
   const roleCard = page.locator('.role-card, .accordion-card, [data-role="frontend"]').first();
@@ -55,7 +55,5 @@ test('create sprint and reach COMPOSITION_AGREED', async ({ page }) => {
 test('widget loads without crash on empty state', async ({ page }) => {
   // Basic smoke: widget renders header and tabs
   await expect(page.locator('#widgetHeader')).toBeVisible({ timeout: 10000 });
-  await expect(page.locator('.tabs')).toBeVisible();
-  await expect(page.locator('#tabBtnPlanning')).toBeVisible();
-  await expect(page.locator('#tabBtnGantt')).toBeVisible();
+  await expect(page.locator('#sspTabsHost')).toBeVisible();
 });
