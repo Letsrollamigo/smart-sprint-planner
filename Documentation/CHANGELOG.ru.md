@@ -8,6 +8,18 @@
 
 ---
 
+## [2.1.8] — 2026-05-26
+
+> **Hotfix — 3 производственных бага** (вёрстка таблицы истории, сортировка по исполнителю, снимок спринта). Без schema-изменений. 419 тестов проходят.
+
+### Исправлено
+
+- **[B] Таблица истории спринтов — схлопывание колонки «Title».** Ring Table host не имел `min-width` на `.td-title`; колонка сужалась в столбик отдельных букв. Колонка заголовка истории теперь несёт класс `ssp-col-title` (`min-width: 240px; word-break: break-word; white-space: normal;`). Дополнительно обнаружено и исправлено: Ring UI Table не передаёт `column.className` на `<th>` — добавлен отдельный `column.headerClassName: 'td-num'` для колонки «Ресурс» в таблице истории.
+- **[C] Сортировка по исполнителю — неверный порядок.** `multiKeySort` и `compareAssignee` читали `item.assignee`, которого нет на объекте задачи — исполнитель хранится в `taskAssignments`. Обе функции получили параметр `taMap`; вызывающий код (`renderCurrentRoleTaskTable`, `renderGanttChart`) передаёт `taskAssignments` третьим аргументом.
+- **[D] Подтверждение спринта — снимок истории терял не-PLANNED/UNPLANNED задачи.** `saveRoleHistorySnapshot` фильтровал `snap.items` через `ACTIVE_INC` (только PLANNED/UNPLANNED) перед записью, отрезая IN_PROGRESS, DONE, CANCELLED и остальные. Снимок теперь содержит все задачи роли. Суммы в таблице истории и Excel-экспорте по-прежнему считаются только по ACTIVE_INC (намеренно).
+
+---
+
 ## [2.1.7] — 2026-05-25
 
 > **Парити-точка с corp full-rebuild lineage.** 8 UX/CSS-фиксов консолидированы из corp v2.1.1→v2.1.7 (приватный fork, full-rebuild итерация). Modal click-anchor jump root cause + Ring Table CSS-module silent-noop селекторы + defensive multiline textarea sizing + Ring font-size 13px scoped override. Без schema-изменений. 424 unit-теста проходят.
