@@ -56,16 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- **Sprint header + buttons + modals regression** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` threw null-deref after migration to host-span, aborting the entire init IIFE and leaving sprint-selector + new-sprint button + clear-history button + modal-positioning broken. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain. (Lesson #31.)
+- **Sprint header + buttons + modals regression** (F1 mass-migration): `pickQuery` callsite `document.getElementById('pickQuery').addEventListener(...)` threw null-deref after migration to host-span, aborting the entire init IIFE and leaving sprint-selector + new-sprint button + clear-history button + modal-positioning broken. Fix: `getElementById('pickQuery') || querySelector('[data-input-id="pickQuery"]')` fallback chain.
 - **Native `<input>` background dark in Ring Table cells** (E4): native `<input>` in Ring Table cells inherits Ring's cell background. Fix: explicit inline `background:var(--surface) + color:var(--text) + border + padding` for `.alloc-input` and `.dyn-period-input`.
-
-### Lessons learned (for next migrations)
-
-- **#27**: Ring Table swallows click events at cell level — use direct `btn.onclick = fn` + `MutationObserver` rebind.
-- **#28**: Verify expected UX with the user before debugging — false-positive «bug» chasing wastes iterations.
-- **#29**: `mcp__chrome-devtools__click` through CDP does not trigger DOM Level 0 `.onclick` inside Ring Table cells — manual user click for per-row button smoke.
-- **#30**: Native `<input>` in Ring Table cell inherits cell background — explicit inline `background:var(--surface)` required.
-- **#31**: Migrating `<input id="X">` → host-span requires grepping `getElementById('X')` callsites in init-time IIFE — null-throw blocks **all subsequent** event-binding.
 
 ---
 
