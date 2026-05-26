@@ -1,6 +1,6 @@
 {
   "name": "smart-sprint-planner",
-  "version": "2.1.7",
+  "version": "2.1.8",
   "private": true,
   "scripts": {
     "build:whitelists": "node scripts/sync-backend-whitelists.js",
@@ -13,7 +13,8 @@
     "test": "playwright test && node --test tests/unit/*.test.js",
     "test:ui": "playwright test --ui",
     "test:unit": "node --test tests/unit/*.test.js",
-    "zip": "npm run build && npm run build:check && cd .. && rm -f 'Realises SSP/Smart-Sprint-Planner-v2.1.8.zip' && zip -r 'Realises SSP/Smart-Sprint-Planner-v2.1.8.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/Spec/*' '*/Spec' '*/RoadMap/*' '*/RoadMap' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts'"
+    "zip": "npm run build && npm run build:check && cd .. && rm -f 'Realises SSP/Smart-Sprint-Planner-v2.1.8.zip' && zip -r 'Realises SSP/Smart-Sprint-Planner-v2.1.8.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/Spec/*' '*/Spec' '*/RoadMap/*' '*/RoadMap' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts'",
+    "zip:marketplace": "npm run build && npm run build:check && rm -f '../Realises SSP/Smart-Sprint-Planner-v2.1.8-marketplace.zip' && zip -r '../Realises SSP/Smart-Sprint-Planner-v2.1.8-marketplace.zip' . -x '*.DS_Store' '.DS_Store' '.claude/*' '.roadmap-source/*' 'CLAUDE.md' 'Spec/*' 'Spec' 'RoadMap/*' 'RoadMap' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' 'Documentation/*' 'Documentation' 'published/*' 'published' 'MP publication/*' 'MP publication' 'node_modules/*' 'package*.json' 'playwright.config.js' 'tests/*' 'widgets/main/src/*' '*.pdf' 'USER-GUIDE.pdf' 'playwright-report/*' 'playwright-report' 'test-results/*' 'test-results' '.git/*' '.git' '.github/*' '.github' 'schema/*' 'schema' 'scripts/*' 'scripts'"
   },
   "devDependencies": {
     "@jetbrains/icons": "^5.22.0",
