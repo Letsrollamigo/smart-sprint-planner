@@ -32,22 +32,18 @@ const context = await browser.newContext();
 const page = await context.newPage();
 
 console.log('Opening YouTrack... Log in with your credentials.');
-console.log('The script waits until you reach the main YouTrack page.\n');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('  После входа вернись в этот терминал и нажми Enter');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
 await page.goto(BASE_URL);
 
-// Wait until user lands on any YouTrack page (past login)
-await page.waitForURL(url => {
-  const href = url.toString();
-  return href.includes('/youtrack') || href.includes('/projects') || href === `${BASE_URL}/`;
-}, { timeout: 120_000 }).catch(() => {
-  // Timeout means user might already be on the right page
+// Wait for user to press Enter in terminal after logging in
+await new Promise(resolve => {
+  process.stdin.setEncoding('utf8');
+  process.stdin.once('data', resolve);
+  process.stdout.write('Залогинился? Нажми Enter → ');
 });
-
-// Extra: wait for the YouTrack toolbar to confirm full load
-await page.waitForSelector('[class*="toolbar"], [data-test="ring-toolbar"], .yt-page__toolbar, body', {
-  timeout: 15_000
-}).catch(() => {});
 
 await context.storageState({ path: AUTH_PATH });
 
