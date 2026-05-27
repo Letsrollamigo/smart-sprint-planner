@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.9] — 2026-05-27
+
+> **UX fixes — 4 modal and tab bugs** (divider overflow, ESC handling, tab indicator, sprint intro). No schema changes. 419 tests pass.
+
+### Fixed
+
+- **[B5] History modal — divider lines overflow dialog frame.** Pseudo-elements on `.ssp-dialog-inner > .modal__head::after` / `::foot::before` used `left: 0; right: 0`, spanning the full 480px `.modal` width and exceeding the Ring Dialog frame. Inset to `left: 20px; right: 20px` (matching `modal__head` horizontal padding).
+- **[B6] ESC did not close «Pick sprint tasks» and «Confirm sprint goal» modals.** The IIFE ESC handler returned early for any non-empty `_modalStack`, even for `pickOverlay` (intentionally excluded from Ring Dialog). Guard now checks `ssp-dialog-host` presence on the topmost modal — legacy-path elements (via `_modalAutoAttach`) never get that class, so IIFE correctly handles their ESC. `openConfirmGoalDialog` also gained a defensive `document` keydown listener that calls `onCancel()` if Ring Dialog does not fire `onCloseAttempt`, ensuring the sprint-goal Promise always resolves.
+- **[B7] Active tab indicator did not follow programmatic tab switch.** `resumeWorkingDraft` programmatically clicks the Planning tab button, switching tab-panel content but leaving `sspTabsHost.dataset.selected` stale — Ring Tabs visual indicator is driven by that attribute via MutationObserver. The tab-btn click handler now syncs `sspTabsHost.dataset.selected` immediately after saving the UI-state draft.
+- **[B8] Sprint intro fields stale after sprint dropdown change.** `setCurrentSprintId()` called `_renderPlanningLevel()` (role accordions) but never refreshed the «Sprint intro» block (#sprintName, #dateStart, #dateEnd, #sprintGoal). These inputs only updated on role accordion render. Explicit refresh added inside `setCurrentSprintId` when the planning tab is active.
+
+---
+
 ## [2.1.8] — 2026-05-26
 
 > **Hotfix — 3 production bugs** (history table layout, assignee sort, sprint snapshot). No schema changes. 419 tests pass.
