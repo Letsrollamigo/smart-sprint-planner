@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.8';
+  var APP_VERSION = '2.1.9';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3413,8 +3413,10 @@
       if (e.key !== 'Escape') return;
 
       /* v2.0.0: Ring Dialog обрабатывает Escape для .overlay/.dyn-modal-overlay через onCloseAttempt.
-         IIFE handler пропускает — иначе двойное закрытие. */
-      if (window.__SSP_DIALOG && _modalStack && _modalStack.length) return;
+         IIFE handler пропускает только если topmost модал действительно в Ring Dialog (ssp-dialog-host).
+         Модалки на legacy-пути (pickOverlay) — в _modalStack но без ssp-dialog-host → IIFE обрабатывает. */
+      var _escTopModal = _modalStack && _modalStack.length && _modalStack[_modalStack.length - 1];
+      if (window.__SSP_DIALOG && _escTopModal && _escTopModal.classList.contains('ssp-dialog-host')) return;
 
       /* settingsOverlay сохраняет специальный путь close (cleanup state, save hint). */
       var settingsOv = document.getElementById('settingsOverlay');
@@ -3955,6 +3957,8 @@
         btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings');
       /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
       var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
+      var tabsHost = document.getElementById('sspTabsHost');
+      if (tabsHost && tabsHost.dataset.selected !== btn.dataset.tab) { tabsHost.dataset.selected = btn.dataset.tab; }
       if (btn.dataset.tab === 'history') {
         apiGet('history').then(function(r){
           if(r && r.history) {
@@ -6898,8 +6902,14 @@
       if (radioHost) radioHost.addEventListener('change', onRadioChange);
       // Кнопки
       var cancelBtn = document.getElementById('confirmGoalCancel');
+      var _cgR = false;
+      function _cgResolve(val) { if (!_cgR) { _cgR = true; resolve(val); } }
+      function _cgEsc(e) {
+        if (e.key === 'Escape') { document.removeEventListener('keydown', _cgEsc); onCancel(); }
+      }
       function cleanup() {
         overlay.classList.add('hidden');
+        document.removeEventListener('keydown', _cgEsc);
         if (radioHost) radioHost.removeEventListener('change', onRadioChange);
         if (okBtn) okBtn.removeEventListener('click', onOk);
         if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
@@ -6909,17 +6919,21 @@
         if (!chosen) return;
         var retroVal = retroEl ? (retroEl.value || '').trim() : '';
         cleanup();
-        resolve({ goalOutcome: chosen, goalRetroNote: retroVal || undefined });
+        _cgResolve({ goalOutcome: chosen, goalRetroNote: retroVal || undefined });
       }
       function onCancel() {
         cleanup();
-        resolve(null);
+        _cgResolve(null);
       }
       if (okBtn) okBtn.addEventListener('click', onOk);
       if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
       /* v1.9.2 — use _showOverlay() instead of plain classList toggle so the dialog
          is scrolled into the parent viewport (iframe-fix shared by other overlays). */
       try { _showOverlay(overlay); } catch(_) { overlay.classList.remove('hidden'); }
+      /* v2.1.9 B6: defensive ESC listener — гарантирует resolve(null) если Ring Dialog
+         не вызвал onCloseAttempt (e.g. focus вне диалога). Зарегистрирован после _showOverlay
+         чтобы Ring отработал первым. Cleanup встроен в cleanup(). */
+      document.addEventListener('keydown', _cgEsc);
     });
   }
 
@@ -9273,6 +9287,17 @@
     var activeTab = activeBtn ? activeBtn.dataset.tab : null;
     if (activeTab === 'planning') {
       try { _renderPlanningLevel(_planningLevel); } catch(e){ diag('planning re-render err: '+e,'err'); }
+      if (_sprint) {
+        var nameEl = document.getElementById('sprintName');
+        if (nameEl) nameEl.value = _sprint.name || '';
+        var dsEl = document.getElementById('dateStart');
+        if (dsEl) dsEl.value = toDateIn(_sprint.dateStart);
+        var deEl = document.getElementById('dateEnd');
+        if (deEl) deEl.value = toDateIn(_sprint.dateEnd);
+        var goalEl = document.getElementById('sprintGoal');
+        if (goalEl) goalEl.value = _sprint.sprintGoal || '';
+        if (typeof renderSprintIntroExtras === 'function') { try { renderSprintIntroExtras(); } catch(_){} }
+      }
     } else if (activeTab === 'gantt') {
       try {
         var rkG = safeLs.get('ssp_lastActiveRole')
