@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.10",
+  "version": "2.1.11",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.10 — 2 bug fixes: sprint intro fields now show data from the selected sprint (not the working sprint) on dropdown switch (B9); pick-task overlay checkboxes now toggle on first click (B10).",
+  "changeNotes": "v2.1.11 — final B10 fix: synchronise host.dataset.checked, inner input.checked, and dispatch change on the input (instead of host) to resolve a Ring Checkbox handleChange race that reset state right after single-click. Pick-overlay checkboxes now reliably toggle on first click in production with Ring Table + React Checkbox.",
   "widgets": [
     {
       "key": "ssp-main",

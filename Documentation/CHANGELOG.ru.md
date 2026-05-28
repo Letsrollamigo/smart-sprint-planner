@@ -8,9 +8,22 @@
 
 ---
 
+## [2.1.11] — 2026-05-28
+
+> **Финальное исправление B10** — стабильное single-click переключение чекбоксов в production с Ring Table + React Checkbox. Без schema-изменений. 419 тестов проходят.
+
+### Исправлено
+
+- **[B10 — финал] Состояние чекбокса в «Подборе задач» сбрасывалось обратно в «0» сразу после single-click.** Capture-listener из v2.1.10 диспатчил `host.dispatchEvent(new Event('change'))` для делегирования `_selectedIds`. Тот же change-event достигал Ring Checkbox React `handleChange`, который читал `e.target.checked` (target = host-span, у которого `.checked` = `undefined`), вычислял `next = false` и тут же возвращал `host.dataset.checked` в `'0'`. Гонка не воспроизводилась в programmatic dispatch-тестах, но срабатывала на каждом реальном клике в браузере. **Решение:** синхронизация `host.dataset.checked` + внутренний `input.checked` атомарно в capture-обработчике; dispatch `change` диспатчится на input (не host), благодаря чему Ring `handleChange` корректно читает `e.target.checked`. Smoke PASS в реальном браузере: переключение 0→1→0 single-click; disabled guard работает.
+- **[release-engineering] `playwright.smoke.config.js` + `playwright/` исключены из zip приложения.** ESM `import` синтаксис в `playwright.smoke.config.js` ломал YouTrack-парсер workflows при установке плагина, блокируя re-upload через REST. Обновлены исключения `npm run zip`.
+
+---
+
 ## [2.1.10] — 2026-05-28
 
 > **2 UX-исправления** (B9: данные вводного блока спринта, B10: чекбоксы в «Подборе задач»). Без schema-изменений. 419 тестов проходят.
+
+> ⚠️ **Примечание:** B10-фикс из v2.1.10 имел регрессию (обнаружена live-smoke: single-click сбрасывался в «0» из-за гонки с Ring Checkbox handleChange) — финальное решение см. в [2.1.11].
 
 ### Исправлено
 

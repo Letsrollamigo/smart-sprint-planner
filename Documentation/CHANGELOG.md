@@ -8,9 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.11] — 2026-05-28
+
+> **Final B10 fix** — pick-overlay single-click reliability in production with Ring Table + React Checkbox. No schema changes. 419 tests pass.
+
+### Fixed
+
+- **[B10 — final] Pick-overlay checkbox state reset back to «0» right after single-click.** The v2.1.10 capture listener used `host.dispatchEvent(new Event('change'))` to trigger `_selectedIds` delegation. That same change event reached the Ring Checkbox React `handleChange`, which read `e.target.checked` (target = host span, `undefined`), computed `next = false`, and immediately reset `host.dataset.checked` to `'0'`. The race was invisible to programmatic dispatch tests but reproduced on every real mouse click in the browser. **Resolution:** synchronise `host.dataset.checked` + inner `input.checked` in lockstep within the capture handler, then dispatch `change` on the inner input (not the host) so React `handleChange` reads the correct `e.target.checked` value. Smoke PASS in real browser: 0→1→0 toggle on single click; `disabled` guard intact.
+- **[release-engineering] `playwright.smoke.config.js` + `playwright/` excluded from app zip.** ESM `import` syntax in `playwright.smoke.config.js` was tripping YouTrack's workflow parser during app install, breaking re-upload via REST. Updated `npm run zip` exclusions.
+
+---
+
 ## [2.1.10] — 2026-05-28
 
 > **Two UX bug fixes** (B9: sprint intro data, B10: pick-overlay checkboxes). No schema changes. 419 tests pass.
+
+> ⚠️ **Note:** v2.1.10's B10 fix had a regression discovered in live smoke (single-click reset to «0» due to Ring Checkbox handleChange race) — see [2.1.11] for the final resolution.
 
 ### Fixed
 
