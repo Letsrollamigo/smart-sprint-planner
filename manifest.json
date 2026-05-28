@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.9",
+  "version": "2.1.10",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.9 — 4 UX fixes: divider separators in «Delete history» modal no longer overflow the dialog frame; ESC now closes «Pick sprint tasks» and «Confirm sprint goal» dialogs correctly; active tab indicator follows programmatic tab switch (draft resume flow); sprint intro fields refresh when selecting a different sprint from the header dropdown.",
+  "changeNotes": "v2.1.10 — 2 bug fixes: sprint intro fields now show data from the selected sprint (not the working sprint) on dropdown switch (B9); pick-task overlay checkboxes now toggle on first click (B10).",
   "widgets": [
     {
       "key": "ssp-main",

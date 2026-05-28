@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.9';
+  var APP_VERSION = '2.1.10';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -8113,6 +8113,30 @@
       });
     }
 
+    /* B10 fix v2.1.10 — Ring Table intercepts row clicks (focus/hover handlers)
+       before they reach the Ring Checkbox React component, causing first click to
+       be consumed without toggling. Capture-phase listener intercepts clicks on
+       .pick-cb hosts BEFORE Ring Table, stops propagation, and toggles state
+       directly via setChecked + dispatches change for _selectedIds delegation. */
+    if (!container.__sspPickClickBound) {
+      container.__sspPickClickBound = true;
+      container.addEventListener('click', function(e) {
+        var tgt = e.target;
+        var host = tgt && typeof tgt.closest === 'function'
+          ? tgt.closest('[data-ssp-checkbox-host].pick-cb') : null;
+        if (!host) return;
+        e.stopPropagation();
+        if (host.dataset.disabled === '1') return;
+        var newChecked = host.dataset.checked !== '1';
+        if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.setChecked === 'function') {
+          window.__SSP_CHECKBOX.setChecked(host, newChecked, false);
+        } else {
+          host.dataset.checked = newChecked ? '1' : '0';
+        }
+        host.dispatchEvent(new Event('change', { bubbles: true }));
+      }, true);
+    }
+
     var pag = document.getElementById('pickPag');
     pag.style.display = 'flex';
     document.getElementById('pickPageInfo').textContent = T('pageOf') + _pickPage;
@@ -9287,15 +9311,27 @@
     var activeTab = activeBtn ? activeBtn.dataset.tab : null;
     if (activeTab === 'planning') {
       try { _renderPlanningLevel(_planningLevel); } catch(e){ diag('planning re-render err: '+e,'err'); }
-      if (_sprint) {
+      /* B9 fix v2.1.10 — read intro from selected sprint, not stale _sprint global.
+         _sprint = working sprint only; not updated on dropdown switch.
+         1. newId === _sprint.sprintId → use _sprint (in-flight edits, B8 preserved).
+         2. else → first _history record for newId (shares name/dates/goal). */
+      var introSrc = null;
+      if (_sprint && _sprint.sprintId === newId) {
+        introSrc = _sprint;
+      } else if (Array.isArray(_history) && newId) {
+        introSrc = _history.find(function(rec) {
+          return rec && rec.sprintId && String(rec.sprintId).split('_')[0] === newId;
+        });
+      }
+      if (introSrc) {
         var nameEl = document.getElementById('sprintName');
-        if (nameEl) nameEl.value = _sprint.name || '';
+        if (nameEl) nameEl.value = introSrc.name || '';
         var dsEl = document.getElementById('dateStart');
-        if (dsEl) dsEl.value = toDateIn(_sprint.dateStart);
+        if (dsEl) dsEl.value = toDateIn(introSrc.dateStart);
         var deEl = document.getElementById('dateEnd');
-        if (deEl) deEl.value = toDateIn(_sprint.dateEnd);
+        if (deEl) deEl.value = toDateIn(introSrc.dateEnd);
         var goalEl = document.getElementById('sprintGoal');
-        if (goalEl) goalEl.value = _sprint.sprintGoal || '';
+        if (goalEl) goalEl.value = introSrc.sprintGoal || '';
         if (typeof renderSprintIntroExtras === 'function') { try { renderSprintIntroExtras(); } catch(_){} }
       }
     } else if (activeTab === 'gantt') {

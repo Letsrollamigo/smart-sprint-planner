@@ -1,5 +1,5 @@
 /**
- * Playwright config for LIVE smoke against youtrack.example.com.
+ * Playwright config for LIVE smoke against local Docker YouTrack stand.
  *
  * Usage:
  *   npm run smoke             — full live smoke suite
@@ -9,14 +9,15 @@
  *   playwright/.auth/user.json must exist. Run `node scripts/save-olear-auth.js` once.
  *
  * Environment variables:
- *   YOUTRACK_URL      — default: https://youtrack.example.com
+ *   YOUTRACK_URL      — default: http://localhost:8080 (local Docker)
+ *                       legacy: https://youtrack.example.com (remote, deprecated 2026-05-27)
  *   YOUTRACK_PROJECT  — default: DEMO
  *   SSP_APP_ID        — YouTrack app numeric ID for community plugin (default: 145-463)
  */
 
 import { defineConfig } from '@playwright/test';
 
-const BASE_URL   = process.env.YOUTRACK_URL     || 'https://youtrack.example.com';
+const BASE_URL   = process.env.YOUTRACK_URL     || 'http://localhost:8080';
 const PROJECT    = process.env.YOUTRACK_PROJECT  || 'DEMO';
 const APP_NAME   = process.env.SSP_APP_NAME      || 'smart-sprint-planner';
 const APP_TITLE  = process.env.SSP_APP_TITLE     || 'Smart Sprint Planner';
