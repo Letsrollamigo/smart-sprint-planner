@@ -8126,14 +8126,21 @@
           ? tgt.closest('[data-ssp-checkbox-host].pick-cb') : null;
         if (!host) return;
         e.stopPropagation();
+        e.preventDefault();
         if (host.dataset.disabled === '1') return;
         var newChecked = host.dataset.checked !== '1';
-        if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.setChecked === 'function') {
-          window.__SSP_CHECKBOX.setChecked(host, newChecked, false);
+        /* Sync state в трёх местах:
+           1) host.dataset.checked — для делегирующего change-listener'а на pickResults
+           2) inner input.checked — чтобы Ring handleChange прочитал e.target.checked корректно
+           3) dispatch change на input — Ring handleChange + _selectedIds delegation оба сработают */
+        host.dataset.checked = newChecked ? '1' : '0';
+        var input = host.querySelector('input[type="checkbox"]');
+        if (input) {
+          input.checked = newChecked;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-          host.dataset.checked = newChecked ? '1' : '0';
+          host.dispatchEvent(new Event('change', { bubbles: true }));
         }
-        host.dispatchEvent(new Event('change', { bubbles: true }));
       }, true);
     }
 
