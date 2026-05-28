@@ -12,7 +12,7 @@
 import { test, expect } from '@playwright/test';
 import { openWidget, clickWidgetTab } from './helpers/widget-nav.js';
 
-const EXPECTED_VERSION = '2.1.8';
+const EXPECTED_VERSION = '2.1.9';
 
 test.describe('Widget loads — live smoke', () => {
 

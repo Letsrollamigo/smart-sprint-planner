@@ -1,5 +1,6 @@
 /**
- * Navigation helpers for live smoke tests against youtrack.example.com.
+ * Navigation helpers for live smoke tests against local Docker YouTrack (localhost:8080).
+ * Legacy: youtrack.example.com (remote, deprecated 2026-05-27 — slow, replaced by local Docker).
  *
  * YouTrack widget URL pattern (discovered 2026-05-26):
  *   /projects/{projectId}?tab={appName}:{appTitle}
@@ -12,7 +13,7 @@
  * Playwright handles srcdoc frames natively via frameLocator('iframe').
  */
 
-const BASE_URL  = process.env.YOUTRACK_URL    || 'https://youtrack.example.com';
+const BASE_URL  = process.env.YOUTRACK_URL    || 'http://localhost:8080';
 const PROJECT   = process.env.YOUTRACK_PROJECT || 'DEMO';
 const APP_NAME  = process.env.SSP_APP_NAME    || 'smart-sprint-planner';
 const APP_TITLE = process.env.SSP_APP_TITLE   || 'Smart Sprint Planner';

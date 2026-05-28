@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.10] — 2026-05-28
+
+> **Two UX bug fixes** (B9: sprint intro data, B10: pick-overlay checkboxes). No schema changes. 419 tests pass.
+
+### Fixed
+
+- **[B9] Sprint intro fields showed stale data from previous sprint after dropdown switch.** `setCurrentSprintId` refreshed #sprintName / #dateStart / #dateEnd / #sprintGoal from the global `_sprint` — the working sprint, which is NOT updated on dropdown switch. Now reads from `_sprint` when its `sprintId` matches the selected sprint; otherwise falls back to the first matching `_history` record. B8 behavior (refresh on init) is preserved.
+- **[B10] Pick-task overlay checkboxes required double-click to toggle.** Ring Table's internal click handling (row focus/hover handlers) consumed the first click before the Ring Checkbox React component could process it. Added a capturing click listener on `#pickResults` that intercepts clicks on `.pick-cb` hosts before Ring Table, stops propagation, and directly toggles state via `setChecked` + dispatches `change` for `_selectedIds` delegation.
+- **[community] Marketplace-screenshots excluded from zip artifacts.** `npm run zip` and `npm run zip:marketplace` now exclude `marketplace-screenshots/` directory, restoring release size to ~700 KB (was ~1.7 MB in v2.1.9).
+
+---
+
 ## [2.1.9] — 2026-05-27
 
 > **UX fixes — 4 modal and tab bugs** (divider overflow, ESC handling, tab indicator, sprint intro). No schema changes. 419 tests pass.
