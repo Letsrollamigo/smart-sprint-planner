@@ -75,7 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- **Version sync 6 points** per CLAUDE.md rule: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — all bumped `2.1.0 → 2.1.7` in a single commit.
+- **Version sync 6 points** per project conventions: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — all bumped `2.1.0 → 2.1.7` in a single commit.
 
 ### Notes
 
@@ -469,7 +469,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [1.8.2] — 2026-05-17
 
-> **GitHub publication target.** This release consolidates v1.8.0 + v1.8.1 + v1.8.2 — the first two were local-only iterations during the UX polish cycle and never shipped to GitHub. Per `CLAUDE.md` → «Release notes на публикацию», all changes since the last published release (v1.7.1) are merged into the v1.8.2 release notes. Intermediate `## [1.8.0]` and `## [1.8.1]` sections below are preserved for development audit but are not user-visible in the GitHub Release UI.
+> **GitHub publication target.** This release consolidates v1.8.0 + v1.8.1 + v1.8.2 — the first two were local-only iterations during the UX polish cycle and never shipped to GitHub. Per project release-notes policy, all changes since the last published release (v1.7.1) are merged into the v1.8.2 release notes. Intermediate `## [1.8.0]` and `## [1.8.1]` sections below are preserved for development audit but are not user-visible in the GitHub Release UI.
 
 ### Added — External ticket ID (originally v1.8.0)
 - **Settings UI — new optional «External ticket ID» dropdown** in «Other fields» section. Selects a YouTrack `string`-type custom field that stores ticket IDs in an external system (Service Desk, Jira, 1C, SAP, …).

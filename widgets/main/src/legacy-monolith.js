@@ -1565,7 +1565,7 @@
      + подсветка изменённых строк таблицы. Backend не задействован. */
   var DRAFT_VERSION = 1;
   /* v5.5.0 — D38 (упрощённая реализация): единая точка истины версии в JS-коде.
-     Поднимать вместе с manifest.json/version при каждом релизе (CLAUDE.md правило
+     Поднимать вместе с manifest.json/version при каждом релизе (правило проекта
      синхронности значений между manifest и кодом). Полное автоподтягивание из
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
@@ -3457,7 +3457,7 @@
        Cache miss → синхронный fallback на runtime APP_VERSION + async fetch из backend
        endpoint app-version (D40). При network error fallback остаётся.
        Версия теперь живёт в одном месте — manifest.json/version, backend читает её при
-       сборке (хардкод синхронно с APP_VERSION в frontend по правилу CLAUDE.md). */
+       сборке (хардкод синхронно с APP_VERSION в frontend по правилу проекта). */
     if (typeof _loadAppVersion === 'function') {
       try { _loadAppVersion(); } catch(e){ diag('_loadAppVersion err: '+e,'err'); }
     }

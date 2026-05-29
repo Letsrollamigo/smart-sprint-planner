@@ -75,7 +75,7 @@
 
 ### Changed
 
-- **Версия в 6 точках** по правилу CLAUDE.md: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — все bump'нуты `2.1.0 → 2.1.7` одним коммитом.
+- **Версия в 6 точках** по правилам проекта: `manifest.json:version`, `manifest.json:changeNotes`, `package.json:version`, `package.json:scripts.zip` filename pattern, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `backend-project.js` `/app-version` literal, `backend-project.js:CURRENT_PLUGIN_VERSION` — все bump'нуты `2.1.0 → 2.1.7` одним коммитом.
 
 ### Notes
 
@@ -469,7 +469,7 @@
 
 ## [1.8.2] — 2026-05-17
 
-> **Цель GitHub-публикации.** Этот релиз консолидирует v1.8.0 + v1.8.1 + v1.8.2 — первые две версии были локальными итерациями полировки UX и не публиковались на GitHub. По правилу `CLAUDE.md` → «Release notes на публикацию», все изменения с момента последнего published-релиза (v1.7.1) объединены в release notes v1.8.2. Промежуточные секции `## [1.8.0]` и `## [1.8.1]` ниже сохранены для аудита разработки, но в GitHub Release UI пользователю не показываются.
+> **Цель GitHub-публикации.** Этот релиз консолидирует v1.8.0 + v1.8.1 + v1.8.2 — первые две версии были локальными итерациями полировки UX и не публиковались на GitHub. По правилам проекта о release notes, все изменения с момента последнего published-релиза (v1.7.1) объединены в release notes v1.8.2. Промежуточные секции `## [1.8.0]` и `## [1.8.1]` ниже сохранены для аудита разработки, но в GitHub Release UI пользователю не показываются.
 
 ### Добавлено — ID задачи во внешней системе (изначально v1.8.0)
 - **Новый необязательный dropdown «ID задачи во внешней системе»** в секции настроек «Прочие поля». Выбирает string-поле YouTrack, в котором хранится ID тикета во внешней системе (Service Desk, Jira, 1C, SAP, …).

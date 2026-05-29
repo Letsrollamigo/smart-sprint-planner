@@ -213,7 +213,7 @@ var ALLOWED_WORKING_DRAFT_KEYS = [
 var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVAL','NONE'];
 // v1.6.0 D125 — глобальная версия плагина для отслеживания совместимости snapshot'ов.
 // Должна совпадать с manifest.json:version и frontend APP_VERSION.
-// См. CLAUDE.md → Версионирование (6 точек bump).
+// См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.1.7';
