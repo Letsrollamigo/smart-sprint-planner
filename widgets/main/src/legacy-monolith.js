@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.11';
+  var APP_VERSION = '2.1.12';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5554,13 +5554,16 @@
         return h && h.sprintId === _currentSprintId + '_' + rk;
       });
       if (histSnap) {
-        var resH = (role && histSnap[role.resKey] != null) ? Number(histSnap[role.resKey]) : 0;
+        var resH = (role && histSnap[role.resKey] != null) ? Number(histSnap[role.resKey]) / 60 : 0;
         if (!isFinite(resH)) resH = 0;
         var itemsH = Array.isArray(histSnap.items) ? histSnap.items : [];
         var totH = 0;
         itemsH.forEach(function(it){
-          var a = (it && (it['alloc_'+rk] != null ? it['alloc_'+rk] : it.alloc));
-          if (typeof a === 'number' && !isNaN(a)) totH += a;
+          var alloc = it && it['alloc_'+rk];
+          var a = (alloc !== null && alloc !== undefined)
+            ? alloc / 60
+            : Math.max(0, (it['estimate_'+rk] || 0) - (it['fact_'+rk] || 0)) / 60;
+          if (isFinite(a)) totH += a;
         });
         return { resource: resH, totalAlloc: totH, taskCount: itemsH.length, overlimit: (resH > 0) && (totH > resH + 0.001) };
       }
@@ -5568,16 +5571,18 @@
       return { resource: 0, totalAlloc: 0, taskCount: 0, overlimit: false };
     }
     var resource = 0;
-    if (_sprint && _sprint.roles && _sprint.roles[rk] && typeof _sprint.roles[rk].resource === 'number') {
-      resource = _sprint.roles[rk].resource;
-    } else if (_settings && role && _settings[role.userField]) {
-      resource = 0;
+    if (role && _sprint && _sprint[role.resKey] != null) {
+      resource = Number(_sprint[role.resKey]) / 60;
+      if (!isFinite(resource)) resource = 0;
     }
     var items = (typeof getRoleItemsArr === 'function') ? (getRoleItemsArr(rk) || []) : [];
     var totalAlloc = 0;
     items.forEach(function(it){
-      var a = (it && (it['alloc_'+rk] != null ? it['alloc_'+rk] : it.alloc));
-      if (typeof a === 'number' && !isNaN(a)) totalAlloc += a;
+      var alloc = it && it['alloc_'+rk];
+      var a = (alloc !== null && alloc !== undefined)
+        ? alloc / 60
+        : Math.max(0, (it['estimate_'+rk] || 0) - (it['fact_'+rk] || 0)) / 60;
+      if (isFinite(a)) totalAlloc += a;
     });
     var overlimit = (resource > 0) && (totalAlloc > resource + 0.001);
     return { resource: resource, totalAlloc: totalAlloc, taskCount: items.length, overlimit: overlimit };
@@ -9739,7 +9744,9 @@
     }
     var nkc = getCurrentRoleNkcHours();
     var kpeMap = _migrateKpeObject(_settings.kpe || {});
+    var mm = !!(_settings && _settings.manualPersonalResource);
     Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
+      if (mm) return;
       var entry = _currentRolePP.resourcesByAssignee[login];
       var g = _migrateGrade(entry.grade);
       var kpe   = (kpeMap[g] !== undefined) ? kpeMap[g] : (KPE_DEFAULTS_LOCAL[g] || 0.65);
@@ -9768,6 +9775,14 @@
     if (_currentRolePP && _currentRolePP.resourcesByAssignee) {
       Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
         savedGrades[login] = _migrateGrade(_currentRolePP.resourcesByAssignee[login].grade) || 'Middle';
+      });
+    }
+    var manualMode = !!(_settings && _settings.manualPersonalResource);
+    var savedResources = {};
+    if (manualMode && _currentRolePP && _currentRolePP.resourcesByAssignee) {
+      Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
+        var e = _currentRolePP.resourcesByAssignee[login];
+        savedResources[login] = { resource: e.resource, manualResource: e.manualResource };
       });
     }
 
@@ -9842,12 +9857,17 @@
           var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
           var rate  = _settings.rate         !== undefined ? _settings.rate         : 1;
           var parti = _settings.participation !== undefined ? _settings.participation : 1;
+          var computedRes = nkc * kpe * rate * parti;
+          var prevRes = manualMode ? savedResources[login] : null;
           assigneeSet[login] = {
             login:        login,
             assigneeName: u.fullName || login,
             grade:        grade,
-            resource:     nkc * kpe * rate * parti,
+            resource:     (prevRes && typeof prevRes.resource === 'number') ? prevRes.resource : computedRes,
           };
+          if (prevRes && typeof prevRes.manualResource === 'number') {
+            assigneeSet[login].manualResource = prevRes.manualResource;
+          }
         });
       });
 
@@ -9861,12 +9881,17 @@
           var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
           var rate  = _settings.rate !== undefined ? _settings.rate : 1;
           var parti = _settings.participation !== undefined ? _settings.participation : 1;
+          var computedRes2 = nkc * kpe * rate * parti;
+          var prevRes2 = manualMode ? savedResources[ta.assignee] : null;
           assigneeSet[ta.assignee] = {
             login:        ta.assignee,
             assigneeName: ta.assigneeName || ta.assignee,
             grade:        grade,
-            resource:     nkc * kpe * rate * parti,
+            resource:     (prevRes2 && typeof prevRes2.resource === 'number') ? prevRes2.resource : computedRes2,
           };
+          if (prevRes2 && typeof prevRes2.manualResource === 'number') {
+            assigneeSet[ta.assignee].manualResource = prevRes2.manualResource;
+          }
         });
       }
 

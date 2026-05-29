@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.12] — 2026-05-29
+
+> **Calculation chain fixes** — role resource cards now show correct values; manual assignee capacity is preserved after recalculation; overlimit validation accounts for tasks without explicit allocation. No schema changes. 419 tests pass.
+
+### Fixed
+
+- **[F2] Role card for active sprint always showed 0 in the «Resource» field.** `computeRoleQuickStats` read `_sprint.roles[rk].resource` — a path that does not exist in the codebase (0 write sites). Fixed to read from `_sprint[role.resKey]` with minutes-to-hours conversion.
+- **[F3] Role card for historical sprint displayed values ×60.** `computeRoleQuickStats` (history branch) passed `resKey` and `Σalloc` (minutes) directly to `_formatHoursLight`, which expects hours. Fixed by dividing by 60 before returning the stat object.
+- **[F1] Overlimit warning did not fire for tasks without explicit allocation.** `computeRoleQuickStats` and backend validation (`action=validate`) treated `alloc=null` as `0` instead of the canonical `alloc ?? max(0, est−fact)` from `calcRemForRole`. Both paths aligned to the canonical formula.
+- **[F8] «Calculate Resources» and «Pick assignees» overwrote manual assignee capacity.** `doRecalcResource` and `doCurrentRoleCalc` did not check `manualPersonalResource` and reset `entry.resource` using the formula. Added `if (manualPersonalResource) return` guard (matching the existing grade-handler pattern); `doCurrentRoleCalc` now preserves `resource`/`manualResource` when rebuilding the assignee list.
+
+---
+
 ## [2.1.11] — 2026-05-28
 
 > **Final B10 fix** — pick-overlay single-click reliability in production with Ring Table + React Checkbox. No schema changes. 419 tests pass.
