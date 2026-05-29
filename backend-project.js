@@ -1673,12 +1673,16 @@ exports.httpHandler = {
               if (typeof resource !== 'number') return;
               var arr = body.roleItems[rk];
               if (!Array.isArray(arr)) return;
+              var estKey  = 'estimate_' + rk;
+              var factKey = 'fact_' + rk;
               var sumAlloc = 0;
               arr.forEach(function (it) {
                 if (it && it.inclusionStatus
-                    && (it.inclusionStatus === 'INC_PLANNED' || it.inclusionStatus === 'INC_UNPLANNED')
-                    && typeof it[allocKey] === 'number') {
-                  sumAlloc += it[allocKey];
+                    && (it.inclusionStatus === 'INC_PLANNED' || it.inclusionStatus === 'INC_UNPLANNED')) {
+                  var alloc = it[allocKey];
+                  sumAlloc += (alloc !== null && alloc !== undefined)
+                    ? alloc
+                    : Math.max(0, (typeof it[estKey] === 'number' ? it[estKey] : 0) - (typeof it[factKey] === 'number' ? it[factKey] : 0));
                 }
               });
               if (sumAlloc > resource) {
@@ -1942,7 +1946,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.11' });
+        ctx.response.json({ version: '2.1.12' });
       }
     },
 
