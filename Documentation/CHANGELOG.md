@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.14] — 2026-05-30
+
+> **Task state on the Gantt chart (#20)** — a badge with the current State in native YouTrack colors, the date of the last transition, and the previous state. No schema changes.
+
+### Added
+
+- **Task state badge.** In the left label cell of each Gantt row (under the assignee name) — a pill with the current State in native YouTrack colors (background/text from the state palette), with the transition date "since {date}" next to it.
+- **Previous state.** A separate line "← was «{state}» · N d. ago" with a colored dot of the previous state. History is pulled from the YouTrack Activities API on the widget side (the backend has no access to the activity log); progressive rendering — the badge draws immediately, history loads asynchronously.
+- **Localization.** 6 new UI strings translated across all 15 supported locales.
+
+### Changed
+
+- **Gantt bar color** now reflects the task state (native YouTrack palette) instead of the assignee. Fallback is a neutral gray when no state or color is present.
+- **"Sync from tasks" button → "Refresh".** The two Gantt buttons are merged into one: it pulls assignee and state from YouTrack, then reloads the transition history. The `refresh-assignees` backend endpoint now also returns State (name + color).
+
+### Removed
+
+- **Manual bar recoloring by double-click.** The bar color is now meaningful (derived from the YT state), making manual marking (`userColorOverride`, frontend-only) redundant — the mechanism has been removed.
+
+---
+
 ## [2.1.13] — 2026-05-30
 
 > **Sprint history export/import (#27)** — JSON round-trip backup and restore of sprint history. No schema changes.
