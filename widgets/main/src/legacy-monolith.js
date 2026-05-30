@@ -7520,7 +7520,7 @@
     items.forEach(function(item) {
       p = p.then(function() {
         return _host.fetchYouTrack('issues/' + item.issueId, {
-          query: { fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login))' }
+          query: { fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login))' }
         }).then(function(issue) {
           if (!issue) return;
           var cfs = issue.customFields || [];
@@ -7554,6 +7554,7 @@
             item.stateColor = (_stC && (_stC.background || _stC.foreground))
               ? { background: _stC.background || null, foreground: _stC.foreground || null }
               : null;
+            item.stateFieldId = (_stCf && _stCf.projectCustomField && _stCf.projectCustomField.field && _stCf.projectCustomField.field.id) || null;
           }
           if (_settings && _settings.fieldSystem)           item.system            = getStr(_settings.fieldSystem);
           /* v1.8.0 D130 — Etap В.2 — populate externalTicketId from YT string field. */
@@ -10991,6 +10992,7 @@
         state:          item.state || '',
         stateLocalized: item.stateLocalized || item.state || '',
         stateColor:     item.stateColor || null,
+        stateFieldId:   item.stateFieldId || null,
       };
     }).filter(function(g){ return g.start && g.end; });
 
@@ -11121,8 +11123,14 @@
     });
     if (_isActiveSprint && _settings && _settings.fieldState) {
       var _histIds = ganttItems.map(function(g){ return g.issueId; });
+      var _histStates = {};
+      var _stateFieldId = '';
+      ganttItems.forEach(function(g){
+        _histStates[g.issueId] = g.stateLocalized || g.state || '';
+        if (!_stateFieldId && g.stateFieldId) _stateFieldId = g.stateFieldId;
+      });
       var _histKey = (_currentSprintId || '') + ':' + rk;
-      _fetchGanttStateHistory(_histIds, _histKey, false);
+      _fetchGanttStateHistory(_histIds, _histKey, false, _histStates, _stateFieldId);
     }
   }
 
@@ -11196,7 +11204,7 @@
     }
   }
 
-  function _fetchGanttStateHistory(ids, sprintKey, force) {
+  function _fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId) {
     if (!ids || !ids.length || !_settings || !_settings.fieldState) return;
     var now = Date.now();
     var TTL = 5 * 60 * 1000;
@@ -11206,14 +11214,15 @@
         (now - _ganttStateHist._fetchedAt) < TTL) return;
     /* Сброс: очищаем все issueId-записи, иначе processChunk пропустит их как «уже загруженные». */
     _ganttStateHist = { _sprintKey: sprintKey, _fetchedAt: 0 };
-    var stateFieldName = _settings.fieldState;
+    curStates = curStates || {};
+    fieldId = fieldId || '';
     var CHUNK_SIZE = 25;
 
     function processChunk(chunkIds) {
       return _host.fetchYouTrack('activities', { query: {
         categories: 'CustomFieldCategory',
         issueQuery: 'issue id: ' + chunkIds.join(', '),
-        fields: 'timestamp,target(idReadable),field(name),' +
+        fields: 'timestamp,target(idReadable),field(id,name,presentation),' +
                 'added(name,localizedName,color(background,foreground)),' +
                 'removed(name,localizedName,color(background,foreground))',
         reverse: 'true',
@@ -11230,13 +11239,32 @@
           });
           return;
         }
+        /* Идентификация нужного поля состояния:
+           1) ПРИОРИТЕТ — по id поля (`field.id`): не локализуется, не коллизит с другими
+              полями, работает для ЛЮБОГО типа (State/enum/owned/version). Универсально.
+           2) Fallback (если id поля не дошёл из Слоя 1): по совпадению нового значения
+              (added[0]) с текущим состоянием (curStates), иначе — по $type StateBundleElement.
+           В YouTrack Activities API added/removed — МАССИВЫ, field.name ЛОКАЛИЗОВАН.
+           reverse:true → берём первую (свежайшую) подходящую запись. */
         activities.forEach(function(act) {
-          if (!act || !act.target || !act.field) return;
+          if (!act || !act.target) return;
           var issueId = act.target.idReadable;
-          if (!issueId || (act.field.name || '') !== stateFieldName) return;
-          if (_ganttStateHist[issueId]) return;
-          var prevName = act.removed ? (act.removed.localizedName || act.removed.name || '') : '';
-          var prevC    = act.removed && act.removed.color ? act.removed.color : null;
+          if (!issueId || _ganttStateHist[issueId]) return;
+          var addedArr   = Array.isArray(act.added)   ? act.added   : (act.added   ? [act.added]   : []);
+          var removedArr = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : []);
+          var addedVal   = addedArr[0]   || null;
+          var removedVal = removedArr[0] || null;
+          var sample     = addedVal || removedVal;
+          if (!sample) return;
+          var addedName  = addedVal ? (addedVal.localizedName || addedVal.name || '') : '';
+          var cur        = curStates[issueId] || '';
+          var actFieldId = (act.field && act.field.id) || '';
+          var isStateChange = fieldId
+            ? (actFieldId === fieldId)
+            : (cur ? (addedName === cur) : (sample.$type === 'StateBundleElement'));
+          if (!isStateChange) return;
+          var prevName = removedVal ? (removedVal.localizedName || removedVal.name || '') : '';
+          var prevC    = removedVal && removedVal.color ? removedVal.color : null;
           _ganttStateHist[issueId] = {
             sinceTs:   act.timestamp || null,
             prev:      prevName,
@@ -11313,12 +11341,16 @@
           }
           if (_syncStateField && ytEntry && ytEntry.state && _itemById[issueId]) {
             var _it = _itemById[issueId];
-            _it.state = ytEntry.state.localizedName || ytEntry.state.name || '';
-            _it.stateLocalized = _it.state;
-            var _sc = ytEntry.state.color;
-            _it.stateColor = (_sc && (_sc.background || _sc.foreground))
-              ? { background: _sc.background || null, foreground: _sc.foreground || null }
-              : null;
+            var _newState = ytEntry.state.localizedName || ytEntry.state.name || '';
+            if (_newState !== (_it.state || '')) {
+              _it.state = _newState;
+              _it.stateLocalized = _newState;
+              var _sc = ytEntry.state.color;
+              _it.stateColor = (_sc && (_sc.background || _sc.foreground))
+                ? { background: _sc.background || null, foreground: _sc.foreground || null }
+                : null;
+              changed++;
+            }
           }
         });
         if (!changed) {
