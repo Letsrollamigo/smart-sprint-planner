@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.12';
+  var APP_VERSION = '2.1.13';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -8336,6 +8336,13 @@
       '<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg> Excel';
     xlsBtn.addEventListener('click', (function(r){ return function(e){ e.stopPropagation(); exportSprintToExcel(r); }; })(rec));
 
+    var jsonBtn = document.createElement('button');
+    jsonBtn.className = 'btn--excel'; jsonBtn.title = T('btnExportSprintJsonTitle') || 'Экспорт спринта в JSON';
+    jsonBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+
+      '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'+
+      '<line x1="8" y1="13" x2="16" y2="13"/></svg> JSON';
+    jsonBtn.addEventListener('click', (function(r){ return function(e){ e.stopPropagation(); exportPerSprintJson(r); }; })(rec));
+
     if (_isValidator && rec.status !== STATUS.FINISHED) {
       /* v5.3.0 — disable/relabel «Открыть на правку» по ownership working copy */
       var wcDraft = (rec.hasWorkingCopy && _workingDrafts[rec.sprintId]) ? _workingDrafts[rec.sprintId] : null;
@@ -8374,7 +8381,7 @@
     var del = document.createElement('button'); del.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly'; del.title = T('btnDeleteTitle'); del.setAttribute('aria-label', T('aria.btnDeleteRow')); del.appendChild(icon('trash', T('aria.btnDeleteRow')));
     del.addEventListener('click', (function(i){ return function(e){ e.stopPropagation(); _pendingDelHist = i; _showOverlay('delHistOverlay'); }; })(idx));
     var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶';
-    ctrl.appendChild(xlsBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
+    ctrl.appendChild(xlsBtn); ctrl.appendChild(jsonBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
     head.appendChild(meta); head.appendChild(ctrl);
     head.addEventListener('click', function(){ wrap.classList.toggle('open'); });
 
@@ -8979,6 +8986,316 @@
     XLSX.writeFile(wb, fileName);
     diag('Excel exported: ' + fileName, 'ok');
   }
+
+  /* ═══ v2.1.13 — Экспорт/импорт истории в JSON (#27) ══════════════ */
+
+  var HIST_EXPORT_FORMAT     = 'ssp-sprint-history';
+  var HIST_EXPORT_FORMAT_VER = 1;
+  var HIST_ACCEPTED_FORMATS  = ['scbt-sprint-history', 'ssp-sprint-history'];
+
+  function _anonymizeHistRecords(records) {
+    return records.map(function(rec) {
+      var r = JSON.parse(JSON.stringify(rec));
+      if (r.settings) {
+        delete r.settings.kpe; delete r.settings.rate;
+        ['analysis','development','testing','devops','analytics','management','design','qa','support'].forEach(function(rk){
+          if (r.settings['rate_' + rk] !== undefined) delete r.settings['rate_' + rk];
+          if (r.settings['kpe_'  + rk] !== undefined) delete r.settings['kpe_'  + rk];
+        });
+      }
+      return r;
+    });
+  }
+
+  function _buildHistEnvelope(records, anonymize) {
+    var recs = anonymize ? _anonymizeHistRecords(records) : records;
+    var su   = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
+    var proj = _projectDisplayName || (_ctx && _ctx.project && (_ctx.project.shortName || _ctx.project.id)) || '';
+    return {
+      format:        HIST_EXPORT_FORMAT,
+      formatVersion: HIST_EXPORT_FORMAT_VER,
+      pluginVersion: APP_VERSION,
+      exportedAt:    Date.now(),
+      exportedBy:    (_currentUser && _currentUser.login) || '',
+      sourceProject: proj,
+      sourceInstance: su,
+      anonymized:    !!anonymize,
+      records:       recs
+    };
+  }
+
+  function _triggerJsonDownload(obj, fileName) {
+    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a'); a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+  }
+
+  function _histFileStem() {
+    var proj = (_projectDisplayName || 'project').replace(/[\\/:*?"<>|]/g, '_');
+    var d    = new Date(); var ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    return 'ssp-history_' + proj + '_' + ds;
+  }
+
+  /* Экспорт всей истории */
+  function exportAllHistoryToJson(anonymize) {
+    if (!_history || !_history.length) { toast(T('emptyHistory') || 'Нет истории', 'warn'); return; }
+    var env = _buildHistEnvelope(_history, anonymize);
+    _triggerJsonDownload(env, _histFileStem() + '.json');
+    toast(T('toastHistExported') || 'История экспортирована', 'success');
+    diag('JSON history exported: ' + _history.length + ' records', 'ok');
+  }
+
+  /* Экспорт одного спринта (все роли) по базовому sprintId */
+  function exportPerSprintJson(rec) {
+    var baseId   = String(rec.sprintId).split('_')[0];
+    var sprintRecs = _history.filter(function(h){ return h && String(h.sprintId).split('_')[0] === baseId; });
+    var env = _buildHistEnvelope(sprintRecs, false);
+    var safeName = (rec.name || 'sprint').replace(/[\\/:*?"<>|]/g, '_');
+    var d   = rec.dateStart ? fmtDate(rec.dateStart).replace(/\./g, '-') : 'nodate';
+    _triggerJsonDownload(env, 'ssp-sprint-' + safeName + '_' + d + '.json');
+    toast(T('toastHistExported') || 'Спринт экспортирован', 'success');
+  }
+
+  /* ── Экспорт-кнопки в header вкладки «История» ── */
+  (function() {
+    var expBtn = document.getElementById('exportAllHistoryBtn');
+    var impBtn = document.getElementById('importHistoryBtn');
+    var fileInput = document.getElementById('histImportFileInput');
+    if (expBtn) {
+      expBtn.title = T('btnExportHistoryTitle') || 'Скачать всю историю в JSON';
+      expBtn.addEventListener('click', function() { exportAllHistoryToJson(false); });
+    }
+    if (impBtn && fileInput) {
+      impBtn.title = T('btnImportHistoryTitle') || 'Загрузить историю из JSON-файла';
+      impBtn.addEventListener('click', function() { fileInput.value = ''; fileInput.click(); });
+      fileInput.addEventListener('change', function() {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var data = JSON.parse(ev.target.result);
+            openImportHistDialog(data).catch(function(){});
+          } catch(e) {
+            toast((T('toastHistImportErr') || 'Ошибка импорта: ') + 'JSON parse error', 'err');
+          }
+        };
+        reader.readAsText(f);
+      });
+    }
+  })();
+
+  /* ── Preflight-валидация конверта ── */
+  function _preflightHistFile(data) {
+    if (!data || typeof data !== 'object') return { ok: false, reason: 'not_object' };
+    if (HIST_ACCEPTED_FORMATS.indexOf(data.format) < 0) return { ok: false, reason: 'wrong_format' };
+    if (!data.formatVersion || data.formatVersion > HIST_EXPORT_FORMAT_VER) return { ok: false, reason: 'unsupported_version' };
+    if (!Array.isArray(data.records)) return { ok: false, reason: 'no_records' };
+    return { ok: true };
+  }
+
+  /* ── Диалог импорта (Promise-based) ── */
+  var _importHistPending = null; // { records, mode, selectedBaseIds }
+
+  function openImportHistDialog(data) {
+    return new Promise(function(resolve) {
+      var pf = _preflightHistFile(data);
+      if (!pf.ok) {
+        toast(T('toastHistImportInvalid') || 'Файл не является историей спринтов', 'err');
+        resolve(null); return;
+      }
+      var records = data.records;
+      if (!records.length) {
+        toast(T('importHistEmpty') || 'Нет записей для импорта', 'warn');
+        resolve(null); return;
+      }
+
+      // Существующие базовые sprintId
+      var existingBaseIds = {};
+      (_history || []).forEach(function(h){ if (h && h.sprintId) existingBaseIds[String(h.sprintId).split('_')[0]] = true; });
+
+      // Группируем записи файла по базовому sprintId
+      var groups = {}; // baseId → { baseId, name, dateStart, roleCount, hasCollision }
+      records.forEach(function(r) {
+        if (!r || !r.sprintId) return;
+        var base = String(r.sprintId).split('_')[0];
+        if (!groups[base]) groups[base] = { baseId: base, name: r.name || base, dateStart: r.dateStart, roleCount: 0, hasCollision: !!existingBaseIds[base] };
+        groups[base].roleCount++;
+      });
+      var groupList = Object.keys(groups).map(function(k){ return groups[k]; });
+
+      // Cross-fork и cross-instance флаги
+      var isCrossFork     = data.format !== HIST_EXPORT_FORMAT;
+      var su              = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
+      var isCrossInstance = !!(data.sourceInstance && su && data.sourceInstance !== su);
+      var isVersionNewer  = !!(data.pluginVersion && data.pluginVersion > APP_VERSION);
+
+      // Заполняем тело диалога
+      var body = document.getElementById('importHistBody');
+      if (!body) { resolve(null); return; }
+
+      // Info block
+      var infoHtml = '<div style="background:var(--surface-light,#f5f5f5);border-radius:6px;padding:10px 12px;font-size:12px;margin-bottom:12px">';
+      infoHtml += '<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 10px">';
+      if (data.sourceProject) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistProject')) + '</span><span><b>' + esc(data.sourceProject) + '</b></span>';
+      if (data.sourceInstance) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistInstance')) + '</span><span>' + esc(data.sourceInstance) + '</span>';
+      if (data.exportedAt)    infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistExportedAt')) + '</span><span>' + fmtDT(data.exportedAt) + '</span>';
+      if (data.pluginVersion) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistPluginVer')) + '</span><span>' + esc(data.pluginVersion) + '</span>';
+      infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistSprintsLabel')) + '</span><span>' + groupList.length + '</span>';
+      infoHtml += '</div>';
+      if (data.anonymized) infoHtml += '<div style="margin-top:6px;color:var(--muted);font-size:11px">🔒 ' + esc(T('importHistAnonBadge')) + '</div>';
+      infoHtml += '</div>';
+
+      // Предупреждения
+      var warnHtml = '';
+      if (isCrossFork)     warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--primary,#0d6efd)">' + esc((T('importHistCrossFork') || '').replace('{fork}', data.format)) + '</div>';
+      if (isCrossInstance) warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--warn-text,#b36800)">' + esc(T('importHistCrossInstance') || '') + '</div>';
+      if (isVersionNewer)  warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--warn-text,#b36800)">' + esc((T('importHistVersionWarn') || '').replace('{v}', data.pluginVersion)) + '</div>';
+
+      // Список спринтов
+      var listHtml = '<div style="margin-bottom:10px">';
+      groupList.forEach(function(g) {
+        var collBadge = g.hasCollision ? ' <span style="font-size:10px;background:var(--warn,#fff3cd);color:var(--warn-text,#b36800);padding:1px 5px;border-radius:3px;vertical-align:middle">' + esc(T('importHistCollisionBadge') || 'дубль') + '</span>' : '';
+        var dateStr   = g.dateStart ? ' <span style="color:var(--muted);font-size:11px">(' + fmtDate(g.dateStart) + ')</span>' : '';
+        listHtml += '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer">';
+        listHtml += '<span data-ssp-checkbox-host data-checkbox-id="importSprint_' + esc(g.baseId) + '" data-checked="1" data-label=""></span>';
+        listHtml += '<span style="font-size:13px">' + esc(g.name) + dateStr + collBadge + '</span>';
+        listHtml += '</label>';
+      });
+      listHtml += '</div>';
+
+      // Radio режима A/B
+      var radioHtml = '<div style="margin-bottom:10px">';
+      radioHtml += '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">' + esc(T('importHistModeLabel') || 'При совпадении sprintId:') + '</div>';
+      radioHtml += '<span data-ssp-radio-host id="importHistModeRadioHost" data-value="skip"></span>';
+      radioHtml += '</div>';
+
+      body.innerHTML = infoHtml + warnHtml + listHtml + radioHtml;
+
+      // Монтируем Ring Checkboxes
+      if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') window.__SSP_CHECKBOX.mountAllIn(body);
+
+      // Монтируем Ring Radio
+      var radioHost = document.getElementById('importHistModeRadioHost');
+      if (radioHost) {
+        radioHost.dataset.optionsJson = JSON.stringify([
+          { value: 'skip',      label: T('importHistModeSkip')      || 'Пропустить дубли' },
+          { value: 'overwrite', label: T('importHistModeOverwrite') || 'Перезаписать дубли' }
+        ]);
+        radioHost.dataset.value = 'skip';
+        if (window.__SSP_RADIO && typeof window.__SSP_RADIO.mountGroupAt === 'function') window.__SSP_RADIO.mountGroupAt(radioHost);
+      }
+
+      // Кнопки диалога
+      var submitBtn  = document.getElementById('importHistSubmit');
+      var cancelBtn  = document.getElementById('importHistCancel');
+      var replaceBtn = document.getElementById('importHistReplaceBtn');
+      var overlay    = document.getElementById('importHistOverlay');
+
+      if (replaceBtn) replaceBtn.title = T('btnImportReplaceTitle') || '';
+
+      function getSelectedBaseIds() {
+        var sel = [];
+        groupList.forEach(function(g) {
+          var host = body.querySelector('[data-checkbox-id="importSprint_' + g.baseId + '"]');
+          var checked = host ? (host.dataset.checked === '1') : true;
+          if (checked) sel.push(g.baseId);
+        });
+        return sel;
+      }
+
+      function updateSubmitState() {
+        if (submitBtn) submitBtn.disabled = getSelectedBaseIds().length === 0;
+      }
+      body.addEventListener('change', updateSubmitState);
+      updateSubmitState();
+
+      var _resolved = false;
+      function _res(val) { if (!_resolved) { _resolved = true; resolve(val); } }
+
+      function cleanup() {
+        overlay.classList.add('hidden');
+        if (submitBtn) submitBtn.removeEventListener('click', onSubmit);
+        if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
+        if (replaceBtn) replaceBtn.removeEventListener('click', onReplace);
+      }
+      function onCancel() { cleanup(); _res(null); }
+      function onSubmit() {
+        var sel  = getSelectedBaseIds();
+        if (!sel.length) return;
+        var mode = radioHost ? (radioHost.dataset.value || 'skip') : 'skip';
+        cleanup();
+        _submitHistImport(sel, mode, records).then(function(){ _res({ action: 'merge' }); }).catch(function(){});
+      }
+      function onReplace() {
+        _importHistPending = { records: records };
+        cleanup(); _res({ action: 'replace' });
+        _showOverlay('importReplaceHistOverlay');
+      }
+
+      if (submitBtn) submitBtn.addEventListener('click', onSubmit);
+      if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
+      if (replaceBtn) replaceBtn.addEventListener('click', onReplace);
+
+      try { _showOverlay(overlay); } catch(_e) { overlay.classList.remove('hidden'); }
+    });
+  }
+
+  /* ── Merge и запись истории ── */
+  function _submitHistImport(selectedBaseIds, mode, fileRecords) {
+    var current = (_history || []).slice();
+    var toAdd   = fileRecords.filter(function(r){ return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });
+    if (mode === 'overwrite') {
+      var removeSet = {};
+      toAdd.forEach(function(r){ removeSet[r.sprintId] = true; });
+      current = current.filter(function(h){ return !removeSet[h.sprintId]; });
+    } else {
+      // skip: убираем из toAdd то, что уже есть (по полному sprintId)
+      var existingIds = {}; current.forEach(function(h){ if (h) existingIds[h.sprintId] = true; });
+      toAdd = toAdd.filter(function(r){ return !existingIds[r.sprintId]; });
+    }
+    var merged = current.concat(toAdd);
+    return apiPost('history', { history: merged }).then(function() {
+      _history = merged;
+      renderHistory();
+      toast((T('toastHistImported') || 'Импортировано: {n}').replace('{n}', toAdd.length), 'success');
+      diag('history import merged: ' + toAdd.length + ' records (mode=' + mode + ')', 'ok');
+    }).catch(function(e) {
+      var msg = (e && e.message) ? e.message : String(e);
+      if (msg.indexOf('history_data_too_large') >= 0) toast(T('toastHistImportTooLarge') || 'Файл превышает допустимый размер', 'err');
+      else toast((T('toastHistImportErr') || 'Ошибка импорта: ') + msg, 'err');
+    });
+  }
+
+  /* ── Полное восстановление (replace-all) ── */
+  (function() {
+    var noBtn  = document.getElementById('importReplaceHistNo');
+    var yesBtn = document.getElementById('importReplaceHistYes');
+    if (noBtn) noBtn.addEventListener('click', function() {
+      document.getElementById('importReplaceHistOverlay').classList.add('hidden');
+      _importHistPending = null;
+    });
+    if (yesBtn) yesBtn.addEventListener('click', function() {
+      document.getElementById('importReplaceHistOverlay').classList.add('hidden');
+      if (!_importHistPending || !_importHistPending.records) { _importHistPending = null; return; }
+      var records = _importHistPending.records; _importHistPending = null;
+      apiPost('history', { history: records }, { action: 'import-replace' })
+        .then(function(r) {
+          if (!r || !r.success) throw new Error((r && r.reason) || 'unknown');
+          _history = records.slice();
+          renderHistory();
+          toast(T('toastHistReplaced') || 'История восстановлена из файла', 'success');
+          diag('history replaced: ' + records.length + ' records', 'ok');
+        })
+        .catch(function(e) {
+          var msg = (e && e.message) ? e.message : String(e);
+          if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) toast(T('toastNoHistReplaceRights') || 'Нет прав', 'err');
+          else toast((T('toastHistReplaceErr') || 'Ошибка: ') + msg, 'err');
+        });
+    });
+  })();
 
   /* ═══════════════════════════════════════════════════════════
      v4.0.0 — АЛЛОКАЦИЯ: валидация превышения лимита по задачам

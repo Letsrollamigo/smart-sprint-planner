@@ -1809,7 +1809,7 @@ exports.httpHandler = {
       path: 'history',
       handle: function (ctx) {
         var action = (ctx.request.getParameter('action') || '').trim();
-        if (action && action !== 'clear' && action !== 'assignerSync') {
+        if (action && action !== 'clear' && action !== 'assignerSync' && action !== 'import-replace') {
           badRequest(ctx, 'invalid_action');
           return;
         }
@@ -1820,6 +1820,31 @@ exports.httpHandler = {
           setProp(ctx, 'ssp_history', '[]');
           dlog(ctx, 'history cleared by ' + ((ctx.currentUser && ctx.currentUser.login) || '?'));
           ctx.response.json({ success: true, cleared: true });
+          return;
+        }
+
+        // v2.1.13 — Полное восстановление истории из файла. Требует historyManager.
+        // Атомарная замена: валидирует + перезаписывает в одной транзакции.
+        if (action === 'import-replace') {
+          if (!authzGuard(ctx, 'historyManager')) return;
+          var bodyIR = getBody(ctx);
+          if (bodyIR.__rejected__) { badRequest(ctx, bodyIR.__reason__ || 'invalid_input'); return; }
+          bodyIR = filterKeys(bodyIR, ALLOWED_HISTORY_KEYS);
+          if (!Array.isArray(bodyIR.history)) { badRequest(ctx, 'invalid_history_structure'); return; }
+          bodyIR.history = stripDeprecatedHistoryKeys(bodyIR.history);
+          for (var iri = 0; iri < bodyIR.history.length; iri++) {
+            if (bodyIR.history[iri] && typeof bodyIR.history[iri] === 'object') bodyIR.history[iri].pluginVersion = CURRENT_PLUGIN_VERSION;
+          }
+          if (!validateHistoryForWrite(bodyIR.history)) {
+            var irDiag = diagnoseHistoryWrite(bodyIR.history);
+            badRequest(ctx, 'invalid_history_structure: ' + (irDiag.where || 'unknown') + ' (record[' + irDiag.idx + '])');
+            return;
+          }
+          var irStr = JSON.stringify(bodyIR.history);
+          if (irStr.length > MAX_HISTORY_SIZE) { badRequest(ctx, 'history_data_too_large'); return; }
+          setProp(ctx, 'ssp_history', irStr);
+          dlog(ctx, 'history replaced by import (' + bodyIR.history.length + ' rec) by ' + ((ctx.currentUser && ctx.currentUser.login) || '?'));
+          ctx.response.json({ success: true, action: 'import-replace', count: bodyIR.history.length });
           return;
         }
 
@@ -1946,7 +1971,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.12' });
+        ctx.response.json({ version: '2.1.13' });
       }
     },
 

@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.12",
+  "version": "2.1.13",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.12 — calculation fixes: role resource cards now show correct values (not 0 or ×60 for history snapshots); manual assignee capacity is preserved after «Calculate Resources»; server-side overlimit validation now accounts for tasks without explicit allocation.",
+  "changeNotes": "v2.1.13 — sprint history export/import (#27): JSON round-trip backup/restore with merge modes (skip/overwrite), anonymization, full restore, and cross-project/instance portability.",
   "widgets": [
     {
       "key": "ssp-main",
