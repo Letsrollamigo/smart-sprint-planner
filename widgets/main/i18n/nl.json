@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "Bijwerken",
+  "ganttStateSince": "sinds {date}",
+  "ganttStateWas": "was \"{state}\"",
+  "ganttStateAgo": "{n} d. geleden",
+  "ganttStateNoTransitions": "geen overgangen",
+  "ganttStateLoading": "laden…",
   "_meta": {
     "lang": "nl",
     "name": "Nederlands",

@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "更新",
+  "ganttStateSince": "自 {date}",
+  "ganttStateWas": "曾是“{state}”",
+  "ganttStateAgo": "{n} 天前",
+  "ganttStateNoTransitions": "无状态变更",
+  "ganttStateLoading": "加载中…",
   "_meta": {
     "lang": "zh",
     "name": "中文",

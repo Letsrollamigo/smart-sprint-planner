@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "Frissítés",
+  "ganttStateSince": "{date} óta",
+  "ganttStateWas": "volt: \"{state}\"",
+  "ganttStateAgo": "{n} napja",
+  "ganttStateNoTransitions": "nincs átmenet",
+  "ganttStateLoading": "betöltés…",
   "_meta": {
     "lang": "hu",
     "name": "Magyar",
