@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.13] — 2026-05-30
+
+> **Sprint history export/import (#27)** — JSON round-trip backup and restore of sprint history. No schema changes.
+
+### Added
+
+- **Export sprint history to JSON.** The History tab header gains a "Full history (JSON)" button (downloads all snapshots in a self-describing envelope) and a per-sprint JSON icon next to the existing Excel export. Optional anonymization strips rates (`kpe`/`rate`) from the export.
+- **Import sprint history from JSON.** "Import from file" opens a preflight dialog: source info (project, instance, export date, plugin version), per-sprint selection, collision markers against current history, and a merge mode — skip duplicates or overwrite duplicates (by `sprintId`).
+- **Full restore (replace-all).** A separate confirm dialog wipes current history and replaces it with the file contents; guarded by the `historyManager` role via a new `POST /history?action=import-replace` endpoint.
+- **Cross-fork compatibility.** Files exported from a paired/sibling fork import here with an info note; records are always written to `ssp_history` regardless of the file's origin marker.
+- **Full localization.** All 38 new UI strings translated across all 15 supported locales.
+
+---
+
 ## [2.1.12] — 2026-05-29
 
 > **Calculation chain fixes** — role resource cards now show correct values; manual assignee capacity is preserved after recalculation; overlimit validation accounts for tasks without explicit allocation. No schema changes. 419 tests pass.

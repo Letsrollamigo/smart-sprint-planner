@@ -2185,7 +2185,11 @@
   </div>
 
 <div class="tab-panel" id="tab-history">
-    <div style="display:flex;justify-content:flex-end;padding:0 0 10px 0">
+    <div style="display:flex;align-items:center;gap:6px;padding:0 0 10px 0">
+      <button class="ring-button-button ring-button-block ring-button-heightS" id="exportAllHistoryBtn" data-i18n="btnExportHistory">Вся история (JSON)</button>
+      <button class="ring-button-button ring-button-block ring-button-heightS" id="importHistoryBtn" data-i18n="btnImportHistory">Импорт из файла</button>
+      <input type="file" id="histImportFileInput" accept=".json" style="display:none">
+      <span style="flex:1"></span>
       <button class="ring-button-button ring-button-block ring-button-heightS ring-button-danger" id="clearAllHistoryBtn" data-i18n="btnClearHistory" data-icon="trash" data-aria-label-key="aria.btnClearHistory">Очистить всю историю</button>
     </div>
     <div id="historyList"><div class="empty" data-i18n="emptyHistory">Нет сохранённых спринтов</div></div>
@@ -2239,6 +2243,36 @@
     <div class="modal__foot">
       <button class="ring-button-button ring-button-block ring-button-heightM" id="clearAllHistNo" data-i18n="btnCancel">Отмена</button>
       <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearAllHistYes" data-i18n="btnYesClearAll">Да, очистить всё</button>
+    </div>
+  </div>
+</div>
+
+<!-- v2.1.13 — Импорт истории спринтов -->
+<div id="importHistOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="importHistTitleEl">
+  <div class="modal" style="max-width:560px">
+    <div class="modal__head" id="importHistTitleEl" data-i18n="importHistTitle">Импорт истории спринтов</div>
+    <div class="modal__body" id="importHistBody" style="max-height:60vh;overflow-y:auto">
+      <!-- заполняется динамически в openImportHistDialog() -->
+    </div>
+    <div class="modal__foot" style="flex-wrap:wrap;gap:6px">
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="importHistReplaceBtn" style="margin-right:auto" data-i18n="btnImportReplace">Полное восстановление…</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="importHistCancel" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="importHistSubmit" disabled data-i18n="btnImport">Импортировать</button>
+    </div>
+  </div>
+</div>
+
+<!-- v2.1.13 — Подтверждение: полное восстановление истории -->
+<div id="importReplaceHistOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="importReplaceHistTitleEl">
+  <div class="modal" style="max-width:420px">
+    <div class="modal__head" id="importReplaceHistTitleEl" data-i18n="importReplaceTitle">Полное восстановление истории</div>
+    <div class="modal__body">
+      <p style="color:var(--error)" data-i18n="importReplaceWarn" data-i18n-html>⚠ Это сотрёт <b>всю текущую историю</b> и заменит содержимым файла.</p>
+      <p style="margin-top:8px;font-size:13px;color:var(--muted)" data-i18n="importReplaceInfo">Операция необратима. Продолжить?</p>
+    </div>
+    <div class="modal__foot">
+      <button class="ring-button-button ring-button-block ring-button-heightM" id="importReplaceHistNo" data-i18n="btnCancel">Отмена</button>
+      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="importReplaceHistYes" data-i18n="btnYesReplace">Да, заменить всё</button>
     </div>
   </div>
 </div>
