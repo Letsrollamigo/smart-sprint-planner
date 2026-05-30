@@ -656,6 +656,12 @@
   "role.devAndroid": "Разработка Android",
   "role.devFs": "Разработка FullStack",
   "role.devDb": "Разработка СУБД",
+  "ganttRefresh": "Обновить",
+  "ganttStateSince": "с {date}",
+  "ganttStateWas": "было «{state}»",
+  "ganttStateAgo": "{n} дн. назад",
+  "ganttStateNoTransitions": "переходов не было",
+  "ganttStateLoading": "загрузка истории…",
   "_meta": {
     "lang": "ru",
     "name": "Русский",

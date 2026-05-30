@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.13",
+  "version": "2.1.14",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.13 — sprint history export/import (#27): JSON round-trip backup/restore with merge modes (skip/overwrite), anonymization, full restore, and cross-project/instance portability.",
+  "changeNotes": "v2.1.14 — бейдж состояния задачи на Ганте (#20): текущее State с цветом YT, дата и предыдущее State; единая кнопка «Обновить».",
   "widgets": [
     {
       "key": "ssp-main",

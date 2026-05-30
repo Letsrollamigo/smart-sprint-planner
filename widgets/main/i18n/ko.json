@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "업데이트",
+  "ganttStateSince": "{date}부터",
+  "ganttStateWas": "이전: \"{state}\"",
+  "ganttStateAgo": "{n}일 전",
+  "ganttStateNoTransitions": "전환 없음",
+  "ganttStateLoading": "로딩 중…",
   "_meta": {
     "lang": "ko",
     "name": "한국어",

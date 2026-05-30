@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "Actualiser",
+  "ganttStateSince": "depuis {date}",
+  "ganttStateWas": "était \"{state}\"",
+  "ganttStateAgo": "il y a {n} j.",
+  "ganttStateNoTransitions": "pas de transitions",
+  "ganttStateLoading": "chargement…",
   "_meta": {
     "lang": "fr",
     "name": "Français",

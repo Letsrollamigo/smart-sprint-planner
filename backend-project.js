@@ -131,7 +131,7 @@ var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items'];
 var ALLOWED_HISTORY_KEYS     = ['history'];
 var ALLOWED_UPDATE_ISSUE_KEYS = ['issueId', 'fieldName', 'value', 'type'];
 /* v6.1.0 D80 (F3) — bulk read assignee из YouTrack для перечисленных issueId. */
-var ALLOWED_REFRESH_ASSIGNEES_KEYS = ['issueIds', 'fieldName'];
+var ALLOWED_REFRESH_ASSIGNEES_KEYS = ['issueIds', 'fieldName', 'stateFieldName'];
 var MAX_REFRESH_ASSIGNEES_BATCH    = 200;
 // v5.0.3 — серверный draft (черновик в backend, поскольку YouTrack iframe
 // sandboxed без allow-same-origin, localStorage недоступен).
@@ -1971,7 +1971,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.13' });
+        ctx.response.json({ version: '2.1.14' });
       }
     },
 
@@ -2526,6 +2526,7 @@ exports.httpHandler = {
 
         var issueIds = body.issueIds;
         var fieldName = body.fieldName;
+        var stateFieldName = body.stateFieldName || '';
         if (!Array.isArray(issueIds) || !issueIds.length || issueIds.length > MAX_REFRESH_ASSIGNEES_BATCH) {
           badRequest(ctx, 'invalid_issue_ids');
           return;
@@ -2533,6 +2534,11 @@ exports.httpHandler = {
         if (typeof fieldName !== 'string' || !fieldName.length || fieldName.length > 200
             || /[\x00-\x1F<>"]/.test(fieldName)) {
           badRequest(ctx, 'invalid_field_name');
+          return;
+        }
+        if (stateFieldName && (typeof stateFieldName !== 'string' || stateFieldName.length > 200
+            || /[\x00-\x1F<>"]/.test(stateFieldName))) {
+          badRequest(ctx, 'invalid_state_field_name');
           return;
         }
         var ID_RE = /^[A-Za-z][A-Za-z0-9_]*-\d+$/;
@@ -2543,6 +2549,19 @@ exports.httpHandler = {
           }
         }
 
+        function readField(issue, fname) {
+          var raw = null;
+          try { raw = issue.fields[fname]; } catch (_) {}
+          if (raw == null && issue.fields && typeof issue.fields.forEach === 'function') {
+            issue.fields.forEach(function (f) {
+              if (raw == null && f && f.projectCustomField && (f.projectCustomField.name || '') === fname) {
+                raw = f.value;
+              }
+            });
+          }
+          return raw;
+        }
+
         var assignees = {};
         for (var k = 0; k < issueIds.length; k++) {
           var issueId = issueIds[k];
@@ -2550,21 +2569,26 @@ exports.httpHandler = {
           try {
             var issue = entities.Issue.findById(issueId);
             if (!issue) continue;
-            var raw = null;
-            try { raw = issue.fields[fieldName]; } catch (_) {}
-            if (raw == null && issue.fields && typeof issue.fields.forEach === 'function') {
-              issue.fields.forEach(function (f) {
-                if (f && f.projectCustomField && (f.projectCustomField.name || '') === fieldName) {
-                  raw = f.value;
-                }
-              });
-            }
+            var raw = readField(issue, fieldName);
+            var entry = null;
             if (raw && typeof raw === 'object') {
-              assignees[issueId] = {
-                login:    raw.login    || null,
-                fullName: raw.fullName || raw.name || null
-              };
+              entry = { login: raw.login || null, fullName: raw.fullName || raw.name || null };
             }
+            if (stateFieldName) {
+              var stRaw = readField(issue, stateFieldName);
+              var stData = null;
+              if (stRaw && typeof stRaw === 'object' && (stRaw.name || stRaw.localizedName)) {
+                var stColor = null;
+                try {
+                  if (stRaw.color && (stRaw.color.background || stRaw.color.foreground)) {
+                    stColor = { background: stRaw.color.background || null, foreground: stRaw.color.foreground || null };
+                  }
+                } catch (_) {}
+                stData = { name: stRaw.name || null, localizedName: stRaw.localizedName || stRaw.name || null, color: stColor };
+              }
+              if (stData) { entry = entry || {}; entry.state = stData; }
+            }
+            assignees[issueId] = entry;
           } catch (e) {
             dlog(ctx, 'refresh-assignees(' + issueId + ') err: ' + String(e && e.message));
           }

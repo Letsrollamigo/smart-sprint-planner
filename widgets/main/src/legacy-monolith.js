@@ -1571,7 +1571,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.13';
+  var APP_VERSION = '2.1.14';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -6084,15 +6084,6 @@
           refreshGanttForCurrentSprint(newRk);
         });
       }
-      var updBtn = document.getElementById('ganttUpdateBtn');
-      if (updBtn && !updBtn.dataset.bound) {
-        updBtn.dataset.bound = '1';
-        updBtn.addEventListener('click', function(){
-          var s = document.getElementById('ganttRoleSel');
-          var rk = s ? s.value : null;
-          refreshGanttForCurrentSprint(rk);
-        });
-      }
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', bind);
@@ -7529,7 +7520,7 @@
     items.forEach(function(item) {
       p = p.then(function() {
         return _host.fetchYouTrack('issues/' + item.issueId, {
-          query: { fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))' }
+          query: { fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login))' }
         }).then(function(issue) {
           if (!issue) return;
           var cfs = issue.customFields || [];
@@ -7554,7 +7545,16 @@
           if (_settings && _settings[role.fieldFact]) item['fact_'+rk]     = getMin(_settings[role.fieldFact]);
           if (_settings && _settings.fieldPriority)         item.priority          = getStr(_settings.fieldPriority);
           if (_settings && _settings.fieldXPriority)        item.xpriority         = getStr(_settings.fieldXPriority);
-          if (_settings && _settings.fieldState)            item.state             = getStr(_settings.fieldState);
+          if (_settings && _settings.fieldState) {
+            item.state = getStr(_settings.fieldState);
+            var _stCf = findCf(_settings.fieldState);
+            var _stV  = _stCf && _stCf.value;
+            item.stateLocalized = _stV ? (_stV.localizedName || _stV.presentation || _stV.name || '') : '';
+            var _stC  = _stV && _stV.color;
+            item.stateColor = (_stC && (_stC.background || _stC.foreground))
+              ? { background: _stC.background || null, foreground: _stC.foreground || null }
+              : null;
+          }
           if (_settings && _settings.fieldSystem)           item.system            = getStr(_settings.fieldSystem);
           /* v1.8.0 D130 — Etap В.2 — populate externalTicketId from YT string field. */
           if (_settings && _settings.fieldExternalTicketId) item.externalTicketId  = getStr(_settings.fieldExternalTicketId);
@@ -10941,20 +10941,8 @@
      v4.0.0 — ДИАГРАММА ГАНТА
      ═══════════════════════════════════════════════════════════ */
 
-  document.getElementById('ganttUpdateBtn').addEventListener('click', function() {
-    renderGanttChart();
-  });
-
-  function toggleGanttCellColor(issueId) {
-    if (!_currentRolePP) return;
-    if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-    if (!_currentRolePP.taskAssignments[issueId]) _currentRolePP.taskAssignments[issueId] = {};
-    var cur = _currentRolePP.taskAssignments[issueId].userColorOverride || null;
-    _currentRolePP.taskAssignments[issueId].userColorOverride =
-      cur === null ? 'red' : (cur === 'red' ? 'blue' : null);
-    saveCurrentRoleState();
-    renderGanttChart();
-  }
+  /* Кеш истории переходов состояний для Ганта: { [issueId]: {sinceTs, prev, prevColor}, _sprintKey, _fetchedAt } */
+  var _ganttStateHist = {};
 
   function renderGanttChart() {
     var container = document.getElementById('ganttContainer');
@@ -10967,7 +10955,8 @@
     var rk  = rec.roleKey || (getActiveRoles()[0] || ALL_ROLES[0]).key;
     /* v5.0.3 — если запись соответствует активному _sprint, берём live items
        из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
-    var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
+    var _isActiveSprint = isActiveSprintRecord(rec);
+    var items = _isActiveSprint ? getRoleItemsArr(rk) : (rec.items || []);
     var active = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
     var ta  = (_currentRolePP.taskAssignments || {});
     /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
@@ -10986,35 +10975,22 @@
       var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
       var start = ta_entry.dateStart || sprintStart;
       var end   = ta_entry.dateEnd   || sprintEnd;
-      /* v5.7.0 — Этап 5: цвет = функция от assignee (primary). Кеш ganttColor —
-         если выставлен и валиден, берём его (быстрее); иначе assigneeColorOf().
-         Legacy fallback: если ассайни нет, но есть старый gt[id].color = 'red' —
-         рисуем красным до миграции/переназначения. Иначе — серый. */
-      var bg;
-      var _colorOverride = ta_entry.userColorOverride || null;
-      if (_colorOverride === 'red') {
-        bg = 'rgba(224, 90, 106, 0.85)';
-      } else if (_colorOverride === 'blue') {
-        bg = 'rgba(120, 180, 255, 0.85)';
-      } else if (ta_entry.assignee) {
-        bg = (ta_entry.ganttColor && /^#[0-9a-fA-F]{6}$/.test(ta_entry.ganttColor))
-          ? ta_entry.ganttColor
-          : assigneeColorOf(ta_entry.assignee, allLogins);
-      } else if (gt[issueId] && gt[issueId].color === 'red') {
-        bg = '#e05a6a';
-      } else if (gt[issueId] && gt[issueId].color === 'blue') {
-        bg = '#5b7de8';
-      } else {
-        bg = ASSIGNEE_FALLBACK_COLOR;
-      }
+      /* v2.1.14 — цвет полосы = родной цвет состояния YT (item.stateColor).
+         Fallback — нейтральный серый при отсутствии state или цвета. */
+      var bg = (item.stateColor && item.stateColor.background)
+        ? item.stateColor.background
+        : ASSIGNEE_FALLBACK_COLOR;
       return {
-        issueId:     issueId,
-        title:       item.title || issueId,
-        url:         item.url || '',
-        assignee:    ta_entry.assigneeName || ta_entry.assignee || T('ganttBarTooltipUnassigned'),
-        start:       start,
-        end:         end,
-        bg:          bg,
+        issueId:        issueId,
+        title:          item.title || issueId,
+        url:            item.url || '',
+        assignee:       ta_entry.assigneeName || ta_entry.assignee || T('ganttBarTooltipUnassigned'),
+        start:          start,
+        end:            end,
+        bg:             bg,
+        state:          item.state || '',
+        stateLocalized: item.stateLocalized || item.state || '',
+        stateColor:     item.stateColor || null,
       };
     }).filter(function(g){ return g.start && g.end; });
 
@@ -11060,9 +11036,11 @@
       /* v5.7.0 — Этап 5: цвет уже вычислен в g.bg через assigneeColorOf */
 
       html += '<tr data-gantt-issue="'+esc(g.issueId)+'">';
-      html += '<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(g.title)+'">' +
-              '<a href="'+safeUrl(g.url)+'" target="_blank" class="link" style="font-weight:600">'+esc(g.issueId)+'</a>'+
-              '<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis">'+esc(g.assignee)+'</div></td>';
+      html += '<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:220px;overflow:hidden" title="'+esc(g.title)+'">' +
+              '<a href="'+safeUrl(g.url)+'" target="_blank" class="link" style="font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.issueId)+'</a>' +
+              '<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.assignee)+'</div>' +
+              _renderGanttStateBadge(g, _isActiveSprint) +
+              '</td>';
 
       for (var d2 = 0; d2 < totalDays; d2++) {
         var inBar   = d2 >= startDay && d2 <= endDay;
@@ -11140,17 +11118,12 @@
           });
         }, 250);
       });
-      cell.addEventListener('dblclick', function() {
-        if (_clickTimer) { clearTimeout(_clickTimer); _clickTimer = null; }
-        /* v6.3.1 D114 — color-toggle (`userColorOverride`) персистится только в
-           personalPlanning frontend, без YouTrack writeback. inline-edit gating
-           снят: это локальная UI-маркировка, не требует update-issue-field.
-           v1.9.9 — color-toggle работает в любом режиме (active + historical),
-           т.к. CSS `.readonly-mode .gantt-cell { pointer-events: none }` снято. */
-        var issueId = cell.getAttribute('data-issue');
-        toggleGanttCellColor(issueId);
-      });
     });
+    if (_isActiveSprint && _settings && _settings.fieldState) {
+      var _histIds = ganttItems.map(function(g){ return g.issueId; });
+      var _histKey = (_currentSprintId || '') + ':' + rk;
+      _fetchGanttStateHistory(_histIds, _histKey, false);
+    }
   }
 
   /* v5.4.0 — Удалены: вторичный tab-btn handler инициализации distrib (его задача
@@ -11167,6 +11140,134 @@
   document.getElementById('currentRoleClearAssigneesBtn').addEventListener('click', function() {
     _showOverlay('clearAssigneesOverlay');
   });
+
+  /* ─── Helpers: Гант state-история (#20) ─── */
+
+  function _fmtGanttDate(ts) {
+    if (!ts) return '';
+    try {
+      var d = new Date(ts);
+      return d.getDate() + '.' + String(d.getMonth() + 1).padStart(2, '0');
+    } catch (_) { return ''; }
+  }
+
+  function _ganttDaysAgo(ts) {
+    if (!ts) return null;
+    return Math.max(0, Math.floor((Date.now() - ts) / 86400000));
+  }
+
+  function _renderGanttStateBadge(g, activeSprint) {
+    if (!g || (!g.state && !g.stateLocalized)) return '';
+    var label  = g.stateLocalized || g.state;
+    var pillBg = (g.stateColor && g.stateColor.background) ? g.stateColor.background : '#c8c8c8';
+    var pillFg = (g.stateColor && g.stateColor.foreground) ? g.stateColor.foreground : '#1a1a1a';
+    var pillHtml =
+      '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;' +
+      'font-size:10px;line-height:1.4;background:' + pillBg + ';color:' + pillFg + ';' +
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' +
+      '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + pillFg + ';flex-shrink:0"></span>' +
+      esc(label) + '</span>';
+    var sinceSpan = activeSprint
+      ? '<span data-gantt-hist-since="' + esc(g.issueId) + '" style="color:var(--muted);font-size:10px;margin-left:4px"></span>'
+      : '';
+    var prevDiv = activeSprint
+      ? '<div data-gantt-hist-prev="' + esc(g.issueId) + '" style="color:var(--muted);font-size:10px;margin-top:1px;white-space:normal">' + esc(T('ganttStateLoading')) + '</div>'
+      : '';
+    return '<div style="margin-top:2px;white-space:nowrap;overflow:hidden">' + pillHtml + sinceSpan + '</div>' + prevDiv;
+  }
+
+  function _updateGanttHistDOM(container, issueId, hist) {
+    var sinceEl = container.querySelector('[data-gantt-hist-since="' + issueId + '"]');
+    var prevEl  = container.querySelector('[data-gantt-hist-prev="'  + issueId + '"]');
+    if (sinceEl) {
+      sinceEl.textContent = hist.sinceTs ? T('ganttStateSince').replace('{date}', _fmtGanttDate(hist.sinceTs)) : '';
+    }
+    if (prevEl) {
+      if (!hist.prev) {
+        prevEl.textContent = T('ganttStateNoTransitions');
+      } else {
+        var dotBg  = (hist.prevColor && hist.prevColor.background) ? hist.prevColor.background : ASSIGNEE_FALLBACK_COLOR;
+        var ago    = hist.sinceTs ? _ganttDaysAgo(hist.sinceTs) : null;
+        var agoStr = ago !== null ? (' · ' + T('ganttStateAgo').replace('{n}', String(ago))) : '';
+        prevEl.innerHTML =
+          '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + dotBg + ';margin-right:3px;vertical-align:middle"></span>' +
+          esc(T('ganttStateWas').replace('{state}', hist.prev)) + agoStr;
+      }
+    }
+  }
+
+  function _fetchGanttStateHistory(ids, sprintKey, force) {
+    if (!ids || !ids.length || !_settings || !_settings.fieldState) return;
+    var now = Date.now();
+    var TTL = 5 * 60 * 1000;
+    if (!force &&
+        _ganttStateHist._sprintKey === sprintKey &&
+        _ganttStateHist._fetchedAt &&
+        (now - _ganttStateHist._fetchedAt) < TTL) return;
+    /* Сброс: очищаем все issueId-записи, иначе processChunk пропустит их как «уже загруженные». */
+    _ganttStateHist = { _sprintKey: sprintKey, _fetchedAt: 0 };
+    var stateFieldName = _settings.fieldState;
+    var CHUNK_SIZE = 25;
+
+    function processChunk(chunkIds) {
+      return _host.fetchYouTrack('activities', { query: {
+        categories: 'CustomFieldCategory',
+        issueQuery: 'issue id: ' + chunkIds.join(', '),
+        fields: 'timestamp,target(idReadable),field(name),' +
+                'added(name,localizedName,color(background,foreground)),' +
+                'removed(name,localizedName,color(background,foreground))',
+        reverse: 'true',
+        $top: 300
+      }}).then(function(activities) {
+        var container = document.getElementById('ganttContainer');
+        diag('_fetchGanttStateHistory chunk=' + chunkIds.length + ' activities=' + (Array.isArray(activities) ? activities.length : typeof activities), 'ok');
+        if (!Array.isArray(activities)) {
+          chunkIds.forEach(function(issueId) {
+            if (!_ganttStateHist[issueId]) {
+              _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
+              if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
+            }
+          });
+          return;
+        }
+        activities.forEach(function(act) {
+          if (!act || !act.target || !act.field) return;
+          var issueId = act.target.idReadable;
+          if (!issueId || (act.field.name || '') !== stateFieldName) return;
+          if (_ganttStateHist[issueId]) return;
+          var prevName = act.removed ? (act.removed.localizedName || act.removed.name || '') : '';
+          var prevC    = act.removed && act.removed.color ? act.removed.color : null;
+          _ganttStateHist[issueId] = {
+            sinceTs:   act.timestamp || null,
+            prev:      prevName,
+            prevColor: prevC ? { background: prevC.background || null, foreground: prevC.foreground || null } : null
+          };
+          if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
+        });
+        chunkIds.forEach(function(issueId) {
+          if (!_ganttStateHist[issueId]) {
+            _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
+            if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
+          }
+        });
+      }).catch(function(e) {
+        diag('_fetchGanttStateHistory err: ' + String(e && e.message ? e.message : e), 'warn');
+        var container2 = document.getElementById('ganttContainer');
+        if (container2) chunkIds.forEach(function(issueId) {
+          if (!_ganttStateHist[issueId]) {
+            var prevEl = container2.querySelector('[data-gantt-hist-prev="' + issueId + '"]');
+            if (prevEl) prevEl.textContent = '';
+          }
+        });
+      });
+    }
+
+    var p = Promise.resolve();
+    for (var ci = 0; ci < ids.length; ci += CHUNK_SIZE) {
+      (function(chunk) { p = p.then(function() { return processChunk(chunk); }); })(ids.slice(ci, ci + CHUNK_SIZE));
+    }
+    p.then(function() { _ganttStateHist._fetchedAt = Date.now(); });
+  }
 
   /* v6.1.0 D80 (F3) — sync Assignee из YouTrack: source-of-truth = YT.
      Кнопки на «Люди» и Ганте → один общий handler. */
@@ -11185,13 +11286,18 @@
     var ids = active.map(function (i) { return i.issueId; }).filter(function (x) { return !!x; });
     if (!ids.length) { toast(T('toastSyncFromYtNoTasks'), 'info'); return; }
 
-    apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName })
+    var _syncStateField = (_settings && _settings.fieldState) || '';
+    apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: _syncStateField })
       .then(function (resp) {
         if (!resp || !resp.success) { toast(T('toastSyncFromYtErr')); return; }
         var assignees = resp.assignees || {};
         if (!_currentRolePP) _currentRolePP = { resourcesByAssignee: {}, taskAssignments: {} };
         if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
         var changed = 0;
+        var _roleArr = (isActiveSprintRecord(_currentSprintRoleRec) && typeof getRoleItemsArr === 'function')
+          ? getRoleItemsArr(rk) : [];
+        var _itemById = {};
+        _roleArr.forEach(function(it) { if (it && it.issueId) _itemById[it.issueId] = it; });
         Object.keys(assignees).forEach(function (issueId) {
           var ytEntry = assignees[issueId];
           var ytLogin = ytEntry && ytEntry.login;
@@ -11205,6 +11311,15 @@
             delete _currentRolePP.taskAssignments[issueId].ganttColor;
             changed++;
           }
+          if (_syncStateField && ytEntry && ytEntry.state && _itemById[issueId]) {
+            var _it = _itemById[issueId];
+            _it.state = ytEntry.state.localizedName || ytEntry.state.name || '';
+            _it.stateLocalized = _it.state;
+            var _sc = ytEntry.state.color;
+            _it.stateColor = (_sc && (_sc.background || _sc.foreground))
+              ? { background: _sc.background || null, foreground: _sc.foreground || null }
+              : null;
+          }
         });
         if (!changed) {
           toast(T('toastSyncFromYtNoChange'), 'info');
@@ -11214,6 +11329,7 @@
         try { renderCurrentRoleAssigneeTable(); } catch (_) {}
         try { renderCurrentRoleTaskTable(); } catch (_) {}
         try { if (typeof updateCurrentRoleTotals === 'function') updateCurrentRoleTotals(); } catch (_) {}
+        _ganttStateHist._fetchedAt = 0;
         try { if (typeof renderGanttChart === 'function') renderGanttChart(); } catch (_) {}
         saveCurrentRoleState();
         toast(T('toastSyncFromYtUpdated').replace('{n}', String(changed)), 'success');

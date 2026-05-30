@@ -653,6 +653,12 @@
   "role.devAndroid": "Dev Android",
   "role.devFs": "Dev FullStack",
   "role.devDb": "Dev DB",
+  "ganttRefresh": "Güncelle",
+  "ganttStateSince": "{date} tarihinden",
+  "ganttStateWas": "\"{state}\" idi",
+  "ganttStateAgo": "{n} gün önce",
+  "ganttStateNoTransitions": "geçiş yok",
+  "ganttStateLoading": "yükleniyor…",
   "_meta": {
     "lang": "tr",
     "name": "Türkçe",
