@@ -134,6 +134,23 @@ function SspModal({ spec, onClose }) {
     return () => clearTimeout(t);
   }, []);
 
+  /* Defensive Escape — document-level capture-listener (восстановление контракта v2.1.9 B6).
+     Ring onCloseAttempt при trapFocus={false} НЕ срабатывает, когда фокус на Ring Radio /
+     textarea / select (проверено: confirmGoal не закрывался Escape'ом). Document-listener
+     закрывает модалку независимо от типа focused-элемента. onClose идемпотентен → двойной
+     вызов (Ring + этот) безопасен. blockEscape (wcMultiTab) — слушатель не вешаем. */
+  React.useEffect(() => {
+    if (spec.blockEscape) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [spec.blockEscape, onClose]);
+
   if (!Dialog) return null;
 
   return (
@@ -162,7 +179,20 @@ function SspModal({ spec, onClose }) {
 window.__SSP_RING_MODAL = {
   open(spec) {
     const id = 'modal-' + spec.id;
-    const onClose = () => this.close(spec.id);
+    /* Идемпотентный close: гарантирует ровно один unmount и ровно один вызов
+       spec.onClose — независимо от пути закрытия (кнопка → handle.close, Escape /
+       backdrop → onCloseAttempt). spec.onClose — хук «модалка закрыта любым способом»
+       (Phase 2: resolve(null)/return-focus). Phase 1 модалки spec.onClose не задают →
+       поведение не меняется. */
+    let closed = false;
+    const onClose = () => {
+      if (closed) return;
+      closed = true;
+      window.__SSP_REACT.unmount(id);
+      if (typeof spec.onClose === 'function') {
+        try { spec.onClose(); } catch (_) { /* noop */ }
+      }
+    };
     window.__SSP_REACT.mount(id, React.createElement(SspModal, { spec, onClose }));
     return { close: onClose, update: (partial) => this.update(spec.id, partial) };
   },

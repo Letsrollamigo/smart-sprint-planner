@@ -927,6 +927,13 @@
       justify-content: flex-end;
       padding: 12px 24px 16px;
     }
+    /* Phase 2 — bespoke body-компоненты (reassignForm/confirmGoalForm) рисуют свой
+       footer ВНУТРИ .ssp-modal-inner (владеют state кнопок). Компенсируем
+       горизонтальный padding inner (24px), чтобы footer достал до краёв island. */
+    .ssp-modal-inner > .ssp-modal-footer {
+      margin-left: -24px;
+      margin-right: -24px;
+    }
 
     /* v2.0.0 D4 R2/R3 — make Ring DatePicker fill the entire date cell.
        Original <input data-ssp-datepicker> behaviour: width:100% (via .tbl td
@@ -2259,34 +2266,8 @@
 <!-- clearDraftOverlay + clearAllHistOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
 <!-- v2.1.13 — Импорт истории спринтов -->
-<div id="importHistOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="importHistTitleEl">
-  <div class="modal" style="max-width:560px">
-    <div class="modal__head" id="importHistTitleEl" data-i18n="importHistTitle">Импорт истории спринтов</div>
-    <div class="modal__body" id="importHistBody" style="max-height:60vh;overflow-y:auto">
-      <!-- заполняется динамически в openImportHistDialog() -->
-    </div>
-    <div class="modal__foot" style="flex-wrap:wrap;gap:6px">
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="importHistReplaceBtn" style="margin-right:auto" data-i18n="btnImportReplace">Полное восстановление…</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="importHistCancel" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="importHistSubmit" disabled data-i18n="btnImport">Импортировать</button>
-    </div>
-  </div>
-</div>
-
-<!-- v2.1.13 — Подтверждение: полное восстановление истории -->
-<div id="importReplaceHistOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="importReplaceHistTitleEl">
-  <div class="modal" style="max-width:420px">
-    <div class="modal__head" id="importReplaceHistTitleEl" data-i18n="importReplaceTitle">Полное восстановление истории</div>
-    <div class="modal__body">
-      <p style="color:var(--error)" data-i18n="importReplaceWarn" data-i18n-html>⚠ Это сотрёт <b>всю текущую историю</b> и заменит содержимым файла.</p>
-      <p style="margin-top:8px;font-size:13px;color:var(--muted)" data-i18n="importReplaceInfo">Операция необратима. Продолжить?</p>
-    </div>
-    <div class="modal__foot">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="importReplaceHistNo" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="importReplaceHistYes" data-i18n="btnYesReplace">Да, заменить всё</button>
-    </div>
-  </div>
-</div>
+<!-- importHistOverlay + importReplaceHistOverlay removed — migrated to openModal() (Phase 3 #32).
+     importHist — bespoke React (react/modal-bodies.jsx: importHistForm); importReplaceHist — generic lines-confirm. -->
 
 <!-- ── Модалка: Подбор задач ── -->
 <div id="pickOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pickModalTitle" data-dismiss-on-backdrop="true">
@@ -2320,118 +2301,15 @@
 <!-- clearOverlay + delAssigneeOverlay + clearAssigneesOverlay + delHistOverlay + overlimitOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
 <!-- v5.3.0 — Working copies modals (immutable snapshots, D3/b) -->
-<div id="wcDiffOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="wcDiffTitle" data-dismiss-on-backdrop="true">
-  <div class="confirm-box" style="max-width:600px;">
-    <h3 id="wcDiffTitle" data-i18n="wcDiffTitle">Различия рабочей копии</h3>
-    <div id="wcDiffBody" class="wc-diff-body"></div>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcDiffCloseBtn" data-i18n="btnClose">Закрыть</button>
-    </div>
-  </div>
-</div>
+<!-- wcDiffOverlay removed — migrated to openModal() (Phase 3 #32, bespoke React: wcDiffView). -->
 
-<div id="wcConflictOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="wcConflictTitle">
-  <div class="confirm-box">
-    <h3 id="wcConflictTitle" data-i18n="wcConflictTitle">Конфликт версий</h3>
-    <p id="wcConflictBody">—</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="wcConflictOverwriteBtn" data-i18n="wcConflictOverwrite">Перезаписать своими изменениями</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="wcConflictExportBtn"    data-i18n="wcConflictExportBoth">Скачать обе версии в Excel</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcConflictCancelBtn"    data-i18n="wcConflictCancel">Отменить</button>
-    </div>
-  </div>
-</div>
-
-<!-- v5.7.0 — Этап 5 (D46): модал переназначения задачи в Ганте.
-     Открывается dblclick'ом по бару, содержит select из ассайни роли + опция «Не назначен».
-     После «Применить» — taskAssignments[issueId].assignee обновляется, бар перекрашивается. -->
-<div id="reassignOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="reassignModalTitle">
-  <div class="confirm-box">
-    <h3 id="reassignModalTitle" data-i18n="modalReassignTitle">Назначить задачу</h3>
-    <p>
-      <span data-i18n="modalReassignBody">Выберите ответственного для задачи</span>
-      <strong id="reassignIssueId"></strong>:
-    </p>
-    <select id="reassignSelect" class="app-select ring-select-button" style="width:100%;margin:8px 0"></select>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="reassignApplyBtn"  data-i18n="btnApply">Применить</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="reassignCancelBtn" data-i18n="btnCancel">Отмена</button>
-    </div>
-  </div>
-</div>
-
-<div id="wcMultiTabOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="wcMultiTabTitle" data-no-escape="true">
-  <div class="confirm-box">
-    <h3 id="wcMultiTabTitle" data-i18n="wcMultiTabTitle">Открыто в другой вкладке</h3>
-    <p id="wcMultiTabBody" data-i18n="wcMultiTabBody">Эта рабочая копия уже редактируется в другой вкладке. Продолжить здесь?</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcMultiTabContinueBtn" data-i18n="wcMultiTabContinue">Продолжить здесь</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="wcMultiTabReadonlyBtn" data-i18n="wcMultiTabReadonly">Открыть только для просмотра</button>
-    </div>
-  </div>
-</div>
-
-<div id="wcDiscardOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="wcDiscardTitle">
-  <div class="confirm-box">
-    <h3 id="wcDiscardTitle" data-i18n="wcDiscardConfirmTitle">Отменить правку?</h3>
-    <p id="wcDiscardBody" data-i18n="wcDiscardConfirmBody">Все несохранённые изменения рабочей копии будут потеряны. Базовая запись истории не пострадает.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="wcDiscardConfirmBtn" data-i18n="wcDiscard">Отменить правку</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="wcDiscardCancelBtn"  data-i18n="btnNo">Назад</button>
-    </div>
-  </div>
-</div>
+<!-- wcConflictOverlay, reassignOverlay, wcMultiTabOverlay, wcDiscardOverlay,
+     confirmGoalOverlay removed — migrated to openModal() (Phase 2 #32).
+     reassign/confirmGoal — bespoke React (react/modal-bodies.jsx). -->
 
 <!-- closeWcOverlay + finishHistOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
-<!-- v1.9.0 D132 — Диалог подтверждения результата спринта (Sprint goal outcome) ── -->
-<div id="confirmGoalOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmGoalTitle">
-  <div class="confirm-box" style="max-width:480px;width:90%">
-    <h3 id="confirmGoalTitle" data-i18n="dialogConfirmGoalTitle" style="margin:0 0 12px">Подтверждение результата спринта</h3>
-    <!-- Цель спринта (read-only) -->
-    <div id="confirmGoalDisplay" style="background:var(--surface-light,#f5f5f5);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:13px;display:none">
-      <span style="font-size:11px;color:var(--muted,#888);display:block;margin-bottom:4px" data-i18n="histGoalLabel">🎯 Цель</span>
-      <span id="confirmGoalText" style="font-weight:500"></span>
-    </div>
-    <div id="confirmGoalNotSet" style="background:var(--surface-light,#f5f5f5);border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:var(--muted,#888);display:none" data-i18n="histGoalNotSet">Цель спринта не была задана</div>
-    <!-- Outcome radio (v2.0.0 D5-A — Ring Radio mount-point; populated by openConfirmGoalDialog) -->
-    <div style="margin-bottom:12px">
-      <label style="font-size:12px;font-weight:600;display:block;margin-bottom:8px" data-i18n="lblGoalOutcome">Результат по цели</label>
-      <span id="goalOutcomeRadioHost" data-ssp-radio-host data-name="goalOutcomeRadio" data-value="" data-options-json="[]" style="display:block"></span>
-    </div>
-    <!-- Retro note -->
-    <div style="margin-bottom:14px">
-      <label for="goalRetroNote" style="font-size:12px;font-weight:600;display:block;margin-bottom:6px" data-i18n="lblGoalRetroNote">Заметка ретроспективы (опционально)</label>
-      <!-- v2.1.0 F1 — Ring Input mount-host (multiline). -->
-      <span data-ssp-input-host data-input-id="goalRetroNote"
-            data-multiline="1" data-rows="3" data-maxlength="1000"
-            data-i18n-placeholder="phGoalRetroNote"
-            placeholder="Что сработало / не сработало для достижения цели"
-            style="width:100%;display:block"></span>
-      <span class="field-err" id="errGoalRetroNote" style="display:none"></span>
-    </div>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="confirmGoalCancel" data-i18n="btnCancelGoal">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="confirmGoalOk" disabled data-i18n="btnConfirmGoal">Подтвердить спринт</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Динамическое модальное окно (обновление поля задачи) ── -->
-<div id="dynFieldOverlay" class="dyn-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dynFieldTitle">
-  <div class="dyn-modal-box">
-    <h3 id="dynFieldTitle" data-i18n="dynModalTitle">Обновить значение поля</h3>
-    <p id="dynFieldDesc"></p>
-    <select id="dynFieldSelect" class="dyn-modal-select" style="display:none"></select>
-    <!-- v2.1.0 F1 — Ring Input mount-host (toggled via `style.display` by caller). -->
-    <span data-ssp-input-host data-input-id="dynFieldInput" style="display:none"
-          data-i18n-ph="phDynInput" placeholder="напр. 2д 4ч"></span>
-    <div class="dyn-modal-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="dynFieldNo" data-i18n="btnNo">Нет</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="dynFieldYes" data-i18n="btnYesUpdate">Да, обновить</button>
-    </div>
-  </div>
-</div>
+<!-- dynFieldOverlay removed — migrated to openModal() (Phase 3 #32, bespoke React: dynFieldForm). -->
 
 <!-- ════ v5.0.1 Settings overlay ════
      Полноэкранный экран настроек, открывается кнопкой #openSettingsBtn в шапке.

@@ -3,11 +3,13 @@
     {
       "entityType": "Project",
       "properties": {
-        "ssp_settings":  { "type": "string" },
-        "ssp_sprint":    { "type": "string" },
-        "ssp_roleitems": { "type": "string" },
-        "ssp_items":     { "type": "string" },
-        "ssp_history":   { "type": "string" }
+        "ssp_settings":   { "type": "string" },
+        "ssp_sprint":     { "type": "string" },
+        "ssp_roleitems":  { "type": "string" },
+        "ssp_items":      { "type": "string" },
+        "ssp_history":    { "type": "string" },
+        "ssp_drafts":     { "type": "string" },
+        "ssp_workdrafts": { "type": "string" }
       }
     }
   ]
