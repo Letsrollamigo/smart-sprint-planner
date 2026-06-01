@@ -311,10 +311,192 @@ function ImportHistForm(props) {
   );
 }
 
+/* ── pickPicker — подбор задач в спринт (Phase 4 #32, закрывает B10+B11) ──
+   Bespoke React: поиск + результаты-таблица (простой <table>, НЕ Ring Table →
+   нет mousedown-проблемы B12 и tri-state-рассинхрона B11) + пагинация + выбор.
+   Чекбоксы = нативные <input> на обычном React-стейте (Set). Master select-all —
+   DERIVED tri-state (all/none/some из размеров selected ∩ known), без dataset-моста/
+   двойной делегации. Data-layer (поиск/load-all/добавление) — IIFE-колбэки в props
+   (поиск НЕ переписан — #33 отдельно).
+   onSearch(q,page)→Promise<{items:[{idReadable,isAdded,state,summary,priority}],hasMore}>
+   onLoadAll(q)→Promise<{ids:[addable],capped}>  ·  onAdd(ids)  ·  onCancel(). */
+function PickPicker(props) {
+  const L = props.labels || {};
+  const onSearch  = props.onSearch  || (() => Promise.resolve({ items: [], hasMore: false }));
+  const onLoadAll = props.onLoadAll || (() => Promise.resolve({ ids: [], capped: false }));
+  const onAdd     = props.onAdd     || noop;
+  const onCancel  = props.onCancel  || noop;
+
+  const [query, setQuery]       = React.useState('');
+  const [committed, setCommitted] = React.useState(null); // запрос текущего набора результатов
+  const [items, setItems]       = React.useState([]);
+  const [page, setPage]         = React.useState(1);
+  const [hasMore, setHasMore]   = React.useState(false);
+  const [selected, setSelected] = React.useState(() => new Set());
+  const [known, setKnown]       = React.useState(() => new Set()); // addable id'ы со всех загруженных страниц (для master)
+  const [loading, setLoading]   = React.useState(false);
+  const [allBusy, setAllBusy]   = React.useState(false);
+  const [searched, setSearched] = React.useState(false);
+  const [error, setError]       = React.useState(null);
+
+  const masterRef = React.useRef(null);
+
+  /* tri-state master — derived, не отдельный source-of-truth */
+  let selectedAddable = 0;
+  selected.forEach((id) => { if (known.has(id)) selectedAddable++; });
+  const addableCount = known.size;
+  const masterChecked = addableCount > 0 && selectedAddable === addableCount;
+  const masterIndeterminate = selectedAddable > 0 && selectedAddable < addableCount;
+
+  React.useEffect(() => {
+    if (masterRef.current) masterRef.current.indeterminate = masterIndeterminate;
+  }, [masterIndeterminate, masterChecked, items]);
+
+  function runSearch(q, p, freshQuery) {
+    setLoading(true); setError(null);
+    onSearch(q, p).then((res) => {
+      const its = (res && res.items) || [];
+      setItems(its);
+      setHasMore(!!(res && res.hasMore));
+      setSearched(true);
+      setLoading(false);
+      setKnown((prev) => {
+        const next = freshQuery ? new Set() : new Set(prev);
+        its.forEach((it) => { if (!it.isAdded) next.add(it.idReadable); });
+        return next;
+      });
+    }).catch((e) => {
+      setLoading(false); setItems([]); setHasMore(false); setSearched(true);
+      setError((L.errorPrefix || '') + (e && e.message ? e.message : String(e)));
+    });
+  }
+
+  function doSearchClick() {
+    const fresh = query !== committed;
+    if (fresh) setSelected(new Set());
+    setCommitted(query);
+    setPage(1);
+    runSearch(query, 1, fresh);
+  }
+
+  function goPage(delta) {
+    const np = page + delta;
+    if (np < 1) return;
+    setPage(np);
+    runSearch(committed, np, false);
+  }
+
+  function toggleRow(id, isAdded) {
+    if (isAdded) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleMaster() {
+    if (allBusy) return;
+    if (masterChecked) {
+      setSelected((prev) => { const next = new Set(prev); known.forEach((id) => next.delete(id)); return next; });
+      return;
+    }
+    setAllBusy(true);
+    onLoadAll(committed).then((res) => {
+      const ids = (res && res.ids) || [];
+      setKnown(new Set(ids));
+      setSelected((prev) => { const next = new Set(prev); ids.forEach((id) => next.add(id)); return next; });
+      setAllBusy(false);
+    }).catch(() => { setAllBusy(false); });
+  }
+
+  const thStyle = { textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border,#ddd)', position: 'sticky', top: 0, background: 'var(--surface,#fff)', fontSize: '12px', fontWeight: 600 };
+  const tdStyle = { padding: '5px 8px', borderBottom: '1px solid var(--border-light,#eee)', verticalAlign: 'top' };
+
+  let results;
+  if (loading) {
+    results = <div className="empty"><span className="spinner"></span> {L.searching}</div>;
+  } else if (error) {
+    results = <div className="empty" style={{ color: 'var(--error)' }}>{error}</div>;
+  } else if (!searched) {
+    results = <div className="empty">{L.emptyInitial}</div>;
+  } else if (!items.length) {
+    results = <div className="empty">{L.notFound}</div>;
+  } else {
+    results = (
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+        <thead>
+          <tr>
+            <th style={Object.assign({ width: '32px' }, thStyle)}>
+              <input ref={masterRef} type="checkbox" checked={masterChecked}
+                     disabled={allBusy || !addableCount} onChange={toggleMaster} title={L.selectAllTitle} />
+            </th>
+            <th style={thStyle}>ID</th>
+            <th style={thStyle}>{L.thState}</th>
+            <th style={thStyle}>{L.thTitle}</th>
+            <th style={thStyle}>{L.thPriority}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it) => (
+            <tr key={it.idReadable} style={it.isAdded ? { opacity: 0.55 } : undefined}>
+              <td style={tdStyle}>
+                <input type="checkbox"
+                       checked={it.isAdded || selected.has(it.idReadable)}
+                       disabled={it.isAdded}
+                       onChange={() => toggleRow(it.idReadable, it.isAdded)}
+                       title={it.isAdded ? L.alreadyInSprint : undefined} />
+              </td>
+              <td style={Object.assign({ color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap' }, tdStyle)}>{it.idReadable}</td>
+              <td style={tdStyle}>{it.state}</td>
+              <td style={tdStyle}>{it.summary}</td>
+              <td style={tdStyle}>{it.priority || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return (
+    <div style={{ width: '100%' }}>
+      <div className="search-row" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        <input type="text" className="ring-input" style={{ flex: 1, minWidth: 0 }}
+               value={query} placeholder={L.placeholder}
+               onChange={(e) => setQuery(e.target.value)}
+               onKeyDown={(e) => { if (e.key === 'Enter') doSearchClick(); }} />
+        <button type="button" className={_btnCls('primary')} style={{ flex: '0 0 auto', minWidth: '90px' }} onClick={doSearchClick}>
+          {L.searchText}
+        </button>
+      </div>
+
+      <div style={{ maxHeight: '48vh', overflow: 'auto' }}>
+        {results}
+      </div>
+
+      {searched && !loading && !error && items.length ? (
+        <div className="pagination" style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
+          <button type="button" className={_btnCls('secondary')} disabled={page <= 1} onClick={() => goPage(-1)}>‹</button>
+          <span style={{ fontSize: '12px' }}>{L.pageOf + page}</span>
+          <button type="button" className={_btnCls('secondary')} disabled={!hasMore} onClick={() => goPage(1)}>›</button>
+        </div>
+      ) : null}
+
+      <div className="ssp-modal-footer">
+        <button type="button" className={_btnCls('secondary')} onClick={() => onCancel()}>{L.closeText}</button>
+        <button type="button" className={_btnCls('primary')} disabled={!selected.size} onClick={() => onAdd(Array.from(selected))}>
+          {L.addText}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 if (window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.registerBody === 'function') {
   window.__SSP_RING_MODAL.registerBody('reassignForm', ReassignForm);
   window.__SSP_RING_MODAL.registerBody('confirmGoalForm', ConfirmGoalForm);
   window.__SSP_RING_MODAL.registerBody('wcDiffView', WcDiffView);
   window.__SSP_RING_MODAL.registerBody('dynFieldForm', DynFieldForm);
   window.__SSP_RING_MODAL.registerBody('importHistForm', ImportHistForm);
+  window.__SSP_RING_MODAL.registerBody('pickPicker', PickPicker);
 }
