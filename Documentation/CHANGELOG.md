@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.15] — 2026-06-01
+
+> **Ring UI modal de-hybridization, phase 1 (#32)** — confirm modals now render through real React instead of a DOM wrapper, plus two interaction fixes.
+
+### Changed
+
+- **Confirm modals on real Ring UI.** Nine confirmation modals (clear draft, clear/delete sprint history, finish sprint, clear role roster, clear/delete assignees, role resource overrun, close working copy) have moved off the DOM wrapper (transplanting vanilla DOM into a Ring Dialog) to genuine React rendering of their content via a declarative `openModal(spec)` API. Consistent appearance, correct dialog width, no divider artifacts.
+
+### Fixed
+
+- **Saving the role roster after a state sync from YouTrack.** After refreshing a task's state from YouTrack (state badge on the Gantt chart / "Refresh" button), saving or validating the sprint on that role could fail with a data-structure error (`invalid_role_items_structure`). The backend validator now accepts the state fields `stateLocalized`, `stateColor`, and `stateFieldId` as part of a task (added to the whitelist — release 2.1.14 #20 wrote them on the frontend, but the whitelist was never extended).
+- **First-click response in Ring Table rows.** The delete (trash) buttons for tasks and assignees, along with the quick-edit cells (state/priority/system), now fire on the first click — previously a second click was required. Cause: Ring Table rebuilds the row on `mousedown`, so the browser never emitted a `click` event on the first press; the handlers have been moved to `mousedown`.
+
+---
+
 ## [2.1.14] — 2026-05-30
 
 > **Task state on the Gantt chart (#20)** — a badge with the current State in native YouTrack colors, the date of the last transition, and the previous state. No schema changes.

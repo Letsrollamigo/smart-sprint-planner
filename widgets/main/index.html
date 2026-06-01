@@ -650,7 +650,8 @@
     .ring-popup,
     .ring-dialog,
     .ssp-dialog-host,
-    .ssp-dialog-inner {
+    .ssp-dialog-inner,
+    .ssp-modal-inner {
       --ring-font-size: 13px;
       --ring-font-size-smaller: 11px;
       --ring-line-height: 18px;
@@ -885,6 +886,48 @@
       display: none !important;
     }
 
+    /* v2.2.0 Phase 0/1 — SspModal: новые компоненты (modal-mount.jsx).
+       .ssp-dialog-inner — legacy bridge (DOM-трансплантация, Phase 6 демонтаж).
+       .ssp-modal-inner  — настоящий React-контент.
+
+       Phase 1 visual-fix (детерминированно через явный класс .ssp-ring-modal
+       на <Dialog className=...>, а не угадывание Ring-структуры):
+       1) фикс ширины island (раньше растягивался → широко/пусто);
+       2) подавление header border-bottom (Ring добавляет
+          .ring-island-withBottomBorder при скролле → линия-разделитель,
+          специфичность 0,2,0 → перебиваем через .ssp-ring-modal + !important);
+       3) footer без border-top. */
+    .ssp-ring-modal .ring-island-island {
+      width: 420px;
+      max-width: 92vw;
+      box-sizing: border-box;
+    }
+    .ssp-ring-modal .ring-island-header,
+    .ssp-ring-modal .ring-island-withBottomBorder.ring-island-withBottomBorder {
+      border-bottom: none !important;
+    }
+    .ssp-ring-modal .ring-island-contentWithTopFade::before,
+    .ssp-ring-modal .ring-island-contentWithBottomFade::after {
+      display: none !important;
+    }
+    .ssp-modal-inner {
+      padding: 20px 24px 4px;
+      min-height: 24px;
+    }
+    .ssp-modal-body-text {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 18px;
+      color: var(--ring-text-color, var(--text, inherit));
+    }
+    .ssp-modal-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      padding: 12px 24px 16px;
+    }
+
     /* v2.0.0 D4 R2/R3 — make Ring DatePicker fill the entire date cell.
        Original <input data-ssp-datepicker> behaviour: width:100% (via .tbl td
        input[type="text"] rule line 545+). New host must do the same so cell
@@ -987,9 +1030,7 @@
        поглощает свободное пространство и центрирует confirm-box vertical, нивелируя
        D113 фикс overlay'я (`align-items: flex-start`). Заменён на `margin-top: 16px`
        как у `.modal` — confirm-box прибивается к верху overlay (= верху main виджета).
-       Применяется к #clearOverlay, #clearAssigneesOverlay, #clearDraftOverlay,
-       #clearAllHistOverlay, #delHistOverlay, #delAssigneeOverlay, #overlimitOverlay,
-       #closeWcOverlay, #wcMultiTabOverlay, #wcConflictOverlay, #editHistOverlay
+       Применяется к #wcMultiTabOverlay, #wcConflictOverlay, #editHistOverlay
        и любым другим overlay-confirmation модалам. */
     .confirm-box {
       background: var(--surface);
@@ -2215,36 +2256,7 @@
 </div><!-- /page -->
 
 <!-- v5.0.3 — Модалка: Очистить локальный черновик -->
-<div id="clearDraftOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="clearDraftConfirmTitle">
-  <div class="modal" style="max-width:420px">
-    <div class="modal__head" id="clearDraftConfirmTitle" data-i18n="clearDraftConfirmTitle">Очистить локальный черновик?</div>
-    <div class="modal__body">
-      <p style="color:var(--warn)" data-i18n="clearDraftConfirmBody">
-        Все несохранённые изменения будут утеряны. Серверная версия останется без изменений.
-      </p>
-      <p id="clearDraftMetaInfo" style="margin-top:8px;font-size:12px;color:var(--muted)"></p>
-    </div>
-    <div class="modal__foot">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearDraftNo" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearDraftYes" data-i18n="btnYesClearDraft">Да, очистить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Модалка: Очистить всю историю ── -->
-<div id="clearAllHistOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="clearAllHistTitle">
-  <div class="modal" style="max-width:400px">
-    <div class="modal__head" id="clearAllHistTitle" data-i18n="clearAllHistTitle">Очистить историю спринтов</div>
-    <div class="modal__body">
-      <p style="color:var(--error)" data-i18n="clearAllHistWarn" data-i18n-html>⚠ Это действие удалит <b>все</b> записи истории безвозвратно.</p>
-      <p style="margin-top:8px;font-size:13px;color:var(--muted)" data-i18n="clearAllHistInfo">Данные хранятся в YouTrack и не восстанавливаются. Продолжить?</p>
-    </div>
-    <div class="modal__foot">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearAllHistNo" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="clearAllHistYes" data-i18n="btnYesClearAll">Да, очистить всё</button>
-    </div>
-  </div>
-</div>
+<!-- clearDraftOverlay + clearAllHistOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
 <!-- v2.1.13 — Импорт истории спринтов -->
 <div id="importHistOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="importHistTitleEl">
@@ -2305,60 +2317,7 @@
   </div>
 </div>
 
-<!-- ── Confirm: Очистка ── -->
-<div id="clearOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="clearOverlayTitle">
-  <div class="confirm-box">
-    <p id="clearOverlayTitle" data-i18n="confirmClearTask">Удалить все задачи из состава текущего спринта (роли)?</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearNo" data-i18n="btnNo">Нет</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="clearYes" data-i18n="btnYesClear">Да, очистить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Confirm v4: Удаление исполнителя из списка ── -->
-<div id="delAssigneeOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="delAssigneeMsg">
-  <div class="confirm-box">
-    <p id="delAssigneeMsg" data-i18n="confirmDelAssignee">Удалить исполнителя?</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="delAssigneeNo" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-danger" id="delAssigneeYes" data-i18n="btnYesDelete">Да, удалить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Confirm v4: Очистить всех исполнителей ── -->
-<div id="clearAssigneesOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="clearAssigneesTitle">
-  <div class="confirm-box">
-    <p id="clearAssigneesTitle" data-i18n="confirmClearAssignees">Очистить весь список исполнителей? Назначения задач сохранятся.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="clearAssigneesNo" data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="clearAssigneesYes" data-i18n="btnYesClear">Да, очистить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Confirm: Удаление записи истории ── -->
-<div id="delHistOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="delHistTitle">
-  <div class="confirm-box">
-    <p id="delHistTitle" data-i18n="confirmDelHist">Удалить запись истории? При следующей валидации она будет восстановлена.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="delHistNo" data-i18n="btnNo">Нет</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="delHistYes" data-i18n="btnYesDelete">Да, удалить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── v5.2.0 Overlimit-модал (замена тихого status revert) ── -->
-<div id="overlimitOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="overlimitOverlayBody">
-  <div class="confirm-box">
-    <p id="overlimitOverlayBody" data-i18n="overlimitModalBody">Текущая аллокация превышает доступный ресурс. Чтобы исправить, уменьшите аллокации или увеличьте ресурс. Если оставить как есть — статус спринта будет понижен до Черновика и потребуется повторная валидация.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM btn--warn" id="overlimitDowngrade" data-i18n="overlimitModalDowngrade">Понизить статус и продолжить</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="overlimitCancel" data-i18n="overlimitModalCancel">Отменить — я исправлю</button>
-    </div>
-  </div>
-</div>
+<!-- clearOverlay + delAssigneeOverlay + clearAssigneesOverlay + delHistOverlay + overlimitOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
 <!-- v5.3.0 — Working copies modals (immutable snapshots, D3/b) -->
 <div id="wcDiffOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="wcDiffTitle" data-dismiss-on-backdrop="true">
@@ -2423,28 +2382,7 @@
   </div>
 </div>
 
-<!-- v5.4.0 (D28) — подтверждение смены спринта при активной working copy -->
-<div id="closeWcOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="closeWcTitle">
-  <div class="confirm-box">
-    <h3 id="closeWcTitle" data-i18n="wcCloseTitle">Закрыть рабочую копию?</h3>
-    <p data-i18n="wcCloseBody">У вас есть незавершённая правка по выбранному спринту/роли. Изменения уже сохранены автоматически — вы сможете продолжить позже из Истории.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="closeWcCancel"  data-i18n="btnCancel">Отмена</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="closeWcConfirm" data-i18n="wcCloseConfirm">Закрыть и переключить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Confirm: Завершить спринт ── -->
-<div id="finishHistOverlay" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="finishHistTitle">
-  <div class="confirm-box">
-    <p id="finishHistTitle" data-i18n="confirmFinishSprint">Перевести спринт в статус «Завершён»? Это действие необратимо.</p>
-    <div class="confirm-btns">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="finishHistNo" data-i18n="btnNo">Нет</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="finishHistYes" data-i18n="btnYesFinish">Да, завершить</button>
-    </div>
-  </div>
-</div>
+<!-- closeWcOverlay + finishHistOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
 <!-- v1.9.0 D132 — Диалог подтверждения результата спринта (Sprint goal outcome) ── -->
 <div id="confirmGoalOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmGoalTitle">
