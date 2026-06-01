@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.17] — 2026-06-01
+
+> **Ring UI modal de-hybridization, phase 3 (#32)** — the working-copy diff view, the task-field update dialog, and the sprint-history import dialogs now render real React.
+
+### Changed
+
+- **Working-copy diff, field-update and history-import modals on real Ring UI.** Four modals — the working-copy diff view (added/removed/changed tasks), the "update task field value" dialog (enum dropdown or period input), the sprint-history import dialog (per-sprint checkboxes + skip/overwrite mode), and the "full history restore" confirmation — now render genuine React content in a Ring Dialog via `openModal(spec)` instead of transplanting vanilla DOM. The diff view and field-update dialog are bespoke React components; the import dialog uses plain React state for its sprint checkboxes (not a Ring Table, avoiding the first-click issue) and keeps its `Promise` import contract. The destructive "full restore" confirmation reuses the generic confirm path.
+
+---
+
+## [2.1.16] — 2026-06-01
+
+> **Ring UI modal de-hybridization, phase 2 (#32)** — five more modals moved to real React, plus two pre-existing working-copy bugs fixed (surfaced once the modals could be exercised).
+
+### Changed
+
+- **Working-copy, reassign and sprint-result modals on real Ring UI.** Five modals — version conflict, "open in another tab", discard working-copy edit, task reassignment, and sprint-result confirmation — now render genuine React content in a Ring Dialog via `openModal(spec)` instead of transplanting vanilla DOM. Reassignment (`<select>`) and sprint-result confirmation (outcome radio + retro note) are bespoke React components; the sprint-result dialog keeps its `Promise<{goalOutcome, goalRetroNote}|null>` contract. The blocking "open in another tab" dialog stays non-dismissable (Escape disabled).
+- **Modal Escape, hardened.** Escape now closes any non-blocking modal reliably via a foundation-level listener, regardless of which control holds focus (Ring's own handler did not fire when focus sat on a radio/textarea).
+
+### Fixed
+
+- **Working copies no longer auto-commit on open.** Opening a history record for edit created a working copy that was immediately committed and deleted by the passive "auto-snapshot after sprint-data save", so the discard button never appeared. The auto-snapshot now skips while a working copy is active (working-copy edits persist to the draft; committing stays explicit).
+- **Working copies and drafts persist again across reloads.** The `ssp_workdrafts` and `ssp_drafts` extension properties were never declared in `entity-extensions.json`, so YouTrack silently dropped writes (POST returned OK, the next GET was empty). Both properties are now declared. This bug had been masked by the auto-commit bug above.
+
+---
+
 ## [2.1.15] — 2026-06-01
 
 > **Ring UI modal de-hybridization, phase 1 (#32)** — confirm modals now render through real React instead of a DOM wrapper, plus two interaction fixes.

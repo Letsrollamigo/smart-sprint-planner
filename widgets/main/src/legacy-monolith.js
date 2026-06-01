@@ -823,8 +823,6 @@
   var _diagLines = [];
   var _enableDebugLog = false;
   var _activeSubtab = null;
-  // Динамическое поле: callback подтверждения
-  var _dynFieldCallback = null;
   // v5.0.1 — состояние settings-overlay (multi-select групп). Объявлено в основной
   // state-секции вместо локального скоупа SETTINGS OVERLAY, чтобы избежать TypeError
   // "Cannot set properties of undefined (setting 'ids')" если applySettingsUI
@@ -1578,7 +1576,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.15';
+  var APP_VERSION = '2.1.17';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2289,99 +2287,108 @@
     });
     return { added: added, removed: removed, changed: changed };
   }
+  /* Phase 3 #32 — wcDiff мигрирован на openModal() (bespoke wcDiffView, настоящий React).
+     Дифф (diffItemsForUI) считается в IIFE, в React уезжают только plain-данные секций.
+     read-only тип: backdrop ✅ / escape ✅ / close-X ✅. */
   function showWorkingCopyDiffModal(key) {
     var draft = _workingDrafts[key];
     if (!draft) return;
     var snap = _history.find(function(s){ return s && s.sprintId === key; });
     if (!snap) return;
     var diff = diffItemsForUI(snap, draft);
-    var body = document.getElementById('wcDiffBody');
-    if (!body) return;
-    body.innerHTML = '';
-    function renderSec(cls, titleKey, items, fmtFn) {
-      if (!items.length) return;
-      var sec = document.createElement('div');
-      sec.className = 'wc-diff-section wc-diff-section--' + cls;
-      var h = document.createElement('h4');
-      h.textContent = T(titleKey) + ' (' + items.length + ')';
-      sec.appendChild(h);
-      items.forEach(function(it){
-        var row = document.createElement('div');
-        row.className = 'wc-diff-item';
-        row.innerHTML = fmtFn(it);
-        sec.appendChild(row);
-      });
-      body.appendChild(sec);
-    }
-    renderSec('added',   'wcDiffAdded',   diff.added,
-      function(it){ return esc(it.title || it.issueId || ''); });
-    renderSec('removed', 'wcDiffRemoved', diff.removed,
-      function(it){ return esc(it.title || it.issueId || ''); });
-    renderSec('changed', 'wcDiffChanged', diff.changed,
-      function(c){
-        return esc(c.item.title || c.item.issueId || '')
-          + c.fields.map(function(f){
-              return '<div class="wc-diff-item__field">'
-                + esc(String(f.name)) + ': '
-                + esc(String(f.from == null ? '—' : f.from))
-                + ' → '
-                + esc(String(f.to   == null ? '—' : f.to))
-                + '</div>';
-            }).join('');
-      });
-    if (!diff.added.length && !diff.removed.length && !diff.changed.length) {
-      body.textContent = T('wcDiffNoChanges');
-    }
-    _showOverlay('wcDiffOverlay');
-  }
-  function hideWorkingCopyDiffModal() {
-    var o = document.getElementById('wcDiffOverlay');
-    if (o) o.classList.add('hidden');
+    var titleOf = function(it){ return it.title || it.issueId || ''; };
+    var h = openModal({
+      id: 'wcDiff',
+      type: 'read-only',
+      title: T('wcDiffTitle'),
+      body: { kind: 'component', name: 'wcDiffView', props: {
+        added:   diff.added.map(titleOf),
+        removed: diff.removed.map(titleOf),
+        changed: diff.changed.map(function(c){
+          return {
+            title: titleOf(c.item),
+            fields: c.fields.map(function(f){
+              return {
+                name: String(f.name),
+                from: f.from == null ? '—' : String(f.from),
+                to:   f.to   == null ? '—' : String(f.to),
+              };
+            }),
+          };
+        }),
+        labels: {
+          added: T('wcDiffAdded'), removed: T('wcDiffRemoved'), changed: T('wcDiffChanged'),
+          noChanges: T('wcDiffNoChanges'), close: T('btnClose'),
+        },
+        onClose: function(){ h.close(); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: true,
+      blockEscape: false,
+      showCloseButton: true,
+    });
   }
 
-  var _wcConflictDecisionCb = null;
+  /* Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog).
+     Callback-контракты сохранены: conflict → 'overwrite'|'export'|'cancel'; multiTab/discard → boolean.
+     onClose гарантирует ровно один вызов callback на любом закрытии (кнопка/Escape). */
   function showWorkingCopyConflictModal(key, baseSnap, mySnap, callback) {
-    _wcConflictDecisionCb = callback || function(){};
+    var cb = callback || function(){};
     var who = (baseSnap && baseSnap.confirmedBy) || '?';
-    var body = document.getElementById('wcConflictBody');
-    if (body) body.textContent = T('wcConflictBody').replace('{who}', who);
-    var o = document.getElementById('wcConflictOverlay');
-    if (o) o.classList.remove('hidden');
-  }
-  function _resolveWcConflict(decision) {
-    var o = document.getElementById('wcConflictOverlay');
-    if (o) o.classList.add('hidden');
-    var cb = _wcConflictDecisionCb;
-    _wcConflictDecisionCb = null;
-    if (cb) cb(decision);
+    var decided = null;
+    openModal({
+      id: 'wcConflict',
+      type: 'confirm',
+      title: T('wcConflictTitle'),
+      body: { kind: 'text', text: T('wcConflictBody').replace('{who}', who) },
+      buttons: [
+        { id: 'overwrite', text: T('wcConflictOverwrite'), variant: 'danger',    onClick: function(h){ decided = 'overwrite'; h.close(); } },
+        { id: 'export',    text: T('wcConflictExportBoth'), variant: 'secondary', onClick: function(h){ decided = 'export';    h.close(); } },
+        { id: 'cancel',    text: T('wcConflictCancel'),     variant: 'primary',   onClick: function(h){ decided = 'cancel';    h.close(); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+      onClose: function(){ cb(decided || 'cancel'); },   /* Escape/backdrop → безопасный 'cancel' */
+    });
   }
 
-  var _wcMultiTabCb = null;
   function showMultiTabConflictModal(key, callback) {
-    _wcMultiTabCb = callback || function(){};
-    var o = document.getElementById('wcMultiTabOverlay');
-    if (o) o.classList.remove('hidden');
-  }
-  function _resolveWcMultiTab(takeOver) {
-    var o = document.getElementById('wcMultiTabOverlay');
-    if (o) o.classList.add('hidden');
-    var cb = _wcMultiTabCb;
-    _wcMultiTabCb = null;
-    if (cb) cb(takeOver);
+    var cb = callback || function(){};
+    var decided = null;
+    openModal({
+      id: 'wcMultiTab',
+      type: 'informational',
+      title: T('wcMultiTabTitle'),
+      body: { kind: 'text', text: T('wcMultiTabBody') },
+      buttons: [
+        { id: 'continue', text: T('wcMultiTabContinue'), variant: 'primary',   onClick: function(h){ decided = true;  h.close(); } },
+        { id: 'readonly', text: T('wcMultiTabReadonly'), variant: 'secondary', onClick: function(h){ decided = false; h.close(); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: true,                                  /* no-escape: системно-блокирующая */
+      showCloseButton: false,
+      onClose: function(){ if (decided !== null) cb(decided); },  /* только явный выбор */
+    });
   }
 
-  var _wcDiscardCb = null;
   function showDiscardConfirmModal(key, callback) {
-    _wcDiscardCb = callback || function(){};
-    var o = document.getElementById('wcDiscardOverlay');
-    if (o) o.classList.remove('hidden');
-  }
-  function _resolveWcDiscard(confirmed) {
-    var o = document.getElementById('wcDiscardOverlay');
-    if (o) o.classList.add('hidden');
-    var cb = _wcDiscardCb;
-    _wcDiscardCb = null;
-    if (cb) cb(confirmed);
+    var cb = callback || function(){};
+    var confirmed = false;
+    openModal({
+      id: 'wcDiscard',
+      type: 'destructive',
+      title: T('wcDiscardConfirmTitle'),
+      body: { kind: 'text', text: T('wcDiscardConfirmBody') },
+      buttons: [
+        { id: 'confirm', text: T('wcDiscard'), variant: 'danger',  onClick: function(h){ confirmed = true;  h.close(); } },
+        { id: 'cancel',  text: T('btnNo'),     variant: 'primary', onClick: function(h){ confirmed = false; h.close(); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+      onClose: function(){ cb(confirmed); },              /* Escape/backdrop → false (отмена, безопасно) */
+    });
   }
 
   /* Wire-up button handlers (idempotent — guard через _sspBound) */
@@ -2413,14 +2420,9 @@
       if (!_activeWorkingDraftKey) return;
       showWorkingCopyDiffModal(_activeWorkingDraftKey);
     });
-    bind('wcDiffCloseBtn',           'click', hideWorkingCopyDiffModal);
-    bind('wcConflictOverwriteBtn',   'click', function(){ _resolveWcConflict('overwrite'); });
-    bind('wcConflictExportBtn',      'click', function(){ _resolveWcConflict('export'); });
-    bind('wcConflictCancelBtn',      'click', function(){ _resolveWcConflict('cancel'); });
-    bind('wcMultiTabContinueBtn',    'click', function(){ _resolveWcMultiTab(true); });
-    bind('wcMultiTabReadonlyBtn',    'click', function(){ _resolveWcMultiTab(false); });
-    bind('wcDiscardConfirmBtn',      'click', function(){ _resolveWcDiscard(true); });
-    bind('wcDiscardCancelBtn',       'click', function(){ _resolveWcDiscard(false); });
+    /* wcConflict/wcMultiTab/wcDiscard кнопки — мигрированы на openModal() (Phase 2 #32);
+       wcDiff — Phase 3 #32. Их .overlay HTML удалён; bind'ы больше не нужны
+       (wcDiff закрывается через handle внутри showWorkingCopyDiffModal). */
   }
   /* Bind при загрузке скрипта (DOM уже готов т.к. main.js — defer) */
   try { bindWorkingCopyHandlers(); } catch(e){ diag('bindWorkingCopyHandlers failed: '+e, 'err'); }
@@ -2429,9 +2431,11 @@
      openReassignModal(issueId) собирает <select> из _currentRolePP.resourcesByAssignee + опция «Не назначен»;
      «Применить» обновляет _currentRolePP.taskAssignments[issueId].assignee, инвалидирует ganttColor cache,
      ставит dirty-флаг, зовёт saveCurrentRoleState() и ре-рендерит Гант (+ опционально таблицу Людей). */
+  /* Phase 2 #32 — reassign мигрирован на openModal() (bespoke reassignForm).
+     hideReassignModal закрывает Ring-модалку через stored handle (паттерн _overlimitModalHandle). */
+  var _reassignModalHandle = null;
   function hideReassignModal() {
-    var ov = document.getElementById('reassignOverlay');
-    if (ov) ov.classList.add('hidden');
+    if (_reassignModalHandle) { try { _reassignModalHandle.close(); } catch(_){} }
   }
   /* v5.8.0 — A.5 (D56): универсальное скрытие всех overlay'ев класса .overlay при tab switch.
      Закрывает leakage класс багов: открыт #reassignOverlay/#wcConflictOverlay/etc. → юзер
@@ -2555,108 +2559,95 @@
     var ra = _currentRolePP.resourcesByAssignee || {};
     var ta = _currentRolePP.taskAssignments || {};
     var current = (ta[issueId] && ta[issueId].assignee) || '';
-    var sel = document.getElementById('reassignSelect');
-    var titleEl = document.getElementById('reassignIssueId');
-    var ov = document.getElementById('reassignOverlay');
-    if (!sel || !ov) return;
-    sel.innerHTML = '';
-    /* Первая опция — «Не назначен» */
-    var optEmpty = document.createElement('option');
-    optEmpty.value = '';
-    optEmpty.textContent = T('reassignOptionUnassigned');
-    if (!current) optEmpty.selected = true;
-    sel.appendChild(optEmpty);
+    /* Опции <select>: «Не назначен» + ассайни роли (sorted) */
+    var options = [{ value: '', label: T('reassignOptionUnassigned') }];
     Object.keys(ra).sort().forEach(function(login){
-      var opt = document.createElement('option');
-      opt.value = login;
       var nm = (ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login;
-      opt.textContent = nm + ' (' + login + ')';
-      if (login === current) opt.selected = true;
-      sel.appendChild(opt);
+      options.push({ value: login, label: nm + ' (' + login + ')' });
     });
-    if (titleEl) titleEl.textContent = issueId;
-    var applyBtn = document.getElementById('reassignApplyBtn');
-    if (applyBtn) applyBtn.dataset.issueId = issueId;
-    _showOverlay(ov);
+    _reassignModalHandle = openModal({
+      id: 'reassign',
+      type: 'confirm',
+      title: T('modalReassignTitle'),
+      body: { kind: 'component', name: 'reassignForm', props: {
+        issueId: issueId,
+        bodyText: T('modalReassignBody'),
+        options: options,
+        current: current,
+        applyText: T('btnApply'),
+        cancelText: T('btnCancel'),
+        onApply: function(login){ if (_reassignModalHandle) _reassignModalHandle.close(); _applyReassign(issueId, login); },
+        onCancel: function(){ if (_reassignModalHandle) _reassignModalHandle.close(); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+      onClose: function(){ _reassignModalHandle = null; },
+    });
   }
-  (function bindReassignHandlers(){
-    function bind(){
-      var applyBtn = document.getElementById('reassignApplyBtn');
-      if (applyBtn && !applyBtn.dataset.bound) {
-        applyBtn.dataset.bound = '1';
-        applyBtn.addEventListener('click', function(){
-          var issueId = applyBtn.dataset.issueId;
-          var sel = document.getElementById('reassignSelect');
-          if (!issueId || !sel || !_currentRolePP) { hideReassignModal(); return; }
-          var login = sel.value || '';
-          var ra = _currentRolePP.resourcesByAssignee || {};
-          if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-          var entry = _currentRolePP.taskAssignments[issueId] || {};
-          entry.assignee     = login || '';
-          entry.assigneeName = login ? ((ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login) : '';
-          /* Инвалидация cache — цвет пересчитается через assigneeColorOf */
-          delete entry.ganttColor;
-          _currentRolePP.taskAssignments[issueId] = entry;
-          /* Прокидываем _currentRolePP обратно в personalPlanning записи и в _sprint.personalPlanning
-             если запись соответствует активному спринту (паттерн из renderCurrentRoleTaskTable). */
-          if (_currentSprintRoleRec) {
-            if (!_currentSprintRoleRec.personalPlanning) _currentSprintRoleRec.personalPlanning = {};
-            var rk = _activeSubtab || _currentSprintRoleRec.roleKey || null;
-            if (!rk && _currentSprintRoleRec.sprintId && _currentSprintId) {
-              rk = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '') || null;
-            }
-            if (rk) _currentSprintRoleRec.personalPlanning[rk] = _currentRolePP;
-            if (typeof isActiveSprintRecord === 'function' && isActiveSprintRecord(_currentSprintRoleRec)) {
-              if (!_sprint.personalPlanning) _sprint.personalPlanning = {};
-              if (rk) _sprint.personalPlanning[rk] = _currentRolePP;
-            }
-          }
-          /* Dirty-tracking для confirm при смене роли */
-          if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
-            var rkDirty = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
-            if (rkDirty) _dirtyRoleKeys[rkDirty] = true;
-          }
-          hideReassignModal();
-          if (typeof saveCurrentRoleState === 'function') {
-            try { saveCurrentRoleState(); } catch(e){ diag('saveCurrentRoleState reassign err: '+e,'err'); }
-          }
-          /* v6.3.0 D105 — после reassign в Ганте писать assignee в YouTrack
-             через update-issue-field (как делает change-handler на «Распределение»).
-             Раньше изменения assignee из Ганта оставались только в personalPlanning. */
-          try {
-            var rkForYt = (_currentSprintRoleRec && _currentSprintRoleRec.roleKey) || _activeSubtab;
-            if (rkForYt && typeof updateIssueAssigneeField === 'function') {
-              updateIssueAssigneeField(issueId, login || null, rkForYt);
-            }
-          } catch(e){ diag('updateIssueAssigneeField reassign err: '+e,'err'); }
-          /* Ре-рендер Ганта (visible) */
-          if (typeof renderGanttChart === 'function') {
-            try { renderGanttChart(); } catch(e){ diag('renderGanttChart reassign err: '+e,'err'); }
-          }
-          /* Двусторонняя синхронизация: если уровень «Люди» рендерил таблицу — обновим её */
-          var peopleEl = document.getElementById('planning-level-people');
-          if (peopleEl && !peopleEl.classList.contains('hidden')
-              && typeof renderCurrentRoleTaskTable === 'function') {
-            try { renderCurrentRoleTaskTable(); } catch(e){ diag('renderCurrentRoleTaskTable reassign err: '+e,'err'); }
-          }
-          /* Снимаем dirty в следующем event-loop — saveCurrentRoleState уже flush'ит draft */
-          setTimeout(function(){
-            if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
-              var rkClean = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
-              if (rkClean) delete _dirtyRoleKeys[rkClean];
-            }
-          }, 0);
-        });
+  /* Применение переназначения (логика дословно из v5.7.0/v6.3.0 D105 — мутация
+     _currentRolePP + запись assignee в YouTrack + ре-рендер Ганта/Людей). login — '' = «Не назначен». */
+  function _applyReassign(issueId, login) {
+    if (!issueId || !_currentRolePP) return;
+    login = login || '';
+    var ra = _currentRolePP.resourcesByAssignee || {};
+    if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
+    var entry = _currentRolePP.taskAssignments[issueId] || {};
+    entry.assignee     = login || '';
+    entry.assigneeName = login ? ((ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login) : '';
+    /* Инвалидация cache — цвет пересчитается через assigneeColorOf */
+    delete entry.ganttColor;
+    _currentRolePP.taskAssignments[issueId] = entry;
+    /* Прокидываем _currentRolePP обратно в personalPlanning записи и в _sprint.personalPlanning
+       если запись соответствует активному спринту (паттерн из renderCurrentRoleTaskTable). */
+    if (_currentSprintRoleRec) {
+      if (!_currentSprintRoleRec.personalPlanning) _currentSprintRoleRec.personalPlanning = {};
+      var rk = _activeSubtab || _currentSprintRoleRec.roleKey || null;
+      if (!rk && _currentSprintRoleRec.sprintId && _currentSprintId) {
+        rk = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '') || null;
       }
-      var cancelBtn = document.getElementById('reassignCancelBtn');
-      if (cancelBtn && !cancelBtn.dataset.bound) {
-        cancelBtn.dataset.bound = '1';
-        cancelBtn.addEventListener('click', hideReassignModal);
+      if (rk) _currentSprintRoleRec.personalPlanning[rk] = _currentRolePP;
+      if (typeof isActiveSprintRecord === 'function' && isActiveSprintRecord(_currentSprintRoleRec)) {
+        if (!_sprint.personalPlanning) _sprint.personalPlanning = {};
+        if (rk) _sprint.personalPlanning[rk] = _currentRolePP;
       }
     }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
-    else bind();
-  })();
+    /* Dirty-tracking для confirm при смене роли */
+    if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
+      var rkDirty = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
+      if (rkDirty) _dirtyRoleKeys[rkDirty] = true;
+    }
+    if (typeof saveCurrentRoleState === 'function') {
+      try { saveCurrentRoleState(); } catch(e){ diag('saveCurrentRoleState reassign err: '+e,'err'); }
+    }
+    /* v6.3.0 D105 — после reassign в Ганте писать assignee в YouTrack
+       через update-issue-field (как делает change-handler на «Распределение»).
+       Раньше изменения assignee из Ганта оставались только в personalPlanning. */
+    try {
+      var rkForYt = (_currentSprintRoleRec && _currentSprintRoleRec.roleKey) || _activeSubtab;
+      if (rkForYt && typeof updateIssueAssigneeField === 'function') {
+        updateIssueAssigneeField(issueId, login || null, rkForYt);
+      }
+    } catch(e){ diag('updateIssueAssigneeField reassign err: '+e,'err'); }
+    /* Ре-рендер Ганта (visible) */
+    if (typeof renderGanttChart === 'function') {
+      try { renderGanttChart(); } catch(e){ diag('renderGanttChart reassign err: '+e,'err'); }
+    }
+    /* Двусторонняя синхронизация: если уровень «Люди» рендерил таблицу — обновим её */
+    var peopleEl = document.getElementById('planning-level-people');
+    if (peopleEl && !peopleEl.classList.contains('hidden')
+        && typeof renderCurrentRoleTaskTable === 'function') {
+      try { renderCurrentRoleTaskTable(); } catch(e){ diag('renderCurrentRoleTaskTable reassign err: '+e,'err'); }
+    }
+    /* Снимаем dirty в следующем event-loop — saveCurrentRoleState уже flush'ит draft */
+    setTimeout(function(){
+      if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
+        var rkClean = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
+        if (rkClean) delete _dirtyRoleKeys[rkClean];
+      }
+    }, 0);
+  }
 
   /* v5.7.0 — KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» /
      «Ваша рабочая копия» + diff-маркер в отдельной колонке. Background-fill в SheetJS
@@ -3194,12 +3185,20 @@
                - action=validate (там есть свой явный saveRoleHistorySnapshot после валидации)
                - settings save (это конфигурация, не данные спринта)
                - FINISHED-спринтов (исторические записи неизменны)
-               - отсутствия активной подвкладки/спринта */
+               - отсутствия активной подвкладки/спринта
+               - активной рабочей копии (B-fix): при активном _activeWorkingDraftKey
+                 пассивный auto-снапшот зовёт saveRoleHistorySnapshot, который видит
+                 _activeWorkingDraftKey===snapKey и НЕМЕДЛЕННО коммитит+удаляет только что
+                 созданную рабочую копию (resumeWorkingDraft постит sprint-data при открытии).
+                 Правки рабочей копии и так персистятся в черновик через
+                 _markDirty→syncWorkingDraftFromMemory; commit рабочей копии — только явный
+                 (Validate/Save → прямой saveRoleHistorySnapshot/_commitWorkingCopy). */
             var isValidate    = query && query.action === 'validate';
             var hasSprintData = body.sprint !== undefined || body.roleItems !== undefined;
             if (hasSprintData && !isValidate
                 && _sprint && _sprint.sprintId
                 && _sprint.status !== STATUS.FINISHED
+                && !_activeWorkingDraftKey
                 && _activeSubtab) {
               try {
                 /* fire-and-forget — игнорируем ошибки, не блокируем основной save */
@@ -6880,82 +6879,39 @@
      null — пользователь нажал Отмена (спринт не завершается). */
   function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
     return new Promise(function(resolve) {
-      var overlay = document.getElementById('confirmGoalOverlay');
-      if (!overlay) { resolve({ goalOutcome: 'achieved', goalRetroNote: '' }); return; }
-      // Показать или скрыть текст цели
-      var goalDisplay = document.getElementById('confirmGoalDisplay');
-      var goalNotSet  = document.getElementById('confirmGoalNotSet');
-      var goalText    = document.getElementById('confirmGoalText');
-      var goalVal     = sprintGoalText;
-      if (goalVal) {
-        if (goalDisplay) { goalDisplay.style.display = ''; }
-        if (goalNotSet)  { goalNotSet.style.display  = 'none'; }
-        if (goalText)    { goalText.textContent = goalVal; }
-      } else {
-        if (goalDisplay) { goalDisplay.style.display = 'none'; }
-        if (goalNotSet)  { goalNotSet.style.display  = ''; }
-      }
-      // v2.0.0 D5-A — outcome radio через Ring Radio mount-point.
-      // Host-span хранит value в data-value; options пересобираются из T() при каждом open
-      // (чтобы applyI18N после открытия не понадобился — мы уже взяли актуальные labels).
-      var radioHost = document.getElementById('goalOutcomeRadioHost');
-      if (radioHost) {
-        radioHost.dataset.optionsJson = JSON.stringify([
-          { value: 'achieved', label: T('optGoalAchieved') || '✅ Достигнута' },
-          { value: 'partial',  label: T('optGoalPartial')  || '⚖ Частично' },
-          { value: 'missed',   label: T('optGoalMissed')   || '❌ Не достигнута' }
-        ]);
-        radioHost.dataset.value = existingOutcome || '';
-        if (window.__SSP_RADIO && typeof window.__SSP_RADIO.mountGroupAt === 'function') {
-          window.__SSP_RADIO.mountGroupAt(radioHost); // idempotent
-        }
-      }
-      var retroEl = document.getElementById('goalRetroNote');
-      if (retroEl) retroEl.value = '';
-      var okBtn = document.getElementById('confirmGoalOk');
-      if (okBtn) okBtn.disabled = !existingOutcome;
-      // i18n placeholder
-      if (retroEl) retroEl.placeholder = T('phGoalRetroNote');
-      // Radio → enable OK (через bubbling change-event с host-span)
-      function onRadioChange() {
-        var v = radioHost ? (radioHost.dataset.value || '') : '';
-        if (okBtn) okBtn.disabled = !v;
-      }
-      if (radioHost) radioHost.addEventListener('change', onRadioChange);
-      // Кнопки
-      var cancelBtn = document.getElementById('confirmGoalCancel');
-      var _cgR = false;
-      function _cgResolve(val) { if (!_cgR) { _cgR = true; resolve(val); } }
-      function _cgEsc(e) {
-        if (e.key === 'Escape') { document.removeEventListener('keydown', _cgEsc); onCancel(); }
-      }
-      function cleanup() {
-        overlay.classList.add('hidden');
-        document.removeEventListener('keydown', _cgEsc);
-        if (radioHost) radioHost.removeEventListener('change', onRadioChange);
-        if (okBtn) okBtn.removeEventListener('click', onOk);
-        if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
-      }
-      function onOk() {
-        var chosen = radioHost ? (radioHost.dataset.value || '') : '';
-        if (!chosen) return;
-        var retroVal = retroEl ? (retroEl.value || '').trim() : '';
-        cleanup();
-        _cgResolve({ goalOutcome: chosen, goalRetroNote: retroVal || undefined });
-      }
-      function onCancel() {
-        cleanup();
-        _cgResolve(null);
-      }
-      if (okBtn) okBtn.addEventListener('click', onOk);
-      if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
-      /* v1.9.2 — use _showOverlay() instead of plain classList toggle so the dialog
-         is scrolled into the parent viewport (iframe-fix shared by other overlays). */
-      try { _showOverlay(overlay); } catch(_) { overlay.classList.remove('hidden'); }
-      /* v2.1.9 B6: defensive ESC listener — гарантирует resolve(null) если Ring Dialog
-         не вызвал onCloseAttempt (e.g. focus вне диалога). Зарегистрирован после _showOverlay
-         чтобы Ring отработал первым. Cleanup встроен в cleanup(). */
-      document.addEventListener('keydown', _cgEsc);
+      /* Phase 2 #32 — мигрировано на openModal() (bespoke confirmGoalForm, настоящий React).
+         Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
+         resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
+      if (!window.__SSP_RING_MODAL) { resolve({ goalOutcome: 'achieved', goalRetroNote: '' }); return; }
+      var result = null;   /* null = отмена/escape; объект = подтверждение */
+      var h = openModal({
+        id: 'confirmGoal',
+        type: 'form',
+        title: T('dialogConfirmGoalTitle'),
+        body: { kind: 'component', name: 'confirmGoalForm', props: {
+          goalText: sprintGoalText || '',
+          goalLabel: T('histGoalLabel'),
+          goalNotSetText: T('histGoalNotSet'),
+          outcomeLabel: T('lblGoalOutcome'),
+          options: [
+            { value: 'achieved', label: T('optGoalAchieved') || '✅ Достигнута' },
+            { value: 'partial',  label: T('optGoalPartial')  || '⚖ Частично' },
+            { value: 'missed',   label: T('optGoalMissed')   || '❌ Не достигнута' },
+          ],
+          existingOutcome: existingOutcome || '',
+          retroLabel: T('lblGoalRetroNote'),
+          retroPlaceholder: T('phGoalRetroNote'),
+          cancelText: T('btnCancelGoal'),
+          confirmText: T('btnConfirmGoal'),
+          onConfirm: function(vals){ result = vals; h.close(); },
+          onCancel: function(){ result = null; h.close(); },
+        }},
+        buttons: [],
+        dismissOnBackdrop: false,
+        blockEscape: false,
+        showCloseButton: false,
+        onClose: function(){ resolve(result); },   /* единственная точка resolve (foundation-guarded) */
+      });
     });
   }
 
@@ -7468,46 +7424,40 @@
     _updateRoleAccordionStats(rk);
   }
 
-  /* ── Динамическое модальное окно ── */
+  /* ── Динамическое модальное окно ──
+     Phase 3 #32 — мигрировано на openModal() (bespoke dynFieldForm, настоящий React).
+     Контракт сохранён: callback(true, val) / callback(false, null). Для enum val = выбранное
+     значение; для текстового ввода val = parsePeriod(ввод) (как в legacy). form-тип:
+     backdrop ✅ / escape ✅ / close-X ✅; Escape/backdrop = отмена (callback(false,null)). */
   function showDynFieldConfirm(title, desc, enumValues, currentVal, callback) {
-    _dynFieldCallback = callback;
-    document.getElementById('dynFieldTitle').textContent = title;
-    document.getElementById('dynFieldDesc').textContent  = desc;
-    var selEl = document.getElementById('dynFieldSelect');
-    var inpEl = document.getElementById('dynFieldInput');
-    if (enumValues) {
-      selEl.style.display = '';
-      inpEl.style.display = 'none';
-      selEl.innerHTML = '';
-      enumValues.forEach(function(v) {
-        var o = document.createElement('option');
-        o.value = v; o.textContent = localizeEnumVal(v) || v;
-        if (v === currentVal) o.selected = true;
-        selEl.appendChild(o);
-      });
-    } else {
-      selEl.style.display = 'none';
-      inpEl.style.display = '';
-      inpEl.value = currentVal ? fmtPeriod(currentVal) : '';
-      inpEl.focus();
-    }
-    _showOverlay('dynFieldOverlay');
+    var cb = callback || function(){};
+    var isEnum = !!enumValues;
+    var done = false;
+    var h = openModal({
+      id: 'dynField',
+      type: 'form',
+      title: title,
+      body: { kind: 'component', name: 'dynFieldForm', props: {
+        desc: desc,
+        mode: isEnum ? 'enum' : 'text',
+        options: isEnum ? enumValues.map(function(v){ return { value: v, label: localizeEnumVal(v) || v }; }) : [],
+        initialValue: isEnum ? (currentVal || (enumValues[0] || '')) : (currentVal ? fmtPeriod(currentVal) : ''),
+        placeholder: T('phDynInput'),
+        applyText: T('btnYesUpdate'),
+        cancelText: T('btnNo'),
+        onApply: function(raw){
+          done = true; h.close();
+          cb(true, isEnum ? raw : parsePeriod(raw));
+        },
+        onCancel: function(){ done = true; h.close(); cb(false, null); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: true,
+      blockEscape: false,
+      showCloseButton: true,
+      onClose: function(){ if (!done) cb(false, null); },
+    });
   }
-
-  document.getElementById('dynFieldNo').addEventListener('click', function() {
-    document.getElementById('dynFieldOverlay').classList.add('hidden');
-    if (_dynFieldCallback) { _dynFieldCallback(false, null); _dynFieldCallback = null; }
-  });
-  document.getElementById('dynFieldYes').addEventListener('click', function() {
-    document.getElementById('dynFieldOverlay').classList.add('hidden');
-    if (_dynFieldCallback) {
-      var selEl = document.getElementById('dynFieldSelect');
-      var inpEl = document.getElementById('dynFieldInput');
-      var val = selEl.style.display !== 'none' ? selEl.value : parsePeriod(inpEl.value);
-      _dynFieldCallback(true, val);
-      _dynFieldCallback = null;
-    }
-  });
 
   function loadEnumBundle(fieldName, cb) {
     if (!fieldName) { cb([]); return; }
@@ -9132,114 +9082,68 @@
       var isCrossInstance = !!(data.sourceInstance && su && data.sourceInstance !== su);
       var isVersionNewer  = !!(data.pluginVersion && data.pluginVersion > APP_VERSION);
 
-      // Заполняем тело диалога
-      var body = document.getElementById('importHistBody');
-      if (!body) { resolve(null); return; }
+      if (!window.__SSP_RING_MODAL) { resolve(null); return; }
 
-      // Info block
-      var infoHtml = '<div style="background:var(--surface-light,#f5f5f5);border-radius:6px;padding:10px 12px;font-size:12px;margin-bottom:12px">';
-      infoHtml += '<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 10px">';
-      if (data.sourceProject) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistProject')) + '</span><span><b>' + esc(data.sourceProject) + '</b></span>';
-      if (data.sourceInstance) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistInstance')) + '</span><span>' + esc(data.sourceInstance) + '</span>';
-      if (data.exportedAt)    infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistExportedAt')) + '</span><span>' + fmtDT(data.exportedAt) + '</span>';
-      if (data.pluginVersion) infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistPluginVer')) + '</span><span>' + esc(data.pluginVersion) + '</span>';
-      infoHtml += '<span style="color:var(--muted)">' + esc(T('importHistSprintsLabel')) + '</span><span>' + groupList.length + '</span>';
-      infoHtml += '</div>';
-      if (data.anonymized) infoHtml += '<div style="margin-top:6px;color:var(--muted);font-size:11px">🔒 ' + esc(T('importHistAnonBadge')) + '</div>';
-      infoHtml += '</div>';
+      // Info-строки (label/value) — рендерятся компонентом importHistForm
+      var infoRows = [];
+      if (data.sourceProject)  infoRows.push({ label: T('importHistProject'),    value: data.sourceProject, bold: true });
+      if (data.sourceInstance) infoRows.push({ label: T('importHistInstance'),   value: data.sourceInstance });
+      if (data.exportedAt)     infoRows.push({ label: T('importHistExportedAt'), value: fmtDT(data.exportedAt) });
+      if (data.pluginVersion)  infoRows.push({ label: T('importHistPluginVer'),  value: data.pluginVersion });
+      infoRows.push({ label: T('importHistSprintsLabel'), value: String(groupList.length) });
 
-      // Предупреждения
-      var warnHtml = '';
-      if (isCrossFork)     warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--primary,#0d6efd)">' + esc((T('importHistCrossFork') || '').replace('{fork}', data.format)) + '</div>';
-      if (isCrossInstance) warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--warn-text,#b36800)">' + esc(T('importHistCrossInstance') || '') + '</div>';
-      if (isVersionNewer)  warnHtml += '<div style="margin-bottom:6px;font-size:12px;color:var(--warn-text,#b36800)">' + esc((T('importHistVersionWarn') || '').replace('{v}', data.pluginVersion)) + '</div>';
+      // Предупреждения (cross-fork / cross-instance / более новая версия)
+      var warnings = [];
+      if (isCrossFork)     warnings.push({ text: (T('importHistCrossFork') || '').replace('{fork}', data.format), color: 'var(--primary,#0d6efd)' });
+      if (isCrossInstance) warnings.push({ text: T('importHistCrossInstance') || '', color: 'var(--warn-text,#b36800)' });
+      if (isVersionNewer)  warnings.push({ text: (T('importHistVersionWarn') || '').replace('{v}', data.pluginVersion), color: 'var(--warn-text,#b36800)' });
 
-      // Список спринтов
-      var listHtml = '<div style="margin-bottom:10px">';
-      groupList.forEach(function(g) {
-        var collBadge = g.hasCollision ? ' <span style="font-size:10px;background:var(--warn,#fff3cd);color:var(--warn-text,#b36800);padding:1px 5px;border-radius:3px;vertical-align:middle">' + esc(T('importHistCollisionBadge') || 'дубль') + '</span>' : '';
-        var dateStr   = g.dateStart ? ' <span style="color:var(--muted);font-size:11px">(' + fmtDate(g.dateStart) + ')</span>' : '';
-        listHtml += '<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer">';
-        listHtml += '<span data-ssp-checkbox-host data-checkbox-id="importSprint_' + esc(g.baseId) + '" data-checked="1" data-label=""></span>';
-        listHtml += '<span style="font-size:13px">' + esc(g.name) + dateStr + collBadge + '</span>';
-        listHtml += '</label>';
+      /* Phase 3 #32 — мигрировано на openModal() (bespoke importHistForm, настоящий React).
+         Чекбоксы выбора спринтов — обычный React-стейт (НЕ Ring Table → нет mousedown-проблемы
+         B11/B12). Promise-контракт сохранён: {action:'merge'} / {action:'replace'} / null. */
+      var decided = null;  // null=отмена; {action:'merge',sel,mode} / {action:'replace'}
+      var h = openModal({
+        id: 'importHist',
+        type: 'form',
+        title: T('importHistTitle'),
+        body: { kind: 'component', name: 'importHistForm', props: {
+          infoRows: infoRows,
+          anonText: data.anonymized ? ('🔒 ' + (T('importHistAnonBadge') || '')) : '',
+          warnings: warnings,
+          groups: groupList.map(function(g){
+            return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDate(g.dateStart) : '', collision: !!g.hasCollision };
+          }),
+          labels: {
+            collisionBadge: T('importHistCollisionBadge') || 'дубль',
+            modeLabel:      T('importHistModeLabel')      || 'При совпадении sprintId:',
+            modeSkip:       T('importHistModeSkip')       || 'Пропустить дубли',
+            modeOverwrite:  T('importHistModeOverwrite')  || 'Перезаписать дубли',
+            replaceText:    T('btnImportReplace')         || 'Полное восстановление…',
+            replaceTitle:   T('btnImportReplaceTitle')    || '',
+            cancelText:     T('btnCancel')                || 'Отмена',
+            submitText:     T('btnImport')                || 'Импортировать',
+          },
+          onSubmit:  function(sel, mode){ decided = { action: 'merge', sel: sel, mode: mode }; h.close(); },
+          onReplace: function(){ decided = { action: 'replace' }; h.close(); },
+          onCancel:  function(){ decided = null; h.close(); },
+        }},
+        buttons: [],
+        dismissOnBackdrop: true,
+        blockEscape: false,
+        showCloseButton: true,
+        onClose: function(){
+          if (!decided) { resolve(null); return; }
+          if (decided.action === 'merge') {
+            _submitHistImport(decided.sel, decided.mode, records)
+              .then(function(){ resolve({ action: 'merge' }); })
+              .catch(function(){ resolve({ action: 'merge' }); });
+          } else {
+            _importHistPending = { records: records };
+            resolve({ action: 'replace' });
+            _openImportReplaceConfirm();
+          }
+        },
       });
-      listHtml += '</div>';
-
-      // Radio режима A/B
-      var radioHtml = '<div style="margin-bottom:10px">';
-      radioHtml += '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">' + esc(T('importHistModeLabel') || 'При совпадении sprintId:') + '</div>';
-      radioHtml += '<span data-ssp-radio-host id="importHistModeRadioHost" data-value="skip"></span>';
-      radioHtml += '</div>';
-
-      body.innerHTML = infoHtml + warnHtml + listHtml + radioHtml;
-
-      // Монтируем Ring Checkboxes
-      if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') window.__SSP_CHECKBOX.mountAllIn(body);
-
-      // Монтируем Ring Radio
-      var radioHost = document.getElementById('importHistModeRadioHost');
-      if (radioHost) {
-        radioHost.dataset.optionsJson = JSON.stringify([
-          { value: 'skip',      label: T('importHistModeSkip')      || 'Пропустить дубли' },
-          { value: 'overwrite', label: T('importHistModeOverwrite') || 'Перезаписать дубли' }
-        ]);
-        radioHost.dataset.value = 'skip';
-        if (window.__SSP_RADIO && typeof window.__SSP_RADIO.mountGroupAt === 'function') window.__SSP_RADIO.mountGroupAt(radioHost);
-      }
-
-      // Кнопки диалога
-      var submitBtn  = document.getElementById('importHistSubmit');
-      var cancelBtn  = document.getElementById('importHistCancel');
-      var replaceBtn = document.getElementById('importHistReplaceBtn');
-      var overlay    = document.getElementById('importHistOverlay');
-
-      if (replaceBtn) replaceBtn.title = T('btnImportReplaceTitle') || '';
-
-      function getSelectedBaseIds() {
-        var sel = [];
-        groupList.forEach(function(g) {
-          var host = body.querySelector('[data-checkbox-id="importSprint_' + g.baseId + '"]');
-          var checked = host ? (host.dataset.checked === '1') : true;
-          if (checked) sel.push(g.baseId);
-        });
-        return sel;
-      }
-
-      function updateSubmitState() {
-        if (submitBtn) submitBtn.disabled = getSelectedBaseIds().length === 0;
-      }
-      body.addEventListener('change', updateSubmitState);
-      updateSubmitState();
-
-      var _resolved = false;
-      function _res(val) { if (!_resolved) { _resolved = true; resolve(val); } }
-
-      function cleanup() {
-        overlay.classList.add('hidden');
-        if (submitBtn) submitBtn.removeEventListener('click', onSubmit);
-        if (cancelBtn) cancelBtn.removeEventListener('click', onCancel);
-        if (replaceBtn) replaceBtn.removeEventListener('click', onReplace);
-      }
-      function onCancel() { cleanup(); _res(null); }
-      function onSubmit() {
-        var sel  = getSelectedBaseIds();
-        if (!sel.length) return;
-        var mode = radioHost ? (radioHost.dataset.value || 'skip') : 'skip';
-        cleanup();
-        _submitHistImport(sel, mode, records).then(function(){ _res({ action: 'merge' }); }).catch(function(){});
-      }
-      function onReplace() {
-        _importHistPending = { records: records };
-        cleanup(); _res({ action: 'replace' });
-        _showOverlay('importReplaceHistOverlay');
-      }
-
-      if (submitBtn) submitBtn.addEventListener('click', onSubmit);
-      if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
-      if (replaceBtn) replaceBtn.addEventListener('click', onReplace);
-
-      try { _showOverlay(overlay); } catch(_e) { overlay.classList.remove('hidden'); }
     });
   }
 
@@ -9269,33 +9173,46 @@
     });
   }
 
-  /* ── Полное восстановление (replace-all) ── */
-  (function() {
-    var noBtn  = document.getElementById('importReplaceHistNo');
-    var yesBtn = document.getElementById('importReplaceHistYes');
-    if (noBtn) noBtn.addEventListener('click', function() {
-      document.getElementById('importReplaceHistOverlay').classList.add('hidden');
-      _importHistPending = null;
+  /* ── Полное восстановление (replace-all) ──
+     Phase 3 #32 — importReplaceHist мигрирован на openModal() (generic lines-confirm,
+     destructive-тип: backdrop ❌ / escape ✅ / close-X ❌). Escape/отмена очищает pending. */
+  function _openImportReplaceConfirm() {
+    var confirmed = false;
+    openModal({
+      id: 'importReplaceHist',
+      type: 'destructive',
+      title: T('importReplaceTitle'),
+      body: { kind: 'lines', lines: [
+        { html: T('importReplaceWarn'), style: { color: 'var(--error)' } },
+        { text: T('importReplaceInfo'), style: { marginTop: '8px', fontSize: '13px', color: 'var(--muted)' } },
+      ]},
+      buttons: [
+        { id: 'cancel', text: T('btnCancel'),     variant: 'secondary', onClick: function(hh){ confirmed = false; hh.close(); } },
+        { id: 'yes',    text: T('btnYesReplace'), variant: 'danger',    onClick: function(hh){ confirmed = true;  hh.close(); _doImportReplaceAll(); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+      onClose: function(){ if (!confirmed) _importHistPending = null; },
     });
-    if (yesBtn) yesBtn.addEventListener('click', function() {
-      document.getElementById('importReplaceHistOverlay').classList.add('hidden');
-      if (!_importHistPending || !_importHistPending.records) { _importHistPending = null; return; }
-      var records = _importHistPending.records; _importHistPending = null;
-      apiPost('history', { history: records }, { action: 'import-replace' })
-        .then(function(r) {
-          if (!r || !r.success) throw new Error((r && r.reason) || 'unknown');
-          _history = records.slice();
-          renderHistory();
-          toast(T('toastHistReplaced') || 'История восстановлена из файла', 'success');
-          diag('history replaced: ' + records.length + ' records', 'ok');
-        })
-        .catch(function(e) {
-          var msg = (e && e.message) ? e.message : String(e);
-          if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) toast(T('toastNoHistReplaceRights') || 'Нет прав', 'err');
-          else toast((T('toastHistReplaceErr') || 'Ошибка: ') + msg, 'err');
-        });
-    });
-  })();
+  }
+  function _doImportReplaceAll() {
+    if (!_importHistPending || !_importHistPending.records) { _importHistPending = null; return; }
+    var records = _importHistPending.records; _importHistPending = null;
+    apiPost('history', { history: records }, { action: 'import-replace' })
+      .then(function(r) {
+        if (!r || !r.success) throw new Error((r && r.reason) || 'unknown');
+        _history = records.slice();
+        renderHistory();
+        toast(T('toastHistReplaced') || 'История восстановлена из файла', 'success');
+        diag('history replaced: ' + records.length + ' records', 'ok');
+      })
+      .catch(function(e) {
+        var msg = (e && e.message) ? e.message : String(e);
+        if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) toast(T('toastNoHistReplaceRights') || 'Нет прав', 'err');
+        else toast((T('toastHistReplaceErr') || 'Ошибка: ') + msg, 'err');
+      });
+  }
 
   /* ═══════════════════════════════════════════════════════════
      v4.0.0 — АЛЛОКАЦИЯ: валидация превышения лимита по задачам
