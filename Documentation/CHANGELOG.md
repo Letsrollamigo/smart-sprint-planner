@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.20] — 2026-06-01
+
+> **Ring UI modal de-hybridization, phase 4 (#32)** — the "pick tasks into the sprint" dialog now renders real React, fixing the selection-checkbox glitches; plus two modal layout fixes.
+
+### Changed
+
+- **Task-picker dialog on real Ring UI.** The "pick tasks into the sprint" dialog (search, paginated results, per-row selection, "select all across pages") is rewritten as a bespoke React component (`pickPicker`) rendering genuine React content in a Ring Dialog via `openModal(spec)`, removing the last vanilla overlay. Selection checkboxes are plain native inputs on React state, and the "select all" master checkbox is a derived tri-state — no more dataset bridge, MutationObserver, or duplicate click handlers.
+
+### Fixed
+
+- **Selection checkboxes now respond to a single click (B10).** Previously the row checkboxes in the task picker required a double-click.
+- **"Select all" master checkbox no longer desyncs from the row checkboxes (B11).** The tri-state master (none/some/all) and the per-row selection stay in sync; the off-by-one and "master appears empty while rows are checked" glitches are gone.
+- **Task-picker dialog width restored.** The dialog is back to its comfortable wide sizing (~900px), so all result columns fit without wrapping or horizontal scrolling.
+- **Form fields now span the full modal width.** Inputs inside form dialogs (the sprint-goal retrospective note, the task-field period input) no longer render narrower than the rest of the dialog.
+
+---
+
 ## [2.1.17] — 2026-06-01
 
 > **Ring UI modal de-hybridization, phase 3 (#32)** — the working-copy diff view, the task-field update dialog, and the sprint-history import dialogs now render real React.

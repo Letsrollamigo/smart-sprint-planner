@@ -157,7 +157,7 @@ function SspModal({ spec, onClose }) {
     <Dialog
       show={true}
       label={spec.title}
-      className="ssp-ring-modal"
+      className={'ssp-ring-modal' + (spec.dialogClass ? ' ' + spec.dialogClass : '')}
       onCloseAttempt={spec.blockEscape ? noop : onClose}
       trapFocus={false}
       showCloseButton={spec.showCloseButton || false}

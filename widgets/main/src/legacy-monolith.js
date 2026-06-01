@@ -811,7 +811,7 @@
   var _permissionsReady = false;
   var _valGroups = new Set(), _editGroups = new Set();
   var _histPage = 1;
-  var _pickPage = 1, _pickResults = [], _selectedIds = new Set(), _pickHasMore = false;
+  var _selectedIds = new Set(); /* Phase 4 #32: _pickPage/_pickResults/_pickHasMore переехали в React-стейт pickPicker */
   /* v5.0.3 — кэш метаданных всех загруженных страниц текущего запроса
      (по idReadable → issue meta). Накапливается при пагинации и при select-all. */
   var _pickAllResults = new Map();
@@ -1576,7 +1576,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.17';
+  var APP_VERSION = '2.1.20';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -6510,14 +6510,7 @@
     if (pickBtn) {
       pickBtn.addEventListener('click', function() {
         if (!_isEditor) { toast(T('toastNoEditRights'), 'warn'); return; }
-        _currentPickRole = rk;
-        _selectedIds = new Set(); _pickPage = 1; _pickResults = [];
-        _pickAllResults = new Map(); _pickQueryFingerprint = ''; _pickAllInFlight = false;
-        document.getElementById('pickModalTitle').textContent = T('pickModalTitle') + ' — ' + roleLabel(role);
-        document.getElementById('pickQuery').value = '';
-        document.getElementById('pickResults').innerHTML = '<div class="empty">'+T('emptyPickResults')+'</div>';
-        document.getElementById('pickPag').style.display = 'none';
-        _showOverlay('pickOverlay');
+        openPickModal(rk, role);
       });
     }
 
@@ -7753,30 +7746,16 @@
 
   /* clearOverlay migrated to openModal() — clearNo/clearYes handlers removed (Phase 1 #32). */
 
-  /* ═══ Подбор задач ════════════════════════════════════════ */
-  document.getElementById('closePickModal').addEventListener('click', function() {
-    document.getElementById('pickOverlay').classList.add('hidden');
-    _pickAllResults = new Map(); _pickQueryFingerprint = '';
-  });
-  document.getElementById('cancelPickBtn').addEventListener('click', function() {
-    document.getElementById('pickOverlay').classList.add('hidden');
-    _pickAllResults = new Map(); _pickQueryFingerprint = '';
-  });
-  document.getElementById('pickSearchBtn').addEventListener('click', function() {
-    _pickPage = 1; doPickSearch();
-  });
-  /* v2.1.0 F1 — pickQuery may be a host-span (data-ssp-input-host) before
-     Ring Input mounts; querySelector resolves both forms. keydown bubbles
-     from the inner Ring native input to the host span. */
-  (document.getElementById('pickQuery') ||
-   document.querySelector('[data-ssp-input-host][data-input-id="pickQuery"]'))
-    .addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { _pickPage = 1; doPickSearch(); }
-    });
+  /* ═══ Подбор задач (Phase 4 #32 — bespoke React pickPicker, см. modal-bodies.jsx) ═══
+     openPickModal(rk, role) монтирует Ring-модалку; data-layer (_pickSearch / _pickLoadAll /
+     _pickAddSelected) — Promise-колбэки в props. Старые DOM-listener'ы (close/cancel/search/
+     keydown/prev/next/addPicked) и UI-функции (renderPickResults/updatePickAllIndicator)
+     удалены вместе с #pickOverlay HTML — закрывает гибрид B10/B11. */
 
-  /* v5.0.3 — построение query + fingerprint для кэша */
-  function _buildPickQuery() {
-    var q = document.getElementById('pickQuery').value.trim();
+  /* v5.0.3 → Phase 4 — построение query + fingerprint; rawQ передаётся из React-компонента
+     (DOM-инпут pickQuery удалён вместе с #pickOverlay). */
+  function _buildPickQuery(rawQ) {
+    var q = (rawQ || '').trim();
     var projectId = _ctx && _ctx.project ? (_ctx.project.shortName || _ctx.project.id) : null;
     var fullQuery = q;
     if (projectId && q.toLowerCase().indexOf('project:') < 0) {
@@ -7826,17 +7805,17 @@
     };
   }
 
-  function doPickSearch() {
-    document.getElementById('pickResults').innerHTML = '<div class="empty"><span class="spinner"></span> '+T('pickSearching')+'</div>';
-    var qInfo = _buildPickQuery();
-    /* v5.0.3 — fingerprint смены запроса: при новом запросе чистим кэш и выбор */
+  /* Phase 4 — data-layer для pickPicker: одна страница → {items, hasMore}.
+     Поиск НЕ переписан (#33 отдельно): тот же fetchYouTrack + _mapIssueMeta + кэш _pickAllResults.
+     isAdded вычисляется здесь (роль знает существующий состав). Ошибка → reject (компонент ловит). */
+  function _pickSearch(rawQ, page) {
+    var qInfo = _buildPickQuery(rawQ);
     if (qInfo.fingerprint !== _pickQueryFingerprint) {
       _pickAllResults = new Map();
-      _selectedIds = new Set();
       _pickQueryFingerprint = qInfo.fingerprint;
     }
-    var skip = (_pickPage - 1) * PICK_PAGE;
-    _host.fetchYouTrack('issues', {
+    var skip = (Math.max(1, page) - 1) * PICK_PAGE;
+    return _host.fetchYouTrack('issues', {
       query: {
         fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))',
         query: qInfo.fullQuery,
@@ -7844,34 +7823,35 @@
         $top: PICK_PAGE + 1
       }
     }).then(function(issues) {
-      if (!Array.isArray(issues) || !issues.length) {
-        document.getElementById('pickResults').innerHTML = '<div class="empty">'+T('tasksNotFound')+'</div>';
-        document.getElementById('pickPag').style.display = 'none';
-        _pickResults = []; return;
-      }
-      _pickHasMore = issues.length > PICK_PAGE;
-      if (_pickHasMore) issues = issues.slice(0, PICK_PAGE);
-      _pickResults = issues.map(_mapIssueMeta);
-      /* v5.0.3 — накопить метаданные текущей страницы в общий кэш запроса */
-      _pickResults.forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
-      renderPickResults();
-    }).catch(function(e) {
-      var msg = e && e.message ? e.message : String(e);
-      document.getElementById('pickResults').innerHTML = '<div class="empty" style="color:var(--error)">'+T('pickError')+esc(msg)+'</div>';
-      document.getElementById('pickPag').style.display = 'none';
+      if (!Array.isArray(issues) || !issues.length) return { items: [], hasMore: false };
+      var hasMore = issues.length > PICK_PAGE;
+      if (hasMore) issues = issues.slice(0, PICK_PAGE);
+      var mapped = issues.map(_mapIssueMeta);
+      mapped.forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
+      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
+      var items = mapped.map(function(it){
+        return {
+          idReadable: it.idReadable,
+          isAdded: existing.has(it.idReadable),
+          state: (it.state && it.state.name) ? it.state.name : '—',
+          summary: it.summary || it.idReadable || '',
+          priority: it.priority || ''
+        };
+      });
+      return { items: items, hasMore: hasMore };
     });
   }
 
-  /* v5.0.3 — последовательная подгрузка ВСЕХ страниц текущего запроса в _pickAllResults.
-     Используется master-checkbox «Выбрать все». Прерывается при достижении MAX_PICK_TOTAL. */
-  function loadAllPickPages() {
-    var qInfo = _buildPickQuery();
-    /* fingerprint должен совпадать с тем, что уже в кэше; если нет — сбросим */
+  /* v5.0.3 → Phase 4 — подгрузка ВСЕХ страниц текущего запроса для master «Выбрать все».
+     Возвращает addable id'ы (за вычетом уже добавленных в роль) + capped. Тосты loading/
+     loaded/limit/err — здесь (компонент держит только busy-флаг). Прерывается на MAX_PICK_TOTAL. */
+  function _pickLoadAll(rawQ) {
+    var qInfo = _buildPickQuery(rawQ);
     if (qInfo.fingerprint !== _pickQueryFingerprint) {
       _pickAllResults = new Map();
-      _selectedIds = new Set();
       _pickQueryFingerprint = qInfo.fingerprint;
     }
+    toast(T('toastPickAllLoading'), 'info');
     var pageIdx = Math.ceil(_pickAllResults.size / PICK_PAGE) || 0;
     var capped = false;
     function loop() {
@@ -7895,268 +7875,45 @@
         if (hasMore) return loop();
       });
     }
-    return loop().then(function(){ return { totalLoaded: _pickAllResults.size, capped: capped }; });
-  }
-
-  /* v5.0.3 → v2.0.0 D5-C — master-checkbox state на host-span dataset.
-     Ring Checkbox реагирует на data-checked / data-indeterminate через MutationObserver. */
-  function updatePickAllIndicator() {
-    var pickAll = document.getElementById('pickAll');
-    if (!pickAll) return;
-    var rk = _currentPickRole;
-    var existingInRole = new Set((rk ? getRoleItemsArr(rk) : []).map(function(i){ return i.issueId; }));
-    var enabledTotal = 0, enabledChecked = 0;
-    _pickAllResults.forEach(function(_, id){
-      if (existingInRole.has(id)) return;
-      enabledTotal++;
-      if (_selectedIds.has(id)) enabledChecked++;
+    return loop().then(function(){
+      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
+      var ids = [];
+      _pickAllResults.forEach(function(_, id){ if (!existing.has(id)) ids.push(id); });
+      if (capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
+      else        toast(T('toastPickAllLoaded').replace('{n}', String(ids.length)), 'success');
+      return { ids: ids, capped: capped };
+    }).catch(function(err){
+      toast(T('toastPickAllErr') + ': ' + (err && err.message ? err.message : err), 'error');
+      throw err;
     });
-    var checked = false, indeterminate = false;
-    if      (enabledTotal === 0)                  { /* defaults */ }
-    else if (enabledChecked === 0)                { /* defaults */ }
-    else if (enabledChecked === enabledTotal)     { checked = true; }
-    else                                          { indeterminate = true; }
-    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.setChecked === 'function') {
-      window.__SSP_CHECKBOX.setChecked(pickAll, checked, indeterminate);
-    } else {
-      pickAll.dataset.checked = checked ? '1' : '0';
-      pickAll.dataset.indeterminate = indeterminate ? '1' : '0';
-    }
   }
 
-  /* v2.1.0 E3 — Ring Table for pick task overlay. Hybrid controlled-mode:
-     Ring renders 5 cols (master Ring Checkbox in header / per-row Ring
-     Checkbox / id / state / title / priority). Master pickAll lives in
-     column.getHeaderValue returning { __html: '<span data-ssp-checkbox-host>'};
-     per-row checkboxes are { __html } cells. After mount, Ring Checkbox
-     mountAllIn binds React roots on the fresh host-spans. change events
-     are not intercepted by Ring Table (unlike click), so the existing
-     host-level change listener on #pickResults works. */
-  function renderPickResults() {
-    var container = document.getElementById('pickResults');
-    /* v2.0.0 D5-C — unmount Ring Checkbox roots внутри контейнера до тотальной перерисовки
-       (innerHTML = ... оставляет React root в WeakMap без host'а → memory leak). */
-    if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.unmountAllIn === 'function') {
-      window.__SSP_CHECKBOX.unmountAllIn(container);
-    }
-    /* Unmount Ring Table inside container before re-render. */
-    if (window.__SSP_TABLE && typeof window.__SSP_TABLE.unmountAllIn === 'function') {
-      window.__SSP_TABLE.unmountAllIn(container);
-    }
-    if (!_pickResults.length) {
-      container.innerHTML = '<div class="empty">'+T('tasksNotFound')+'</div>';
-      document.getElementById('pickPag').style.display = 'none';
-      return;
-    }
-    var rk = _currentPickRole;
-    var existingInRole = new Set((getRoleItemsArr(rk)).map(function(i){ return i.issueId; }));
+  /* updatePickAllIndicator + renderPickResults удалены (Phase 4 #32) — tri-state master
+     и рендеринг результатов теперь в bespoke React-компоненте pickPicker (derived tri-state,
+     нативные чекбоксы на React-стейте). Гибрид dataset-мост/MutationObserver/двойная
+     делегация (корень B11) больше не существует. */
 
-    /* Replace container content with Ring Table host. */
-    container.innerHTML = '';
-    var wrap = document.createElement('div'); wrap.className = 'tbl-wrap';
-    var host = document.createElement('div');
-    host.id = 'pickResultsHost';
-    host.setAttribute('data-ssp-table-host', '');
-    wrap.appendChild(host);
-    container.appendChild(wrap);
+  /* renderPickResults удалён (Phase 4 #32) — рендеринг результатов + tri-state master
+     теперь в bespoke React-компоненте pickPicker (modal-bodies.jsx). */
 
-    var items = _pickResults.map(function(issue) {
-      return {
-        idReadable: issue.idReadable,
-        isAdded: existingInRole.has(issue.idReadable),
-        state: issue.state && issue.state.name ? issue.state.name : '—',
-        summary: issue.summary || issue.idReadable || '',
-        priority: issue.priority || '',
-      };
-    });
-
-    var columns = [
-      {
-        id: 'checkbox', sortable: false,
-        getHeaderValue: function() {
-          /* Master pickAll Ring Checkbox host-span. */
-          return { __html:
-            '<span id="pickAll" data-ssp-checkbox-host data-checked="0" data-indeterminate="0" title="'+esc(T('titlePickAll'))+'"></span>'
-          };
-        },
-        getValue: function(item) {
-          return { __html:
-            '<span class="pick-cb" data-ssp-checkbox-host data-id="'+esc(item.idReadable)+'" '+
-              'data-checked="'+(_selectedIds.has(item.idReadable) ? '1' : '0')+'"'+
-              (item.isAdded ? ' data-disabled="1" title="'+esc(T('alreadyInSprint'))+'"' : '')+
-            '></span>'
-          };
-        }
-      },
-      {
-        id: 'id', title: 'ID', sortable: false, className: 'td-id',
-        getValue: function(item) {
-          return { __html: '<span style="color:var(--primary);font-weight:600">'+esc(item.idReadable)+'</span>' };
-        }
-      },
-      {
-        id: 'state', title: T('thState'), sortable: false,
-        getValue: function(item) { return esc(item.state); }
-      },
-      {
-        id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
-        getValue: function(item) { return esc(item.summary); }
-      },
-      {
-        id: 'priority', title: T('thPriority'), sortable: false,
-        getValue: function(item) { return item.priority ? esc(item.priority) : '—'; }
-      },
-    ];
-
-    if (window.__SSP_TABLE) {
-      window.__SSP_TABLE.mountAt(host, {
-        items: items,
-        columns: columns,
-        sortKey: 'off',
-        onSort: function() {},
-        getItemKey: function(item) { return item.idReadable; },
-        stickyHeader: true,
-        emptyText: T('tasksNotFound'),
-      });
-    }
-
-    /* Mount Ring Checkboxes on the fresh host-spans inside Ring Table cells +
-       header. mountAllIn is idempotent. Re-bind via MutationObserver — Ring
-       Table re-renders may replace cells (e.g. on page change). */
-    function _mountPickCheckboxes() {
-      if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
-        window.__SSP_CHECKBOX.mountAllIn(container);
-      }
-    }
-    _mountPickCheckboxes();
-    if (!container.__sspPickMutObs) {
-      container.__sspPickMutObs = new MutationObserver(_mountPickCheckboxes);
-      container.__sspPickMutObs.observe(container, { childList: true, subtree: true });
-    }
-
-    /* Host-level change delegation — Ring Table does not intercept change
-       events (only clicks). Idempotent flag on container. */
-    if (!container.__sspPickChangeBound) {
-      container.__sspPickChangeBound = true;
-      container.addEventListener('change', function(e) {
-        var hostEl = e.target;
-        if (!hostEl || !hostEl.dataset) return;
-        /* Per-row Ring Checkbox change */
-        if (hostEl.classList && hostEl.classList.contains('pick-cb')) {
-          if (hostEl.dataset.checked === '1') _selectedIds.add(hostEl.dataset.id);
-          else _selectedIds.delete(hostEl.dataset.id);
-          updatePickAllIndicator();
-          return;
-        }
-        /* Master pickAll change */
-        if (hostEl.id === 'pickAll') {
-          var wantSelectAll = hostEl.dataset.checked === '1';
-          if (_pickAllInFlight) {
-            window.__SSP_CHECKBOX.setChecked(hostEl, !wantSelectAll, false);
-            return;
-          }
-          if (!wantSelectAll) {
-            _pickAllResults.forEach(function(_, id){ _selectedIds.delete(id); });
-            renderPickResults();
-            return;
-          }
-          _pickAllInFlight = true;
-          hostEl.dataset.disabled = '1';
-          window.__SSP_CHECKBOX.setChecked(hostEl, true, false);
-          toast(T('toastPickAllLoading'), 'info');
-          loadAllPickPages().then(function(res){
-            var existingInRoleSet = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){return i.issueId;}));
-            _pickAllResults.forEach(function(_, id){
-              if (!existingInRoleSet.has(id)) _selectedIds.add(id);
-            });
-            _pickAllInFlight = false;
-            hostEl.dataset.disabled = '0';
-            renderPickResults();
-            if (res.capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
-            else            toast(T('toastPickAllLoaded').replace('{n}', String(_selectedIds.size)), 'success');
-          }).catch(function(err){
-            _pickAllInFlight = false;
-            hostEl.dataset.disabled = '0';
-            window.__SSP_CHECKBOX.setChecked(hostEl, false, false);
-            toast(T('toastPickAllErr')+': '+(err&&err.message?err.message:err), 'error');
-          });
-          return;
-        }
-      });
-    }
-
-    /* B10 fix v2.1.10 — Ring Table intercepts row clicks (focus/hover handlers)
-       before they reach the Ring Checkbox React component, causing first click to
-       be consumed without toggling. Capture-phase listener intercepts clicks on
-       .pick-cb hosts BEFORE Ring Table, stops propagation, and toggles state
-       directly via setChecked + dispatches change for _selectedIds delegation.
-       ⚠️ Известно хрупким (см. backlog): tri-state master ↔ rows рассинхрон.
-       Правильный фикс — переписать pickOverlay bespoke React в Phase 4 #32. */
-    if (!container.__sspPickClickBound) {
-      container.__sspPickClickBound = true;
-      container.addEventListener('click', function(e) {
-        var tgt = e.target;
-        var host = tgt && typeof tgt.closest === 'function'
-          ? tgt.closest('[data-ssp-checkbox-host].pick-cb') : null;
-        if (!host) return;
-        e.stopPropagation();
-        e.preventDefault();
-        if (host.dataset.disabled === '1') return;
-        var newChecked = host.dataset.checked !== '1';
-        /* Sync state в трёх местах:
-           1) host.dataset.checked — для делегирующего change-listener'а на pickResults
-           2) inner input.checked — чтобы Ring handleChange прочитал e.target.checked корректно
-           3) dispatch change на input — Ring handleChange + _selectedIds delegation оба сработают */
-        host.dataset.checked = newChecked ? '1' : '0';
-        var input = host.querySelector('input[type="checkbox"]');
-        if (input) {
-          input.checked = newChecked;
-          input.dispatchEvent(new Event('change', { bubbles: true }));
-        } else {
-          host.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }, true);
-    }
-
-    var pag = document.getElementById('pickPag');
-    pag.style.display = 'flex';
-    document.getElementById('pickPageInfo').textContent = T('pageOf') + _pickPage;
-    document.getElementById('pickPrev').disabled = _pickPage <= 1;
-    document.getElementById('pickNext').disabled = !_pickHasMore;
-    /* v5.0.3 — отразить актуальное состояние master-checkbox по всему кэшу */
-    updatePickAllIndicator();
-  }
-
-  document.getElementById('pickPrev').addEventListener('click', function() { _pickPage--; doPickSearch(); });
-  document.getElementById('pickNext').addEventListener('click', function() { _pickPage++; doPickSearch(); });
-
-  document.getElementById('addPickedBtn').addEventListener('click', function() {
-    if (!_selectedIds.size) { toast(T('toastPickAtLeastOne')); return; }
-    var rk = _currentPickRole;
-    if (!rk) return;
+  /* Phase 4 — добавление выбранных задач в роль (рефактор бывшего addPickedBtn-листенера).
+     selectedIds — массив issueId из компонента; мета берётся из кумулятивного кэша
+     _pickAllResults (заполнен _pickSearch/_pickLoadAll). Закрытие модалки — у вызывающего. */
+  function _pickAddSelected(rk, selectedIds) {
+    if (!rk || !selectedIds || !selectedIds.length) { toast(T('toastPickAtLeastOne')); return; }
     var existing = new Set(getRoleItemsArr(rk).map(function(i){ return i.issueId; }));
-    var newIds = Array.from(_selectedIds).filter(function(id){ return !existing.has(id); });
+    var newIds = selectedIds.filter(function(id){ return !existing.has(id); });
     newIds.forEach(function(issueId) {
-      /* v5.0.3 — берём метаданные из кумулятивного кэша всех загруженных страниц,
-         а не из _pickResults (который содержит только текущую страницу). */
-      var issue = _pickAllResults.get(issueId) || _pickResults.find(function(i){ return i.idReadable === issueId; });
+      /* мета из кумулятивного кэша всех загруженных страниц */
+      var issue = _pickAllResults.get(issueId);
       if (!issue) {
-        diag('addPickedBtn: missing meta for ' + issueId + ' — using stub', 'err');
+        diag('_pickAddSelected: missing meta for ' + issueId + ' — using stub', 'err');
         toast(T('toastPickPageMetaLost'), 'warn');
         issue = { idReadable: issueId, summary: issueId, priority: '', state: { name: '' }, xpriority: '', system: '' };
       }
-      var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-      /* v5.0.3 — НЕ кладём sprintId на item: backend whitelist (`ALLOWED_ITEM_KEYS`)
-         не содержит этот ключ, и `validateItem` отвергает item целиком.
-         Раньше из-за этого `apiPost('sprint-data', { roleItems })` молча возвращал
-         400 (а wrapper интерпретировал как success), и состав не сохранялся.
-         История заполнялась корректно, потому что snapshot не клал sprintId на items. */
-      /* v5.0.3 (итерация 5c) — новые подобранные задачи по умолчанию идут в статус
-         «Включена планово» (INC_PLANNED), а не «Ожидает распределения» (INC_PENDING).
-         Раньше из-за PENDING-дефолта пользователь после подбора получал красный
-         toast «Нет активных задач в составе» при валидации, потому что валидация
-         считает активными только PLANNED/UNPLANNED. Кто хочет триаж — может
-         вручную сменить статус в столбце «Статус включения» на PENDING. */
+      /* v5.0.3 — НЕ кладём sprintId на item: backend whitelist (ALLOWED_ITEM_KEYS) его не
+         содержит, validateItem отвергнет item целиком.
+         v5.0.3 (5c) — дефолт INC_PLANNED (не PENDING): иначе валидация «нет активных задач». */
       var newItem = {
         issueId:  issueId,
         url:      _ytBase + '/issue/' + issueId,
@@ -8169,7 +7926,7 @@
         addedAt: Date.now(),
         addedBy: _currentUser ? _currentUser.login : null,
       };
-      /* v1.8.0 D130 — Etap В.2 — populate externalTicketId if mapping configured. */
+      /* v1.8.0 D130 — Etap В.2 — externalTicketId если маппинг настроен. */
       if (_settings && _settings.fieldExternalTicketId && issue && issue.externalTicketId) {
         newItem.externalTicketId = issue.externalTicketId;
       }
@@ -8178,27 +7935,61 @@
       newItem['alloc_'+rk]    = null; // null → при рендере = дельта по умолчанию
       getRoleItemsArr(rk).push(newItem);
     });
-    document.getElementById('pickOverlay').classList.add('hidden');
-    /* v5.0.3 — после закрытия модалки кэш запроса больше не нужен */
-    var skipped = _selectedIds.size - newIds.length;
+    var skipped = selectedIds.length - newIds.length;
     _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set();
-    /* v5.0.3 — пометить dirty + сразу записать в backend draft, чтобы при закрытии вкладки
-       до окончания apiPost данные не потерялись. apiPost-успех потом снимет dirty. */
     if (newIds.length) {
       _markDirty('roleItems');
       _draftSet('roleItems', _roleItems);
       _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
     }
-    /* v5.0.3 — также сохраняем _sprint вместе с roleItems, чтобы на свежем проекте
-       (когда server.sprint=null и _sprint сгенерирован клиентом через uid()) при
-       возврате в плагин не генерировался новый sprintId, а грузился существующий. */
+    /* v5.0.3 — сохраняем _sprint вместе с roleItems (на свежем проекте sprintId не перегенерится). */
     apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }).then(function() {
       renderRoleComposition(rk);
       updateRoleRemaining(rk);
       toast(T('toastPickDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
       if (newIds.length) refreshRoleEstimates(rk);
     });
-  });
+  }
+
+  /* Phase 4 — открытие модалки подбора (bespoke React pickPicker через openModal). */
+  function openPickModal(rk, role) {
+    _currentPickRole = rk;
+    _selectedIds = new Set();
+    _pickAllResults = new Map(); _pickQueryFingerprint = ''; _pickAllInFlight = false;
+    var h = openModal({
+      id: 'pick',
+      type: 'selection',
+      dialogClass: 'ssp-ring-modal--wide',
+      title: T('pickModalTitle') + ' — ' + roleLabel(role),
+      body: { kind: 'component', name: 'pickPicker', props: {
+        labels: {
+          searchText:      T('btnFind'),
+          placeholder:     T('phPickQuery'),
+          emptyInitial:    T('emptyPickResults'),
+          searching:       T('pickSearching'),
+          notFound:        T('tasksNotFound'),
+          errorPrefix:     T('pickError'),
+          thState:         T('thState'),
+          thTitle:         T('thTitle'),
+          thPriority:      T('thPriority'),
+          selectAllTitle:  T('titlePickAll'),
+          alreadyInSprint: T('alreadyInSprint'),
+          pageOf:          T('pageOf'),
+          closeText:       T('btnClose'),
+          addText:         T('btnAddPicked'),
+        },
+        onSearch:  function(q, page){ return _pickSearch(q, page); },
+        onLoadAll: function(q){ return _pickLoadAll(q); },
+        onAdd:     function(ids){ _pickAddSelected(rk, ids); h.close(); },
+        onCancel:  function(){ h.close(); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: true,
+      blockEscape: false,
+      showCloseButton: true,
+      onClose: function(){ _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set(); },
+    });
+  }
 
   /* ═══ ИСТОРИЯ ═══════════════════════════════════════════════ */
   function renderHistory() {

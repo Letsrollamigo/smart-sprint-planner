@@ -902,6 +902,13 @@
       max-width: 92vw;
       box-sizing: border-box;
     }
+    /* Phase 4 — широкий вариант для selection-таблиц (pickPicker): восстанавливает
+       юзер-френдли размеры старого .modal (max-width:900px; width:90vw).
+       !important — гарантированно бьёт базовое .ssp-ring-modal .ring-island-island{width:420px}. */
+    .ssp-ring-modal--wide .ring-island-island {
+      width: 900px !important;
+      max-width: 90vw !important;
+    }
     .ssp-ring-modal .ring-island-header,
     .ssp-ring-modal .ring-island-withBottomBorder.ring-island-withBottomBorder {
       border-bottom: none !important;
@@ -934,6 +941,12 @@
       margin-left: -24px;
       margin-right: -24px;
     }
+    /* Phase 4 fix — Ring Input в bespoke-формах (confirmGoal ретро-заметка, dynField период)
+       рендерится напрямую, не через [data-ssp-input-host] → не растягивался на ширину модалки
+       («поле ужато»). Делаем full-width внутри .ssp-modal-inner (зеркалит host-span-правила). */
+    .ssp-modal-inner .ring-input-outerContainer { display: block; width: 100%; }
+    .ssp-modal-inner .ring-input { width: 100%; }
+    .ssp-modal-inner .ring-input-input { width: 100%; box-sizing: border-box; }
 
     /* v2.0.0 D4 R2/R3 — make Ring DatePicker fill the entire date cell.
        Original <input data-ssp-datepicker> behaviour: width:100% (via .tbl td
@@ -2270,33 +2283,7 @@
      importHist — bespoke React (react/modal-bodies.jsx: importHistForm); importReplaceHist — generic lines-confirm. -->
 
 <!-- ── Модалка: Подбор задач ── -->
-<div id="pickOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pickModalTitle" data-dismiss-on-backdrop="true">
-  <div class="modal" style="max-width:900px;width:90vw;max-height:calc(100vh - 64px)">
-    <div class="modal__head">
-      <span id="pickModalTitle" data-i18n="pickModalTitle">Подбор задач в спринт</span>
-      <button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly" id="closePickModal" data-icon="close" data-aria-label-key="aria.btnClose" aria-label="Закрыть"></button>
-    </div>
-    <div class="modal__body">
-      <div class="search-row">
-        <!-- v2.1.0 F1 — Ring Input mount-host. -->
-        <span data-ssp-input-host data-input-id="pickQuery"
-              data-i18n-ph="phPickQuery"
-              placeholder="Запрос YouTrack (напр. Приоритет: Критичный #unresolved)"></span>
-        <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="pickSearchBtn" data-i18n="btnFind">Найти</button>
-      </div>
-      <div id="pickResults"><div class="empty" data-i18n="emptyPickResults">Введите запрос и нажмите «Найти»</div></div>
-      <div class="pagination" id="pickPag" style="display:none">
-        <button class="ring-button-button ring-button-block ring-button-heightS" id="pickPrev">‹</button>
-        <span id="pickPageInfo"></span>
-        <button class="ring-button-button ring-button-block ring-button-heightS" id="pickNext">›</button>
-      </div>
-    </div>
-    <div class="modal__foot">
-      <button class="ring-button-button ring-button-block ring-button-heightM" id="cancelPickBtn" data-i18n="btnClose">Закрыть</button>
-      <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="addPickedBtn" data-i18n="btnAddPicked">Добавить выбранные</button>
-    </div>
-  </div>
-</div>
+<!-- pickOverlay removed — migrated to openModal() bespoke React pickPicker (Phase 4 #32, closes B10/B11) -->
 
 <!-- clearOverlay + delAssigneeOverlay + clearAssigneesOverlay + delHistOverlay + overlimitOverlay removed — migrated to openModal() (Phase 1 #32) -->
 
