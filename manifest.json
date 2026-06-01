@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.14",
+  "version": "2.1.15",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.14 — бейдж состояния задачи на Ганте (#20): текущее State с цветом YT, дата и предыдущее State; единая кнопка «Обновить».",
+  "changeNotes": "v2.1.15 — де-гибридизация модалок на Ring UI (#32, фаза 1): 9 confirm-модалок переведены на настоящий React-рендеринг. Фикс сохранения состава ролей после синка состояния из YouTrack. Корзинки и dyn-ячейки таблиц теперь срабатывают с первого клика.",
   "widgets": [
     {
       "key": "ssp-main",

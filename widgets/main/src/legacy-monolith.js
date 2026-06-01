@@ -819,7 +819,7 @@
   var _pickAllInFlight = false;
   var MAX_PICK_TOTAL = 1000;
   var _currentPickRole = null;
-  var _pendingDelHist = -1, _pendingFinishHist = -1;
+  /* _pendingDelHist / _pendingFinishHist removed — overlays migrated to openModal() (Phase 1 #32). */
   var _diagLines = [];
   var _enableDebugLog = false;
   var _activeSubtab = null;
@@ -1429,6 +1429,13 @@
     }
   }
 
+  /* Phase 1 #32 — декларативный spec-API поверх __SSP_RING_MODAL.
+     Возвращает { close(), update(partial) }. Fallback — no-op (Ring не подключён). */
+  function openModal(spec) {
+    if (window.__SSP_RING_MODAL) return window.__SSP_RING_MODAL.open(spec);
+    return { close: function() {}, update: function() {} };
+  }
+
   /* Открывает overlay (public API). v2.0.0: .overlay/.dyn-modal-overlay → Ring Dialog bridge.
      Legacy: .settings-overlay и не-overlay элементы идут через _showOverlay как раньше. */
   function _appModalOpen(idOrEl, opts) {
@@ -1571,7 +1578,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.14';
+  var APP_VERSION = '2.1.15';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2914,15 +2921,12 @@
   }
   function bindClearDraftHandlers() {
     var btn = document.getElementById('clearDraftBtn');
-    var no  = document.getElementById('clearDraftNo');
-    var yes = document.getElementById('clearDraftYes');
     if (btn && !btn._sspBound) {
       btn._sspBound = true;
       btn.addEventListener('click', function(){
         var dirty = _draftGet('dirty') || {};
         var meta  = _draftGet('meta');
         if (!meta || !_draftIsDirty()) {
-          /* нечего очищать — но всё равно сносим возможный мусор */
           clearDraftStorage();
           refreshDirtyIndicator();
           try { toast(T('toastDraftCleared'), 'info'); } catch(_){}
@@ -2935,36 +2939,39 @@
         if (dirty.roleItems) sections.push(T('draftSectionRoleItems'));
         if (dirty.currentRole)   sections.push(T('draftSectionCurrentRole'));
         var info = T('draftMetaInfo').replace('{ts}', ts).replace('{sections}', sections.join(', '));
-        var infoEl = document.getElementById('clearDraftMetaInfo');
-        if (infoEl) infoEl.textContent = info;
-        _showOverlay('clearDraftOverlay');
-      });
-    }
-    if (no && !no._sspBound) {
-      no._sspBound = true;
-      no.addEventListener('click', function(){
-        document.getElementById('clearDraftOverlay').classList.add('hidden');
-      });
-    }
-    if (yes && !yes._sspBound) {
-      yes._sspBound = true;
-      yes.addEventListener('click', function(){
-        document.getElementById('clearDraftOverlay').classList.add('hidden');
-        /* v5.0.3 — backend-clear + перезагрузка серверной версии */
-        _draftClearOnBackend().then(function(){
-          return loadAllData();
-        }).then(function(){
-          _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
-          _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
-          _baseRevHash = computeRevHash(_sprint, _roleItems);
-          try {
-            if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
-            if (typeof renderHistory === 'function')      renderHistory();
-          } catch(_){}
-          refreshDirtyIndicator();
-          try { toast(T('toastDraftCleared'), 'success'); } catch(_){}
-        }).catch(function(e){
-          try { toast(T('toastDraftClearErr')+': '+(e&&e.message?e.message:e), 'error'); } catch(_){}
+        openModal({
+          id: 'clearDraft',
+          type: 'confirm',
+          title: T('clearDraftConfirmTitle'),
+          body: { kind: 'lines', lines: [
+            { text: T('clearDraftConfirmBody'), style: { color: 'var(--warn)' } },
+            { text: info, style: { marginTop: '8px', fontSize: '12px', color: 'var(--muted)' } },
+          ]},
+          buttons: [
+            { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); } },
+            { id: 'confirm', text: T('btnYesClearDraft'), variant: 'danger', onClick: function(h) {
+              h.close();
+              /* v5.0.3 — backend-clear + перезагрузка серверной версии */
+              _draftClearOnBackend().then(function(){
+                return loadAllData();
+              }).then(function(){
+                _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
+                _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
+                _baseRevHash = computeRevHash(_sprint, _roleItems);
+                try {
+                  if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
+                  if (typeof renderHistory === 'function')      renderHistory();
+                } catch(_){}
+                refreshDirtyIndicator();
+                try { toast(T('toastDraftCleared'), 'success'); } catch(_){}
+              }).catch(function(e){
+                try { toast(T('toastDraftClearErr')+': '+(e&&e.message?e.message:e), 'error'); } catch(_){}
+              });
+            }},
+          ],
+          dismissOnBackdrop: false,
+          blockEscape: false,
+          showCloseButton: false,
         });
       });
     }
@@ -6537,11 +6544,30 @@
     /* Кнопка Очистить */
     var clearBtn = document.getElementById('clearBtn_'+rk);
     if (clearBtn) {
-      clearBtn.addEventListener('click', function() {
+      clearBtn.addEventListener('click', (function(roleKey) { return function() {
         if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        _showOverlay('clearOverlay');
-        document.getElementById('clearYes').dataset.roleKey = rk;
-      });
+        openModal({
+          id: 'clear',
+          type: 'confirm',
+          title: T('confirmClearTask'),
+          body: { kind: 'text', text: T('confirmClearTask') },
+          buttons: [
+            { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
+            { id: 'confirm', text: T('btnYesClear'), variant: 'danger', onClick: function(h) {
+              h.close();
+              _roleItems[roleKey] = [];
+              apiPost('sprint-data', { roleItems: _roleItems }).then(function() {
+                renderRoleComposition(roleKey);
+                updateRoleRemaining(roleKey);
+                toast(T('toastCleared'), 'success');
+              });
+            }},
+          ],
+          dismissOnBackdrop: false,
+          blockEscape: false,
+          showCloseButton: false,
+        });
+      }; })(rk));
     }
 
     /* Кнопка Валидировать */
@@ -7357,17 +7383,27 @@
       });
     }
 
-    /* Per-render: rebind delete buttons + dyn-enum spans via direct .onclick
-       (Ring Table swallows clicks at cell level — lesson #27). MutationObserver
-       on host rebinds after every Ring re-render. */
-    function _bindCompHostClickHandlers() {
-      host.querySelectorAll('button.del-item-btn[data-iid]').forEach(function(btn) {
-        if (btn.__sspDelBound) return;
-        btn.__sspDelBound = true;
-        btn.onclick = function(ev) {
-          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-          var rk2 = btn.dataset.rk;
-          var iid = btn.dataset.iid;
+    /* v2.1.14 — Ring Table на mousedown по содержимому ячейки делает focus/re-render
+       строки → кнопка пересоздаётся между mousedown и mouseup → браузер НЕ генерирует
+       `click` на первом клике (mousedown/mouseup на разных DOM-элементах; доказано
+       инструментально: mousedown✅ mouseup✅ click❌). Старый per-button .onclick и
+       click-делегация срабатывали только со 2-го клика (pre-existing класс, как B11).
+       Fix: слушаем MOUSEDOWN (приходит всегда, первым) в CAPTURE — данные уже доступны
+       (data-iid/rk), действие выполняется сразу. preventDefault гасит Ring row-focus,
+       stopPropagation — Ring синтетику. Делегация переживает re-render.
+       Инпуты/селекты (alloc-input/inc-sel) НЕ трогаем — им нужен нативный фокус/change.
+       Только левая кнопка (ev.button===0). */
+    if (!host.__sspCompCaptureBound) {
+      host.__sspCompCaptureBound = true;
+      host.addEventListener('mousedown', function(ev) {
+        if (ev.button !== 0) return;
+        var tgt = ev.target;
+        if (!tgt || typeof tgt.closest !== 'function') return;
+
+        var delBtn = tgt.closest('button.del-item-btn[data-iid]');
+        if (delBtn && host.contains(delBtn)) {
+          ev.preventDefault(); ev.stopPropagation();
+          var rk2 = delBtn.dataset.rk, iid = delBtn.dataset.iid;
           var idx = _findIdxByIid(rk2, iid);
           if (idx < 0) { diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
           getRoleItemsArr(rk2).splice(idx, 1);
@@ -7376,19 +7412,17 @@
           _markDirty('roleItems');
           _draftSaveDebounced('roleItems', function(){ return _roleItems; });
           apiPost('sprint-data', { roleItems: _roleItems });
-        };
-      });
-      host.querySelectorAll('span.dyn-enum-cell[data-iid]').forEach(function(cell) {
-        if (cell.__sspEnumBound) return;
-        cell.__sspEnumBound = true;
-        cell.onclick = function(ev) {
-          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-          var rk2 = cell.dataset.rk;
-          var iid = cell.dataset.iid;
-          var idx = _findIdxByIid(rk2, iid);
-          if (idx < 0) { diag('dyn-enum-cell click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+          return;
+        }
+
+        var cell = tgt.closest('span.dyn-enum-cell[data-iid]');
+        if (cell && host.contains(cell)) {
+          ev.preventDefault(); ev.stopPropagation();
+          var rkc = cell.dataset.rk, iidc = cell.dataset.iid;
+          var idxc = _findIdxByIid(rkc, iidc);
+          if (idxc < 0) { diag('dyn-enum-cell click: item iid='+iidc+' not found in role '+rkc,'warn'); return; }
           var dataField = cell.dataset.field;
-          var item     = getRoleItemsArr(rk2)[idx];
+          var item     = getRoleItemsArr(rkc)[idxc];
           var fieldName = _settings && _settings[dataField];
           if (!fieldName) return;
           var fieldTitleMap = { fieldState: T('dynFieldState'), fieldPriority: T('dynFieldPriority'), fieldXPriority: T('dynFieldXpriority'), fieldSystem: T('dynFieldSystem') };
@@ -7406,18 +7440,14 @@
                   item[itemKey] = newVal;
                   cell.textContent = localizeEnumVal(newVal) || newVal;
                   updateIssueField(item.issueId, fieldName, newVal, 'enum');
-                  apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rk2); });
+                  apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rkc); });
                 }
               }
             );
           });
-        };
-      });
-    }
-    _bindCompHostClickHandlers();
-    if (!host.__sspCompClickMutObs) {
-      host.__sspCompClickMutObs = new MutationObserver(_bindCompHostClickHandlers);
-      host.__sspCompClickMutObs.observe(host, { childList: true, subtree: true });
+          return;
+        }
+      }, true);
     }
 
     // Пагинация
@@ -7771,21 +7801,7 @@
     });
   }
 
-  /* ── Очистка (confirm) ── */
-  document.getElementById('clearNo').addEventListener('click', function() {
-    document.getElementById('clearOverlay').classList.add('hidden');
-  });
-  document.getElementById('clearYes').addEventListener('click', function() {
-    document.getElementById('clearOverlay').classList.add('hidden');
-    var rk = document.getElementById('clearYes').dataset.roleKey;
-    if (!rk) return;
-    _roleItems[rk] = [];
-    apiPost('sprint-data', { roleItems: _roleItems }).then(function() {
-      renderRoleComposition(rk);
-      updateRoleRemaining(rk);
-      toast(T('toastCleared'), 'success');
-    });
-  });
+  /* clearOverlay migrated to openModal() — clearNo/clearYes handlers removed (Phase 1 #32). */
 
   /* ═══ Подбор задач ════════════════════════════════════════ */
   document.getElementById('closePickModal').addEventListener('click', function() {
@@ -8123,7 +8139,9 @@
        before they reach the Ring Checkbox React component, causing first click to
        be consumed without toggling. Capture-phase listener intercepts clicks on
        .pick-cb hosts BEFORE Ring Table, stops propagation, and toggles state
-       directly via setChecked + dispatches change for _selectedIds delegation. */
+       directly via setChecked + dispatches change for _selectedIds delegation.
+       ⚠️ Известно хрупким (см. backlog): tri-state master ↔ rows рассинхрон.
+       Правильный фикс — переписать pickOverlay bespoke React в Phase 4 #32. */
     if (!container.__sspPickClickBound) {
       container.__sspPickClickBound = true;
       container.addEventListener('click', function(e) {
@@ -8380,7 +8398,44 @@
       ctrl.appendChild(finBtn);
     }
     var del = document.createElement('button'); del.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly'; del.title = T('btnDeleteTitle'); del.setAttribute('aria-label', T('aria.btnDeleteRow')); del.appendChild(icon('trash', T('aria.btnDeleteRow')));
-    del.addEventListener('click', (function(i){ return function(e){ e.stopPropagation(); _pendingDelHist = i; _showOverlay('delHistOverlay'); }; })(idx));
+    del.addEventListener('click', (function(histIdx){ return function(e){
+      e.stopPropagation();
+      openModal({
+        id: 'delHist',
+        type: 'destructive',
+        title: T('confirmDelHist'),
+        body: { kind: 'text', text: T('confirmDelHist') },
+        buttons: [
+          { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
+          { id: 'confirm', text: T('btnYesDelete'), variant: 'danger', onClick: function(h) {
+            h.close();
+            if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); return; }
+            _history.splice(histIdx, 1);
+            apiPost('history', { history: _history }).then(function() {
+              renderHistory();
+              try {
+                if (_currentSprintId) {
+                  var stillHas = _history.some(function(hh){
+                    return hh && typeof hh.sprintId === 'string' && hh.sprintId.indexOf(_currentSprintId + '_') === 0;
+                  });
+                  var isActive = _sprint && _sprint.sprintId === _currentSprintId;
+                  if (!stillHas && !isActive) {
+                    var ids = (typeof getLogicalSprintIds === 'function') ? getLogicalSprintIds() : [];
+                    setCurrentSprintId(ids.length > 0 ? ids[0] : null, { confirmed: true });
+                  } else if (typeof renderWidgetHeader === 'function') {
+                    renderWidgetHeader();
+                  }
+                }
+              } catch(e){ diag('delHist sync header err: '+e,'err'); }
+              toast(T('toastHistDeleted'), 'success');
+            });
+          }},
+        ],
+        dismissOnBackdrop: false,
+        blockEscape: false,
+        showCloseButton: false,
+      });
+    }; })(idx));
     var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶';
     ctrl.appendChild(xlsBtn); ctrl.appendChild(jsonBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
     head.appendChild(meta); head.appendChild(ctrl);
@@ -8673,151 +8728,95 @@
 
   /* ── Завершить спринт ── */
   function finishHistorySprint(rec, idx) {
-    _pendingFinishHist = idx;
-    _showOverlay('finishHistOverlay');
+    openModal({
+      id: 'finishHist',
+      type: 'confirm',
+      title: T('confirmFinishSprint'),
+      body: { kind: 'text', text: T('confirmFinishSprint') },
+      buttons: [
+        { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
+        { id: 'confirm', text: T('btnYesFinish'), variant: 'primary', onClick: function(h) {
+          h.close();
+          if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); return; }
+          if (!_history[idx]) return;
+          var histRec = _history[idx];
+          openConfirmGoalDialog(histRec.sprintGoal, histRec.goalOutcome).then(function(goalFields) {
+            if (!goalFields) return;
+            histRec.status = STATUS.FINISHED;
+            histRec.finishedAt = Date.now();
+            if (goalFields.goalOutcome)   histRec.goalOutcome   = goalFields.goalOutcome;
+            if (goalFields.goalRetroNote) histRec.goalRetroNote = goalFields.goalRetroNote;
+            apiPost('history', { history: _history }).then(function() {
+              renderHistory();
+              toast(T('toastSprintFinished'), 'success');
+            });
+          });
+        }},
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+    });
   }
 
-  /* v5.2.0 — bind кнопок overlimit-модала */
-  (function() {
-    var cancelBtn = document.getElementById('overlimitCancel');
-    if (cancelBtn) {
-      cancelBtn.addEventListener('click', function() {
-        hideOverlimitModal();
-        /* Статус не меняется. validateBtn остаётся disabled через .btn--disabled-overlimit. */
-      });
-    }
-    var downgradeBtn = document.getElementById('overlimitDowngrade');
-    if (downgradeBtn) {
-      downgradeBtn.addEventListener('click', function() {
-        if (_sprint) {
-          _sprint.status = STATUS.PLANNING;
-          if (typeof _markDirty === 'function') _markDirty('sprint');
-          if (typeof _draftSaveDebounced === 'function') {
-            _draftSaveDebounced('sprint', function(){ return _sprint; });
-          }
-          /* Перерисовать badge для всех активных ролей */
-          ALL_ROLES.forEach(function(r) {
-            var active = _settings && _settings.activeRoles && _settings.activeRoles[r.key];
-            if (active && document.getElementById('statusBadge_'+r.key)) {
-              renderRoleStatusBadge(r.key);
-            }
-          });
-          if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-          diag('Status downgraded to PLANNING by user (overlimit modal)', 'info');
-          toast(T('toastOverlimitDowngraded'), 'warn');
-        }
-        hideOverlimitModal();
-      });
-    }
-  })();
+  /* overlimitOverlay migrated to openModal() — button bindings removed (Phase 1 #32). */
 
-  document.getElementById('finishHistNo').addEventListener('click', function() {
-    document.getElementById('finishHistOverlay').classList.add('hidden');
-    _pendingFinishHist = -1;
-  });
-  document.getElementById('finishHistYes').addEventListener('click', function() {
-    document.getElementById('finishHistOverlay').classList.add('hidden');
-    if (_pendingFinishHist < 0) return;
-    // [P0-4] Серверная проверка прав перед записью в историю
-    if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); _pendingFinishHist = -1; return; }
-    var idx = _pendingFinishHist; _pendingFinishHist = -1;
-    if (!_history[idx]) return;
-    var rec = _history[idx];
-    /* v1.9.1 D133 — Диалог outcome перед финальным завершением спринта.
-       Показывает цель из rec.sprintGoal (уже заморожена в snapshot при validate).
-       Pre-select existingOutcome если роль уже получала outcome ранее (re-finish). */
-    openConfirmGoalDialog(rec.sprintGoal, rec.goalOutcome).then(function(goalFields) {
-      if (!goalFields) return; // Отмена — спринт НЕ завершается
-      rec.status = STATUS.FINISHED;
-      rec.finishedAt = Date.now();
-      if (goalFields.goalOutcome)   rec.goalOutcome   = goalFields.goalOutcome;
-      if (goalFields.goalRetroNote) rec.goalRetroNote = goalFields.goalRetroNote;
-      apiPost('history', { history: _history }).then(function() {
-        renderHistory();
-        toast(T('toastSprintFinished'), 'success');
-      });
-    });
-  });
+  /* finishHistOverlay migrated to openModal() — finishHistNo/finishHistYes handlers removed (Phase 1 #32). */
 
-  /* ── Удаление записи истории ── */
-  document.getElementById('delHistNo').addEventListener('click', function() {
-    document.getElementById('delHistOverlay').classList.add('hidden'); _pendingDelHist = -1;
-  });
-  document.getElementById('delHistYes').addEventListener('click', function() {
-    document.getElementById('delHistOverlay').classList.add('hidden');
-    if (_pendingDelHist < 0) return;
-    // [P0-4] Серверная проверка прав перед удалением из истории
-    if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); _pendingDelHist = -1; return; }
-    _history.splice(_pendingDelHist, 1); _pendingDelHist = -1;
-    apiPost('history', { history: _history }).then(function() {
-      renderHistory();
-      /* v6.3.0 D108 — после удаления спринта из истории убрать его из widget-header.
-         Если для _currentSprintId не осталось записей в _history и он не равен активному
-         _sprint.sprintId — переключить на первый valid logical sprintId или null. */
-      try {
-        if (_currentSprintId) {
-          var stillHas = _history.some(function(h){
-            return h && typeof h.sprintId === 'string' && h.sprintId.indexOf(_currentSprintId + '_') === 0;
-          });
-          var isActive = _sprint && _sprint.sprintId === _currentSprintId;
-          if (!stillHas && !isActive) {
-            var ids = (typeof getLogicalSprintIds === 'function') ? getLogicalSprintIds() : [];
-            setCurrentSprintId(ids.length > 0 ? ids[0] : null, { confirmed: true });
-          } else if (typeof renderWidgetHeader === 'function') {
-            renderWidgetHeader();
-          }
-        }
-      } catch(e){ diag('delHist sync header err: '+e,'err'); }
-      toast(T('toastHistDeleted'), 'success');
-    });
-  });
+  /* delHistOverlay migrated to openModal() — delHistNo/delHistYes handlers removed (Phase 1 #32). */
 
   /* ── Очистить всю историю — v5.0.1: отдельная роль historyManager ── */
   (function () {
     var btn = document.getElementById('clearAllHistoryBtn');
     if (btn) btn.addEventListener('click', function () {
-      _showOverlay('clearAllHistOverlay');
-    });
-    var no = document.getElementById('clearAllHistNo');
-    if (no) no.addEventListener('click', function () {
-      document.getElementById('clearAllHistOverlay').classList.add('hidden');
-    });
-    var yes = document.getElementById('clearAllHistYes');
-    if (yes) yes.addEventListener('click', function () {
-      document.getElementById('clearAllHistOverlay').classList.add('hidden');
-      // Серверная проверка historyManager + сервер сам режет, если прав нет (403)
-      apiPost('history', null, { action: 'clear' })
-        .then(function (r) {
-          if (!r || !r.success) {
-            var reason = (r && r.reason) || 'unknown';
-            if (reason === 'history_manager_rights_required') {
-              toast(T('toastNoHistClearRights'), 'err');
-              return;
-            }
-            throw new Error(reason);
-          }
-          _history = [];
-          renderHistory();
-          /* v6.3.0 D108 — после полной очистки истории также сбросить _currentSprintId
-             (если активного _sprint нет, шапка должна стать пустой). */
-          try {
-            var isActiveAfterClear = _sprint && _sprint.sprintId === _currentSprintId;
-            if (!isActiveAfterClear) {
-              setCurrentSprintId(_sprint && _sprint.sprintId ? _sprint.sprintId : null, { confirmed: true });
-            } else if (typeof renderWidgetHeader === 'function') {
-              renderWidgetHeader();
-            }
-          } catch(e){ diag('clearAll sync header err: '+e,'err'); }
-          toast(T('toastHistoryCleared'), 'success');
-        })
-        .catch(function (e) {
-          var msg = (e && e.message) ? e.message : String(e);
-          if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) {
-            toast(T('toastNoHistClearRights'), 'err');
-          } else {
-            toast(T('toastHistoryClearErr') + ': ' + msg, 'err');
-          }
-        });
+      openModal({
+        id: 'clearAllHist',
+        type: 'destructive',
+        title: T('clearAllHistTitle'),
+        body: { kind: 'lines', lines: [
+          { html: T('clearAllHistWarn'), style: { color: 'var(--error)' } },
+          { text: T('clearAllHistInfo'), style: { marginTop: '8px', fontSize: '13px', color: 'var(--muted)' } },
+        ]},
+        buttons: [
+          { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); } },
+          { id: 'confirm', text: T('btnYesClearAll'), variant: 'danger', onClick: function(h) {
+            h.close();
+            apiPost('history', null, { action: 'clear' })
+              .then(function (r) {
+                if (!r || !r.success) {
+                  var reason = (r && r.reason) || 'unknown';
+                  if (reason === 'history_manager_rights_required') {
+                    toast(T('toastNoHistClearRights'), 'err');
+                    return;
+                  }
+                  throw new Error(reason);
+                }
+                _history = [];
+                renderHistory();
+                try {
+                  var isActiveAfterClear = _sprint && _sprint.sprintId === _currentSprintId;
+                  if (!isActiveAfterClear) {
+                    setCurrentSprintId(_sprint && _sprint.sprintId ? _sprint.sprintId : null, { confirmed: true });
+                  } else if (typeof renderWidgetHeader === 'function') {
+                    renderWidgetHeader();
+                  }
+                } catch(e){ diag('clearAll sync header err: '+e,'err'); }
+                toast(T('toastHistoryCleared'), 'success');
+              })
+              .catch(function (e) {
+                var msg = (e && e.message) ? e.message : String(e);
+                if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) {
+                  toast(T('toastNoHistClearRights'), 'err');
+                } else {
+                  toast(T('toastHistoryClearErr') + ': ' + msg, 'err');
+                }
+              });
+          }},
+        ],
+        dismissOnBackdrop: false,
+        blockEscape: false,
+        showCloseButton: false,
+      });
     });
   })();
 
@@ -9407,23 +9406,49 @@
      до первого вызова updateAllocOverlimitUI.
      ════════════════════════════════════════════════════════════ */
 
+  var _overlimitModalHandle = null;
+
   function showOverlimitModal(rk) {
-    var overlay = document.getElementById('overlimitOverlay');
-    if (!overlay) return;
-    var body = document.getElementById('overlimitOverlayBody');
-    if (body) {
-      var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-      var rl = role ? roleLabel(role) : rk;
-      body.textContent = T('overlimitModalBodyTpl').replace('{role}', rl);
-    }
-    overlay._overlimitRoleKey = rk;
-    _showOverlay(overlay);
+    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
+    var rl = role ? roleLabel(role) : rk;
+    var bodyText = T('overlimitModalBodyTpl').replace('{role}', rl);
+    _overlimitModalHandle = openModal({
+      id: 'overlimit',
+      type: 'confirm',
+      title: bodyText,
+      body: { kind: 'text', text: bodyText },
+      buttons: [
+        { id: 'downgrade', text: T('overlimitModalDowngrade'), variant: 'danger', onClick: function(h) {
+          h.close(); _overlimitModalHandle = null;
+          if (_sprint) {
+            _sprint.status = STATUS.PLANNING;
+            if (typeof _markDirty === 'function') _markDirty('sprint');
+            if (typeof _draftSaveDebounced === 'function') {
+              _draftSaveDebounced('sprint', function(){ return _sprint; });
+            }
+            ALL_ROLES.forEach(function(r) {
+              var active = _settings && _settings.activeRoles && _settings.activeRoles[r.key];
+              if (active && document.getElementById('statusBadge_'+r.key)) {
+                renderRoleStatusBadge(r.key);
+              }
+            });
+            if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
+            diag('Status downgraded to PLANNING by user (overlimit modal)', 'info');
+            toast(T('toastOverlimitDowngraded'), 'warn');
+          }
+        }},
+        { id: 'cancel', text: T('overlimitModalCancel'), variant: 'primary', onClick: function(h) {
+          h.close(); _overlimitModalHandle = null;
+        }},
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+    });
   }
 
   function hideOverlimitModal() {
-    var overlay = document.getElementById('overlimitOverlay');
-    if (!overlay) return;
-    overlay.classList.add('hidden');
+    if (_overlimitModalHandle) { _overlimitModalHandle.close(); _overlimitModalHandle = null; }
   }
 
   /* v5.2.0 — единоразовый onboarding при первой встрече с ALLOCATED-спринтом
@@ -9684,21 +9709,19 @@
 
   /* Soft-warn модал перед сменой спринта при активной WC (D28). */
   function showCloseWorkingCopyModal(cb) {
-    var ov = document.getElementById('closeWcOverlay');
-    if (!ov) { cb(true); return; } // fail-open: модал не загружен — не блокируем UX
-    _showOverlay(ov);
-    var cancelBtn = document.getElementById('closeWcCancel');
-    var confirmBtn = document.getElementById('closeWcConfirm');
-    function done(ok) {
-      ov.classList.add('hidden');
-      if (cancelBtn)  cancelBtn.removeEventListener('click', onCancel);
-      if (confirmBtn) confirmBtn.removeEventListener('click', onConfirm);
-      cb(ok);
-    }
-    function onCancel(){ done(false); }
-    function onConfirm(){ done(true); }
-    if (cancelBtn)  cancelBtn.addEventListener('click', onCancel);
-    if (confirmBtn) confirmBtn.addEventListener('click', onConfirm);
+    openModal({
+      id: 'closeWc',
+      type: 'confirm',
+      title: T('wcCloseTitle'),
+      body: { kind: 'text', text: T('wcCloseBody') },
+      buttons: [
+        { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); cb(false); } },
+        { id: 'confirm', text: T('wcCloseConfirm'), variant: 'primary', onClick: function(h) { h.close(); cb(true); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+    });
   }
 
   /* Идемпотентный рендер шапки виджета.
@@ -10290,7 +10313,7 @@
   }
 
   /* ── Таблица исполнителей ── */
-  var _pendingDelAssigneeLogin = null;
+  /* _pendingDelAssigneeLogin removed — delAssigneeOverlay migrated to openModal() (Phase 1 #32). */
 
   /* v1.4.0 — Resource breakdown по системам для одного исполнителя.
      Активные items (PLANNED+UNPLANNED), отфильтрованные по taskAssignments[id].assignee===login,
@@ -10490,36 +10513,46 @@
       });
     }
 
-    /* Direct DOM property-assignment handler (btn.onclick = ...) attached
-       after each Ring Table render. Document/host event delegation cannot
-       reach our buttons because Ring Table's React-root intercepts clicks
-       in row selection logic; inline onclick="" attributes are stripped by
-       Ring's dangerouslySetInnerHTML reconciliation. Direct .onclick on the
-       button bypasses both — it is a DOM Level 0 handler invoked by the
-       browser without going through React's synthetic system.
-       MutationObserver rebinds after every Ring re-render. Direct delete
-       without confirm overlay (legacy behaviour). */
-    function _bindDeleteButtons() {
-      host.querySelectorAll('button.currentRole-del-assignee[data-login]').forEach(function(btn) {
-        if (btn.__sspDelBound) return;
-        btn.__sspDelBound = true;
-        btn.onclick = function(ev) {
-          if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-          var login = btn.getAttribute('data-login');
-          if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
-          delete _currentRolePP.resourcesByAssignee[login];
-          renderCurrentRoleAssigneeTable();
-          updateCurrentRoleTotals();
-          saveCurrentRoleState();
-        };
-      });
-    }
-    /* Immediate bind for buttons already in DOM. */
-    _bindDeleteButtons();
-    /* Re-bind after Ring Table re-renders (React replaces children on update). */
-    if (!host.__sspDelMutObs) {
-      host.__sspDelMutObs = new MutationObserver(_bindDeleteButtons);
-      host.__sspDelMutObs.observe(host, { childList: true, subtree: true });
+    /* v2.1.14 — MOUSEDOWN-capture делегат (как в renderRoleComposition): Ring Table
+       на mousedown пересоздаёт строку → первый `click` не генерируется браузером
+       (доказано: mousedown✅ mouseup✅ click❌) → старый .onclick реагировал со 2-го
+       клика. Слушаем mousedown (приходит первым, всегда), действие сразу. Переживает
+       Ring re-render → per-button rebind + MutationObserver не нужны. Только ЛКМ. */
+    if (!host.__sspDelCaptureBound) {
+      host.__sspDelCaptureBound = true;
+      host.addEventListener('mousedown', function(ev) {
+        if (ev.button !== 0) return;
+        var tgt = ev.target;
+        if (!tgt || typeof tgt.closest !== 'function') return;
+        var btn = tgt.closest('button.currentRole-del-assignee[data-login]');
+        if (!btn || !host.contains(btn)) return;
+        ev.preventDefault(); ev.stopPropagation();
+        var login = btn.getAttribute('data-login');
+        if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
+        openModal({
+          id: 'delAssignee',
+          type: 'destructive',
+          title: T('confirmDelAssignee'),
+          body: { kind: 'text', text: T('confirmDelAssignee') },
+          buttons: [
+            { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); } },
+            { id: 'confirm', text: T('btnYesDelete'), variant: 'danger', onClick: function(h) {
+              h.close();
+              if (_currentRolePP && _currentRolePP.resourcesByAssignee) {
+                delete _currentRolePP.resourcesByAssignee[login];
+              }
+              renderCurrentRoleAssigneeTable();
+              renderCurrentRoleTaskTable();
+              updateCurrentRoleTotals();
+              saveCurrentRoleState();
+              toast(T('toastAssigneeDeleted'), 'success');
+            }},
+          ],
+          dismissOnBackdrop: false,
+          blockEscape: false,
+          showCloseButton: false,
+        });
+      }, true);
     }
   }
 
@@ -11146,7 +11179,27 @@
 
   /* ─── Очистить исполнителей — показ подтверждения ─── */
   document.getElementById('currentRoleClearAssigneesBtn').addEventListener('click', function() {
-    _showOverlay('clearAssigneesOverlay');
+    openModal({
+      id: 'clearAssignees',
+      type: 'destructive',
+      title: T('confirmClearAssignees'),
+      body: { kind: 'text', text: T('confirmClearAssignees') },
+      buttons: [
+        { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); } },
+        { id: 'confirm', text: T('btnYesClear'), variant: 'danger', onClick: function(h) {
+          h.close();
+          if (_currentRolePP) { _currentRolePP.resourcesByAssignee = {}; }
+          renderCurrentRoleAssigneeTable();
+          renderCurrentRoleTaskTable();
+          updateCurrentRoleTotals();
+          saveCurrentRoleState();
+          toast(T('toastAssigneesCleared'), 'success');
+        }},
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+    });
   });
 
   /* ─── Helpers: Гант state-история (#20) ─── */
@@ -11376,41 +11429,7 @@
   var _ganttSyncBtn = document.getElementById('ganttSyncFromYtBtn');
   if (_ganttSyncBtn) _ganttSyncBtn.addEventListener('click', syncAssigneesFromYouTrack);
 
-  /* ─── Модалка удаления одного исполнителя — Отмена ─── */
-  document.getElementById('delAssigneeNo').addEventListener('click', function() {
-    document.getElementById('delAssigneeOverlay').classList.add('hidden');
-    _pendingDelAssigneeLogin = null;
-  });
-
-  /* ─── Модалка удаления одного исполнителя — Подтвердить ─── */
-  document.getElementById('delAssigneeYes').addEventListener('click', function() {
-    if (_pendingDelAssigneeLogin && _currentRolePP && _currentRolePP.resourcesByAssignee) {
-      delete _currentRolePP.resourcesByAssignee[_pendingDelAssigneeLogin];
-    }
-    document.getElementById('delAssigneeOverlay').classList.add('hidden');
-    _pendingDelAssigneeLogin = null;
-    renderCurrentRoleAssigneeTable();
-    renderCurrentRoleTaskTable();
-    updateCurrentRoleTotals();
-    saveCurrentRoleState();
-    toast(T('toastAssigneeDeleted'), 'success');
-  });
-
-  /* ─── Модалка очистки всех исполнителей — Отмена ─── */
-  document.getElementById('clearAssigneesNo').addEventListener('click', function() {
-    document.getElementById('clearAssigneesOverlay').classList.add('hidden');
-  });
-
-  /* ─── Модалка очистки всех исполнителей — Подтвердить ─── */
-  document.getElementById('clearAssigneesYes').addEventListener('click', function() {
-    if (_currentRolePP) { _currentRolePP.resourcesByAssignee = {}; }
-    document.getElementById('clearAssigneesOverlay').classList.add('hidden');
-    renderCurrentRoleAssigneeTable();
-    renderCurrentRoleTaskTable();
-    updateCurrentRoleTotals();
-    saveCurrentRoleState();
-    toast(T('toastAssigneesCleared'), 'success');
-  });
+  /* delAssigneeOverlay + clearAssigneesOverlay migrated to openModal() (Phase 1 #32). */
 
   /* v5.0.1 — Переключатель языка теперь привязывается в init-цепочке (после YTApp.register).
      Старый IIFE-binding удалён, потому что мог срабатывать ДО полной отрисовки DOM

@@ -651,7 +651,11 @@ var ALLOWED_ITEM_KEYS = [
   'version','inclusionStatus','assignee','addedBy','addedAt',
   /* v1.8.0 D130 — Etap В.2 — external ticket ID (optional, populated from
      _settings.fieldExternalTicketId at pick/refresh time). Read-only in UI. */
-  'externalTicketId'
+  'externalTicketId',
+  /* v2.1.14 #20 — Gantt state-history: localized state label + color + field id,
+     written into items by refreshRoleEstimates / syncAssigneesFromYouTrack.
+     Persisted to roleItems → must be whitelisted (иначе invalid_role_items_structure). */
+  'stateLocalized','stateColor','stateFieldId'
 ];
 
 /**
@@ -676,9 +680,17 @@ function validateItem(item) {
      Изначальный отдельный лимит 200 снят: значение может быть URL (> 200 символов).
      URL-рендер в UI управляется на фронтенде; длинные значения усекаются через ellipsis. */
   var strFields = ['url', 'title', 'priority', 'xpriority', 'state', 'system',
-                   'version', 'assignee', 'addedBy', 'externalTicketId'];
+                   'version', 'assignee', 'addedBy', 'externalTicketId',
+                   /* v2.1.14 #20 — Gantt state-history string fields. */
+                   'stateLocalized', 'stateFieldId'];
   for (var s = 0; s < strFields.length; s++) {
     if (!assertStr(item[strFields[s]], 1000)) return false;
+  }
+  /* v2.1.14 #20 — stateColor: optional объект { background, foreground } (оба — строка|null) или null. */
+  if (item.stateColor !== undefined && item.stateColor !== null) {
+    if (typeof item.stateColor !== 'object') return false;
+    if (!assertStr(item.stateColor.background, 100)) return false;
+    if (!assertStr(item.stateColor.foreground, 100)) return false;
   }
   // url — только https?:// или пустая строка, длина ограничена
   if (item.url && item.url.length > 0) {
@@ -1971,7 +1983,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.14' });
+        ctx.response.json({ version: '2.1.15' });
       }
     },
 
