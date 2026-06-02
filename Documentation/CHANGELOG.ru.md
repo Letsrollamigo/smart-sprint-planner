@@ -8,6 +8,17 @@
 
 ---
 
+## [2.1.43] — 2026-06-02
+
+> **Завершение де-гибридизации (#32, фаза 6, ч.2)** — всплывающие уведомления (toast) переведены на настоящий Ring UI (`alertService` + `Alert`), визуальный стиль унифицирован со всеми модалками. Де-гибридизация #32 завершена.
+
+### Изменено
+
+- **Тосты переведены на Ring `alertService`.** Custom-DOM тостов заменён настоящими Ring `Alert`. Контракт `toast(msg, type)` и `toastApi.{info,warn,error,success,dismissAll}` сохранён 1:1: маппинг типов → Ring (info→message, warn→warning, error→error, success→successMessage), длительности по типам сохранены (info/success 4 с, warn 6 с, error — persistent), очередь ограничена 3 (вытесняется старейший не-error). `alertService` добавлен в vendor-бандл; CSS Ring Alert добавлен в curated-сабсет Ring.
+- **Позиционирование тостов в auto-grow iframe.** Ring рендерит контейнер алертов в `document.body` как `position:fixed` (правый нижний угол) — в auto-grow виджет-iframe YouTrack это уходит за пределы видимой части (та же проблема, что решал custom-тост). Контейнер переякорен на `position:absolute` с JS-вычислением top относительно последнего клика (гарантия видимой области). Legacy DOM-стак тостов сохранён как fallback, если vendor-бандл недоступен.
+
+---
+
 ## [2.1.42] — 2026-06-02
 
 > **Завершение де-гибридизации (#32, фаза 6, ч.1)** — демонтаж legacy-моста Ring Dialog и старого vanilla-пути окна настроек; модалки и настройки полностью на настоящем React.

@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.43] — 2026-06-02
+
+> **De-hybridization wrap-up (#32, phase 6, part 2)** — toast notifications now render with real Ring UI (`alertService` + `Alert`), unifying their look with all modals. The #32 de-hybridization is complete.
+
+### Changed
+
+- **Toasts migrated to Ring `alertService`.** The custom toast DOM is replaced by real Ring `Alert` components. The `toast(msg, type)` contract and `toastApi.{info,warn,error,success,dismissAll}` are preserved 1:1: type→Ring mapping (info→message, warn→warning, error→error, success→successMessage), per-type durations kept (info/success 4 s, warn 6 s, error persistent), queue capped at 3 (oldest non-error evicted). `alertService` added to the vendor bundle; Ring alert CSS added to the curated Ring subset.
+- **Toast positioning in the auto-grow iframe.** Ring renders its alert container into `document.body` as `position:fixed` (bottom-right), which lands off-screen in YouTrack's auto-grown widget iframe — the same problem the custom toast solved. The container is re-anchored to `position:absolute` with a JS-computed top relative to the last click (visible-region guarantee). The legacy toast DOM stack is retained as a fallback if the vendor bundle is unavailable.
+
+---
+
 ## [2.1.42] — 2026-06-02
 
 > **De-hybridization wrap-up (#32, phase 6, part 1)** — the legacy Ring Dialog bridge and the old vanilla settings window are removed; modals and settings now run entirely on real React.
