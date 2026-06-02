@@ -1576,7 +1576,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.20';
+  var APP_VERSION = '2.1.41';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3371,7 +3371,7 @@
     /* v5.0.1 — bind кнопок открытия/закрытия settings-overlay */
     var openBtn  = document.getElementById('openSettingsBtn');
     var closeBtn = document.getElementById('closeSettingsBtn');
-    if (openBtn  && !openBtn._sspBound)  { openBtn.addEventListener('click',  openSettingsOverlay);  openBtn._sspBound  = true; }
+    if (openBtn  && !openBtn._sspBound)  { openBtn.addEventListener('click',  openSettingsModal);    openBtn._sspBound  = true; }
     if (closeBtn && !closeBtn._sspBound) { closeBtn.addEventListener('click', closeSettingsOverlay); closeBtn._sspBound = true; }
     /* v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. */
     /* v6.1.0 D71 — settings-nav chips: smooth-scroll на target секцию.
@@ -3665,6 +3665,158 @@
     if (!overlay) return;
     overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  /* ═══ v2.2.0 Phase 5 #32 — settingsOverlay → bespoke SettingsForm в Ring Dialog ═══
+     openSettingsModal заменяет vanilla openSettingsOverlay: 3 состояния доступа
+     (not-configured / denied → kind:'text'; canManage → component 'settingsForm').
+     Старый openSettingsOverlay/applySettingsUI/collectSettings/doSaveSettings + DOM
+     #settingsOverlay живут параллельно до Phase 6 (demount). */
+
+  /* Списки имён полей проекта по типам (зеркалит фильтр fillFieldSelect). */
+  function _buildFieldsByType() {
+    function ofTypes(allowed) {
+      var out = [];
+      (_projectFields || []).forEach(function (f) {
+        var ty = (f.type || '').toLowerCase();
+        if (allowed.some(function (at) { return ty.indexOf((at || '').toLowerCase()) >= 0; })) out.push(f.name);
+      });
+      return out;
+    }
+    return {
+      priority:         ofTypes(['enum']),
+      xpriority:        ofTypes(['enum']),
+      state:            ofTypes(['state', 'enum']),
+      system:           ofTypes(['enum', 'owned']),
+      externalTicketId: ofTypes(['string']),
+      sprint:           ofTypes(['enum']),
+      version:          ofTypes(['version', 'build']),
+      period:           ofTypes(['period']),
+      user:             ofTypes(['user']),
+      /* 5c — cascade kind-field (enum-поля проекта). */
+      enumFields:       ofTypes(['enum']),
+    };
+  }
+
+  /* Сохранение settings из bespoke-формы. Возвращает Promise<{success}|{success:false,reason}>.
+     Дословно зеркалит post-save хвост doSaveSettings (cache-invalidate, _settings,
+     project-default lang, feature-bar, soft-warn, права/видимость, re-render). */
+  function _saveSettingsData(data) {
+    data.savedAt = Date.now();
+    return apiPost('sprint-data', { settings: data }).then(function (resp) {
+      if (!resp || !resp.success) {
+        var reason = (resp && resp.reason) || (resp && resp.error) || 'unknown';
+        toast(T('toastSettingsErr'), 'err');
+        return { success: false, reason: reason };
+      }
+      try {
+        if (_settings && (_settings.fieldSprint  !== data.fieldSprint))  invalidateFieldValuesCache(_settings.fieldSprint);
+        if (_settings && (_settings.fieldVersion !== data.fieldVersion)) invalidateFieldValuesCache(_settings.fieldVersion);
+      } catch (_) {}
+      _settings = data;
+      _syncProjectDefaultLang();
+      _refreshFeatureStatusBar();
+      var bc = document.getElementById('bannerCfg');
+      if (bc) bc.classList.add('hidden');
+      toast(T('toastSettingsSaved'), 'success');
+      var missingRequired = [];
+      if (!data.fieldPriority) missingRequired.push(T('fldPriority'));
+      if (!data.fieldState)    missingRequired.push(T('fldState'));
+      if (missingRequired.length) {
+        setTimeout(function () {
+          toast(T('toastRequiredFieldsMissing') + ': ' + missingRequired.join(', '), 'warn');
+        }, 400);
+      }
+      checkValidator();
+      checkEditorRights();
+      checkAssignerRights();
+      applyPersonalPlanningVisibility();
+      refreshClearHistoryBtn();
+      renderPlannerRoles();
+      try { _applyDiagLogVisibility(); } catch (_) {}
+      return { success: true };
+    });
+  }
+
+  function openSettingsModal() {
+    /* Fallback на legacy-путь, если React-мост недоступен. */
+    if (!window.__SSP_RING_MODAL) { openSettingsOverlay(); return; }
+
+    apiGet('check-settings-manager').then(function (r) {
+      diag('settingsModal open: configured=' + (r && r.configured) + ' canManage=' + (r && r.canManage), 'info');
+
+      if (!r || !r.configured) {
+        openModal({
+          id: 'settingsAccess', type: 'info', title: T('appTitleSettings'),
+          body: { kind: 'text', text: T('settingsNotConfiguredHint') },
+          buttons: [{ id: 'ok', text: T('btnCancel'), variant: 'primary', onClick: function (h) { h.close(); } }],
+          dismissOnBackdrop: true, showCloseButton: true,
+        });
+        return;
+      }
+      if (!r.canManage) {
+        var txt = T('settingsNoAccessHint');
+        if (r.groupName) txt += ' (' + T('settingsNoAccessGroup').replace('{group}', r.groupName) + ')';
+        openModal({
+          id: 'settingsAccess', type: 'info', title: T('appTitleSettings'),
+          body: { kind: 'text', text: txt },
+          buttons: [{ id: 'ok', text: T('btnCancel'), variant: 'primary', onClick: function (h) { h.close(); } }],
+          dismissOnBackdrop: true, showCloseButton: true,
+        });
+        return;
+      }
+
+      /* canManage → форма. Lazy-load групп (для 5b multi-select). */
+      if (typeof loadProjectGroups === 'function' && !window._sspGroupsLoaded) {
+        window._sspGroupsLoaded = true;
+        loadProjectGroups().catch(function (e) { diag('lazy loadProjectGroups err: ' + e, 'err'); });
+      }
+
+      var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || [];
+      var defaultLangOptions = langs.map(function (l) {
+        return { value: l.code, label: (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')' };
+      });
+
+      var handle = openModal({
+        id: 'settings', type: 'form', title: T('appTitleSettings'),
+        dialogClass: 'ssp-ring-modal--wide ssp-ring-modal--settings',
+        body: { kind: 'component', name: 'settingsForm', props: {
+          initial:            _settings || {},
+          roles:              ALL_ROLES,
+          fieldsByType:       _buildFieldsByType(),
+          defaultLangOptions: defaultLangOptions,
+          uiLang:             _lang,
+          t:                  T,
+          initialGroups:      _projectGroups || [],
+          loadGroups:         function () { return loadProjectGroups().then(function () { return _projectGroups; }); },
+          /* 5c — async bundle-значения поля (cascade level2/3, rollup/standup states),
+             с тем же кэшем _fieldValuesCache, что vanilla-path. */
+          enumFields:         (_buildFieldsByType().enumFields) || [],
+          stateFieldName:     (_settings && typeof _settings.fieldState === 'string' && _settings.fieldState) ? _settings.fieldState : 'State',
+          loadFieldValues:    function (fieldName) {
+            if (!fieldName) return Promise.resolve([]);
+            if (_fieldValuesCache[fieldName]) return Promise.resolve(_fieldValuesCache[fieldName].values || []);
+            return apiGet('field-values?fieldName=' + encodeURIComponent(fieldName)).then(function (r) {
+              if (r && r.success && r.values) _fieldValuesCache[fieldName] = r;
+              return (r && r.values) || [];
+            }).catch(function () { return []; });
+          },
+          onUiLangChange:     function (lang) { setLang(lang); },
+          onSave:             _saveSettingsData,
+          onClose:            function () { if (handle) handle.close(); },
+        } },
+        buttons: [],
+        dismissOnBackdrop: false,
+        blockEscape: false,
+        /* showCloseButton:false — форма рисует свой явный × (ssp-settings-close);
+           Ring-ный был бледным и у края island, неинтуитивен. */
+        showCloseButton: false,
+        onClose: function () { /* idемпотентный close из foundation */ },
+      });
+    }).catch(function (e) {
+      diag('openSettingsModal check ERR: ' + String(e), 'err');
+      toast(T('toastInitError') + (e && e.message ? e.message : String(e)), 'err');
+    });
   }
 
   /* ── Загрузка данных ── */

@@ -909,6 +909,15 @@
       width: 900px !important;
       max-width: 90vw !important;
     }
+    /* Phase 5 #32 — settings-модалка (two-pane): умеренная ширина (показываем одну
+       секцию за раз → сверх-ширина не нужна). Высоту island НЕ фиксируем — правый
+       pane ограничен max-height (см. ниже), поэтому модалка стабильно помещается во
+       вьюпорт независимо от внутренней flex-цепочки Ring. */
+    .ssp-ring-modal--settings .ring-island-island {
+      width: min(1040px, 95vw) !important;
+      min-width: min(1040px, 95vw) !important;
+      max-width: min(1040px, 95vw) !important;
+    }
     .ssp-ring-modal .ring-island-header,
     .ssp-ring-modal .ring-island-withBottomBorder.ring-island-withBottomBorder {
       border-bottom: none !important;
@@ -947,6 +956,123 @@
     .ssp-modal-inner .ring-input-outerContainer { display: block; width: 100%; }
     .ssp-modal-inner .ring-input { width: 100%; }
     .ssp-modal-inner .ring-input-input { width: 100%; box-sizing: border-box; }
+
+    /* Phase 5 #32 — settingsForm two-pane: слева nav-список секций, справа активная
+       секция (свой скролл), footer снизу всегда виден. Заменяет прежний аккордеон +
+       sticky-footer-в-Ring-скролле (плотные секции не тянулись одной колонкой).
+       Базовый шрифт формы меньше основного визуала (~14px → 11-12px). */
+    .ssp-settings-form { font-size: 12px; display: flex; flex-direction: column; width: 100%; position: relative; }
+    /* inner без падингов — two-pane сам управляет отступами (nav/pane/footer). */
+    .ssp-ring-modal--settings .ssp-modal-inner { padding: 0; }
+
+    /* Явный × закрытия (правый верхний угол формы). */
+    .ssp-settings-close {
+      position: absolute; top: 6px; right: 8px; z-index: 4;
+      width: 30px; height: 30px; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      border: 0; border-radius: 6px; cursor: pointer;
+      background: transparent; color: var(--secondary, #737577);
+      font-size: 22px; line-height: 1;
+    }
+    .ssp-settings-close:hover { background: var(--surface-hover, rgba(128,128,128,.14)); color: var(--text, inherit); }
+
+    .ssp-settings-main { display: flex; align-items: stretch; }
+
+    /* Левый nav: фикс-ширина, свой скролл (если секций много), border-right на высоту ряда. */
+    .ssp-settings-nav {
+      flex: 0 0 224px;
+      overflow-y: auto;
+      padding: 12px 8px;
+      border-right: 1px solid var(--border, #e0e0e0);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    /* align-items:flex-start — длинные названия секций переносятся на несколько строк
+       (без ellipsis: полностью видны), error-dot прижат к первой строке. */
+    .ssp-settings-nav__item {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;
+      width: 100%; text-align: left;
+      padding: 7px 10px; border: 0; border-radius: 6px;
+      background: transparent; color: var(--text, inherit);
+      font-size: 12px; line-height: 1.3; cursor: pointer;
+    }
+    .ssp-settings-nav__item:hover { background: var(--surface-hover, rgba(128,128,128,.12)); }
+    .ssp-settings-nav__item.active {
+      background: var(--ring-selected-background-color, rgba(0,114,255,.12));
+      font-weight: 600;
+    }
+    .ssp-settings-nav__label { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+    .ssp-settings-nav__dot { flex: 0 0 auto; margin-top: 2px; color: var(--error, #e5493a); font-size: 9px; line-height: 1; }
+
+    /* Правый pane: активная секция, свой вертикальный скролл, ограничен по высоте
+       (модалка не выходит за вьюпорт независимо от Ring-цепочки). */
+    .ssp-settings-pane {
+      flex: 1 1 auto; min-width: 0;
+      padding: 16px 20px;
+      overflow-y: auto;
+      max-height: min(64vh, 560px);
+    }
+    .ssp-settings-pane__title {
+      font-size: 13px; font-weight: 600; margin: 0 0 14px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border, #e0e0e0);
+    }
+
+    /* Footer: flex-child под обеими панелями. Sticky как страховка на коротких
+       вьюпортах (если Ring-контент всё же заскроллится). */
+    .ssp-settings-form > .ssp-modal-footer {
+      flex: 0 0 auto;
+      position: sticky; bottom: -4px; z-index: 2;
+      margin: 0;
+      padding: 10px 20px;
+      border-top: 1px solid var(--border, #e0e0e0);
+      background: var(--content-background, var(--ring-content-background-color, #fff));
+    }
+
+    /* Многоколоночная раскладка полей внутри pane (auto-fit: ~2-3 колонки при ширине
+       pane ~780px, 1fr заполняет ширину без пустого хвоста). Перебиваем form-grid--2/--3. */
+    .ssp-settings-form .form-grid,
+    .ssp-settings-form .form-grid--2,
+    .ssp-settings-form .form-grid--3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 14px;
+    }
+    /* Ролевые гриды (user/оценки/факт, до 9 селектов) — flex: последний неполный ряд
+       растягивается на всю ширину (нет пустого хвоста справа). */
+    .ssp-settings-form .ssp-role-grid { display: flex; flex-wrap: wrap; gap: 10px 12px; }
+    .ssp-settings-form .ssp-role-grid > .field { flex: 1 1 200px; min-width: 0; }
+
+    /* Шрифтовая компрессия плотной формы. */
+    .ssp-settings-form .field label,
+    .ssp-settings-form label,
+    .ssp-settings-form select,
+    .ssp-settings-form .app-select,
+    .ssp-settings-form input,
+    .ssp-settings-form .role-check__label { font-size: 11px; }
+    .ssp-settings-form .card-subtitle { font-size: 10px; }
+    .ssp-settings-form .hint { font-size: 10px; }
+
+    /* 5c — нативные multi-select (каскад/rollup/standup) и DTA-таблица. */
+    .ssp-settings-form .ssp-multiselect {
+      width: 100%; box-sizing: border-box; min-height: 96px;
+      padding: 2px 4px; border: 1px solid var(--border, #e0e0e0);
+      border-radius: var(--radius, 4px); background: var(--content-background, #fff);
+    }
+    .ssp-settings-form .ssp-multiselect option { padding: 2px 6px; }
+    /* DTA-таблица: ограничена по ширине (2 поля + delete не должны распирать модалку),
+       поля заполняют свои ячейки на 100%. */
+    .ssp-settings-form .ssp-dta-table { max-width: 680px; }
+    .ssp-settings-form .ssp-dta-table th {
+      text-align: left; font-size: 10px; font-weight: 600; color: var(--muted, #888);
+      text-transform: uppercase; letter-spacing: .04em; padding: 0 6px 6px;
+    }
+    .ssp-settings-form .ssp-dta-table th:first-child,
+    .ssp-settings-form .ssp-dta-table td:first-child { width: 50%; }
+    .ssp-settings-form .ssp-dta-table td { padding: 3px 6px 3px 0; vertical-align: top; }
+    .ssp-settings-form .ssp-dta-table td:last-child { padding-right: 0; width: 34px; }
+    .ssp-settings-form .ssp-dta-table input,
+    .ssp-settings-form .ssp-dta-table select { width: 100%; box-sizing: border-box; }
 
     /* v2.0.0 D4 R2/R3 — make Ring DatePicker fill the entire date cell.
        Original <input data-ssp-datepicker> behaviour: width:100% (via .tbl td

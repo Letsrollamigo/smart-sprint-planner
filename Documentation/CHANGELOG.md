@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.41] — 2026-06-02
+
+> **Ring UI modal de-hybridization, phase 5 (#32)** — the settings window now renders real React in a two-pane layout, completing the migration of the last vanilla form.
+
+### Changed
+
+- **Settings window on real Ring UI (two-pane).** The plugin settings form is rewritten as a bespoke React component (`settingsForm`) rendering genuine React content in a Ring Dialog via `openModal(spec)`. A two-pane layout — section list on the left, the active section on the right with its own scroll, footer always visible — replaces the previous accordion, which did not scale to twelve dense sections inside a height-limited modal. All sections (roles, access groups, field mappings, estimate/fact fields, norms, planning modes, differentiated time accounting, cascade aggregation, state rollup, stand-up, misc) render as real React; section-specific data (cascade values, rollup/stand-up states) loads asynchronously through callbacks. An explicit close (×) button was added to the top-right corner.
+
+### Fixed
+
+- **Settings sections are now directly reachable.** The left-hand navigation buttons make every section selectable with a single click (the previous accordion summaries were not exposed as actionable controls). The duplicate-type guard in differentiated time accounting now also marks the offending section in the navigation.
+
+---
+
 ## [2.1.20] — 2026-06-01
 
 > **Ring UI modal de-hybridization, phase 4 (#32)** — the "pick tasks into the sprint" dialog now renders real React, fixing the selection-checkbox glitches; plus two modal layout fixes.
