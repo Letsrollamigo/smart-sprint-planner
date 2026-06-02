@@ -50,6 +50,11 @@ const KEEP_PATTERNS = [
   'ring-collapse',     // dumb collapsible from @jetbrains/ring-ui-built/components/collapse
   'ring-list',         // options list rendered by Ring Select dropdown
   'ring-dropdown',     // popup anchor used by Ring Select
+  /* #32 Phase 6c — Ring Alert (toast → alertService). Alert item visuals/animations
+     (.ring-alert-*) + portal container (.ring-container-alert*). Контейнер
+     position:fixed переопределяется в index.html на click-anchor (auto-grow iframe). */
+  'ring-alert',
+  'ring-container-alert',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
@@ -63,7 +68,7 @@ const EXCLUDE_PATTERNS = [
   'ring-tags',
   'ring-auth',
   'ring-banner',
-  'ring-alert-',     // avoid matching alert within other names
+  /* #32 Phase 6c — 'ring-alert-' moved to KEEP_PATTERNS (toast → Ring alertService). */
   'ring-avatar',
   'ring-badge',
   'ring-breadcrumb',

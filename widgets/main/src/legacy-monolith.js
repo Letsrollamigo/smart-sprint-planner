@@ -1033,7 +1033,13 @@
   } catch(_){}
 
   function _positionToastStack() {
-    var stack = document.getElementById('toastStack');
+    /* #32 Phase 6c — приоритет Ring alertService-контейнеру (portal в document.body,
+       position:fixed по дефолту Ring → переопределён на absolute в index.html);
+       fallback — legacy #toastStack. Оба позиционируются click-anchor'ом, т.к. в
+       auto-grow YT-iframe position:fixed улетает в Y=2000+ за пределы видимой части. */
+    var ringStack = (document.body && typeof document.body.querySelector === 'function')
+      ? document.body.querySelector('[data-test="alert-container"]') : null;
+    var stack = ringStack || document.getElementById('toastStack');
     if (!stack || stack.children.length === 0) return;
     try {
       var stackH = stack.offsetHeight || 100;
@@ -1045,6 +1051,13 @@
       var top = Math.max(8, anchorY + pageOff - stackH - 24);
       stack.style.top = top + 'px';
     } catch(_) {}
+  }
+  /* Ring alertService рендерит контейнер асинхронно (React commit). Многопроходный
+     settle: RAF, RAF², +140мс — гарантирует репозиционирование после монтирования. */
+  function _repositionToastSoon() {
+    var raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame : function(cb){ setTimeout(cb, 16); };
+    raf(function(){ _positionToastStack(); raf(function(){ _positionToastStack(); }); });
+    setTimeout(_positionToastStack, 140);
   }
   var _toastReposScheduled = false;
   function _scheduleToastReposition() {
@@ -1209,18 +1222,72 @@
     return t.id;
   }
 
+  var _toastText = TOAST_PURE.normaliseToastText || function(msg) {
+    return String(msg == null ? '' : msg).replace(/\n+/g, ' · ');
+  };
+
+  /* #32 Phase 6c — Ring alertService bridge. Тосты рендерятся настоящим Ring Alert
+     (Alert + Container из vendor), а не custom DOM. Контракт toast(msg,type) и
+     toastApi.{info,warn,error,success,dismissAll} сохранён 1:1.
+     - Маппинг типов → Ring AlertType (строковые значения enum'а).
+     - Длительности из toast-pure (info/success 4000, warn 6000, error 0=persistent).
+     - Очередь ≤3 — ручной evict oldest-non-error (alertService стекует без лимита).
+     - Позиционирование — _positionToastStack ретаргетится на Ring-контейнер.
+     Legacy DOM-стак (_enqueueToast) сохранён как fallback, если vendor недоступен. */
+  var _RING_TOAST_TYPE = { info: 'message', warn: 'warning', error: 'error', success: 'success' };
+  var _ringToastKeys = []; // [{key,type}] в порядке появления (oldest first) для очереди ≤3
+  function _ringAlertService() {
+    try { var v = window.SSP_VENDORED; return (v && v.alertService) || null; } catch(_) { return null; }
+  }
+  function _ringToast(type, text, duration) {
+    var svc = _ringAlertService();
+    if (!svc || typeof svc.addAlert !== 'function') return null; // нет Ring → caller уходит в legacy
+    var ringType = _RING_TOAST_TYPE[type] || 'message';
+    var timeout = computeToastDuration(type, duration);
+    var entry = { key: null, type: type };
+    try {
+      entry.key = svc.addAlert(text, ringType, timeout, {
+        onClose: function() {
+          var i = _ringToastKeys.indexOf(entry);
+          if (i >= 0) _ringToastKeys.splice(i, 1);
+        }
+      });
+    } catch(_) { return null; }
+    _ringToastKeys.push(entry);
+    /* Очередь ≤3 — evict oldest non-error (persistent error не выбрасывается). */
+    while (_ringToastKeys.length > TOAST_LIMIT) {
+      var evictIdx = selectToastToEvict(_ringToastKeys, TOAST_LIMIT);
+      if (evictIdx < 0) break;
+      var ev = _ringToastKeys[evictIdx];
+      _ringToastKeys.splice(evictIdx, 1); // снимаем сразу, чтобы не зациклить (onClose async)
+      try { svc.remove(ev.key); } catch(_) {}
+    }
+    _repositionToastSoon();
+    return entry.key;
+  }
+  function _toastShow(type, text, opts) {
+    var msg = _toastText(text);
+    var dur = opts && opts.duration;
+    var key = _ringToast(type, msg, dur);
+    if (key != null) return key;
+    return _enqueueToast({ text: msg, type: type, duration: dur }); // legacy fallback
+  }
+
   var toastApi = {
-    info:    function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'info',    duration: opts && opts.duration }); },
-    warn:    function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'warn',    duration: opts && opts.duration }); },
-    error:   function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'error',   duration: opts && opts.duration }); },
-    success: function(text, opts) { return _enqueueToast({ text: _toastText(text), type: 'success', duration: opts && opts.duration }); },
+    info:    function(text, opts) { return _toastShow('info',    text, opts); },
+    warn:    function(text, opts) { return _toastShow('warn',    text, opts); },
+    error:   function(text, opts) { return _toastShow('error',   text, opts); },
+    success: function(text, opts) { return _toastShow('success', text, opts); },
     dismissAll: function() {
+      var svc = _ringAlertService();
+      if (svc) {
+        var snap = _ringToastKeys.slice();
+        for (var k = 0; k < snap.length; k++) { try { svc.remove(snap[k].key); } catch(_) {} }
+        _ringToastKeys.length = 0;
+      }
       var snapshot = _toastQueue.slice();
       for (var i = 0; i < snapshot.length; i++) _dismissToast(snapshot[i]);
     }
-  };
-  var _toastText = TOAST_PURE.normaliseToastText || function(msg) {
-    return String(msg == null ? '' : msg).replace(/\n+/g, ' · ');
   };
 
   /* Backward-compat для 107 существующих call-sites toast(msg, type). */
@@ -1514,7 +1581,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.42';
+  var APP_VERSION = '2.1.43';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая

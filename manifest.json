@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "2.1.42",
+  "version": "2.1.43",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "v2.1.42 — завершение де-гибридизации (#32, фаза 6, ч.1): демонтаж legacy-моста Ring Dialog (DOM-трансплантация, MutationObserver, polling-репозиционирование, __SSP_DIALOG / dialog-mount) и старого vanilla-пути окна настроек (#settingsOverlay) — все модалки и настройки работают на настоящем React. v2.1.41 — фаза 5: окно настроек на двухпанельном React. v2.1.20 — фаза 4: окно подбора задач в спринт.",
+  "changeNotes": "v2.1.43 — The Ring UI journey is complete. Every dialog, the settings window and all toast notifications now render as genuine Ring UI React components — one consistent, accessible, polished interface from end to end.\n\nWhat's new since v2.1.13:\n• Full UI on real Ring UI (#32) — all 20 modal surfaces, the redesigned two-pane settings window, and toast notifications were migrated off the legacy DOM bridge onto native Ring React. Unified styling, focus handling, ARIA and keyboard behaviour throughout.\n• Task state on the Gantt (#20) — every task shows its current YouTrack state as a coloured badge, the previous state and how long ago it changed; bar colour now reflects state.\n• Reliability — single-click checkboxes and row actions in the task picker and grids (B10/B11/B12), working-copy persistence across reload and tabs (B14/B15), and a role-items schema fix (#37).\n\n15 UI languages. No breaking changes — sprints, history and settings upgrade in place.",
   "widgets": [
     {
       "key": "ssp-main",

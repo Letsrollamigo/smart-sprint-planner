@@ -1100,6 +1100,26 @@
       .toast.toast--out { transform: none; opacity: 0; }
     }
 
+    /* ── #32 Phase 6c — Ring alertService toast-контейнер ──
+       Тосты мигрированы на Ring alertService (Alert + Container). Ring рендерит
+       контейнер `[data-test=alert-container]` в document.body как position:fixed
+       bottom-right — в auto-grow YT-iframe (высота=высоте контента) это улетает
+       в Y=2000+ за пределы видимой части (та же проблема, что решал custom toast).
+       Переопределяем на position:absolute + JS-anchored top: _positionToastStack()
+       ретаргетится на этот узел и ставит top относительно последнего клика
+       (стак растёт вверх через column-reverse — гарантированно в visible region). */
+    .ring-container-alertContainer {
+      position: absolute !important;
+      bottom: auto !important;
+      right: 16px !important;
+      left: auto !important;
+      flex-direction: column-reverse !important;
+      z-index: var(--z-toast) !important;
+      max-width: min(480px, calc(100vw - 32px));
+    }
+    /* Длинный текст — max-height + scroll внутри alert-элемента (контракт v1.9.11). */
+    .ring-container-alertInContainer { max-height: 30vh; overflow-y: auto; }
+
     /* ── Баннер ── */
     .banner {
       display: flex; align-items: flex-start; gap: 10px;
