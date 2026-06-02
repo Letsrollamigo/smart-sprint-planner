@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.44] — 2026-06-02
+
+> **Role over-allocation detector fix (B13).**
+
+### Fixed
+
+- **Over-allocation detector now accounts for the role's aggregate allocation.** Previously over-allocation was checked per task only (a task's allocation vs its own «estimate − spent» delta); with empty estimates the delta was zero and the over-allocation went undetected even though the role's remaining resource was already negative. Added an aggregate check: the sum of active-task allocations against the role resource (the same computation that paints the «Remaining» card red). The «Validate» button is now disabled, and for confirmed/allocated roles the over-allocation dialog appears, even when task estimates are empty.
+
+---
+
 ## [2.1.43] — 2026-06-02
 
 > **De-hybridization wrap-up (#32, phase 6, part 2)** — toast notifications now render with real Ring UI (`alertService` + `Alert`), unifying their look with all modals. The #32 de-hybridization is complete.

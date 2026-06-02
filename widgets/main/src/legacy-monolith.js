@@ -1581,7 +1581,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.43';
+  var APP_VERSION = '2.1.44';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -8749,7 +8749,11 @@
     /* Fallback global check — host may not be visible yet (collapsed role
        card), but validate button state still needs to reflect overlimit. */
     if (!anyOverlimit) {
-      anyOverlimit = checkAllocOverlimit(rk).length > 0;
+      /* B13 — per-task delta-проверка слепа при пустых est/fact (delta=0).
+         Дополняем агрегатом: Σalloc активных задач > ресурс роли. Канон —
+         calcRemForRole (та же формула, что красит карточку «Остатки» в red),
+         поэтому детектор и индикатор остатка всегда согласованы. */
+      anyOverlimit = checkAllocOverlimit(rk).length > 0 || calcRemForRole(rk) < 0;
     }
 
     // Блокировка валидации: аллокация задачи > ресурс роли
