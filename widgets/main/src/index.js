@@ -20,6 +20,7 @@ import './react/portal.jsx';
 import './react/dialog-mount.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
+import './react/settings-form.jsx';
 import './react/loader-mount.jsx';
 import './react/datepicker-mount.jsx';
 import './react/checkbox-mount.jsx';
