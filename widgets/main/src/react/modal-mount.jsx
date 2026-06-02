@@ -2,7 +2,7 @@
    Заменяет DOM-трансплантацию (dialog-mount.jsx) декларативным React-рендерингом.
    window.__SSP_MODAL: open(spec) / close(id) / update(id,partial) / registerBody(name,comp).
    Позиционирование: click-anchor без polling — double-RAF + settle-timer + scroll/resize.
-   Bridge __SSP_DIALOG живёт параллельно до Phase 6 (де-гибридизация). */
+   Bridge __SSP_DIALOG (dialog-mount.jsx) демонтирован в Phase 6 — все модалки на этом API. */
 
 import * as React from 'react';
 

@@ -8,6 +8,21 @@
 
 ---
 
+## [2.1.42] — 2026-06-02
+
+> **Завершение де-гибридизации (#32, фаза 6, ч.1)** — демонтаж legacy-моста Ring Dialog и старого vanilla-пути окна настроек; модалки и настройки полностью на настоящем React.
+
+### Удалено
+
+- **Legacy-мост Ring Dialog (`__SSP_DIALOG` / `dialog-mount.jsx`).** Убраны DOM-трансплантация содержимого vanilla-оверлеев в Ring Dialog, per-overlay `MutationObserver` (ловивший `classList.add('hidden')`), polling-репозиционирование (`setInterval`) и сам мост. После миграции всех модалок на декларативный `openModal()` (фазы 1–5) мост стал недостижим — удалён вместе со своими CSS-правилами (`.ssp-dialog-host`, `.ssp-dialog-inner`).
+- **Старый vanilla-путь окна настроек.** Удалён DOM `#settingsOverlay` (полноэкранная vanilla-форма) и его обвязка: `openSettingsOverlay` / `closeSettingsOverlay` / `applySettingsUI` / `collectSettings` / `doSaveSettings` + bind'ы кнопок и nav-чипов формы. Настройки открываются исключительно через React-компонент `settingsForm` (фаза 5). CSS формы (`.settings-overlay`, `.settings-card`, `.settings-nav__chip`) удалён.
+
+### Прочее
+
+- Устаревшие e2e-тесты vanilla-формы настроек (UI дифференцированного учёта / каскада / каскада состояний) удалены; smoke окна настроек переведён на проверку демонтажа и не-падения виджета.
+
+---
+
 ## [2.1.41] — 2026-06-02
 
 > **Де-гибридизация модалок Ring UI, фаза 5 (#32)** — окно настроек переведено на настоящий React с двухпанельной раскладкой; миграция последней vanilla-формы завершена.

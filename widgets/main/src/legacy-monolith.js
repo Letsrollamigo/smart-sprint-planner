@@ -1441,60 +1441,9 @@
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return null;
 
-    /* pickOverlay has complex content (data table, pagination, large form) — keep on
-       legacy .overlay rendering. settingsOverlay also legacy. Other 15 modals use Ring Dialog. */
-    var isRingTarget = window.__SSP_DIALOG &&
-      el.id !== 'pickOverlay' &&
-      (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay'));
-
-    if (isRingTarget) {
-      var labelElId = el.getAttribute('aria-labelledby');
-      var labelEl = labelElId ? document.getElementById(labelElId) : null;
-      var label = labelEl ? labelEl.textContent.trim() : (el.getAttribute('aria-label') || el.id);
-      var dismissOnBackdrop = el.getAttribute('data-dismiss-on-backdrop') === 'true' || opts.dismissOnBackdrop === true;
-      var blockEscape = el.getAttribute('data-no-escape') === 'true';
-
-      /* Убираем .hidden чтобы MutationObserver мог поймать последующий classList.add('hidden')
-         от кнопок отмены. .ssp-dialog-host делает элемент невидимым через CSS. */
-      el.classList.remove('hidden');
-      el.classList.add('ssp-dialog-host');
-
-      /* _modalStack для Escape-handler совместимости. */
-      if (MODAL_PURE.pushUnique) MODAL_PURE.pushUnique(_modalStack, el);
-      else if (_modalStack.indexOf(el) === -1) _modalStack.push(el);
-
-      /* Per-overlay observer: кнопки отмены делают classList.add('hidden') → закрываем Ring Dialog. */
-      var closeObserver = new MutationObserver(function(mutations) {
-        for (var i = 0; i < mutations.length; i++) {
-          if (mutations[i].attributeName === 'class' && el.classList.contains('hidden')) {
-            closeObserver.disconnect();
-            el._sspCloseObserver = null;
-            el.classList.remove('ssp-dialog-host');
-            if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
-            else { var idx2 = _modalStack.indexOf(el); if (idx2 >= 0) _modalStack.splice(idx2, 1); }
-            window.__SSP_DIALOG.close(el.id);
-            return;
-          }
-        }
-      });
-      closeObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
-      el._sspCloseObserver = closeObserver;
-
-      window.__SSP_DIALOG.open(el.id, {
-        label: label,
-        dismissOnBackdrop: dismissOnBackdrop,
-        blockEscape: blockEscape,
-        onClose: function() { _appModalClose(el); }
-      });
-      /* v2.0.0 R2 fix (D3-r5) — НЕ вызываем _scrollFrameIntoView():
-         в cross-origin sandbox iframe parent/frameElement BLOCKED, остаётся только
-         window.scrollTo(0,0) который скроллит сам iframe к верху → таблицы / Гант
-         теряют scroll position при открытии модала. Click-anchored positioning сам
-         ставит модал в visible portion outer viewport, scroll-в-нулевую-точку лишний. */
-      return el;
-    }
-
-    /* Legacy path: .settings-overlay, non-overlay elements, pre-bridge fallback. */
+    /* Bridge __SSP_DIALOG демонтирован (Phase 6 — де-гибридизация #32). Все модалки переехали
+       на __SSP_RING_MODAL (декларативный openModal). Остаётся только legacy-путь через _showOverlay
+       для settingsOverlay / .overlay-элементов, открываемых старым API (__SSP_MODAL фасад). */
     _showOverlay(el);
     if (opts.dismissOnBackdrop === true && !el.__sspBackdropBound) {
       el.addEventListener('mousedown', _onBackdropMousedown);
@@ -1507,18 +1456,7 @@
   function _appModalClose(idOrEl) {
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return;
-    if (window.__SSP_DIALOG && el._sspCloseObserver) {
-      /* Disconnect до classList.add('hidden') — предотвращает re-entry через observer. */
-      el._sspCloseObserver.disconnect();
-      el._sspCloseObserver = null;
-      el.classList.remove('ssp-dialog-host');
-      el.classList.add('hidden');
-      if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
-      else { var idx = _modalStack.indexOf(el); if (idx >= 0) _modalStack.splice(idx, 1); }
-      window.__SSP_DIALOG.close(el.id);
-      return;
-    }
-    el.classList.add('hidden'); /* Legacy path — MutationObserver вызовет _modalAutoDetach. */
+    el.classList.add('hidden'); /* Legacy path — глобальный _modalObserver вызовет _modalAutoDetach. */
   }
 
   /* Глобальный observer — наблюдает за добавлением .hidden класса на overlay-элементы.
@@ -1576,7 +1514,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.41';
+  var APP_VERSION = '2.1.42';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2505,13 +2443,6 @@
   function _showOverlay(idOrEl) {
     var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
     if (!el) return;
-    /* v2.0.0: .overlay/.dyn-modal-overlay → Ring Dialog (если bridge активен).
-       pickOverlay исключён — у него сложный контент, идёт по legacy-пути. */
-    if (window.__SSP_DIALOG && el.id !== 'pickOverlay' &&
-        (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay'))) {
-      _appModalOpen(el);
-      return;
-    }
     /* Очищаем inline-style остатки от старого _positionOverlayInView (D102 v6.3.0). */
     try {
       el.style.position = ''; el.style.top = ''; el.style.left = '';
@@ -3368,45 +3299,10 @@
        должно перенарисовать локализованную подпись с актуальным timestamp). */
     refreshDirtyIndicator();
 
-    /* v5.0.1 — bind кнопок открытия/закрытия settings-overlay */
+    /* v2.2.0 Phase 6 #32 — settings открывается только через React-модалку (openSettingsModal).
+       Старые binds closeBtn/saveBtn/nav-chip жили в #settingsOverlay DOM — демонтированы. */
     var openBtn  = document.getElementById('openSettingsBtn');
-    var closeBtn = document.getElementById('closeSettingsBtn');
     if (openBtn  && !openBtn._sspBound)  { openBtn.addEventListener('click',  openSettingsModal);    openBtn._sspBound  = true; }
-    if (closeBtn && !closeBtn._sspBound) { closeBtn.addEventListener('click', closeSettingsOverlay); closeBtn._sspBound = true; }
-    /* v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. */
-    /* v6.1.0 D71 — settings-nav chips: smooth-scroll на target секцию.
-       Раньше были <a href="#secXxx"> → hashchange триггерил SPA tab-switch на «Планирование». */
-    document.querySelectorAll('.settings-nav__chip').forEach(function (chip) {
-      if (chip._sspNavBound) return;
-      chip._sspNavBound = true;
-      chip.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var targetId = chip.getAttribute('data-target');
-        if (!targetId) return;
-        var target = document.getElementById(targetId);
-        if (!target) return;
-        /* v1.7.1: все секции collapse-by-default. При клике на nav-chip
-           разворачиваем target секцию, чтобы пользователь сразу видел контент.
-           v1.9.9: в связке с accordion-логикой (см. openSettingsOverlay) — открываем
-           только ПЕРВЫЙ details внутри target. Accordion-toggle закроет все
-           остальные details за пределами target. Это даёт предсказуемый результат:
-           «click nav-chip → видишь верхнюю секцию выбранной области, остальные свёрнуты». */
-        try {
-          var firstDetails = target.querySelector('details.settings-card');
-          if (firstDetails) firstDetails.open = true;
-        } catch (_) {}
-        if (typeof target.scrollIntoView === 'function') {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      });
-    });
-    /* v5.0.1 — bind сохранения настроек */
-    var saveBtn = document.getElementById('saveSettingsBtn');
-    if (saveBtn && !saveBtn._sspBound) {
-      saveBtn.addEventListener('click', function (e) { e.preventDefault(); doSaveSettings(); });
-      saveBtn._sspBound = true;
-    }
     /* v5.0.3 — bind кнопок локального черновика */
     bindClearDraftHandlers();
     /* v5.0.1 — Esc для закрытия overlay
@@ -3417,19 +3313,6 @@
        data-no-escape="true" для блокирующих модалок (wcMultiTab). */
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-
-      /* v2.0.0: Ring Dialog обрабатывает Escape для .overlay/.dyn-modal-overlay через onCloseAttempt.
-         IIFE handler пропускает только если topmost модал действительно в Ring Dialog (ssp-dialog-host).
-         Модалки на legacy-пути (pickOverlay) — в _modalStack но без ssp-dialog-host → IIFE обрабатывает. */
-      var _escTopModal = _modalStack && _modalStack.length && _modalStack[_modalStack.length - 1];
-      if (window.__SSP_DIALOG && _escTopModal && _escTopModal.classList.contains('ssp-dialog-host')) return;
-
-      /* settingsOverlay сохраняет специальный путь close (cleanup state, save hint). */
-      var settingsOv = document.getElementById('settingsOverlay');
-      if (settingsOv && !settingsOv.classList.contains('hidden')) {
-        closeSettingsOverlay();
-        return;
-      }
 
       /* 1) Прежде всего смотрим в _modalStack — он содержит модалки, открытые
             через _appModalOpen(). Top = последняя пушнутая. */
@@ -3507,92 +3390,6 @@
    * Открытие выполняет повторную серверную проверку через /check-settings-manager.
    * Закрытие — просто скрывает overlay, никакой mutation. Никаких deep-link/новых tab.
    */
-  function openSettingsOverlay() {
-    var overlay = document.getElementById('settingsOverlay');
-    var form    = document.getElementById('settingsForm');
-    var notCfg  = document.getElementById('settingsNotConfigured');
-    var denied  = document.getElementById('settingsAccessDenied');
-    var details = document.getElementById('settingsAccessDeniedDetails');
-    if (!overlay) return;
-
-    // Сбрасываем состояния панели
-    if (form)    form.classList.add('hidden');
-    if (notCfg)  notCfg.classList.add('hidden');
-    if (denied)  denied.classList.add('hidden');
-    if (details) details.textContent = '';
-
-    overlay.classList.remove('hidden');
-    overlay.setAttribute('aria-hidden', 'false');
-
-    /* v1.9.9 — при каждом открытии Settings все спойлеры свёрнуты по умолчанию.
-       Пользователь может развернуть конкретные секции через nav-chip быстрого
-       доступа сверху, либо вручную кликом по <summary>. Accordion-поведение
-       (закрытие остальных при открытии одного) реализовано через toggle-listener
-       ниже — навешивается один раз через .dataset.sspAccordionBound. */
-    try {
-      overlay.querySelectorAll('details.settings-card').forEach(function(d) {
-        d.open = false;
-        if (d.dataset.sspAccordionBound) return;
-        d.dataset.sspAccordionBound = '1';
-        d.addEventListener('toggle', function() {
-          if (!d.open) return;
-          overlay.querySelectorAll('details.settings-card').forEach(function(other) {
-            if (other !== d && other.open) other.open = false;
-          });
-        });
-      });
-    } catch(_) {}
-
-    /* v5.0.3 (итерация 5) — lazy-load project groups при открытии overlay
-       (раньше грузились в init Promise.all, что замедляло холодный старт). */
-    if (typeof loadProjectGroups === 'function' && !window._sspGroupsLoaded) {
-      window._sspGroupsLoaded = true; // защита от двойного fetch
-      loadProjectGroups().catch(function(e){ diag('lazy loadProjectGroups err: '+e,'err'); });
-    }
-
-    apiGet('check-settings-manager').then(function (r) {
-      diag('overlay open: configured=' + (r && r.configured) + ' canManage=' + (r && r.canManage), 'info');
-
-      if (!r || !r.configured) {
-        if (notCfg) notCfg.classList.remove('hidden');
-        return;
-      }
-      if (!r.canManage) {
-        if (denied) denied.classList.remove('hidden');
-        if (details && r.groupName) {
-          details.textContent = T('settingsNoAccessGroup').replace('{group}', r.groupName);
-        }
-        return;
-      }
-
-      // canManage:true → подгружаем актуальные данные и рендерим форму.
-      // Ошибки рендера НЕ должны выглядеть как access-denied — обернём в try/catch.
-      try {
-        applySettingsUI();
-        bindSettingsFormHandlers();
-        applyI18N();
-        // v2.0.0 D5-B — после applyI18N data-label на host-spans заполнен; mount Ring Checkboxes (idempotent).
-        if (window.__SSP_CHECKBOX && typeof window.__SSP_CHECKBOX.mountAllIn === 'function') {
-          window.__SSP_CHECKBOX.mountAllIn(overlay);
-        }
-        _settingsLoaded = true;
-        if (form) form.classList.remove('hidden');
-      } catch (renderErr) {
-        diag('overlay render ERR: ' + (renderErr && renderErr.message ? renderErr.message : String(renderErr)), 'err');
-        // Init-error: показываем баннер access-denied как контейнер, но с честным текстом «ошибка инициализации»
-        if (denied) denied.classList.remove('hidden');
-        if (details) {
-          details.textContent = T('toastInitError') + (renderErr && renderErr.message ? renderErr.message : String(renderErr));
-        }
-        toast(T('toastInitError') + (renderErr && renderErr.message ? renderErr.message : ''), 'err');
-      }
-    }).catch(function (e) {
-      // Это ошибка серверного запроса check-settings-manager (не ошибка прав)
-      diag('overlay check ERR: ' + String(e), 'err');
-      if (denied) denied.classList.remove('hidden');
-      if (details) details.textContent = T('toastInitError') + (e && e.message ? e.message : String(e));
-    });
-  }
 
   /**
    * v5.0.1 — bind интерактивных элементов settings-формы (один раз, через _sspBound).
@@ -3616,27 +3413,6 @@
     }
   }
 
-  function bindSettingsFormHandlers() {
-    ['dynEditCheck', 'usePersonalForResourceCheck', 'personalPlanningCheck', 'manualPersonalResourceCheck'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || el._sspBound) return;
-      el.addEventListener('click', function () {
-        /* v5.1.0 — блокировка дочернего usePersonalForResource при выключенном parent */
-        if (id === 'usePersonalForResourceCheck' && el.classList.contains('role-check--disabled')) return;
-        /* v1.4.0 — блокировка дочернего manualPersonalResource при выключенном parent */
-        if (id === 'manualPersonalResourceCheck' && el.classList.contains('role-check--disabled')) return;
-        el.classList.toggle('active');
-        if (id === 'personalPlanningCheck') applyModesDependencies();
-      });
-      el._sspBound = true;
-    });
-    // Кнопка сохранения (на случай, если init-bind не сработал из-за отсутствия DOM):
-    var saveBtn = document.getElementById('saveSettingsBtn');
-    if (saveBtn && !saveBtn._sspBound) {
-      saveBtn.addEventListener('click', function (e) { e.preventDefault(); doSaveSettings(); });
-      saveBtn._sspBound = true;
-    }
-  }
 
   /**
    * v5.1.0 — Применить parent/child зависимости feature-flags в overlay.
@@ -3644,28 +3420,7 @@
    * выключенном parent personalPlanning. Читает текущее DOM-состояние чекбокса parent
    * (а не _settings), чтобы реагировать на ещё не сохранённые правки в форме.
    */
-  function applyModesDependencies() {
-    var parentEl = document.getElementById('personalPlanningCheck');
-    var parentOn = !!(parentEl && parentEl.classList.contains('active'));
-    var childEl  = document.getElementById('usePersonalForResourceCheck');
-    if (childEl) {
-      childEl.classList.toggle('role-check--disabled', !parentOn);
-    }
-    /* v1.4.0 — manualPersonalResource также дочерний к personalPlanning. */
-    var manualEl = document.getElementById('manualPersonalResourceCheck');
-    if (manualEl) {
-      manualEl.classList.toggle('role-check--disabled', !parentOn);
-    }
-    /* v5.5.0 — Этап 3d (D36): синхронизировать видимость уровня «Люди» в segmented control */
-    try { if (typeof _applyPersonalPlanningToSegmentedControl === 'function') _applyPersonalPlanningToSegmentedControl(); } catch(_){}
-  }
 
-  function closeSettingsOverlay() {
-    var overlay = document.getElementById('settingsOverlay');
-    if (!overlay) return;
-    overlay.classList.add('hidden');
-    overlay.setAttribute('aria-hidden', 'true');
-  }
 
   /* ═══ v2.2.0 Phase 5 #32 — settingsOverlay → bespoke SettingsForm в Ring Dialog ═══
      openSettingsModal заменяет vanilla openSettingsOverlay: 3 состояния доступа
@@ -3739,9 +3494,6 @@
   }
 
   function openSettingsModal() {
-    /* Fallback на legacy-путь, если React-мост недоступен. */
-    if (!window.__SSP_RING_MODAL) { openSettingsOverlay(); return; }
-
     apiGet('check-settings-manager').then(function (r) {
       diag('settingsModal open: configured=' + (r && r.configured) + ' canManage=' + (r && r.canManage), 'info');
 
@@ -5193,130 +4945,6 @@
   }
 
   /* ── Применить значения _settings к форме ── */
-  function applySettingsUI() {
-    // Defensive: гарантируем инициализацию состояния multi-select групп
-    if (!_valGroupsState        || typeof _valGroupsState        !== 'object') _valGroupsState        = { ids: [], names: [] };
-    if (!_editGroupsState       || typeof _editGroupsState       !== 'object') _editGroupsState       = { ids: [], names: [] };
-    if (!_histClearGroupsState  || typeof _histClearGroupsState  !== 'object') _histClearGroupsState  = { ids: [], names: [] };
-    /* v6.1.0 D82 (F5) — assigner-роль. */
-    if (!_assignerGroupsState   || typeof _assignerGroupsState   !== 'object') _assignerGroupsState   = { ids: [], names: [] };
-    if (!Array.isArray(_valGroupsState.ids))         _valGroupsState.ids         = [];
-    if (!Array.isArray(_valGroupsState.names))       _valGroupsState.names       = [];
-    if (!Array.isArray(_editGroupsState.ids))        _editGroupsState.ids        = [];
-    if (!Array.isArray(_editGroupsState.names))      _editGroupsState.names      = [];
-    if (!Array.isArray(_histClearGroupsState.ids))   _histClearGroupsState.ids   = [];
-    if (!Array.isArray(_histClearGroupsState.names)) _histClearGroupsState.names = [];
-    if (!Array.isArray(_assignerGroupsState.ids))    _assignerGroupsState.ids    = [];
-    if (!Array.isArray(_assignerGroupsState.names))  _assignerGroupsState.names  = [];
-
-    renderRolesGrid();
-    renderDynamicRoleFields();
-
-    fillFieldSelect(document.getElementById('s_priority'),            ['enum'],             _settings && _settings.fieldPriority);
-    fillFieldSelect(document.getElementById('s_xpriority'),           ['enum'],             _settings && _settings.fieldXPriority);
-    fillFieldSelect(document.getElementById('s_state'),               ['state', 'enum'],    _settings && _settings.fieldState);
-    fillFieldSelect(document.getElementById('s_system'),              ['enum', 'owned'],    _settings && _settings.fieldSystem);
-    /* v1.8.0 D130 — Etap В.2 — string-type filter: excludes text/enum/integer/period. */
-    fillFieldSelect(document.getElementById('s_external_ticket_id'),  ['string'],           _settings && _settings.fieldExternalTicketId);
-    fillFieldSelect(document.getElementById('s_sprint_field'),        ['enum'],             _settings && _settings.fieldSprint);
-    fillFieldSelect(document.getElementById('s_version_field'),       ['version', 'build'], _settings && _settings.fieldVersion);
-
-    setCheck('dynEditCheck',                !!(_settings && _settings.dynEditEnabled));
-    setCheck('usePersonalForResourceCheck', !!(_settings && _settings.usePersonalForResource));
-    setCheck('personalPlanningCheck',       !!(_settings && _settings.personalPlanningEnabled));
-    /* v1.4.0 — manual per-assignee resource. */
-    setCheck('manualPersonalResourceCheck', !!(_settings && _settings.manualPersonalResource));
-    /* v6.3.0 D110 → v2.0.0 D5-B — Ring Checkbox host-span, унифицированный setCheck. */
-    setCheck('hideDiagLogUiCheck', !!(_settings && _settings.hideDiagLogUi));
-    /* v1.2.0 DTA — checkbox + mapping table. workItemTypeMapping хранится в settings
-       как object<typeName, roleKey>; UI-state — массив строк, чтобы поддержать
-       пустые/невалидные промежуточные состояния редактирования. */
-    setCheck('dtaEnabledCheck',    !!(_settings && _settings.dtaEnabled));
-    setCheck('dtaWarningsCheck',   !!(_settings && _settings.dtaWarningsEnabled));
-    _dtaRows = [];
-    var mapping = (_settings && _settings.workItemTypeMapping) || {};
-    Object.keys(mapping).forEach(function(t) {
-      _dtaRows.push({ type: t, role: mapping[t] || '' });
-    });
-    _renderDtaMapping();
-    _bindDtaMappingEvents();
-    /* v1.3.0 Cascade — load 7 ключей в form.
-       kindField — single-select из всех enum-полей проекта.
-       level2/3 — multi-select из bundle-values текущего kindField. */
-    setCheck('cascadeAggregationCheck',     !!(_settings && _settings.cascadeAggregationEnabled));
-    setCheck('forbidContainerWorkItemsCheck', !!(_settings && _settings.forbidContainerWorkItems));
-    /* kind-field select: enum-fields проекта. Если в settings было записано имя
-       поля, которого больше нет в _projectFields, fillFieldSelect добавит
-       его placeholder с пометкой ⚠. */
-    var kindFieldSel = document.getElementById('cascadeKindFieldSel');
-    var kindFieldName = (_settings && typeof _settings.cascadeKindField === 'string') ? _settings.cascadeKindField : '';
-    if (kindFieldSel) fillFieldSelect(kindFieldSel, ['enum'], kindFieldName);
-    /* level2/3 multi-selects — заполняются bundle-values по выбранному kind-field. */
-    var lvl2Sel = (_settings && Array.isArray(_settings.cascadeLevel2Values)) ? _settings.cascadeLevel2Values : [];
-    var lvl3Sel = (_settings && Array.isArray(_settings.cascadeLevel3Values)) ? _settings.cascadeLevel3Values : [];
-    /* Загрузка асинхронная через apiGet field-values; UI рендерит сразу
-       options=[selected only] и обновит после resolve. */
-    _fillCascadeBundleSelect('cascadeLevel2Sel', kindFieldName, lvl2Sel);
-    _fillCascadeBundleSelect('cascadeLevel3Sel', kindFieldName, lvl3Sel);
-    var linkInEl = document.getElementById('cascadeLinkInwardInput');
-    if (linkInEl) linkInEl.value = (_settings && typeof _settings.cascadeParentLinkInward === 'string') ? _settings.cascadeParentLinkInward : '';
-    var linkOutEl = document.getElementById('cascadeLinkOutwardInput');
-    if (linkOutEl) linkOutEl.value = (_settings && typeof _settings.cascadeParentLinkOutward === 'string') ? _settings.cascadeParentLinkOutward : '';
-    _bindCascadeWarning();
-    _refreshCascadeWarning();
-    /* v1.7.0 D128 — State Rollup: load 7 ключей в form. */
-    setCheck('stateRollupEnabledCheck', !!(_settings && _settings.stateRollupEnabled));
-    var srOrder    = (_settings && Array.isArray(_settings.stateRollupOrder))         ? _settings.stateRollupOrder         : [];
-    var srResolved = (_settings && Array.isArray(_settings.stateRollupResolvedStates)) ? _settings.stateRollupResolvedStates : [];
-    var srFloor    = (_settings && typeof _settings.stateRollupFloor === 'string')     ? _settings.stateRollupFloor         : '';
-    _fillStateRollupOrderList(srOrder);
-    _stateRollupBundleStates().then(function(bundleStates) {
-      _fillStateRollupBundleSel(bundleStates, srOrder);
-      _fillStateRollupResolvedSel(bundleStates, srResolved);
-      _fillStateRollupFloorSel(srOrder, srFloor);
-      _refreshStateRollupValidation();
-      /* v1.9.0 D132 — Stand-up: populate done-states multi-select from same bundle. */
-      _fillStandupDoneStatesSel(bundleStates, (_settings && Array.isArray(_settings.standupDoneStates)) ? _settings.standupDoneStates : []);
-    });
-    _bindStateRollupButtons();
-    /* v1.1.0 — defaultLang select. Заполняем 15 опциями (пустую сохраняем как «inherit»),
-       подставляем сохранённое значение, регистрируем live-apply через setProjectDefault. */
-    var defLangSel = document.getElementById('defaultLangSel');
-    if (defLangSel) {
-      _populateDefaultLangSelect(defLangSel);
-      defLangSel.value = (_settings && typeof _settings.defaultLang === 'string') ? _settings.defaultLang : '';
-    }
-    /* v5.1.0 — после установки значений активировать parent/child disable */
-    if (typeof applyModesDependencies === 'function') applyModesDependencies();
-
-    setVal('s_nkc_january',   (_settings && _settings.nkcJanuary)   || 105);
-    setVal('s_nkc_may',       (_settings && _settings.nkcMay)       || 119);
-    setVal('s_nkc_other',     (_settings && _settings.nkcOther)     || 145);
-    setVal('s_rate',          (_settings && _settings.rate          !== undefined) ? _settings.rate          : 1);
-    setVal('s_participation', (_settings && _settings.participation !== undefined) ? _settings.participation : 1);
-
-    /* v1.4.1 D128 — kpe object is migrated on read so legacy installs with
-       Cyrillic-keyed values still resolve via the English canonical keys. */
-    var kpe = _migrateKpeObject((_settings && _settings.kpe) || {});
-    setVal('s_kpe_intern', kpe.Intern !== undefined ? kpe.Intern : 0);
-    setVal('s_kpe_jun',    kpe.Junior !== undefined ? kpe.Junior : 0.5);
-    setVal('s_kpe_mid',    kpe.Middle !== undefined ? kpe.Middle : 0.65);
-    setVal('s_kpe_senior', kpe.Senior !== undefined ? kpe.Senior : 0.75);
-
-    // Multi-select групп — состояние из _settings
-    _valGroupsState.ids        = ((_settings && _settings.validationGroups)         || []).slice();
-    _valGroupsState.names      = ((_settings && _settings.validationGroupNames)     || []).slice();
-    _editGroupsState.ids       = ((_settings && _settings.editGroups)               || []).slice();
-    _editGroupsState.names     = ((_settings && _settings.editGroupNames)           || []).slice();
-    _histClearGroupsState.ids   = ((_settings && _settings.historyClearGroups)      || []).slice();
-    _histClearGroupsState.names = ((_settings && _settings.historyClearGroupNames)  || []).slice();
-    _assignerGroupsState.ids    = ((_settings && _settings.assignerGroups)          || []).slice();
-    _assignerGroupsState.names  = ((_settings && _settings.assignerGroupNames)      || []).slice();
-    renderGrpMultiselect('val');
-    renderGrpMultiselect('edit');
-    renderGrpMultiselect('histClear');
-    renderGrpMultiselect('assigner');
-  }
 
   function setCheck(id, on) {
     var el = document.getElementById(id);
@@ -5491,179 +5119,7 @@
   }
 
   /* ── Сборка settings-объекта из формы ── */
-  function collectSettings() {
-    var activeRoles = [];
-    document.querySelectorAll('#rolesGrid .role-check.active').forEach(function (el) {
-      var k = el.getAttribute('data-role');
-      if (k) activeRoles.push(k);
-    });
 
-    var data = {
-      activeRoles:             activeRoles,
-      dynEditEnabled:          document.getElementById('dynEditCheck').classList.contains('active'),
-      personalPlanningEnabled: document.getElementById('personalPlanningCheck').classList.contains('active'),
-      usePersonalForResource:  document.getElementById('usePersonalForResourceCheck').classList.contains('active'),
-      /* v1.4.0 — ручной ввод ресурса по исполнителям; дочерний к personalPlanning. */
-      manualPersonalResource:  document.getElementById('manualPersonalResourceCheck').classList.contains('active'),
-      /* v6.3.0 D110 → v2.0.0 D5-B — унифицированный getCheck (Ring host-span). */
-      hideDiagLogUi:           getCheck('hideDiagLogUiCheck'),
-      /* v1.2.0 DTA — feature flag + mapping. Mapping собирается из _dtaRows;
-         пустые type-name строки скипаются. Дубликаты фильтруются на уровне
-         object-shape (последний выигрывает); UI-валидация блокирует save при
-         duplicate, поэтому до этого места не доходим если duplicate exists. */
-      dtaEnabled:              getCheck('dtaEnabledCheck'),
-      dtaWarningsEnabled:      getCheck('dtaWarningsCheck'),
-      workItemTypeMapping:     (function() {
-        var out = {};
-        (Array.isArray(_dtaRows) ? _dtaRows : []).forEach(function(r) {
-          var t = (r && r.type || '').trim();
-          if (!t) return;
-          if (!r.role) return;
-          out[t] = r.role;
-        });
-        return out;
-      })(),
-      /* v1.3.0 Cascade — 7 ключей. Empty-strings для kind-field/links заменяем
-         на null, чтобы backend assertStr принял (он допускает null). Empty
-         arrays для level-values — отправляем как пустой массив (== «cascade
-         выключен по факту, нет container-kinds»), валидация isStrArr допускает 0. */
-      cascadeAggregationEnabled: getCheck('cascadeAggregationCheck'),
-      forbidContainerWorkItems:  getCheck('forbidContainerWorkItemsCheck'),
-      cascadeKindField:          _cascadeStrOrNull(document.getElementById('cascadeKindFieldSel')),
-      cascadeLevel2Values:       _cascadeMultiSelectValues(document.getElementById('cascadeLevel2Sel')),
-      cascadeLevel3Values:       _cascadeMultiSelectValues(document.getElementById('cascadeLevel3Sel')),
-      cascadeParentLinkInward:   _cascadeStrOrNull(document.getElementById('cascadeLinkInwardInput')),
-      cascadeParentLinkOutward:  _cascadeStrOrNull(document.getElementById('cascadeLinkOutwardInput')),
-      /* v1.7.0 D128 — State Rollup. rescanRequested/At не сохраняем здесь
-         (управляются кнопкой Rescan; в v1.7.0 кнопка disabled — ключи не трогаем). */
-      stateRollupEnabled:       getCheck('stateRollupEnabledCheck'),
-      stateRollupOrder:         _stateRollupCurrentOrder(),
-      stateRollupResolvedStates: _stateRollupCurrentResolved(),
-      stateRollupFloor:         (function() { var v = document.getElementById('stateRollupFloorSel'); return (v && v.value) ? v.value : null; })(),
-      stateRollupStrategy:      'min',
-      /* v1.1.0 — project-default язык. Пустая строка из <option value=""> → undefined,
-         чтобы whitelist не отверг (defaultLang допускает только валидные ISO-коды или отсутствие). */
-      defaultLang:             (function () {
-        var sel = document.getElementById('defaultLangSel');
-        var v = sel ? sel.value : '';
-        return v ? v : undefined;
-      })(),
-      nkcJanuary:    parseFloat(document.getElementById('s_nkc_january').value) || 105,
-      nkcMay:        parseFloat(document.getElementById('s_nkc_may').value)     || 119,
-      nkcOther:      parseFloat(document.getElementById('s_nkc_other').value)   || 145,
-      rate:          isFinite(parseFloat(document.getElementById('s_rate').value))
-                       ? parseFloat(document.getElementById('s_rate').value) : 1,
-      participation: isFinite(parseFloat(document.getElementById('s_participation').value))
-                       ? parseFloat(document.getElementById('s_participation').value) : 1,
-      kpe: {
-        Intern: parseFloat(document.getElementById('s_kpe_intern').value) || 0,
-        Junior: parseFloat(document.getElementById('s_kpe_jun').value)    || 0.5,
-        Middle: parseFloat(document.getElementById('s_kpe_mid').value)    || 0.65,
-        Senior: parseFloat(document.getElementById('s_kpe_senior').value) || 0.75
-      },
-      fieldPriority:         document.getElementById('s_priority').value           || null,
-      fieldXPriority:        document.getElementById('s_xpriority').value          || null,
-      fieldState:            document.getElementById('s_state').value              || null,
-      fieldSystem:           document.getElementById('s_system').value             || null,
-      /* v1.8.0 D130 — Etap В.2 — external ticket ID field name. */
-      fieldExternalTicketId: document.getElementById('s_external_ticket_id').value || null,
-      fieldSprint:           document.getElementById('s_sprint_field').value       || null,
-      fieldVersion:          document.getElementById('s_version_field').value      || null,
-      validationGroups:        _valGroupsState.ids.slice(),
-      validationGroupNames:    _valGroupsState.names.slice(),
-      editGroups:              _editGroupsState.ids.slice(),
-      editGroupNames:          _editGroupsState.names.slice(),
-      historyClearGroups:      _histClearGroupsState.ids.slice(),
-      historyClearGroupNames:  _histClearGroupsState.names.slice(),
-      /* v6.1.0 D82 (F5) — assigner-роль (variant b: assignee + start/end-dates). */
-      assignerGroups:          _assignerGroupsState.ids.slice(),
-      assignerGroupNames:      _assignerGroupsState.names.slice(),
-      /* v1.9.0 D132 — Stand-up done states: selected options from multi-select. */
-      standupDoneStates:       (function() {
-        var sel = document.getElementById('standupDoneStatesList');
-        if (!sel) return [];
-        return Array.from(sel.selectedOptions).map(function(o){ return o.value; });
-      })(),
-      savedAt:                 Date.now()
-    };
-
-    // Поля по активным ролям
-    ALL_ROLES.forEach(function (role) {
-      var estEl  = document.getElementById('s_est_'  + role.key);
-      var factEl = document.getElementById('s_fact_' + role.key);
-      var userEl = document.getElementById('s_user_' + role.key);
-      data[role.fieldEst]  = estEl  ? (estEl.value  || null) : null;
-      data[role.fieldFact] = factEl ? (factEl.value || null) : null;
-      data[role.userField] = userEl ? (userEl.value || null) : null;
-    });
-
-    return data;
-  }
-
-  function doSaveSettings() {
-    var btn  = document.getElementById('saveSettingsBtn');
-    var hint = document.getElementById('saveSettingsHint');
-    var data = collectSettings();
-
-    diag('saveSettings: collected ' + Object.keys(data).length + ' keys', 'info');
-
-    if (btn)  { btn.disabled = true; btn.textContent = T('toastSaving'); }
-    if (hint) { hint.className = 'save-hint'; hint.textContent = T('toastSaving'); }
-
-    apiPost('sprint-data', { settings: data })
-      .then(function (resp) {
-        if (!resp || !resp.success) {
-          var reason = (resp && resp.reason) || (resp && resp.error) || 'unknown';
-          throw new Error(reason);
-        }
-        /* v5.0.3 (итерация 5b) — если поменялись fieldSprint/fieldVersion,
-           инвалидируем cache field-values, чтобы новые опции загрузились с backend. */
-        try {
-          if (_settings && (_settings.fieldSprint  !== data.fieldSprint))  invalidateFieldValuesCache(_settings.fieldSprint);
-          if (_settings && (_settings.fieldVersion !== data.fieldVersion)) invalidateFieldValuesCache(_settings.fieldVersion);
-        } catch(_){}
-        _settings = data;
-        /* v1.1.0 — после save обновляем project-default в loader (admin изменил defaultLang). */
-        _syncProjectDefaultLang();
-        /* v1.3.1 — после save status-bar модулей пересчитать. */
-        _refreshFeatureStatusBar();
-        if (btn)  { btn.disabled = false; btn.textContent = T('btnSaveSettings'); }
-        if (hint) {
-          hint.className = 'save-ok';
-          hint.textContent = T('toastSettingsSaved');
-          setTimeout(function () { if (hint) hint.classList.add('fade'); }, 4000);
-          setTimeout(function () { if (hint) { hint.className = 'save-hint'; hint.textContent = ''; } }, 4500);
-        }
-        var bc = document.getElementById('bannerCfg');
-        if (bc) bc.classList.add('hidden');
-        toast(T('toastSettingsSaved'), 'success');
-        /* v1.8.1 — soft warning: обязательные поля (Priority + State) не выбраны.
-           Save проходит (нет блокировки), но пользователь предупреждается. */
-        var missingRequired = [];
-        if (!data.fieldPriority) missingRequired.push(T('fldPriority'));
-        if (!data.fieldState)    missingRequired.push(T('fldState'));
-        if (missingRequired.length) {
-          setTimeout(function() {
-            toast(T('toastRequiredFieldsMissing') + ': ' + missingRequired.join(', '), 'warn');
-          }, 400);
-        }
-        // После сохранения — пересчёт прав, видимости вкладок и перерендер планировщика
-        checkValidator();
-        checkEditorRights();
-        checkAssignerRights(); // v6.1.0 D82 (F5)
-        applyPersonalPlanningVisibility();
-        refreshClearHistoryBtn();
-        renderPlannerRoles();
-        try { _applyDiagLogVisibility(); } catch(_){}
-      })
-      .catch(function (e) {
-        if (btn)  { btn.disabled = false; btn.textContent = T('btnSaveSettings'); }
-        var msg = (e && e.message) ? e.message : String(e);
-        if (hint) { hint.className = 'save-err'; hint.textContent = T('toastSettingsErr') + ': ' + msg; }
-        diag('saveSettings ERR: ' + msg, 'err');
-        toast(T('toastSettingsErr'), 'err');
-      });
-  }
 
   /* ═══ ПЛАНИРОВАНИЕ ══════════════════════════════════════════ */
 

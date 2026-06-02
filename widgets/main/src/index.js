@@ -17,7 +17,6 @@ import './toast-pure.js';
 import './modal-pure.js';
 import './sort-pure.js';
 import './react/portal.jsx';
-import './react/dialog-mount.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
 import './react/settings-form.jsx';
