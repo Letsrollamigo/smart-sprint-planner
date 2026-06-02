@@ -513,6 +513,7 @@ function SettingsForm(props) {
     usePersonalForResource: !!initial.usePersonalForResource,
     manualPersonalResource: !!initial.manualPersonalResource,
     dynEditEnabled: !!initial.dynEditEnabled,
+    allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
   }));
   const toggleMode = (k) => setModes((p) => Object.assign({}, p, { [k]: !p[k] }));
 
@@ -642,6 +643,7 @@ function SettingsForm(props) {
     data.personalPlanningEnabled = modes.personalPlanningEnabled;
     data.usePersonalForResource = modes.usePersonalForResource;
     data.manualPersonalResource = modes.manualPersonalResource;
+    data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
     data.hideDiagLogUi = hideDiagLogUi;
 
     const num = (v, d) => { const f = parseFloat(v); return isFinite(f) ? f : d; };
@@ -913,6 +915,9 @@ function SettingsForm(props) {
           </div>
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.dynEditEnabled} label={t('lblDynEdit')} hint={t('descDynEdit')} tooltip={t('tooltipDynEdit')} onToggle={() => toggleMode('dynEditEnabled')} />
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.allowOverlimitPlanning} label={t('lblAllowOverlimit')} hint={t('descAllowOverlimit')} onToggle={() => toggleMode('allowOverlimitPlanning')} />
           </div>
         </React.Fragment>
       ),

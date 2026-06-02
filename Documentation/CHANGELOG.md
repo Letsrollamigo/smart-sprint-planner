@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.46] — 2026-06-03
+
+> **Locale-aware Priority/State display (B7) + plan-beyond-limits mode (#38).**
+
+### Fixed
+
+- **Task Priority/State values now display in the widget's UI language (B7).** YouTrack returns enum-field values (Priority, State, Cross Priority) in the server locale, so on English (and other non-Russian) widget languages they were still shown in the server's language. Display now goes through a locale-aware resolver: Russian behaviour is unchanged; on other languages standard values are shown using their canonical English names. Custom values with no canonical translation are shown as-is. Only display is affected (planning table, history, Excel export, Gantt); the underlying logic (per-type hours aggregation, history snapshots, sorting, Gantt state-change detection) uses the original values and is unchanged.
+
+### Added
+
+- **"Allow planning with over-allocation" mode (#38).** A new checkbox in Settings (Planning modes). When enabled: validation is no longer blocked and the over-limit dialog is not shown when a role's total allocation exceeds its resource; negative remainders are still shown in red as an indicator (over-limit detection is preserved — only the reaction changes). A status chip in the widget header reflects the mode. Localized across all 15 languages.
+
+---
+
 ## [2.1.44] — 2026-06-02
 
 > **Role over-allocation detector fix (B13).**
