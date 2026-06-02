@@ -947,6 +947,13 @@
     'Submitted':'Отправлена','Reopened':'Переоткрыта','Obsolete':'Устаревшая','Verified':'Проверена',
   };
   function localizeEnumVal(s) { if (!s) return s; return _enumLocaleMap[s] || s; }
+  /* B7 — locale-aware DISPLAY значений enum (Priority/State/X-Priority). YT отдаёт
+     localizedName первым → item.* всегда в локали сервера (RU). Для отображения:
+     RU-UI — как раньше (localizeEnumVal, EN→RU); не-RU — инверсная мапа RU→EN для
+     стандартных значений, кастомные/немапленные остаются как есть (их канон). Только
+     display — logic-поля (item.state в DTA/снапшотах/Ганте, _prRank) не затрагиваются. */
+  var _enumLocaleMapInverse = (function(){ var inv = {}; for (var k in _enumLocaleMap) { if (!(_enumLocaleMap[k] in inv)) inv[_enumLocaleMap[k]] = k; } return inv; })();
+  function dispEnum(s) { if (!s) return s; return _lang === 'ru' ? localizeEnumVal(s) : (_enumLocaleMapInverse[s] || s); }
 
   function toDateIn(ts)  { return ts ? new Date(ts).toISOString().slice(0,10) : ''; }
   function fromDateIn(s) { return s ? new Date(s).getTime() : null; }
@@ -1581,7 +1588,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.44';
+  var APP_VERSION = '2.1.46';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3696,7 +3703,8 @@
       { id: 'ssbPersonal', on: !!s.personalPlanningEnabled },
       { id: 'ssbDta',         on: !!s.dtaEnabled },
       { id: 'ssbCascade',     on: !!s.cascadeAggregationEnabled },
-      { id: 'ssbStateRollup', on: !!s.stateRollupEnabled } /* v1.7.0 D128 */
+      { id: 'ssbStateRollup', on: !!s.stateRollupEnabled }, /* v1.7.0 D128 */
+      { id: 'ssbOverlimit', on: !!s.allowOverlimitPlanning } /* #38 */
     ];
     modules.forEach(function(m) {
       var el = document.getElementById(m.id);
@@ -6815,9 +6823,9 @@
       id: 'priority', title: T('thPriority'), sortable: true,
       getValue: function(row) {
         if (dynEdit && _settings && _settings.fieldPriority) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.priority)||'—')+'</span>' };
+          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(dispEnum(row.item.priority)||'—')+'</span>' };
         }
-        return esc(localizeEnumVal(row.item.priority)||'—');
+        return esc(dispEnum(row.item.priority)||'—');
       }
     });
     if (_settings && _settings.fieldXPriority) {
@@ -6825,9 +6833,9 @@
         id: 'xpriority', title: T('thXpriority'), sortable: true,
         getValue: function(row) {
           if (dynEdit) {
-            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.xpriority)||'—')+'</span>' };
+            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(dispEnum(row.item.xpriority)||'—')+'</span>' };
           }
-          return esc(localizeEnumVal(row.item.xpriority)||'—');
+          return esc(dispEnum(row.item.xpriority)||'—');
         }
       });
     }
@@ -6835,9 +6843,9 @@
       id: 'state', title: T('thState'), sortable: false,
       getValue: function(row) {
         if (dynEdit && _settings && _settings.fieldState) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(localizeEnumVal(row.item.state)||'—')+'</span>' };
+          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(dispEnum(row.item.state)||'—')+'</span>' };
         }
-        return esc(localizeEnumVal(row.item.state)||'—');
+        return esc(dispEnum(row.item.state)||'—');
       }
     });
     columns.push({
@@ -7996,17 +8004,17 @@
       });
       cols.push({
         id: 'priority', title: T('histColPriority'), sortable: false, className: 'td-hist-narrow',
-        getValue: function(item) { return esc(localizeEnumVal(item.priority) || '—'); }
+        getValue: function(item) { return esc(dispEnum(item.priority) || '—'); }
       });
       if (hasXPri) {
         cols.push({
           id: 'xpriority', title: T('histColXpriority'), sortable: false, className: 'td-hist-narrow',
-          getValue: function(item) { return esc(localizeEnumVal(item.xpriority) || '—'); }
+          getValue: function(item) { return esc(dispEnum(item.xpriority) || '—'); }
         });
       }
       cols.push({
         id: 'state', title: T('histColState'), sortable: false, className: 'td-hist-narrow',
-        getValue: function(item) { return esc(localizeEnumVal(item.state) || '—'); }
+        getValue: function(item) { return esc(dispEnum(item.state) || '—'); }
       });
       cols.push({
         id: 'incStatus', title: T('histColIncStatus'), sortable: false, className: 'td-hist-inc',
@@ -8351,9 +8359,9 @@
         item.issueId  || '',
         item.title    || '',
         item.system   || '',
-        item.priority || '',
-        item.xpriority || '',
-        item.state    || '',
+        dispEnum(item.priority) || '',
+        dispEnum(item.xpriority) || '',
+        dispEnum(item.state)    || '',
         item.inclusionStatus ? incLabel(item.inclusionStatus) : '',
         minToH(item['estimate_' + rk]),
         minToH(item['fact_'     + rk]),
@@ -8757,9 +8765,13 @@
     }
 
     // Блокировка валидации: аллокация задачи > ресурс роли
+    /* #38 — если включено «разрешить планирование с превышением лимитов»,
+       детекция остаётся (красные бордеры/карточка остатка выше — индикация),
+       но валидацию НЕ блокируем и overlimit-модалку НЕ показываем. */
+    var allowOver = !!(_settings && _settings.allowOverlimitPlanning);
     var validateBtn = document.getElementById('validateBtn_'+rk);
     if (validateBtn) {
-      if (anyOverlimit) {
+      if (anyOverlimit && !allowOver) {
         validateBtn.disabled = true;
         validateBtn.title = T('overlimitTooltip');
         validateBtn.classList.add('btn--disabled-overlimit');
@@ -10073,12 +10085,12 @@
     });
     columns.push({
       id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority',
-      getValue: function(item) { return esc(item.priority || '—'); }
+      getValue: function(item) { return esc(dispEnum(item.priority) || '—'); }
     });
     if (_settings && _settings.fieldXPriority) {
       columns.push({
         id: 'xpriority', title: T('thXpriority'), sortable: true, className: 'td-xpriority',
-        getValue: function(item) { return esc(item.xpriority || '—'); }
+        getValue: function(item) { return esc(dispEnum(item.xpriority) || '—'); }
       });
     }
     columns.push({

@@ -766,6 +766,9 @@ var ALLOWED_SETTINGS_KEYS = [
      При включении entry.resource в personalPlanning.resourcesByAssignee становится
      manual-input в ЧЧ; авторасчёт по грейду игнорируется. */
   'manualPersonalResource',
+  /* #38 — разрешить планирование с превышением лимитов роли (не блокировать
+     валидацию и не показывать overlimit-модалку; детекция остаётся). */
+  'allowOverlimitPlanning',
   'nkcJanuary','nkcMay','nkcOther','rate','participation',
   'kpe',
   /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI. */
@@ -895,7 +898,7 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled','stateRollupRescanRequested'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
@@ -1983,7 +1986,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.44' });
+        ctx.response.json({ version: '2.1.46' });
       }
     },
 
