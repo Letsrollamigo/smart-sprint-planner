@@ -1983,7 +1983,7 @@ exports.httpHandler = {
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: '2.1.41' });
+        ctx.response.json({ version: '2.1.42' });
       }
     },
 

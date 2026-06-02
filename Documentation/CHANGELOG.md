@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.42] — 2026-06-02
+
+> **De-hybridization wrap-up (#32, phase 6, part 1)** — the legacy Ring Dialog bridge and the old vanilla settings window are removed; modals and settings now run entirely on real React.
+
+### Removed
+
+- **Legacy Ring Dialog bridge (`__SSP_DIALOG` / `dialog-mount.jsx`).** Dropped the DOM transplantation of vanilla-overlay content into Ring Dialog, the per-overlay `MutationObserver` (which watched for `classList.add('hidden')`), the polling repositioning (`setInterval`), and the bridge itself. After every modal moved to the declarative `openModal()` (phases 1–5) the bridge became unreachable — removed together with its CSS (`.ssp-dialog-host`, `.ssp-dialog-inner`).
+- **Old vanilla settings path.** Removed the `#settingsOverlay` DOM (the full-screen vanilla form) and its wiring: `openSettingsOverlay` / `closeSettingsOverlay` / `applySettingsUI` / `collectSettings` / `doSaveSettings` plus the form button/nav-chip bindings. Settings now open exclusively through the React `settingsForm` component (phase 5). Form CSS (`.settings-overlay`, `.settings-card`, `.settings-nav__chip`) removed.
+
+### Other
+
+- Obsolete e2e tests of the vanilla settings form (DTA / cascade / state-rollup UI) removed; the settings smoke test now asserts demolition + no widget crash.
+
+---
+
 ## [2.1.41] — 2026-06-02
 
 > **Ring UI modal de-hybridization, phase 5 (#32)** — the settings window now renders real React in a two-pane layout, completing the migration of the last vanilla form.
