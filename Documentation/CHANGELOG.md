@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.1.47] — 2026-06-03
+
+> **Maintenance release: build toolchain update.**
+
+### Changed
+
+- **Upgraded esbuild 0.21.5 → 0.28.0.** Closes an `npm audit` advisory (GHSA-67mh-4wv8-2f99 — affected a build-time dev dependency; the shipped product was unaffected). Build re-verified: artifacts reproducible and comparable in size, unit tests and live smoke pass. No widget functionality changes.
+
+---
+
 ## [2.1.46] — 2026-06-03
 
 > **Locale-aware Priority/State display (B7) + plan-beyond-limits mode (#38).**
