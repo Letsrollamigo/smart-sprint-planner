@@ -88,65 +88,12 @@
     _sortKeyMemo = k;
     safeLs.set('ssp_sortKey', k);
   }
-  function _xpRank(xp) { var m = String(xp || '').match(/(\d+)/); return m ? parseInt(m[1], 10) : 1e6; }
-  /* Priority rank: latin codes из YouTrack (низкое значение = высокий приоритет). */
-  var _PRIORITY_RANK_MAP = {
-    'Show-stopper': 0, 'Critical': 1, 'Major': 2, 'Normal': 3, 'Minor': 4
-  };
-  function _prRank(p) { var k = String(p || ''); return (k in _PRIORITY_RANK_MAP) ? _PRIORITY_RANK_MAP[k] : 1e6; }
-  function _idCmp(a, b) { return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true }); }
-  /* Multi-key sort с настраиваемым primary key. Вторичные ключи всегда по убыванию приоритета. */
+  var SORT_PURE = (typeof window !== 'undefined' && window.__SSP_SORT_PURE) || {};
+  /* Multi-key task sort — чистые компараторы живут в sort-pure.js (window.__SSP_SORT_PURE),
+     юнит-тестируются изолированно. IIFE владеет состоянием сортировки: getSortKey()
+     резолвит активный primary-ключ, когда вызывающий его опускает. */
   function multiKeySort(items, primary, taMap) {
-    if (!Array.isArray(items)) return items;
-    primary = primary || getSortKey();
-    if (primary === 'off') return items;
-    var arr = items.slice();
-    arr.sort(function (a, b) {
-      if (primary === 'id') {
-        var c0 = _idCmp(a.issueId, b.issueId);
-        if (c0 !== 0) return c0;
-        return (_xpRank(a.xpriority) - _xpRank(b.xpriority)) || (_prRank(a.priority) - _prRank(b.priority));
-      }
-      if (primary === 'priority') {
-        var c1 = _prRank(a.priority) - _prRank(b.priority);
-        if (c1 !== 0) return c1;
-        return (_xpRank(a.xpriority) - _xpRank(b.xpriority)) || _idCmp(a.issueId, b.issueId);
-      }
-      if (primary === 'system') {
-        var sysA = String(a.system || '').toLowerCase();
-        var sysB = String(b.system || '').toLowerCase();
-        var cs = sysA < sysB ? -1 : (sysA > sysB ? 1 : 0);
-        if (cs !== 0) return cs;
-        return (_xpRank(a.xpriority) - _xpRank(b.xpriority)) || _idCmp(a.issueId, b.issueId);
-      }
-      /* v1.8.0 D130 — externalTicketId: lexicographic, undefined/empty sorts to end. */
-      if (primary === 'externalTicketId') {
-        var extA = String(a.externalTicketId || '').toLowerCase();
-        var extB = String(b.externalTicketId || '').toLowerCase();
-        var ce = extA < extB ? -1 : (extA > extB ? 1 : 0);
-        if (ce !== 0) return ce;
-        return _idCmp(a.issueId, b.issueId);
-      }
-      /* v1.10.0 — assignee: lexicographic по lowercase fullName/login, пустые в конец.
-         Tie-breaker: xpriority desc → priority desc → id asc. */
-      if (primary === 'assignee') {
-        var asA = String((taMap && taMap[a.issueId] && taMap[a.issueId].assignee) || '').toLowerCase();
-        var asB = String((taMap && taMap[b.issueId] && taMap[b.issueId].assignee) || '').toLowerCase();
-        /* Пустые assignee — в конец списка независимо от направления. */
-        if (asA === '' && asB !== '') return 1;
-        if (asB === '' && asA !== '') return -1;
-        var ca = asA < asB ? -1 : (asA > asB ? 1 : 0);
-        if (ca !== 0) return ca;
-        return (_xpRank(a.xpriority) - _xpRank(b.xpriority))
-            || (_prRank(a.priority)  - _prRank(b.priority))
-            || _idCmp(a.issueId, b.issueId);
-      }
-      // 'xpriority' (default)
-      var c2 = _xpRank(a.xpriority) - _xpRank(b.xpriority);
-      if (c2 !== 0) return c2;
-      return (_prRank(a.priority) - _prRank(b.priority)) || _idCmp(a.issueId, b.issueId);
-    });
-    return arr;
+    return SORT_PURE.multiKeySort(items, primary || getSortKey(), taMap);
   }
   /* v6.2.1 D98 — sort полностью в th таблиц задач. globalSortToggle в шапке удалён.
      При клике на th[data-sort-key]: toggle между этим ключом и 'off'. */
