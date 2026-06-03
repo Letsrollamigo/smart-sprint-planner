@@ -69,6 +69,59 @@ function isValidSortKey(key) {
   return SORT_KEYS_CYCLE.indexOf(key) >= 0;
 }
 
+// Full multi-key task sort. `primary` MUST be resolved by the caller — the IIFE
+// delegator passes getSortKey() when it is omitted, so this pure function never
+// reads sort state. Faithful port of multiKeySort in legacy-monolith.js: the
+// secondary keys always order by descending priority, and an unrecognised
+// primary falls through to the 'xpriority' default branch.
+function multiKeySort(items, primary, taMap) {
+  if (!Array.isArray(items)) return items;
+  if (!primary || primary === 'off') return items;
+  const arr = items.slice();
+  arr.sort(function (a, b) {
+    if (primary === 'id') {
+      const c0 = idCmp(a.issueId, b.issueId);
+      if (c0 !== 0) return c0;
+      return (xpRank(a.xpriority) - xpRank(b.xpriority)) || (prRank(a.priority) - prRank(b.priority));
+    }
+    if (primary === 'priority') {
+      const c1 = prRank(a.priority) - prRank(b.priority);
+      if (c1 !== 0) return c1;
+      return (xpRank(a.xpriority) - xpRank(b.xpriority)) || idCmp(a.issueId, b.issueId);
+    }
+    if (primary === 'system') {
+      const sysA = String(a.system || '').toLowerCase();
+      const sysB = String(b.system || '').toLowerCase();
+      const cs = sysA < sysB ? -1 : (sysA > sysB ? 1 : 0);
+      if (cs !== 0) return cs;
+      return (xpRank(a.xpriority) - xpRank(b.xpriority)) || idCmp(a.issueId, b.issueId);
+    }
+    if (primary === 'externalTicketId') {
+      const extA = String(a.externalTicketId || '').toLowerCase();
+      const extB = String(b.externalTicketId || '').toLowerCase();
+      const ce = extA < extB ? -1 : (extA > extB ? 1 : 0);
+      if (ce !== 0) return ce;
+      return idCmp(a.issueId, b.issueId);
+    }
+    if (primary === 'assignee') {
+      const asA = String((taMap && taMap[a.issueId] && taMap[a.issueId].assignee) || '').toLowerCase();
+      const asB = String((taMap && taMap[b.issueId] && taMap[b.issueId].assignee) || '').toLowerCase();
+      if (asA === '' && asB !== '') return 1;
+      if (asB === '' && asA !== '') return -1;
+      const ca = asA < asB ? -1 : (asA > asB ? 1 : 0);
+      if (ca !== 0) return ca;
+      return (xpRank(a.xpriority) - xpRank(b.xpriority))
+          || (prRank(a.priority) - prRank(b.priority))
+          || idCmp(a.issueId, b.issueId);
+    }
+    // 'xpriority' (default)
+    const c2 = xpRank(a.xpriority) - xpRank(b.xpriority);
+    if (c2 !== 0) return c2;
+    return (prRank(a.priority) - prRank(b.priority)) || idCmp(a.issueId, b.issueId);
+  });
+  return arr;
+}
+
 const api = {
   SORT_KEYS_CYCLE,
   PRIORITY_RANK_MAP,
@@ -76,6 +129,7 @@ const api = {
   prRank,
   idCmp,
   compareAssignee,
+  multiKeySort,
   nextSortKey,
   isValidSortKey
 };

@@ -12,6 +12,7 @@ const {
   prRank,
   idCmp,
   compareAssignee,
+  multiKeySort,
   nextSortKey,
   isValidSortKey
 } = require('../../widgets/main/src/sort-pure.js');
@@ -186,5 +187,91 @@ describe('idCmp', () => {
     assert.ok(idCmp('PRJ-1', null) > 0);
     assert.ok(idCmp(null, 'PRJ-1') < 0);
     assert.strictEqual(idCmp(null, undefined), 0);
+  });
+});
+
+// ── multiKeySort (full task sort orchestrator) ──────────────────────────────
+
+describe('multiKeySort', () => {
+  const ids = (arr) => arr.map((x) => x.issueId);
+
+  it('returns the input unchanged for non-arrays', () => {
+    assert.strictEqual(multiKeySort(null, 'priority'), null);
+    assert.strictEqual(multiKeySort(undefined, 'priority'), undefined);
+    const obj = { not: 'array' };
+    assert.strictEqual(multiKeySort(obj, 'priority'), obj);
+  });
+
+  it('returns the input unchanged (same reference) when primary is off/empty', () => {
+    const items = [{ issueId: 'P-2' }, { issueId: 'P-1' }];
+    assert.strictEqual(multiKeySort(items, 'off'), items);
+    assert.strictEqual(multiKeySort(items, ''), items);
+    assert.strictEqual(multiKeySort(items), items);
+  });
+
+  it('does not mutate the input array (sorts a copy)', () => {
+    const items = [
+      { issueId: 'P-2', priority: 'Normal' },
+      { issueId: 'P-1', priority: 'Critical' }
+    ];
+    const before = ids(items);
+    const out = multiKeySort(items, 'priority');
+    assert.notStrictEqual(out, items);
+    assert.deepStrictEqual(ids(items), before);
+  });
+
+  it('primary "priority": high priority (lower rank) first, id as tie-breaker', () => {
+    const items = [
+      { issueId: 'P-3', priority: 'Normal' },
+      { issueId: 'P-1', priority: 'Critical' },
+      { issueId: 'P-2', priority: 'Critical' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'priority')), ['P-1', 'P-2', 'P-3']);
+  });
+
+  it('primary "id": natural id order, xpriority then priority as tie-breakers', () => {
+    const items = [
+      { issueId: 'P-10', xpriority: 'XP2' },
+      { issueId: 'P-2',  xpriority: 'XP2' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'id')), ['P-2', 'P-10']);
+  });
+
+  it('default branch (unknown primary) orders by xpriority asc', () => {
+    const items = [
+      { issueId: 'P-1', xpriority: 'XP5' },
+      { issueId: 'P-2', xpriority: 'XP1' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'xpriority')), ['P-2', 'P-1']);
+    assert.deepStrictEqual(ids(multiKeySort(items, 'no-such-key')), ['P-2', 'P-1']);
+  });
+
+  it('primary "system": plain lexicographic (case-insensitive); empty string sorts first', () => {
+    // The IIFE original does a bare string compare — '' < any value, so blanks lead.
+    const items = [
+      { issueId: 'P-1', system: 'Zeta' },
+      { issueId: 'P-2', system: 'alpha' },
+      { issueId: 'P-3', system: '' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'system')), ['P-3', 'P-2', 'P-1']);
+  });
+
+  it('primary "externalTicketId": plain lexicographic; empty string sorts first', () => {
+    const items = [
+      { issueId: 'P-1', externalTicketId: 'JIRA-9' },
+      { issueId: 'P-2', externalTicketId: '' },
+      { issueId: 'P-3', externalTicketId: 'JIRA-1' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'externalTicketId')), ['P-2', 'P-3', 'P-1']);
+  });
+
+  it('primary "assignee": reads assignee from taMap, empty sorts to end', () => {
+    const items = [{ issueId: 'P-1' }, { issueId: 'P-2' }, { issueId: 'P-3' }];
+    const taMap = {
+      'P-1': { assignee: 'Zoe' },
+      'P-2': { assignee: 'Amy' }
+      // P-3 has no taMap entry → treated as empty → last
+    };
+    assert.deepStrictEqual(ids(multiKeySort(items, 'assignee', taMap)), ['P-2', 'P-1', 'P-3']);
   });
 });
