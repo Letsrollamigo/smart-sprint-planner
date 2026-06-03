@@ -825,53 +825,15 @@
     });
   }
 
-  /* v5.0.3 — Период всегда отображается в часах и минутах (без недель/дней).
-     Раньше большие значения переходили в "Xн Yд" → запутывало пользователя.
-     parsePeriod() остаётся обратно совместимым: принимает и [нwdд] из legacy-данных. */
-  /* v1.4.1 D124 — единицы часов/минут берутся из активной локали через T('hourShort')
-     и T('minuteShort'). До v1.4.1 литералы 'ч' / 'м' были захардкожены, из-за чего
-     plan/fact/capacity-плашки оставались русскими при любом языке UI. */
-  function fmtPeriod(m) {
-    if (m===null||m===undefined) return '—';
-    m=Math.round(m);
-    var sign = m < 0 ? '-' : '';
-    m = Math.abs(m);
-    var h=Math.floor(m/60), mn=m%60, p=[];
-    var hSuf = T('hourShort'), mSuf = T('minuteShort');
-    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
-    return sign + (p.length?p.join(' '):'0'+mSuf);
-  }
-
-  function fmtHours(m) {
-    if (m===null||m===undefined) return '—';
-    m=Math.round(m);
-    var sign = m < 0 ? '-' : '';
-    m = Math.abs(m);
-    var h=Math.floor(m/60), mn=m%60, p=[];
-    var hSuf = T('hourShort'), mSuf = T('minuteShort');
-    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
-    return sign+(p.length?p.join(' '):'0'+mSuf);
-  }
-
-  function fmtHoursOnly(m) {
-    if (m===null||m===undefined) return '—';
-    m=Math.round(m);
-    var h=Math.floor(m/60), mn=m%60, p=[];
-    var hSuf = T('hourShort'), mSuf = T('minuteShort');
-    if(h)p.push(h+hSuf); if(mn)p.push(mn+mSuf);
-    return p.length?p.join(' '):'0'+mSuf;
-  }
-
-  function parsePeriod(s) {
-    if(!s)return 0; s=s.trim().toLowerCase(); var t=0;
-    var wm=s.match(/(\d+)\s*[нnw]/), dm=s.match(/(\d+)\s*[дd]/), hm=s.match(/(\d+)\s*[чh]/), mm=s.match(/(\d+)\s*[мm]/);
-    if(wm)t+=parseInt(wm[1])*2400;
-    if(dm)t+=parseInt(dm[1])*480;
-    if(hm)t+=parseInt(hm[1])*60;
-    if(mm)t+=parseInt(mm[1]);
-    if(!wm&&!dm&&!hm&&!mm){var n=parseInt(s);if(!isNaN(n))t=n;}
-    return t;
-  }
+  /* Форматирование/парсинг периодов вынесено в widgets/main/src/period-pure.js
+     (window.__SSP_PERIOD_PURE) — паттерн как TOAST_PURE/MODAL_PURE/sort-pure.
+     Здесь — тонкие делегаторы: call-sites без изменений, function-декларации
+     сохраняют hoisting. Единицы локали резолвятся внутри модуля через window.__SSP_T. */
+  var PERIOD_PURE = (typeof window !== 'undefined' && window.__SSP_PERIOD_PURE) || {};
+  function fmtPeriod(m)    { return PERIOD_PURE.fmtPeriod(m); }
+  function fmtHours(m)     { return PERIOD_PURE.fmtHours(m); }
+  function fmtHoursOnly(m) { return PERIOD_PURE.fmtHoursOnly(m); }
+  function parsePeriod(s)  { return PERIOD_PURE.parsePeriod(s); }
 
   var _enumLocaleMap = {
     'Normal':'Обычная','Minor':'Незначительный','Major':'Значительный',
