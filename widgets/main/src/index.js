@@ -19,6 +19,7 @@ import './sort-pure.js';
 import './period-pure.js';
 import './enum-locale-pure.js';
 import './date-pure.js';
+import './hash-pure.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
