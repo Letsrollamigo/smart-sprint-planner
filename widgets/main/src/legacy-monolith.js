@@ -843,7 +843,8 @@
   function localizeEnumVal(s) { return ENUM_PURE.localizeEnumVal(s); }
   function dispEnum(s) { return ENUM_PURE.dispEnum(s, _lang === 'ru'); }
 
-  function toDateIn(ts)  { return ts ? new Date(ts).toISOString().slice(0,10) : ''; }
+  /* toDateIn определён ниже (локальное время) — это его единственное объявление;
+     прежний UTC-дубль здесь удалён (был мёртв из-за hoisting, расходился по таймзоне). */
   function fromDateIn(s) { return s ? new Date(s).getTime() : null; }
   function fmtDate(ts)   { return ts ? new Date(ts).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; }
   function fmtDT(ts)     { return ts ? new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'; }
