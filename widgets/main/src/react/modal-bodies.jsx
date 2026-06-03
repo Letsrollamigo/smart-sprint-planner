@@ -176,6 +176,14 @@ function DynFieldForm(props) {
   const [value, setValue] = React.useState(props.initialValue || '');
   const onApply = props.onApply || noop;
   const onCancel = props.onCancel || noop;
+  /* #34 — blur-реформат периода к каноничному виду (часы+минуты). Только text-режим. */
+  const reformatBlur = () => {
+    if (isEnum) return;
+    const raw = (value || '').trim();
+    if (raw === '' || !/\d/.test(raw)) return;
+    const P = globalThis.__SSP_PERIOD_PURE;
+    if (P) setValue(P.fmtPeriod(P.parsePeriod(raw)));
+  };
   return (
     <React.Fragment>
       {props.desc ? <p className="ssp-modal-body-text">{props.desc}</p> : null}
@@ -199,6 +207,7 @@ function DynFieldForm(props) {
                 value={value}
                 placeholder={props.placeholder}
                 onChange={(ev) => setValue(ev && ev.target ? ev.target.value : '')}
+                onBlur={reformatBlur}
               />
             </div>
           )
@@ -210,6 +219,7 @@ function DynFieldForm(props) {
               value={value}
               placeholder={props.placeholder}
               onChange={(e) => setValue(e.target.value)}
+              onBlur={reformatBlur}
             />
           ))}
       <div className="ssp-modal-footer">

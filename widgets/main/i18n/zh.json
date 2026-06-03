@@ -340,6 +340,7 @@
   "btnYesFinish": "是,完成",
   "dynModalTitle": "更新字段值",
   "phDynInput": "例如 2 天 4 小时",
+  "phPeriod": "例如 16时 / 90分",
   "btnYesUpdate": "是,更新",
   "toastInitError": "初始化错误: ",
   "toastSettingsSaved": "设置已保存",

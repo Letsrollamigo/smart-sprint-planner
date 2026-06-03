@@ -44,18 +44,41 @@ function fmtHoursOnly(m) {
   return p.length ? p.join(' ') : '0' + mSuf;
 }
 
-/* Парсинг строки периода (недели/дни/часы/минуты или голое число = минуты). Полностью чистая. */
-function parsePeriod(s) {
-  if (!s) return 0; s = s.trim().toLowerCase(); var t = 0;
-  var wm = s.match(/(\d+)\s*[нnw]/), dm = s.match(/(\d+)\s*[дd]/), hm = s.match(/(\d+)\s*[чh]/), mm = s.match(/(\d+)\s*[мm]/);
-  if (wm) t += parseInt(wm[1]) * 2400;
-  if (dm) t += parseInt(dm[1]) * 480;
-  if (hm) t += parseInt(hm[1]) * 60;
-  if (mm) t += parseInt(mm[1]);
-  if (!wm && !dm && !hm && !mm) { var n = parseInt(s); if (!isNaN(n)) t = n; }
-  return t;
+/* Множество токенов-минут активной локали (#34). minuteShort локали + ASCII/RU/слова.
+   hourShort НЕ нужен: всё, что не минуты (голое число / hourShort / h/ч / неизвестное), = часы. */
+function _minuteTokens() {
+  var mSuf = (_t('minuteShort') || '').toLowerCase();
+  var set = { 'm': 1, 'м': 1, 'min': 1, 'мин': 1 };
+  if (mSuf) set[mSuf] = 1;
+  return set;
 }
 
+/* Парсинг строки периода в минуты (#34). Единицы — только часы/минуты, locale-aware.
+   Правило: фрагмент «(число)(буквы)»; если буквы ∈ minuteTokens → минуты, иначе → часы
+   (голое число, hourShort локали, h/ч, неизвестный суффикс). Полностью чистая. */
+function parsePeriod(s) {
+  if (s === null || s === undefined) return 0;
+  s = String(s).trim().toLowerCase();
+  if (!s) return 0;
+  var minTok = _minuteTokens(), total = 0, found = false;
+  var re = /(\d+)\s*([^\d\s]*)/g, m;
+  while ((m = re.exec(s)) !== null) {
+    if (m[0] === '') { re.lastIndex++; continue; }
+    found = true;
+    var n = parseInt(m[1], 10);
+    if (isNaN(n)) continue;
+    var unit = (m[2] || '').toLowerCase();
+    total += minTok[unit] ? n : n * 60;
+  }
+  return found ? Math.round(total) : 0;
+}
+
+var _api = { fmtPeriod: fmtPeriod, fmtHours: fmtHours, fmtHoursOnly: fmtHoursOnly, parsePeriod: parsePeriod };
+
 if (typeof window !== 'undefined') {
-  window.__SSP_PERIOD_PURE = { fmtPeriod: fmtPeriod, fmtHours: fmtHours, fmtHoursOnly: fmtHoursOnly, parsePeriod: parsePeriod };
+  try { window.__SSP_PERIOD_PURE = _api; } catch (_) { /* sandboxed write may throw */ }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = _api;
 }

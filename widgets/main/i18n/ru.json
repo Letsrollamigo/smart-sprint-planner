@@ -342,6 +342,7 @@
   "btnYesFinish": "Да, завершить",
   "dynModalTitle": "Обновить значение поля",
   "phDynInput": "напр. 2д 4ч",
+  "phPeriod": "напр. 16ч / 90м",
   "btnYesUpdate": "Да, обновить",
   "toastInitError": "Ошибка инициализации: ",
   "toastSettingsSaved": "Настройки сохранены",

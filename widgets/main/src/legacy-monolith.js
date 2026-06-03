@@ -1391,7 +1391,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.1.47';
+  var APP_VERSION = '2.2.0';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2733,6 +2733,18 @@
     };
     el.addEventListener('input', handler);
     el.addEventListener('change', handler);
+    /* #34 — blur-реформат к каноничному виду (часы+минуты). Пусто → пусто;
+       без цифр (мусор) → revert к сохранённому значению. */
+    el.addEventListener('blur', function(){
+      if (el.readOnly || _draftRestoreInProgress) return;
+      var raw = (el.value || '').trim();
+      if (raw === '') { el.value = ''; return; }
+      if (!/\d/.test(raw)) {
+        el.value = _sprint && _sprint[role.resKey] ? fmtPeriod(_sprint[role.resKey]) : '';
+        return;
+      }
+      el.value = fmtPeriod(parsePeriod(raw));
+    });
   }
 
   /* v5.0.3 — Восстановление черновика из localStorage в state.
@@ -5196,7 +5208,7 @@
     var resField = document.createElement('div');
     resField.className = 'field';
     resField.innerHTML = '<label for="res_'+role.key+'">'+esc(roleLabel(role))+'</label>'+
-      '<input type="text" id="res_'+role.key+'" placeholder="'+T('phResource')+'"/>';
+      '<input type="text" id="res_'+role.key+'" placeholder="'+T('phPeriod')+'"/>';
     colRes.appendChild(resField);
 
     /* Колонка 3: Остатки ресурсов */
@@ -5970,7 +5982,7 @@
           /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
              have their own background and native inputs inherit it (looking
              black in dark theme). Force surface/text vars on inputs. */
-          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="—" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phPeriod'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
         }
       });
       columns.push({
@@ -5992,7 +6004,7 @@
     columns.push({
       id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num',
       getValue: function(row) {
-        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="—" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="'+esc(T('phPeriod'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
       }
     });
     columns.push({
@@ -6228,7 +6240,7 @@
         mode: isEnum ? 'enum' : 'text',
         options: isEnum ? enumValues.map(function(v){ return { value: v, label: localizeEnumVal(v) || v }; }) : [],
         initialValue: isEnum ? (currentVal || (enumValues[0] || '')) : (currentVal ? fmtPeriod(currentVal) : ''),
-        placeholder: T('phDynInput'),
+        placeholder: T('phPeriod'),
         applyText: T('btnYesUpdate'),
         cancelText: T('btnNo'),
         onApply: function(raw){

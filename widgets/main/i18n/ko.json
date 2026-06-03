@@ -340,6 +340,7 @@
   "btnYesFinish": "예, 종료합니다",
   "dynModalTitle": "필드 값 업데이트",
   "phDynInput": "예: 2일 4시",
+  "phPeriod": "예: 16시 / 90분",
   "btnYesUpdate": "예, 업데이트합니다",
   "toastInitError": "초기화 오류: ",
   "toastSettingsSaved": "설정이 저장되었습니다",

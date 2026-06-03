@@ -342,6 +342,7 @@
   "btnYesFinish": "Yes, finish",
   "dynModalTitle": "Update Field Value",
   "phDynInput": "e.g. 2d 4h",
+  "phPeriod": "e.g. 16h / 90m",
   "btnYesUpdate": "Yes, update",
   "toastInitError": "Initialization error: ",
   "toastSettingsSaved": "Settings saved",
