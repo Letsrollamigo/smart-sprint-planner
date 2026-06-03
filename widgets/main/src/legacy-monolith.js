@@ -835,21 +835,13 @@
   function fmtHoursOnly(m) { return PERIOD_PURE.fmtHoursOnly(m); }
   function parsePeriod(s)  { return PERIOD_PURE.parsePeriod(s); }
 
-  var _enumLocaleMap = {
-    'Normal':'Обычная','Minor':'Незначительный','Major':'Значительный',
-    'Critical':'Критическая','Blocker':'Блокирующий','High':'Высокий','Low':'Низкий',
-    'Open':'Открыта','In Progress':'В работе','Resolved':'Решена',
-    'Won\'t fix':'Не будет исправлена','Duplicate':'Дубликат','Fixed':'Исправлена',
-    'Submitted':'Отправлена','Reopened':'Переоткрыта','Obsolete':'Устаревшая','Verified':'Проверена',
-  };
-  function localizeEnumVal(s) { if (!s) return s; return _enumLocaleMap[s] || s; }
-  /* B7 — locale-aware DISPLAY значений enum (Priority/State/X-Priority). YT отдаёт
-     localizedName первым → item.* всегда в локали сервера (RU). Для отображения:
-     RU-UI — как раньше (localizeEnumVal, EN→RU); не-RU — инверсная мапа RU→EN для
-     стандартных значений, кастомные/немапленные остаются как есть (их канон). Только
-     display — logic-поля (item.state в DTA/снапшотах/Ганте, _prRank) не затрагиваются. */
-  var _enumLocaleMapInverse = (function(){ var inv = {}; for (var k in _enumLocaleMap) { if (!(_enumLocaleMap[k] in inv)) inv[_enumLocaleMap[k]] = k; } return inv; })();
-  function dispEnum(s) { if (!s) return s; return _lang === 'ru' ? localizeEnumVal(s) : (_enumLocaleMapInverse[s] || s); }
+  /* B7 enum-locale DISPLAY вынесено в widgets/main/src/enum-locale-pure.js
+     (window.__SSP_ENUM_PURE) — паттерн как PERIOD_PURE/TOAST_PURE. Делегаторы;
+     текущий язык _lang инъектируется в dispEnum. Только display — logic-поля
+     (item.state в DTA/снапшотах/Ганте, ранги) не затрагиваются. */
+  var ENUM_PURE = (typeof window !== 'undefined' && window.__SSP_ENUM_PURE) || {};
+  function localizeEnumVal(s) { return ENUM_PURE.localizeEnumVal(s); }
+  function dispEnum(s) { return ENUM_PURE.dispEnum(s, _lang === 'ru'); }
 
   function toDateIn(ts)  { return ts ? new Date(ts).toISOString().slice(0,10) : ''; }
   function fromDateIn(s) { return s ? new Date(s).getTime() : null; }
