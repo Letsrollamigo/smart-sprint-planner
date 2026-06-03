@@ -340,6 +340,7 @@
   "btnYesFinish": "Evet, bitir",
   "dynModalTitle": "Alan değerini güncelle",
   "phDynInput": "örn. 2g 4s",
+  "phPeriod": "örn. 16s / 90d",
   "btnYesUpdate": "Evet, güncelle",
   "toastInitError": "Başlatma hatası: ",
   "toastSettingsSaved": "Ayarlar kaydedildi",

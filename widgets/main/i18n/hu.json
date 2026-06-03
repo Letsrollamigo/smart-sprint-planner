@@ -340,6 +340,7 @@
   "btnYesFinish": "Igen, befejezés",
   "dynModalTitle": "Mező-érték frissítése",
   "phDynInput": "pl. 2n 4ó",
+  "phPeriod": "pl. 16ó / 90p",
   "btnYesUpdate": "Igen, frissítés",
   "toastInitError": "Inicializálási hiba: ",
   "toastSettingsSaved": "Beállítások elmentve",

@@ -340,6 +340,7 @@
   "btnYesFinish": "Sí, finalizar",
   "dynModalTitle": "Actualizar valor del campo",
   "phDynInput": "p. ej. 2d 4h",
+  "phPeriod": "p. ej. 16h / 90m",
   "btnYesUpdate": "Sí, actualizar",
   "toastInitError": "Error de inicialización: ",
   "toastSettingsSaved": "Configuración guardada",

@@ -340,6 +340,7 @@
   "btnYesFinish": "はい、終了します",
   "dynModalTitle": "フィールド値を更新",
   "phDynInput": "例: 2日 4時",
+  "phPeriod": "例: 16時 / 90分",
   "btnYesUpdate": "はい、更新します",
   "toastInitError": "初期化エラー: ",
   "toastSettingsSaved": "設定を保存しました",

@@ -340,6 +340,7 @@
   "btnYesFinish": "Ano, dokončit",
   "dynModalTitle": "Aktualizovat hodnotu pole",
   "phDynInput": "např. 2d 4h",
+  "phPeriod": "např. 16h / 90m",
   "btnYesUpdate": "Ano, aktualizovat",
   "toastInitError": "Chyba inicializace: ",
   "toastSettingsSaved": "Nastavení uloženo",

@@ -340,6 +340,7 @@
   "btnYesFinish": "Tak, zakończ",
   "dynModalTitle": "Aktualizuj wartość pola",
   "phDynInput": "np. 2d 4g",
+  "phPeriod": "np. 16h / 90m",
   "btnYesUpdate": "Tak, aktualizuj",
   "toastInitError": "Błąd inicjalizacji: ",
   "toastSettingsSaved": "Ustawienia zapisane",

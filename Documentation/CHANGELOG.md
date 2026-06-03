@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.2.0] — 2026-06-03
+
+> **Clearer period value entry (#34).**
+
+### Changed
+
+- **A plain number in a time field is now read as hours** (previously minutes): typing "16" = 16h. Applies to every period field (resource/capacity, estimate, allocation).
+- **Unit suffixes follow the interface language.** The parser understands the active locale's hour/minute markers (plus Latin `h`/`m` and Russian `ч`/`м`), removing the input/display mismatch across all 15 languages (including Turkish, where "d" means minute).
+- **Period fields auto-format on blur** to a canonical hours-and-minutes form: "16" → "16h", "90m" → "1h 30m".
+- **A single placeholder hint** ("e.g. 16h / 90m") across all period inputs.
+
+### Removed
+
+- **Day/week input retired** in favour of consistent hours and minutes (the display never showed them anyway). Previously accepted "5d"/"2w" are now read as hours.
+
+---
+
 ## [2.1.47] — 2026-06-03
 
 > **Maintenance release: build toolchain update.**

@@ -340,6 +340,7 @@
   "btnYesFinish": "Ja, voltooien",
   "dynModalTitle": "Veldwaarde bijwerken",
   "phDynInput": "bijv. 2d 4u",
+  "phPeriod": "bijv. 16u / 90m",
   "btnYesUpdate": "Ja, bijwerken",
   "toastInitError": "Initialisatiefout: ",
   "toastSettingsSaved": "Instellingen opgeslagen",
