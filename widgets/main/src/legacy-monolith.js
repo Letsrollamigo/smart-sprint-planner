@@ -9798,18 +9798,11 @@
 
   /* ─── Helpers: Гант state-история (#20) ─── */
 
-  function _fmtGanttDate(ts) {
-    if (!ts) return '';
-    try {
-      var d = new Date(ts);
-      return d.getDate() + '.' + String(d.getMonth() + 1).padStart(2, '0');
-    } catch (_) { return ''; }
-  }
-
-  function _ganttDaysAgo(ts) {
-    if (!ts) return null;
-    return Math.max(0, Math.floor((Date.now() - ts) / 86400000));
-  }
+  /* Date-хелперы Ганта вынесены в widgets/main/src/date-pure.js
+     (window.__SSP_DATE_PURE) — паттерн как PERIOD_PURE. Делегаторы. */
+  var DATE_PURE = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || {};
+  function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts); }
+  function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
   function _renderGanttStateBadge(g, activeSprint) {
     if (!g || (!g.state && !g.stateLocalized)) return '';
