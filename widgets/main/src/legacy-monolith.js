@@ -196,7 +196,6 @@
   ═══════════════════════════════════════════════════════════ */
   var _i18nBridge = (typeof window !== 'undefined' && window.__SSP_I18N__) || null;
   var _i18nDicts  = (typeof window !== 'undefined' && window.__SSP_I18N_DICTS__) || { en: {}, ru: {} };
-  var _i18nPlural = (typeof window !== 'undefined' && window.__SSP_I18N_PLURAL__) || null;
 
   /* Словари по языкам. EN+RU inlined в bundle (через index.js bridge), остальные
      13 загружаются по требованию через _i18nBridge.loadDictionary(lang) и записываются
@@ -226,28 +225,6 @@
 
   /** Plural-форматирование через CLDR-engine (Intl.PluralRules внутри). Если plural-engine
      не доступен — возвращает строку как есть. */
-  function Tn(key, count) {
-    var d = I18N[_lang] || {};
-    var forms = (d[key] !== undefined)
-      ? d[key]
-      : (I18N.en && I18N.en[key] !== undefined ? I18N.en[key] : null);
-    if (forms == null) return key;
-    if (typeof forms === 'string') {
-      // Простой template — поддерживаем {n}/{count}.
-      return forms.replace(/\{n\}|\{count\}/g, String(count));
-    }
-    if (_i18nPlural && typeof _i18nPlural.formatPlural === 'function') {
-      return _i18nPlural.formatPlural(forms, count, _lang);
-    }
-    // Fallback: ищем 'other' либо первое строковое значение.
-    if (typeof forms.other === 'string') return forms.other.replace(/\{n\}|\{count\}/g, String(count));
-    for (var k in forms) {
-      if (Object.prototype.hasOwnProperty.call(forms, k) && typeof forms[k] === 'string') {
-        return forms[k].replace(/\{n\}|\{count\}/g, String(count));
-      }
-    }
-    return key;
-  }
 
   /* ═══════════════════════════════════════════════════════════
      ICONS — Ring UI ярус 1 (v1.9.6). SVG-иконки из @jetbrains/icons +
@@ -347,24 +324,6 @@
   }
 
   /** Initial mount spinner — показываем если первая загрузка занимает >500ms. */
-  var _initialLoadTimer = null;
-  function startInitialLoad() {
-    _initialLoadTimer = setTimeout(function() {
-      var panel = document.querySelector('.tab-panel.active');
-      if (!panel || panel.querySelector('.ssp-initial-loader')) return;
-      var wrap = document.createElement('div');
-      wrap.className = 'ssp-initial-loader';
-      wrap.style.cssText = 'text-align:center;padding:40px;color:var(--muted);';
-      var loaderEl = icon('loader', T('aria.loading'), { size: '20' });
-      loaderEl.classList.add('ssp-loader', 'ssp-loader--20');
-      wrap.appendChild(loaderEl);
-      panel.appendChild(wrap);
-    }, 500);
-  }
-  function finishInitialLoad() {
-    clearTimeout(_initialLoadTimer);
-    document.querySelectorAll('.ssp-initial-loader').forEach(function(el) { el.remove(); });
-  }
 
   /** Обходит все элементы с data-i18n и обновляет их текст/плейсхолдер.
    *  v1.9.6: сохраняет .ssp-icon дочерние узлы при обновлении textContent (смена языка). */
@@ -476,27 +435,6 @@
 
   /* v1.1.0 — заполняет defaultLangSel (settings overlay) 15 ISO-опциями + первая
      "inherit-from-user" (value=""). Идемпотентно. */
-  function _populateDefaultLangSelect(el) {
-    if (!el) return;
-    var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || null;
-    if (!langs || !langs.length) return;
-    if (el._sspDefaultPopulated) return;
-    var inheritOpt = el.options && el.options.length ? el.options[0] : null;
-    var inheritLabel = inheritOpt ? inheritOpt.textContent : '— inherit from user —';
-    el.innerHTML = '';
-    var inherit = document.createElement('option');
-    inherit.value = '';
-    inherit.textContent = inheritLabel;
-    el.appendChild(inherit);
-    for (var i = 0; i < langs.length; i++) {
-      var l = langs[i];
-      var opt = document.createElement('option');
-      opt.value = l.code;
-      opt.textContent = (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')';
-      el.appendChild(opt);
-    }
-    el._sspDefaultPopulated = true;
-  }
 
   /* v1.1.0 — после загрузки _settings — синхронизируем project-default в loader.
      Loader использует это значение в getCurrentLang() цепочке fallback'ов. */
@@ -723,7 +661,6 @@
   };
 
   var PAGE_SIZE = 25, PICK_PAGE = 10, HIST_PAGE = 10;
-  var FINAL_STATUSES = [STATUS.FINISHED]; // v4.0.0
 
   /* ═══ Типы ролей (порядок и ключи жёсткие) ════════════════
      v6.3.1 D119 — добавлен labelEn для каждой роли. Раньше roleLabel(role) читал
@@ -809,7 +746,6 @@
      сдвинул timing и сделал race наблюдаемой. Future-proof для D4-D7 яруса 3. */
   var _permissionsCheckPromise = null;
   var _permissionsReady = false;
-  var _valGroups = new Set(), _editGroups = new Set();
   var _histPage = 1;
   var _selectedIds = new Set(); /* Phase 4 #32: _pickPage/_pickResults/_pickHasMore переехали в React-стейт pickPicker */
   /* v5.0.3 — кэш метаданных всех загруженных страниц текущего запроса
@@ -829,9 +765,7 @@
   // вызывается из необычной точки или JS-runtime YouTrack ведёт себя неожиданно.
   var _valGroupsState        = { ids: [], names: [] };
   var _editGroupsState       = { ids: [], names: [] };
-  var _histClearGroupsState  = { ids: [], names: [] };
   /* v6.1.0 D82 (F5) — assigner-роль. */
-  var _assignerGroupsState   = { ids: [], names: [] };
   var _settingsLoaded  = false;
 
   var _ytBase = (function() {
@@ -1317,7 +1251,6 @@
   var MODAL_PURE = (typeof window !== 'undefined' && window.__SSP_MODAL_PURE) || {};
   var _modalStack = []; // массив overlay DOM-элементов, last = topmost
   var _bodyLockCount = 0;
-  var _savedScrollY = 0;
   var CANCEL_SELECTOR = (MODAL_PURE.CANCEL_BUTTON_SELECTOR) ||
     'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], ' +
     'button[id$="CloseBtn"], button[id$="Close"], button[id^="close"]';
@@ -4609,7 +4542,6 @@
    *   .grp-ms__item-cb / __item-icon / __item-name — структура внутри item
    *   .grp-ms__empty                          — текст при пустом списке
    */
-  var GRP_ICON = '<svg class="grp-ms__item-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
 
 
   /* ── Сборка settings-объекта из формы ── */
@@ -5562,47 +5494,6 @@
     return frag;
   }
 
-  function buildRoleTableHeader(thead, role, dynEdit) {
-    // dynEdit: Оценка (ред.) + Факт (ro) + Ресурс (ro) + Аллокация (ред.)
-    // normal:  Ресурс (ro) + Аллокация (ред.)
-    var numCols = dynEdit
-      ? '<th class="td-num th-dev" style="min-width:80px">'+T('thEstimate')+'</th>'+
-        '<th class="td-num th-dev" style="min-width:80px">'+T('thFact')+'</th>'+
-        '<th class="td-num th-dev" style="min-width:80px">'+T('thResource')+'</th>'+
-        '<th class="td-num th-dev" style="min-width:80px">'+T('thAllocation')+'</th>'
-      : '<th class="td-num th-dev">'+fmtThLabel(roleLabel(role))+'</th>'+
-        '<th class="td-num th-dev" style="min-width:80px">'+T('thAllocation')+'</th>';
-    var _sk = (typeof getSortKey === 'function') ? getSortKey() : 'off';
-    /* v6.3.1 D112 — крупные явные sort-иконки через .sort-icon обёртку. */
-    function _sortIcon(active) { return '<span class="sort-icon">'+(active?'▼':'↕')+'</span>'; }
-    /* v1.8.1 — Опциональные колонки скрываются, если соответствующее поле не настроено.
-       Priority + State остаются всегда (обязательные). System + XPriority — опциональны. */
-    thead.innerHTML = '<tr>'+
-      '<th class="sortable'+(_sk==='id'?' sortable--active':'')+'" data-sort-key="id" title="'+esc(T('thSortClickHint'))+'" style="min-width:90px">'+T('thId')+_sortIcon(_sk==='id')+'</th>'+
-      /* v1.8.0 D130 — externalTicketId column header (2nd position, right after issue ID link). */
-      (_settings && _settings.fieldExternalTicketId
-        ? '<th class="sortable'+(_sk==='externalTicketId'?' sortable--active':'')+'" data-sort-key="externalTicketId" title="'+esc(T('thSortClickHint'))+'" style="min-width:120px">'+T('thExternalTicketId')+_sortIcon(_sk==='externalTicketId')+'</th>'
-        : '')+
-      (_settings && _settings.fieldSystem
-        ? '<th style="min-width:80px">'+T('thSystem')+'</th>'
-        : '')+
-      '<th class="sortable'+(_sk==='priority'?' sortable--active':'')+'" data-sort-key="priority" title="'+esc(T('thSortClickHint'))+'" style="min-width:80px">'+T('thPriority')+_sortIcon(_sk==='priority')+'</th>'+
-      (_settings && _settings.fieldXPriority
-        ? '<th class="th-dev sortable'+(_sk==='xpriority'?' sortable--active':'')+'" data-sort-key="xpriority" title="'+esc(T('thSortClickHint'))+'">'+T('thXpriority')+_sortIcon(_sk==='xpriority')+'</th>'
-        : '')+
-      '<th class="th-dev">'+T('thState')+'</th>'+
-      '<th style="min-width:160px">'+T('thTitle')+'</th>'+
-      numCols+
-      '<th style="min-width:160px">'+T('thIncStatus')+'</th>'+
-      '<th></th>'+
-      '</tr>';
-    /* v6.3.0 D103 — bind sort handlers сразу после переписи innerHTML, независимо от
-       callsite. Раньше bind был только в renderRoleComposition; при initial buildRolePanel
-       handlers не привязывались, а sort headers выглядели нерабочими. */
-    if (typeof _bindSortHeaders === 'function') {
-      try { _bindSortHeaders(thead); } catch(_){}
-    }
-  }
 
   function wireRolePanel(role, dynEdit) {
     var rk = role.key;
@@ -6107,15 +5998,6 @@
      - http(s) URL     → clickable <a> (target=_blank, rel=noopener)
      - plain string    → truncated text with full value in title tooltip
      esc() is mandatory on every path — this is a user-controlled string from a YT custom field. */
-  function _renderExternalTicketCell(val) {
-    if (!val) return '<td style="color:var(--muted)">—</td>';
-    var safe = esc(String(val));
-    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"';
-    if (/^https?:\/\//i.test(val)) {
-      return '<td '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></td>';
-    }
-    return '<td '+style+' title="'+safe+'">'+safe+'</td>';
-  }
   /* v2.1.0 E4 — inner-only variant for Ring Table cell (without <td> wrapper). */
   function _renderExternalTicketInnerHtml(val) {
     if (!val) return '<span style="color:var(--muted)">—</span>';
@@ -8265,9 +8147,6 @@
     });
   }
 
-  function hideOverlimitModal() {
-    if (_overlimitModalHandle) { _overlimitModalHandle.close(); _overlimitModalHandle = null; }
-  }
 
   /* v5.2.0 — единоразовый onboarding при первой встрече с ALLOCATED-спринтом
      (после релиза 5.2.0 поведение строк изменилось: lock + readonly).
@@ -8738,37 +8617,7 @@
    * Возвращает { key: 'january'|'may'|'other', crossMonth: boolean }.
    * crossMonth=true если спринт затрагивает >1 месяц (повод для UI-warning).
    */
-  function getNkcKeyLocal(dateStart, dateEnd) {
-    if (!dateStart) return { key: 'other', crossMonth: false };
-    var ds = new Date(dateStart);
-    var de = dateEnd ? new Date(dateEnd) : new Date(dateStart);
-    if (isNaN(ds.getTime()) || isNaN(de.getTime()) || de < ds) {
-      return { key: 'other', crossMonth: false };
-    }
-    var counts = { january: 0, may: 0, other: 0 };
-    var seenMonths = {};
-    var d = new Date(ds.getFullYear(), ds.getMonth(), ds.getDate());
-    var endTs = new Date(de.getFullYear(), de.getMonth(), de.getDate()).getTime();
-    var safety = 0;
-    while (d.getTime() <= endTs && safety < 366) {
-      var m = d.getMonth();
-      seenMonths[m] = true;
-      if      (m === 0) counts.january++;
-      else if (m === 4) counts.may++;
-      else              counts.other++;
-      d.setDate(d.getDate() + 1);
-      safety++;
-    }
-    var key = 'other';
-    if (counts.january >= counts.may && counts.january >= counts.other && counts.january > 0) key = 'january';
-    else if (counts.may >= counts.january && counts.may >= counts.other && counts.may > 0)    key = 'may';
-    var crossMonth = Object.keys(seenMonths).length > 1;
-    return { key: key, crossMonth: crossMonth };
-  }
   // legacy compat: старая сигнатура (1 аргумент) → возвращает только key
-  function _getNkcKeyLegacy(dateStart) {
-    return getNkcKeyLocal(dateStart, dateStart).key;
-  }
 
   /* ── НКЧ изменён вручную ── */
   document.getElementById('currentRoleNkcSel').addEventListener('change', function() {
@@ -9374,33 +9223,6 @@
     }
   }
 
-  function encodeLogin(login) { return (login || '').replace(/[^a-zA-Z0-9_]/g, '_'); }
-  function round2(v) { return (Math.round((v||0)*100)/100).toFixed(2); }
-
-  /* ── Рассчитать суммарно использованные часы исполнителя ── */
-  function calcAssigneeUsed(login) {
-    if (!_currentSprintRoleRec || !_currentRolePP) return 0;
-    var rec = _currentSprintRoleRec;
-    // Для активного спринта используем roleKey сохранённый в PP (выбранный пользователем)
-    // Для снэпшота — roleKey из записи истории
-    var rk = rec.roleKey || (_currentRolePP && _currentRolePP.roleKey) || (getActiveRoles()[0] || ALL_ROLES[0]).key;
-    /* v5.0.3 — если запись соответствует активному _sprint, берём live items
-       из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
-    var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
-    var ta = _currentRolePP.taskAssignments || {};
-    return items.reduce(function(sum, item) {
-      if (!ta[item.issueId]) return sum;
-      if (ta[item.issueId].assignee !== login) return sum;
-      if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) return sum;
-      var alloc = item['alloc_'+rk];
-      var est   = item['estimate_'+rk];
-      var fact  = item['fact_'+rk];
-      var allocVal = (alloc !== null && alloc !== undefined)
-        ? alloc / 60  // в часы
-        : Math.max(0, ((est||0) - (fact||0))) / 60;
-      return sum + allocVal;
-    }, 0);
-  }
 
   /* ── Обновить итоги ── */
   function updateCurrentRoleTotals() {
