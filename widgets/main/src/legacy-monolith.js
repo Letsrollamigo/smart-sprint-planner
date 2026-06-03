@@ -843,11 +843,14 @@
   function localizeEnumVal(s) { return ENUM_PURE.localizeEnumVal(s); }
   function dispEnum(s) { return ENUM_PURE.dispEnum(s, _lang === 'ru'); }
 
-  /* toDateIn определён ниже (локальное время) — это его единственное объявление;
-     прежний UTC-дубль здесь удалён (был мёртв из-за hoisting, расходился по таймзоне). */
-  function fromDateIn(s) { return s ? new Date(s).getTime() : null; }
-  function fmtDate(ts)   { return ts ? new Date(ts).toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—'; }
-  function fmtDT(ts)     { return ts ? new Date(ts).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—'; }
+  /* Date-хелперы вынесены в widgets/main/src/date-pure.js (window.__SSP_DATE_PURE) —
+     паттерн как PERIOD_PURE. Делегаторы; все чистые (fmtDate/fmtDT — локаль ru-RU).
+     toDateIn — локальное время (прежний UTC-дубль удалён). */
+  var DATE_PURE = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || {};
+  function toDateIn(ts)  { return DATE_PURE.toDateIn(ts); }
+  function fromDateIn(s) { return DATE_PURE.fromDateIn(s); }
+  function fmtDate(ts)   { return DATE_PURE.fmtDate(ts); }
+  function fmtDT(ts)     { return DATE_PURE.fmtDT(ts); }
 
   /* v1.9.11 — UX-нормализация toast'ов (UX-сессия B-32):
      - Единое API: toastApi.{info,warn,error,success}(text, opts?). Backward-compat
@@ -9440,14 +9443,6 @@
        lifecycle inside React (useEffect). */
   }
 
-  function toDateIn(ts) {
-    if (!ts) return '';
-    var d = new Date(ts);
-    var mm = String(d.getMonth()+1).padStart(2,'0');
-    var dd = String(d.getDate()).padStart(2,'0');
-    return d.getFullYear()+'-'+mm+'-'+dd;
-  }
-
   /* v2.1.0 E1 — Ring Table is React-owned: per-row remain cells no longer have
      stable IDs to mutate directly. Re-render through Ring Table mountAt (cheap:
      items array rebuild + React reconciliation), then update totals. */
@@ -9799,9 +9794,7 @@
 
   /* ─── Helpers: Гант state-история (#20) ─── */
 
-  /* Date-хелперы Ганта вынесены в widgets/main/src/date-pure.js
-     (window.__SSP_DATE_PURE) — паттерн как PERIOD_PURE. Делегаторы. */
-  var DATE_PURE = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || {};
+  /* _fmtGanttDate/_ganttDaysAgo — делегаторы к DATE_PURE (объявлен выше, date-pure.js). */
   function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts); }
   function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
