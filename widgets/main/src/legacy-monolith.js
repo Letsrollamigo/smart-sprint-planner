@@ -31,31 +31,13 @@
 
   /* Defensive миграция: на случай, если из storage прилетит старая русская строка
      (backend уже мигрирует на чтении, это второй слой защиты). */
-  var STATUS_MIGRATION = {
-    'Планируется':                'PLANNING',
-    'Запланирован':               'PLANNING',
-    'Запланирован и подтвержден': 'CONFIRMED',
-    'Запланирован и подтверждён': 'CONFIRMED',
-    'Аллоцирован':                                'ALLOCATED',
-    'Запланирован, подтверждён, аллоцирован':     'ALLOCATED',
-    'Завершён':                   'FINISHED',
-    'Завершен':                   'FINISHED'
-  };
-  var INC_MIGRATION = {
-    'Ожидает распределения': 'INC_PENDING',
-    'Включена планово':      'INC_PLANNED',
-    'Включена внепланово':   'INC_UNPLANNED',
-    'Исключена из спринта':  'INC_EXCLUDED'
-  };
-  function migrateStatus(v) {
-    if (!v) return v;
-    if (STATUS_MIGRATION[v]) return STATUS_MIGRATION[v];
-    /* v5.2.0 — статус PLANNED удалён из STATUS, мигрируем на PLANNING (display: «Черновик»).
-       Идемпотентно: если v уже нормализован, no-op. */
-    if (v === 'PLANNED') return 'PLANNING';
-    return v;
-  }
-  function migrateInc(v)    { return v && INC_MIGRATION[v]    ? INC_MIGRATION[v]    : v; }
+  /* Legacy→canonical миграция статусов/включений/грейдов вынесена в
+     widgets/main/src/migrate-pure.js (window.__SSP_MIGRATE_PURE) — паттерн как
+     PERIOD_PURE/sort-pure. Здесь — тонкие делегаторы (call-sites без изменений,
+     hoisting сохранён). MIGRATE_PURE используется также _migrateGrade/_migrateKpeObject. */
+  var MIGRATE_PURE = (typeof window !== 'undefined' && window.__SSP_MIGRATE_PURE) || {};
+  function migrateStatus(v) { return MIGRATE_PURE.migrateStatus(v); }
+  function migrateInc(v)    { return MIGRATE_PURE.migrateInc(v); }
 
   /* v6.1.0 D70 — safe localStorage wrapper для production iframe без allow-same-origin.
      В sandboxed iframe `localStorage` exists как объект (typeof === 'object'), но любой
@@ -746,31 +728,14 @@
   /* ═══ Утилиты ══════════════════════════════════════════════ */
   /** Экранирование для безопасной вставки в HTML-контент и атрибуты.
    * Экранирует: & < > " ' — предотвращает XSS в контексте тегов и атрибутов. */
-  function esc(s) {
-    return String(s||'')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  /** Безопасный URL: разрешает только https:// и http://. Всё остальное — '#'.
-   * Предотвращает javascript: и data: схемы в href-атрибутах. */
-  function safeUrl(url) {
-    if (!url) return '#';
-    var s = String(url).trim();
-    if (/^https?:\/\//i.test(s)) return esc(s);
-    return '#';
-  }
-
-  function uid() {
-    var d = Date.now();
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){
-      var r=(d+Math.random()*16)%16|0; d=Math.floor(d/16);
-      return (c==='x'?r:(r&0x3|0x8)).toString(16);
-    });
-  }
+  /* Чистые DOM-free утилиты (esc/safeUrl/uid/deepClone/_formatHoursLight) вынесены
+     в widgets/main/src/util-pure.js (window.__SSP_UTIL_PURE) — паттерн как
+     PERIOD_PURE/sort-pure. Делегаторы; call-sites и hoisting сохранены.
+     UTIL_PURE используется также deepClone/_formatHoursLight ниже по файлу. */
+  var UTIL_PURE = (typeof window !== 'undefined' && window.__SSP_UTIL_PURE) || {};
+  function esc(s)       { return UTIL_PURE.esc(s); }
+  function safeUrl(url) { return UTIL_PURE.safeUrl(url); }
+  function uid()        { return UTIL_PURE.uid(); }
 
   /* Форматирование/парсинг периодов вынесено в widgets/main/src/period-pure.js
      (window.__SSP_PERIOD_PURE) — паттерн как TOAST_PURE/MODAL_PURE/sort-pure.
@@ -4476,11 +4441,7 @@
     return { resource: resource, totalAlloc: totalAlloc, taskCount: items.length, overlimit: overlimit };
   }
 
-  function _formatHoursLight(n) {
-    if (n === null || n === undefined || isNaN(n)) return '0';
-    var rounded = Math.round(n * 100) / 100;
-    return (rounded === Math.floor(rounded)) ? String(rounded) : rounded.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
-  }
+  function _formatHoursLight(n) { return UTIL_PURE.formatHoursLight(n); }
 
   function renderRoleAccordion(rk) {
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
@@ -8781,10 +8742,7 @@
   }
 
   /* ── Вспомогательные функции ── */
-  function deepClone(obj) {
-    if (obj === null || obj === undefined) return obj;
-    try { return JSON.parse(JSON.stringify(obj)); } catch(e) { return obj; }
-  }
+  function deepClone(obj) { return UTIL_PURE.deepClone(obj); }
   /* v5.7.0 — Этап 5 (D45): структура `taskAssignments[issueId]`:
        { assignee: 'login', assigneeName: 'Display Name',
          dateStart: <ts>, dateEnd: <ts>,
@@ -8806,26 +8764,10 @@
      KPE values or per-assignee grade selections. */
   var GRADES_LOCAL = ['Intern', 'Junior', 'Middle', 'Senior'];
   var KPE_DEFAULTS_LOCAL = { Intern: 0, Junior: 0.5, Middle: 0.65, Senior: 0.75 };
-  var _GRADE_LEGACY_MAP = {
-    'Стажёр': 'Intern',
-    'Джун':   'Junior',
-    'Мидл':   'Middle',
-    'Синьор': 'Senior'
-  };
-  function _migrateGrade(g) {
-    if (!g) return g;
-    return _GRADE_LEGACY_MAP[g] || g;
-  }
-  function _migrateKpeObject(kpe) {
-    if (!kpe || typeof kpe !== 'object') return kpe;
-    var out = {};
-    for (var k in kpe) {
-      if (!Object.prototype.hasOwnProperty.call(kpe, k)) continue;
-      var nk = _migrateGrade(k);
-      out[nk] = kpe[k];
-    }
-    return out;
-  }
+  /* _migrateGrade/_migrateKpeObject (+ legacy-мапа грейдов) вынесены в migrate-pure.js
+     (window.__SSP_MIGRATE_PURE). Делегаторы; MIGRATE_PURE объявлен выше по файлу. */
+  function _migrateGrade(g)       { return MIGRATE_PURE.migrateGrade(g); }
+  function _migrateKpeObject(kpe) { return MIGRATE_PURE.migrateKpeObject(kpe); }
 
   /* ── Таблица исполнителей ── */
   /* _pendingDelAssigneeLogin removed — delAssigneeOverlay migrated to openModal() (Phase 1 #32). */
