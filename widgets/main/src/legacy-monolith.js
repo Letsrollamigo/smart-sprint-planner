@@ -71,6 +71,8 @@
     safeLs.set('ssp_sortKey', k);
   }
   var SORT_PURE = (typeof window !== 'undefined' && window.__SSP_SORT_PURE) || {};
+  /* #35 — чистое ядро слияния «Обновить из задачи» (refresh-merge-pure.js). */
+  var REFRESH_MERGE_PURE = (typeof window !== 'undefined' && window.__SSP_REFRESH_MERGE_PURE) || {};
   /* Multi-key task sort — чистые компараторы живут в sort-pure.js (window.__SSP_SORT_PURE),
      юнит-тестируются изолированно. IIFE владеет состоянием сортировки: getSortKey()
      резолвит активный primary-ключ, когда вызывающий его опускает. */
@@ -1391,7 +1393,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.2.0';
+  var APP_VERSION = '2.2.3';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5245,14 +5247,13 @@
     pickBtn.id = 'pickBtn_'+role.key;
     pickBtn.textContent = T('btnPickTasks');
 
-    var refreshBtn = null;
-    if (!dynEdit) {
-      refreshBtn = document.createElement('button');
-      refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-      refreshBtn.id = 'refreshBtn_'+role.key;
-      refreshBtn.disabled = true;
-      refreshBtn.textContent = T('btnRefreshTasks');
-    }
+    /* S6 #35 — кнопка «Обновить из задачи» теперь в обоих режимах (inline и обычный):
+       единый refreshFromYouTrack тянет полный срез и в inline безопасен (dirty-guard). */
+    var refreshBtn = document.createElement('button');
+    refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
+    refreshBtn.id = 'refreshBtn_'+role.key;
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = T('btnRefreshFromTask');
 
     var recalcBtn = document.createElement('button');
     recalcBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
@@ -5333,7 +5334,7 @@
     if (refreshBtn) {
       refreshBtn.addEventListener('click', function() {
         if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        refreshRoleEstimates(rk);
+        refreshFromYouTrack(); /* #35 — единый путь: весь спринт, обе вкладки + Гант */
       });
     }
 
@@ -6353,7 +6354,7 @@
        toast(T('toastEstUpdated'), 'success');
      })
      .finally(function(){
-       if (btn) { btn.disabled = items.length === 0; btn.textContent = T('btnRefreshTasks'); }
+       if (btn) { btn.disabled = items.length === 0; btn.textContent = T('btnRefreshFromTask'); } /* S6 #35 — единый label */
      });
   }
 
@@ -9777,82 +9778,354 @@
 
   /* v6.1.0 D80 (F3) — sync Assignee из YouTrack: source-of-truth = YT.
      Кнопки на «Люди» и Ганте → один общий handler. */
-  function syncAssigneesFromYouTrack() {
-    if (!_currentSprintRoleRec) { toast(T('toastSelectSprint')); return; }
-    var rk = _currentSprintRoleRec.roleKey || _activeSubtab;
-    var role = ALL_ROLES.find(function (r) { return r.key === rk; });
-    if (!role) { toast(T('toastSyncFromYtErr')); return; }
-    var fieldName = _settings && _settings[role.userField];
-    if (!fieldName) { toast(T('toastSyncFromYtNoField'), 'warn'); return; }
+  /* ── #35 — apply-хелперы универсального refresh ───────────────────────────── */
+  /* updates приходят из резолвера с обобщёнными ключами estimate/fact; в item они
+     хранятся per-role как estimate_<rk>/fact_<rk>. Зеркальные поля — как есть. */
+  function _applyRefreshItemUpdates(item, updates, rk) {
+    Object.keys(updates).forEach(function (k) {
+      var target = (k === 'estimate') ? ('estimate_' + rk)
+                 : (k === 'fact')     ? ('fact_' + rk)
+                 : k;
+      item[target] = updates[k];
+    });
+  }
+  /* assignee живёт в taskAssignments текущей роли (personalPlanning). value = {login,fullName}|null. */
+  function _applyRefreshAssignee(issueId, value) {
+    if (!_currentRolePP) _currentRolePP = { resourcesByAssignee: {}, taskAssignments: {} };
+    if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
+    var ta = _currentRolePP.taskAssignments[issueId] = _currentRolePP.taskAssignments[issueId] || {};
+    var login = value ? (value.login || null) : null;
+    var full  = value ? (value.fullName || value.login) : '';
+    ta.assignee = login;
+    ta.assigneeName = login ? (full || login) : '';
+    delete ta.ganttColor;
+  }
+  function _setRefreshBtnsBusy(busy) {
+    try {
+      var sel = '#currentRoleSyncFromYtBtn, #ganttSyncFromYtBtn, [id^="refreshBtn_"], [id^="refreshFromTaskBtn_"]';
+      document.querySelectorAll(sel).forEach(function (btn) { btn.disabled = !!busy; });
+    } catch (_) {}
+  }
+  function _persistAndRerenderRefresh(curRk) {
+    _markDirty('roleItems');
+    _markDirty('currentRole');
+    apiPost('sprint-data', { roleItems: _roleItems }).catch(function () {});
+    try { if (typeof renderPlanningRoles === 'function') renderPlanningRoles(); } catch (_) {}
+    if (curRk) { try { if (typeof renderRoleComposition === 'function') renderRoleComposition(curRk); } catch (_) {} }
+    try { renderCurrentRoleAssigneeTable(); } catch (_) {}
+    try { renderCurrentRoleTaskTable(); } catch (_) {}
+    try { if (typeof updateCurrentRoleTotals === 'function') updateCurrentRoleTotals(); } catch (_) {}
+    _ganttStateHist._fetchedAt = 0;
+    try { if (typeof renderGanttChart === 'function') renderGanttChart(); } catch (_) {}
+    saveCurrentRoleState();
+  }
 
-    var items = isActiveSprintRecord(_currentSprintRoleRec)
-      ? getRoleItemsArr(rk)
-      : (_currentSprintRoleRec.items || []);
-    var active = (items || []).filter(function (i) { return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var ids = active.map(function (i) { return i.issueId; }).filter(function (x) { return !!x; });
+  /* S7 #35 — открыт ли незакоммиченный редактор ячейки в таблицах планирования.
+     Редактируемые ячейки состава роли: .dyn-period-input (inline-режим — прямая запись в YT
+     по blur+confirm) и .alloc-input (локальная аллокация — blur-коммит). Пока такой input
+     в фокусе, значение ещё не записано в item → refresh откладываем, чтобы не затереть ввод. */
+  function _isInlineCellEditing() {
+    try {
+      var ae = document.activeElement;
+      return !!(ae && ae.matches && ae.matches('input.dyn-period-input, input.alloc-input'));
+    } catch (_) { return false; }
+  }
+
+  /* S5 #35 — представление конфликта в diff: подпись поля + форматирование значения.
+     Конфликты возникают только на пограничных полях: estimate / fact (минуты) и assignee (login). */
+  function _refreshConflictFieldLabel(field) {
+    if (field === 'estimate') return T('refreshConflictFieldEstimate');
+    if (field === 'fact')     return T('refreshConflictFieldFact');
+    if (field === 'assignee') return T('refreshConflictFieldAssignee');
+    return field;
+  }
+  function _refreshConflictVal(field, v) {
+    if (v == null || v === '') return '—';
+    if (field === 'assignee') return String(v);
+    return fmtPeriod(v); /* estimate/fact — минуты */
+  }
+
+  /* S5 #35 — diff-просмотр конфликтов поверх wcDiffView (read-only, Phase 3 #32).
+     Конфликты уже несут точные from/to (вкл. assignee) — группируем по задаче в changed[].
+     reopen() — колбэк возврата в сводку-модалку (S4) после закрытия diff. */
+  function _showRefreshDiffModal(conflicts, reopen) {
+    var byItem = {};
+    (conflicts || []).forEach(function (c) {
+      var key = c.issueId || '';
+      if (!byItem[key]) {
+        var it = c._item || {};
+        byItem[key] = { title: it.title || it.summary || c.issueId || '', fields: [] };
+      }
+      byItem[key].fields.push({
+        name: _refreshConflictFieldLabel(c.field),
+        from: _refreshConflictVal(c.field, c.from),
+        to:   _refreshConflictVal(c.field, c.to),
+      });
+    });
+    var changed = Object.keys(byItem).map(function (k) { return byItem[k]; });
+    var h = openModal({
+      id: 'refreshDiff',
+      type: 'read-only',
+      title: T('refreshDiffTitle'),
+      body: { kind: 'component', name: 'wcDiffView', props: {
+        added: [], removed: [], changed: changed,
+        labels: {
+          added: T('wcDiffAdded'), removed: T('wcDiffRemoved'), changed: T('wcDiffChanged'),
+          noChanges: T('wcDiffNoChanges'), close: T('btnClose'),
+        },
+        onClose: function () { h.close(); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: true,
+      blockEscape: false,
+      showCloseButton: true,
+      onClose: function () { if (typeof reopen === 'function') reopen(); },
+    });
+  }
+
+  /* S4 #35 — модалка-сводка конфликтов «Обновить из задачи».
+     spec = { total, conflictCount, conflicts, onAll, onSkip }.
+       • [Обновить всё из YouTrack] → onAll (overwrite, вкл. конфликтные);
+       • [Сохранить мои правки]     → onSkip (только бесконфликтные);
+       • [Показать различия]        → diff-подмодалка → возврат в эту сводку.
+     Escape/backdrop/close-X → отмена (ничего не применяем — безопасно). */
+  function _showRefreshConflictModal(spec) {
+    spec = spec || {};
+    var decided = null; /* 'all' | 'skip' | 'diff' | null */
+    function open() {
+      decided = null;
+      openModal({
+        id: 'refreshConflict',
+        type: 'confirm',
+        title: T('refreshConflictTitle'),
+        body: { kind: 'text', text: T('refreshConflictBody')
+          .replace('{n}', String(spec.total || 0))
+          .replace('{k}', String(spec.conflictCount || 0)) },
+        buttons: [
+          { id: 'all',  text: T('refreshConflictAll'),  variant: 'danger',    onClick: function (h) { decided = 'all';  h.close(); } },
+          { id: 'skip', text: T('refreshConflictSkip'), variant: 'primary',   onClick: function (h) { decided = 'skip'; h.close(); } },
+          { id: 'diff', text: T('refreshConflictDiff'), variant: 'secondary', onClick: function (h) { decided = 'diff'; h.close(); } },
+        ],
+        dismissOnBackdrop: false,
+        blockEscape: false,
+        showCloseButton: true,
+        onClose: function () {
+          if (decided === 'all') { if (spec.onAll) spec.onAll(); }
+          else if (decided === 'skip') { if (spec.onSkip) spec.onSkip(); }
+          else if (decided === 'diff') { _showRefreshDiffModal(spec.conflicts, open); }
+          /* decided === null → отмена: ничего не применяем */
+        },
+      });
+    }
+    open();
+  }
+
+  /* ── #35 — универсальный refresh «Обновить из задачи» ───────────────────────
+     Единый путь обновления данных задач из YouTrack для обеих вкладок планирования
+     (Аллокация общего ресурса + Распределение по исполнителям) и Ганта.
+       • item-поля (estimate/fact/state/priority/system/extId) — для ВСЕХ активных ролей;
+       • assignee-распределение — только для текущей роли (там, где people-вкладка и где
+         пользователь его правит; для прочих ролей подтянется при переключении).
+     Слияние — через REFRESH_MERGE_PURE.resolveRefreshMerge (field-class + dirty-guard).
+     Конфликты — эскалируются в _showRefreshConflictModal (S4). */
+  function refreshFromYouTrack() {
+    if (!_currentSprintRoleRec || !isActiveSprintRecord(_currentSprintRoleRec)) {
+      toast(T('toastRefreshNotActive'), 'info'); return;
+    }
+    if (typeof _isInlineCellEditing === 'function' && _isInlineCellEditing()) {
+      toast(T('toastRefreshBusyEditing'), 'warn'); return; /* S7 */
+    }
+    var roles = getActiveRoles();
+    if (!roles.length) { toast(T('toastSelectSprint')); return; }
+
+    var curRk = _currentSprintRoleRec.roleKey || _activeSubtab;
+    var curRole = ALL_ROLES.find(function (r) { return r.key === curRk; });
+
+    var fState     = (_settings && _settings.fieldState) || '';
+    var fPriority  = (_settings && _settings.fieldPriority) || '';
+    var fXPriority = (_settings && _settings.fieldXPriority) || '';
+    var fSystem    = (_settings && _settings.fieldSystem) || '';
+    var fExtId     = (_settings && _settings.fieldExternalTicketId) || '';
+    var curUserField = (curRole && _settings && _settings[curRole.userField]) || '';
+
+    var roleData = [], idSet = {};
+    roles.forEach(function (role) {
+      var ytEst  = (_settings && _settings[role.fieldEst]) || null;
+      var ytFact = (_settings && _settings[role.fieldFact]) || null;
+      var arr = getRoleItemsArr(role.key).filter(function (i) {
+        return i && i.issueId && ACTIVE_INC.indexOf(i.inclusionStatus) >= 0;
+      });
+      arr.forEach(function (i) { idSet[i.issueId] = 1; });
+      roleData.push({ rk: role.key, items: arr, ytEst: ytEst, ytFact: ytFact });
+    });
+
+    var ids = Object.keys(idSet);
     if (!ids.length) { toast(T('toastSyncFromYtNoTasks'), 'info'); return; }
 
-    var _syncStateField = (_settings && _settings.fieldState) || '';
-    apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: _syncStateField })
-      .then(function (resp) {
-        if (!resp || !resp.success) { toast(T('toastSyncFromYtErr')); return; }
-        var assignees = resp.assignees || {};
-        if (!_currentRolePP) _currentRolePP = { resourcesByAssignee: {}, taskAssignments: {} };
-        if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-        var changed = 0;
-        var _roleArr = (isActiveSprintRecord(_currentSprintRoleRec) && typeof getRoleItemsArr === 'function')
-          ? getRoleItemsArr(rk) : [];
-        var _itemById = {};
-        _roleArr.forEach(function(it) { if (it && it.issueId) _itemById[it.issueId] = it; });
-        Object.keys(assignees).forEach(function (issueId) {
-          var ytEntry = assignees[issueId];
-          var ytLogin = ytEntry && ytEntry.login;
-          var ytFull  = ytEntry && (ytEntry.fullName || ytEntry.login);
-          var prevTa  = _currentRolePP.taskAssignments[issueId] || {};
-          var prevLogin = prevTa.assignee || null;
-          if ((prevLogin || null) !== (ytLogin || null)) {
-            _currentRolePP.taskAssignments[issueId] = _currentRolePP.taskAssignments[issueId] || {};
-            _currentRolePP.taskAssignments[issueId].assignee = ytLogin || null;
-            _currentRolePP.taskAssignments[issueId].assigneeName = ytLogin ? (ytFull || ytLogin) : '';
-            delete _currentRolePP.taskAssignments[issueId].ganttColor;
-            changed++;
-          }
-          if (_syncStateField && ytEntry && ytEntry.state && _itemById[issueId]) {
-            var _it = _itemById[issueId];
-            var _newState = ytEntry.state.localizedName || ytEntry.state.name || '';
-            if (_newState !== (_it.state || '')) {
-              _it.state = _newState;
-              _it.stateLocalized = _newState;
-              var _sc = ytEntry.state.color;
-              _it.stateColor = (_sc && (_sc.background || _sc.foreground))
-                ? { background: _sc.background || null, foreground: _sc.foreground || null }
-                : null;
-              changed++;
-            }
-          }
-        });
-        if (!changed) {
-          toast(T('toastSyncFromYtNoChange'), 'info');
-          return;
-        }
-        _markDirty('currentRole');
-        try { renderCurrentRoleAssigneeTable(); } catch (_) {}
-        try { renderCurrentRoleTaskTable(); } catch (_) {}
-        try { if (typeof updateCurrentRoleTotals === 'function') updateCurrentRoleTotals(); } catch (_) {}
-        _ganttStateHist._fetchedAt = 0;
-        try { if (typeof renderGanttChart === 'function') renderGanttChart(); } catch (_) {}
-        saveCurrentRoleState();
-        toast(T('toastSyncFromYtUpdated').replace('{n}', String(changed)), 'success');
-      })
-      .catch(function (e) {
-        diag('refresh-assignees failed: ' + (e && e.message ? e.message : e), 'err');
-        toast(T('toastSyncFromYtErr'));
+    /* Источник — фронтовый REST-батч. YouTrack REST отдаёт локализованные enum/state
+       (localizedName/presentation); workflow entities-API на backend — нет (#35: на стенде
+       priority приходил как name «Show-stopper» вместо «Неотложная»). Чанкуем по 100 id,
+       чтобы не упереться в лимит длины URL-запроса. */
+    var FIELDS = 'id,idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login,fullName))';
+    var CHUNK = 100, chunks = [];
+    for (var ci = 0; ci < ids.length; ci += CHUNK) chunks.push(ids.slice(ci, ci + CHUNK));
+
+    function cfOf(issue, fname) {
+      var cfs = issue.customFields || [];
+      return cfs.find(function (cf) {
+        var fn = (cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.name) || cf.name || '';
+        return fn === fname;
       });
+    }
+    function getMin(issue, fname) {
+      var f = cfOf(issue, fname);
+      return (f && f.value && f.value.minutes !== undefined) ? f.value.minutes : null;
+    }
+    function getStr(issue, fname) {
+      var f = cfOf(issue, fname);
+      if (!f || f.value === null || f.value === undefined) return '';
+      var v = f.value;
+      if (typeof v === 'string') return v;
+      return v.localizedName || v.presentation || v.name || '';
+    }
+    function getUser(issue, fname) {
+      var f = cfOf(issue, fname);
+      var v = f && f.value;
+      return (v && typeof v === 'object' && (v.login || v.fullName))
+        ? { login: v.login || null, fullName: v.fullName || v.name || null }
+        : null;
+    }
+    function getStateObj(issue, fname) {
+      var f = cfOf(issue, fname);
+      var v = f && f.value;
+      if (!v || typeof v !== 'object') return null;
+      var nm = v.localizedName || v.presentation || v.name || '';
+      var c = v.color;
+      return { name: nm, color: (c && (c.background || c.foreground)) ? { background: c.background || null, foreground: c.foreground || null } : null };
+    }
+
+    _setRefreshBtnsBusy(true);
+    Promise.all(chunks.map(function (chunk) {
+      return _host.fetchYouTrack('issues', { query: { fields: FIELDS, query: 'issue id: ' + chunk.join(', '), '$top': chunk.length } });
+    })).then(function (results) {
+      var issuesById = {};
+      (results || []).forEach(function (arr) {
+        (arr || []).forEach(function (issue) {
+          if (issue.idReadable) issuesById[issue.idReadable] = issue;
+          if (issue.id) issuesById[issue.id] = issue;
+        });
+      });
+
+      var curTA  = (_currentRolePP && _currentRolePP.taskAssignments) || {};
+      var snapTA = (_serverSnapshotCurrentRolePP && _serverSnapshotCurrentRolePP.taskAssignments) || {};
+      function snapItem(rk, issueId) {
+        var arr = (_serverSnapshotRoleItems && _serverSnapshotRoleItems[rk]) || [];
+        for (var i = 0; i < arr.length; i++) if (arr[i] && arr[i].issueId === issueId) return arr[i];
+        return null;
+      }
+
+      var pendingItemUpdates = [];  /* {item, updates, rk} */
+      var pendingAssignee = [];     /* {issueId, value} */
+      var conflicts = [];           /* {issueId, roleKey, field, from, to, _item, _rk, _assignee} */
+
+      roleData.forEach(function (rd) {
+        var rk = rd.rk, isCur = (rk === curRk);
+        rd.items.forEach(function (item) {
+          var issue = issuesById[item.issueId];
+          if (!issue) return;
+          var remote = {};
+          if (rd.ytEst)  remote.estimate = getMin(issue, rd.ytEst);
+          if (rd.ytFact) remote.fact     = getMin(issue, rd.ytFact);
+          if (fState) {
+            var stv = getStateObj(issue, fState);
+            if (stv) { remote.state = stv.name; remote.stateLocalized = stv.name; remote.stateColor = stv.color; }
+          }
+          if (fPriority)  remote.priority         = getStr(issue, fPriority);
+          if (fXPriority) remote.xpriority        = getStr(issue, fXPriority);
+          if (fSystem)    remote.system           = getStr(issue, fSystem);
+          if (fExtId)     remote.externalTicketId = getStr(issue, fExtId);
+          if (isCur && curUserField) remote.assignee = getUser(issue, curUserField); /* {login,fullName}|null */
+
+          var sItem = snapItem(rk, item.issueId);
+          var local = {
+            estimate: item['estimate_' + rk], fact: item['fact_' + rk],
+            state: item.state, priority: item.priority, xpriority: item.xpriority,
+            system: item.system, externalTicketId: item.externalTicketId,
+          };
+          var snapshot = {
+            estimate: sItem ? sItem['estimate_' + rk] : null,
+            fact: sItem ? sItem['fact_' + rk] : null,
+          };
+          if (isCur) {
+            local.assignee = (curTA[item.issueId] || {}).assignee || null;
+            snapshot.assignee = (snapTA[item.issueId] || {}).assignee || null;
+          }
+
+          var res = REFRESH_MERGE_PURE.resolveRefreshMerge({
+            issueId: item.issueId, roleKey: rk, local: local, snapshot: snapshot, remote: remote,
+          });
+
+          if (res.updates && Object.keys(res.updates).length) pendingItemUpdates.push({ item: item, updates: res.updates, rk: rk });
+          if (res.assigneeUpdate !== undefined) pendingAssignee.push({ issueId: item.issueId, value: res.assigneeUpdate });
+          (res.conflicts || []).forEach(function (c) {
+            var rich = { issueId: c.issueId, roleKey: c.roleKey, field: c.field, from: c.from, to: c.to, _item: item, _rk: rk };
+            if (c.field === 'assignee') rich._assignee = remote.assignee;
+            conflicts.push(rich);
+          });
+        });
+      });
+
+      /* mode: 'all' (вкл. конфликтные) | 'skip' (только бесконфликтные). */
+      function applyAndFinish(mode) {
+        pendingItemUpdates.forEach(function (u) { _applyRefreshItemUpdates(u.item, u.updates, u.rk); });
+        pendingAssignee.forEach(function (a) { _applyRefreshAssignee(a.issueId, a.value); });
+        if (mode === 'all') {
+          conflicts.forEach(function (c) {
+            if (c.field === 'assignee') { _applyRefreshAssignee(c.issueId, c._assignee); }
+            else { var u = {}; u[c.field] = c.to; _applyRefreshItemUpdates(c._item, u, c._rk); }
+          });
+        }
+        _persistAndRerenderRefresh(curRk);
+        var applied = pendingItemUpdates.length + pendingAssignee.length + (mode === 'all' ? conflicts.length : 0);
+        if (!applied) toast(T('toastSyncFromYtNoChange'), 'info');
+        else toast(T('toastSyncFromYtUpdated').replace('{n}', String(applied)), 'success');
+      }
+
+      var totalAffected = pendingItemUpdates.length + pendingAssignee.length + conflicts.length;
+      if (!conflicts.length) {
+        if (!totalAffected) { toast(T('toastSyncFromYtNoChange'), 'info'); return; }
+        applyAndFinish('skip');
+        return;
+      }
+      /* Сводка считает ЗАДАЧИ (distinct issueId), не записи: одна задача может дать несколько
+         field-изменений/конфликтов. N = затронутых задач, K = задач с несохранёнными правками. */
+      var affTaskSet = {}, conflTaskSet = {};
+      pendingItemUpdates.forEach(function (u) { if (u.item && u.item.issueId) affTaskSet[u.item.issueId] = 1; });
+      pendingAssignee.forEach(function (a) { if (a.issueId) affTaskSet[a.issueId] = 1; });
+      conflicts.forEach(function (c) { if (c.issueId) { affTaskSet[c.issueId] = 1; conflTaskSet[c.issueId] = 1; } });
+      /* Эскалация: модалка-сводка (S4). */
+      _showRefreshConflictModal({
+        total: Object.keys(affTaskSet).length,
+        conflictCount: Object.keys(conflTaskSet).length,
+        conflicts: conflicts,
+        onAll: function () { applyAndFinish('all'); },
+        onSkip: function () { applyAndFinish('skip'); },
+      });
+    }).catch(function (e) {
+      diag('refreshFromYouTrack failed: ' + (e && e.message ? e.message : e), 'err');
+      toast(T('toastSyncFromYtErr'));
+    }).finally(function () {
+      _setRefreshBtnsBusy(false);
+    });
   }
+
+  /* S6 #35 — syncAssigneesFromYouTrack удалён: assignee-логика поглощена единым
+     refreshFromYouTrack (field-class merge). Все три кнопки (roles/people/Гант) → refreshFromYouTrack.
+     Backend-эндпоинт refresh-assignees теперь без вызовов — снос отдельной задачей (whitelist+fixture). */
   var _peopleSyncBtn = document.getElementById('currentRoleSyncFromYtBtn');
-  if (_peopleSyncBtn) _peopleSyncBtn.addEventListener('click', syncAssigneesFromYouTrack);
+  if (_peopleSyncBtn) _peopleSyncBtn.addEventListener('click', refreshFromYouTrack); /* #35 */
   var _ganttSyncBtn = document.getElementById('ganttSyncFromYtBtn');
-  if (_ganttSyncBtn) _ganttSyncBtn.addEventListener('click', syncAssigneesFromYouTrack);
+  if (_ganttSyncBtn) _ganttSyncBtn.addEventListener('click', refreshFromYouTrack); /* #35 */
 
   /* delAssigneeOverlay + clearAssigneesOverlay migrated to openModal() (Phase 1 #32). */
 

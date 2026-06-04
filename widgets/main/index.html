@@ -2071,7 +2071,7 @@
               <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
               <button class="ring-button-button ring-button-block ring-button-heightS btn--warn editor-btn" id="currentRoleClearAssigneesBtn" data-i18n="btnClearAssignees" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnSyncFromYt" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задач</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnRefreshFromTask" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задачи</button>
             </div>
           </div>
           <!-- v2.1.0 E1 — Ring Table host. Native <table> + <thead> + <tbody> removed;
@@ -2134,7 +2134,7 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v2.1.14 — merged: sync assignee+state из YT + дозагрузка истории состояний. -->
-      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="ganttRefresh" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить</button>
+      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="btnRefreshFromTask" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задачи</button>
     </div>
     <div id="ganttContainer"></div>
   </div>

@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.2.3] — 2026-06-04
+
+> **Universal "Refresh from task" button (#35).**
+
+### Added
+
+- **A single "Refresh from task" button** on both planning tabs and the Gantt. One batch request pulls the full task snapshot (estimate, spent, state, priority, system, assignee) and updates both tabs and the Gantt at once.
+- **Unsaved edits are protected.** When local data clashes with YouTrack, a summary appears with a choice: "Update all from YouTrack" / "Keep my changes" / "Show differences" (diff over estimate/spent/assignee).
+- **Refresh is blocked** while an uncommitted cell editor is open, and is available only for the active sprint.
+
+### Changed
+
+- The three former refresh points (per role, per assignee, Gantt) are unified into a single `refreshFromYouTrack` path. The button label is consolidated into the `btnRefreshFromTask` key.
+
+---
+
 ## [2.2.0] — 2026-06-03
 
 > **Clearer period value entry (#34).**
