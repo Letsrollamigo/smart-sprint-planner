@@ -55,6 +55,11 @@ const KEEP_PATTERNS = [
      position:fixed переопределяется в index.html на click-anchor (auto-grow iframe). */
   'ring-alert',
   'ring-container-alert',
+  /* #33 — Ring QueryAssist (нативный поиск в модалке подбора). Все классы под
+     префиксом ring-query-assist (input, huge, highlight, letter-field-name/value,
+     actions, icon, clear, loader, placeholder, error). Popup подсказок реюзит
+     ring-popup и ring-list (уже в KEEP от Ring Select). */
+  'ring-query-assist',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
@@ -80,7 +85,7 @@ const EXCLUDE_PATTERNS = [
   'ring-pager',
   'ring-panel',
   'ring-progress',
-  'ring-query',
+  /* #33 — 'ring-query' moved to KEEP_PATTERNS (Ring QueryAssist — нативный поиск). */
   'ring-spin-',      // avoid matching .ring-input (no overlap but be safe)
   'ring-status',
   'ring-tag',        // covers ring-tags too + ring-tag-input

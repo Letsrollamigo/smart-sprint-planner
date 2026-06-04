@@ -451,6 +451,47 @@ textarea.ring-input-input{box-sizing:border-box;overflow:hidden;resize:none}
 .ring-list-overscrollNone{overscroll-behavior:none}
 .ring-list-disabled{color:var(--ring-disabled-color)}
 .ring-list-disabled,.ring-list-item:not(.ring-list-action,.ring-list-hint){pointer-events:none}
+.ring-query-assist-queryAssist{--ring-input-icon-offset:calc(var(--ring-unit)*2.5);--ring-input-padding-inline:var(--ring-unit);--ring-input-padding-block:1px;align-items:center;border:1px solid var(--ring-borders-color);border-radius:var(--ring-border-radius);box-sizing:border-box;display:flex;font-size:var(--ring-font-size);line-height:var(--ring-line-height);min-height:calc(var(--ring-input-padding-inline)*3);padding:var(--ring-input-padding-block) var(--ring-input-padding-inline);position:relative;transition:border-color var(--ring-ease)}
+.ring-query-assist-queryAssist *{box-sizing:border-box}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-query-assist-queryAssist:hover{border-color:var(--ring-border-hover-color);transition:none}}
+.ring-query-assist-queryAssist:focus-within{border-color:var(--ring-main-color);transition:none}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-query-assist-queryAssist:-webkit-autofill:hover{-webkit-transition:background-color 50000s ease-in-out 0s;transition:background-color 50000s ease-in-out 0s}}
+.ring-query-assist-queryAssist:-webkit-autofill,.ring-query-assist-queryAssist:-webkit-autofill:focus{-webkit-transition:background-color 50000s ease-in-out 0s;transition:background-color 50000s ease-in-out 0s}
+.ring-query-assist-error .ring-query-assist-queryAssist{border-color:var(--ring-error-color)}
+.ring-query-assist-queryAssistDisabled{background-color:var(--ring-disabled-background-color);border-color:var(--ring-border-disabled-color);color:var(--ring-disabled-color);-webkit-text-fill-color:var(--ring-disabled-color)}
+.ring-query-assist-huge{max-height:calc(var(--ring-input-padding-inline)*4);padding:0 0 0 var(--ring-input-padding-inline)}
+.ring-query-assist-huge .ring-query-assist-actions{padding-right:var(--ring-input-padding-inline)}
+[dir=rtl] .ring-query-assist-huge{padding:0 var(--ring-input-padding-inline) 0 0}
+:is([dir=rtl] .ring-query-assist-huge) .ring-query-assist-actions{padding:0 var(--ring-input-padding-inline)}
+.ring-query-assist-input{background:transparent;caret-color:var(--ring-main-color);color:var(--ring-text-color);cursor:text;flex-grow:1;font:inherit;margin:0;outline:none;overflow:auto;scrollbar-width:none;transition:border-color var(--ring-ease);white-space:nowrap}
+.ring-query-assist-letter-text{color:var(--ring-warning-color)}
+.ring-query-assist-letter-field-name,.ring-query-assist-letterDefault{color:var(--ring-text-color)}
+.ring-query-assist-letter-field-value{color:var(--ring-link-color)}
+.ring-query-assist-letter-operator{color:var(--ring-secondary-color)}
+.ring-query-assist-letter-error{border-bottom:1px solid var(--ring-error-color);padding-bottom:1px}
+.ring-query-assist-highlight{font-weight:var(--ring-font-weight-bold)}
+.ring-query-assist-service{color:var(--ring-secondary-color)}
+.ring-query-assist-placeholder{color:var(--ring-disabled-color);display:block;overflow:hidden;padding-left:calc(var(--ring-input-padding-inline)*3 - var(--ring-input-padding-block));pointer-events:none;position:absolute;text-overflow:ellipsis;white-space:nowrap;width:calc(100% - var(--ring-input-padding-inline)*4)}
+[dir=rtl] .ring-query-assist-placeholder{padding-right:calc(var(--ring-input-padding-inline)*3 + var(--ring-input-padding-block)*2);text-align:right}
+.ring-query-assist-hugePlaceholder{padding-left:0}
+.ring-query-assist-letter{display:inline}
+.ring-query-assist-actions{align-items:center;display:inline-flex;height:100%;justify-content:center;line-height:inherit;max-height:calc(var(--ring-input-padding-inline)*2);padding-left:var(--ring-input-padding-inline)}
+[dir=rtl] .ring-query-assist-actions{padding:0 var(--ring-input-padding-inline) 0 0}
+.ring-query-assist-icon{color:var(--ring-secondary-color);padding-right:var(--ring-input-padding-inline)}
+[dir=rtl] .ring-query-assist-icon{padding:0 0 0 var(--ring-input-padding-inline)}
+.ring-query-assist-rightSearchButton{border:1px solid var(--ring-borders-color);border-radius:var(--ring-border-radius);border-bottom-left-radius:0;border-right:0;border-top-left-radius:0;color:var(--ring-secondary-color);cursor:pointer;padding:5px 9px;transition:border-color var(--ring-ease)}
+.ring-query-assist-queryAssist.ring-query-assist-queryAssist:focus-within .ring-query-assist-rightSearchButton{border-color:var(--ring-main-color);transition:none}
+@media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-query-assist-queryAssist:hover .ring-query-assist-rightSearchButton{border-color:var(--ring-border-hover-color);transition:none}}
+[dir=rtl] .ring-query-assist-rightSearchButton{border-left:0;border-radius:var(--ring-border-radius);border-bottom-right-radius:0;border-right:1px solid var(--ring-borders-color);border-top-right-radius:0}
+.ring-query-assist-clear{padding-right:0;top:1px}
+[dir=rtl] .ring-query-assist-clear{padding-left:0;padding-right:var(--ring-input-padding-inline)}
+.ring-query-assist-input::-webkit-scrollbar{display:none}
+.ring-query-assist-withoutGlass{padding-left:0}
+[dir=rtl] .ring-query-assist-withoutGlass{padding-right:calc(var(--ring-input-padding-block)*3)}
+.ring-query-assist-loaderActive{padding-right:calc(var(--ring-input-padding-inline) - var(--ring-input-padding-block))}
+.ring-query-assist-loaderOnTheRight{padding-right:0}
+[dir=rtl] .ring-query-assist-loaderOnTheRight{padding-left:0}
+.ring-query-assist-inputRevertOrder{order:-1}
 .ring-radio-radio{color:var(--ring-text-color);display:flex;flex-direction:row;outline:none;padding:2px 0;position:relative;text-align:left}
 @media (-moz-touch-enabled:0),(-ms-high-contrast:active),(-ms-high-contrast:none),(hover:hover){.ring-radio-radio:hover .ring-radio-circle{border-color:var(--ring-border-hover-color);transition:none}}
 .ring-radio-circle{background-color:var(--ring-content-background-color);border:1px solid var(--ring-borders-color);border-radius:var(--ring-unit);box-sizing:border-box;flex-shrink:0;height:calc(var(--ring-unit)*2);pointer-events:none;position:relative;top:2px;transition:border-color var(--ring-ease),box-shadow var(--ring-ease);-webkit-user-select:none;-moz-user-select:none;user-select:none;width:calc(var(--ring-unit)*2)}

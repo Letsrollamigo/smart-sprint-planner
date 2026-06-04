@@ -336,6 +336,9 @@ function PickPicker(props) {
   const onLoadAll = props.onLoadAll || (() => Promise.resolve({ ids: [], capped: false }));
   const onAdd     = props.onAdd     || noop;
   const onCancel  = props.onCancel  || noop;
+  /* #33 — нативный поиск: Ring QueryAssist из вендор-бандла + data-source подсказок. */
+  const QueryAssist = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.QueryAssist;
+  const onAssist  = props.onAssist  || (() => Promise.resolve({ suggestions: [] }));
 
   const [query, setQuery]       = React.useState('');
   const [committed, setCommitted] = React.useState(null); // запрос текущего набора результатов
@@ -381,13 +384,16 @@ function PickPicker(props) {
     });
   }
 
-  function doSearchClick() {
-    const fresh = query !== committed;
+  /* #33 — apply явным запросом q (из QueryAssist onApply или fallback-input Enter). */
+  function applyQuery(q) {
+    const fresh = q !== committed;
     if (fresh) setSelected(new Set());
-    setCommitted(query);
+    setQuery(q);
+    setCommitted(q);
     setPage(1);
-    runSearch(query, 1, fresh);
+    runSearch(q, 1, fresh);
   }
+  function doSearchClick() { applyQuery(query); }
 
   function goPage(delta) {
     const np = page + delta;
@@ -470,14 +476,32 @@ function PickPicker(props) {
 
   return (
     <div style={{ width: '100%' }}>
-      <div className="search-row" style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-        <input type="text" className="ring-input" style={{ flex: 1, minWidth: 0 }}
-               value={query} placeholder={L.placeholder}
-               onChange={(e) => setQuery(e.target.value)}
-               onKeyDown={(e) => { if (e.key === 'Enter') doSearchClick(); }} />
-        <button type="button" className={_btnCls('primary')} style={{ flex: '0 0 auto', minWidth: '90px' }} onClick={doSearchClick}>
-          {L.searchText}
-        </button>
+      {/* #33 — нативный поиск YouTrack: Ring QueryAssist (автокомплит на лету,
+          подсветка, синтаксис) поверх search/assist. Apply (Enter / glass-иконка /
+          выбор подсказки) → запуск выборки списка. Guard-fallback на обычный input,
+          если QueryAssist недоступен (старый Ring/сборка) — модалка не падает. */}
+      <div className="search-row ssp-pick-search" style={{ marginBottom: '10px' }}>
+        {QueryAssist ? (
+          <QueryAssist
+            huge glass clear
+            placeholder={L.placeholder}
+            query={query}
+            dataSource={onAssist}
+            onChange={(ch) => setQuery((ch && ch.query) || '')}
+            onApply={(ch) => applyQuery((ch && ch.query) || '')}
+            onClear={() => setQuery('')}
+          />
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input type="text" className="ring-input" style={{ flex: 1, minWidth: 0 }}
+                   value={query} placeholder={L.placeholder}
+                   onChange={(e) => setQuery(e.target.value)}
+                   onKeyDown={(e) => { if (e.key === 'Enter') doSearchClick(); }} />
+            <button type="button" className={_btnCls('primary')} style={{ flex: '0 0 auto', minWidth: '90px' }} onClick={doSearchClick}>
+              {L.searchText}
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ maxHeight: '48vh', overflow: 'auto' }}>

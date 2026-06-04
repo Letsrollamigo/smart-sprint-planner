@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.3.0] — 2026-06-04
+
+> **Native YouTrack search in the task picker (#33).**
+
+### Added
+
+- **YouTrack-native search in the "+ Pick tasks" dialog.** The search field is now a Ring UI `QueryAssist` backed by the native `POST /api/search/assist` endpoint: type-ahead suggestions for fields/values/IDs, match highlighting, and full YouTrack query syntax. Suggestions are scoped to the current project. The results list is re-fetched when the query is applied (Enter or the search-glass icon) — easy on large projects.
+- **Parameterized search scope** (`_buildPickScope`) — foundation for future cross-project sprint composition: the suggestion context (`folders`) and the issue-list filter (`project:` prefix) are extracted into an injectable object, so moving to multiple projects will not require rewriting the search layer.
+
+---
+
 ## [2.2.6] — 2026-06-04
 
 > **"Refresh from task" works for an agreed sprint (follow-up to #35).**
