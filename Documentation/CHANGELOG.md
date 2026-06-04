@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.2.4] — 2026-06-04
+
+> **Stand-up refresh button fix (alongside #35).**
+
+### Fixed
+
+- **The "Refresh" button on the Stand-up tab now works.** It previously sent a malformed request (the endpoint contract did not match) and silently did nothing (since the full rebuild). It now correctly pulls task state from YouTrack (the basis for the Done / In progress / Not started buckets) for the selected role, and the assignee for the current role.
+- **Stand-up reads assignment data from the canonical source** (same as the "Distribution by people" tab and the Gantt) instead of an unreliable cache — assignees no longer disappear from the buckets after saving other roles.
+
+---
+
 ## [2.2.3] — 2026-06-04
 
 > **Universal "Refresh from task" button (#35).**

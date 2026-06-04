@@ -1393,7 +1393,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.2.3';
+  var APP_VERSION = '2.2.4';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -4221,10 +4221,20 @@
     return { done: done, inflight: inflight, notStarted: notStarted };
   }
 
+  /* Канон-источник personalPlanning роли для Stand-up (фикс tangled keyed-vs-single модели,
+     v2.2.4): текущая роль → live _currentRolePP; иначе → _getPersonalPlanningForCurrent (histRec
+     first, кэш _sprint.personalPlanning[rk] лишь fallback). Раньше Stand-up читал сырой кэш
+     напрямую — а saveCurrentRoleState затирает его single-объектом одной роли → assignee пропадал. */
+  function _standupPP(rk) {
+    if (_currentRolePP && _currentSprintRoleRec
+        && (_currentSprintRoleRec.roleKey || _activeSubtab) === rk) return _currentRolePP;
+    return (typeof _getPersonalPlanningForCurrent === 'function') ? _getPersonalPlanningForCurrent(rk) : null;
+  }
+
   function _renderStandupBucket(containerId, titleKey, issueIds, rk) {
     var el = document.getElementById(containerId);
     if (!el) return;
-    var pp = _sprint && _sprint.personalPlanning && _sprint.personalPlanning[rk];
+    var pp = _standupPP(rk);
     var assignments = (pp && pp.taskAssignments) || {};
     var roleItems   = (_roleItems && _roleItems[rk]) || [];
     el.innerHTML = '';
@@ -4298,7 +4308,7 @@
       if (goalMissing) goalMissing.style.display = '';
     }
     // Empty state: no tasks in role
-    var pp = _sprint.personalPlanning && _sprint.personalPlanning[rk];
+    var pp = _standupPP(rk);  /* канон-источник (v2.2.4 фикс) — не сырой кэш _sprint.personalPlanning[rk] */
     var assignments = (pp && pp.taskAssignments) || {};
     var hasItems = Object.keys(assignments).length > 0;
     var roleItems = (_roleItems && _roleItems[rk]) || [];
@@ -4333,17 +4343,74 @@
     _renderStandupBucket('standupBucketNotStarted', 'standupBucketNotStarted', classified.notStarted, rk);
   }
 
+  /* v2.2.4 — фикс: раньше слался { sprintId } на /refresh-assignees, а handler ждёт
+     { issueIds, fieldName, stateFieldName } и отдаёт { assignees } → запрос всегда падал
+     (стендап-refresh не работал с full-rebuild v2.1.0). Теперь корректный контракт:
+       • state (ось бакетов done/inflight/notStarted) — для выбранной роли rk в _roleItems[rk]
+         (чистая keyed-модель, персист sprint-data) — работает для любой роли селектора;
+       • assignee — только для текущей роли через _currentRolePP + saveCurrentRoleState
+         (канон-персист). Для не-текущей роли assignee не мутируем (избегаем tangled
+         personalPlanning-персиста — техдолг в COMMON_ROADMAP); бакетинг идёт по state. */
   function doStandupRefresh() {
     if (!_sprint) return Promise.resolve();
+    var sel = document.getElementById('standupRoleSel');
+    var rk = (sel && sel.value) || _activeSubtab || '';
+    if (!rk) { var ar = getActiveRoles(); rk = ar.length ? ar[0].key : ''; }
+    var role = ALL_ROLES.find(function (r) { return r.key === rk; });
+    if (!role) return Promise.resolve();
+    var fieldName = _settings && _settings[role.userField];
+    if (!fieldName) { toast(T('toastSyncFromYtNoField'), 'warn'); return Promise.resolve(); }
+    var roleItems = (_roleItems && _roleItems[rk]) || [];
+    var ids = roleItems
+      .filter(function (i) { return i && i.issueId && ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; })
+      .map(function (i) { return i.issueId; });
+    if (!ids.length) { renderStandupView(); return Promise.resolve(); }
+    var stateField = (_settings && _settings.fieldState) || '';
+    var isCur = !!(_currentSprintRoleRec && (_currentSprintRoleRec.roleKey || _activeSubtab) === rk);
     var btn = document.getElementById('standupRefreshBtn');
-    return withLoader(btn, function() {
-      return apiPost('refresh-assignees', { sprintId: _sprint.sprintId })
-        .then(function(res) {
-          if (res && res.sprint) _sprint = res.sprint;
+    return withLoader(btn, function () {
+      return apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: stateField })
+        .then(function (res) {
+          if (!res || !res.success) { toast(T('toastSyncFromYtErr')); return; }
+          var assignees = res.assignees || {};
+          var pp = isCur ? _currentRolePP : null;
+          if (isCur && !pp) { _currentRolePP = pp = { resourcesByAssignee: {}, taskAssignments: {} }; }
+          if (pp && !pp.taskAssignments) pp.taskAssignments = {};
+          var byId = {};
+          roleItems.forEach(function (it) { if (it && it.issueId) byId[it.issueId] = it; });
+          var changed = 0;
+          Object.keys(assignees).forEach(function (id) {
+            var e = assignees[id];
+            if (pp) { /* assignee — только текущая роль (канон-персист) */
+              var login = (e && e.login) || null;
+              var ta = pp.taskAssignments[id] || (pp.taskAssignments[id] = {});
+              if ((ta.assignee || null) !== login) {
+                ta.assignee = login;
+                ta.assigneeName = login ? ((e && (e.fullName || e.login)) || login) : '';
+                delete ta.ganttColor;
+                changed++;
+              }
+            }
+            if (stateField && e && e.state && byId[id]) { /* state — любая роль */
+              var ns = e.state.localizedName || e.state.name || '';
+              if (ns && ns !== (byId[id].state || '')) {
+                byId[id].state = ns;
+                byId[id].stateLocalized = ns;
+                var sc = e.state.color;
+                byId[id].stateColor = (sc && (sc.background || sc.foreground))
+                  ? { background: sc.background || null, foreground: sc.foreground || null } : null;
+                changed++;
+              }
+            }
+          });
+          if (!changed) { renderStandupView(); toast(T('toastSyncFromYtNoChange'), 'info'); return; }
+          _markDirty('roleItems');
+          apiPost('sprint-data', { roleItems: _roleItems }).catch(function () {});
+          if (isCur) saveCurrentRoleState();
           renderStandupView();
           toast(T('toastStandupRefreshed'), 'success');
         })
-        .catch(function(e){ diag('standup refresh err: ' + e, 'err'); });
+        .catch(function (e) { diag('standup refresh err: ' + e, 'err'); toast(T('toastSyncFromYtErr')); });
     });
   }
 
