@@ -1393,7 +1393,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.2.4';
+  var APP_VERSION = '2.2.5';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -4332,7 +4332,10 @@
       Object.keys(item).forEach(function(k){ if (/^(fact_|estimate_|alloc_)/.test(k)) unifiedMap[item.issueId][k] = item[k]; });
     });
     Object.keys(assignments).forEach(function(id) {
-      if (!unifiedMap[id]) unifiedMap[id] = {};
+      if (!unifiedMap[id]) return;  /* v2.2.5 — только обогащаем задачи состава роли исполнителем/состоянием;
+        «осиротевшие» назначения (issueId есть в taskAssignments, но нет в _roleItems[rk] — задача убрана
+        из состава, запись назначенца осталась) НЕ добавляем как title-less строки. До v2.2.4 баг был скрыт
+        пустым кэшем _sprint.personalPlanning[rk]; read-fix v2.2.4 вскрыл сирот. */
       var a = assignments[id];
       if (a.state) unifiedMap[id].state = a.state;
       if (a.assignee) unifiedMap[id].assignee = a.assignee;
