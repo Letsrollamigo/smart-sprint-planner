@@ -1393,7 +1393,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.2.6';
+  var APP_VERSION = '2.3.0';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -6640,6 +6640,48 @@
     return { fullQuery: fullQuery, fingerprint: fullQuery + '|' + (projectId || '') };
   }
 
+  /* #33 — скоуп поиска. Два независимых канала (не пересекаются, не трогают каретку):
+       folders   → контекст подсказок search/assist (значения статусов/полей под проект)
+       projectId → префикс выборки issues (через _buildPickQuery)
+     Сейчас оба производны от текущего проекта. Фундамент под кросс-проект: позже сюда
+     подставляется набор проектов (folders:[p1..pn]) — data-слой не переписывается. */
+  function _buildPickScope() {
+    var p = (_ctx && _ctx.project) || null;
+    return {
+      /* $type:'Project' обязателен — search/assist без дискриминатора IssueFolder
+         отвечает 500 InstantiationException (проверено live-probe на стенде, #33). */
+      folders:   p && p.id ? [{ $type: 'Project', id: p.id }] : [],
+      projectId: p ? (p.shortName || p.id) : null
+    };
+  }
+
+  /* #33 — data-source подсказок для Ring QueryAssist. Мост к нативному YT endpoint
+     POST /api/search/assist: на каждый ввод/движение каретки отдаёт подсказки с
+     позициями достройки и диапазонами совпадений (автокомплит + подсветка + синтаксис
+     YouTrack «из коробки»). Контракт возврата 1:1 с QueryAssistResponse Ring UI.
+     folders — отдельным полем тела (скоуп подсказок под проект), query/caret не трогаем.
+     Ошибка/недоступность assist → пустые подсказки (поле и список продолжают работать). */
+  var ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completionEnd,' +
+                      'matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)';
+  function _pickAssist(req) {
+    var query = (req && req.query) || '';
+    var caret = (req && typeof req.caret === 'number') ? req.caret : query.length;
+    var scope = _buildPickScope();
+    var body = { query: query, caret: caret, ignoreUnresolvedSetting: true };
+    if (scope.folders && scope.folders.length) body.folders = scope.folders;
+    return _host.fetchYouTrack('search/assist', {
+      method: 'POST',
+      query: { fields: ASSIST_FIELDS },
+      body: body,
+      headers: { 'Content-Type': 'application/json' }
+    }).then(function (res) {
+      return { query: query, caret: caret, suggestions: (res && res.suggestions) || [] };
+    }).catch(function (err) {
+      diag('_pickAssist: search/assist failed — ' + (err && err.message ? err.message : err), 'warn');
+      return { query: query, caret: caret, suggestions: [] };
+    });
+  }
+
   /* v5.0.3 — преобразование сырого issue из YouTrack-API в meta-объект для UI/кэша */
   function _mapIssueMeta(iss) {
     var cfs = iss.customFields || [];
@@ -6854,6 +6896,7 @@
           closeText:       T('btnClose'),
           addText:         T('btnAddPicked'),
         },
+        onAssist:  function(req){ return _pickAssist(req); },
         onSearch:  function(q, page){ return _pickSearch(q, page); },
         onLoadAll: function(q){ return _pickLoadAll(q); },
         onAdd:     function(ids){ _pickAddSelected(rk, ids); h.close(); },
