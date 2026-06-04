@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.2.5] — 2026-06-04
+
+> **Stand-up rendering fix (follow-up to v2.2.4).**
+
+### Fixed
+
+- **The Stand-up buckets no longer show orphan title-less rows** (like "DEMO-1 DEMO-1 @login"). Those were tasks removed from the role composition but still carrying an assignee entry in personalPlanning. The v2.2.4 read-fix surfaced them (they were previously hidden by an empty cache); Stand-up now shows only tasks in the current role composition, enriched with their assignee.
+
+---
+
 ## [2.2.4] — 2026-06-04
 
 > **Stand-up refresh button fix (alongside #35).**
