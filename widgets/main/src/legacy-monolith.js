@@ -1393,7 +1393,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.2.5';
+  var APP_VERSION = '2.2.6';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -9999,7 +9999,14 @@
      Слияние — через REFRESH_MERGE_PURE.resolveRefreshMerge (field-class + dirty-guard).
      Конфликты — эскалируются в _showRefreshConflictModal (S4). */
   function refreshFromYouTrack() {
-    if (!_currentSprintRoleRec || !isActiveSprintRecord(_currentSprintRoleRec)) {
+    /* Гард v2.2.6: refresh доступен для редактируемого активного/планируемого спринта в ЛЮБОМ
+       статусе (вкл. «Состав согласован»/ALLOCATED). Блокируем ТОЛЬКО исторический readonly-просмотр
+       (§5) и редактирование working-copy истории. Критерий — тот же, что у UI readonly-режима
+       (isHistoricalView, :4482), а НЕ isActiveSprintRecord: последний требует непустой working
+       `_sprint` и ложно блокировал активный согласованный спринт, собранный из истории
+       (_sprint === null → вид редактируемый, но refresh падал). */
+    var _histView = !!(_currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId);
+    if (!_currentSprintId || _histView || _activeWorkingDraftKey) {
       toast(T('toastRefreshNotActive'), 'info'); return;
     }
     if (typeof _isInlineCellEditing === 'function' && _isInlineCellEditing()) {
@@ -10008,7 +10015,9 @@
     var roles = getActiveRoles();
     if (!roles.length) { toast(T('toastSelectSprint')); return; }
 
-    var curRk = _currentSprintRoleRec.roleKey || _activeSubtab;
+    /* null-safe: _currentSprintRoleRec может быть null на вкладке «Состав ролей» или при _sprint===null. */
+    var curRk = (_currentSprintRoleRec && _currentSprintRoleRec.roleKey) || _activeSubtab
+              || (roles[0] && roles[0].key) || null;
     var curRole = ALL_ROLES.find(function (r) { return r.key === curRk; });
 
     var fState     = (_settings && _settings.fieldState) || '';

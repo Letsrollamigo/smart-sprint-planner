@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.2.6] — 2026-06-04
+
+> **"Refresh from task" works for an agreed sprint (follow-up to #35).**
+
+### Fixed
+
+- **"Refresh from task" is no longer blocked for the active sprint once its composition is agreed** (or in any other planning status). It previously showed "Refresh is available only for the active sprint" — the guard relied on the internal working `_sprint` object, which is empty for an agreed sprint reconstructed from history. The guard now uses the same criterion as the UI read-only mode (`isHistoricalView`): refresh is unavailable only when viewing historical snapshots or editing working copies.
+
+---
+
 ## [2.2.5] — 2026-06-04
 
 > **Stand-up rendering fix (follow-up to v2.2.4).**
