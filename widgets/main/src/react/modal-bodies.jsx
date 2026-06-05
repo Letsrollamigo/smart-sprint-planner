@@ -426,8 +426,8 @@ function PickPicker(props) {
     }).catch(() => { setAllBusy(false); });
   }
 
-  const thStyle = { textAlign: 'left', padding: '6px 8px', borderBottom: '1px solid var(--border,#ddd)', position: 'sticky', top: 0, background: 'var(--surface,#fff)', fontSize: '12px', fontWeight: 600 };
-  const tdStyle = { padding: '5px 8px', borderBottom: '1px solid var(--border-light,#eee)', verticalAlign: 'top' };
+  const thStyle = { textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid var(--border,#ddd)', position: 'sticky', top: 0, background: 'var(--surface,#fff)', fontSize: '12px', fontWeight: 600 };
+  const tdStyle = { padding: '3px 8px', borderBottom: '1px solid var(--border-light,#eee)', verticalAlign: 'top' };
 
   let results;
   if (loading) {
