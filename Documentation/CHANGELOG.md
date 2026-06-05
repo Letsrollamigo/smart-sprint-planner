@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.3.2] — 2026-06-05
+
+> **Table micro-redesign: compact typography + row separators (#42).**
+
+### Changed
+
+- **Compact typography across all tables.** Reduced line-height and row vertical padding, plus a smaller, tighter font for the «Title» column — long task names no longer stretch rows into tall blocks, so data reads denser.
+- **Thin row-separator lines in the planning tables (Ring UI).** Ring did not separate rows by default — with the compact layout they blurred together; a 1px divider was added under every row.
+
+Visual only (CSS) — no logic or calculation changes.
+
 ## [2.3.1] — 2026-06-05
 
 > **Task-picker modal positioning fix (follow-up to #33).**
