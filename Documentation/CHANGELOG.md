@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.3.1] — 2026-06-05
+
+> **Task-picker modal positioning fix (follow-up to #33).**
+
+### Fixed
+
+- **The task-picker modal no longer shifts the page when it opens.** Ring Dialog's default `autoFocusFirst` focused the `QueryAssist` search field on open; on focus QueryAssist sets a caret (Selection API) and the browser scrolled the widget iframe to it — and `preventScroll` does not cross the OOPIF sandbox boundary. `autoFocusFirst` is now disabled on the shared Ring Dialog (our `modal-mount` already sets focus manually with `preventScroll`); for the modal that hosts `QueryAssist` the auto-focus is skipped entirely — the field is focused on user click. Other modals are unaffected (the manual handler already determined the final focus).
+
+---
+
 ## [2.3.0] — 2026-06-04
 
 > **Native YouTrack search in the task picker (#33).**
