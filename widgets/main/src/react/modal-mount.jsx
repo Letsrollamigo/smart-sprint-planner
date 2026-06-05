@@ -126,7 +126,14 @@ function SspModal({ spec, onClose }) {
         'button:not([disabled]), input:not([disabled]):not([type="hidden"]), ' +
         'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
-      const target = focusables[0] || containerRef.current;
+      /* #33 — если первый фокусируемый элемент внутри Ring QueryAssist (модалка
+         подбора задач), НЕ фокусируем его: QueryAssist на фокусе ставит каретку
+         (Selection API), что скроллит виджет-iframe, а preventScroll Selection-скролл
+         не глушит. Модалка в position:fixed видна и без фокуса; поле фокусится по клику.
+         Для остальных модалок — обычный preventScroll-фокус первого элемента. */
+      const first = focusables[0];
+      if (first && first.closest('.ring-query-assist')) return;
+      const target = first || containerRef.current;
       try { target.focus({ preventScroll: true }); } catch (_) {
         try { target.focus(); } catch (__) {}
       }
@@ -160,6 +167,12 @@ function SspModal({ spec, onClose }) {
       className={'ssp-ring-modal' + (spec.dialogClass ? ' ' + spec.dialogClass : '')}
       onCloseAttempt={spec.blockEscape ? noop : onClose}
       trapFocus={false}
+      /* #33 — Ring autoFocusFirst (дефолт true) фокусит первый элемент на открытии
+         БЕЗ preventScroll; для Ring QueryAssist (модалка подбора) это ставит каретку
+         (Selection) и браузер скроллит виджет-iframe (OOPIF, preventScroll не пересекает
+         границу) → страница прыгает. Отключаем — фокус ставит modal-mount вручную ниже
+         с preventScroll (а для QueryAssist пропускает focus вовсе). */
+      autoFocusFirst={false}
       showCloseButton={spec.showCloseButton || false}
       preventBodyScroll={false}
       onOverlayClick={spec.dismissOnBackdrop ? onClose : noop}
