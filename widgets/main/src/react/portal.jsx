@@ -19,6 +19,9 @@ function getOrCreateRoot(mountPointId) {
   return { container, root };
 }
 
+/* #25 Ф1-A — inline-маунт в произвольный DOM-контейнер (в потоке страницы, НЕ портал). */
+const _inlinePool = new Map();
+
 window.__SSP_REACT = {
   mount(id, element) {
     const { root } = getOrCreateRoot(id);
@@ -27,6 +30,16 @@ window.__SSP_REACT = {
   unmount(id) {
     const entry = _rootPool.get(id);
     if (entry) entry.root.render(null);
+  },
+  mountInto(container, element) {
+    if (!container) return;
+    let root = _inlinePool.get(container);
+    if (!root) { root = ReactDOMClient.createRoot(container); _inlinePool.set(container, root); }
+    root.render(element);
+  },
+  unmountFrom(container) {
+    const root = _inlinePool.get(container);
+    if (root) root.render(null);
   },
   _React: React,
 };

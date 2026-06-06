@@ -216,4 +216,14 @@ window.__SSP_RING_MODAL = {
   registerBody(name, component) {
     _bodyRegistry[name] = component;
   },
+  /* #25 Ф1-A — inline-рендер body-компонента в контейнер страницы (не модалка). */
+  mountInline(container, bodyName, props) {
+    const Comp = _bodyRegistry[bodyName];
+    if (!Comp || !container) return false;
+    window.__SSP_REACT.mountInto(container, React.createElement(Comp, props || {}));
+    return true;
+  },
+  unmountInline(container) {
+    window.__SSP_REACT.unmountFrom(container);
+  },
 };

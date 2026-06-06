@@ -627,6 +627,12 @@
 
   /* ═══ Состояние ════════════════════════════════════════════ */
   var _host, _ctx, _settings = null, _projectFields = [], _projectGroups = [];
+  /* #25 Ф1 — режим виджета. 'project' (PROJECT_SETTINGS) или 'global' (MAIN_MENU_ITEM,
+     проект выбирается в picker'е шапки). Backend-роутинг ветвится по _mode. */
+  var _mode = 'project';
+  var _activeProjectKey = null;
+  var _globalProjects = [];
+  var _NO_PROJECT_SENTINEL = { __noProject__: true };
   var _sprint = null;
   /* v5.2.0 — guard для overlimit-модала: ключ "<rk>:<sprintId>" → bool */
   var _overlimitModalShownFor = {};
@@ -1393,7 +1399,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.3.2';
+  var APP_VERSION = '2.4.8';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2915,18 +2921,46 @@
   }
 
   /* ═══ Backend API ══════════════════════════════════════════ */
+  /* #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global →
+     backend-global + projectKey (query нормализуется: путь может нести встроенный
+     '?a=b', раскладываем в единый объект query — без двойного '?'). */
+  function _backendCall(path, baseOpts) {
+    baseOpts = baseOpts || {};
+    if (_mode !== 'global') {
+      baseOpts.scope = true;
+      return _host.fetchApp('backend-project/' + path, baseOpts);
+    }
+    var q = {};
+    var qi = path.indexOf('?');
+    var cleanPath = path;
+    if (qi >= 0) {
+      cleanPath = path.slice(0, qi);
+      path.slice(qi + 1).split('&').forEach(function (pair) {
+        if (!pair) return;
+        var kv = pair.split('=');
+        q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+      });
+    }
+    if (baseOpts.query) {
+      Object.keys(baseOpts.query).forEach(function (k) { q[k] = baseOpts.query[k]; });
+    }
+    q.projectKey = _activeProjectKey;
+    baseOpts.query = q;
+    return _host.fetchApp('backend-global/' + cleanPath, baseOpts);
+  }
+
   function apiGet(path) {
-    diag('GET ' + path);
-    return _host.fetchApp('backend-project/' + path, { scope: true })
+    diag('GET ' + path + ' [' + _mode + ']');
+    return _backendCall(path, {})
       .then(function(r){ diag('OK ' + path, 'ok'); return r; })
       .catch(function(e){ diag('ERR ' + path + ': ' + (e&&e.message?e.message:e), 'err'); throw e; });
   }
 
   function apiPost(path, body, query) {
-    diag('POST ' + path);
-    var opts = { scope: true, method: 'POST', body: body };
+    diag('POST ' + path + ' [' + _mode + ']');
+    var opts = { method: 'POST', body: body };
     if (query && typeof query === 'object') opts.query = query;
-    return _host.fetchApp('backend-project/' + path, opts)
+    return _backendCall(path, opts)
       .then(function(r){
         /* v5.0.3 — backend всегда отвечает JSON-ом с полем success.
            Если success=false — это валидационная ошибка (status 400) или auth_required.
@@ -3035,21 +3069,63 @@
         }
       } catch(ex) { /* ignore */ }
     }
-    diag('YTApp registered. project='+(_ctx&&_ctx.project?_ctx.project.id:'?'),'info');
-    if (_ctx && _ctx.project && (_ctx.project.name || _ctx.project.shortName)) {
-      _projectDisplayName = _ctx.project.name || _ctx.project.shortName;
-      _updateProjectNameLabel();
+    /* #25 Ф1-A — НАДЁЖНЫЙ детект режима. host.context.project — нестандартное поле
+       (нет в Host API), на YT 2026.1 пусто → раньше оба виджета падали в global.
+       Источник истины: YTApp.widget.id (генерируемый id) / YTApp.entity (hosting-проект
+       в PROJECT_SETTINGS, отсутствует в MAIN_MENU_ITEM) → legacy _ctx.project. */
+    var _yt = (typeof YTApp !== 'undefined') ? YTApp : null;
+    var _wid = (_yt && _yt.widget) ? String(_yt.widget.id || _yt.widget.key || '') : '';
+    var _entType = (_yt && _yt.entity) ? String(_yt.entity.type || '') : '';
+    var _entId   = (_yt && _yt.entity) ? String(_yt.entity.id || '') : '';
+    var _legacyProj = (_ctx && _ctx.project) ? String(_ctx.project.id || _ctx.project.shortName || '') : '';
+    diag('#25 mode signals: widget.id="' + _wid + '" entity.type="' + _entType + '" entity.id="' + _entId + '" ctx.project="' + _legacyProj + '"', 'info');
+    if (_wid === 'ssp-main-global') {
+      _mode = 'global';
+    } else if (_wid === 'ssp-main') {
+      _mode = 'project';
+    } else if (/global/i.test(_wid)) {
+      _mode = 'global';
+    } else if (_entId && (!_entType || /Project/i.test(_entType))) {
+      _mode = 'project';
+    } else if (_legacyProj) {
+      _mode = 'project';
+    } else {
+      _mode = 'global';
     }
+    diag('#25 widget mode resolved = ' + _mode, 'ok');
+    if (_mode === 'project') {
+      _activeProjectKey = (_ctx && _ctx.project && (_ctx.project.shortName || _ctx.project.key))
+        || (_yt && _yt.entity && (_yt.entity.shortName || _yt.entity.key)) || null;
+      var _pname = (_ctx && _ctx.project && (_ctx.project.name || _ctx.project.shortName))
+        || (_yt && _yt.entity && (_yt.entity.name || _yt.entity.shortName)) || '';
+      if (_pname) { _projectDisplayName = _pname; _updateProjectNameLabel(); }
+      _syncAclFireAndForget();
+    } else {
+      try { document.body.classList.add('ssp-global-mode'); } catch(_) {}
+    }
+    if (typeof _loadAppVersion === 'function') { try { _loadAppVersion(); } catch(_) {} }
     /* v5.0.3 (итерация 5) — loadProjectGroups убран из критического пути
        (нужен только в settings-overlay; ленивая загрузка при openSettingsOverlay).
        На сетях через прокси GET /groups может занимать 5–10 секунд. */
-    var _initT0 = Date.now();
-    diag('init: loadMe + loadProjectFields START', 'info');
-    return Promise.all([loadMe(), loadProjectFields()]).then(function(arr){
-      diag('init: loadMe+loadProjectFields OK ('+(Date.now()-_initT0)+'ms)', 'ok');
-      return arr;
-    });
+    /* #25 Ф1 — loadMe (user-scoped) один раз; данные проекта грузятся ниже по режиму. */
+    diag('init: loadMe START', 'info');
+    return loadMe();
   }).then(function() {
+    if (_mode === 'global') return _initGlobalProjectSelection();
+    return _renderProjectSettingsPage();   // #25 Ф1-A — проект = страница настроек
+  }).catch(function(e) {
+    if (e === _NO_PROJECT_SENTINEL) { diag('global: awaiting project selection', 'info'); return; }
+    diag('INIT ERROR: '+(e&&e.message?e.message:e),'err');
+    toast(T('toastInitError')+(e&&e.message?e.message:e));
+  });
+
+  /* #25 Ф1 — загрузка+рендер данных активного проекта. Переиспользуется на init и смене проекта. */
+  function _loadAndRenderProject() {
+    var _initT0 = Date.now();
+    diag('init: loadProjectFields START', 'info');
+    return loadProjectFields().then(function() {
+      diag('init: loadProjectFields OK ('+(Date.now()-_initT0)+'ms)', 'ok');
+    }).then(function() {
     var t = Date.now();
     diag('init: loadAllData START', 'info');
     return loadAllData().then(function(r){
@@ -3189,6 +3265,234 @@
     diag('INIT ERROR: '+(e&&e.message?e.message:e),'err');
     toast(T('toastInitError')+(e&&e.message?e.message:e));
   });
+  } /* /_loadAndRenderProject (#25 Ф1) */
+
+  /* ═══ #25 Ф1-A — проектный виджет = страница настроек (планер уехал в главное меню) ══ */
+
+  function _loadSettingsOnly() {
+    return apiGet('sprint-data').then(function (r) {
+      _settings = (r && r.settings) || null;
+    }).catch(function () {});
+  }
+
+  function _renderProjectSettingsPage() {
+    diag('project mode -> settings page', 'info');
+    return Promise.all([
+      loadProjectFields(),
+      _loadSettingsOnly(),
+      (typeof loadProjectGroups === 'function' ? loadProjectGroups().catch(function () {}) : Promise.resolve())
+    ]).then(function () {
+      return apiGet('check-settings-manager').catch(function () { return null; });
+    }).then(function (r) {
+      var canManage  = !!(r && r.canManage);
+      var configured = !!(r && r.configured);
+      document.body.classList.add('ssp-project-settings-mode');
+      var banner = document.getElementById('projectSettingsBanner');
+      if (banner) { banner.textContent = T('projectMovedToMenu'); banner.classList.remove('hidden'); }
+      try { _populateLangSelect(document.getElementById('langSel')); } catch (_) {}
+      var langSelEl = document.getElementById('langSel');
+      if (langSelEl) {
+        langSelEl.value = _lang;
+        if (!langSelEl._sspBound) { langSelEl.addEventListener('change', function () { setLang(langSelEl.value); }); langSelEl._sspBound = true; }
+      }
+      applyI18N();
+      try { applyIcons(); } catch (_) {}
+      try { applyRingTheme(); } catch (_) {}
+      if (typeof _loadAppVersion === 'function') { try { _loadAppVersion(); } catch (_) {} }
+      _mountProjectSettings(canManage, configured);
+      diag('project settings page rendered (canManage=' + canManage + ', configured=' + configured + ')', 'info');
+    });
+  }
+
+  function _mountProjectSettings(canManage, configured) {
+    var host = document.getElementById('projectSettingsHost');
+    if (!host) return;
+    var ro = !canManage || !configured;
+    host.classList.toggle('ssp-settings-readonly', ro);
+    if (!window.__SSP_RING_MODAL || typeof window.__SSP_RING_MODAL.mountInline !== 'function') {
+      host.textContent = T('settingsNotConfiguredHint');
+      return;
+    }
+    var props = _buildSettingsFormProps(function () { _renderProjectSettingsPage(); });
+    window.__SSP_RING_MODAL.mountInline(host, 'settingsForm', props);
+  }
+
+  /* ═══ #25 Ф1 — global-режим: picker проекта + смена проекта ════════════════ */
+
+  function _syncAclFireAndForget() {
+    try { apiPost('sync-acl', {}).then(function(){}, function(){}); } catch (_) {}
+  }
+
+  var _LAST_PROJECT_LS_KEY = 'ssp_last_project_key';
+  function _getLastProjectKey() { try { return safeLs.get(_LAST_PROJECT_LS_KEY) || null; } catch (_) { return null; } }
+  function _setLastProjectKey(k) { try { if (k) safeLs.set(_LAST_PROJECT_LS_KEY, k); } catch (_) {} }
+
+  function _loadGlobalProjectList() {
+    return _host.fetchYouTrack('admin/projects', { query: { fields: 'id,name,shortName,archived', '$top': 1000 } })
+      .then(function (list) {
+        var keys = [];
+        (list || []).forEach(function (p) {
+          if (p && p.shortName && !p.archived) keys.push(p.shortName);
+        });
+        if (!keys.length) return [];
+        return apiPost('filter-planner-projects', { keys: keys }).then(function (r) {
+          return (r && r.projects) || [];
+        });
+      }).catch(function (e) {
+        diag('loadGlobalProjectList ERR: ' + (e && e.message ? e.message : e), 'err');
+        return [];
+      });
+  }
+
+  function _renderProjectPicker() {
+    var wrap = document.getElementById('globalProjectPicker');
+    if (!wrap) return;
+    wrap.classList.remove('hidden');
+    var sel = document.getElementById('globalProjectSelect');
+    if (!sel) {
+      var label = document.createElement('span');
+      label.className = 'ssp-global-project-label';
+      label.setAttribute('data-i18n', 'globalProjectLabel');
+      label.textContent = T('globalProjectLabel');
+      sel = document.createElement('select');
+      sel.id = 'globalProjectSelect';
+      sel.className = 'ssp-global-project-select';
+      sel.addEventListener('change', function () { _onProjectPicked(sel.value); });
+      wrap.appendChild(label);
+      wrap.appendChild(sel);
+    }
+    sel.innerHTML = '';
+    var ph = document.createElement('option');
+    ph.value = '';
+    ph.setAttribute('data-i18n', 'globalProjectPlaceholder');
+    ph.textContent = T('globalProjectPlaceholder');
+    sel.appendChild(ph);
+    _globalProjects.forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p.key;
+      o.textContent = p.name + ' (' + p.key + ')';
+      sel.appendChild(o);
+    });
+    if (_activeProjectKey) sel.value = _activeProjectKey;
+  }
+
+  function _setPickerValue(k) {
+    var sel = document.getElementById('globalProjectSelect');
+    if (sel) sel.value = k || '';
+  }
+
+  function _setGlobalBanner(textKey) {
+    var b = document.getElementById('globalNoProjectBanner');
+    if (!b) return;
+    if (textKey) { b.textContent = T(textKey); b.classList.remove('hidden'); }
+    else b.classList.add('hidden');
+  }
+
+  function _initGlobalProjectSelection() {
+    return _loadGlobalProjectList().then(function (projects) {
+      _globalProjects = projects || [];
+      _renderProjectPicker();
+      if (!_globalProjects.length) {
+        _setGlobalBanner('globalNoProjects');
+        throw _NO_PROJECT_SENTINEL;
+      }
+      var last = _getLastProjectKey();
+      var initKey = null;
+      if (last && _globalProjects.some(function (p) { return p.key === last; })) initKey = last;
+      else if (_globalProjects.length === 1) initKey = _globalProjects[0].key;
+      if (!initKey) {
+        _setGlobalBanner('globalPickPrompt');
+        throw _NO_PROJECT_SENTINEL;
+      }
+      _applyActiveProject(initKey);
+      _setGlobalBanner(null);
+      return _loadAndRenderProject();
+    });
+  }
+
+  function _applyActiveProject(key) {
+    _activeProjectKey = key;
+    _setPickerValue(key);
+    _setLastProjectKey(key);
+    var p = _globalProjects.filter(function (x) { return x.key === key; })[0];
+    _projectDisplayName = (p && p.name) ? p.name : key;
+    try { _updateProjectNameLabel(); } catch (_) {}
+  }
+
+  function _onProjectPicked(newKey) {
+    if (!newKey || newKey === _activeProjectKey) return;
+    if (_draftIsDirty()) {
+      _confirmDiscardAndSwitch(
+        function onConfirm() { _switchToProject(newKey); },
+        function onCancel()  { _setPickerValue(_activeProjectKey); }
+      );
+    } else {
+      _switchToProject(newKey);
+    }
+  }
+
+  function _switchToProject(newKey) {
+    diag('switch project -> ' + newKey, 'info');
+    _resetProjectStateCaches();
+    _applyActiveProject(newKey);
+    _setGlobalBanner(null);
+    _loadAndRenderProject().catch(function (e) {
+      diag('switch load ERR: ' + (e && e.message ? e.message : e), 'err');
+    });
+  }
+
+  function _resetProjectStateCaches() {
+    _sprint = null;
+    _roleItems = {};
+    _history = [];
+    _settings = null;
+    _projectFields = [];
+    _serverSnapshotSprint = null;
+    _serverSnapshotRoleItems = null;
+    _baseRevHash = '';
+    _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
+    _draftLoaded = false;
+    _draftPending = false;
+    _currentSprintId = null;
+    _activeSubtab = null;
+    _workingDrafts = {};
+    _workingDraftsLoaded = false;
+    _activeWorkingDraftKey = null;
+    _currentSprintRoleRec = null;
+    _currentRoleGantt = null;
+    _ganttStateHist = {};
+    _permissionsCheckPromise = null;
+    _permissionsReady = false;
+    _isValidator = false;
+    _isEditor = false;
+    _isAssigner = false;
+  }
+
+  function _confirmDiscardAndSwitch(onConfirm, onCancel) {
+    if (!window.__SSP_RING_MODAL) {
+      var ok = true;
+      try { ok = window.confirm(T('globalSwitchDiscardMsg')); } catch (_) { ok = true; }
+      if (ok) onConfirm(); else onCancel();
+      return;
+    }
+    var decided = false;
+    openModal({
+      id: 'globalSwitchConfirm',
+      type: 'confirm',
+      title: T('globalSwitchDiscardTitle'),
+      body: { kind: 'text', text: T('globalSwitchDiscardMsg') },
+      buttons: [
+        { id: 'cancel', text: T('globalSwitchCancel'), variant: 'secondary',
+          onClick: function (api) { decided = true; onCancel(); api.close(); } },
+        { id: 'ok', text: T('globalSwitchDiscardConfirm'), variant: 'primary',
+          onClick: function (api) { decided = true; onConfirm(); api.close(); } }
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: true,
+      onClose: function () { if (!decided) onCancel(); }
+    });
+  }
 
   /**
    * v5.0 — обновить видимость и поведение кнопки перехода в виджет настроек.
@@ -3327,6 +3631,37 @@
     });
   }
 
+  /* #25 Ф1-A — сборка props формы настроек (модалка global + inline-страница проекта). */
+  function _buildSettingsFormProps(onCloseFn) {
+    var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || [];
+    var defaultLangOptions = langs.map(function (l) {
+      return { value: l.code, label: (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')' };
+    });
+    return {
+      initial:            _settings || {},
+      roles:              ALL_ROLES,
+      fieldsByType:       _buildFieldsByType(),
+      defaultLangOptions: defaultLangOptions,
+      uiLang:             _lang,
+      t:                  T,
+      initialGroups:      _projectGroups || [],
+      loadGroups:         function () { return loadProjectGroups().then(function () { return _projectGroups; }); },
+      enumFields:         (_buildFieldsByType().enumFields) || [],
+      stateFieldName:     (_settings && typeof _settings.fieldState === 'string' && _settings.fieldState) ? _settings.fieldState : 'State',
+      loadFieldValues:    function (fieldName) {
+        if (!fieldName) return Promise.resolve([]);
+        if (_fieldValuesCache[fieldName]) return Promise.resolve(_fieldValuesCache[fieldName].values || []);
+        return apiGet('field-values?fieldName=' + encodeURIComponent(fieldName)).then(function (r) {
+          if (r && r.success && r.values) _fieldValuesCache[fieldName] = r;
+          return (r && r.values) || [];
+        }).catch(function () { return []; });
+      },
+      onUiLangChange:     function (lang) { setLang(lang); },
+      onSave:             _saveSettingsData,
+      onClose:            onCloseFn,
+    };
+  }
+
   function openSettingsModal() {
     apiGet('check-settings-manager').then(function (r) {
       diag('settingsModal open: configured=' + (r && r.configured) + ' canManage=' + (r && r.canManage), 'info');
@@ -3358,44 +3693,15 @@
         loadProjectGroups().catch(function (e) { diag('lazy loadProjectGroups err: ' + e, 'err'); });
       }
 
-      var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || [];
-      var defaultLangOptions = langs.map(function (l) {
-        return { value: l.code, label: (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')' };
-      });
-
       var handle = openModal({
         id: 'settings', type: 'form', title: T('appTitleSettings'),
         dialogClass: 'ssp-ring-modal--wide ssp-ring-modal--settings',
-        body: { kind: 'component', name: 'settingsForm', props: {
-          initial:            _settings || {},
-          roles:              ALL_ROLES,
-          fieldsByType:       _buildFieldsByType(),
-          defaultLangOptions: defaultLangOptions,
-          uiLang:             _lang,
-          t:                  T,
-          initialGroups:      _projectGroups || [],
-          loadGroups:         function () { return loadProjectGroups().then(function () { return _projectGroups; }); },
-          /* 5c — async bundle-значения поля (cascade level2/3, rollup/standup states),
-             с тем же кэшем _fieldValuesCache, что vanilla-path. */
-          enumFields:         (_buildFieldsByType().enumFields) || [],
-          stateFieldName:     (_settings && typeof _settings.fieldState === 'string' && _settings.fieldState) ? _settings.fieldState : 'State',
-          loadFieldValues:    function (fieldName) {
-            if (!fieldName) return Promise.resolve([]);
-            if (_fieldValuesCache[fieldName]) return Promise.resolve(_fieldValuesCache[fieldName].values || []);
-            return apiGet('field-values?fieldName=' + encodeURIComponent(fieldName)).then(function (r) {
-              if (r && r.success && r.values) _fieldValuesCache[fieldName] = r;
-              return (r && r.values) || [];
-            }).catch(function () { return []; });
-          },
-          onUiLangChange:     function (lang) { setLang(lang); },
-          onSave:             _saveSettingsData,
-          onClose:            function () { if (handle) handle.close(); },
-        } },
+        body: { kind: 'component', name: 'settingsForm',
+          props: _buildSettingsFormProps(function () { if (handle) handle.close(); }) },
         buttons: [],
         dismissOnBackdrop: false,
         blockEscape: false,
-        /* showCloseButton:false — форма рисует свой явный × (ssp-settings-close);
-           Ring-ный был бледным и у края island, неинтуитивен. */
+        /* showCloseButton:false — форма рисует свой явный × (ssp-settings-close). */
         showCloseButton: false,
         onClose: function () { /* idемпотентный close из foundation */ },
       });
@@ -3813,9 +4119,8 @@
    * клиент не передаёт список групп — их нельзя подменить.
    */
   function checkValidatorNow() {
-    return _host.fetchApp('backend-project/check-validator', {
-      scope: true, method: 'GET'
-    }).then(function(r){ return !!(r && r.isValidator); })
+    return _backendCall('check-validator', { method: 'GET' })
+      .then(function(r){ return !!(r && r.isValidator); })
       .catch(function(){ return false; });
   }
 
@@ -3824,17 +4129,15 @@
    * Сервер сверяет ctx.currentUser.groups с настроенными группами редактирования.
    */
   function checkEditorRightsNow() {
-    return _host.fetchApp('backend-project/check-editor', {
-      scope: true, method: 'GET'
-    }).then(function(r){ return !!(r && r.isEditor); })
+    return _backendCall('check-editor', { method: 'GET' })
+      .then(function(r){ return !!(r && r.isEditor); })
       .catch(function(){ return false; });
   }
 
   function checkSettingsManager() {
     diag('checkSettingsManager: запрос...', 'info');
-    return _host.fetchApp('backend-project/check-settings-manager', {
-      scope: true, method: 'GET'
-    }).then(function(r) {
+    return _backendCall('check-settings-manager', { method: 'GET' })
+      .then(function(r) {
       var msg = 'checkSettingsManager: canManage=' + (r && r.canManage) +
         ' group="' + (r && r.groupName || '') + '"';
       diag(msg, (r && r.canManage) ? 'ok' : 'err');
@@ -3864,9 +4167,8 @@
      Backend GET /check-assigner возвращает { isAssigner }, наследование на frontend
      учитывается в applyEditorRightsToUI (assigner-btn enabled if editor OR assigner). */
   function checkAssignerRightsNow() {
-    return _host.fetchApp('backend-project/check-assigner', {
-      scope: true, method: 'GET'
-    }).then(function (r) {
+    return _backendCall('check-assigner', { method: 'GET' })
+      .then(function (r) {
       return !!(r && r.isAssigner);
     }).catch(function () { return false; });
   }
