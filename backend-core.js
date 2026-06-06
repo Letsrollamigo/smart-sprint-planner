@@ -223,7 +223,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.1.7';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.4.8';
+var APP_VERSION = '2.4.9';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2630,8 +2630,15 @@ var ENDPOINTS = [
       path: 'sync-acl',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
+        // Нормализуем в простой сериализуемый вид: settingsManagerGroup может быть строкой
+        // (legacy text-input) ИЛИ entity-прокси UserGroup (x-entity picker). JSON.stringify
+        // живого прокси теряет id/name (сериализуется в {}) → зеркало пустое. Извлекаем явно.
         var g = null;
-        try { g = (ctx.settings && ctx.settings.settingsManagerGroup) || null; } catch (e) { g = null; }
+        try {
+          var raw = (ctx.settings && ctx.settings.settingsManagerGroup);
+          if (typeof raw === 'string') { g = raw.trim() || null; }
+          else if (raw && (raw.name || raw.id)) { g = { id: raw.id ? String(raw.id) : null, name: raw.name ? String(raw.name) : null }; }
+        } catch (e) { g = null; }
         var cur  = parseJson(getProp(ctx, 'ssp_acl'), null);
         var curG = (cur && cur.settingsManagerGroup !== undefined) ? cur.settingsManagerGroup : null;
         var changed = JSON.stringify(curG) !== JSON.stringify(g);
