@@ -50,9 +50,9 @@ APP_VER=$(grep -oE "APP_VERSION = '${semver}'" widgets/main/src/legacy-monolith.
 [ "$APP_VER" = "$PKG_VER" ] && ok "legacy-monolith.js:APP_VERSION = $APP_VER" \
   || fail "legacy-monolith.js:APP_VERSION '$APP_VER' ≠ package '$PKG_VER'"
 
-BE_VER=$(grep -oE "response\.json\(\{ version: '${semver}'" backend-project.js | grep -oE "$semver" | head -1)
-[ "$BE_VER" = "$PKG_VER" ] && ok "backend-project.js /app-version = $BE_VER" \
-  || fail "backend-project.js /app-version '$BE_VER' ≠ package '$PKG_VER' (часто забывается!)"
+BE_VER=$(grep -oE "var APP_VERSION = '${semver}'" backend-core.js | grep -oE "$semver" | head -1)
+[ "$BE_VER" = "$PKG_VER" ] && ok "backend-core.js:APP_VERSION (/app-version) = $BE_VER" \
+  || fail "backend-core.js:APP_VERSION '$BE_VER' ≠ package '$PKG_VER' (часто забывается!)"
 
 # ── имена zip-архивов ─────────────────────────────────────────────────────────
 echo "— имена zip-архивов —"

@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const ROOT    = path.join(__dirname, '..');
 const SCHEMA  = path.join(ROOT, 'schema', 'whitelists.json');
-const BACKEND = path.join(ROOT, 'backend-project.js');
+const BACKEND = path.join(ROOT, 'backend-core.js'); // #25 Ф1 — whitelist'ы в ядре
 
 const BEGIN_MARK = '// AUTOGEN:WHITELISTS BEGIN — generated from schema/whitelists.json by scripts/sync-backend-whitelists.js. Do NOT edit by hand.';
 const END_MARK   = '// AUTOGEN:WHITELISTS END';
@@ -41,7 +41,7 @@ const bi = content.indexOf(BEGIN_MARK);
 const ei = content.indexOf(END_MARK);
 
 if (bi === -1 || ei === -1) {
-  console.error('AUTOGEN markers not found in backend-project.js — add markers manually before first sync');
+  console.error('AUTOGEN markers not found in backend-core.js — add markers manually before first sync');
   process.exit(1);
 }
 if (ei < bi) { console.error('END marker before BEGIN'); process.exit(1); }
@@ -51,8 +51,8 @@ const after   = content.slice(ei + END_MARK.length);
 const updated = before + generated + after;
 
 if (updated === content) {
-  console.log('✓ whitelists in backend-project.js already in sync with schema/whitelists.json');
+  console.log('✓ whitelists in backend-core.js already in sync with schema/whitelists.json');
 } else {
   fs.writeFileSync(BACKEND, updated);
-  console.log('✓ synced backend-project.js from schema/whitelists.json');
+  console.log('✓ synced backend-core.js from schema/whitelists.json');
 }

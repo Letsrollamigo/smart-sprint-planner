@@ -166,6 +166,23 @@
     .page-header__title { font-size: 18px; font-weight: 600; }
     .page-header__sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .page-header__links { margin-left: auto; flex-shrink: 0; white-space: nowrap; display:flex; gap:8px; align-items:center; }
+    /* #25 Ф1 — picker проекта в шапке (global-режим). */
+    .ssp-global-project-picker { display:flex; align-items:center; gap:6px; margin-left:24px; min-width:0; }
+    .ssp-global-project-picker.hidden { display:none; }
+    .ssp-global-project-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+    .ssp-global-project-select { max-width:340px; min-width:180px; padding:5px 8px; font-size:13px; cursor:pointer;
+      background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:var(--radius); }
+    /* #25 Ф1-A — проектный виджет = страница настроек (планер уехал в главное меню). */
+    #projectSettingsHost { display:none; }
+    #projectSettingsBanner { display:none; padding:10px 14px; margin:0 0 12px; border-radius:var(--radius);
+      background:rgba(90,125,232,.12); color:var(--text); border:1px solid rgba(90,125,232,.35); font-size:13px; }
+    .ssp-project-settings-mode .page > *:not(.page-header):not(#projectSettingsHost):not(#projectSettingsBanner):not(#diagWrap) { display:none; }
+    .ssp-project-settings-mode #projectSettingsHost { display:block; }
+    .ssp-project-settings-mode #projectSettingsBanner { display:block; }
+    #projectSettingsHost .ssp-settings-close { display:none; }
+    #projectSettingsHost .ssp-settings-form { height:auto; min-height:68vh; }
+    #projectSettingsHost.ssp-settings-readonly .ssp-settings-pane { pointer-events:none; opacity:.92; }
+    #projectSettingsHost.ssp-settings-readonly .ssp-modal-footer { display:none; }
     .alloc-input { width:70px; box-sizing:border-box; background:var(--surface-hover,#2a2a3a); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:2px 6px; font-size:13px; text-align:right; cursor:text; }
     /* v2.1.6+v2.1.7 UI fix — baseline font-size 13px для всех inputs/selects внутри Ring Table cells.
        Ring native cell typography 14px → inputs inherit → mismatch с scale.
@@ -1831,6 +1848,8 @@
         <span id="dirtyBadge" class="dirty-badge hidden"></span>
       </div>
     </div>
+    <!-- #25 Ф1 — выбор проекта (только global-режим / MAIN_MENU_ITEM). Label+select строит JS. -->
+    <div id="globalProjectPicker" class="ssp-global-project-picker hidden"></div>
     <div class="page-header__links">
       <!-- v5.0.3 — Кнопка очистки локального черновика. Видна при наличии любого
            черновика (meta в localStorage). Текст и title ставятся скриптом, чтобы
@@ -1929,6 +1948,12 @@
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
+  <div id="globalNoProjectBanner" class="banner banner--warn hidden"></div>
+
+  <!-- #25 Ф1-A — проектный виджет = страница настроек. Баннер + хост inline-формы. -->
+  <div id="projectSettingsBanner" class="banner hidden"></div>
+  <div id="projectSettingsHost"></div>
+
   <div id="bannerNotConfigured" class="banner banner--warn hidden" data-i18n="bannerNotConfigured">
     ⚠️ Плагин не настроен. Администратор проекта должен задать группу управления настройками в Project Settings → Apps → Sprint Planner.
   </div>

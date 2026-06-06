@@ -9,7 +9,8 @@
         "ssp_items":      { "type": "string" },
         "ssp_history":    { "type": "string" },
         "ssp_drafts":     { "type": "string" },
-        "ssp_workdrafts": { "type": "string" }
+        "ssp_workdrafts": { "type": "string" },
+        "ssp_acl":        { "type": "string" }
       }
     }
   ]
