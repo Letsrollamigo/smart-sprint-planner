@@ -183,6 +183,253 @@
     #projectSettingsHost .ssp-settings-form { height:auto; min-height:68vh; }
     #projectSettingsHost.ssp-settings-readonly .ssp-settings-pane { pointer-events:none; opacity:.92; }
     #projectSettingsHost.ssp-settings-readonly .ssp-modal-footer { display:none; }
+
+    /* ════ #25 Ф2 — дашборд (рельс + пейн), ТОЛЬКО global-режим ════
+       Каркас .ssp-dash (grid [rail][pane]) строит JS (_buildGlobalDashShell) единожды
+       при _mode==='global'; существующий контент .page переезжает в .ssp-pane (move, не
+       recreate — id/классы/обработчики живы). Брейкпоинт — по ширине iframe планера
+       (= доступная ширина; навбар YT влияет — M8/§2 спеки), НЕ по window.screen: @media
+       внутри виджет-iframe видит ширину самого iframe → container-query-поведение «бесплатно».
+       Узкая/средняя зона (<1330) = стопка (рельс-контент flow сверху, как сегодня).
+       Wide (≥1330) = grid рельс+пейн; рельс sticky, сворачивается вручную. */
+    body.ssp-global-mode .ssp-pane { min-width: 0; }   /* grid-трек не распирается таблицами min-width:1100 */
+
+    /* ── Рельс: единая вертикальная стопка, всё на всю ширину, выровнено ── */
+    /* голова: бренд (.page-header) + кнопка «свернуть» справа */
+    body.ssp-global-mode .ssp-rail__head { display: flex; align-items: flex-start; gap: 8px; }
+    body.ssp-global-mode .ssp-rail__head .page-header { flex: 1; min-width: 0; margin: 0 0 4px 0; gap: 8px; }
+    /* текстовый заголовок «Smart Sprint Planner» убран — YouTrack уже рисует его в полоске
+       над виджетом (дубль). Оставляем только лого-иконку + версию/черновик/проект ниже. */
+    body.ssp-global-mode .ssp-rail__head .page-header__title { display: none; }
+    body.ssp-global-mode .ssp-rail__head .page-header__icon { width: 32px; height: 32px; }
+    body.ssp-global-mode .ssp-rail__toggle {
+      display: none;                                       /* в стопке сворачивать нечего */
+      flex-shrink: 0; align-items: center; justify-content: center;
+      width: 22px; height: 22px; padding: 0; cursor: pointer; line-height: 1;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--muted); font-size: 13px;
+    }
+    body.ssp-global-mode .ssp-rail__toggle:hover { color: var(--text); background: var(--surface); }
+
+    /* утилиты — компактной группой сразу под брендом (auto-grow iframe: «низ» не прижать) */
+    body.ssp-global-mode .ssp-rail__utils { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    body.ssp-global-mode .ssp-rail__utils .page-header__links {
+      margin-left: 0; flex-direction: column; align-items: stretch; gap: 6px; white-space: normal;
+    }
+
+    /* контекст: проект-пикер / спринт-шапка / статусбар — каждый на всю ширину рельса */
+    /* flex+gap: видимые отступы между логическими блоками (gap не перебивается margin:0 карточек) */
+    body.ssp-global-mode .ssp-rail__context { display: flex; flex-direction: column; gap: 16px; }
+    body.ssp-global-mode .ssp-rail__context .ssp-global-project-picker { margin-left: 0; flex-direction: column; align-items: stretch; gap: 4px; }
+    body.ssp-global-mode .ssp-rail__context .ssp-global-project-select { width: 100%; max-width: 100%; min-width: 0; }
+    /* спринт-шапка: горизонтальный бокс → вертикальная стопка на всю ширину */
+    /* ── Логические карточки контекста (фон/скругления как .card справа в «Вводных») ── */
+    body.ssp-global-mode .ssp-rail__context .widget-header,
+    body.ssp-global-mode .ssp-rail__context .ssp-rail-card {
+      display: flex; flex-direction: column; align-items: stretch; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 12px; margin: 0;
+    }
+    body.ssp-global-mode .ssp-rail__context .widget-header__sprint { flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; flex: none; }
+    body.ssp-global-mode .ssp-rail__context .widget-header__select { width: 100%; min-width: 0 !important; max-width: 100% !important; }
+    /* рабочая копия — во всю ширину карточки, контент по центру (над статусами ролей) */
+    body.ssp-global-mode .ssp-rail__context .widget-header__wc { display: flex !important; width: 100% !important; box-sizing: border-box; justify-content: center; align-self: stretch; }
+    /* статусы ролей — цветные блоки во всю ширину карточки, текст по центру */
+    body.ssp-global-mode .ssp-rail__context .widget-header__badge { width: 100%; overflow: visible; gap: 6px; }
+    body.ssp-global-mode .ssp-rail__context .widget-header__badge .s-badge {
+      width: 100%; display: block; text-align: center; white-space: normal; max-width: 100%; box-sizing: border-box;
+    }
+    /* карточку статусов прячем, если активных ролей нет (бейдж скрыт) */
+    body.ssp-global-mode .ssp-rail-card--badges:has(> .widget-header__badge.hidden) { display: none; }
+    /* «Новый спринт» — отдельной строкой, во всю ширину, с воздухом по Y */
+    body.ssp-global-mode .ssp-rail__context .widget-header__new { margin: 2px 0; width: 100%; }
+    /* статусбар модулей (в utils-зоне под языком): вертикальная стопка пилюль */
+    body.ssp-global-mode .ssp-rail .widget-statusbar {
+      flex-direction: column; align-items: stretch; gap: 5px;
+      padding: 0; border: none; margin: 0;
+    }
+    body.ssp-global-mode .ssp-rail .widget-statusbar__label { margin: 0 0 2px 0; }
+    body.ssp-global-mode .ssp-rail .ssb-chip { width: 100%; justify-content: flex-start; }
+    body.ssp-global-mode .ssp-rail__utils .ssb-spoiler { margin-top: 8px; }
+    body.ssp-global-mode .ssp-rail__nav { margin-bottom: 0; }
+    /* поля выбора Спринт/Версия (форма) и Норма часов/Грейд (исполнители) — фон/скругление как у дат-полей */
+    body.ssp-global-mode #sprintFieldVal,
+    body.ssp-global-mode #versionFieldVal,
+    body.ssp-global-mode #currentRoleNkcSel,
+    body.ssp-global-mode .currentRole-grade-sel {
+      background-color: var(--surface2) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: var(--radius) !important;
+      color: var(--text); font-size: 13px;
+      padding: 6px 30px 6px 10px !important;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238888aa'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important; background-position: right 10px center !important;
+    }
+
+    /* таблицы в пейне: компактные колонки, без бокового скролла. ТОЛЬКО дашборд —
+       project-режим и community-паритет не затрагиваются (CSS-only, без shared-JS). */
+    body.ssp-global-mode [data-ssp-table-host] .ring-table-table { min-width: 0; }   /* снять пол 1100px — пейн сам ограничивает */
+    body.ssp-global-mode [data-ssp-table-host] .ring-table-cell,
+    body.ssp-global-mode [data-ssp-table-host] .ring-table-headerCell { padding-left: 6px; padding-right: 6px; }
+    /* сортер: убрать абсолютное позиционирование (без left/right ползёт на соседнюю колонку),
+       положить inline-block справа от текста заголовка */
+    body.ssp-global-mode [data-ssp-table-host] .ring-table-sorter { position: static !important; margin-left: 4px !important; top: auto !important; }
+    body.ssp-global-mode [data-ssp-table-host] .td-num { min-width: 56px !important; max-width: 70px !important; width: 60px !important; }  /* Оценка/Факт/Ресурс/Аллокация — компактно, корзинка влезает */
+    /* инпуты Оценка/Аллокация — вписать в узкую ячейку (плейсхолдер «напр. 16ч») */
+    body.ssp-global-mode [data-ssp-table-host] .td-num input { font-size: 11px !important; padding-left: 4px !important; padding-right: 4px !important; min-width: 0 !important; width: 100% !important; box-sizing: border-box; }
+    body.ssp-global-mode [data-ssp-table-host] .td-num input::placeholder { font-size: 11px; }
+    body.ssp-global-mode [data-ssp-table-host] .td-id  { min-width: 52px; max-width: 84px; width: 60px; }  /* ID компактнее */
+    /* поле «Ресурс (ч)» исполнителя (ручной режим) — вписать в ячейку, чтобы правый бордер не обрезался */
+    body.ssp-global-mode [data-ssp-table-host] .currentRole-manual-res { width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
+    /* таблица исполнителей просторнее плотной таблицы ролей — числовым колонкам больше ширины */
+    body.ssp-global-mode #currentRoleAssigneeHost .td-num { min-width: 84px; max-width: 120px; width: 96px; }
+    /* п.3 — ужать «Статус включения» и поле аллокации, чтобы корзинка влезала без бокового скролла */
+    body.ssp-global-mode [data-ssp-table-host] .inc-sel { min-width: 120px; max-width: 160px; font-size: 11px !important; padding: 2px 14px 2px 4px !important; }  /* мельче + без левого отступа → «Включена планово» влезает */
+    body.ssp-global-mode [data-ssp-table-host] .alloc-input { min-width: 0 !important; width: 100%; }
+    body.ssp-global-mode [data-ssp-table-host] .ssp-col-action { width: 34px; min-width: 34px; }
+
+    /* п.1 — бренд вертикально (иконка над названием): «Smart Sprint Planner» влезает в одну
+       строку → дефис не приходится на конец строки. Под лого — название/проект/версия/статус
+       черновика ровным столбиком по левому краю. */
+    body.ssp-global-mode .ssp-rail__head .page-header { flex-direction: column; align-items: flex-start; gap: 6px; order: 1; }
+    /* тогл «свернуть» — в правый верхний угол, чтобы бренд был флёш-влево (не отжат вправо) */
+    body.ssp-global-mode .ssp-rail__head .ssp-rail__toggle { order: 2; margin-left: auto; align-self: flex-start; }
+    body.ssp-global-mode .ssp-rail__head .page-header > div { width: 100%; }
+    body.ssp-global-mode .ssp-rail__head .page-header > div > div:last-child {
+      flex-direction: column; align-items: flex-start !important; gap: 3px;
+    }
+    /* п.4 (обновлено) — навигация по ЛЕВОМУ краю: Ring-табы вертикальной стопкой, флёш-влево */
+    /* навигация — акцентный блок-карточка с фоном/границей, отступ от «Новый спринт» */
+    body.ssp-global-mode .ssp-rail__nav {
+      text-align: left; margin-top: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 8px;
+    }
+    body.ssp-global-mode .ssp-rail__nav .tabs { justify-content: flex-start; }
+    body.ssp-global-mode .ssp-rail__nav #sspTabsHost { text-align: left; }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-titles {
+      display: flex !important; flex-direction: column !important; align-items: stretch !important;
+      width: 100%; margin: 0 !important; box-shadow: none !important; gap: 2px;
+    }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-titles > * + * { margin-left: 0 !important; }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-title,
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-container,
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-visible {
+      width: 100% !important; text-align: center !important; justify-content: center !important; margin-left: 0 !important;
+    }
+    /* каждая вкладка — кликабельная строка с паддингом, текст по центру; активная — акцент */
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-title {
+      padding: 8px 10px !important; border-radius: var(--radius); box-sizing: border-box; box-shadow: none !important;
+    }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-title:hover { background: var(--surface2); }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-selected {
+      background: rgba(90,125,232,.18) !important; color: var(--primary) !important;
+      font-weight: 700 !important; box-shadow: none !important;
+    }
+    body.ssp-global-mode .ssp-rail__nav .ring-tabs-selected .ring-tabs-visible { font-weight: 700 !important; }
+
+    /* ════ #25 Ф2 Этап 3+4+7 — дерево навигации D5/D6/Ф2.5 ════
+       Структура: Параметры спринта · ▾Планирование[Роли/Люди/Stand-up] · Гант · История · Поделиться(скоро).
+       Скрываем горизонтальные Ring-tabs и segmented planning-levels — управление через дерево.
+       Tracker-узлы (.tab-btn / .planning-level-btn) живы (display:none) — для callsite'ов. */
+    body.ssp-global-mode .ssp-rail__nav #sspTabsHost { display: none !important; }
+    body.ssp-global-mode .ssp-rail__nav .tabs { display: none !important; }   /* пустой контейнер tracker'ов — убрать (заполнить пустую строку дерева) */
+    body.ssp-global-mode .planning-levels { display: none !important; }
+    body.ssp-global-mode .ssp-tree { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+    body.ssp-global-mode .ssp-tree__item,
+    body.ssp-global-mode .ssp-tree__group-summary,
+    body.ssp-global-mode .ssp-tree__child {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: var(--radius); cursor: pointer; user-select: none;
+      background: transparent; border: none; color: var(--text); font-size: 13px; text-align: left;
+      box-sizing: border-box; width: 100%;
+    }
+    body.ssp-global-mode .ssp-tree__group-summary { list-style: none; }
+    body.ssp-global-mode .ssp-tree__group-summary::-webkit-details-marker { display: none; }
+    body.ssp-global-mode .ssp-tree__group-summary::before {
+      content: '▸'; font-size: 10px; color: var(--muted); transition: transform .15s; flex-shrink: 0;
+    }
+    body.ssp-global-mode .ssp-tree__group[open] > .ssp-tree__group-summary::before { transform: rotate(90deg); }
+    body.ssp-global-mode .ssp-tree__children { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; margin-top: 2px; }
+    body.ssp-global-mode .ssp-tree__item:hover,
+    body.ssp-global-mode .ssp-tree__group-summary:hover,
+    body.ssp-global-mode .ssp-tree__child:hover { background: var(--surface2); }
+    body.ssp-global-mode .ssp-tree__item.active,
+    body.ssp-global-mode .ssp-tree__child.active {
+      background: rgba(90,125,232,.18); color: var(--primary); font-weight: 700;
+    }
+    body.ssp-global-mode .ssp-tree__item--disabled { color: var(--muted); cursor: not-allowed; }
+    body.ssp-global-mode .ssp-tree__item--disabled:hover { background: transparent; }
+    body.ssp-global-mode .ssp-tree__icon { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--muted); }
+    body.ssp-global-mode .ssp-tree__icon svg { width: 15px; height: 15px; }
+    body.ssp-global-mode .ssp-tree__item.active .ssp-tree__icon,
+    body.ssp-global-mode .ssp-tree__child.active .ssp-tree__icon { color: var(--primary); }
+    body.ssp-global-mode .ssp-tree__soon {
+      margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 10px;
+      background: var(--surface2); color: var(--muted); text-transform: uppercase; letter-spacing: .3px;
+    }
+
+    /* dashNode states: показ карточки «Вводные» / уровней планирования / Ганта / Истории.
+       Скрываем по умолчанию всё «контентное», конкретное состояние включает нужный блок. */
+    body.ssp-global-mode #sprintIntroCard { display: none; }
+    body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard { display: block; }   /* @media (≥1330) переключит на grid */
+    /* в режиме «Параметры спринта» — скрыть planning-level-pane'ы (показываются только в planning-roles/people/standup) */
+    body.ssp-global-mode.ssp-dashnode-sprint-params .planning-level-pane { display: none !important; }
+
+    /* п.5 — статус-бейджи ролей переносятся целиком, не обрезаются */
+    body.ssp-global-mode .ssp-rail__context .widget-header__badge { overflow: visible; }
+    body.ssp-global-mode .ssp-rail__context .widget-header__badge .s-badge { white-space: normal; max-width: 100%; }
+    /* п.6 — полное имя текущего спринта под селектором (перенос до 4 строк, во всю ширину) */
+    body.ssp-global-mode .ssp-rail-sprint-name {
+      font-size: 12px; line-height: 1.35; color: var(--text); font-weight: 600;
+      word-break: break-word; white-space: normal; margin-top: 2px;
+      display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    body.ssp-global-mode .ssp-rail-sprint-name:empty { display: none; }
+
+    @media (min-width: 1330px) {
+      body.ssp-global-mode .ssp-dash {
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr);
+        align-items: start;
+        gap: 16px;
+      }
+      body.ssp-global-mode .ssp-dash.ssp-rail-collapsed { grid-template-columns: 28px minmax(0, 1fr); }
+      body.ssp-global-mode .ssp-rail {
+        position: sticky; top: 0; align-self: start;
+        max-height: 100vh; overflow-y: auto; overflow-x: hidden;
+        display: flex; flex-direction: column;
+        border-right: 1px solid var(--border); padding-right: 12px;
+      }
+      body.ssp-global-mode .ssp-rail__toggle { display: inline-flex; }
+      /* п.2 — «Вводные данные» в 2 колонки: слева название/даты/спринт-версия, справа цель;
+         кнопка «Сохранить» — отдельной строкой снизу на всю ширину. Только на широком экране. */
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas:
+          "title title"
+          "name  goal"
+          "dates extra"
+          "act   act";
+        gap: 14px 24px; align-items: start;
+      }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .card-title { grid-area: title; }
+      /* распаковать .sprint-intro-grid → Название и даты становятся отдельными ячейками сетки карточки */
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-grid { display: contents; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-grid > .field { grid-area: name; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-grid > .sprint-intro-dates { grid-area: dates; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .field { grid-area: goal; margin-top: 0 !important; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard [data-input-id="sprintGoal"] textarea,
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard [data-input-id="sprintGoal"] .ring-input-input { padding-top: 7px; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > #sprintExtraFields { grid-area: extra; margin-top: 0 !important; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-actions { grid-area: act; margin-top: 0 !important; }
+      /* свёрнутый рельс → узкая полоса: всё, кроме кнопки-тогла, скрыто */
+      body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail > :not(.ssp-rail__head) { display: none; }
+      body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail__head > :not(.ssp-rail__toggle) { display: none; }
+      body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail { border-right-color: transparent; padding-right: 0; }
+    }
     .alloc-input { width:70px; box-sizing:border-box; background:var(--surface-hover,#2a2a3a); border:1px solid var(--border); border-radius:4px; color:var(--text); padding:2px 6px; font-size:13px; text-align:right; cursor:text; }
     /* v2.1.6+v2.1.7 UI fix — baseline font-size 13px для всех inputs/selects внутри Ring Table cells.
        Ring native cell typography 14px → inputs inherit → mismatch с scale.
@@ -1681,6 +1928,21 @@
     .widget-statusbar__label {
       color: var(--muted); font-weight: 500; margin-right: 4px;
     }
+    /* #25 Ф2 — спойлер «Статус активности модулей планирования» (нативный details/summary) */
+    .ssb-spoiler { border: none; }
+    .ssb-spoiler > .widget-statusbar { border-bottom: none; margin: 6px 0 8px 0; padding-top: 0; padding-bottom: 0; }
+    .ssb-spoiler__summary {
+      cursor: pointer; list-style: none; user-select: none;
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .4px; padding: 2px 0;
+    }
+    .ssb-spoiler__summary:hover { color: var(--text); }
+    .ssb-spoiler__summary::-webkit-details-marker { display: none; }   /* убрать дефолтный disclosure-маркер */
+    .ssb-spoiler__summary::before {
+      content: '▸'; font-size: 10px; color: var(--muted); transition: transform .15s; flex-shrink: 0;
+    }
+    .ssb-spoiler[open] > .ssb-spoiler__summary::before { transform: rotate(90deg); }
     .ssb-chip {
       display: inline-flex; align-items: center; gap: 5px;
       padding: 1px 8px;
@@ -1901,15 +2163,16 @@
     </span>
     <button id="widgetNewSprintBtn"
             class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText widget-header__new editor-btn"
-            data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Новый спринт</button>
+            data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnNewSprintWidget">Новый спринт</button>
     <!-- v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. -->
   </div>
 
   <!-- v1.3.1 — Status-bar активных функциональных модулей. Видимость
        и подписи on/off управляются через _refreshFeatureStatusBar в
        legacy-monolith.js на основании _settings. -->
+  <details class="ssb-spoiler" id="widgetStatusBarSpoiler">
+    <summary class="ssb-spoiler__summary" data-i18n="ssbSpoilerTitle">Статус активности модулей планирования</summary>
   <div class="widget-statusbar" id="widgetStatusBar">
-    <span class="widget-statusbar__label" data-i18n="ssbLabel">Modules:</span>
     <span class="ssb-chip" id="ssbInline" data-module="inline" data-i18n-title="hintSsbInline">
       <span class="ssb-chip__dot"></span>
       <span class="ssb-chip__txt"><span data-i18n="ssbInline">Quick edit</span> · <span class="ssb-chip__state" data-i18n="ssbOff">off</span></span>
@@ -1935,6 +2198,7 @@
       <span class="ssb-chip__txt"><span data-i18n="ssbOverlimit">Allow over-limit</span> · <span class="ssb-chip__state" data-i18n="ssbOff">off</span></span>
     </span>
   </div>
+  </details>
 
   <!-- Вкладки первого уровня: Планирование / Диаграмма Ганта / История. Settings — overlay.
        v2.0.0 D6 — Ring Tabs визуальный driver; hidden state-tracker buttons остаются для
@@ -1992,7 +2256,7 @@
       <button id="bannerOrphanGanttDismissBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-ghost ring-button-flat" type="button" data-i18n="btnDismiss" style="margin-left:8px">Скрыть</button>
     </div>
     <!-- Вводные данные по спринту (общие для всех ролей) -->
-    <div class="card">
+    <div class="card" id="sprintIntroCard">
       <div class="card-title" data-i18n="cardSprintIntro">Вводные данные по спринту</div>
       <div class="sprint-intro-grid">
         <div class="field">
@@ -2098,9 +2362,9 @@
               </div>
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
               <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
-              <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
             </div>
           </div>
         </div>

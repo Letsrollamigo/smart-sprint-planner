@@ -1399,7 +1399,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.4.9';
+  var APP_VERSION = '2.4.45';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2805,6 +2805,232 @@
     }
   }
 
+  /* ════ #25 Ф2 — каркас дашборда (рельс + пейн), ТОЛЬКО global-режим ════
+     _buildGlobalDashShell строит .ssp-dash (grid) единожды на init при _mode==='global'
+     и переносит существующих детей .page в .ssp-pane (move, не recreate — id/классы/
+     обработчики сохраняются). Рельс на Этапе 1 — каркас с кнопкой «свернуть»; chrome,
+     контекст и навигация переедут в рельс на следующих этапах. Состояние collapse —
+     safeLs (мгновенно, до загрузки черновика) + _draft.ui.railCollapsed (источник истины
+     в sandbox-iframe, где localStorage может быть недоступен). */
+  var _railCollapsedMemo = null;
+  function getRailCollapsed() {
+    if (_railCollapsedMemo !== null) return _railCollapsedMemo;
+    _railCollapsedMemo = (safeLs.get('ssp_railCollapsed') === '1');
+    return _railCollapsedMemo;
+  }
+  function setRailCollapsed(v) {
+    v = !!v;
+    _railCollapsedMemo = v;
+    safeLs.set('ssp_railCollapsed', v ? '1' : '0');
+    try { var ui = _draftGet('ui') || {}; ui.railCollapsed = v; _draftSet('ui', ui); } catch(_){}
+  }
+  function _applyRailCollapsed(v) {
+    v = !!v;
+    var dash = document.querySelector('.ssp-dash');
+    if (dash) dash.classList.toggle('ssp-rail-collapsed', v);
+    var tgl = document.getElementById('sspRailToggle');
+    if (tgl) {
+      tgl.textContent = v ? '»' : '«';
+      tgl.setAttribute('aria-label', v ? 'Развернуть панель' : 'Свернуть панель');
+      tgl.setAttribute('title', v ? 'Развернуть панель' : 'Свернуть панель');
+      tgl.setAttribute('aria-expanded', v ? 'false' : 'true');
+    }
+  }
+  /* #25 Ф2 п.6 — полное имя текущего спринта под селектором (нативный <select> обрезает;
+     показываем выбранный текст отдельной подписью с переносом до 4 строк). Только global-рельс. */
+  function _updateRailSprintName() {
+    var el = document.getElementById('sspRailSprintName');
+    if (!el) return;
+    var sel = document.getElementById('widgetSprintSel');
+    var txt = '';
+    if (sel && sel.value && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]) {
+      txt = (sel.options[sel.selectedIndex].textContent || '').trim();
+    }
+    el.textContent = txt;
+  }
+  /* ════ #25 Ф2 Этап 3+4+7 — дерево навигации + dashNode-стейт ════
+     Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(Ф2.5/#36 disabled).
+     Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
+     callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
+  var SSP_DASH_NODES = ['sprint-params','planning-roles','planning-people','planning-standup','gantt','history'];
+
+  function _buildDashTree() {
+    var tree = document.createElement('div');
+    tree.className = 'ssp-tree'; tree.setAttribute('role','tree');
+
+    /* нативная Ring-иконка (SVG из __SSP_ICONS через icon()), а не emoji */
+    function _treeIcon(iconName) {
+      var ic = (typeof icon === 'function') ? icon(iconName) : document.createElement('span');
+      ic.classList.add('ssp-tree__icon');
+      return ic;
+    }
+    function mkItem(nodeId, labelKey, iconName, extraClass) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'ssp-tree__item' + (extraClass ? ' ' + extraClass : '');
+      b.dataset.node = nodeId;
+      if (iconName) b.appendChild(_treeIcon(iconName));
+      var t = document.createElement('span'); t.setAttribute('data-i18n', labelKey); t.textContent = T(labelKey);
+      b.appendChild(t);
+      b.addEventListener('click', function(){ if (!b.classList.contains('ssp-tree__item--disabled')) _setDashNode(nodeId); });
+      return b;
+    }
+    function mkChild(nodeId, labelKey, iconName) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'ssp-tree__child'; b.dataset.node = nodeId;
+      if (iconName) b.appendChild(_treeIcon(iconName));
+      var t = document.createElement('span'); t.setAttribute('data-i18n', labelKey); t.textContent = T(labelKey);
+      b.appendChild(t);
+      b.addEventListener('click', function(){ _setDashNode(nodeId); });
+      return b;
+    }
+
+    /* 1. Параметры спринта (D6) */
+    tree.appendChild(mkItem('sprint-params', 'treeSprintParams', 'settings'));
+
+    /* 2. Планирование (раскрывающаяся группа с детьми Роли/Люди/Stand-up) */
+    var grp = document.createElement('details'); grp.className = 'ssp-tree__group'; grp.open = true;
+    var sum = document.createElement('summary'); sum.className = 'ssp-tree__group-summary';
+    sum.appendChild(_treeIcon('task'));
+    var sumTxt = document.createElement('span'); sumTxt.setAttribute('data-i18n','tabPlanning'); sumTxt.textContent = T('tabPlanning');
+    sum.appendChild(sumTxt); grp.appendChild(sum);
+    var kids = document.createElement('div'); kids.className = 'ssp-tree__children';
+    kids.appendChild(mkChild('planning-roles',   'planningLevelRoles',   'group'));
+    kids.appendChild(mkChild('planning-people',  'planningLevelPeople',  'user'));
+    kids.appendChild(mkChild('planning-standup', 'planningLevelStandup', 'comment'));
+    grp.appendChild(kids);
+    tree.appendChild(grp);
+
+    /* 3. Гант / История */
+    tree.appendChild(mkItem('gantt',   'tabGantt',   'bars'));
+    tree.appendChild(mkItem('history', 'tabHistory', 'history'));
+
+    /* 4. Поделиться (Ф2.5/#36 слот, disabled) */
+    var share = mkItem('share', 'treeShare', 'share', 'ssp-tree__item--disabled');
+    var soon = document.createElement('span'); soon.className='ssp-tree__soon'; soon.setAttribute('data-i18n','treeShareSoon'); soon.textContent = T('treeShareSoon');
+    share.appendChild(soon);
+    tree.appendChild(share);
+
+    return tree;
+  }
+
+  function _deriveDashNodeFromTabLevel() {
+    /* Маппинг устаревшего состояния (activeTab/planningLevel) в новое dashNode. */
+    var ui = _draftGet('ui') || {};
+    var t = ui.activeTab || 'planning';
+    if (t === 'gantt')   return 'gantt';
+    if (t === 'history') return 'history';
+    var lvl = ui.planningLevel || _planningLevel || 'roles';
+    if (lvl === 'people')  return 'planning-people';
+    if (lvl === 'standup') return 'planning-standup';
+    return 'planning-roles';
+  }
+
+  function _setDashNode(nodeId) {
+    if (SSP_DASH_NODES.indexOf(nodeId) < 0) return;   /* share/disabled — no-op */
+    /* подсветка дерева */
+    document.querySelectorAll('.ssp-tree [data-node]').forEach(function(n){
+      n.classList.toggle('active', n.dataset.node === nodeId);
+    });
+    /* body-класс для CSS-стейта (для #sprintIntroCard и др.) */
+    var cls = document.body.className.replace(/\bssp-dashnode-\S+/g, '').replace(/\s+/g,' ').trim();
+    document.body.className = cls + ' ssp-dashnode-' + nodeId;
+    /* делегирование на скрытые tracker-узлы (callsite'ы целы) */
+    function _clickTab(t) { var el = document.querySelector('.tab-btn[data-tab="'+t+'"]'); if (el && !el.classList.contains('active')) el.click(); }
+    function _clickLevel(l){ var el = document.querySelector('.planning-level-btn[data-level="'+l+'"]'); if (el && !el.classList.contains('active')) el.click(); }
+    if (nodeId === 'sprint-params')    { _clickTab('planning'); }
+    else if (nodeId === 'planning-roles')   { _clickTab('planning'); _clickLevel('roles'); }
+    else if (nodeId === 'planning-people')  { _clickTab('planning'); _clickLevel('people'); }
+    else if (nodeId === 'planning-standup') { _clickTab('planning'); _clickLevel('standup'); }
+    else if (nodeId === 'gantt')            { _clickTab('gantt'); }
+    else if (nodeId === 'history')          { _clickTab('history'); }
+    /* persist */
+    try { var ui = _draftGet('ui') || {}; ui.dashNode = nodeId; _draftSet('ui', ui); } catch(_){}
+  }
+
+  function _buildGlobalDashShell() {
+    var page = document.querySelector('.page');
+    if (!page || document.querySelector('.ssp-dash')) return;   /* идемпотентно */
+    function _el(cls) { var d = document.createElement('div'); if (cls) d.className = cls; return d; }
+
+    var dash = _el('ssp-dash');
+    var rail = _el('ssp-rail'); rail.id = 'sspRail';
+    var pane = _el('ssp-pane'); pane.id = 'sspPane';
+
+    /* Этап 2 — захватываем существующие узлы chrome/контекста/навигации (move, не recreate:
+       id/классы/обработчики и серверная видимость #openSettingsBtn сохраняются). */
+    var pageHeader  = page.querySelector('.page-header');          /* иконка/title/версия (+ picker/links внутри) */
+    var picker      = document.getElementById('globalProjectPicker');
+    var headerLinks = page.querySelector('.page-header__links');   /* Настройки/Руководство/Обр.связь/язык/Очистить */
+    var widgetHdr   = document.getElementById('widgetHeader');     /* спринт-селектор/бейдж/WC/новый */
+    var statusBar   = document.getElementById('widgetStatusBarSpoiler')  /* спойлер «Статус активности модулей» */
+                    || document.getElementById('widgetStatusBar');       /* fallback, если обёртки нет */
+    var tabs        = page.querySelector('.tabs');                 /* tracker-табы + Ring-Tabs host #sspTabsHost */
+
+    /* ── Голова рельса: кнопка «свернуть» + бренд (.page-header) ── */
+    var head = _el('ssp-rail__head');
+    var tgl = document.createElement('button');
+    tgl.type = 'button'; tgl.className = 'ssp-rail__toggle'; tgl.id = 'sspRailToggle';
+    head.appendChild(tgl);
+    /* picker и links вытаскиваем из .page-header ДО переноса бренда (иначе уедут вместе с ним) */
+    if (pageHeader)  head.appendChild(pageHeader);
+    /* утилиты — компактной группой сразу под брендом. В auto-grow iframe нет
+       фиксированного «дна экрана», поэтому классический «низ сайдбара» не прижать —
+       наверху аккуратнее (см. правку 2026-06-06 по фидбэку владельца). */
+    var utils = _el('ssp-rail__utils');
+    if (headerLinks) utils.appendChild(headerLinks);
+    /* спойлер «Статус активности модулей» — под пикером языка (в utils-зоне, по фидбэку) */
+    if (statusBar) utils.appendChild(statusBar);
+    /* контекст: проект-пикер + логические карточки спринта */
+    var ctx = _el('ssp-rail__context');
+    if (picker)      ctx.appendChild(picker);
+    if (widgetHdr) {
+      var _sprintBox = widgetHdr.querySelector('.widget-header__sprint');  /* селектор + имя спринта */
+      var _badge     = widgetHdr.querySelector('.widget-header__badge');   /* #widgetSprintBadge — статусы ролей */
+      var _wc        = widgetHdr.querySelector('.widget-header__wc');       /* #widgetWcIndicator — рабочая копия */
+      var _newBtn    = widgetHdr.querySelector('.widget-header__new');      /* #widgetNewSprintBtn */
+      /* п.6 — подпись полного имени спринта внутри спринт-блока (под селектором) */
+      if (_sprintBox && !document.getElementById('sspRailSprintName')) {
+        var _nm = document.createElement('div');
+        _nm.id = 'sspRailSprintName'; _nm.className = 'ssp-rail-sprint-name';
+        _sprintBox.appendChild(_nm);
+      }
+      /* Карточка 1 = сам #widgetHeader (renderWidgetHeader проверяет его наличие):
+         имя спринта + рабочая копия (WC над статусами ролей). */
+      if (_sprintBox) widgetHdr.appendChild(_sprintBox);   /* порядок: спринт первым */
+      if (_wc)        widgetHdr.appendChild(_wc);            /* WC сразу под спринтом */
+      /* Карточка 2 = статусы ролей спринта (отдельный блок). */
+      var _card2 = _el('ssp-rail-card ssp-rail-card--badges');
+      if (_badge) _card2.appendChild(_badge);
+
+      ctx.appendChild(widgetHdr);                /* блок 1: спринт + WC */
+      ctx.appendChild(_card2);                   /* блок 2: статусы ролей */
+      if (_newBtn) ctx.appendChild(_newBtn);     /* «Новый спринт» — отдельной строкой */
+    }
+    /* ── Навигация (Этап 3+4+7 — дерево D5/D6/Ф2.5) ── */
+    var nav = _el('ssp-rail__nav');
+    if (tabs) nav.appendChild(tabs);            /* tracker-узлы сохраняются для callsite'ов (скрыты CSS) */
+    nav.appendChild(_buildDashTree());
+
+    rail.appendChild(head);
+    rail.appendChild(utils);
+    rail.appendChild(ctx);
+    rail.appendChild(nav);
+
+    /* Остаток .page (баннеры, projectSettings*, tab-panel'ы, #diagWrap) → пейн. */
+    while (page.firstChild) { pane.appendChild(page.firstChild); }
+
+    dash.appendChild(rail); dash.appendChild(pane);
+    page.appendChild(dash);
+
+    tgl.addEventListener('click', function() {
+      setRailCollapsed(!dash.classList.contains('ssp-rail-collapsed'));
+      _applyRailCollapsed(getRailCollapsed());
+    });
+    _applyRailCollapsed(getRailCollapsed());
+    _updateRailSprintName();
+    diag('#25 Ф2 dash shell built (global): chrome/context/nav → rail', 'ok');
+  }
+
   /* v5.0.3 — Восстановление UI-навигации (активная вкладка/подвкладка/спринт-селектор).
      Вызывается после рендера, поскольку DOM подвкладок строится в renderPlannerRoles. */
   function restoreUiState() {
@@ -2852,6 +3078,15 @@
           ui.expandedRoles.forEach(function(rk){ if (rk) _uiExpandedRoles[rk] = true; });
         }
       } catch(e) { diag('restoreUiState: expandedRoles err: '+e, 'err'); }
+      /* #25 Ф2 — состояние «свёрнут рельс» из backend-черновика (источник истины в sandbox,
+         где localStorage недоступен; safeLs мог не сохранить). В project-режиме .ssp-dash
+         нет — _applyRailCollapsed guard'ится. */
+      try {
+        if (typeof ui.railCollapsed === 'boolean') {
+          _railCollapsedMemo = ui.railCollapsed;
+          _applyRailCollapsed(ui.railCollapsed);
+        }
+      } catch(e) { diag('restoreUiState: railCollapsed err: '+e, 'err'); }
       if (ui.currentRoleNkcKey) {
         var nkcSel = document.getElementById('currentRoleNkcSel');
         if (nkcSel && nkcSel.querySelector('option[value="'+ui.currentRoleNkcKey+'"]')) {
@@ -3102,6 +3337,9 @@
       _syncAclFireAndForget();
     } else {
       try { document.body.classList.add('ssp-global-mode'); } catch(_) {}
+      /* #25 Ф2 — каркас дашборда (рельс+пейн) строим сразу после класса режима,
+         пока DOM .page статичен; последующие рендеры/запросы по id работают (узлы в пейне). */
+      try { _buildGlobalDashShell(); } catch(_) {}
     }
     if (typeof _loadAppVersion === 'function') { try { _loadAppVersion(); } catch(_) {} }
     /* v5.0.3 (итерация 5) — loadProjectGroups убран из критического пути
@@ -3159,8 +3397,30 @@
        v5.0.3: ВЫЗЫВАЕМ ДО restoreUiState — иначе distrib-таб может быть скрыт
        на момент попытки восстановить активную вкладку. */
     applyPersonalPlanningVisibility();
+    /* #25 Ф2 — в global-режиме при выборе/смене проекта всегда стартуем с уровня
+       «Аллокация общего ресурса» (roles). Уровень «Распределение по исполнителям» на
+       свежем открытии бывает пустым (роль ещё не выбрана, dropdown не наполнен) →
+       перебиваем сохранённый ui.planningLevel ДО restoreUiState (без мигания). */
+    if (_mode === 'global') {
+      var _uiLvl = _draftGet('ui') || {};
+      if (_uiLvl.planningLevel !== 'roles') { _uiLvl.planningLevel = 'roles'; _draftSet('ui', _uiLvl); }
+    }
     /* v5.0.3 — восстановить UI-навигацию (активная вкладка/подвкладка/спринт-селектор) */
     restoreUiState();
+    /* #25 Ф2 — отрисовать активный уровень планирования ПОСЛЕ restoreUiState (именно там
+       резолвится _currentSprintId). Без этого на свежем открытии проекта уровень пустой
+       («Выберите спринт…») и наполнялся только по клику на вкладку уровня. */
+    if (typeof _renderPlanningLevel === 'function') {
+      try { _renderPlanningLevel(_planningLevel); } catch(e){ diag('init planning level render err: '+e, 'err'); }
+    }
+    /* #25 Ф2 Этап 3+4 — синхронизировать узел дерева с восстановленным tab/level
+       (или применить сохранённый ui.dashNode, если есть). */
+    if (_mode === 'global' && typeof _setDashNode === 'function') {
+      var _uiR = _draftGet('ui') || {};
+      var _node = _uiR.dashNode;
+      if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
+      try { _setDashNode(_node); } catch(e){ diag('init dashNode err: '+e, 'err'); }
+    }
     /* v5.0 — refresh кнопки перехода в overlay настроек (видимость по серверной проверке) */
     refreshOpenSettingsBtn();
     /* v5.0.1 — refresh кнопки «Очистить всю историю» (отдельная роль historyManager) */
@@ -4101,10 +4361,12 @@
   document.querySelectorAll('.planning-level-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var lvl = btn.dataset.level || 'roles';
-      /* v6.3.0 D101 — при переходе на «Распределение по исполнителям»: если есть активный
-         _sprint, но _currentSprintId не установлен (или указывает на другой спринт) —
-         подтянуть из _sprint.sprintId, чтобы saturatePeople увидел контекст. */
-      if (lvl === 'people' && _sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
+      /* v6.3.0 D101 — при переходе на «Распределение по исполнителям»: если _currentSprintId
+         НЕ установлен — подтянуть активный _sprint, чтобы saturatePeople увидел контекст.
+         #25 Ф2 fix: НЕ перетираем осознанно выбранный в пикере спринт (раньше условие было
+         `_currentSprintId !== _sprint.sprintId` → навигация по дереву прыгала на активный/
+         черновой спринт, игнорируя выбор пользователя). */
+      if (lvl === 'people' && _sprint && _sprint.sprintId && !_currentSprintId) {
         try { setCurrentSprintId(_sprint.sprintId, { confirmed: true }); } catch(_){}
       }
       _renderPlanningLevel(lvl);
@@ -5793,18 +6055,32 @@
     });
   }
 
+  /* #25 Ф2 fix — источник intro-полей (Название/Даты/Цель) = выбранный спринт:
+     активный _sprint, если он и есть _currentSprintId; иначе снапшот истории.
+     Раньше renderRolePlannerHeader безусловно писал _sprint (активный) → при выборе
+     исторического спринта «Параметры спринта» показывали данные активного. */
+  function _introSourceForCurrent() {
+    if (_sprint && (!_currentSprintId || _sprint.sprintId === _currentSprintId)) return _sprint;
+    if (Array.isArray(_history)) {
+      var rec = _history.find(function(r){ return r && r.sprintId && String(r.sprintId).split('_')[0] === _currentSprintId; });
+      if (rec) return rec;
+    }
+    return _sprint;
+  }
+
   /* ── Рендер шапки планировщика для роли ── */
   function renderRolePlannerHeader(rk) {
     var ok = _settings && getActiveRoles().some(function(r){ return r.key === rk && _settings[r.fieldEst]; });
     document.getElementById('bannerPlanner').classList.toggle('hidden', !!ok || !_settings);
     if (!_sprint) return;
-    // Название, даты — общие, уже в верхнем блоке
-    document.getElementById('sprintName').value = _sprint.name || '';
-    document.getElementById('dateStart').value  = toDateIn(_sprint.dateStart);
-    document.getElementById('dateEnd').value    = toDateIn(_sprint.dateEnd);
+    // Название, даты, цель — общие; источник = выбранный спринт (активный или исторический снапшот)
+    var _intro = _introSourceForCurrent() || _sprint;
+    document.getElementById('sprintName').value = _intro.name || '';
+    document.getElementById('dateStart').value  = toDateIn(_intro.dateStart);
+    document.getElementById('dateEnd').value    = toDateIn(_intro.dateEnd);
     /* v1.9.0 D132 — Заполнить sprint goal textarea при переключении спринта. */
     var goalEl = document.getElementById('sprintGoal');
-    if (goalEl) goalEl.value = _sprint.sprintGoal || '';
+    if (goalEl) goalEl.value = _intro.sprintGoal || '';
 
     var resEl = document.getElementById('res_'+rk);
     var role  = ALL_ROLES.find(function(r){ return r.key === rk; });
@@ -6220,7 +6496,22 @@
   function renderRoleComposition(rk) {
     var host = document.getElementById('compHost_'+rk);
     if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
-    var items = getRoleItemsArr(rk);
+    /* #25 Ф2 fix — в «историческом виде» (выбран не активный _sprint, без рабочей копии)
+       состав читаем из снапшота истории (read-only display), а не из _roleItems активного
+       спринта. Иначе шапка показывала счёт снапшота (computeRoleQuickStats), а таблица —
+       пустой _roleItems → «Состав спринта пуст». Архитектура не меняется: редактирование
+       не-активного спринта по-прежнему только через рабочую копию (read-only снимается там).
+       .slice() — чтобы не мутировать _history (items._page ставится ниже). */
+    var isHistoricalView = _currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId;
+    var items;
+    if (isHistoricalView) {
+      var _hsnap = (Array.isArray(_history) ? _history : []).find(function(h){
+        return h && h.sprintId === _currentSprintId + '_' + rk;
+      });
+      items = (_hsnap && Array.isArray(_hsnap.items)) ? _hsnap.items.slice() : [];
+    } else {
+      items = getRoleItemsArr(rk);
+    }
     var has = items.length > 0;
     diag('renderRoleComposition('+rk+'): items.length='+items.length+' host=yes has='+has, 'info');
     var clearBtn  = document.getElementById('clearBtn_'+rk);
@@ -6355,7 +6646,7 @@
           /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
              have their own background and native inputs inherit it (looking
              black in dark theme). Force surface/text vars on inputs. */
-          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phPeriod'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
         }
       });
       columns.push({
@@ -6377,7 +6668,7 @@
     columns.push({
       id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num',
       getValue: function(row) {
-        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="'+esc(T('phPeriod'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
       }
     });
     columns.push({
@@ -8766,6 +9057,8 @@
     }
     /* Кнопка «+ Новый спринт» — visibility управляется .editor-btn classом
        через общую цепочку init (как остальные editor-кнопки виджета). */
+    /* #25 Ф2 п.6 — синхронизировать подпись полного имени спринта в global-рельсе. */
+    if (typeof _updateRailSprintName === 'function') { try { _updateRailSprintName(); } catch(_){} }
   }
 
   /* Bind listeners шапки виджета (idempotent) */
@@ -8812,6 +9105,11 @@
           return;
         }
         if (typeof doNewSprint === 'function') doNewSprint(roles[0].key);
+        /* #25 Ф2 — после создания нового спринта в global-режиме перекидываем на узел
+           дерева «Параметры спринта», чтобы пользователь сразу заполнил вводные. */
+        if (_mode === 'global' && typeof _setDashNode === 'function') {
+          try { _setDashNode('sprint-params'); } catch(_){}
+        }
       });
     }
   })();
@@ -9441,6 +9739,40 @@
     }
   }
 
+
+  /* Округление до 2 знаков как строка. v2.4.14 — ВОССТАНОВЛЕНА: ошибочно удалена
+     dead-code аудитом (commit b1a39e1) рядом с calcAssigneeUsed при 6 живых вызовах
+     в таблице «Распределение по исполнителям» (ресурс/остаток/итоги) → ReferenceError
+     → ресурсы не заполнялись, подбор исполнителей не отображался. */
+  function round2(v) { return (Math.round((v||0)*100)/100).toFixed(2); }
+
+  /* Сумма «использовано» (часы) по исполнителю для текущей роли.
+     v2.4.11 — ВОССТАНОВЛЕНА: ошибочно удалена dead-code аудитом (commit b1a39e1,
+     2026-06-03) при живых вызовах в renderCurrentRoleAssigneeTable + updateCurrentRoleTotals
+     → ReferenceError на уровне «Распределение по исполнителям» (баг в проде с v2.2.0). */
+  function calcAssigneeUsed(login) {
+    if (!_currentSprintRoleRec || !_currentRolePP) return 0;
+    var rec = _currentSprintRoleRec;
+    // Для активного спринта используем roleKey сохранённый в PP (выбранный пользователем)
+    // Для снэпшота — roleKey из записи истории
+    var rk = rec.roleKey || (_currentRolePP && _currentRolePP.roleKey) || (getActiveRoles()[0] || ALL_ROLES[0]).key;
+    /* v5.0.3 — если запись соответствует активному _sprint, берём live items
+       из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
+    var items = isActiveSprintRecord(rec) ? getRoleItemsArr(rk) : (rec.items || []);
+    var ta = _currentRolePP.taskAssignments || {};
+    return items.reduce(function(sum, item) {
+      if (!ta[item.issueId]) return sum;
+      if (ta[item.issueId].assignee !== login) return sum;
+      if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) return sum;
+      var alloc = item['alloc_'+rk];
+      var est   = item['estimate_'+rk];
+      var fact  = item['fact_'+rk];
+      var allocVal = (alloc !== null && alloc !== undefined)
+        ? alloc / 60  // в часы
+        : Math.max(0, ((est||0) - (fact||0))) / 60;
+      return sum + allocVal;
+    }, 0);
+  }
 
   /* ── Обновить итоги ── */
   function updateCurrentRoleTotals() {
