@@ -44,34 +44,34 @@ The plugin isn't tied to a specific methodology — it works equally well in pur
 
 ## 2. How to open the plugin in your project
 
-The plugin lives in YouTrack project settings. To open it:
+The Sprint Planner now lives in the **YouTrack main menu** — in the left column, next to "Issues" and "Agile Boards". To open it:
 
-1. Open your project in YouTrack.
-2. Go to **Project Settings** (the gear icon in the project menu).
-3. Find the **Smart Sprint Planner** block in the list and expand it.
+1. In the YouTrack left menu, click **Smart Sprint Planner**.
+2. The full planner opens: on the left — a panel with the project picker and navigation; on the right — the work area.
+3. **Pick a project** from the dropdown on the left — and work with that project's sprints.
 
-If the block isn't there — contact your YouTrack admin: the plugin is installed once per instance via App upload.
+This is where you do all your day-to-day planning: create sprints, pick tasks, distribute them among people, view the Gantt chart and history.
+
+If there's no **Smart Sprint Planner** item in the menu — contact your YouTrack admin: the plugin is installed once per instance via App upload. If the item is there but the project you need isn't in the picker — the project hasn't been connected to the planner yet (how to connect it — [section 3](#3-first-time-setup-what-the-project-admin-configures)).
+
+> 💡 **Where the settings went.** The plugin also has a second, service part — the **Smart Sprint Planner block inside project settings**. You go there rarely: only to connect a project once and to change its settings later (roles, fields, modes). No planning happens there anymore — it's all in the main menu.
 
 ### What you'll see inside
 
-The plugin consists of three parts:
+The planner has two parts:
 
-**1. Plugin header** — shared across all tabs. It contains:
+**1. Left panel** — context and navigation. It contains:
 
-- **Sprint dropdown.** The current sprint is on top, followed by completed ones. Switching sprints in the header instantly re-renders what's below.
-- **Sprint status badge.** A short hint about which stage the selected sprint is in: *planning*, *reviewed*, *committed*, *finished*. See [section 9](#9-sprint-stages-review-commit-complete) for details.
-- **"Edit draft exists" badge.** Appears if someone started editing the selected sprint but hasn't applied the changes yet (see [section 10](#10-sprint-history-and-re-editing)).
-- **"+ New sprint" button.** Creates the next sprint (see [section 4](#4-creating-a-new-sprint)).
-- **Plugin Settings gear.** Opens the project settings dialog. Only visible to members of the configurator group (see [section 11](#11-who-can-do-what-group-permissions)).
-- **Language switcher** — in case you and your colleagues use different interface languages. The plugin supports 15 languages with browser auto-detection.
+- **Project picker.** Work starts here — until a project is picked, the right side shows a "pick a project" hint.
+- **Sprint dropdown.** The current sprint is on top, followed by completed ones. Switching sprints instantly re-renders what's shown on the right.
+- **Sprint status badge** and **"Edit draft exists" badge** — short hints about the sprint stage and an unfinished edit (see [section 9](#9-sprint-stages-review-commit-complete) and [section 10](#10-sprint-history-and-re-editing)).
+- **"+ New sprint" button** (see [section 4](#4-creating-a-new-sprint)).
+- **Navigation tree** — switch between sections: "Sprint parameters", "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Gantt chart", "Sprint history".
+- **Service links at the bottom:** the user guide, feedback, language switcher.
 
-**2. Three tabs** — the main work area:
+**2. Work area on the right** — the content of the selected section.
 
-- **Planning** — task selection, capacity calculation, per-assignee distribution, daily stand-up view.
-- **Gantt chart** — calendar timeline of sprint tasks for the selected role.
-- **Sprint history** — list of all completed sprints, open for editing, finish the current one.
-
-**3. Below the tabs** — the content of the selected tab.
+> On a narrow screen the panel and work area stack into a single column (as before); on a wide screen they sit side by side. The panel can be collapsed with the button in its top corner.
 
 Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save parameters** and **Confirm** buttons are for fixing sprint stages (see [section 9](#9-sprint-stages-review-commit-complete)), not for saving data itself.
 
@@ -79,15 +79,15 @@ Everything you do in the plugin is **saved automatically** — nothing is lost e
 
 ## 3. First-time setup: what the project admin configures
 
-This section is needed **only once** — when the plugin is connected to a project. After settings are in place, regular users don't need to go here.
+This section is needed **only once** — when the project is connected to the planner. After settings are in place, regular users don't need to go here — they work in the main-menu planner.
 
-Right after installation, the plugin runs in read-only mode — the editing buttons are hidden. This is intentional, to prevent a random person from rewriting settings on a freshly installed plugin.
+Connecting is done **in project settings** (not in the main menu). Open your project → **Project Settings** (gear icon) → find the **Smart Sprint Planner** block. Right after installation this block is read-only — the editing buttons are hidden, so a random person can't rewrite settings on a freshly installed project.
 
-To make the plugin operational, the project admin needs to do **four things**:
+To make the project operational and **make it appear in the main-menu planner**, the project admin needs to do **four things**:
 
-1. **Open plugin settings.** In the plugin header, click the **Plugin Settings** gear — a dialog opens with five sections (navigation chips at the top).
+1. **Open settings.** In the plugin block, click the **Plugin Settings** gear — a dialog opens with five sections (navigation chips at the top).
 
-2. **Set the configurator group.** In the **Access and roles** section, in the **Settings manager group** field, pick the YouTrack group whose members can enter this settings dialog. Without this step, the plugin stays in read-only mode.
+2. **Set the settings manager group — this is the "connection".** In the **Access and roles** section, in the **Settings manager group** field, pick the YouTrack group whose members can change this project's settings. As soon as the group is set, **the project becomes visible in the main-menu planner** — anyone with access to the project in YouTrack can open it. Until the group is set, the project won't appear in the menu, and its settings stay read-only.
 
 3. **Choose active roles.** In the same **Access and roles** section there's a list of nine checkboxes — these are the functional roles (Analysis, Testing, Backend, Frontend, iOS, Android, Fullstack, Database, Platform development). Tick only the roles that actually work in your project. Each active role gets its own "lane" in the planning view.
 

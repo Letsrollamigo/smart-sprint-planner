@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.4.45] — 2026-06-08
+
+> **Sprint planner in the YouTrack main menu + wide-screen dashboard (#25, phases 1–2).**
+
+### Added
+
+- **Planner moved to the YouTrack main menu** (`MAIN_MENU_ITEM`). All planning now happens from the left menu, without opening project settings; the project is picked in the planner header. The project widget (`PROJECT_SETTINGS`) is narrowed down to a settings page.
+- **Connecting a project to the planner via the settings manager group.** During a project's first-time setup you pick a settings-access group; after that the project becomes visible in the main-menu planner for everyone with access to the project (`ssp_acl` mirror + `sync-acl`).
+- **«Rail + pane» dashboard.** On a wide screen (≥1330px of available width) — a navigation panel on the left (project/sprint context + section tree: Sprint parameters / Planning [Allocation / Distribution / Stand-up] / Gantt / History) and a wide work area on the right; on a narrow screen — the familiar stack. The panel collapses.
+
+### Fixed
+
+- **"Sprint parameters" and composition for a historical sprint.** When a finished sprint is selected, the parameters and role composition are read from the history snapshot, not from the active sprint.
+- **Restored distribution-table calculations** (resource totals and the "used" column), broken since 2.2.0.
+
+---
+
 ## [2.3.2] — 2026-06-05
 
 > **Table micro-redesign: compact typography + row separators (#42).**
