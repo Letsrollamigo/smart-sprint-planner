@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.0] — 2026-06-09
+
+> **Shareable sprint links — deep-link navigation and handoff (#36).**
+
+### Added
+
+- **Page address reflects planner state.** In main-menu mode the page URL automatically updates when you pick a project, switch sprints, or navigate to a section (`projectKey`, `sprintId`, `node` params).
+- **«Share» button** in the navigation panel copies the current link to the clipboard (a "Link copied" tooltip confirms it). Open the link and a colleague lands directly on the same project, sprint and section.
+- **Handoff workflow.** The primary use case: an analysis lead prepares sprint composition and sends the link to the dev lead, who opens it and assigns executors. The link only navigates to the view; what the recipient can do (view or edit) is determined by their access in the project and the working-draft mode — no new permissions are introduced.
+- **Optional `focus` param** in the link for jumping to a specific role or assignee — the target block scrolls into view and is briefly highlighted.
+
+### Misc
+
+- The «Share» button is available only in main-menu mode and is active when a sprint is open; without an open sprint it is disabled with a tooltip.
+
+---
+
 ## [2.4.45] — 2026-06-08
 
 > **Sprint planner in the YouTrack main menu + wide-screen dashboard (#25, phases 1–2).**

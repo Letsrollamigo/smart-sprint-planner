@@ -23,6 +23,7 @@ import './hash-pure.js';
 import './util-pure.js';
 import './migrate-pure.js';
 import './refresh-merge-pure.js';
+import './share-url-pure.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';

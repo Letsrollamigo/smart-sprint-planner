@@ -369,6 +369,13 @@
       margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 10px;
       background: var(--surface2); color: var(--muted); text-transform: uppercase; letter-spacing: .3px;
     }
+    /* #36 — кратковременная подсветка элемента при focus=role:/user: из share-ссылки */
+    @keyframes ssp-focus-flash {
+      0%   { box-shadow: 0 0 0 2px var(--primary), 0 0 0 6px rgba(90,125,232,.35); }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .ssp-focus-flash { animation: ssp-focus-flash 1.6s ease-out; border-radius: var(--radius, 6px); }
+    @media (prefers-reduced-motion: reduce) { .ssp-focus-flash { animation: none; } }
 
     /* dashNode states: показ карточки «Вводные» / уровней планирования / Ганта / Истории.
        Скрываем по умолчанию всё «контентное», конкретное состояние включает нужный блок. */

@@ -67,11 +67,22 @@ The planner has two parts:
 - **Sprint status badge** and **"Edit draft exists" badge** — short hints about the sprint stage and an unfinished edit (see [section 9](#9-sprint-stages-review-commit-complete) and [section 10](#10-sprint-history-and-re-editing)).
 - **"+ New sprint" button** (see [section 4](#4-creating-a-new-sprint)).
 - **Navigation tree** — switch between sections: "Sprint parameters", "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Gantt chart", "Sprint history".
+- **«Share» button** (at the bottom of the navigation tree) — copies a link to the current view (see below).
 - **Service links at the bottom:** the user guide, feedback, language switcher.
 
 **2. Work area on the right** — the content of the selected section.
 
 > On a narrow screen the panel and work area stack into a single column (as before); on a wide screen they sit side by side. The panel can be collapsed with the button in its top corner.
+
+### Sharing a link to a sprint
+
+The page address in main-menu mode **automatically reflects what you're looking at**: the selected project, sprint, and navigation tree section. To give a colleague exactly this view, click **«Share»** at the bottom of the navigation tree — the link is copied to the clipboard (a "Link copied" tooltip confirms it). Send it any way you like; when the recipient opens it, they land directly on the same project, sprint and section.
+
+The button is active when a sprint is open. Share the link **after saving the sprint** — the recipient sees the last saved state, not your unfinished draft.
+
+**Handoff.** This is the primary use case: an analysis lead prepares sprint composition and sends the link to the dev lead. The dev lead opens it, sees the sprint view, and — if they have assignee-editing rights — clicks «Open for editing» and distributes tasks. The link **only navigates** to the view; what the recipient can do (view or edit) is determined by their project access in YouTrack and the working-draft mode — the link grants no extra permissions.
+
+If the recipient opens a link to a project they don't have access to (or the planner isn't connected to that project), they'll see a message and can pick an accessible project instead.
 
 Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save parameters** and **Confirm** buttons are for fixing sprint stages (see [section 9](#9-sprint-stages-review-commit-complete)), not for saving data itself.
 
