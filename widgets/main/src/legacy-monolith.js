@@ -865,6 +865,18 @@
        auto-grow YT-iframe position:fixed улетает в Y=2000+ за пределы видимой части. */
     var ringStack = (document.body && typeof document.body.querySelector === 'function')
       ? document.body.querySelector('[data-test="alert-container"]') : null;
+    /* #43 W1 (C-2/H-1) — error-тост обязан прерывать screen-reader (aria-live=assertive);
+       Ring alertService-контейнер по дефолту polite для всех типов. Держим assertive,
+       пока в очереди есть error-тост, иначе polite. Применяется в settle-проходах
+       _repositionToastSoon (RAF²/+140мс после addAlert) и на resize. */
+    if (ringStack) {
+      var _hasErrToast = false;
+      for (var _ti = 0; _ti < _ringToastKeys.length; _ti++) {
+        if (_ringToastKeys[_ti].type === 'error') { _hasErrToast = true; break; }
+      }
+      ringStack.setAttribute('aria-live', _hasErrToast ? 'assertive' : 'polite');
+      ringStack.setAttribute('role', _hasErrToast ? 'alert' : 'status');
+    }
     var stack = ringStack || document.getElementById('toastStack');
     if (!stack || stack.children.length === 0) return;
     try {
@@ -1406,7 +1418,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.5.2';
+  var APP_VERSION = '2.5.3';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -5308,7 +5320,7 @@
       +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
       +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
       +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
-      +     (stats.overlimit ? '<span class="planning-role-warn" title="' + esc(T('planningRoleStatOverlimit')) + '">⚠</span>' : '')
+      +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
       +   '</button>'
       +   '<div class="planning-role-body" data-role-body="' + rk + '">'
       /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
@@ -5336,8 +5348,7 @@
       if (!warn) {
         warn = document.createElement('span');
         warn.className = 'planning-role-warn';
-        warn.title = T('planningRoleStatOverlimit');
-        warn.textContent = '⚠';
+        warn.textContent = T('planningRoleStatOverlimit');
         card.querySelector('.planning-role-toggle').appendChild(warn);
       }
     } else if (warn) {

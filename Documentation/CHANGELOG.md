@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.3] — 2026-06-09
+
+> **Accessibility & settings UI polish (#43, wave 1).**
+
+### Changed
+
+- **Role and planning-mode checkboxes now use the standard Ring component** — selecting functional roles and toggling modes (DTA, cascade, state rollup, personal planning, etc.) is keyboard-accessible and announced correctly by screen readers (role "checkbox" + checked state).
+- **Emoji in resource statuses and role cards replaced with text** — renders correctly on every OS (including Windows without an emoji set) and no longer adds screen-reader noise.
+- **Larger hint font in settings** (≥12 px); form base font bumped to 13 px.
+- **Active settings section marked with a left accent bar**; keyboard focus indicators added to nav items, the close button, the rail toggle, and the project selector.
+- **Higher contrast for muted text in dark theme** (WCAG AA).
+
+### Fixed
+
+- **Settings number fields** — native browser spinners hidden (they made the form jump in width).
+- **Error toasts** are announced by screen readers immediately (`aria-live=assertive`).
+
+---
+
 ## [2.5.2] — 2026-06-09
 
 ### Changed
