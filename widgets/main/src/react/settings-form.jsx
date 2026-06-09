@@ -54,19 +54,28 @@ function NumField({ id, label, value, onChange, min, max, step }) {
   );
 }
 
-/* role-check тоггл (зеркалит .role-check.active паттерн; mousedown не нужен — это не Ring Table). */
+/* #43 W1 (C-1, Path B) — семантический чекбокс роли: Ring <Checkbox> вместо
+   <div onClick> (нет role/aria-checked/tabIndex/keyboard у старого). Ring даёт
+   нативную a11y из коробки; визуал — стандартный Ring-чекбокс (осознанный Path B).
+   guard-fallback на прежний .role-check div, если вендор не загрузился. */
 function RoleCheck({ on, disabled, label, onToggle, tooltip, hint }) {
-  return (
-    <div>
+  const Checkbox = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Checkbox;
+  const box = Checkbox
+    ? <Checkbox checked={!!on} disabled={!!disabled} label={label}
+                onChange={() => { if (!disabled) onToggle(); }} />
+    : (
       <div
         className={'role-check' + (on ? ' active' : '') + (disabled ? ' role-check--disabled' : '')}
-        title={tooltip || undefined}
         onClick={() => { if (!disabled) onToggle(); }}
       >
         <span className="role-check__cb"></span>
         <span className="role-check__label">{label}</span>
       </div>
-      {hint ? <p className="hint" style={{ fontSize: '11px', color: 'var(--muted)', margin: '4px 0 0' }}>{hint}</p> : null}
+    );
+  return (
+    <div className="ssp-role-toggle" title={tooltip || undefined}>
+      {box}
+      {hint ? <p className="hint" style={{ fontSize: '12px', color: 'var(--muted)', margin: '4px 0 0' }}>{hint}</p> : null}
     </div>
   );
 }
@@ -289,7 +298,7 @@ function DtaSection(props) {
         </tbody>
       </table>
       <button type="button" className={_btnCls('secondary')} style={{ marginTop: '10px' }} onClick={addRow}>{t('btnDtaAddRow')}</button>
-      {props.hasDup ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('dtaErrDuplicate')}</div> : null}
+      {props.hasDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('dtaErrDuplicate')}</div> : null}
     </React.Fragment>
   );
 }
@@ -322,7 +331,7 @@ function CascadeSection(props) {
       <RoleCheck on={v.agg} label={t('lblCascadeEnabled')} hint={t('hintCascade')} onToggle={() => patch({ agg: !v.agg })} />
       <div style={{ marginTop: '12px' }}>
         <RoleCheck on={v.forbid} label={t('lblForbidContainer')} hint={t('hintForbidContainer')} onToggle={() => patch({ forbid: !v.forbid })} />
-        {dangerous ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('warnCascadeWithoutForbid')}</div> : null}
+        {dangerous ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('warnCascadeWithoutForbid')}</div> : null}
       </div>
       <div className="form-grid form-grid--2" style={{ marginTop: '14px' }}>
         <div className="field">
@@ -341,8 +350,8 @@ function CascadeSection(props) {
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblCascadeLevel3')}</label>
         <MultiSelect options={bundle} selected={v.level3} onChange={(vals) => patch({ level3: vals })} size={5} />
-        <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
-        {overlap ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnCascadeLevelsOverlap')}</div> : null}
+        <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
+        {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnCascadeLevelsOverlap')}</div> : null}
       </div>
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
         <div className="field">
@@ -354,7 +363,7 @@ function CascadeSection(props) {
           <TextField value={v.linkOut} onChange={(val) => patch({ linkOut: val })} placeholder={t('phCascadeLinkOutward')} />
         </div>
       </div>
-      <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '8px' }}>{t('hintCascadeLinks')}</div>
+      <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>{t('hintCascadeLinks')}</div>
     </React.Fragment>
   );
 }
@@ -399,18 +408,18 @@ function StateRollupSection(props) {
   return (
     <React.Fragment>
       <RoleCheck on={v.enabled} label={t('lblStateRollupEnabled')} hint={t('hintStateRollup')} onToggle={() => patch({ enabled: !v.enabled })} />
-      {noHierarchy ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('hintStateRollupNoHierarchy')}</div> : null}
+      {noHierarchy ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('hintStateRollupNoHierarchy')}</div> : null}
 
       <div className="field" style={{ marginTop: '14px' }}>
         <label>{t('lblStateRollupOrder')}</label>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>{t('lblStateRollupBundle')}</label>
+            <label style={{ fontSize: '12px', color: 'var(--muted)' }}>{t('lblStateRollupBundle')}</label>
             <MultiSelect options={available} selected={bundleSel} onChange={setBundleSel} size={6} />
             <button type="button" className={_btnCls('secondary')} style={{ marginTop: '4px' }} onClick={addToOrder}>{t('btnStateRollupAdd')}</button>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <label style={{ fontSize: '11px', color: 'var(--muted)' }}>{t('lblStateRollupOrderList')}</label>
+            <label style={{ fontSize: '12px', color: 'var(--muted)' }}>{t('lblStateRollupOrderList')}</label>
             <select
               size={6} className="app-select ssp-multiselect" style={{ width: '100%' }}
               value={orderIdx >= 0 ? String(orderIdx) : ''}
@@ -425,14 +434,14 @@ function StateRollupSection(props) {
             </div>
           </div>
         </div>
-        <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupOrder')}</div>
-        {orderShort ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnStateRollupOrderShort')}</div> : null}
+        <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupOrder')}</div>
+        {orderShort ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnStateRollupOrderShort')}</div> : null}
       </div>
 
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblStateRollupResolved')}</label>
         <MultiSelect options={bundle} selected={v.resolved} onChange={(vals) => patch({ resolved: vals })} size={4} />
-        <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupResolved')}</div>
+        <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupResolved')}</div>
       </div>
 
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
@@ -442,14 +451,14 @@ function StateRollupSection(props) {
             <option value="">{t('optStateRollupFloorNone')}</option>
             {v.order.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupFloor')}</div>
+          <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupFloor')}</div>
         </div>
         <div className="field">
           <label>{t('lblStateRollupStrategy')}</label>
           <select className="app-select" value="min" disabled onChange={noop}>
             <option value="min">min</option>
           </select>
-          <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupStrategy')}</div>
+          <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupStrategy')}</div>
         </div>
       </div>
     </React.Fragment>
@@ -463,7 +472,7 @@ function StandupSection(props) {
     <div className="field">
       <label>{t('lblStandupDoneStates')}</label>
       <MultiSelect options={props.bundleStates || []} selected={props.value || []} onChange={props.onChange} size={6} />
-      <div className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
+      <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
     </div>
   );
 }
@@ -744,6 +753,9 @@ function SettingsForm(props) {
     onUiLangChange(lang); // легаси меняет глобальный _lang + applyI18N остального UI; t() ниже читает новый язык
   }
 
+  /* #43 W1 (C-1, Path B) — вендорный Ring Checkbox для сетки выбора ролей. */
+  const RingCheckbox = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Checkbox;
+
   /* ── Конфиг секций (two-pane): id → title → node. Контент идентичен прежним
      Card-блокам; меняется только обёртка (nav-список слева + активная секция справа).
      node вычисляется каждый рендер (дёшево) — все секции в одном scope. ── */
@@ -752,16 +764,22 @@ function SettingsForm(props) {
       id: 'roles', title: t('cardRoles'),
       node: (
         <div className="roles-grid">
-          {roles.map((r) => (
-            <div
-              key={r.key}
-              className={'role-check' + (activeRoles.indexOf(r.key) >= 0 ? ' active' : '')}
-              onClick={() => toggleRole(r.key)}
-            >
-              <span className="role-check__cb"></span>
-              <span className="role-check__label">{uiLang === 'en' ? (r.labelEn || r.label) : r.label}</span>
-            </div>
-          ))}
+          {roles.map((r) => {
+            const on = activeRoles.indexOf(r.key) >= 0;
+            const lbl = uiLang === 'en' ? (r.labelEn || r.label) : r.label;
+            return RingCheckbox
+              ? <RingCheckbox key={r.key} checked={on} label={lbl} onChange={() => toggleRole(r.key)} />
+              : (
+                <div
+                  key={r.key}
+                  className={'role-check' + (on ? ' active' : '')}
+                  onClick={() => toggleRole(r.key)}
+                >
+                  <span className="role-check__cb"></span>
+                  <span className="role-check__label">{lbl}</span>
+                </div>
+              );
+          })}
         </div>
       ),
     },
@@ -785,7 +803,7 @@ function SettingsForm(props) {
                 loadGroups={props.loadGroups}
                 onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
               />
-              {g.hint ? <span className="hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>{g.hint}</span> : null}
+              {g.hint ? <span className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>{g.hint}</span> : null}
             </div>
           ))}
         </React.Fragment>
@@ -859,7 +877,7 @@ function SettingsForm(props) {
               </div>
             ))}
           </div>
-          {hasEstDup ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateEstField')}</div> : null}
+          {hasEstDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateEstField')}</div> : null}
         </React.Fragment>
       ),
     },
@@ -875,7 +893,7 @@ function SettingsForm(props) {
               </div>
             ))}
           </div>
-          {hasFactDup ? <div className="hint" style={{ fontSize: '11px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateFactField')}</div> : null}
+          {hasFactDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateFactField')}</div> : null}
         </React.Fragment>
       ),
     },

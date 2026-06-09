@@ -50,7 +50,7 @@
       --surface-hover: #3a3a4d;
       --border:    #3e3e5a;
       --text:      #e0e0f0;
-      --muted:     #8888aa;
+      --muted:     #a0a0c0;
       --primary:   #5b7cfa;
       --primary-h: #7090ff;
       --error:     #e05a6a;
@@ -68,7 +68,7 @@
         --surface-hover: #3a3a4d;
         --border:    #3e3e5a;
         --text:      #e0e0f0;
-        --muted:     #8888aa;
+        --muted:     #a0a0c0;
         --primary:   #5b7cfa;
         --primary-h: #7090ff;
         --error:     #e05a6a;
@@ -1078,7 +1078,7 @@
        секция (свой скролл), footer снизу всегда виден. Заменяет прежний аккордеон +
        sticky-footer-в-Ring-скролле (плотные секции не тянулись одной колонкой).
        Базовый шрифт формы меньше основного визуала (~14px → 11-12px). */
-    .ssp-settings-form { font-size: 12px; display: flex; flex-direction: column; width: 100%; position: relative; }
+    .ssp-settings-form { font-size: 13px; display: flex; flex-direction: column; width: 100%; position: relative; }
     /* inner без падингов — two-pane сам управляет отступами (nav/pane/footer). */
     .ssp-ring-modal--settings .ssp-modal-inner { padding: 0; }
 
@@ -1092,6 +1092,18 @@
       font-size: 22px; line-height: 1;
     }
     .ssp-settings-close:hover { background: var(--surface-hover, rgba(128,128,128,.14)); color: var(--text, inherit); }
+    /* #43 W1 (C-5) — focus-visible на интерактиве настроек/рельса (WCAG 2.4.7),
+       непокрытом ранними правилами .btn/.tab-btn/.field. */
+    .ssp-settings-nav__item:focus-visible,
+    .ssp-settings-close:focus-visible,
+    .role-check:focus-visible,
+    .ssp-rail__toggle:focus-visible,
+    .ssp-global-project-select:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    /* #43 W1 (E-2) — скрыть нативный browser-spinner у числовых полей формы:
+       стрелки прибавляли неконтролируемую ширину и форма «прыгала». */
+    .ssp-settings-form input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    .ssp-settings-form input[type="number"]::-webkit-inner-spin-button,
+    .ssp-settings-form input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
     .ssp-settings-main { display: flex; align-items: stretch; }
 
@@ -1118,6 +1130,10 @@
     .ssp-settings-nav__item.active {
       background: var(--ring-selected-background-color, rgba(0,114,255,.12));
       font-weight: 600;
+      /* #43 W1 (A-2) — левая вертикальная полоса = сильный affordance активной
+         секции (консистентно с Ring sidebar / YT nav). inset box-shadow вместо
+         border-left — не сдвигает текст и не ломает border-radius. */
+      box-shadow: inset 3px 0 0 var(--primary);
     }
     .ssp-settings-nav__label { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
     .ssp-settings-nav__dot { flex: 0 0 auto; margin-top: 2px; color: var(--error, #e5493a); font-size: 9px; line-height: 1; }
@@ -1166,9 +1182,9 @@
     .ssp-settings-form select,
     .ssp-settings-form .app-select,
     .ssp-settings-form input,
-    .ssp-settings-form .role-check__label { font-size: 11px; }
-    .ssp-settings-form .card-subtitle { font-size: 10px; }
-    .ssp-settings-form .hint { font-size: 10px; }
+    .ssp-settings-form .role-check__label { font-size: 12px; }
+    .ssp-settings-form .card-subtitle { font-size: 12px; }
+    .ssp-settings-form .hint { font-size: 12px; }
 
     /* 5c — нативные multi-select (каскад/rollup/standup) и DTA-таблица. */
     .ssp-settings-form .ssp-multiselect {
@@ -2006,7 +2022,7 @@
     .planning-role-name { font-weight: 600; min-width: 140px; }
     .planning-role-stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
     .planning-role-stat__num { color: var(--text); font-weight: 500; }
-    .planning-role-warn { color: var(--error); margin-left: auto; font-size: 14px; }
+    .planning-role-warn { color: var(--error); margin-left: auto; font-size: 12px; font-weight: 600; }
     .planning-role-body { padding: 0 14px 14px 14px; border-top: 1px solid var(--border); }
     .planning-role-body__hint { font-size: 12px; color: var(--muted); padding: 10px 0; }
     .planning-role-body__actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 8px; }
@@ -2327,7 +2343,7 @@
     </div>
     <div id="planning-level-roles"  class="planning-level-pane">
       <div id="planningRolesNoSprint" class="empty hidden" data-i18n="planningRolesNoSprint">Выберите спринт в шапке виджета или создайте новый.</div>
-      <div id="planningRolesNoActive" class="banner banner--warn hidden" data-i18n="planningRolesNoActive">⚠️ Не выбраны функциональные роли участников. Откройте виджет настроек и выберите хотя бы одну роль.</div>
+      <div id="planningRolesNoActive" class="banner banner--warn hidden" data-i18n="planningRolesNoActive">Не выбраны функциональные роли участников. Откройте виджет настроек и выберите хотя бы одну роль.</div>
       <div id="roleAccordions" class="role-accordions"></div>
     </div>
     <div id="planning-level-people" class="planning-level-pane hidden">
