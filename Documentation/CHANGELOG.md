@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.2] — 2026-06-09
+
+### Changed
+
+- **«Share» button gated to YouTrack 2026.1+** (`host.navigation` API introduced there). On older servers the button is hidden; it appears automatically after the server is upgraded — no plugin update needed.
+
+### Fixed
+
+- **Share link reconstructed from state** — the widget runs in an `about:srcdoc` iframe, where `window.location.href` returns the iframe address, not the parent YouTrack URL. The link is now built from `_ytBase` + app path + `app_`-prefixed state parameters.
+
+---
+
 ## [2.5.1] — 2026-06-09
 
 > **Hotfix: projects with non-ASCII keys were missing from the planner picker.**
