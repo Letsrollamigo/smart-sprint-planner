@@ -73,6 +73,13 @@
   var SORT_PURE = (typeof window !== 'undefined' && window.__SSP_SORT_PURE) || {};
   /* #35 — чистое ядро слияния «Обновить из задачи» (refresh-merge-pure.js). */
   var REFRESH_MERGE_PURE = (typeof window !== 'undefined' && window.__SSP_REFRESH_MERGE_PURE) || {};
+  /* #36 — чистое ядро deep-link share-URL (share-url-pure.js): parse/build search ↔ state. */
+  var SHARE_URL_PURE = (typeof window !== 'undefined' && window.__SSP_SHARE_URL_PURE) || {};
+  /* #36 — share-параметры из URL, считанные ОДИН раз на init (consumed в _loadAndRenderProject). */
+  var _pendingShareParams = null;
+  /* #36 — guard авто-синка state→URL: выключен во время init-restore (иначе _applyActiveProject
+     затёр бы sprintId из ссылки до его применения); включается в конце init-хвоста. */
+  var _urlSyncEnabled = false;
   /* Multi-key task sort — чистые компараторы живут в sort-pure.js (window.__SSP_SORT_PURE),
      юнит-тестируются изолированно. IIFE владеет состоянием сортировки: getSortKey()
      резолвит активный primary-ключ, когда вызывающий его опускает. */
@@ -1399,7 +1406,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.4.45';
+  var APP_VERSION = '2.5.0';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -2849,7 +2856,7 @@
     el.textContent = txt;
   }
   /* ════ #25 Ф2 Этап 3+4+7 — дерево навигации + dashNode-стейт ════
-     Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(Ф2.5/#36 disabled).
+     Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
   var SSP_DASH_NODES = ['sprint-params','planning-roles','planning-people','planning-standup','gantt','history'];
@@ -2904,10 +2911,12 @@
     tree.appendChild(mkItem('gantt',   'tabGantt',   'bars'));
     tree.appendChild(mkItem('history', 'tabHistory', 'history'));
 
-    /* 4. Поделиться (Ф2.5/#36 слот, disabled) */
-    var share = mkItem('share', 'treeShare', 'share', 'ssp-tree__item--disabled');
-    var soon = document.createElement('span'); soon.className='ssp-tree__soon'; soon.setAttribute('data-i18n','treeShareSoon'); soon.textContent = T('treeShareSoon');
-    share.appendChild(soon);
+    /* 4. Поделиться (#36) — копирует текущий deep-link URL; enable/disable по наличию спринта.
+       mkItem-клик зовёт _setDashNode('share') (no-op, не в SSP_DASH_NODES); добавляем copy-handler. */
+    var share = mkItem('share', 'treeShare', 'share', 'ssp-tree__item--share ssp-tree__item--disabled');
+    share.addEventListener('click', function(){
+      if (!share.classList.contains('ssp-tree__item--disabled')) _onShareClick();
+    });
     tree.appendChild(share);
 
     return tree;
@@ -2945,6 +2954,8 @@
     else if (nodeId === 'history')          { _clickTab('history'); }
     /* persist */
     try { var ui = _draftGet('ui') || {}; ui.dashNode = nodeId; _draftSet('ui', ui); } catch(_){}
+    /* #36 — отразить узел в URL (no-op до _urlSyncEnabled / вне global) */
+    try { _syncStateToUrl(); } catch(_){}
   }
 
   function _buildGlobalDashShell() {
@@ -3407,6 +3418,14 @@
     }
     /* v5.0.3 — восстановить UI-навигацию (активная вкладка/подвкладка/спринт-селектор) */
     restoreUiState();
+    /* #36 — sprintId из share-ссылки приоритетнее восстановленного; невалидный → fallback-toast */
+    if (_pendingShareParams && _pendingShareParams.sprintId) {
+      if (_validSprintId(_pendingShareParams.sprintId)) {
+        try { setCurrentSprintId(_pendingShareParams.sprintId, { confirmed: true }); } catch(e){ diag('share sprint apply err: '+e, 'err'); }
+      } else {
+        try { toast(T('sprintNotFoundFallback')); } catch(_){}
+      }
+    }
     /* #25 Ф2 — отрисовать активный уровень планирования ПОСЛЕ restoreUiState (именно там
        резолвится _currentSprintId). Без этого на свежем открытии проекта уровень пустой
        («Выберите спринт…») и наполнялся только по клику на вкладку уровня. */
@@ -3414,12 +3433,24 @@
       try { _renderPlanningLevel(_planningLevel); } catch(e){ diag('init planning level render err: '+e, 'err'); }
     }
     /* #25 Ф2 Этап 3+4 — синхронизировать узел дерева с восстановленным tab/level
-       (или применить сохранённый ui.dashNode, если есть). */
+       (или сохранённый ui.dashNode). #36 — node из share-ссылки приоритетнее. */
     if (_mode === 'global' && typeof _setDashNode === 'function') {
-      var _uiR = _draftGet('ui') || {};
-      var _node = _uiR.dashNode;
-      if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
+      var _node = (_pendingShareParams && _pendingShareParams.node && SSP_DASH_NODES.indexOf(_pendingShareParams.node) >= 0)
+        ? _pendingShareParams.node : null;
+      if (!_node) {
+        var _uiR = _draftGet('ui') || {};
+        _node = _uiR.dashNode;
+        if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
+      }
       try { _setDashNode(_node); } catch(e){ diag('init dashNode err: '+e, 'err'); }
+    }
+    /* #36 — focus (scroll+flash), затем завершить restore: consume params + включить авто-синк URL. */
+    if (_mode === 'global') {
+      if (_pendingShareParams && _pendingShareParams.focus) { try { _applyShareFocus(_pendingShareParams.focus); } catch(_){} }
+      _pendingShareParams = null;
+      _urlSyncEnabled = true;
+      try { _syncStateToUrl(); } catch(_){}
+      try { _updateShareBtnState(); } catch(_){}
     }
     /* v5.0 — refresh кнопки перехода в overlay настроек (видимость по серверной проверке) */
     refreshOpenSettingsBtn();
@@ -3641,25 +3672,48 @@
     if (sel) sel.value = k || '';
   }
 
-  function _setGlobalBanner(textKey) {
+  function _setGlobalBanner(textKey, sub) {
     var b = document.getElementById('globalNoProjectBanner');
     if (!b) return;
-    if (textKey) { b.textContent = T(textKey); b.classList.remove('hidden'); }
-    else b.classList.add('hidden');
+    if (textKey) {
+      var txt = T(textKey);
+      if (sub != null) txt = txt.replace('{key}', String(sub));   /* #36 — noAccessToProject {key} */
+      b.textContent = txt;
+      b.classList.remove('hidden');
+    } else b.classList.add('hidden');
   }
 
   function _initGlobalProjectSelection() {
-    return _loadGlobalProjectList().then(function (projects) {
+    _urlSyncEnabled = false;   /* #36 — не синкать URL во время init-restore (иначе затрём sprintId) */
+    return _readShareParams().then(function (share) {
+      /* #36 — restore триггерится только при наличии projectKey (ядро ссылки); иначе игнор. */
+      _pendingShareParams = (share && share.projectKey) ? share : null;
+      return _loadGlobalProjectList();
+    }).then(function (projects) {
       _globalProjects = projects || [];
       _renderProjectPicker();
       if (!_globalProjects.length) {
         _setGlobalBanner('globalNoProjects');
         throw _NO_PROJECT_SENTINEL;
       }
-      var last = _getLastProjectKey();
+      var share = _pendingShareParams || {};
       var initKey = null;
-      if (last && _globalProjects.some(function (p) { return p.key === last; })) initKey = last;
-      else if (_globalProjects.length === 1) initKey = _globalProjects[0].key;
+      /* #36 — projectKey из ссылки приоритетнее last-used */
+      if (share.projectKey) {
+        if (_globalProjects.some(function (p) { return p.key === share.projectKey; })) {
+          initKey = share.projectKey;
+        } else {
+          /* проект из ссылки недоступен/планер не подключён — banner, остаёмся на picker'е (D6) */
+          _setGlobalBanner('noAccessToProject', share.projectKey);
+          _pendingShareParams = null;
+          throw _NO_PROJECT_SENTINEL;
+        }
+      }
+      if (!initKey) {
+        var last = _getLastProjectKey();
+        if (last && _globalProjects.some(function (p) { return p.key === last; })) initKey = last;
+        else if (_globalProjects.length === 1) initKey = _globalProjects[0].key;
+      }
       if (!initKey) {
         _setGlobalBanner('globalPickPrompt');
         throw _NO_PROJECT_SENTINEL;
@@ -3677,6 +3731,130 @@
     var p = _globalProjects.filter(function (x) { return x.key === key; })[0];
     _projectDisplayName = (p && p.name) ? p.name : key;
     try { _updateProjectNameLabel(); } catch (_) {}
+    try { _syncStateToUrl(); } catch (_) {}   /* #36 — авто-синк state→URL (no-op до _urlSyncEnabled) */
+  }
+
+  /* ═══ #36 Share-URL (deep-link + handoff) ═══════════════════════════════
+     host.navigation доступен только в global-режиме (MAIN_MENU_ITEM). getAppLocation()
+     АСИНХРОНЕН (Promise) — проверено V0-A 2026-06-09. YT добавляет app_-префикс к ключам
+     в видимой строке, но get/replaceAppLocation работают с чистыми ключами симметрично. */
+
+  function _navAvailable() {
+    return !!(_host && _host.navigation && typeof _host.navigation.getAppLocation === 'function');
+  }
+
+  /* URL → state: читает search один раз на init. Возвращает Promise<{projectKey,sprintId,node,focus}>. */
+  function _readShareParams() {
+    if (typeof SHARE_URL_PURE.parseShareSearch !== 'function' || !_navAvailable()) return Promise.resolve({});
+    try {
+      return Promise.resolve(_host.navigation.getAppLocation())
+        .then(function (loc) { return SHARE_URL_PURE.parseShareSearch(loc && loc.search) || {}; })
+        .catch(function () { return {}; });
+    } catch (_) { return Promise.resolve({}); }
+  }
+
+  /* Внутренний id активного узла дерева (для билда URL). */
+  function _currentDashNode() {
+    try {
+      var act = document.querySelector('.ssp-tree [data-node].active');
+      if (act && act.dataset && act.dataset.node) return act.dataset.node;
+    } catch (_) {}
+    return null;
+  }
+
+  /* state → URL: replaceAppLocation (без записи в history). No-op до _urlSyncEnabled / вне global. */
+  function _syncStateToUrl() {
+    if (!_urlSyncEnabled || _mode !== 'global' || !_navAvailable()) return;
+    if (typeof _host.navigation.replaceAppLocation !== 'function') return;
+    if (typeof SHARE_URL_PURE.buildShareSearch !== 'function') return;
+    try {
+      var search = SHARE_URL_PURE.buildShareSearch({
+        projectKey: _activeProjectKey,
+        sprintId:   _currentSprintId,
+        node:       _currentDashNode()
+      });
+      _host.navigation.replaceAppLocation({ search: search });
+    } catch (_) {}
+  }
+
+  /* Валиден ли sprintId (base-UUID) среди доступных: активный спринт или запись истории. */
+  function _validSprintId(id) {
+    if (!id) return false;
+    if (_sprint && _sprint.sprintId === id) return true;
+    if (Array.isArray(_history)) {
+      return _history.some(function (rec) {
+        return rec && rec.sprintId && String(rec.sprintId).split('_')[0] === id;
+      });
+    }
+    return false;
+  }
+
+  /* Применить focus=role:K / user:L — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
+  function _applyShareFocus(focus) {
+    if (typeof SHARE_URL_PURE.parseFocus !== 'function') return;
+    var f = SHARE_URL_PURE.parseFocus(focus);
+    if (!f) return;
+    setTimeout(function () {
+      try {
+        var el = null;
+        if (f.kind === 'role') {
+          el = document.querySelector('.planning-role-card[data-role-key="' + f.value + '"]');
+        } else if (f.kind === 'user') {
+          /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
+          el = document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]');
+        }
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ssp-focus-flash');
+        setTimeout(function () { try { el.classList.remove('ssp-focus-flash'); } catch (_) {} }, 1600);
+      } catch (_) {}
+    }, 200);
+  }
+
+  /* Состояние кнопки «Поделиться» в рельсе: enabled только при выбранном спринте. */
+  function _updateShareBtnState() {
+    var btn = document.querySelector('.ssp-tree__item--share');
+    if (!btn) return;
+    var ok = _mode === 'global' && _navAvailable() && !!_currentSprintId;
+    btn.classList.toggle('ssp-tree__item--disabled', !ok);
+    btn.setAttribute('title', ok ? T('shareHandoffHint') : T('shareDisabledNoSprint'));
+  }
+
+  /* Клик по «Поделиться»: копирует текущий deep-link URL + toast. Без модалки/dropdown (D4).
+     ВАЖНО (V0-смоук 2026-06-09): iframe виджета YT идёт без allow="clipboard-write" в
+     Permissions-Policy → navigator.clipboard.writeText БЛОКИРУЕТСЯ (и в проде, не только в
+     автоматизации). Поэтому primary-путь — синхронный execCommand('copy') в gesture'е (он
+     не гейтится clipboard-write policy); async Clipboard API — лишь enhancement-fallback. */
+  function _execCopy(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { ta.setSelectionRange(0, text.length); } catch (_) {}
+      var done = false;
+      try { done = document.execCommand('copy'); } catch (_) { done = false; }
+      document.body.removeChild(ta);
+      return !!done;
+    } catch (_) { return false; }
+  }
+  function _onShareClick() {
+    var href = '';
+    try { href = window.location.href; } catch (_) {}
+    function ok()  { try { toast(T('shareCopyOk')); } catch (_) {} }
+    function err() { try { toast(T('shareCopyErr')); } catch (_) {} }
+    /* 1) синхронный execCommand в gesture'е (работает в sandboxed iframe без clipboard-write) */
+    if (_execCopy(href)) { ok(); return; }
+    /* 2) fallback — async Clipboard API (если вдруг доступен) */
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(href).then(ok, err);
+      } else {
+        err();
+      }
+    } catch (_) { err(); }
   }
 
   function _onProjectPicked(newKey) {
@@ -8925,6 +9103,9 @@
     }
     /* v5.5.0 — D34: применить hybrid-режим (read-only / editable) для нового _currentSprintId */
     try { _applyHybridSprintMode(_currentSprintId); } catch(e){ diag('hybrid sprint mode err: '+e,'err'); }
+    /* #36 — синк sprintId в URL + обновить кнопку «Поделиться» (enabled при наличии спринта) */
+    try { _syncStateToUrl(); } catch(_){}
+    try { _updateShareBtnState(); } catch(_){}
     return true;
   }
 
