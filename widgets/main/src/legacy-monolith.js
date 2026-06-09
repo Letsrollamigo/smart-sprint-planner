@@ -1406,7 +1406,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.5.1';
+  var APP_VERSION = '2.5.2';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3039,6 +3039,9 @@
     });
     _applyRailCollapsed(getRailCollapsed());
     _updateRailSprintName();
+    /* #36 v2.5.2 — сразу выставить видимость кнопки «Поделиться» по наличию host.navigation
+       (на YT<2026.1 спрятать немедленно, не дожидаясь выбора проекта). */
+    try { _updateShareBtnState(); } catch (_) {}
     diag('#25 Ф2 dash shell built (global): chrome/context/nav → rail', 'ok');
   }
 
@@ -3815,7 +3818,13 @@
   function _updateShareBtnState() {
     var btn = document.querySelector('.ssp-tree__item--share');
     if (!btn) return;
-    var ok = _mode === 'global' && _navAvailable() && !!_currentSprintId;
+    /* #36 v2.5.2 — host.navigation присутствует только в YT ≥ 2026.1; на старых серверах
+       (прод 2025.3) deep-link не работает (ни синк, ни приём, ни корректная ссылка) →
+       ПРЯЧЕМ кнопку целиком, чтобы не висела мёртвой. Появится сама, когда сервер
+       апнут до 2026.1 (nav станет доступен) — без отдельного релиза. */
+    if (_mode !== 'global' || !_navAvailable()) { btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    var ok = !!_currentSprintId;
     btn.classList.toggle('ssp-tree__item--disabled', !ok);
     btn.setAttribute('title', ok ? T('shareHandoffHint') : T('shareDisabledNoSprint'));
   }
@@ -3840,9 +3849,23 @@
       return !!done;
     } catch (_) { return false; }
   }
+  /* #36 v2.5.2 — shareable URL РЕКОНСТРУИРУЕМ из состояния, НЕ из window.location.href:
+     виджет живёт в sandboxed about:srcdoc-iframe → window.location.href = "about:srcdoc#…"
+     (адрес iframe, не родительский YT-URL). Собираем: ytBase + путь app/widget +
+     app_-префиксные параметры (YT в реальном URL префиксует ключи app_; getAppLocation
+     читает их обратно без префикса — V0-A 2026-06-09). */
+  var _SHARE_APP_PATH = '/app/smart-sprint-planner/ssp-main-global/';
+  function _buildShareHref() {
+    var base = String(_ytBase || '').replace(/\/+$/, '');
+    var raw = (typeof SHARE_URL_PURE.buildShareSearch === 'function')
+      ? SHARE_URL_PURE.buildShareSearch({ projectKey: _activeProjectKey, sprintId: _currentSprintId, node: _currentDashNode() })
+      : '';
+    var prefixed = raw ? raw.split('&').map(function (p) { return 'app_' + p; }).join('&') : '';
+    return base + _SHARE_APP_PATH + (prefixed ? '?' + prefixed : '');
+  }
   function _onShareClick() {
-    var href = '';
-    try { href = window.location.href; } catch (_) {}
+    var href = _buildShareHref();
+    try { diag('share copy: ' + href, 'info'); } catch (_) {}
     function ok()  { try { toast(T('shareCopyOk')); } catch (_) {} }
     function err() { try { toast(T('shareCopyErr')); } catch (_) {} }
     /* 1) синхронный execCommand в gesture'е (работает в sandboxed iframe без clipboard-write) */
