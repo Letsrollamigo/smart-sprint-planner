@@ -27,8 +27,22 @@ var core     = require('./backend-core.js');
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.
 // Семантика «есть доступ к проекту/видимость». isVisibleTo/isInProject/visibleProjects отсутствуют.
 var READ_PROJECT_PERMISSION = 'READ_PROJECT_BASIC';
-var PROJECT_KEY_RE = /^[A-Za-z][A-Za-z0-9_]{0,99}$/; // shortName YouTrack; недоверенный вход
-var MAX_PICKER_KEYS = 500;                           // лимит батча picker'а
+// shortName/ID проекта YouTrack — недоверенный вход (тело picker'а клиентское). YT генерирует ID
+// из имени: может начинаться с цифры (1c_zup для «1С ЗУП»), быть в нижнем регистре, содержать
+// кириллицу/Unicode-буквы, дефис, точку, подчёркивание. Прежняя ASCII-allowlist
+// /^[A-Za-z][A-Za-z0-9_]{0,99}$/ молча теряла такие проекты в picker'е и global-эндпоинтах
+// (prod-fix 2026-06-09 «1С ЗУП»/1c_zup). Валидируем длину + denylist опасных символов
+// (engine-portable: без \p{L}/u-флага и без диапазонов в char-class); существование арбитрит findByKey.
+var PROJECT_KEY_MAX = 100;
+var PROJECT_KEY_WS_RE     = /\s/;
+var PROJECT_KEY_DANGER_RE = /["'`<>(){}\[\]|\\\/?#&=;%:@$*+^~,!]/;
+function isValidProjectKey(k) {
+  if (typeof k !== 'string') return false;
+  var s = k.trim();
+  if (s.length < 1 || s.length > PROJECT_KEY_MAX) return false;
+  return !PROJECT_KEY_WS_RE.test(s) && !PROJECT_KEY_DANGER_RE.test(s);
+}
+var MAX_PICKER_KEYS = 5000;                          // лимит батча picker'а (был 500; bump под масштаб)
 
 // ── 4xx-хелперы (форма ответа идентична core.badRequest/forbidden) ───────────
 function gBad(ctx, reason)    { try { ctx.response.status = 400; } catch (e) {} ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input' }); }
@@ -39,7 +53,7 @@ function getProjectKey(globalCtx) {
     var k = globalCtx.request.getParameter('projectKey');
     if (!k) return null;
     k = String(k).trim();
-    return PROJECT_KEY_RE.test(k) ? k : null;
+    return isValidProjectKey(k) ? k : null;
   } catch (e) { return null; }
 }
 
@@ -121,7 +135,7 @@ endpoints.push({
       var k = keys[i];
       if (typeof k !== 'string') continue;
       k = k.trim();
-      if (!PROJECT_KEY_RE.test(k) || seen[k]) continue;
+      if (!isValidProjectKey(k) || seen[k]) continue;
       seen[k] = true;
       var project = null;
       try { project = entities.Project.findByKey(k); } catch (e) { project = null; }
@@ -157,3 +171,4 @@ endpoints.push({
 });
 
 exports.httpHandler = { endpoints: endpoints };
+exports.isValidProjectKey = isValidProjectKey;  // test-only (unit: project-key-validation)

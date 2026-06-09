@@ -1406,7 +1406,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.5.0';
+  var APP_VERSION = '2.5.1';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3619,7 +3619,7 @@
   function _setLastProjectKey(k) { try { if (k) safeLs.set(_LAST_PROJECT_LS_KEY, k); } catch (_) {} }
 
   function _loadGlobalProjectList() {
-    return _host.fetchYouTrack('admin/projects', { query: { fields: 'id,name,shortName,archived', '$top': 1000 } })
+    return _host.fetchYouTrack('admin/projects', { query: { fields: 'id,name,shortName,archived', '$top': 5000 } })
       .then(function (list) {
         var keys = [];
         (list || []).forEach(function (p) {

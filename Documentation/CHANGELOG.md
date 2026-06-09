@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.1] — 2026-06-09
+
+> **Hotfix: projects with non-ASCII keys were missing from the planner picker.**
+
+### Fixed
+
+- **Projects with a non-ASCII shortName not appearing in the picker.** A project whose key (shortName) starts with a digit or contains Cyrillic characters or a hyphen — for example «1С ЗУП» (`1c_zup`) — was silently absent from the planner's project picker. The cause: the picker filter validated the key against a strict ASCII regex (`^[A-Za-z][A-Za-z0-9_]…`) and discarded everything else. Key validation is now replaced with a length check + denylist of dangerous characters — any real YouTrack key passes (digit at start, Cyrillic, hyphen, period, underscore). The same regex also affected opening deep-links (#36) to such projects.
+- **Project-list caps raised** (fetch and picker batch 1000/500 → 5000) — headroom for installations with a large number of projects.
+
+---
+
 ## [2.5.0] — 2026-06-09
 
 > **Shareable sprint links — deep-link navigation and handoff (#36).**
