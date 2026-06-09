@@ -7,7 +7,6 @@
  *
  * Examples:
  *   community: /projects/DEMO?tab=smart-sprint-planner:Smart Sprint Planner
- *   corp:      /projects/DEMO?tab=smart-sprint-planner:Smart Sprint Planner
  *
  * The widget renders in an about:srcdoc iframe (no src attribute).
  * Playwright handles srcdoc frames natively via frameLocator('iframe').
