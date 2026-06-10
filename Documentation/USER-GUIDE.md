@@ -96,7 +96,7 @@ Connecting is done **in project settings** (not in the main menu). Open your pro
 
 To make the project operational and **make it appear in the main-menu planner**, the project admin needs to do **four things**:
 
-1. **Open settings.** In the plugin block, click the **Plugin Settings** gear — a dialog opens with five sections (navigation chips at the top).
+1. **Open settings.** In the plugin block, click the **Plugin Settings** gear — a dialog opens with several sections (navigation list on the left — two-pane layout).
 
 2. **Set the settings manager group — this is the "connection".** In the **Access and roles** section, in the **Settings manager group** field, pick the YouTrack group whose members can change this project's settings. As soon as the group is set, **the project becomes visible in the main-menu planner** — anyone with access to the project in YouTrack can open it. Until the group is set, the project won't appear in the menu, and its settings stay read-only.
 
@@ -629,7 +629,7 @@ At the bottom of the plugin there's a collapsible **Diagnostics** block — all 
 
 ## Appendix A. Full reference of project settings
 
-This is the complete list of settings the project admin configures in the **Plugin Settings** dialog (gear in the header). The dialog is split into five sections by navigation chips at the top.
+This is the complete list of settings the project admin configures in the **Plugin Settings** dialog (gear in the header). The dialog uses a two-pane layout: a navigation list of sections on the left, the active section on the right.
 
 > Most users don't need to go here. This section is for the project configurator.
 
