@@ -4,12 +4,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GitHub Release](https://img.shields.io/badge/GitHub-v2.5.3-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
-[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.1.46-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
+[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.4.45-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
 
-> 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **2.1.46** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
+> 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **2.4.45** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
 
 > 💎 **Like this project?** If it helped your team and you'd like to support
 > its development, donations in any amount are welcome on TON:
@@ -32,8 +32,8 @@ The plugin ships through two parallel channels — pick the one that matches you
 
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.1.46** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.5.3** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (466 unit tests + Playwright) but ships ahead of marketplace review. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.4.45** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.5.3** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested (551 unit tests + Playwright) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
