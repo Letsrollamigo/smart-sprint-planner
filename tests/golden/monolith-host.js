@@ -50,6 +50,7 @@ const BRIDGE_SCRIPTS = [
   'refresh-merge-pure.js',
   'share-url-pure.js',
   'modal-specs.js',
+  'excel-export.js',
 ];
 
 const GM_HOOK = `
