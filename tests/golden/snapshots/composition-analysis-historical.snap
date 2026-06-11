@@ -1,0 +1,127 @@
+{
+  "sortKey": "off",
+  "stickyHeader": true,
+  "emptyText": "Состав спринта пуст. Нажмите «+ Подобрать задачи».",
+  "itemKeys": [
+    "GM-H1",
+    "GM-H2"
+  ],
+  "columns": [
+    {
+      "id": "id",
+      "title": "ID",
+      "sortable": true,
+      "className": "td-id",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-H1</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-H2</a>"
+        }
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Приоритет",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Значительный",
+        "Обычная"
+      ]
+    },
+    {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Исправлена",
+        "Исправлена"
+      ]
+    },
+    {
+      "id": "title",
+      "title": "Название",
+      "sortable": false,
+      "className": "td-title ssp-col-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Историческая задача анализа",
+        "Историческая задача без alloc"
+      ]
+    },
+    {
+      "id": "resource",
+      "title": "Ресурс<br>Анализ",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "0м"
+        },
+        {
+          "html": "10ч"
+        }
+      ]
+    },
+    {
+      "id": "allocation",
+      "title": "Аллокация",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H1\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\" readonly=\"readonly\" tabindex=\"-1\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H2\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\" readonly=\"readonly\" tabindex=\"-1\"/>"
+        }
+      ]
+    },
+    {
+      "id": "incStatus",
+      "title": "Статус<br>включения",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-H1\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\" selected>Включена планово</option><option value=\"INC_UNPLANNED\">Включена внепланово</option><option value=\"INC_EXCLUDED\">Исключена из спринта</option></select>"
+        },
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-H2\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\" selected>Включена планово</option><option value=\"INC_UNPLANNED\">Включена внепланово</option><option value=\"INC_EXCLUDED\">Исключена из спринта</option></select>"
+        }
+      ]
+    },
+    {
+      "id": "delete",
+      "title": "",
+      "sortable": false,
+      "className": "ssp-col-action",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-H1\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        },
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-H2\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        }
+      ]
+    }
+  ]
+}
