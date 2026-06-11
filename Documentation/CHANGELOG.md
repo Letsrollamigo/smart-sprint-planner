@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.5] — 2026-06-11
+
+> **Unified dropdowns in settings (#43, wave 3).**
+
+### Changed
+
+- **Every list in the settings form now uses the standard Ring Select component:** project fields (priority/state/subsystem/sprint/version/role fields), DTA mapping roles, cascade kind field and level values, rollup and stand-up states, languages. Search in long lists (>10 items), one-click value clearing, full keyboard support.
+- **Multi-selects** (cascade, rollup, stand-up) — a dropdown with checkboxes and search; selected values are shown in the select button.
+- **State-rollup order** — a clear, always-visible list with row selection (click/arrows) for the Up/Down/Remove buttons.
+- Semantics preserved 1:1: the `⚠` mark for saved values missing from the project, empty selection, async cascade bundle loading; the saved settings structure is unchanged.
+
+### Known limitations
+
+- The search box inside the dropdown uses the component's default English placeholder ("Filter items"); localization is left for a potential native i18n review.
+
+---
+
 ## [2.5.4] — 2026-06-11
 
 > **Density & empty states (#43, wave 2).**

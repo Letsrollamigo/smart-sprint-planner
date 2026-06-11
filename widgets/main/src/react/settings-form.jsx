@@ -26,17 +26,34 @@ function _btnCls(variant) {
   return b; /* secondary */
 }
 
-/* Один <select> поля проекта: placeholder + список доступных имён по типу +
-   (если сохранённое значение отсутствует в списке) placeholder-⚠, как fillFieldSelect. */
+/* Один селект поля проекта: placeholder + список доступных имён по типу +
+   (если сохранённое значение отсутствует в списке) `⚠`-элемент, как fillFieldSelect.
+   #43 W3 — Ring Select (вендорный, как RingCheckbox в W1); пустой выбор — крестик
+   clear + placeholder; поиск при длинных списках. Фоллбек — прежний нативный. */
 function FieldSelect({ value, onChange, names, placeholder }) {
+  const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
   const list = Array.isArray(names) ? names : [];
   const missing = value && list.indexOf(value) < 0;
+  if (!Select) {
+    return (
+      <select className="app-select" value={value || ''} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{placeholder}</option>
+        {list.map((n) => <option key={n} value={n}>{n}</option>)}
+        {missing ? <option value={value}>{value + ' ⚠'}</option> : null}
+      </select>
+    );
+  }
+  const data = list.map((n) => ({ key: n, label: n }));
+  if (missing) data.push({ key: value, label: value + ' ⚠' });
+  const selected = data.find((d) => d.key === value) || null;
   return (
-    <select className="app-select" value={value || ''} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{placeholder}</option>
-      {list.map((n) => <option key={n} value={n}>{n}</option>)}
-      {missing ? <option value={value}>{value + ' ⚠'}</option> : null}
-    </select>
+    <Select
+      className="ssp-form-select" size="FULL"
+      data={data} selected={selected}
+      clear filter={data.length > 10}
+      label={placeholder || undefined}
+      onSelect={(item) => onChange(item ? String(item.key) : '')}
+    />
   );
 }
 
@@ -201,25 +218,94 @@ function capValues(arr) {
   return out;
 }
 
-/* Нативный multi-select (как legacy <select multiple>). options дополняется
-   значениями из selected, которых в нём нет (поле сменилось — не теряем
-   сохранённый выбор, как _fillCascadeBundleSelect/_fill*Sel).
-   #43 W2 (A-5): дефолтный size адаптивный — короткие списки не резервируют
-   5-6 пустых рядов (3..6 рядов по числу опций; CSS-страховка min/max-height). */
+/* Мульти-выбор. options дополняется значениями из selected, которых в нём нет
+   (поле сменилось — не теряем сохранённый выбор, как _fillCascadeBundleSelect).
+   #43 W3 — Ring Select multiple с поиском (выбранное — в кнопке селекта).
+   Фоллбек — прежний нативный <select multiple> с адаптивным size (W2 A-5). */
 function MultiSelect(props) {
+  const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
   const selected = props.selected || [];
   const opts = (props.options || []).slice();
   selected.forEach((v) => { if (opts.indexOf(v) < 0) opts.push(v); });
+  if (!Select) {
+    return (
+      <select
+        multiple
+        size={props.size || Math.min(Math.max(opts.length, 3), 6)}
+        className="app-select ssp-multiselect"
+        value={selected}
+        onChange={(e) => props.onChange(Array.prototype.slice.call(e.target.selectedOptions).map((o) => o.value))}
+      >
+        {opts.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  }
+  const data = opts.map((o) => ({ key: o, label: o }));
+  const sel = data.filter((d) => selected.indexOf(d.key) >= 0);
   return (
-    <select
-      multiple
-      size={props.size || Math.min(Math.max(opts.length, 3), 6)}
-      className="app-select ssp-multiselect"
-      value={selected}
-      onChange={(e) => props.onChange(Array.prototype.slice.call(e.target.selectedOptions).map((o) => o.value))}
+    <Select
+      className="ssp-form-select" size="FULL"
+      multiple filter
+      data={data} selected={sel}
+      label={props.placeholder || undefined}
+      onChange={(arr) => props.onChange((Array.isArray(arr) ? arr : []).map((x) => String(x.key)))}
+    />
+  );
+}
+
+/* #43 W3 — одиночный Ring Select по парам {key,label} (роль DTA-маппинга, floor
+   rollup, стратегия, языки). clearable — пустой выбор крестиком + placeholder.
+   Фоллбек — нативный <select>. */
+function RingSelLite({ options, value, onChange, placeholder, clearable, disabled }) {
+  const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
+  const opts = options || [];
+  if (!Select) {
+    return (
+      <select className="app-select" value={value || ''} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
+        {(clearable || !value) ? <option value="">{placeholder || ''}</option> : null}
+        {opts.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+      </select>
+    );
+  }
+  const data = opts.map((o) => ({ key: o.key, label: o.label }));
+  const selected = data.find((d) => d.key === value) || null;
+  return (
+    <Select
+      className="ssp-form-select" size="FULL"
+      data={data} selected={selected}
+      clear={!!clearable} disabled={!!disabled}
+      filter={data.length > 10}
+      label={placeholder || undefined}
+      onSelect={(item) => onChange(item ? String(item.key) : '')}
+    />
+  );
+}
+
+/* #43 W3 — листбокс порядка состояний rollup (замена нативного <select size>):
+   порядок должен быть постоянно видим, dropdown не подходит. Клик/стрелки —
+   выбор активного элемента для кнопок Вверх/Вниз/Убрать. */
+function RollupOrderList({ items, selectedIdx, onSelect }) {
+  const list = items || [];
+  const onKey = (e) => {
+    if (!list.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); onSelect(Math.min((selectedIdx < 0 ? -1 : selectedIdx) + 1, list.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); onSelect(Math.max((selectedIdx < 0 ? list.length : selectedIdx) - 1, 0)); }
+  };
+  return (
+    <div
+      className="ssp-rollup-order" role="listbox" tabIndex={0}
+      aria-activedescendant={selectedIdx >= 0 ? 'sspRollupOrd' + selectedIdx : undefined}
+      onKeyDown={onKey}
     >
-      {opts.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
+      {list.map((s, i) => (
+        <div
+          key={i} id={'sspRollupOrd' + i} role="option" aria-selected={i === selectedIdx}
+          className={'ssp-rollup-order__item' + (i === selectedIdx ? ' active' : '')}
+          onClick={() => onSelect(i)}
+        >{s}</div>
+      ))}
+      {!list.length ? <div className="ssp-rollup-order__empty">—</div> : null}
+    </div>
   );
 }
 
@@ -282,10 +368,11 @@ function DtaSection(props) {
                   />
                 </td>
                 <td>
-                  <select className="app-select" value={r.role || ''} onChange={(e) => setRow(i, { role: e.target.value })}>
-                    <option value=""></option>
-                    {roleOpts.map((ro) => <option key={ro.key} value={ro.key}>{uiLang === 'en' ? (ro.labelEn || ro.label) : ro.label}</option>)}
-                  </select>
+                  <RingSelLite
+                    options={roleOpts.map((ro) => ({ key: ro.key, label: uiLang === 'en' ? (ro.labelEn || ro.label) : ro.label }))}
+                    value={r.role || ''} clearable placeholder={t('phNotSelected')}
+                    onChange={(val) => setRow(i, { role: val })}
+                  />
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <button
@@ -324,7 +411,6 @@ function CascadeSection(props) {
   const patch = (p) => set(Object.assign({}, v, p));
   const dangerous = v.agg && !v.forbid;
   const overlap = v.level2.some((x) => v.level3.indexOf(x) >= 0);
-  const kindMissing = v.kindField && enumFields.indexOf(v.kindField) < 0;
   /* Смена kind-field → значения из старого bundle невалидны, чистим level2/3. */
   function changeKind(fname) { patch({ kindField: fname, level2: [], level3: [] }); }
 
@@ -338,20 +424,16 @@ function CascadeSection(props) {
       <div className="form-grid form-grid--2" style={{ marginTop: '14px' }}>
         <div className="field">
           <label>{t('lblCascadeKindField')}</label>
-          <select className="app-select" value={v.kindField || ''} onChange={(e) => changeKind(e.target.value)}>
-            <option value=""></option>
-            {enumFields.map((n) => <option key={n} value={n}>{n}</option>)}
-            {kindMissing ? <option value={v.kindField}>{v.kindField + ' ⚠'}</option> : null}
-          </select>
+          <FieldSelect value={v.kindField || ''} onChange={changeKind} names={enumFields} placeholder={t('phNotSelected')} />
         </div>
       </div>
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblCascadeLevel2')}</label>
-        <MultiSelect options={bundle} selected={v.level2} onChange={(vals) => patch({ level2: vals })} />
+        <MultiSelect options={bundle} selected={v.level2} placeholder={t('phNotSelected')} onChange={(vals) => patch({ level2: vals })} />
       </div>
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblCascadeLevel3')}</label>
-        <MultiSelect options={bundle} selected={v.level3} onChange={(vals) => patch({ level3: vals })} />
+        <MultiSelect options={bundle} selected={v.level3} placeholder={t('phNotSelected')} onChange={(vals) => patch({ level3: vals })} />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
         {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnCascadeLevelsOverlap')}</div> : null}
       </div>
@@ -417,18 +499,12 @@ function StateRollupSection(props) {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <label style={{ fontSize: '12px', color: 'var(--muted)' }}>{t('lblStateRollupBundle')}</label>
-            <MultiSelect options={available} selected={bundleSel} onChange={setBundleSel} size={6} />
+            <MultiSelect options={available} selected={bundleSel} placeholder={t('phNotSelected')} onChange={setBundleSel} size={6} />
             <button type="button" className={_btnCls('secondary')} style={{ marginTop: '4px' }} onClick={addToOrder}>{t('btnStateRollupAdd')}</button>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <label style={{ fontSize: '12px', color: 'var(--muted)' }}>{t('lblStateRollupOrderList')}</label>
-            <select
-              size={6} className="app-select ssp-multiselect" style={{ width: '100%' }}
-              value={orderIdx >= 0 ? String(orderIdx) : ''}
-              onChange={(e) => setOrderIdx(e.target.value === '' ? -1 : parseInt(e.target.value, 10))}
-            >
-              {v.order.map((s, i) => <option key={i} value={String(i)}>{s}</option>)}
-            </select>
+            <RollupOrderList items={v.order} selectedIdx={orderIdx} onSelect={(i) => setOrderIdx(i)} />
             <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
               <button type="button" className={_btnCls('secondary')} onClick={() => move(-1)}>{t('btnStateRollupUp')}</button>
               <button type="button" className={_btnCls('secondary')} onClick={() => move(1)}>{t('btnStateRollupDown')}</button>
@@ -442,24 +518,23 @@ function StateRollupSection(props) {
 
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblStateRollupResolved')}</label>
-        <MultiSelect options={bundle} selected={v.resolved} onChange={(vals) => patch({ resolved: vals })} size={4} />
+        <MultiSelect options={bundle} selected={v.resolved} placeholder={t('phNotSelected')} onChange={(vals) => patch({ resolved: vals })} size={4} />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupResolved')}</div>
       </div>
 
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
         <div className="field">
           <label>{t('lblStateRollupFloor')}</label>
-          <select className="app-select" value={v.floor || ''} onChange={(e) => patch({ floor: e.target.value })}>
-            <option value="">{t('optStateRollupFloorNone')}</option>
-            {v.order.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <RingSelLite
+            options={v.order.map((s) => ({ key: s, label: s }))}
+            value={v.floor || ''} clearable placeholder={t('optStateRollupFloorNone')}
+            onChange={(val) => patch({ floor: val })}
+          />
           <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupFloor')}</div>
         </div>
         <div className="field">
           <label>{t('lblStateRollupStrategy')}</label>
-          <select className="app-select" value="min" disabled onChange={noop}>
-            <option value="min">min</option>
-          </select>
+          <RingSelLite options={[{ key: 'min', label: 'min' }]} value="min" disabled onChange={noop} />
           <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupStrategy')}</div>
         </div>
       </div>
@@ -473,7 +548,7 @@ function StandupSection(props) {
   return (
     <div className="field">
       <label>{t('lblStandupDoneStates')}</label>
-      <MultiSelect options={props.bundleStates || []} selected={props.value || []} onChange={props.onChange} />
+      <MultiSelect options={props.bundleStates || []} selected={props.value || []} placeholder={props.t('phNotSelected')} onChange={props.onChange} />
       <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
     </div>
   );
@@ -975,19 +1050,19 @@ function SettingsForm(props) {
           <div className="form-grid form-grid--2">
             <div className="field">
               <label>{t('lblLang')}</label>
-              <select className="app-select" value={uiLang} onChange={(e) => changeUiLang(e.target.value)}>
-                <option value="ru">{'🇷🇺 RU'}</option>
-                <option value="en">{'🇬🇧 EN'}</option>
-              </select>
+              <RingSelLite
+                options={[{ key: 'ru', label: '🇷🇺 RU' }, { key: 'en', label: '🇬🇧 EN' }]}
+                value={uiLang} onChange={changeUiLang}
+              />
             </div>
             <div className="field">
               <label>{t('lblDefaultLang')}</label>
-              <select className="app-select" value={defaultLang} onChange={(e) => setDefaultLang(e.target.value)}>
-                <option value="">{t('optInheritFromUser') !== 'optInheritFromUser' ? t('optInheritFromUser') : '— inherit from user —'}</option>
-                {(props.defaultLangOptions || [{ value: 'ru', label: 'RU' }, { value: 'en', label: 'EN' }]).map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              <RingSelLite
+                options={(props.defaultLangOptions || [{ value: 'ru', label: 'RU' }, { value: 'en', label: 'EN' }]).map((o) => ({ key: o.value, label: o.label }))}
+                value={defaultLang} clearable
+                placeholder={t('optInheritFromUser') !== 'optInheritFromUser' ? t('optInheritFromUser') : '— inherit from user —'}
+                onChange={setDefaultLang}
+              />
             </div>
           </div>
           <div style={{ marginTop: '12px' }}>
