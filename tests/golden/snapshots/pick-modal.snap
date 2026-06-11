@@ -1,0 +1,56 @@
+{
+  "spec": {
+    "id": "pick",
+    "type": "selection",
+    "dialogClass": "ssp-ring-modal--wide",
+    "title": "Подбор задач в спринт — Анализ",
+    "body": {
+      "kind": "component",
+      "name": "pickPicker",
+      "props": {
+        "labels": {
+          "searchText": "Найти",
+          "placeholder": "Запрос YouTrack (напр. Приоритет: Критичный #unresolved)",
+          "emptyInitial": "Введите запрос и нажмите «Найти»",
+          "searching": "Поиск…",
+          "notFound": "Задачи не найдены",
+          "errorPrefix": "Ошибка: ",
+          "thState": "Состояние",
+          "thTitle": "Название",
+          "thPriority": "Приоритет",
+          "selectAllTitle": "Выбрать все результаты со всех страниц",
+          "alreadyInSprint": "Уже в составе",
+          "pageOf": "Стр. ",
+          "closeText": "Закрыть",
+          "addText": "Добавить выбранные"
+        },
+        "onAssist": "<fn>",
+        "onSearch": "<fn>",
+        "onLoadAll": "<fn>",
+        "onAdd": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": true,
+    "blockEscape": false,
+    "showCloseButton": true,
+    "onClose": "<fn>"
+  },
+  "stateAfterOpen": {
+    "currentPickRole": "analysis",
+    "cacheCleared": true,
+    "fingerprintCleared": true,
+    "inFlightReset": true
+  },
+  "onAddCalls": [
+    {
+      "rk": "analysis",
+      "ids": [
+        "GM-7",
+        "GM-8"
+      ]
+    }
+  ],
+  "cacheResetOnClose": true
+}

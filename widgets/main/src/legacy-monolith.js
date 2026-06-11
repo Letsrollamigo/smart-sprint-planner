@@ -798,6 +798,29 @@
   function localizeEnumVal(s) { return ENUM_PURE.localizeEnumVal(s); }
   function dispEnum(s) { return ENUM_PURE.dispEnum(s, _lang === 'ru'); }
 
+  /* Тир B — фабрики modal-спеков (WC-семейство, closeWc, confirmGoal, dynField,
+     importReplace) вынесены в widgets/main/src/modal-specs.js
+     (window.__SSP_MODAL_SPECS) — паттерн как PERIOD_PURE/UTIL_PURE. Делегаторы
+     у мест исходных деклараций: call-sites и hoisting без изменений; T/openModal
+     и downstream-колбэки инъектируются на вызове. Golden-контракты колбэков —
+     tests/golden/modal-specs.golden.test.js. */
+  var MODAL_SPECS = (typeof window !== 'undefined' && window.__SSP_MODAL_SPECS) || {};
+
+  /* Тир B — Excel-экспорт (AOA-билдеры спринта и конфликта) вынесен в
+     widgets/main/src/excel-export.js (window.__SSP_EXCEL_EXPORT). Делегаторы
+     собирают deps на вызове (живые ссылки ALL_ROLES/ACTIVE_INC + сервисы);
+     XLSX остаётся глобалом (vendored, lazy-load). Golden-оракул —
+     tests/golden/excel.golden.test.js (capture-стаб XLSX). */
+  var EXCEL_EXPORT = (typeof window !== 'undefined' && window.__SSP_EXCEL_EXPORT) || {};
+  function _excelDeps() {
+    return {
+      t: T, toast: toast, diag: diag, loadXLSXLib: loadXLSXLib,
+      allRoles: ALL_ROLES, activeInc: ACTIVE_INC,
+      fmtDate: fmtDate, fmtDT: fmtDT, fmtPeriod: fmtPeriod, fmtHours: fmtHours,
+      statusLabel: statusLabel, roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
+    };
+  }
+
   /* Date-хелперы вынесены в widgets/main/src/date-pure.js (window.__SSP_DATE_PURE) —
      паттерн как PERIOD_PURE. Делегаторы; все чистые (fmtDate/fmtDT — локаль ru-RU).
      toDateIn — локальное время (прежний UTC-дубль удалён). */
@@ -1727,262 +1750,88 @@
   function _blockEq(a, b)  { return HASH_PURE._blockEq(a, b); }
   function _mapById(arr)   { return HASH_PURE._mapById(arr); }
   function _numEq(a, b)    { return HASH_PURE._numEq(a, b); }
-  /* Уровни ре-валидации working copy. Чем глубже правка — тем ниже падает статус. */
+  /* Кластер ре-валидации working copy (уровни ре-валидации, хэш базового снимка,
+     overlimit-чек аллокаций) вынесен в widgets/main/src/revalidation.js
+     (window.__SSP_REVALIDATION) — Тир C. Делегаторы; state-контекст (роли,
+     статусы, доступ к _roleItems, hash-утилиты) собирается в _revalDeps на вызове. */
+  var REVALIDATION = (typeof window !== 'undefined' && window.__SSP_REVALIDATION) || {};
+  function _revalDeps() {
+    return {
+      allRoles: ALL_ROLES, status: STATUS, activeInc: ACTIVE_INC,
+      getRoleItemsArr: getRoleItemsArr, hash: HASH_PURE,
+    };
+  }
   function computeRequiredRevalidationLevel(snap, work) {
-    if (!snap || !work) return 'CONFIRMED_REVAL';
-    var rk   = snap.roleKey;
-    if (!rk) return 'NONE';
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var resK = role ? role.resKey : '';
-    var estK = 'estimate_' + rk;
-    var allK = 'alloc_'    + rk;
-
-    var sMap = _mapById(snap.items || []);
-    var wMap = _mapById(work.items || []);
-    var sIds = Object.keys(sMap), wIds = Object.keys(wMap);
-    var added = wIds.filter(function(id){ return !sMap[id]; });
-    var removed = sIds.filter(function(id){ return !wMap[id]; });
-    if (added.length || removed.length) return 'CONFIRMED_REVAL';
-
-    var allocChanged = false;
-    for (var i = 0; i < wIds.length; i++) {
-      var id = wIds[i], s = sMap[id], w = wMap[id];
-      if (s.inclusionStatus !== w.inclusionStatus) return 'CONFIRMED_REVAL';
-      if (!_numEq(s[estK], w[estK]))               return 'CONFIRMED_REVAL';
-      if (!_numEq(s[allK], w[allK]))               allocChanged = true;
-    }
-    var sRes = (resK && snap[resK] != null) ? snap[resK] : 0;
-    var wRes = (work.sprint && resK && work.sprint[resK] != null) ? work.sprint[resK] : 0;
-    if (!_numEq(sRes, wRes)) allocChanged = true;
-
-    var ws = work.sprint || {};
-    var metaChanged =
-         (snap.name             || null) !== (ws.name             || null)
-      || (snap.dateStart        || null) !== (ws.dateStart        || null)
-      || (snap.dateEnd          || null) !== (ws.dateEnd          || null)
-      || (snap.sprintFieldVal   || null) !== (ws.sprintFieldVal   || null)
-      || (snap.versionFieldVal  || null) !== (ws.versionFieldVal  || null)
-      || !_blockEq(snap.personalPlanning, work.personalPlanning)
-      || !_blockEq(snap.gantt,            work.gantt);
-
-    if (allocChanged) return 'ALLOCATED_REVAL';
-    if (metaChanged)  return 'META_ONLY';
-    return 'NONE';
+    return REVALIDATION.computeRequiredRevalidationLevel(snap, work, _revalDeps());
   }
   function applyRevalidationLevel(currentStatus, level) {
-    if (level === 'CONFIRMED_REVAL') return STATUS.PLANNING;
-    if (level === 'ALLOCATED_REVAL') {
-      return (currentStatus === STATUS.ALLOCATED) ? STATUS.CONFIRMED : currentStatus;
-    }
-    return currentStatus;
+    return REVALIDATION.applyRevalidationLevel(currentStatus, level, _revalDeps());
   }
-
-  /* Стабильный хэш базового снимка по полям, релевантным для diff.
-     НЕ включает confirmedAt/By/revisions/personalPlanning/gantt — изменения этих
-     полей не должны провоцировать conflict-модал. */
   function computeBaseSnapshotHash(snap) {
-    if (!snap) return '';
-    var rk = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var resK = role ? role.resKey : '';
-    var estK = 'estimate_' + rk;
-    var allK = 'alloc_' + rk;
-    var items = (snap.items || []).slice()
-      .sort(function(a, b){ return String(a.issueId||'').localeCompare(String(b.issueId||'')); })
-      .map(function(it){
-        return [it.issueId, it.inclusionStatus || '', (it[estK] != null ? it[estK] : ''), (it[allK] != null ? it[allK] : '')].join('|');
-      })
-      .join(';');
-    var head = [
-      snap.sprintId || '', snap.status || '',
-      snap.name || '', snap.dateStart || 0, snap.dateEnd || 0,
-      (resK && snap[resK] != null ? snap[resK] : 0),
-      snap.sprintFieldVal || '', snap.versionFieldVal || ''
-    ].join('|');
-    return _wcSha1Light(head + '##' + items);
+    return REVALIDATION.computeBaseSnapshotHash(snap, _revalDeps());
   }
 
-  /* ═══ v5.3.0 — Working copy lifecycle ═══ */
-  function createWorkingDraftFromSnapshot(snap, idx) {
-    if (!snap || !snap.sprintId) return null;
-    var key = snap.sprintId;
-    var rk  = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return null;
-    var login = (_currentUser && _currentUser.login) || '';
-    var draft = {
-      schemaVersion:    1,
-      key:              key,
-      baseSnapshotHash: computeBaseSnapshotHash(snap),
-      baseStatusAtOpen: snap.status || STATUS.PLANNING,
-      createdAt:        Date.now(),
-      updatedAt:        Date.now(),
-      editorLogin:      login,
-      editorTabToken:   _thisTabToken,
-      sprint: {
-        sprintId:        snap.sprintId,
-        name:            snap.name || null,
-        dateStart:       snap.dateStart || null,
-        dateEnd:         snap.dateEnd || null,
-        sprintFieldVal:  snap.sprintFieldVal || null,
-        versionFieldVal: snap.versionFieldVal || null
+  /* ═══ v5.3.0 — Working copy lifecycle ═══
+     Стейт-машина рабочих копий (create/resume/discard/commit/restore/save) вынесена в
+     widgets/main/src/working-copy.js (window.__SSP_WORKING_COPY) — Тир C. Делегаторы;
+     контекст собирается в _wcDeps на вызове. Стейт (_workingDrafts/_history/_sprint/
+     _roleItems/_activeWorkingDraftKey/…) остаётся здесь — модуль ходит к нему через
+     аксессоры deps.state. Persistence-инфра (_workingDrafts load/flush/delete/
+     reconcile/gc) и syncWorkingDraftFromMemory остаются здесь же. */
+  var WC = (typeof window !== 'undefined' && window.__SSP_WORKING_COPY) || {};
+  function _wcDeps() {
+    return {
+      t: T, toast: toast, diag: diag,
+      allRoles: ALL_ROLES, status: STATUS, activeInc: ACTIVE_INC, draftVersion: DRAFT_VERSION,
+      deepClone: deepClone, apiGet: apiGet, apiPost: apiPost,
+      getRoleItemsArr: getRoleItemsArr, calcRemForRole: calcRemForRole,
+      isActiveSprintRecord: isActiveSprintRecord,
+      computeBaseSnapshotHash: computeBaseSnapshotHash,
+      computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
+      applyRevalidationLevel: applyRevalidationLevel,
+      workingDraftsScheduleFlush: _workingDraftsScheduleFlush,
+      workingDraftsDeleteOnBackend: _workingDraftsDeleteOnBackend,
+      draftGet: _draftGet, draftSet: _draftSet, markClean: _markClean,
+      showDiscardConfirmModal: showDiscardConfirmModal,
+      showWorkingCopyConflictModal: showWorkingCopyConflictModal,
+      exportConflictToExcel: exportConflictToExcel,
+      hideWorkingCopyBanner: hideWorkingCopyBanner,
+      renderWorkingCopyBanner: renderWorkingCopyBanner,
+      renderPlanningRoles: renderPlanningRoles,
+      renderRolePlannerHeader: renderRolePlannerHeader,
+      renderRoleComposition: renderRoleComposition,
+      updateRoleRemaining: updateRoleRemaining,
+      renderHistory: renderHistory,
+      renderPlannerRoles: renderPlannerRoles,
+      renderWidgetHeader: renderWidgetHeader,
+      state: {
+        getWorkingDrafts: function () { return _workingDrafts; },
+        getHistory: function () { return _history; },
+        getSprint: function () { return _sprint; },
+        setSprint: function (s) { _sprint = s; },
+        getRoleItems: function () { return _roleItems; },
+        setRoleItems: function (r) { _roleItems = r; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        setActiveWorkingDraftKey: function (k) { _activeWorkingDraftKey = k; },
+        getCurrentUser: function () { return _currentUser; },
+        getThisTabToken: function () { return _thisTabToken; },
+        getSettings: function () { return _settings; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+        setCurrentRolePP: function (v) { _currentRolePP = v; },
+        setCurrentRoleGantt: function (v) { _currentRoleGantt = v; },
+        setCurrentRoleNkcKey: function (v) { _currentRoleNkcKey = v; },
+        getBaseRevHash: function () { return _baseRevHash; },
+        setDraftRestoreInProgress: function (b) { _draftRestoreInProgress = b; },
+        getLang: function () { return _lang; },
+        getUiExpandedRoles: function () { return (typeof _uiExpandedRoles !== 'undefined') ? _uiExpandedRoles : undefined; },
       },
-      items: (snap.items || []).map(function(it){
-        var copy = {};
-        Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-        return copy;
-      }),
-      personalPlanning: snap.personalPlanning ? deepClone(snap.personalPlanning) : null,
-      gantt:            snap.gantt            ? deepClone(snap.gantt)            : null,
-      revisions:        (snap.revisions || []).slice()
     };
-    /* Скопировать ёмкость роли (resource<Role>) */
-    if (role.resKey) draft.sprint[role.resKey] = (snap[role.resKey] != null ? snap[role.resKey] : 0);
-
-    _workingDrafts[key] = draft;
-    if (idx != null && _history[idx]) {
-      _history[idx].hasWorkingCopy = true;
-      apiPost('history', { history: _history }).catch(function(){});
-    }
-    _workingDraftsScheduleFlush();
-    return draft;
   }
-
-  function resumeWorkingDraft(key, idx) {
-    var draft = _workingDrafts[key];
-    if (!draft) return;
-    var rk = (draft.items && draft.items.length) ? null : null;
-    /* Извлекаем roleKey из ключа: '<sprintId>_<roleKey>'. */
-    var snap = _history.find(function(s){ return s && s.sprintId === key; });
-    if (!snap) {
-      diag('resumeWorkingDraft: base snap not found for key='+key, 'err');
-      return;
-    }
-    rk = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return;
-
-    _activeWorkingDraftKey = key;
-
-    /* Загрузить данные working copy в активный _sprint и _roleItems[rk]. */
-    _sprint = _sprint || {};
-    _sprint.sprintId        = key.replace('_' + rk, '');
-    _sprint.name            = draft.sprint.name;
-    _sprint.dateStart       = draft.sprint.dateStart;
-    _sprint.dateEnd         = draft.sprint.dateEnd;
-    _sprint.sprintFieldVal  = draft.sprint.sprintFieldVal;
-    _sprint.versionFieldVal = draft.sprint.versionFieldVal;
-    _sprint.status          = STATUS.PLANNING;  /* в working copy всегда PLANNING (lock-bypass) */
-    /* Все resource<Role> копируются */
-    ALL_ROLES.forEach(function(r){
-      if (draft.sprint[r.resKey] != null) _sprint[r.resKey] = draft.sprint[r.resKey];
-    });
-    /* Legacy флаги стираем — больше не нужны */
-    delete _sprint.editingFromHistory;
-    delete _sprint.historyIdx;
-
-    _roleItems[rk] = (draft.items || []).map(function(it){
-      var copy = {};
-      Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-      return copy;
-    });
-    /* v1.9.3 D134 — Etap О.2/П.2 fix: контаминация составов других ролей.
-       До v1.9.3 _roleItems[otherRk] оставался от предыдущего контекста (другой
-       спринт / роль), потому что resumeWorkingDraft грузил из draft только
-       активную rk. Симптом: открываешь на правку спринт А роль X → состав X
-       корректный (из draft), но спойлеры ролей Y и Z в Planning показывали
-       составы из спринта Б (что было активно до).
-
-       Источник истины для других ролей при открытии исторического спринта на
-       правку — последний history snapshot этого же sprintId для каждой роли.
-       Если snapshot отсутствует (роль никогда не редактировалась в спринте) —
-       пустой массив (а не stale данные предыдущего контекста).
-
-       Cherry-pick из proprietary v7.3.2 Этап П.2. */
-    var _sprintIdForOthers = _sprint.sprintId;
-    ALL_ROLES.forEach(function(r) {
-      if (r.key === rk) return; // активную роль уже загрузили выше из draft
-      var otherSnapId = _sprintIdForOthers + '_' + r.key;
-      var otherSnap = Array.isArray(_history)
-        ? _history.find(function(h){ return h && h.sprintId === otherSnapId; })
-        : null;
-      if (otherSnap && Array.isArray(otherSnap.items)) {
-        _roleItems[r.key] = otherSnap.items.map(function(it){
-          var copy = {};
-          Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-          return copy;
-        });
-      } else {
-        _roleItems[r.key] = [];
-      }
-    });
-    if (draft.personalPlanning) _sprint.personalPlanning = deepClone(draft.personalPlanning);
-    if (draft.gantt)            _sprint.gantt            = deepClone(draft.gantt);
-
-    /* Sync на бэкенд _sprint+_roleItems */
-    apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems })
-      .catch(function(e){ diag('resumeWorkingDraft: sprint-data sync failed: '+(e&&e.message?e.message:e),'err'); });
-
-    /* v5.6.0 — Этап 4 (4c): переключение на tab-planning > Роли + раскрытие accordion-карточки.
-       Legacy tab-planner и subtabs физически удалены. */
-    var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
-    if (planBtn) planBtn.click();
-    var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
-    if (rolesBtn) rolesBtn.click();
-    if (typeof _uiExpandedRoles !== 'undefined') {
-      _uiExpandedRoles[rk] = true;
-      var ui = _draftGet('ui') || {};
-      ui.expandedRoles = Object.keys(_uiExpandedRoles).filter(function(k){ return _uiExpandedRoles[k]; });
-      _draftSet('ui', ui);
-    }
-    if (typeof renderPlanningRoles === 'function') {
-      try { renderPlanningRoles(); } catch(e){ diag('renderPlanningRoles err: '+e,'err'); }
-    }
-
-    if (typeof renderWorkingCopyBanner === 'function') renderWorkingCopyBanner();
-    if (typeof renderRolePlannerHeader === 'function') renderRolePlannerHeader(rk);
-    if (typeof renderRoleComposition  === 'function') renderRoleComposition(rk);
-    if (typeof updateRoleRemaining    === 'function') updateRoleRemaining(rk);
-    if (typeof renderHistory          === 'function') renderHistory();
-  }
-
-  function discardWorkingDraft(key) {
-    if (typeof showDiscardConfirmModal === 'function') {
-      showDiscardConfirmModal(key, function(confirmed){
-        if (!confirmed) return;
-        _doDiscardWorkingDraft(key);
-      });
-    } else {
-      _doDiscardWorkingDraft(key);
-    }
-  }
-  function _doDiscardWorkingDraft(key) {
-    delete _workingDrafts[key];
-    var idx = _history.findIndex(function(s){ return s && s.sprintId === key; });
-    if (idx >= 0) {
-      _history[idx].hasWorkingCopy = false;
-      apiPost('history', { history: _history }).catch(function(){});
-    }
-    _workingDraftsDeleteOnBackend(key);
-    if (_activeWorkingDraftKey === key) {
-      _activeWorkingDraftKey = null;
-      if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-      /* Перезагрузить активный спринт */
-      apiGet('sprint-data').then(function(r){
-        if (r && r.success) {
-          _sprint    = r.sprint    || null;
-          _roleItems = r.roleItems || {};
-          /* v5.9.0 — D59: orphans из backend. */
-          if (_sprint && Array.isArray(r.orphanGanttIssues) && r.orphanGanttIssues.length) {
-            _sprint._orphanGanttIssues = r.orphanGanttIssues;
-          }
-          if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
-        }
-      }).catch(function(){});
-    }
-    if (typeof renderHistory === 'function') renderHistory();
-    try { toast(T('wcDiscardedToast'), 'info'); } catch(_){}
-  }
+  function createWorkingDraftFromSnapshot(snap, idx) { return WC.createWorkingDraftFromSnapshot(snap, idx, _wcDeps()); }
+  function resumeWorkingDraft(key, idx) { return WC.resumeWorkingDraft(key, idx, _wcDeps()); }
+  function discardWorkingDraft(key) { return WC.discardWorkingDraft(key, _wcDeps()); }
+  function _doDiscardWorkingDraft(key) { return WC._doDiscardWorkingDraft(key, _wcDeps()); }
 
   function syncWorkingDraftFromMemory(rk) {
     if (!_activeWorkingDraftKey) return;
@@ -2013,63 +1862,9 @@
     if (typeof renderWorkingCopyBanner === 'function') renderWorkingCopyBanner();
   }
 
-  /* Commit working copy → overwrite базового snap + revisions[].
-     Уровень ре-валидации применяется к статусу. */
+  /* Commit working copy → overwrite базового snap + revisions[] — вынесен в working-copy.js. */
   function _commitWorkingCopy(rk, idx, draft, snapFromCurrent) {
-    var baseSnap = _history[idx];
-    if (!baseSnap) return;
-    var level = computeRequiredRevalidationLevel(baseSnap, draft);
-    var newStatus = applyRevalidationLevel(baseSnap.status, level);
-    diag('[COMMIT-WC] role='+rk+' baseStatus='+baseSnap.status+' level='+level+' newStatus='+newStatus+' snapFromStatus='+(snapFromCurrent&&snapFromCurrent.status), 'info');
-    var finalSnap = snapFromCurrent;
-    finalSnap.status = newStatus;
-    if (level !== 'NONE' && level !== 'META_ONLY') {
-      finalSnap.confirmedAt = Date.now();
-      finalSnap.confirmedBy = (_currentUser && (_currentUser.fullName || _currentUser.login)) || baseSnap.confirmedBy || '';
-    } else {
-      finalSnap.confirmedAt = baseSnap.confirmedAt;
-      finalSnap.confirmedBy = baseSnap.confirmedBy;
-    }
-    /* v1.8.1 — не записывать revision с level='NONE' (no-op commit без реальных изменений).
-       Ранее: при closing working copy без правок level='NONE' приводил к invalid_history_structure
-       (backend whitelist его отвергал). Теперь добавляем revision ТОЛЬКО для значимых уровней. */
-    var newRevisions = (baseSnap.revisions || []).slice();
-    if (level !== 'NONE') {
-      newRevisions.push({
-        at:    Date.now(),
-        by:    (_currentUser && _currentUser.login) || '',
-        level: level
-      });
-    }
-    finalSnap.revisions = newRevisions.slice(-200);  /* лимит 200 ревизий — защита от runaway */
-    finalSnap.hasWorkingCopy = false;
-    if (baseSnap.finishedAt) finalSnap.finishedAt = baseSnap.finishedAt;
-    if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
-
-    _history[idx] = finalSnap;
-    delete _workingDrafts[draft.key];
-    _workingDraftsScheduleFlush();
-    _workingDraftsDeleteOnBackend(draft.key);
-    _activeWorkingDraftKey = null;
-
-    if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-
-    return apiPost('history', { history: _history }).then(function(){
-      if (typeof renderHistory === 'function') renderHistory();
-      if (typeof renderRoleComposition === 'function') renderRoleComposition(rk);
-      /* v1.8.1 — после commit working copy шапка должна пересчитаться, иначе
-         бейдж в main-виджете висит на старом статусе (например "Черновик"), даже
-         когда таблица истории уже показывает новый (CONFIRMED/ALLOCATED). */
-      if (typeof renderWidgetHeader === 'function') {
-        try { renderWidgetHeader(); } catch(_){}
-      }
-      try {
-        var statusLabelKey = 'status_' + newStatus;
-        var levelKey       = 'wcLevel_' + level;
-        toast(T('wcRevalidatedToast').replace('{status}', T(statusLabelKey)).replace('{level}', T(levelKey)),
-              level === 'CONFIRMED_REVAL' ? 'warn' : 'info');
-      } catch(_){}
-    });
+    return WC._commitWorkingCopy(rk, idx, draft, snapFromCurrent, _wcDeps());
   }
 
   /* ═══ v5.3.0 — UI: working copy banner ═══ */
@@ -2157,66 +1952,19 @@
     });
   }
 
-  /* Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog).
-     Callback-контракты сохранены: conflict → 'overwrite'|'export'|'cancel'; multiTab/discard → boolean.
-     onClose гарантирует ровно один вызов callback на любом закрытии (кнопка/Escape). */
+  /* Phase 2 #32 — WC-семейство мигрировано на openModal(); Тир B — тела вынесены
+     в modal-specs.js. Callback-контракты сохранены: conflict → 'overwrite'|'export'|'cancel';
+     multiTab/discard → boolean; onClose гарантирует ровно один вызов callback. */
   function showWorkingCopyConflictModal(key, baseSnap, mySnap, callback) {
-    var cb = callback || function(){};
-    var who = (baseSnap && baseSnap.confirmedBy) || '?';
-    var decided = null;
-    openModal({
-      id: 'wcConflict',
-      type: 'confirm',
-      title: T('wcConflictTitle'),
-      body: { kind: 'text', text: T('wcConflictBody').replace('{who}', who) },
-      buttons: [
-        { id: 'overwrite', text: T('wcConflictOverwrite'), variant: 'danger',    onClick: function(h){ decided = 'overwrite'; h.close(); } },
-        { id: 'export',    text: T('wcConflictExportBoth'), variant: 'secondary', onClick: function(h){ decided = 'export';    h.close(); } },
-        { id: 'cancel',    text: T('wcConflictCancel'),     variant: 'primary',   onClick: function(h){ decided = 'cancel';    h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ cb(decided || 'cancel'); },   /* Escape/backdrop → безопасный 'cancel' */
-    });
+    return MODAL_SPECS.showWorkingCopyConflictModal(key, baseSnap, mySnap, callback, { t: T, openModal: openModal });
   }
 
   function showMultiTabConflictModal(key, callback) {
-    var cb = callback || function(){};
-    var decided = null;
-    openModal({
-      id: 'wcMultiTab',
-      type: 'informational',
-      title: T('wcMultiTabTitle'),
-      body: { kind: 'text', text: T('wcMultiTabBody') },
-      buttons: [
-        { id: 'continue', text: T('wcMultiTabContinue'), variant: 'primary',   onClick: function(h){ decided = true;  h.close(); } },
-        { id: 'readonly', text: T('wcMultiTabReadonly'), variant: 'secondary', onClick: function(h){ decided = false; h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: true,                                  /* no-escape: системно-блокирующая */
-      showCloseButton: false,
-      onClose: function(){ if (decided !== null) cb(decided); },  /* только явный выбор */
-    });
+    return MODAL_SPECS.showMultiTabConflictModal(key, callback, { t: T, openModal: openModal });
   }
 
   function showDiscardConfirmModal(key, callback) {
-    var cb = callback || function(){};
-    var confirmed = false;
-    openModal({
-      id: 'wcDiscard',
-      type: 'destructive',
-      title: T('wcDiscardConfirmTitle'),
-      body: { kind: 'text', text: T('wcDiscardConfirmBody') },
-      buttons: [
-        { id: 'confirm', text: T('wcDiscard'), variant: 'danger',  onClick: function(h){ confirmed = true;  h.close(); } },
-        { id: 'cancel',  text: T('btnNo'),     variant: 'primary', onClick: function(h){ confirmed = false; h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ cb(confirmed); },              /* Escape/backdrop → false (отмена, безопасно) */
-    });
+    return MODAL_SPECS.showDiscardConfirmModal(key, callback, { t: T, openModal: openModal });
   }
 
   /* Wire-up button handlers (idempotent — guard через _sspBound) */
@@ -2470,82 +2218,9 @@
     }, 0);
   }
 
-  /* v5.7.0 — KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» /
-     «Ваша рабочая копия» + diff-маркер в отдельной колонке. Background-fill в SheetJS
-     community edition не поддерживается на запись (требует xlsx-js-style fork),
-     поэтому используем текстовый маркер «Δ» в первой колонке и легенду в meta. */
+  /* Тир B — тело в excel-export.js (buildConflictAOA); AOA 1:1, текстовый Δ-маркер. */
   function _buildConflictAOA(snap, otherSnap) {
-    var rk = snap && snap.roleKey;
-    var role = rk ? ALL_ROLES.find(function(r){ return r.key === rk; }) : null;
-    var roleName = role ? roleLabel(role) : (rk || '—');
-    var pp = (snap && snap.personalPlanning) || null;
-    var ppRole = (pp && rk && pp[rk]) ? pp[rk] : null;
-    var ta = (ppRole && ppRole.taskAssignments) || {};
-    /* Зеркальные данные другой стороны для diff-сравнения */
-    var otherPP = (otherSnap && otherSnap.personalPlanning) || null;
-    var otherPPRole = (otherPP && rk && otherPP[rk]) ? otherPP[rk] : null;
-    var otherTA = (otherPPRole && otherPPRole.taskAssignments) || {};
-
-    var meta = [
-      [T('excelSprintName'),      snap && snap.name || '—'],
-      [T('excelRole'),            roleName],
-      [T('excelPeriod'),          (snap && snap.dateStart ? fmtDate(snap.dateStart) : '—') + ' — ' + (snap && snap.dateEnd ? fmtDate(snap.dateEnd) : '—')],
-      [T('excelStatus'),          (snap && snap.status) ? statusLabel(snap.status) : '—'],
-      [T('excelDiffHighlightLegend')], /* строка-легенда */
-      []
-    ];
-    /* v6.1.0 D78 (F1, OQ76 default) — добавлены Факт и Ресурс для consistency с основным экспортом. */
-    var header = ['Δ', T('excelColId'), T('excelColTitle'), T('excelColInclusion'),
-                  T('excelColEstimate'), T('excelColFact'), T('excelColResource'), T('excelColAlloc'),
-                  T('excelColAssignee'), T('excelColStartDate') || 'Старт', T('excelColEndDate') || 'Финиш'];
-    function minToH(m){ return m != null ? Math.round(m/60*100)/100 : ''; }
-    function tsToD(ts){ return ts ? fmtDate(ts) : ''; }
-    var items = (snap && snap.items) || [];
-    var rows = items.map(function(item) {
-      var iid = item.issueId || '';
-      var taE = ta[iid] || {};
-      var oE  = otherTA[iid] || {};
-      /* Сравниваем ключевые поля: estimate, alloc, inclusion, assignee, dates.
-         Если хоть одно отличается — Δ. Также сравниваем сам факт наличия item у второй стороны. */
-      var otherItem = (otherSnap && otherSnap.items) ? otherSnap.items.find(function(x){ return x && x.issueId === iid; }) : null;
-      var diffParts = [];
-      if (!otherItem) diffParts.push('item');
-      else {
-        if ((item['estimate_'+rk]||0) !== (otherItem['estimate_'+rk]||0)) diffParts.push('est');
-        if ((item['alloc_'+rk]) !== (otherItem['alloc_'+rk])) diffParts.push('alloc');
-        if ((item.inclusionStatus||'') !== (otherItem.inclusionStatus||'')) diffParts.push('incl');
-      }
-      if ((taE.assignee||'') !== (oE.assignee||'')) diffParts.push('assignee');
-      if ((taE.dateStart||0) !== (oE.dateStart||0)) diffParts.push('start');
-      if ((taE.dateEnd||0)   !== (oE.dateEnd||0))   diffParts.push('end');
-      var diff = diffParts.length ? ('Δ ' + diffParts.join(',')) : '';
-      var resourceMin = Math.max(0, (item['estimate_'+rk]||0) - (item['fact_'+rk]||0));
-      var allocRaw = item['alloc_'+rk];
-      var allocMin = (allocRaw !== null && allocRaw !== undefined) ? allocRaw : resourceMin;
-      return [
-        diff,
-        iid,
-        item.title || '',
-        item.inclusionStatus ? incLabel(item.inclusionStatus) : '',
-        minToH(item['estimate_'+rk]),
-        minToH(item['fact_'+rk]),
-        minToH(resourceMin),
-        minToH(allocMin),
-        taE.assigneeName || taE.assignee || '',
-        tsToD(taE.dateStart),
-        tsToD(taE.dateEnd)
-      ];
-    });
-    /* Также добавим строки для items, которые есть только в other (orphan на этой стороне) */
-    var ourIds = {};
-    items.forEach(function(it){ if (it && it.issueId) ourIds[it.issueId] = true; });
-    var otherItems = (otherSnap && otherSnap.items) || [];
-    otherItems.forEach(function(it){
-      if (!it || !it.issueId) return;
-      if (ourIds[it.issueId]) return;
-      rows.push(['Δ missing', it.issueId, it.title || '', '', '', '', '', '', '', '', '']);
-    });
-    return meta.concat([header]).concat(rows);
+    return EXCEL_EXPORT.buildConflictAOA(snap, otherSnap, _excelDeps());
   }
 
   function exportConflictToExcel(baseSnap, mySnap) {
@@ -2811,53 +2486,7 @@
 
   /* v5.0.3 — Восстановление черновика из localStorage в state.
      Вызывается из init после loadAllData, до рендера UI. */
-  function restoreDraftIfAny() {
-    var meta = _draftGet('meta');
-    if (!meta) { diag('draft: no meta in localStorage','info'); return; }
-    diag('draft: meta found, savedAt='+meta.savedAt+' version='+meta.version+' baseRevHash='+meta.baseRevHash, 'info');
-    if (meta.version !== DRAFT_VERSION) {
-      diag('draft: schema version mismatch, ignoring', 'info');
-      return;
-    }
-    var dirty = _draftGet('dirty') || {};
-    var hasAny = !!(dirty.sprint || dirty.roleItems || dirty.currentRole);
-    diag('draft: dirty='+JSON.stringify(dirty)+' hasAny='+hasAny, 'info');
-    if (!hasAny) return;
-    /* Конфликт: серверная версия изменилась — не накатываем черновик, чтобы не затереть чужие правки */
-    if (meta.baseRevHash && meta.baseRevHash !== _baseRevHash) {
-      try { toast(T('toastDraftStale'), 'warn'); } catch(_){}
-      _markClean('sprint'); _markClean('roleItems'); _markClean('currentRole');
-      diag('draft: stale, skipping restore (serverHash='+_baseRevHash+', draftBase='+meta.baseRevHash+')', 'info');
-      return;
-    }
-    _draftRestoreInProgress = true;
-    try {
-      if (dirty.sprint) {
-        var d = _draftGet('sprint');
-        if (d && typeof d === 'object') _sprint = d;
-      }
-      if (dirty.roleItems) {
-        var dr = _draftGet('roleItems');
-        if (dr && typeof dr === 'object') _roleItems = dr;
-      }
-      if (dirty.currentRole) {
-        var dd = _draftGet('currentRole');
-        if (dd && typeof dd === 'object') {
-          _currentRolePP    = dd.pp    || null;
-          _currentRoleGantt = dd.gantt || null;
-          if (dd.nkcKey) _currentRoleNkcKey = dd.nkcKey;
-          /* _currentSprintRoleRec восстанавливается через ui.distribSprintId в restoreUiState */
-        }
-      }
-      var ts;
-      try { ts = new Date(meta.savedAt).toLocaleString(_lang === 'en' ? 'en-US' : 'ru-RU'); }
-      catch(_) { ts = String(meta.savedAt); }
-      try { toast(T('toastDraftRestored').replace('{ts}', ts), 'info'); } catch(_){}
-      diag('draft: restored sections '+JSON.stringify(dirty), 'ok');
-    } finally {
-      _draftRestoreInProgress = false;
-    }
-  }
+  function restoreDraftIfAny() { return WC.restoreDraftIfAny(_wcDeps()); }
 
   /* ════ #25 Ф2 — каркас дашборда (рельс + пейн), ТОЛЬКО global-режим ════
      _buildGlobalDashShell строит .ssp-dash (grid) единожды на init при _mode==='global'
@@ -3216,110 +2845,38 @@
     return resource - used;
   }
 
-  /* ═══ Backend API ══════════════════════════════════════════ */
-  /* #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global →
-     backend-global + projectKey (query нормализуется: путь может нести встроенный
-     '?a=b', раскладываем в единый объект query — без двойного '?'). */
-  function _backendCall(path, baseOpts) {
-    baseOpts = baseOpts || {};
-    if (_mode !== 'global') {
-      baseOpts.scope = true;
-      return _host.fetchApp('backend-project/' + path, baseOpts);
-    }
-    var q = {};
-    var qi = path.indexOf('?');
-    var cleanPath = path;
-    if (qi >= 0) {
-      cleanPath = path.slice(0, qi);
-      path.slice(qi + 1).split('&').forEach(function (pair) {
-        if (!pair) return;
-        var kv = pair.split('=');
-        q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
-      });
-    }
-    if (baseOpts.query) {
-      Object.keys(baseOpts.query).forEach(function (k) { q[k] = baseOpts.query[k]; });
-    }
-    q.projectKey = _activeProjectKey;
-    baseOpts.query = q;
-    return _host.fetchApp('backend-global/' + cleanPath, baseOpts);
+  /* ═══ Backend API ══════════════════════════════════════════
+     IO-слой вынесен в widgets/main/src/youtrack-api.js (window.__SSP_YOUTRACK_API) —
+     Тир C. Делегаторы; контекст собирается в _ytApiDeps на вызове. Стейт
+     (_mode/_activeProjectKey — роутинг #25 Ф1; _sprint/_activeWorkingDraftKey/
+     _activeSubtab/_currentSprintRoleRec/_history — save-сайд-эффекты apiPost;
+     _ganttStateHist — кэш Ганта #20) остаётся здесь — модуль ходит к нему через
+     аксессоры deps.state. */
+  var YT_API = (typeof window !== 'undefined' && window.__SSP_YOUTRACK_API) || {};
+  function _ytApiDeps() {
+    return {
+      diag: diag, host: _host, STATUS: STATUS, settings: _settings,
+      markSavedAndCleanup: markSavedAndCleanup,
+      saveRoleHistorySnapshot: saveRoleHistorySnapshot,
+      updateGanttHistDOM: _updateGanttHistDOM,
+      getGanttContainer: function () { return document.getElementById('ganttContainer'); },
+      state: {
+        getMode: function () { return _mode; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        getSprint: function () { return _sprint; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        setCurrentSprintRoleRec: function (r) { _currentSprintRoleRec = r; },
+        getHistory: function () { return _history; },
+        getGanttStateHist: function () { return _ganttStateHist; },
+        setGanttStateHist: function (o) { _ganttStateHist = o; },
+      },
+    };
   }
-
-  function apiGet(path) {
-    diag('GET ' + path + ' [' + _mode + ']');
-    return _backendCall(path, {})
-      .then(function(r){ diag('OK ' + path, 'ok'); return r; })
-      .catch(function(e){ diag('ERR ' + path + ': ' + (e&&e.message?e.message:e), 'err'); throw e; });
-  }
-
-  function apiPost(path, body, query) {
-    diag('POST ' + path + ' [' + _mode + ']');
-    var opts = { method: 'POST', body: body };
-    if (query && typeof query === 'object') opts.query = query;
-    return _backendCall(path, opts)
-      .then(function(r){
-        /* v5.0.3 — backend всегда отвечает JSON-ом с полем success.
-           Если success=false — это валидационная ошибка (status 400) или auth_required.
-           fetchApp может resolve-ить в обоих случаях, поэтому проверяем явно
-           и пробрасываем как rejected promise, чтобы wrapper НЕ помечал save успешным
-           (раньше markSavedAndCleanup вызывался на 400 → sprint-данные считались
-           сохранёнными, хотя сервер их отверг). */
-        if (r && r.success === false) {
-          var reason = (r && (r.reason || r.error)) || 'unknown_error';
-          diag('ERR ' + path + ': server returned success=false reason='+reason, 'err');
-          throw new Error(reason);
-        }
-        diag('OK ' + path, 'ok');
-        /* v5.0.3 — после успешного сохранения снять dirty + обновить snapshot/baseRevHash */
-        try {
-          if (path === 'sprint-data' && body) {
-            if (body.sprint    !== undefined) markSavedAndCleanup('sprint');
-            if (body.roleItems !== undefined) markSavedAndCleanup('roleItems');
-            /* v5.0.3 — динамический upsert в историю даже при PLANNING/PLANNED.
-               Пропускаем для:
-               - action=validate (там есть свой явный saveRoleHistorySnapshot после валидации)
-               - settings save (это конфигурация, не данные спринта)
-               - FINISHED-спринтов (исторические записи неизменны)
-               - отсутствия активной подвкладки/спринта
-               - активной рабочей копии (B-fix): при активном _activeWorkingDraftKey
-                 пассивный auto-снапшот зовёт saveRoleHistorySnapshot, который видит
-                 _activeWorkingDraftKey===snapKey и НЕМЕДЛЕННО коммитит+удаляет только что
-                 созданную рабочую копию (resumeWorkingDraft постит sprint-data при открытии).
-                 Правки рабочей копии и так персистятся в черновик через
-                 _markDirty→syncWorkingDraftFromMemory; commit рабочей копии — только явный
-                 (Validate/Save → прямой saveRoleHistorySnapshot/_commitWorkingCopy). */
-            var isValidate    = query && query.action === 'validate';
-            var hasSprintData = body.sprint !== undefined || body.roleItems !== undefined;
-            if (hasSprintData && !isValidate
-                && _sprint && _sprint.sprintId
-                && _sprint.status !== STATUS.FINISHED
-                && !_activeWorkingDraftKey
-                && _activeSubtab) {
-              try {
-                /* fire-and-forget — игнорируем ошибки, не блокируем основной save */
-                saveRoleHistorySnapshot(_activeSubtab).catch(function(e){
-                  diag('auto-snapshot history failed: '+(e&&e.message?e.message:e),'err');
-                });
-              } catch(_){}
-            }
-          } else if (path === 'history') {
-            markSavedAndCleanup('currentRole');
-            /* v5.0.3 (итерация 5) — после успешного POST history (обычно auto-snapshot)
-               обновлённая запись в _history имеет ту же sprintId, что и _currentSprintRoleRec.
-               Перепривязываем _currentSprintRoleRec на новую ссылку, чтобы distrib-таблица
-               видела свежие items/personalPlanning. */
-            try {
-              if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && Array.isArray(_history)) {
-                var freshRec = _history.find(function(h){ return h.sprintId === _currentSprintRoleRec.sprintId; });
-                if (freshRec && freshRec !== _currentSprintRoleRec) _currentSprintRoleRec = freshRec;
-              }
-            } catch(_){}
-          }
-        } catch(_){}
-        return r;
-      })
-      .catch(function(e){ diag('ERR ' + path + ': ' + (e&&e.message?e.message:e), 'err'); throw e; });
-  }
+  function _backendCall(path, baseOpts) { return YT_API._backendCall(path, baseOpts, _ytApiDeps()); }
+  function apiGet(path) { return YT_API.apiGet(path, _ytApiDeps()); }
+  function apiPost(path, body, query) { return YT_API.apiPost(path, body, query, _ytApiDeps()); }
 
   /* ═══ Инициализация ════════════════════════════════════════ */
   /* v5.0.3 (итерация 5) — timing-логи + retry для YTApp.register().
@@ -6588,42 +6145,11 @@
      existingOutcome — pre-select radio если outcome уже был записан ранее (re-finish flow).
      Возвращает Promise<{goalOutcome, goalRetroNote}|null>.
      null — пользователь нажал Отмена (спринт не завершается). */
+  /* Phase 2 #32 — мигрировано на openModal(); Тир B — тело в modal-specs.js.
+     Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
+     resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
   function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
-    return new Promise(function(resolve) {
-      /* Phase 2 #32 — мигрировано на openModal() (bespoke confirmGoalForm, настоящий React).
-         Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
-         resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
-      if (!window.__SSP_RING_MODAL) { resolve({ goalOutcome: 'achieved', goalRetroNote: '' }); return; }
-      var result = null;   /* null = отмена/escape; объект = подтверждение */
-      var h = openModal({
-        id: 'confirmGoal',
-        type: 'form',
-        title: T('dialogConfirmGoalTitle'),
-        body: { kind: 'component', name: 'confirmGoalForm', props: {
-          goalText: sprintGoalText || '',
-          goalLabel: T('histGoalLabel'),
-          goalNotSetText: T('histGoalNotSet'),
-          outcomeLabel: T('lblGoalOutcome'),
-          options: [
-            { value: 'achieved', label: T('optGoalAchieved') || '✅ Достигнута' },
-            { value: 'partial',  label: T('optGoalPartial')  || '⚖ Частично' },
-            { value: 'missed',   label: T('optGoalMissed')   || '❌ Не достигнута' },
-          ],
-          existingOutcome: existingOutcome || '',
-          retroLabel: T('lblGoalRetroNote'),
-          retroPlaceholder: T('phGoalRetroNote'),
-          cancelText: T('btnCancelGoal'),
-          confirmText: T('btnConfirmGoal'),
-          onConfirm: function(vals){ result = vals; h.close(); },
-          onCancel: function(){ result = null; h.close(); },
-        }},
-        buttons: [],
-        dismissOnBackdrop: false,
-        blockEscape: false,
-        showCloseButton: false,
-        onClose: function(){ resolve(result); },   /* единственная точка resolve (foundation-guarded) */
-      });
-    });
+    return MODAL_SPECS.openConfirmGoalDialog(sprintGoalText, existingOutcome, { t: T, openModal: openModal });
   }
 
   /* v1.9.0 D132 — bind Stand-up refresh button. */
@@ -7159,34 +6685,10 @@
      Контракт сохранён: callback(true, val) / callback(false, null). Для enum val = выбранное
      значение; для текстового ввода val = parsePeriod(ввод) (как в legacy). form-тип:
      backdrop ✅ / escape ✅ / close-X ✅; Escape/backdrop = отмена (callback(false,null)). */
+  /* Тир B — тело в modal-specs.js; enum/text-режимы и done-гард сохранены. */
   function showDynFieldConfirm(title, desc, enumValues, currentVal, callback) {
-    var cb = callback || function(){};
-    var isEnum = !!enumValues;
-    var done = false;
-    var h = openModal({
-      id: 'dynField',
-      type: 'form',
-      title: title,
-      body: { kind: 'component', name: 'dynFieldForm', props: {
-        desc: desc,
-        mode: isEnum ? 'enum' : 'text',
-        options: isEnum ? enumValues.map(function(v){ return { value: v, label: localizeEnumVal(v) || v }; }) : [],
-        initialValue: isEnum ? (currentVal || (enumValues[0] || '')) : (currentVal ? fmtPeriod(currentVal) : ''),
-        placeholder: T('phPeriod'),
-        applyText: T('btnYesUpdate'),
-        cancelText: T('btnNo'),
-        onApply: function(raw){
-          done = true; h.close();
-          cb(true, isEnum ? raw : parsePeriod(raw));
-        },
-        onCancel: function(){ done = true; h.close(); cb(false, null); },
-      }},
-      buttons: [],
-      dismissOnBackdrop: true,
-      blockEscape: false,
-      showCloseButton: true,
-      onClose: function(){ if (!done) cb(false, null); },
-    });
+    return MODAL_SPECS.showDynFieldConfirm(title, desc, enumValues, currentVal, callback,
+      { t: T, openModal: openModal, localizeEnumVal: localizeEnumVal, fmtPeriod: fmtPeriod, parsePeriod: parsePeriod });
   }
 
   function loadEnumBundle(fieldName, cb) {
@@ -7357,419 +6859,53 @@
   }
 
   function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated) {
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role || !_sprint) return Promise.resolve();
-    var items = getRoleItemsArr(rk);
-    var activeItems = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var rem = calcRemForRole(rk);
-    var isOverLimit = rem < 0;
-
-    /* v1.9.3 D134 — Etap О.1 fix: per-role status в snapshot, не глобальный _sprint.status.
-       До v1.9.3 snapshot ЛЮБОЙ роли получал status = _sprint.status. После
-       doValidateRole(rk1) → _sprint.status = CONFIRMED, и при ближайшем save другой
-       роли rk2 (refresh / save header / commit working copy / etc.) её snapshot
-       получал status = CONFIRMED — хотя rk2 не валидировалась. Контаминация была
-       визуально скрыта v1.8.1 фиксом renderRoleStatusBadge (читает per-role из
-       _history), но снимок в _history оставался поражённым → History spoiler и
-       Excel export показывали неверный статус.
-
-       Cherry-pick из proprietary v7.3.1 Этап О.1: добавлен параметр wasValidated
-       (true только при вызове из doValidateRole), статус резолвится per-role:
-         - wasValidated=true → CONFIRMED (single source of truth для validate)
-         - иначе → existing snap.status из _history (preserve) ИЛИ PLANNING для нового
-       Архитектурно правильное решение (deep refactor на _sprint.statusByRole[rk])
-       отложено; quick fix через explicit param достаточен для всех known call-sites. */
-    var resolvedStatus;
-    if (wasValidated === true) {
-      resolvedStatus = STATUS.CONFIRMED;
-    } else {
-      var existingSnap = _history.find(function(s){ return s && s.sprintId === (_sprint.sprintId + '_' + rk); });
-      resolvedStatus = (existingSnap && existingSnap.status) ? existingSnap.status : STATUS.PLANNING;
-    }
-    var snap = {
-      sprintId:     _sprint.sprintId + '_' + rk,
-      roleKey:      rk,
-      roleLabel:    role.label,
-      dateStart:    _sprint.dateStart,
-      dateEnd:      _sprint.dateEnd,
-      name:         _sprint.name || null,
-      status:       resolvedStatus,
-      confirmedAt:  Date.now(),
-      confirmedBy:  _currentUser ? (_currentUser.fullName || _currentUser.login) : null,
-      isOverLimit:  isOverLimit,
-      settings:     _settings,
-      sprintFieldVal:   _sprint.sprintFieldVal || null,
-      versionFieldVal:  _sprint.versionFieldVal || null,
-    };
-    snap[role.resKey] = _sprint[role.resKey] || 0;
-    snap[role.remKey] = rem;
-    snap.items = items.map(function(i) {
-      var obj = {
-        issueId:  i.issueId,
-        url:      i.url,
-        title:    i.title,
-        priority: i.priority,
-        xpriority:i.xpriority,
-        state:    i.state,
-        system:   i.system,
-        inclusionStatus: i.inclusionStatus,
-      };
-      /* v1.8.0 D130 — Etap В.2 — фиксируем externalTicketId в snapshot.
-         Раньше поле не копировалось в snap.items, поэтому история не содержала
-         значений нового поля даже когда оно было задано на live item. */
-      if (i.externalTicketId !== undefined && i.externalTicketId !== null && i.externalTicketId !== '') {
-        obj.externalTicketId = i.externalTicketId;
-      }
-      obj['estimate_'+rk] = i['estimate_'+rk];
-      obj['fact_'+rk]     = i['fact_'+rk];
-      obj['alloc_'+rk]    = i['alloc_'+rk] !== undefined ? i['alloc_'+rk] : null;
-      return obj;
-    });
-    // v6.1.0 D69 — сохранять только personalPlanning. Поле `gantt` удалено из snap-whitelist
-    // в v5.9.0 (D60); запись `snap.gantt` ломала validateHistory → invalid_history_structure
-    // → каскад #4/#6/#7/#10 в v6.0.0 testbench. Источник истины для назначений и дат —
-    // personalPlanning[*].taskAssignments[issueId].{assignee,startDate,endDate}.
-    var ppToSnap    = (isActiveSprintRecord(_currentSprintRoleRec) && _currentRolePP)
-      ? _currentRolePP
-      : (_sprint.personalPlanning || null);
-    snap.personalPlanning = deepClone(ppToSnap);
-    /* v1.9.0 D132 — Freeze sprint goal + inject outcome/retro from confirm dialog. */
-    if (_sprint.sprintGoal) snap.sprintGoal = _sprint.sprintGoal;
-    if (goalFields) {
-      if (goalFields.goalOutcome)  snap.goalOutcome  = goalFields.goalOutcome;
-      if (goalFields.goalRetroNote) snap.goalRetroNote = goalFields.goalRetroNote;
-    }
-
-    /* v5.3.0 — Если активна working copy на этот ключ — commit-flow с ре-валидацией.
-       Иначе — обычный insert/overwrite. Legacy ветка editingFromHistory удалена. */
-    var snapKey = snap.sprintId;
-    if (overrideIdx === undefined && _activeWorkingDraftKey === snapKey && _workingDrafts[snapKey]) {
-      var draft = _workingDrafts[snapKey];
-      var commitIdx = _history.findIndex(function(h){ return h.sprintId === snapKey; });
-      if (commitIdx >= 0) {
-        var baseSnap = _history[commitIdx];
-        /* Conflict detection: hash базового снимка изменился? */
-        var currentHash = computeBaseSnapshotHash(baseSnap);
-        if (draft.baseSnapshotHash && currentHash !== draft.baseSnapshotHash) {
-          if (typeof showWorkingCopyConflictModal === 'function') {
-            showWorkingCopyConflictModal(snapKey, baseSnap, snap, function(decision){
-              if (decision === 'overwrite') {
-                _commitWorkingCopy(rk, commitIdx, draft, snap);
-              } else if (decision === 'export' && typeof exportConflictToExcel === 'function') {
-                /* v5.7.0 — KL#5: один xlsx с двумя листами + diff-маркер. */
-                exportConflictToExcel(baseSnap, snap);
-              }
-              /* 'cancel' → ничего */
-            });
-            return Promise.resolve();
-          }
-        }
-        return _commitWorkingCopy(rk, commitIdx, draft, snap);
-      }
-      /* Орфан: working copy без базового снимка — fallback на обычный insert */
-      diag('saveRoleHistorySnapshot: working copy without base snap, fallback to insert', 'warn');
-    }
-    var idx = -1;
-    if (overrideIdx !== undefined) {
-      idx = overrideIdx;
-    } else {
-      idx = _history.findIndex(function(h){ return h.sprintId === snap.sprintId; });
-    }
-    if (idx >= 0) _history[idx] = snap; else _history.unshift(snap);
-    return apiPost('history', { history: _history }).then(function() {
-      renderHistory();
-    });
+    return WC.saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, _wcDeps());
   }
 
   /* clearOverlay migrated to openModal() — clearNo/clearYes handlers removed (Phase 1 #32). */
 
   /* ═══ Подбор задач (Phase 4 #32 — bespoke React pickPicker, см. modal-bodies.jsx) ═══
-     openPickModal(rk, role) монтирует Ring-модалку; data-layer (_pickSearch / _pickLoadAll /
-     _pickAddSelected) — Promise-колбэки в props. Старые DOM-listener'ы (close/cancel/search/
-     keydown/prev/next/addPicked) и UI-функции (renderPickResults/updatePickAllIndicator)
-     удалены вместе с #pickOverlay HTML — закрывает гибрид B10/B11. */
-
-  /* v5.0.3 → Phase 4 — построение query + fingerprint; rawQ передаётся из React-компонента
-     (DOM-инпут pickQuery удалён вместе с #pickOverlay). */
-  function _buildPickQuery(rawQ) {
-    var q = (rawQ || '').trim();
-    var projectId = _ctx && _ctx.project ? (_ctx.project.shortName || _ctx.project.id) : null;
-    var fullQuery = q;
-    if (projectId && q.toLowerCase().indexOf('project:') < 0) {
-      fullQuery = 'project: ' + projectId + (q ? ' ' + q : '');
-    }
-    return { fullQuery: fullQuery, fingerprint: fullQuery + '|' + (projectId || '') };
-  }
-
-  /* #33 — скоуп поиска. Два независимых канала (не пересекаются, не трогают каретку):
-       folders   → контекст подсказок search/assist (значения статусов/полей под проект)
-       projectId → префикс выборки issues (через _buildPickQuery)
-     Сейчас оба производны от текущего проекта. Фундамент под кросс-проект: позже сюда
-     подставляется набор проектов (folders:[p1..pn]) — data-слой не переписывается. */
-  function _buildPickScope() {
-    var p = (_ctx && _ctx.project) || null;
+     Кластер (query/scope/assist/meta/search/loadAll/add/модалка) вынесен в
+     widgets/main/src/pick.js (window.__SSP_PICK) — Тир C. Делегаторы; контекст
+     собирается в _pickDeps на вызове. Кэш-стейт подбора (_pickAllResults /
+     _pickQueryFingerprint / _currentPickRole / _selectedIds / _pickAllInFlight)
+     остаётся здесь — модуль ходит к нему через аксессоры deps.state. _mapIssueMeta
+     включён в pick.js: его единственные потребители — _pickSearch/_pickLoadAll. */
+  var PICK = (typeof window !== 'undefined' && window.__SSP_PICK) || {};
+  function _pickDeps() {
     return {
-      /* $type:'Project' обязателен — search/assist без дискриминатора IssueFolder
-         отвечает 500 InstantiationException (проверено live-probe на стенде, #33). */
-      folders:   p && p.id ? [{ $type: 'Project', id: p.id }] : [],
-      projectId: p ? (p.shortName || p.id) : null
+      t: T, toast: toast, diag: diag,
+      ctx: _ctx, settings: _settings, currentUser: _currentUser,
+      host: _host, pickPage: PICK_PAGE, maxPickTotal: MAX_PICK_TOTAL,
+      inc: INC, ytBase: _ytBase, draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
+      sprint: _sprint, roleItems: _roleItems,
+      getRoleItemsArr: getRoleItemsArr, apiPost: apiPost, openModal: openModal, roleLabel: roleLabel,
+      markDirty: _markDirty, draftSet: _draftSet,
+      renderRoleComposition: renderRoleComposition,
+      updateRoleRemaining: updateRoleRemaining,
+      refreshRoleEstimates: refreshRoleEstimates,
+      pickAssist: _pickAssist, pickSearch: _pickSearch,
+      pickLoadAll: _pickLoadAll, pickAddSelected: _pickAddSelected,
+      state: {
+        getCache: function(){ return _pickAllResults; },
+        setCache: function(m){ _pickAllResults = m; },
+        getFingerprint: function(){ return _pickQueryFingerprint; },
+        setFingerprint: function(s){ _pickQueryFingerprint = s; },
+        getCurrentRole: function(){ return _currentPickRole; },
+        setCurrentRole: function(rk){ _currentPickRole = rk; },
+        setSelectedIds: function(s){ _selectedIds = s; },
+        setAllInFlight: function(b){ _pickAllInFlight = b; },
+      },
     };
   }
-
-  /* #33 — data-source подсказок для Ring QueryAssist. Мост к нативному YT endpoint
-     POST /api/search/assist: на каждый ввод/движение каретки отдаёт подсказки с
-     позициями достройки и диапазонами совпадений (автокомплит + подсветка + синтаксис
-     YouTrack «из коробки»). Контракт возврата 1:1 с QueryAssistResponse Ring UI.
-     folders — отдельным полем тела (скоуп подсказок под проект), query/caret не трогаем.
-     Ошибка/недоступность assist → пустые подсказки (поле и список продолжают работать). */
-  var ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completionEnd,' +
-                      'matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)';
-  function _pickAssist(req) {
-    var query = (req && req.query) || '';
-    var caret = (req && typeof req.caret === 'number') ? req.caret : query.length;
-    var scope = _buildPickScope();
-    var body = { query: query, caret: caret, ignoreUnresolvedSetting: true };
-    if (scope.folders && scope.folders.length) body.folders = scope.folders;
-    return _host.fetchYouTrack('search/assist', {
-      method: 'POST',
-      query: { fields: ASSIST_FIELDS },
-      body: body,
-      headers: { 'Content-Type': 'application/json' }
-    }).then(function (res) {
-      return { query: query, caret: caret, suggestions: (res && res.suggestions) || [] };
-    }).catch(function (err) {
-      diag('_pickAssist: search/assist failed — ' + (err && err.message ? err.message : err), 'warn');
-      return { query: query, caret: caret, suggestions: [] };
-    });
-  }
-
-  /* v5.0.3 — преобразование сырого issue из YouTrack-API в meta-объект для UI/кэша */
-  function _mapIssueMeta(iss) {
-    var cfs = iss.customFields || [];
-    function cfValPres(names) {
-      if (!names || !names.length) return null;
-      for (var ni = 0; ni < names.length; ni++) {
-        var target = names[ni]; if (!target) continue;
-        var f = null;
-        for (var ci = 0; ci < cfs.length; ci++) {
-          var cf = cfs[ci];
-          var fn = (cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.name) || cf.name || '';
-          if (fn === target) { f = cf; break; }
-        }
-        if (f && f.value !== null && f.value !== undefined) {
-          var v = f.value;
-          if (typeof v === 'string') return v;
-          if (v && v.localizedName) return v.localizedName;
-          if (v && v.presentation)  return v.presentation;
-          if (v && v.name)          return v.name;
-        }
-      }
-      return null;
-    }
-    var stateField    = _settings && _settings.fieldState            || null;
-    var priorityField = _settings && _settings.fieldPriority         || null;
-    var xpField       = _settings && _settings.fieldXPriority        || null;
-    var systemField   = _settings && _settings.fieldSystem           || null;
-    /* v1.8.0 D130 — Etap В.2 — external ticket ID field. */
-    var extTicketField = _settings && _settings.fieldExternalTicketId || null;
-    return {
-      id:               iss.id,
-      idReadable:       iss.idReadable || iss.id,
-      summary:          (iss.summary && iss.summary.trim()) || null,
-      state:          { name: cfValPres(stateField ? [stateField, 'State','Состояние'] : ['State','Состояние']) || '—' },
-      priority:       cfValPres(priorityField  ? [priorityField,'Priority','Приоритет'] : ['Priority','Приоритет']),
-      xpriority:      cfValPres(xpField        ? [xpField,'Сквозной приоритет'] : ['Сквозной приоритет']),
-      system:         systemField    ? cfValPres([systemField])    : null,
-      externalTicketId: extTicketField ? cfValPres([extTicketField]) : null,
-    };
-  }
-
-  /* Phase 4 — data-layer для pickPicker: одна страница → {items, hasMore}.
-     Поиск НЕ переписан (#33 отдельно): тот же fetchYouTrack + _mapIssueMeta + кэш _pickAllResults.
-     isAdded вычисляется здесь (роль знает существующий состав). Ошибка → reject (компонент ловит). */
-  function _pickSearch(rawQ, page) {
-    var qInfo = _buildPickQuery(rawQ);
-    if (qInfo.fingerprint !== _pickQueryFingerprint) {
-      _pickAllResults = new Map();
-      _pickQueryFingerprint = qInfo.fingerprint;
-    }
-    var skip = (Math.max(1, page) - 1) * PICK_PAGE;
-    return _host.fetchYouTrack('issues', {
-      query: {
-        fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))',
-        query: qInfo.fullQuery,
-        $skip: skip,
-        $top: PICK_PAGE + 1
-      }
-    }).then(function(issues) {
-      if (!Array.isArray(issues) || !issues.length) return { items: [], hasMore: false };
-      var hasMore = issues.length > PICK_PAGE;
-      if (hasMore) issues = issues.slice(0, PICK_PAGE);
-      var mapped = issues.map(_mapIssueMeta);
-      mapped.forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
-      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
-      var items = mapped.map(function(it){
-        return {
-          idReadable: it.idReadable,
-          isAdded: existing.has(it.idReadable),
-          state: (it.state && it.state.name) ? it.state.name : '—',
-          summary: it.summary || it.idReadable || '',
-          priority: it.priority || ''
-        };
-      });
-      return { items: items, hasMore: hasMore };
-    });
-  }
-
-  /* v5.0.3 → Phase 4 — подгрузка ВСЕХ страниц текущего запроса для master «Выбрать все».
-     Возвращает addable id'ы (за вычетом уже добавленных в роль) + capped. Тосты loading/
-     loaded/limit/err — здесь (компонент держит только busy-флаг). Прерывается на MAX_PICK_TOTAL. */
-  function _pickLoadAll(rawQ) {
-    var qInfo = _buildPickQuery(rawQ);
-    if (qInfo.fingerprint !== _pickQueryFingerprint) {
-      _pickAllResults = new Map();
-      _pickQueryFingerprint = qInfo.fingerprint;
-    }
-    toast(T('toastPickAllLoading'), 'info');
-    var pageIdx = Math.ceil(_pickAllResults.size / PICK_PAGE) || 0;
-    var capped = false;
-    function loop() {
-      if (_pickAllResults.size >= MAX_PICK_TOTAL) {
-        capped = true;
-        return Promise.resolve();
-      }
-      return _host.fetchYouTrack('issues', {
-        query: {
-          fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))',
-          query: qInfo.fullQuery,
-          $skip: pageIdx * PICK_PAGE,
-          $top: PICK_PAGE + 1
-        }
-      }).then(function(issues){
-        if (!Array.isArray(issues) || !issues.length) return;
-        var hasMore = issues.length > PICK_PAGE;
-        if (hasMore) issues = issues.slice(0, PICK_PAGE);
-        issues.map(_mapIssueMeta).forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
-        pageIdx++;
-        if (hasMore) return loop();
-      });
-    }
-    return loop().then(function(){
-      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
-      var ids = [];
-      _pickAllResults.forEach(function(_, id){ if (!existing.has(id)) ids.push(id); });
-      if (capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
-      else        toast(T('toastPickAllLoaded').replace('{n}', String(ids.length)), 'success');
-      return { ids: ids, capped: capped };
-    }).catch(function(err){
-      toast(T('toastPickAllErr') + ': ' + (err && err.message ? err.message : err), 'error');
-      throw err;
-    });
-  }
-
-  /* updatePickAllIndicator + renderPickResults удалены (Phase 4 #32) — tri-state master
-     и рендеринг результатов теперь в bespoke React-компоненте pickPicker (derived tri-state,
-     нативные чекбоксы на React-стейте). Гибрид dataset-мост/MutationObserver/двойная
-     делегация (корень B11) больше не существует. */
-
-  /* renderPickResults удалён (Phase 4 #32) — рендеринг результатов + tri-state master
-     теперь в bespoke React-компоненте pickPicker (modal-bodies.jsx). */
-
-  /* Phase 4 — добавление выбранных задач в роль (рефактор бывшего addPickedBtn-листенера).
-     selectedIds — массив issueId из компонента; мета берётся из кумулятивного кэша
-     _pickAllResults (заполнен _pickSearch/_pickLoadAll). Закрытие модалки — у вызывающего. */
-  function _pickAddSelected(rk, selectedIds) {
-    if (!rk || !selectedIds || !selectedIds.length) { toast(T('toastPickAtLeastOne')); return; }
-    var existing = new Set(getRoleItemsArr(rk).map(function(i){ return i.issueId; }));
-    var newIds = selectedIds.filter(function(id){ return !existing.has(id); });
-    newIds.forEach(function(issueId) {
-      /* мета из кумулятивного кэша всех загруженных страниц */
-      var issue = _pickAllResults.get(issueId);
-      if (!issue) {
-        diag('_pickAddSelected: missing meta for ' + issueId + ' — using stub', 'err');
-        toast(T('toastPickPageMetaLost'), 'warn');
-        issue = { idReadable: issueId, summary: issueId, priority: '', state: { name: '' }, xpriority: '', system: '' };
-      }
-      /* v5.0.3 — НЕ кладём sprintId на item: backend whitelist (ALLOWED_ITEM_KEYS) его не
-         содержит, validateItem отвергнет item целиком.
-         v5.0.3 (5c) — дефолт INC_PLANNED (не PENDING): иначе валидация «нет активных задач». */
-      var newItem = {
-        issueId:  issueId,
-        url:      _ytBase + '/issue/' + issueId,
-        title:    issue && issue.summary    ? issue.summary    : issueId,
-        priority: issue && issue.priority   ? issue.priority   : '',
-        xpriority:issue && issue.xpriority  ? issue.xpriority  : '',
-        state:    issue && issue.state      ? issue.state.name : '',
-        system:   issue && issue.system     ? issue.system     : '',
-        inclusionStatus: INC.PLANNED,
-        addedAt: Date.now(),
-        addedBy: _currentUser ? _currentUser.login : null,
-      };
-      /* v1.8.0 D130 — Etap В.2 — externalTicketId если маппинг настроен. */
-      if (_settings && _settings.fieldExternalTicketId && issue && issue.externalTicketId) {
-        newItem.externalTicketId = issue.externalTicketId;
-      }
-      newItem['estimate_'+rk] = null;
-      newItem['fact_'+rk]     = null;
-      newItem['alloc_'+rk]    = null; // null → при рендере = дельта по умолчанию
-      getRoleItemsArr(rk).push(newItem);
-    });
-    var skipped = selectedIds.length - newIds.length;
-    _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set();
-    if (newIds.length) {
-      _markDirty('roleItems');
-      _draftSet('roleItems', _roleItems);
-      _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    }
-    /* v5.0.3 — сохраняем _sprint вместе с roleItems (на свежем проекте sprintId не перегенерится). */
-    apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }).then(function() {
-      renderRoleComposition(rk);
-      updateRoleRemaining(rk);
-      toast(T('toastPickDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
-      if (newIds.length) refreshRoleEstimates(rk);
-    });
-  }
-
-  /* Phase 4 — открытие модалки подбора (bespoke React pickPicker через openModal). */
-  function openPickModal(rk, role) {
-    _currentPickRole = rk;
-    _selectedIds = new Set();
-    _pickAllResults = new Map(); _pickQueryFingerprint = ''; _pickAllInFlight = false;
-    var h = openModal({
-      id: 'pick',
-      type: 'selection',
-      dialogClass: 'ssp-ring-modal--wide',
-      title: T('pickModalTitle') + ' — ' + roleLabel(role),
-      body: { kind: 'component', name: 'pickPicker', props: {
-        labels: {
-          searchText:      T('btnFind'),
-          placeholder:     T('phPickQuery'),
-          emptyInitial:    T('emptyPickResults'),
-          searching:       T('pickSearching'),
-          notFound:        T('tasksNotFound'),
-          errorPrefix:     T('pickError'),
-          thState:         T('thState'),
-          thTitle:         T('thTitle'),
-          thPriority:      T('thPriority'),
-          selectAllTitle:  T('titlePickAll'),
-          alreadyInSprint: T('alreadyInSprint'),
-          pageOf:          T('pageOf'),
-          closeText:       T('btnClose'),
-          addText:         T('btnAddPicked'),
-        },
-        onAssist:  function(req){ return _pickAssist(req); },
-        onSearch:  function(q, page){ return _pickSearch(q, page); },
-        onLoadAll: function(q){ return _pickLoadAll(q); },
-        onAdd:     function(ids){ _pickAddSelected(rk, ids); h.close(); },
-        onCancel:  function(){ h.close(); },
-      }},
-      buttons: [],
-      dismissOnBackdrop: true,
-      blockEscape: false,
-      showCloseButton: true,
-      onClose: function(){ _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set(); },
-    });
-  }
+  function _buildPickQuery(rawQ) { return PICK._buildPickQuery(rawQ, _pickDeps()); }
+  function _buildPickScope() { return PICK._buildPickScope(_pickDeps()); }
+  function _pickAssist(req) { return PICK._pickAssist(req, _pickDeps()); }
+  function _mapIssueMeta(iss) { return PICK._mapIssueMeta(iss, _pickDeps()); }
+  function _pickSearch(rawQ, page) { return PICK._pickSearch(rawQ, page, _pickDeps()); }
+  function _pickLoadAll(rawQ) { return PICK._pickLoadAll(rawQ, _pickDeps()); }
+  function _pickAddSelected(rk, selectedIds) { return PICK._pickAddSelected(rk, selectedIds, _pickDeps()); }
+  function openPickModal(rk, role) { return PICK.openPickModal(rk, role, _pickDeps()); }
 
   /* ═══ ИСТОРИЯ ═══════════════════════════════════════════════ */
   function renderHistory() {
@@ -8383,129 +7519,9 @@
     });
     return _xlsxLoadPromise;
   }
+  /* Тир B — тело в excel-export.js; lazy-load XLSX и AOA-сборка 1:1. */
   function exportSprintToExcel(rec) {
-    /* Lazy load — если ещё не загружен, грузим, потом рекурсивно вызываем себя */
-    if (typeof XLSX === 'undefined') {
-      toast(T('toastXlsxLoading') || 'Загружаем XLSX-библиотеку…', 'info');
-      loadXLSXLib().then(function(){
-        exportSprintToExcel(rec);
-      }).catch(function(e){
-        diag('XLSX load failed: '+(e&&e.message?e.message:e),'err');
-        toast(T('toastXlsxErr'));
-      });
-      return;
-    }
-    var rk   = rec.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-
-    var meta = [
-      [T('excelSprintName'), rec.name || '—'],
-      [T('excelRole'), rec.roleLabel || rk],
-      [T('excelPeriod'), fmtDate(rec.dateStart) + ' — ' + fmtDate(rec.dateEnd)],
-      [T('excelStatus'), rec.status ? statusLabel(rec.status) : '—'],
-      [T('currentRoleConfirmedAt'), (rec.confirmedBy || '—') + ' · ' + fmtDT(rec.confirmedAt)],
-      [T('excelQtyTasks'), rec.items ? rec.items.length : 0],
-      []
-    ];
-    if (role) {
-      meta.push([T('excelResource') + ' ' + roleLabel(role), fmtPeriod(rec[role.resKey] || 0), T('excelRemain'), fmtHours(rec[role.remKey] !== undefined ? rec[role.remKey] : 0)]);
-    }
-    if (rec.sprintFieldVal)  meta.push([T('excelSprint'), rec.sprintFieldVal]);
-    if (rec.versionFieldVal) meta.push([T('excelVersion'), rec.versionFieldVal]);
-    meta.push([]);
-
-    var roleSuffixHdr = ' ' + (role ? roleLabel(role) : rk) + ' (ч)';
-    /* v5.5.0 — Этап 3e: условная колонка «Ответственный по задаче» при наличии
-       personal-распределения хотя бы по одной задаче этой роли. Multi-assignee — через запятую.
-       Спринты без personal распределения экспортируются как раньше (regression-safe). */
-    var ppTaskAssignments = (rec.personalPlanning && rec.personalPlanning.taskAssignments) || {};
-    var hasAssignees = Object.keys(ppTaskAssignments).some(function(id){
-      var ta = ppTaskAssignments[id];
-      if (!ta) return false;
-      if (Array.isArray(ta)) return ta.some(function(x){ return x && x.assignee; });
-      return !!ta.assignee;
-    });
-    function _formatAssigneeCell(item) {
-      var ta = ppTaskAssignments[item.issueId];
-      if (!ta) return '';
-      if (Array.isArray(ta)) {
-        var names = ta.filter(function(x){ return x && x.assignee; })
-                      .map(function(x){ return x.assigneeName || x.assignee; });
-        return names.join(', ');
-      }
-      return ta.assigneeName || ta.assignee || '';
-    }
-    /* v6.1.0 D78 (F1) — добавлена колонка «Факт» между Estimate и Resource. */
-    var header = [T('excelColId'), T('excelColTitle'), T('excelColSystem'), T('excelColPriority'), T('excelColXpriority'), T('excelColState'), T('excelColInclusion'),
-      T('excelColEstimate') + roleSuffixHdr,
-      T('excelColFact')     + roleSuffixHdr,
-      T('excelColResource') + roleSuffixHdr,
-      T('excelColAlloc')    + roleSuffixHdr];
-    if (hasAssignees) header.push(T('excelColAssignee'));
-    header.push(T('excelColLink'));
-
-    function minToH(m) { return m != null ? Math.round(m / 60 * 100) / 100 : ''; }
-
-    var rows = (rec.items || []).map(function(item) {
-      var est  = item['estimate_' + rk] || 0;
-      var fact = item['fact_'     + rk] || 0;
-      var resourceMin = Math.max(0, est - fact);
-      var allocRaw    = item['alloc_' + rk];
-      var allocMin    = (allocRaw !== null && allocRaw !== undefined) ? allocRaw : resourceMin;
-      var row = [
-        item.issueId  || '',
-        item.title    || '',
-        item.system   || '',
-        dispEnum(item.priority) || '',
-        dispEnum(item.xpriority) || '',
-        dispEnum(item.state)    || '',
-        item.inclusionStatus ? incLabel(item.inclusionStatus) : '',
-        minToH(item['estimate_' + rk]),
-        minToH(item['fact_'     + rk]),
-        minToH(resourceMin),
-        minToH(allocMin)
-      ];
-      if (hasAssignees) row.push(_formatAssigneeCell(item));
-      row.push(item.url || '');
-      return row;
-    });
-
-    var _activeSnap = (rec.items || []).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var totalsBase = ['', T('excelTotal'), '', '', '', '', '',
-      Math.round(_activeSnap.reduce(function(s, i) { return s + (i['estimate_' + rk] || 0); }, 0) / 60 * 100) / 100,
-      /* v6.1.0 D78 (F1) — итог по колонке «Факт». */
-      Math.round(_activeSnap.reduce(function(s, i) { return s + (i['fact_' + rk] || 0); }, 0) / 60 * 100) / 100,
-      Math.round(_activeSnap.reduce(function(s, i) {
-        var est  = i['estimate_' + rk] || 0;
-        var fact = i['fact_'     + rk] || 0;
-        return s + Math.max(0, est - fact);
-      }, 0) / 60 * 100) / 100,
-      Math.round(_activeSnap.reduce(function(s, i) {
-        var est  = i['estimate_' + rk] || 0;
-        var fact = i['fact_'     + rk] || 0;
-        var raw  = i['alloc_'    + rk];
-        var resMin = Math.max(0, est - fact);
-        return s + ((raw !== null && raw !== undefined) ? raw : resMin);
-      }, 0) / 60 * 100) / 100
-    ];
-    if (hasAssignees) totalsBase.push('');
-    totalsBase.push('');
-    var totals = totalsBase;
-
-    var wsData = meta.concat([header]).concat(rows).concat([totals]);
-    var ws = XLSX.utils.aoa_to_sheet(wsData);
-    /* v6.1.0 D78 (F1) — +1 колонка ширины (Факт). */
-    var cols = [{wch:16},{wch:50},{wch:16},{wch:14},{wch:20},{wch:16},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14}];
-    if (hasAssignees) cols.push({wch:24});
-    cols.push({wch:40});
-    ws['!cols'] = cols;
-
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, T('excelSprint'));
-    var roleSuffix = role ? ('_' + roleLabel(role).replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '')) : '';
-    var fileName = (rec.name ? rec.name.replace(/[\\/:*?"<>|]/g, '_') : T('excelSprint').toLowerCase()) + roleSuffix + '_' + fmtDate(rec.dateStart).replace(/\./g, '-') + '.xlsx';
-    XLSX.writeFile(wb, fileName);
-    diag('Excel exported: ' + fileName, 'ok');
+    return EXCEL_EXPORT.exportSprintToExcel(rec, _excelDeps());
   }
 
   /* ═══ v2.1.13 — Экспорт/импорт истории в JSON (#27) ══════════════ */
@@ -8514,35 +7530,30 @@
   var HIST_EXPORT_FORMAT_VER = 1;
   var HIST_ACCEPTED_FORMATS  = ['scbt-sprint-history', 'ssp-sprint-history'];
 
-  function _anonymizeHistRecords(records) {
-    return records.map(function(rec) {
-      var r = JSON.parse(JSON.stringify(rec));
-      if (r.settings) {
-        delete r.settings.kpe; delete r.settings.rate;
-        ['analysis','development','testing','devops','analytics','management','design','qa','support'].forEach(function(rk){
-          if (r.settings['rate_' + rk] !== undefined) delete r.settings['rate_' + rk];
-          if (r.settings['kpe_'  + rk] !== undefined) delete r.settings['kpe_'  + rk];
-        });
-      }
-      return r;
-    });
-  }
-
-  function _buildHistEnvelope(records, anonymize) {
-    var recs = anonymize ? _anonymizeHistRecords(records) : records;
-    var su   = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
-    var proj = _projectDisplayName || (_ctx && _ctx.project && (_ctx.project.shortName || _ctx.project.id)) || '';
+  /* Кластер экспорта/импорта истории (anonymize, конверт, preflight, файл-стем,
+     импорт-диалог) вынесен в widgets/main/src/history-io.js (window.__SSP_HISTORY_IO)
+     — Тир C. Делегаторы; контекст собирается в _histIoDeps на вызове. Формат-маркеры
+     HIST_* остаются здесь: значения намеренно различаются между форками (cross-fork
+     приём). _triggerJsonDownload / exportPerSprintJson / _importHistPending — тоже здесь. */
+  var HISTORY_IO = (typeof window !== 'undefined' && window.__SSP_HISTORY_IO) || {};
+  function _histIoDeps() {
     return {
-      format:        HIST_EXPORT_FORMAT,
-      formatVersion: HIST_EXPORT_FORMAT_VER,
-      pluginVersion: APP_VERSION,
-      exportedAt:    Date.now(),
-      exportedBy:    (_currentUser && _currentUser.login) || '',
-      sourceProject: proj,
-      sourceInstance: su,
-      anonymized:    !!anonymize,
-      records:       recs
+      t: T, toast: toast, diag: diag, fmtDate: fmtDate, fmtDT: fmtDT,
+      histExportFormat: HIST_EXPORT_FORMAT, histExportFormatVer: HIST_EXPORT_FORMAT_VER,
+      histAcceptedFormats: HIST_ACCEPTED_FORMATS, appVersion: APP_VERSION,
+      projectDisplayName: _projectDisplayName, ctx: _ctx, currentUser: _currentUser,
+      history: _history, openModal: openModal,
+      triggerJsonDownload: _triggerJsonDownload,
+      submitHistImport: _submitHistImport,
+      openImportReplaceConfirm: _openImportReplaceConfirm,
+      setImportHistPending: function (v) { _importHistPending = v; },
     };
+  }
+  function _anonymizeHistRecords(records) {
+    return HISTORY_IO._anonymizeHistRecords(records);
+  }
+  function _buildHistEnvelope(records, anonymize) {
+    return HISTORY_IO._buildHistEnvelope(records, anonymize, _histIoDeps());
   }
 
   function _triggerJsonDownload(obj, fileName) {
@@ -8554,18 +7565,12 @@
   }
 
   function _histFileStem() {
-    var proj = (_projectDisplayName || 'project').replace(/[\\/:*?"<>|]/g, '_');
-    var d    = new Date(); var ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    return 'ssp-history_' + proj + '_' + ds;
+    return HISTORY_IO._histFileStem(_histIoDeps());
   }
 
   /* Экспорт всей истории */
   function exportAllHistoryToJson(anonymize) {
-    if (!_history || !_history.length) { toast(T('emptyHistory') || 'Нет истории', 'warn'); return; }
-    var env = _buildHistEnvelope(_history, anonymize);
-    _triggerJsonDownload(env, _histFileStem() + '.json');
-    toast(T('toastHistExported') || 'История экспортирована', 'success');
-    diag('JSON history exported: ' + _history.length + ' records', 'ok');
+    return HISTORY_IO.exportAllHistoryToJson(anonymize, _histIoDeps());
   }
 
   /* Экспорт одного спринта (все роли) по базовому sprintId */
@@ -8610,115 +7615,16 @@
 
   /* ── Preflight-валидация конверта ── */
   function _preflightHistFile(data) {
-    if (!data || typeof data !== 'object') return { ok: false, reason: 'not_object' };
-    if (HIST_ACCEPTED_FORMATS.indexOf(data.format) < 0) return { ok: false, reason: 'wrong_format' };
-    if (!data.formatVersion || data.formatVersion > HIST_EXPORT_FORMAT_VER) return { ok: false, reason: 'unsupported_version' };
-    if (!Array.isArray(data.records)) return { ok: false, reason: 'no_records' };
-    return { ok: true };
+    return HISTORY_IO._preflightHistFile(data, _histIoDeps());
   }
 
   /* ── Диалог импорта (Promise-based) ── */
   var _importHistPending = null; // { records, mode, selectedBaseIds }
 
   function openImportHistDialog(data) {
-    return new Promise(function(resolve) {
-      var pf = _preflightHistFile(data);
-      if (!pf.ok) {
-        toast(T('toastHistImportInvalid') || 'Файл не является историей спринтов', 'err');
-        resolve(null); return;
-      }
-      var records = data.records;
-      if (!records.length) {
-        toast(T('importHistEmpty') || 'Нет записей для импорта', 'warn');
-        resolve(null); return;
-      }
-
-      // Существующие базовые sprintId
-      var existingBaseIds = {};
-      (_history || []).forEach(function(h){ if (h && h.sprintId) existingBaseIds[String(h.sprintId).split('_')[0]] = true; });
-
-      // Группируем записи файла по базовому sprintId
-      var groups = {}; // baseId → { baseId, name, dateStart, roleCount, hasCollision }
-      records.forEach(function(r) {
-        if (!r || !r.sprintId) return;
-        var base = String(r.sprintId).split('_')[0];
-        if (!groups[base]) groups[base] = { baseId: base, name: r.name || base, dateStart: r.dateStart, roleCount: 0, hasCollision: !!existingBaseIds[base] };
-        groups[base].roleCount++;
-      });
-      var groupList = Object.keys(groups).map(function(k){ return groups[k]; });
-
-      // Cross-fork и cross-instance флаги
-      var isCrossFork     = data.format !== HIST_EXPORT_FORMAT;
-      var su              = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
-      var isCrossInstance = !!(data.sourceInstance && su && data.sourceInstance !== su);
-      var isVersionNewer  = !!(data.pluginVersion && data.pluginVersion > APP_VERSION);
-
-      if (!window.__SSP_RING_MODAL) { resolve(null); return; }
-
-      // Info-строки (label/value) — рендерятся компонентом importHistForm
-      var infoRows = [];
-      if (data.sourceProject)  infoRows.push({ label: T('importHistProject'),    value: data.sourceProject, bold: true });
-      if (data.sourceInstance) infoRows.push({ label: T('importHistInstance'),   value: data.sourceInstance });
-      if (data.exportedAt)     infoRows.push({ label: T('importHistExportedAt'), value: fmtDT(data.exportedAt) });
-      if (data.pluginVersion)  infoRows.push({ label: T('importHistPluginVer'),  value: data.pluginVersion });
-      infoRows.push({ label: T('importHistSprintsLabel'), value: String(groupList.length) });
-
-      // Предупреждения (cross-fork / cross-instance / более новая версия)
-      var warnings = [];
-      if (isCrossFork)     warnings.push({ text: (T('importHistCrossFork') || '').replace('{fork}', data.format), color: 'var(--primary,#0d6efd)' });
-      if (isCrossInstance) warnings.push({ text: T('importHistCrossInstance') || '', color: 'var(--warn-text,#b36800)' });
-      if (isVersionNewer)  warnings.push({ text: (T('importHistVersionWarn') || '').replace('{v}', data.pluginVersion), color: 'var(--warn-text,#b36800)' });
-
-      /* Phase 3 #32 — мигрировано на openModal() (bespoke importHistForm, настоящий React).
-         Чекбоксы выбора спринтов — обычный React-стейт (НЕ Ring Table → нет mousedown-проблемы
-         B11/B12). Promise-контракт сохранён: {action:'merge'} / {action:'replace'} / null. */
-      var decided = null;  // null=отмена; {action:'merge',sel,mode} / {action:'replace'}
-      var h = openModal({
-        id: 'importHist',
-        type: 'form',
-        title: T('importHistTitle'),
-        body: { kind: 'component', name: 'importHistForm', props: {
-          infoRows: infoRows,
-          anonText: data.anonymized ? ('🔒 ' + (T('importHistAnonBadge') || '')) : '',
-          warnings: warnings,
-          groups: groupList.map(function(g){
-            return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDate(g.dateStart) : '', collision: !!g.hasCollision };
-          }),
-          labels: {
-            collisionBadge: T('importHistCollisionBadge') || 'дубль',
-            modeLabel:      T('importHistModeLabel')      || 'При совпадении sprintId:',
-            modeSkip:       T('importHistModeSkip')       || 'Пропустить дубли',
-            modeOverwrite:  T('importHistModeOverwrite')  || 'Перезаписать дубли',
-            replaceText:    T('btnImportReplace')         || 'Полное восстановление…',
-            replaceTitle:   T('btnImportReplaceTitle')    || '',
-            cancelText:     T('btnCancel')                || 'Отмена',
-            submitText:     T('btnImport')                || 'Импортировать',
-          },
-          onSubmit:  function(sel, mode){ decided = { action: 'merge', sel: sel, mode: mode }; h.close(); },
-          onReplace: function(){ decided = { action: 'replace' }; h.close(); },
-          onCancel:  function(){ decided = null; h.close(); },
-        }},
-        buttons: [],
-        dismissOnBackdrop: true,
-        blockEscape: false,
-        showCloseButton: true,
-        onClose: function(){
-          if (!decided) { resolve(null); return; }
-          if (decided.action === 'merge') {
-            _submitHistImport(decided.sel, decided.mode, records)
-              .then(function(){ resolve({ action: 'merge' }); })
-              .catch(function(){ resolve({ action: 'merge' }); });
-          } else {
-            _importHistPending = { records: records };
-            resolve({ action: 'replace' });
-            _openImportReplaceConfirm();
-          }
-        },
-      });
-    });
+    return HISTORY_IO.openImportHistDialog(data, _histIoDeps());
   }
 
-  /* ── Merge и запись истории ── */
   function _submitHistImport(selectedBaseIds, mode, fileRecords) {
     var current = (_history || []).slice();
     var toAdd   = fileRecords.filter(function(r){ return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });
@@ -8747,24 +7653,13 @@
   /* ── Полное восстановление (replace-all) ──
      Phase 3 #32 — importReplaceHist мигрирован на openModal() (generic lines-confirm,
      destructive-тип: backdrop ❌ / escape ✅ / close-X ❌). Escape/отмена очищает pending. */
+  /* Тир B — тело в modal-specs.js; downstream-стейт инъектируется колбэками:
+     yes → _doImportReplaceAll (сам чистит pending), отмена/escape → сброс pending. */
   function _openImportReplaceConfirm() {
-    var confirmed = false;
-    openModal({
-      id: 'importReplaceHist',
-      type: 'destructive',
-      title: T('importReplaceTitle'),
-      body: { kind: 'lines', lines: [
-        { html: T('importReplaceWarn'), style: { color: 'var(--error)' } },
-        { text: T('importReplaceInfo'), style: { marginTop: '8px', fontSize: '13px', color: 'var(--muted)' } },
-      ]},
-      buttons: [
-        { id: 'cancel', text: T('btnCancel'),     variant: 'secondary', onClick: function(hh){ confirmed = false; hh.close(); } },
-        { id: 'yes',    text: T('btnYesReplace'), variant: 'danger',    onClick: function(hh){ confirmed = true;  hh.close(); _doImportReplaceAll(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ if (!confirmed) _importHistPending = null; },
+    return MODAL_SPECS.openImportReplaceConfirm({
+      t: T, openModal: openModal,
+      onReplace: function(){ _doImportReplaceAll(); },
+      onAbandon: function(){ _importHistPending = null; },
     });
   }
   function _doImportReplaceAll() {
@@ -8792,24 +7687,10 @@
   /**
    * Проверяет превышение аллокации у задач vs. ресурс роли.
    * Возвращает массив индексов задач с превышением.
+   * Тело — в widgets/main/src/revalidation.js (Тир C), см. _revalDeps выше.
    */
   function checkAllocOverlimit(rk) {
-    // Строка с задачей: превышение если аллокация задачи > дельта этой задачи (max(0, est-fact))
-    // Ресурс задачи = дельта между оценкой и фактом трудозатрат — именно это значение
-    // отображается в колонке «Ресурс Анализ» для каждой строки задачи.
-    var items = getRoleItemsArr(rk);
-    var overlimit = [];
-    items.forEach(function(item, idx) {
-      if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) return;
-      var alloc = item['alloc_'+rk];
-      var est   = item['estimate_'+rk] || 0;
-      var fact  = item['fact_'+rk] || 0;
-      var delta    = Math.max(0, est - fact);  // ресурс строки задачи
-      var allocVal = (alloc !== null && alloc !== undefined) ? alloc : delta;
-      // Аллокация задачи превышает дельту этой задачи
-      if (delta > 0 && allocVal > delta) overlimit.push(idx);
-    });
-    return overlimit;
+    return REVALIDATION.checkAllocOverlimit(rk, _revalDeps());
   }
 
   /**
@@ -9204,20 +8085,9 @@
      через _setHistoricalReadOnly + _applyHybridSprintMode заменил функционально. */
 
   /* Soft-warn модал перед сменой спринта при активной WC (D28). */
+  /* Тир B — тело в modal-specs.js; cb только по явному клику (confirm/cancel). */
   function showCloseWorkingCopyModal(cb) {
-    openModal({
-      id: 'closeWc',
-      type: 'confirm',
-      title: T('wcCloseTitle'),
-      body: { kind: 'text', text: T('wcCloseBody') },
-      buttons: [
-        { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); cb(false); } },
-        { id: 'confirm', text: T('wcCloseConfirm'), variant: 'primary', onClick: function(h) { h.close(); cb(true); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-    });
+    return MODAL_SPECS.showCloseWorkingCopyModal(cb, { t: T, openModal: openModal });
   }
 
   /* Идемпотентный рендер шапки виджета.
@@ -10701,97 +9571,12 @@
     }
   }
 
+  /* #20 — история переходов состояний вынесена в widgets/main/src/youtrack-api.js
+     (window.__SSP_YOUTRACK_API) — Тир C. Кэш _ganttStateHist остаётся здесь —
+     модуль ходит к нему через аксессоры deps.state (late binding: кэш может быть
+     сброшен извне между чанками). DOM-апдейты — через _updateGanttHistDOM. */
   function _fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId) {
-    if (!ids || !ids.length || !_settings || !_settings.fieldState) return;
-    var now = Date.now();
-    var TTL = 5 * 60 * 1000;
-    if (!force &&
-        _ganttStateHist._sprintKey === sprintKey &&
-        _ganttStateHist._fetchedAt &&
-        (now - _ganttStateHist._fetchedAt) < TTL) return;
-    /* Сброс: очищаем все issueId-записи, иначе processChunk пропустит их как «уже загруженные». */
-    _ganttStateHist = { _sprintKey: sprintKey, _fetchedAt: 0 };
-    curStates = curStates || {};
-    fieldId = fieldId || '';
-    var CHUNK_SIZE = 25;
-
-    function processChunk(chunkIds) {
-      return _host.fetchYouTrack('activities', { query: {
-        categories: 'CustomFieldCategory',
-        issueQuery: 'issue id: ' + chunkIds.join(', '),
-        fields: 'timestamp,target(idReadable),field(id,name,presentation),' +
-                'added(name,localizedName,color(background,foreground)),' +
-                'removed(name,localizedName,color(background,foreground))',
-        reverse: 'true',
-        $top: 300
-      }}).then(function(activities) {
-        var container = document.getElementById('ganttContainer');
-        diag('_fetchGanttStateHistory chunk=' + chunkIds.length + ' activities=' + (Array.isArray(activities) ? activities.length : typeof activities), 'ok');
-        if (!Array.isArray(activities)) {
-          chunkIds.forEach(function(issueId) {
-            if (!_ganttStateHist[issueId]) {
-              _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
-              if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-            }
-          });
-          return;
-        }
-        /* Идентификация нужного поля состояния:
-           1) ПРИОРИТЕТ — по id поля (`field.id`): не локализуется, не коллизит с другими
-              полями, работает для ЛЮБОГО типа (State/enum/owned/version). Универсально.
-           2) Fallback (если id поля не дошёл из Слоя 1): по совпадению нового значения
-              (added[0]) с текущим состоянием (curStates), иначе — по $type StateBundleElement.
-           В YouTrack Activities API added/removed — МАССИВЫ, field.name ЛОКАЛИЗОВАН.
-           reverse:true → берём первую (свежайшую) подходящую запись. */
-        activities.forEach(function(act) {
-          if (!act || !act.target) return;
-          var issueId = act.target.idReadable;
-          if (!issueId || _ganttStateHist[issueId]) return;
-          var addedArr   = Array.isArray(act.added)   ? act.added   : (act.added   ? [act.added]   : []);
-          var removedArr = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : []);
-          var addedVal   = addedArr[0]   || null;
-          var removedVal = removedArr[0] || null;
-          var sample     = addedVal || removedVal;
-          if (!sample) return;
-          var addedName  = addedVal ? (addedVal.localizedName || addedVal.name || '') : '';
-          var cur        = curStates[issueId] || '';
-          var actFieldId = (act.field && act.field.id) || '';
-          var isStateChange = fieldId
-            ? (actFieldId === fieldId)
-            : (cur ? (addedName === cur) : (sample.$type === 'StateBundleElement'));
-          if (!isStateChange) return;
-          var prevName = removedVal ? (removedVal.localizedName || removedVal.name || '') : '';
-          var prevC    = removedVal && removedVal.color ? removedVal.color : null;
-          _ganttStateHist[issueId] = {
-            sinceTs:   act.timestamp || null,
-            prev:      prevName,
-            prevColor: prevC ? { background: prevC.background || null, foreground: prevC.foreground || null } : null
-          };
-          if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-        });
-        chunkIds.forEach(function(issueId) {
-          if (!_ganttStateHist[issueId]) {
-            _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
-            if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-          }
-        });
-      }).catch(function(e) {
-        diag('_fetchGanttStateHistory err: ' + String(e && e.message ? e.message : e), 'warn');
-        var container2 = document.getElementById('ganttContainer');
-        if (container2) chunkIds.forEach(function(issueId) {
-          if (!_ganttStateHist[issueId]) {
-            var prevEl = container2.querySelector('[data-gantt-hist-prev="' + issueId + '"]');
-            if (prevEl) prevEl.textContent = '';
-          }
-        });
-      });
-    }
-
-    var p = Promise.resolve();
-    for (var ci = 0; ci < ids.length; ci += CHUNK_SIZE) {
-      (function(chunk) { p = p.then(function() { return processChunk(chunk); }); })(ids.slice(ci, ci + CHUNK_SIZE));
-    }
-    p.then(function() { _ganttStateHist._fetchedAt = Date.now(); });
+    return YT_API._fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId, _ytApiDeps());
   }
 
   /* v6.1.0 D80 (F3) — sync Assignee из YouTrack: source-of-truth = YT.

@@ -1,0 +1,47 @@
+{
+  "happyBoth": {
+    "cleanup": [
+      "sprint",
+      "roleItems"
+    ],
+    "snapshots": [
+      "analysis"
+    ]
+  },
+  "sprintOnly": {
+    "cleanup": [
+      "sprint"
+    ],
+    "snapshots": [
+      "analysis"
+    ]
+  },
+  "validateSkipsSnapshot": {
+    "cleanup": [
+      "sprint"
+    ],
+    "snapshots": []
+  },
+  "finishedSkips": {
+    "cleanup": [
+      "roleItems"
+    ],
+    "snapshots": []
+  },
+  "workingCopySkips": {
+    "cleanup": [
+      "roleItems"
+    ],
+    "snapshots": []
+  },
+  "noSubtabSkips": {
+    "cleanup": [
+      "sprint"
+    ],
+    "snapshots": []
+  },
+  "settingsOnly": {
+    "cleanup": [],
+    "snapshots": []
+  }
+}

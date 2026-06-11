@@ -1,0 +1,22 @@
+{
+  "PLANNING": {
+    "none": "PLANNING",
+    "soft": "PLANNING",
+    "hard": "PLANNING"
+  },
+  "ALLOCATED": {
+    "none": "ALLOCATED",
+    "soft": "ALLOCATED",
+    "hard": "ALLOCATED"
+  },
+  "CONFIRMED": {
+    "none": "CONFIRMED",
+    "soft": "CONFIRMED",
+    "hard": "CONFIRMED"
+  },
+  "FINISHED": {
+    "none": "FINISHED",
+    "soft": "FINISHED",
+    "hard": "FINISHED"
+  }
+}

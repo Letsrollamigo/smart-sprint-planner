@@ -1,0 +1,50 @@
+{
+  "appended": [
+    {
+      "issueId": "GM-99",
+      "url": "http://localhost:8080/issue/GM-99",
+      "title": "Synthetic issue 99",
+      "priority": "Major",
+      "xpriority": "",
+      "state": "Open",
+      "system": "",
+      "inclusionStatus": "INC_PLANNED",
+      "addedAt": 1780315200000,
+      "addedBy": "gm_user_editor",
+      "estimate_analysis": null,
+      "fact_analysis": null,
+      "alloc_analysis": null
+    }
+  ],
+  "totalAfter": 5,
+  "calls": {
+    "apiPost": [
+      {
+        "path": "sprint-data",
+        "payloadKeys": [
+          "sprint",
+          "roleItems"
+        ]
+      }
+    ],
+    "markDirty": [
+      "roleItems"
+    ],
+    "draftSet": [
+      "roleItems",
+      "meta"
+    ],
+    "renders": [
+      "comp:analysis",
+      "rem:analysis",
+      "est:analysis"
+    ],
+    "toasts": [
+      {
+        "msg": "Подобрано исполнителей из бандла: : 1 ( (дублей пропущено: : 1)",
+        "type": "success"
+      }
+    ]
+  },
+  "cacheReset": true
+}

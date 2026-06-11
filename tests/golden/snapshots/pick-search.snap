@@ -1,0 +1,87 @@
+{
+  "result": {
+    "items": [
+      {
+        "idReadable": "GM-1",
+        "isAdded": true,
+        "state": "Open",
+        "summary": "Synthetic issue 1",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-2",
+        "isAdded": true,
+        "state": "In Progress",
+        "summary": "Synthetic issue 2",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-3",
+        "isAdded": true,
+        "state": "Open",
+        "summary": "Synthetic issue 3",
+        "priority": "Major"
+      },
+      {
+        "idReadable": "GM-4",
+        "isAdded": true,
+        "state": "In Progress",
+        "summary": "Synthetic issue 4",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-5",
+        "isAdded": false,
+        "state": "Open",
+        "summary": "Synthetic issue 5",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-6",
+        "isAdded": false,
+        "state": "In Progress",
+        "summary": "Synthetic issue 6",
+        "priority": "Major"
+      },
+      {
+        "idReadable": "GM-7",
+        "isAdded": false,
+        "state": "Open",
+        "summary": "Synthetic issue 7",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-8",
+        "isAdded": false,
+        "state": "In Progress",
+        "summary": "Synthetic issue 8",
+        "priority": "Normal"
+      },
+      {
+        "idReadable": "GM-9",
+        "isAdded": false,
+        "state": "Open",
+        "summary": "Synthetic issue 9",
+        "priority": "Major"
+      },
+      {
+        "idReadable": "GM-10",
+        "isAdded": false,
+        "state": "In Progress",
+        "summary": "Synthetic issue 10",
+        "priority": "Normal"
+      }
+    ],
+    "hasMore": true
+  },
+  "fetches": [
+    {
+      "kind": "yt",
+      "path": "issues",
+      "query": "project: GM #Unresolved",
+      "skip": 0
+    }
+  ],
+  "cacheSize": 10,
+  "fingerprint": "project: GM #Unresolved|GM"
+}

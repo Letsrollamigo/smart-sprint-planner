@@ -1,0 +1,8 @@
+{
+  "identical": "NONE",
+  "allocChanged": "ALLOCATED_REVAL",
+  "itemAdded": "CONFIRMED_REVAL",
+  "itemRemoved": "CONFIRMED_REVAL",
+  "resourceChanged": "ALLOCATED_REVAL",
+  "datesChanged": "META_ONLY"
+}

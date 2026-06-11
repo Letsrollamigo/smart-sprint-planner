@@ -1,0 +1,33 @@
+{
+  "nullData": {
+    "ok": false,
+    "reason": "not_object"
+  },
+  "stringData": {
+    "ok": false,
+    "reason": "not_object"
+  },
+  "wrongFormat": {
+    "ok": false,
+    "reason": "wrong_format"
+  },
+  "noVersion": {
+    "ok": false,
+    "reason": "unsupported_version"
+  },
+  "newerVersion": {
+    "ok": false,
+    "reason": "unsupported_version"
+  },
+  "noRecords": {
+    "ok": false,
+    "reason": "no_records"
+  },
+  "ownOk": {
+    "ok": true
+  },
+  "crossForkOk": {
+    "ok": true
+  },
+  "crossForkDetected": true
+}

@@ -1,0 +1,52 @@
+{
+  "draft": {
+    "schemaVersion": 1,
+    "key": "gm-hist-2026-05_analysis",
+    "baseSnapshotHash": "603cae12",
+    "baseStatusAtOpen": "FINISHED",
+    "createdAt": 1780315200000,
+    "updatedAt": 1780315200000,
+    "editorLogin": "gm_user_editor",
+    "sprint": {
+      "sprintId": "gm-hist-2026-05_analysis",
+      "name": "GM Hist May 2026",
+      "dateStart": 1776556800000,
+      "dateEnd": 1778889600000,
+      "sprintFieldVal": null,
+      "versionFieldVal": null,
+      "resourceAnalysis": 1800
+    },
+    "items": [
+      {
+        "issueId": "GM-H1",
+        "title": "Историческая задача анализа",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 600,
+        "fact_analysis": 600,
+        "alloc_analysis": 600,
+        "priority": "Major",
+        "state": "Fixed"
+      },
+      {
+        "issueId": "GM-H2",
+        "title": "Историческая задача без alloc",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 900,
+        "fact_analysis": 300,
+        "alloc_analysis": null,
+        "priority": "Normal",
+        "state": "Fixed"
+      }
+    ],
+    "personalPlanning": {},
+    "gantt": null,
+    "revisions": []
+  },
+  "tokenPresent": true,
+  "historyFlag": true,
+  "draftRegistered": true
+}

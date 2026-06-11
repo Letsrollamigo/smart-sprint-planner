@@ -1,0 +1,58 @@
+{
+  "spec": {
+    "id": "importReplaceHist",
+    "type": "destructive",
+    "title": "Полное восстановление истории",
+    "body": {
+      "kind": "lines",
+      "lines": [
+        {
+          "html": "⚠ Это сотрёт <b>всю текущую историю</b> и заменит содержимым файла.",
+          "style": {
+            "color": "var(--error)"
+          }
+        },
+        {
+          "text": "Операция необратима. Продолжить?",
+          "style": {
+            "marginTop": "8px",
+            "fontSize": "13px",
+            "color": "var(--muted)"
+          }
+        }
+      ]
+    },
+    "buttons": [
+      {
+        "id": "cancel",
+        "text": "Отмена",
+        "variant": "secondary",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "yes",
+        "text": "Да, заменить всё",
+        "variant": "danger",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "cancelPending": null,
+    "escapePending": null,
+    "yesPending": {
+      "records": [
+        {
+          "sprintId": "gm-s1"
+        }
+      ]
+    },
+    "replaceAllCalls": [
+      "replaceAll"
+    ]
+  }
+}

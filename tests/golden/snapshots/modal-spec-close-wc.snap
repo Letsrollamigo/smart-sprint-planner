@@ -1,0 +1,36 @@
+{
+  "spec": {
+    "id": "closeWc",
+    "type": "confirm",
+    "title": "Закрыть рабочую копию?",
+    "body": {
+      "kind": "text",
+      "text": "У вас есть незавершённая правка по выбранному спринту/роли. Изменения уже сохранены автоматически — вы сможете продолжить позже из Истории."
+    },
+    "buttons": [
+      {
+        "id": "cancel",
+        "text": "Отмена",
+        "variant": "secondary",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "confirm",
+        "text": "Закрыть и переключить",
+        "variant": "primary",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false
+  },
+  "behavior": {
+    "confirm": [
+      true
+    ],
+    "cancel": [
+      false
+    ]
+  }
+}

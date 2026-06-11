@@ -1,0 +1,20 @@
+{
+  "analysis": {
+    "resource": 30,
+    "totalAlloc": 20,
+    "taskCount": 2,
+    "overlimit": false
+  },
+  "testing": {
+    "resource": 20,
+    "totalAlloc": 20,
+    "taskCount": 1,
+    "overlimit": false
+  },
+  "devBack": {
+    "resource": 0,
+    "totalAlloc": 0,
+    "taskCount": 0,
+    "overlimit": false
+  }
+}
