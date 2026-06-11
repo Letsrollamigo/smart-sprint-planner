@@ -8188,35 +8188,30 @@
   var HIST_EXPORT_FORMAT_VER = 1;
   var HIST_ACCEPTED_FORMATS  = ['scbt-sprint-history', 'ssp-sprint-history'];
 
-  function _anonymizeHistRecords(records) {
-    return records.map(function(rec) {
-      var r = JSON.parse(JSON.stringify(rec));
-      if (r.settings) {
-        delete r.settings.kpe; delete r.settings.rate;
-        ['analysis','development','testing','devops','analytics','management','design','qa','support'].forEach(function(rk){
-          if (r.settings['rate_' + rk] !== undefined) delete r.settings['rate_' + rk];
-          if (r.settings['kpe_'  + rk] !== undefined) delete r.settings['kpe_'  + rk];
-        });
-      }
-      return r;
-    });
-  }
-
-  function _buildHistEnvelope(records, anonymize) {
-    var recs = anonymize ? _anonymizeHistRecords(records) : records;
-    var su   = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
-    var proj = _projectDisplayName || (_ctx && _ctx.project && (_ctx.project.shortName || _ctx.project.id)) || '';
+  /* Кластер экспорта/импорта истории (anonymize, конверт, preflight, файл-стем,
+     импорт-диалог) вынесен в widgets/main/src/history-io.js (window.__SSP_HISTORY_IO)
+     — Тир C. Делегаторы; контекст собирается в _histIoDeps на вызове. Формат-маркеры
+     HIST_* остаются здесь: значения намеренно различаются между форками (cross-fork
+     приём). _triggerJsonDownload / exportPerSprintJson / _importHistPending — тоже здесь. */
+  var HISTORY_IO = (typeof window !== 'undefined' && window.__SSP_HISTORY_IO) || {};
+  function _histIoDeps() {
     return {
-      format:        HIST_EXPORT_FORMAT,
-      formatVersion: HIST_EXPORT_FORMAT_VER,
-      pluginVersion: APP_VERSION,
-      exportedAt:    Date.now(),
-      exportedBy:    (_currentUser && _currentUser.login) || '',
-      sourceProject: proj,
-      sourceInstance: su,
-      anonymized:    !!anonymize,
-      records:       recs
+      t: T, toast: toast, diag: diag, fmtDate: fmtDate, fmtDT: fmtDT,
+      histExportFormat: HIST_EXPORT_FORMAT, histExportFormatVer: HIST_EXPORT_FORMAT_VER,
+      histAcceptedFormats: HIST_ACCEPTED_FORMATS, appVersion: APP_VERSION,
+      projectDisplayName: _projectDisplayName, ctx: _ctx, currentUser: _currentUser,
+      history: _history, openModal: openModal,
+      triggerJsonDownload: _triggerJsonDownload,
+      submitHistImport: _submitHistImport,
+      openImportReplaceConfirm: _openImportReplaceConfirm,
+      setImportHistPending: function (v) { _importHistPending = v; },
     };
+  }
+  function _anonymizeHistRecords(records) {
+    return HISTORY_IO._anonymizeHistRecords(records);
+  }
+  function _buildHistEnvelope(records, anonymize) {
+    return HISTORY_IO._buildHistEnvelope(records, anonymize, _histIoDeps());
   }
 
   function _triggerJsonDownload(obj, fileName) {
@@ -8228,18 +8223,12 @@
   }
 
   function _histFileStem() {
-    var proj = (_projectDisplayName || 'project').replace(/[\\/:*?"<>|]/g, '_');
-    var d    = new Date(); var ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    return 'ssp-history_' + proj + '_' + ds;
+    return HISTORY_IO._histFileStem(_histIoDeps());
   }
 
   /* Экспорт всей истории */
   function exportAllHistoryToJson(anonymize) {
-    if (!_history || !_history.length) { toast(T('emptyHistory') || 'Нет истории', 'warn'); return; }
-    var env = _buildHistEnvelope(_history, anonymize);
-    _triggerJsonDownload(env, _histFileStem() + '.json');
-    toast(T('toastHistExported') || 'История экспортирована', 'success');
-    diag('JSON history exported: ' + _history.length + ' records', 'ok');
+    return HISTORY_IO.exportAllHistoryToJson(anonymize, _histIoDeps());
   }
 
   /* Экспорт одного спринта (все роли) по базовому sprintId */
@@ -8284,115 +8273,16 @@
 
   /* ── Preflight-валидация конверта ── */
   function _preflightHistFile(data) {
-    if (!data || typeof data !== 'object') return { ok: false, reason: 'not_object' };
-    if (HIST_ACCEPTED_FORMATS.indexOf(data.format) < 0) return { ok: false, reason: 'wrong_format' };
-    if (!data.formatVersion || data.formatVersion > HIST_EXPORT_FORMAT_VER) return { ok: false, reason: 'unsupported_version' };
-    if (!Array.isArray(data.records)) return { ok: false, reason: 'no_records' };
-    return { ok: true };
+    return HISTORY_IO._preflightHistFile(data, _histIoDeps());
   }
 
   /* ── Диалог импорта (Promise-based) ── */
   var _importHistPending = null; // { records, mode, selectedBaseIds }
 
   function openImportHistDialog(data) {
-    return new Promise(function(resolve) {
-      var pf = _preflightHistFile(data);
-      if (!pf.ok) {
-        toast(T('toastHistImportInvalid') || 'Файл не является историей спринтов', 'err');
-        resolve(null); return;
-      }
-      var records = data.records;
-      if (!records.length) {
-        toast(T('importHistEmpty') || 'Нет записей для импорта', 'warn');
-        resolve(null); return;
-      }
-
-      // Существующие базовые sprintId
-      var existingBaseIds = {};
-      (_history || []).forEach(function(h){ if (h && h.sprintId) existingBaseIds[String(h.sprintId).split('_')[0]] = true; });
-
-      // Группируем записи файла по базовому sprintId
-      var groups = {}; // baseId → { baseId, name, dateStart, roleCount, hasCollision }
-      records.forEach(function(r) {
-        if (!r || !r.sprintId) return;
-        var base = String(r.sprintId).split('_')[0];
-        if (!groups[base]) groups[base] = { baseId: base, name: r.name || base, dateStart: r.dateStart, roleCount: 0, hasCollision: !!existingBaseIds[base] };
-        groups[base].roleCount++;
-      });
-      var groupList = Object.keys(groups).map(function(k){ return groups[k]; });
-
-      // Cross-fork и cross-instance флаги
-      var isCrossFork     = data.format !== HIST_EXPORT_FORMAT;
-      var su              = (typeof YTApp !== 'undefined' && YTApp.serverUrl) ? YTApp.serverUrl : '';
-      var isCrossInstance = !!(data.sourceInstance && su && data.sourceInstance !== su);
-      var isVersionNewer  = !!(data.pluginVersion && data.pluginVersion > APP_VERSION);
-
-      if (!window.__SSP_RING_MODAL) { resolve(null); return; }
-
-      // Info-строки (label/value) — рендерятся компонентом importHistForm
-      var infoRows = [];
-      if (data.sourceProject)  infoRows.push({ label: T('importHistProject'),    value: data.sourceProject, bold: true });
-      if (data.sourceInstance) infoRows.push({ label: T('importHistInstance'),   value: data.sourceInstance });
-      if (data.exportedAt)     infoRows.push({ label: T('importHistExportedAt'), value: fmtDT(data.exportedAt) });
-      if (data.pluginVersion)  infoRows.push({ label: T('importHistPluginVer'),  value: data.pluginVersion });
-      infoRows.push({ label: T('importHistSprintsLabel'), value: String(groupList.length) });
-
-      // Предупреждения (cross-fork / cross-instance / более новая версия)
-      var warnings = [];
-      if (isCrossFork)     warnings.push({ text: (T('importHistCrossFork') || '').replace('{fork}', data.format), color: 'var(--primary,#0d6efd)' });
-      if (isCrossInstance) warnings.push({ text: T('importHistCrossInstance') || '', color: 'var(--warn-text,#b36800)' });
-      if (isVersionNewer)  warnings.push({ text: (T('importHistVersionWarn') || '').replace('{v}', data.pluginVersion), color: 'var(--warn-text,#b36800)' });
-
-      /* Phase 3 #32 — мигрировано на openModal() (bespoke importHistForm, настоящий React).
-         Чекбоксы выбора спринтов — обычный React-стейт (НЕ Ring Table → нет mousedown-проблемы
-         B11/B12). Promise-контракт сохранён: {action:'merge'} / {action:'replace'} / null. */
-      var decided = null;  // null=отмена; {action:'merge',sel,mode} / {action:'replace'}
-      var h = openModal({
-        id: 'importHist',
-        type: 'form',
-        title: T('importHistTitle'),
-        body: { kind: 'component', name: 'importHistForm', props: {
-          infoRows: infoRows,
-          anonText: data.anonymized ? ('🔒 ' + (T('importHistAnonBadge') || '')) : '',
-          warnings: warnings,
-          groups: groupList.map(function(g){
-            return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDate(g.dateStart) : '', collision: !!g.hasCollision };
-          }),
-          labels: {
-            collisionBadge: T('importHistCollisionBadge') || 'дубль',
-            modeLabel:      T('importHistModeLabel')      || 'При совпадении sprintId:',
-            modeSkip:       T('importHistModeSkip')       || 'Пропустить дубли',
-            modeOverwrite:  T('importHistModeOverwrite')  || 'Перезаписать дубли',
-            replaceText:    T('btnImportReplace')         || 'Полное восстановление…',
-            replaceTitle:   T('btnImportReplaceTitle')    || '',
-            cancelText:     T('btnCancel')                || 'Отмена',
-            submitText:     T('btnImport')                || 'Импортировать',
-          },
-          onSubmit:  function(sel, mode){ decided = { action: 'merge', sel: sel, mode: mode }; h.close(); },
-          onReplace: function(){ decided = { action: 'replace' }; h.close(); },
-          onCancel:  function(){ decided = null; h.close(); },
-        }},
-        buttons: [],
-        dismissOnBackdrop: true,
-        blockEscape: false,
-        showCloseButton: true,
-        onClose: function(){
-          if (!decided) { resolve(null); return; }
-          if (decided.action === 'merge') {
-            _submitHistImport(decided.sel, decided.mode, records)
-              .then(function(){ resolve({ action: 'merge' }); })
-              .catch(function(){ resolve({ action: 'merge' }); });
-          } else {
-            _importHistPending = { records: records };
-            resolve({ action: 'replace' });
-            _openImportReplaceConfirm();
-          }
-        },
-      });
-    });
+    return HISTORY_IO.openImportHistDialog(data, _histIoDeps());
   }
 
-  /* ── Merge и запись истории ── */
   function _submitHistImport(selectedBaseIds, mode, fileRecords) {
     var current = (_history || []).slice();
     var toAdd   = fileRecords.filter(function(r){ return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });

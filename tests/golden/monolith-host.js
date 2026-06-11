@@ -52,6 +52,7 @@ const BRIDGE_SCRIPTS = [
   'modal-specs.js',
   'excel-export.js',
   'revalidation.js',
+  'history-io.js',
 ];
 
 const GM_HOOK = `

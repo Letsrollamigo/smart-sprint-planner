@@ -27,6 +27,7 @@ import './share-url-pure.js';
 import './modal-specs.js';
 import './excel-export.js';
 import './revalidation.js';
+import './history-io.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
