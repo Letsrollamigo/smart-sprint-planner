@@ -22,6 +22,17 @@ test('golden: renderWidgetHeader — селектор спринтов, бейд
   checkJsonSnapshot('widget-header', out);
 });
 
+/* ── Stand-up, ступень 2 (React): оракул = vm-контракт «standup-view.js →
+   __SSP_STANDUP_MOUNT» (recording-стаб харнесса стэшит vm на
+   #standupViewHost.__sspStandupVm). Снапшоты регенерированы со ступени 1
+   (innerHTML → структурный vm) с ручным ревью паритета: те же бакеты/тексты/
+   каунты/видимость. Статические empty-states (noSprint/emptyRole) — по-прежнему
+   реальный DOM (classList), их контракт не менялся. ── */
+
+function standupVm(document) {
+  return document.getElementById('standupViewHost').__sspStandupVm;
+}
+
 test('golden: renderStandupView — бакеты текущей роли (devBack)', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
@@ -30,10 +41,11 @@ test('golden: renderStandupView — бакеты текущей роли (devBac
   settings.standupDoneStates = ['Fixed'];
   gm.set({ _settings: settings, _activeSubtab: 'devBack' });
   gm.call('renderStandupView');
+  const vm = standupVm(document);
   const out = {
-    buckets: document.getElementById('standupBuckets').innerHTML,
-    goalBannerVisible: document.getElementById('standupGoalBanner').style.display !== 'none',
-    goalText: document.getElementById('standupGoalText').textContent,
+    buckets: vm.buckets,
+    goalBannerVisible: vm.goalBannerVisible,
+    goalText: vm.goalText,
     emptyRoleHidden: document.getElementById('standupEmptyRole').classList.contains('hidden'),
   };
   checkJsonSnapshot('standup-devback', out);
@@ -46,7 +58,7 @@ test('golden: renderStandupView — нет спринта (empty-state)', () => 
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-no-sprint', {
     noSprintVisible: !document.getElementById('standupNoSprint').classList.contains('hidden'),
-    bucketsHidden: document.getElementById('standupBuckets').style.display === 'none',
+    bucketsHidden: !standupVm(document).bucketsVisible,
   });
 });
 
@@ -64,8 +76,8 @@ test('golden: renderStandupView — done-состояния из fallback rollup
   gm.set({ _settings: settings });
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-fallback-done', {
-    buckets: document.getElementById('standupBuckets').innerHTML,
-    noDoneHintHidden: document.getElementById('standupNoDoneStatesHint').style.display === 'none',
+    buckets: standupVm(document).buckets,
+    noDoneHintHidden: !standupVm(document).noDoneHintVisible,
   });
 });
 
@@ -76,8 +88,8 @@ test('golden: renderStandupView — done-состояния не настрое�
      GM-3 (fact>0) уезжает в inflight вместо done. */
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-no-done-states', {
-    buckets: document.getElementById('standupBuckets').innerHTML,
-    noDoneHintVisible: document.getElementById('standupNoDoneStatesHint').style.display !== 'none',
+    buckets: standupVm(document).buckets,
+    noDoneHintVisible: standupVm(document).noDoneHintVisible,
   });
 });
 
@@ -91,7 +103,7 @@ test('golden: renderStandupView — пустая роль (empty-state)', () => 
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-empty-role', {
     emptyRoleVisible: !document.getElementById('standupEmptyRole').classList.contains('hidden'),
-    bucketsHidden: document.getElementById('standupBuckets').style.display === 'none',
+    bucketsHidden: !standupVm(document).bucketsVisible,
     noSprintHidden: document.getElementById('standupNoSprint').classList.contains('hidden'),
   });
 });
@@ -106,7 +118,7 @@ test('golden: селектор роли Stand-up — populate + PP-обогащ�
   gm.call('_populateStandupRoleSel');
   const sel = document.getElementById('standupRoleSel');
   gm.call('renderStandupView');
-  const bucketsDevBack = document.getElementById('standupBuckets').innerHTML;
+  const bucketsDevBack = standupVm(document).buckets;
   /* Смена роли в селекте перерисовывает бакеты (контракт onchange). */
   sel.value = 'analysis';
   sel.dispatchEvent(new window.Event('change'));
@@ -114,7 +126,7 @@ test('golden: селектор роли Stand-up — populate + PP-обогащ�
     selOptions: sel.innerHTML,
     selValueAfterPopulate: 'devBack',
     bucketsDevBack: bucketsDevBack,
-    bucketsAfterChange: document.getElementById('standupBuckets').innerHTML,
+    bucketsAfterChange: standupVm(document).buckets,
   });
 });
 

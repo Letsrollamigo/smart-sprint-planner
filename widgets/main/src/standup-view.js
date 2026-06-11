@@ -1,13 +1,20 @@
 'use strict';
-// Stand-up view extracted from widgets/main/src/legacy-monolith.js (Tier D slice 1,
-// stage 1 — faithful as-is move). Browser bridge: window.__SSP_STANDUP_VIEW.
-// Golden-tested in tests/golden/render-shell.golden.test.js (bucket classification
-// incl. fallback done-states, empty states, role selector populate/onchange,
-// refresh contract: no-field early exit / mutation+persist chain / no-change).
+// Stand-up view extracted from widgets/main/src/legacy-monolith.js (Tier D slice 1).
+// Browser bridge: window.__SSP_STANDUP_VIEW. Stage 2 (React-ификация): рендер-ядро
+// строит view-model и отдаёт его React-мосту window.__SSP_STANDUP_MOUNT
+// (react/standup-view.jsx) — DOM бакетов/баннера/хинтов собирает React.
+// Статические empty-states index.html (standupNoSprint/standupEmptyRole, CTA-бинды
+// per-element) остаются под прямым classList-управлением отсюда.
+// Golden-tested in tests/golden/render-shell.golden.test.js (vm-контракт «модуль →
+// __SSP_STANDUP_MOUNT»: классификация бакетов вкл. fallback done-states, empty
+// states, селектор роли populate/onchange, refresh contract: no-field early exit /
+// mutation+persist chain / no-change).
 //
-// Bodies mirror the IIFE originals 1:1 modulo state access. The monolith keeps thin
+// Классификация/PP/контроллеры — 1:1 со ступени 1. The monolith keeps thin
 // delegators (building deps per call via _standupDeps). Injected deps:
-//   T, esc, fmtHours              — i18n + pure formatters (monolith aliases)
+//   T, esc, fmtHours              — i18n + pure formatters (monolith aliases;
+//                                   esc после React-ификации не используется —
+//                                   контракт _standupDeps не сужаем)
 //   getActiveRoles                — shared role helper (stays in monolith)
 //   getPersonalPlanningForCurrent — canonical PP read (v2.2.4 fix), stays in monolith
 //   state                         — get-аксессоры монолитного стейта, читаются
@@ -50,27 +57,17 @@ function _standupPP(rk, deps) {
   return (typeof deps.getPersonalPlanningForCurrent === 'function') ? deps.getPersonalPlanningForCurrent(rk) : null;
 }
 
-function _renderStandupBucket(containerId, titleKey, issueIds, rk, deps) {
-  var el = document.getElementById(containerId);
-  if (!el) return;
-  var esc = deps.esc, fmtHours = deps.fmtHours;
+/* Строки бакета для vm — расчёты 1:1 с vanilla-рендером ступени 1
+   (factSum по fact_*, planH из assignment либо item, trunc 60→57+…, hours
+   «факт/план» при planH или «факт» при factSum). Экранирование ушло: React
+   эскейпит текст сам, vm несёт сырые строки. */
+function _buildStandupBucketRows(issueIds, rk, deps) {
+  var fmtHours = deps.fmtHours;
   var pp = _standupPP(rk, deps);
   var assignments = (pp && pp.taskAssignments) || {};
   var _roleItems = deps.state.getRoleItems();
   var roleItems   = (_roleItems && _roleItems[rk]) || [];
-  el.innerHTML = '';
-  var hdr = document.createElement('div');
-  hdr.style.cssText = 'font-weight:600;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border,#e0e0e0)';
-  hdr.textContent = deps.T(titleKey) + ' (' + issueIds.length + ')';
-  el.appendChild(hdr);
-  if (!issueIds.length) {
-    var emp = document.createElement('div');
-    emp.style.cssText = 'font-size:11px;color:var(--muted,#888);text-align:center;padding:12px 0';
-    emp.textContent = '—';
-    el.appendChild(emp);
-    return;
-  }
-  issueIds.forEach(function(issueId) {
+  return issueIds.map(function(issueId) {
     var a = assignments[issueId] || {};
     var item = roleItems.find(function(i){ return i.issueId === issueId; });
     var title = (item && item.title) || issueId;
@@ -78,39 +75,42 @@ function _renderStandupBucket(containerId, titleKey, issueIds, rk, deps) {
     var factSum = 0;
     Object.keys(a).forEach(function(k){ if (/^fact_/.test(k)) factSum += (a[k] || 0); });
     var planH = a['estimate_'+rk] || (item && item['estimate_'+rk]) || 0;
-    var row = document.createElement('div');
-    row.style.cssText = 'padding:5px 0;border-bottom:1px solid var(--border,#e0e0e0);font-size:12px;';
-    var idHtml = url
-      ? '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="font-weight:600;color:var(--primary)">' + esc(issueId) + '</a>'
-      : '<span style="font-weight:600">' + esc(issueId) + '</span>';
     var titleTrunc = title.length > 60 ? title.substring(0, 57) + '…' : title;
-    var hoursHtml = planH
-      ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + '/' + fmtHours(planH) + '</span>'
-      : (factSum ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + '</span>' : '');
+    var hours = planH
+      ? fmtHours(factSum) + '/' + fmtHours(planH)
+      : (factSum ? fmtHours(factSum) : '');
     var assignee = a.assignee || (item && item.assignee) || '';
-    var assigneeHtml = assignee ? '<div style="font-size:11px;color:var(--muted,#888);margin-top:2px">@' + esc(assignee) + '</div>' : '';
-    row.innerHTML = hoursHtml + idHtml + ' <span title="'+esc(title)+'" style="color:var(--text)">'+esc(titleTrunc)+'</span>' + assigneeHtml;
-    el.appendChild(row);
+    return { issueId: issueId, url: url, title: title, titleTrunc: titleTrunc, hours: hours, assignee: assignee };
   });
+}
+
+/* vm → React-мост. Флаги видимости заменяют display-toggle ступени 1 (conditional
+   render); host/мост читаются в момент вызова (late binding — в golden-харнессе
+   мост = recording-стаб). */
+function _mountStandupVm(vm) {
+  var host = document.getElementById('standupViewHost');
+  var mount = (typeof window !== 'undefined' && window.__SSP_STANDUP_MOUNT) || null;
+  if (host && mount && typeof mount.mountAt === 'function') mount.mountAt(host, vm);
+}
+
+function _hiddenStandupVm() {
+  return {
+    goalBannerVisible: false, goalLabel: '', goalText: '',
+    goalMissingVisible: false, goalMissingText: '',
+    bucketsVisible: false, buckets: [],
+    noDoneHintVisible: false, noDoneHintText: '',
+  };
 }
 
 function renderStandupView(deps) {
   var noSprint   = document.getElementById('standupNoSprint');
   var emptyRole  = document.getElementById('standupEmptyRole');
-  var buckets    = document.getElementById('standupBuckets');
-  var noDoneHint = document.getElementById('standupNoDoneStatesHint');
-  var goalBanner = document.getElementById('standupGoalBanner');
-  var goalMissing= document.getElementById('standupGoalMissingHint');
-  var goalText   = document.getElementById('standupGoalText');
   var _sprint = deps.state.getSprint();
   // Empty state: no sprint
   if (!_sprint) {
     if (noSprint)   noSprint.classList.remove('hidden');
     if (emptyRole)  emptyRole.classList.add('hidden');
-    if (buckets)    buckets.style.display = 'none';
-    if (noDoneHint) noDoneHint.style.display = 'none';
-    if (goalBanner) goalBanner.style.display = 'none';
-    if (goalMissing)goalMissing.style.display = 'none';
+    _mountStandupVm(_hiddenStandupVm());
     return;
   }
   if (noSprint) noSprint.classList.add('hidden');
@@ -121,14 +121,13 @@ function renderStandupView(deps) {
     var activeRoles = deps.getActiveRoles();
     rk = activeRoles.length ? activeRoles[0].key : '';
   }
-  // Sprint goal banner
-  if (_sprint.sprintGoal) {
-    if (goalBanner) { goalBanner.style.display = ''; if (goalText) goalText.textContent = _sprint.sprintGoal; }
-    if (goalMissing) goalMissing.style.display = 'none';
-  } else {
-    if (goalBanner) goalBanner.style.display = 'none';
-    if (goalMissing) goalMissing.style.display = '';
-  }
+  // Sprint goal banner (флаги — в обоих исходах ниже, вкл. пустую роль)
+  var vm = _hiddenStandupVm();
+  vm.goalBannerVisible  = !!_sprint.sprintGoal;
+  vm.goalLabel          = deps.T('standupGoalLabel');
+  vm.goalText           = _sprint.sprintGoal || '';
+  vm.goalMissingVisible = !_sprint.sprintGoal;
+  vm.goalMissingText    = deps.T('standupGoalMissing');
   // Empty state: no tasks in role
   var pp = _standupPP(rk, deps);  /* канон-источник (v2.2.4 фикс) — не сырой кэш _sprint.personalPlanning[rk] */
   var assignments = (pp && pp.taskAssignments) || {};
@@ -137,18 +136,18 @@ function renderStandupView(deps) {
   var roleItems = (_roleItems && _roleItems[rk]) || [];
   if (!hasItems && !roleItems.length) {
     if (emptyRole)  emptyRole.classList.remove('hidden');
-    if (buckets)    buckets.style.display = 'none';
-    if (noDoneHint) noDoneHint.style.display = 'none';
+    _mountStandupVm(vm);
     return;
   }
   if (emptyRole) emptyRole.classList.add('hidden');
-  if (buckets)   buckets.style.display = '';
+  vm.bucketsVisible = true;
   // Done states resolution
   var _settings = deps.state.getSettings();
   var doneStates = (_settings && Array.isArray(_settings.standupDoneStates) && _settings.standupDoneStates.length)
     ? _settings.standupDoneStates
     : _stateRollupFallbackDone(deps);
-  if (noDoneHint) noDoneHint.style.display = doneStates.length ? 'none' : '';
+  vm.noDoneHintVisible = !doneStates.length;
+  vm.noDoneHintText    = deps.T('standupNoDoneStatesHint');
   // Build a unified map: combine personalPlanning.taskAssignments + roleItems for state
   var unifiedMap = {};
   roleItems.forEach(function(item) {
@@ -165,9 +164,12 @@ function renderStandupView(deps) {
     if (a.assignee) unifiedMap[id].assignee = a.assignee;
   });
   var classified = _classifyStandupBuckets(unifiedMap, doneStates);
-  _renderStandupBucket('standupBucketDone',       'standupBucketDone',       classified.done,       rk, deps);
-  _renderStandupBucket('standupBucketInflight',   'standupBucketInflight',   classified.inflight,   rk, deps);
-  _renderStandupBucket('standupBucketNotStarted', 'standupBucketNotStarted', classified.notStarted, rk, deps);
+  vm.buckets = [
+    { id: 'standupBucketDone',       header: deps.T('standupBucketDone')       + ' (' + classified.done.length       + ')', rows: _buildStandupBucketRows(classified.done,       rk, deps) },
+    { id: 'standupBucketInflight',   header: deps.T('standupBucketInflight')   + ' (' + classified.inflight.length   + ')', rows: _buildStandupBucketRows(classified.inflight,   rk, deps) },
+    { id: 'standupBucketNotStarted', header: deps.T('standupBucketNotStarted') + ' (' + classified.notStarted.length + ')', rows: _buildStandupBucketRows(classified.notStarted, rk, deps) },
+  ];
+  _mountStandupVm(vm);
 }
 
 function _populateStandupRoleSel(deps) {
