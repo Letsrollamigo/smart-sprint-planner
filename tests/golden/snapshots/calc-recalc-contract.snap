@@ -1,0 +1,69 @@
+{
+  "guardToasts": [
+    [
+      "info",
+      "Список исполнителей пуст. Сначала нажмите «Подобрать исполнителей»."
+    ]
+  ],
+  "recalc": {
+    "toasts": [
+      [
+        "success",
+        "Ресурс пересчитан"
+      ]
+    ],
+    "resources": {
+      "gm_user_1": {
+        "resource": 108.75,
+        "manualResource": null,
+        "grade": "Senior",
+        "kpe": 1,
+        "participation": 1,
+        "nkc": 168
+      },
+      "gm_user_2": {
+        "resource": 94.25,
+        "manualResource": 12,
+        "grade": "Middle",
+        "kpe": 0.8,
+        "participation": 0.5,
+        "nkc": 168
+      }
+    },
+    "nkcKey": "other",
+    "calculatedAt": 1780315200000
+  },
+  "manual": {
+    "toasts": [
+      [
+        "success",
+        "Ресурс пересчитан"
+      ]
+    ],
+    "resources": {
+      "gm_user_1": {
+        "resource": 40,
+        "manualResource": null,
+        "grade": "Senior",
+        "kpe": 1,
+        "participation": 1,
+        "nkc": 168
+      },
+      "gm_user_2": {
+        "resource": 16,
+        "manualResource": 12,
+        "grade": "Middle",
+        "kpe": 0.8,
+        "participation": 0.5,
+        "nkc": 168
+      }
+    },
+    "nkcKey": "other"
+  },
+  "apiPostPaths": [
+    "history",
+    "sprint-data",
+    "history",
+    "sprint-data"
+  ]
+}

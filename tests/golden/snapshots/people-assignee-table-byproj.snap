@@ -1,0 +1,99 @@
+{
+  "sortKey": "off",
+  "stickyHeader": true,
+  "emptyText": "Выберите спринт и нажмите «Подобрать исполнителей»",
+  "itemKeys": [
+    "gm_user_1",
+    "gm_user_2"
+  ],
+  "columns": [
+    {
+      "id": "assigneeName",
+      "title": "Член команды",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "gm_user_1",
+        "gm_user_2"
+      ]
+    },
+    {
+      "id": "grade",
+      "title": "Грейд",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<select class=\"currentRole-grade-sel\" data-login=\"gm_user_1\" style=\"width:100%;font-size:12px\"><option value=\"Intern\">Стажёр</option><option value=\"Junior\">Джун</option><option value=\"Middle\">Мидл</option><option value=\"Senior\" selected>Синьор</option></select>"
+        },
+        {
+          "html": "<select class=\"currentRole-grade-sel\" data-login=\"gm_user_2\" style=\"width:100%;font-size:12px\"><option value=\"Intern\">Стажёр</option><option value=\"Junior\">Джун</option><option value=\"Middle\" selected>Мидл</option><option value=\"Senior\">Синьор</option></select>"
+        }
+      ]
+    },
+    {
+      "id": "resource",
+      "title": "Ресурс (ч)",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "40.00",
+        "16.00"
+      ]
+    },
+    {
+      "id": "allocByProject",
+      "title": "Аллокации по проектам",
+      "sortable": false,
+      "className": "td-alloc-by-sys",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<div class=\"alloc-by-sys-row\">Платёжный модуль · 15.00ч · 38%</div>"
+        },
+        {
+          "html": "<div class=\"alloc-by-sys-row alloc-by-sys-row--over alloc-by-sys-row--nosys\">Вне проектов/систем · 40.00ч · 250% ⚠</div>"
+        }
+      ]
+    },
+    {
+      "id": "remain",
+      "title": "Остаток (ч)",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span style=\"color:var(--success)\">25.00</span>"
+        },
+        {
+          "html": "<span style=\"color:var(--error)\">-24.00</span>"
+        }
+      ]
+    },
+    {
+      "id": "delete",
+      "title": "",
+      "sortable": false,
+      "className": "ssp-col-action",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee\" data-login=\"gm_user_1\" title=\"Удалить исполнителя\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        },
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee\" data-login=\"gm_user_2\" title=\"Удалить исполнителя\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        }
+      ]
+    }
+  ]
+}
