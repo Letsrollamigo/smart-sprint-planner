@@ -1,0 +1,35 @@
+{
+  "chunked": {
+    "fetches": [
+      {
+        "path": "activities",
+        "issueQuery": "issue id: GM-1, GM-2, GM-3, GM-4, GM-5, GM-6, GM-7, GM-8, GM-9, GM-10, GM-11, GM-12, GM-13, GM-14, GM-15, GM-16, GM-17, GM-18, GM-19, GM-20, GM-21, GM-22, GM-23, GM-24, GM-25",
+        "top": 300,
+        "reverse": "true",
+        "categories": "CustomFieldCategory",
+        "fields": "timestamp,target(idReadable),field(id,name,presentation),added(name,localizedName,color(background,foreground)),removed(name,localizedName,color(background,foreground))"
+      },
+      {
+        "path": "activities",
+        "issueQuery": "issue id: GM-26",
+        "top": 300,
+        "reverse": "true",
+        "categories": "CustomFieldCategory",
+        "fields": "timestamp,target(idReadable),field(id,name,presentation),added(name,localizedName,color(background,foreground)),removed(name,localizedName,color(background,foreground))"
+      }
+    ],
+    "fetchedAt": 1780315200000,
+    "nullRecord": {
+      "sinceTs": null,
+      "prev": null,
+      "prevColor": null
+    }
+  },
+  "ttlSkip": 2,
+  "forceRefetch": 4,
+  "keyChange": {
+    "fetches": 5,
+    "sprintKey": "sk-other"
+  },
+  "guards": 5
+}

@@ -1,0 +1,71 @@
+{
+  "byFieldId": {
+    "hist": {
+      "_sprintKey": "sk-detect",
+      "_fetchedAt": 1780315200000,
+      "GM-1": {
+        "sinceTs": 1780056000000,
+        "prev": "Открыта",
+        "prevColor": {
+          "background": "#e0f",
+          "foreground": "#111"
+        }
+      },
+      "GM-3": {
+        "sinceTs": 1780056000000,
+        "prev": "",
+        "prevColor": null
+      },
+      "GM-2": {
+        "sinceTs": null,
+        "prev": null,
+        "prevColor": null
+      },
+      "GM-4": {
+        "sinceTs": null,
+        "prev": null,
+        "prevColor": null
+      }
+    },
+    "dom": "<span data-gantt-hist-since=\"GM-1\">с 29.05</span><div data-gantt-hist-prev=\"GM-1\"><span style=\"display:inline-block;width:5px;height:5px;border-radius:50%;background:#e0f;margin-right:3px;vertical-align:middle\"></span>было «Открыта» · 3 дн. назад</div><span data-gantt-hist-since=\"GM-2\"></span><div data-gantt-hist-prev=\"GM-2\">переходов не было</div><span data-gantt-hist-since=\"GM-3\">с 29.05</span><div data-gantt-hist-prev=\"GM-3\">переходов не было</div><span data-gantt-hist-since=\"GM-4\"></span><div data-gantt-hist-prev=\"GM-4\">переходов не было</div>",
+    "request": {
+      "kind": "yt",
+      "path": "activities",
+      "query": {
+        "categories": "CustomFieldCategory",
+        "issueQuery": "issue id: GM-1, GM-2, GM-3, GM-4",
+        "fields": "timestamp,target(idReadable),field(id,name,presentation),added(name,localizedName,color(background,foreground)),removed(name,localizedName,color(background,foreground))",
+        "reverse": "true",
+        "$top": 300
+      }
+    }
+  },
+  "byCurState": {
+    "_sprintKey": "sk-curstates",
+    "_fetchedAt": 1780315200000,
+    "GM-7": {
+      "sinceTs": 1780056000000,
+      "prev": "Open",
+      "prevColor": null
+    },
+    "GM-8": {
+      "sinceTs": null,
+      "prev": null,
+      "prevColor": null
+    }
+  },
+  "byBundleType": {
+    "_sprintKey": "sk-bundletype",
+    "_fetchedAt": 1780315200000,
+    "GM-9": {
+      "sinceTs": 1780056000000,
+      "prev": "Open",
+      "prevColor": null
+    },
+    "GM-10": {
+      "sinceTs": null,
+      "prev": null,
+      "prevColor": null
+    }
+  }
+}

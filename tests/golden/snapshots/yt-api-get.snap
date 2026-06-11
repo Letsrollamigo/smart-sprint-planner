@@ -1,0 +1,25 @@
+{
+  "result": {
+    "success": true,
+    "marker": "payload"
+  },
+  "error": "network down",
+  "diag": [
+    {
+      "msg": "GET sprint-data [project]",
+      "type": "info"
+    },
+    {
+      "msg": "OK sprint-data",
+      "type": "ok"
+    },
+    {
+      "msg": "GET history [project]",
+      "type": "info"
+    },
+    {
+      "msg": "ERR history: network down",
+      "type": "err"
+    }
+  ]
+}
