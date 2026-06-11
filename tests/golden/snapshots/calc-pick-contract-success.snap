@@ -1,0 +1,42 @@
+{
+  "toasts": [
+    [
+      "success",
+      "Подобрано исполнителей из бандла: : 3"
+    ]
+  ],
+  "apiGetCalls": [
+    "get-user-field-values?fieldName=Backend%20Dev"
+  ],
+  "apiPostPaths": [
+    "history",
+    "sprint-data"
+  ],
+  "refreshCalls": [
+    "devBack"
+  ],
+  "resourcesByAssignee": {
+    "gm_user_1": {
+      "login": "gm_user_1",
+      "assigneeName": "GM User One",
+      "grade": "Senior",
+      "resource": 108.75
+    },
+    "gm_user_3": {
+      "login": "gm_user_3",
+      "assigneeName": "GM User Three",
+      "grade": "Middle",
+      "resource": 94.25
+    },
+    "gm_user_2": {
+      "login": "gm_user_2",
+      "assigneeName": "gm_user_2",
+      "grade": "Middle",
+      "resource": 94.25
+    }
+  },
+  "nkcKey": "other",
+  "calculatedAt": 1780315200000,
+  "pickBtnText": "Подобрать исполнителей",
+  "pickBtnDisabled": false
+}

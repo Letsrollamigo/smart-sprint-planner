@@ -1,0 +1,23 @@
+{
+  "resourcesByAssignee": {
+    "gm_user_1": {
+      "login": "gm_user_1",
+      "assigneeName": "GM User One",
+      "grade": "Senior",
+      "resource": 40
+    },
+    "gm_user_2": {
+      "login": "gm_user_2",
+      "assigneeName": "GM User Two",
+      "grade": "Middle",
+      "resource": 16,
+      "manualResource": 12
+    },
+    "gm_user_3": {
+      "login": "gm_user_3",
+      "assigneeName": "GM User Three",
+      "grade": "Middle",
+      "resource": 94.25
+    }
+  }
+}
