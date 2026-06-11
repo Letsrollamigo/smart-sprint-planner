@@ -3065,110 +3065,38 @@
     return resource - used;
   }
 
-  /* ═══ Backend API ══════════════════════════════════════════ */
-  /* #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global →
-     backend-global + projectKey (query нормализуется: путь может нести встроенный
-     '?a=b', раскладываем в единый объект query — без двойного '?'). */
-  function _backendCall(path, baseOpts) {
-    baseOpts = baseOpts || {};
-    if (_mode !== 'global') {
-      baseOpts.scope = true;
-      return _host.fetchApp('backend-project/' + path, baseOpts);
-    }
-    var q = {};
-    var qi = path.indexOf('?');
-    var cleanPath = path;
-    if (qi >= 0) {
-      cleanPath = path.slice(0, qi);
-      path.slice(qi + 1).split('&').forEach(function (pair) {
-        if (!pair) return;
-        var kv = pair.split('=');
-        q[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
-      });
-    }
-    if (baseOpts.query) {
-      Object.keys(baseOpts.query).forEach(function (k) { q[k] = baseOpts.query[k]; });
-    }
-    q.projectKey = _activeProjectKey;
-    baseOpts.query = q;
-    return _host.fetchApp('backend-global/' + cleanPath, baseOpts);
+  /* ═══ Backend API ══════════════════════════════════════════
+     IO-слой вынесен в widgets/main/src/youtrack-api.js (window.__SSP_YOUTRACK_API) —
+     Тир C. Делегаторы; контекст собирается в _ytApiDeps на вызове. Стейт
+     (_mode/_activeProjectKey — роутинг #25 Ф1; _sprint/_activeWorkingDraftKey/
+     _activeSubtab/_currentSprintRoleRec/_history — save-сайд-эффекты apiPost;
+     _ganttStateHist — кэш Ганта #20) остаётся здесь — модуль ходит к нему через
+     аксессоры deps.state. */
+  var YT_API = (typeof window !== 'undefined' && window.__SSP_YOUTRACK_API) || {};
+  function _ytApiDeps() {
+    return {
+      diag: diag, host: _host, STATUS: STATUS, settings: _settings,
+      markSavedAndCleanup: markSavedAndCleanup,
+      saveRoleHistorySnapshot: saveRoleHistorySnapshot,
+      updateGanttHistDOM: _updateGanttHistDOM,
+      getGanttContainer: function () { return document.getElementById('ganttContainer'); },
+      state: {
+        getMode: function () { return _mode; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        getSprint: function () { return _sprint; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        setCurrentSprintRoleRec: function (r) { _currentSprintRoleRec = r; },
+        getHistory: function () { return _history; },
+        getGanttStateHist: function () { return _ganttStateHist; },
+        setGanttStateHist: function (o) { _ganttStateHist = o; },
+      },
+    };
   }
-
-  function apiGet(path) {
-    diag('GET ' + path + ' [' + _mode + ']');
-    return _backendCall(path, {})
-      .then(function(r){ diag('OK ' + path, 'ok'); return r; })
-      .catch(function(e){ diag('ERR ' + path + ': ' + (e&&e.message?e.message:e), 'err'); throw e; });
-  }
-
-  function apiPost(path, body, query) {
-    diag('POST ' + path + ' [' + _mode + ']');
-    var opts = { method: 'POST', body: body };
-    if (query && typeof query === 'object') opts.query = query;
-    return _backendCall(path, opts)
-      .then(function(r){
-        /* v5.0.3 — backend всегда отвечает JSON-ом с полем success.
-           Если success=false — это валидационная ошибка (status 400) или auth_required.
-           fetchApp может resolve-ить в обоих случаях, поэтому проверяем явно
-           и пробрасываем как rejected promise, чтобы wrapper НЕ помечал save успешным
-           (раньше markSavedAndCleanup вызывался на 400 → sprint-данные считались
-           сохранёнными, хотя сервер их отверг). */
-        if (r && r.success === false) {
-          var reason = (r && (r.reason || r.error)) || 'unknown_error';
-          diag('ERR ' + path + ': server returned success=false reason='+reason, 'err');
-          throw new Error(reason);
-        }
-        diag('OK ' + path, 'ok');
-        /* v5.0.3 — после успешного сохранения снять dirty + обновить snapshot/baseRevHash */
-        try {
-          if (path === 'sprint-data' && body) {
-            if (body.sprint    !== undefined) markSavedAndCleanup('sprint');
-            if (body.roleItems !== undefined) markSavedAndCleanup('roleItems');
-            /* v5.0.3 — динамический upsert в историю даже при PLANNING/PLANNED.
-               Пропускаем для:
-               - action=validate (там есть свой явный saveRoleHistorySnapshot после валидации)
-               - settings save (это конфигурация, не данные спринта)
-               - FINISHED-спринтов (исторические записи неизменны)
-               - отсутствия активной подвкладки/спринта
-               - активной рабочей копии (B-fix): при активном _activeWorkingDraftKey
-                 пассивный auto-снапшот зовёт saveRoleHistorySnapshot, который видит
-                 _activeWorkingDraftKey===snapKey и НЕМЕДЛЕННО коммитит+удаляет только что
-                 созданную рабочую копию (resumeWorkingDraft постит sprint-data при открытии).
-                 Правки рабочей копии и так персистятся в черновик через
-                 _markDirty→syncWorkingDraftFromMemory; commit рабочей копии — только явный
-                 (Validate/Save → прямой saveRoleHistorySnapshot/_commitWorkingCopy). */
-            var isValidate    = query && query.action === 'validate';
-            var hasSprintData = body.sprint !== undefined || body.roleItems !== undefined;
-            if (hasSprintData && !isValidate
-                && _sprint && _sprint.sprintId
-                && _sprint.status !== STATUS.FINISHED
-                && !_activeWorkingDraftKey
-                && _activeSubtab) {
-              try {
-                /* fire-and-forget — игнорируем ошибки, не блокируем основной save */
-                saveRoleHistorySnapshot(_activeSubtab).catch(function(e){
-                  diag('auto-snapshot history failed: '+(e&&e.message?e.message:e),'err');
-                });
-              } catch(_){}
-            }
-          } else if (path === 'history') {
-            markSavedAndCleanup('currentRole');
-            /* v5.0.3 (итерация 5) — после успешного POST history (обычно auto-snapshot)
-               обновлённая запись в _history имеет ту же sprintId, что и _currentSprintRoleRec.
-               Перепривязываем _currentSprintRoleRec на новую ссылку, чтобы distrib-таблица
-               видела свежие items/personalPlanning. */
-            try {
-              if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && Array.isArray(_history)) {
-                var freshRec = _history.find(function(h){ return h.sprintId === _currentSprintRoleRec.sprintId; });
-                if (freshRec && freshRec !== _currentSprintRoleRec) _currentSprintRoleRec = freshRec;
-              }
-            } catch(_){}
-          }
-        } catch(_){}
-        return r;
-      })
-      .catch(function(e){ diag('ERR ' + path + ': ' + (e&&e.message?e.message:e), 'err'); throw e; });
-  }
+  function _backendCall(path, baseOpts) { return YT_API._backendCall(path, baseOpts, _ytApiDeps()); }
+  function apiGet(path) { return YT_API.apiGet(path, _ytApiDeps()); }
+  function apiPost(path, body, query) { return YT_API.apiPost(path, body, query, _ytApiDeps()); }
 
   /* ═══ Инициализация ════════════════════════════════════════ */
   /* v5.0.3 (итерация 5) — timing-логи + retry для YTApp.register().
@@ -9984,97 +9912,12 @@
     }
   }
 
+  /* #20 — история переходов состояний вынесена в widgets/main/src/youtrack-api.js
+     (window.__SSP_YOUTRACK_API) — Тир C. Кэш _ganttStateHist остаётся здесь —
+     модуль ходит к нему через аксессоры deps.state (late binding: кэш может быть
+     сброшен извне между чанками). DOM-апдейты — через _updateGanttHistDOM. */
   function _fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId) {
-    if (!ids || !ids.length || !_settings || !_settings.fieldState) return;
-    var now = Date.now();
-    var TTL = 5 * 60 * 1000;
-    if (!force &&
-        _ganttStateHist._sprintKey === sprintKey &&
-        _ganttStateHist._fetchedAt &&
-        (now - _ganttStateHist._fetchedAt) < TTL) return;
-    /* Сброс: очищаем все issueId-записи, иначе processChunk пропустит их как «уже загруженные». */
-    _ganttStateHist = { _sprintKey: sprintKey, _fetchedAt: 0 };
-    curStates = curStates || {};
-    fieldId = fieldId || '';
-    var CHUNK_SIZE = 25;
-
-    function processChunk(chunkIds) {
-      return _host.fetchYouTrack('activities', { query: {
-        categories: 'CustomFieldCategory',
-        issueQuery: 'issue id: ' + chunkIds.join(', '),
-        fields: 'timestamp,target(idReadable),field(id,name,presentation),' +
-                'added(name,localizedName,color(background,foreground)),' +
-                'removed(name,localizedName,color(background,foreground))',
-        reverse: 'true',
-        $top: 300
-      }}).then(function(activities) {
-        var container = document.getElementById('ganttContainer');
-        diag('_fetchGanttStateHistory chunk=' + chunkIds.length + ' activities=' + (Array.isArray(activities) ? activities.length : typeof activities), 'ok');
-        if (!Array.isArray(activities)) {
-          chunkIds.forEach(function(issueId) {
-            if (!_ganttStateHist[issueId]) {
-              _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
-              if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-            }
-          });
-          return;
-        }
-        /* Идентификация нужного поля состояния:
-           1) ПРИОРИТЕТ — по id поля (`field.id`): не локализуется, не коллизит с другими
-              полями, работает для ЛЮБОГО типа (State/enum/owned/version). Универсально.
-           2) Fallback (если id поля не дошёл из Слоя 1): по совпадению нового значения
-              (added[0]) с текущим состоянием (curStates), иначе — по $type StateBundleElement.
-           В YouTrack Activities API added/removed — МАССИВЫ, field.name ЛОКАЛИЗОВАН.
-           reverse:true → берём первую (свежайшую) подходящую запись. */
-        activities.forEach(function(act) {
-          if (!act || !act.target) return;
-          var issueId = act.target.idReadable;
-          if (!issueId || _ganttStateHist[issueId]) return;
-          var addedArr   = Array.isArray(act.added)   ? act.added   : (act.added   ? [act.added]   : []);
-          var removedArr = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : []);
-          var addedVal   = addedArr[0]   || null;
-          var removedVal = removedArr[0] || null;
-          var sample     = addedVal || removedVal;
-          if (!sample) return;
-          var addedName  = addedVal ? (addedVal.localizedName || addedVal.name || '') : '';
-          var cur        = curStates[issueId] || '';
-          var actFieldId = (act.field && act.field.id) || '';
-          var isStateChange = fieldId
-            ? (actFieldId === fieldId)
-            : (cur ? (addedName === cur) : (sample.$type === 'StateBundleElement'));
-          if (!isStateChange) return;
-          var prevName = removedVal ? (removedVal.localizedName || removedVal.name || '') : '';
-          var prevC    = removedVal && removedVal.color ? removedVal.color : null;
-          _ganttStateHist[issueId] = {
-            sinceTs:   act.timestamp || null,
-            prev:      prevName,
-            prevColor: prevC ? { background: prevC.background || null, foreground: prevC.foreground || null } : null
-          };
-          if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-        });
-        chunkIds.forEach(function(issueId) {
-          if (!_ganttStateHist[issueId]) {
-            _ganttStateHist[issueId] = { sinceTs: null, prev: null, prevColor: null };
-            if (container) _updateGanttHistDOM(container, issueId, _ganttStateHist[issueId]);
-          }
-        });
-      }).catch(function(e) {
-        diag('_fetchGanttStateHistory err: ' + String(e && e.message ? e.message : e), 'warn');
-        var container2 = document.getElementById('ganttContainer');
-        if (container2) chunkIds.forEach(function(issueId) {
-          if (!_ganttStateHist[issueId]) {
-            var prevEl = container2.querySelector('[data-gantt-hist-prev="' + issueId + '"]');
-            if (prevEl) prevEl.textContent = '';
-          }
-        });
-      });
-    }
-
-    var p = Promise.resolve();
-    for (var ci = 0; ci < ids.length; ci += CHUNK_SIZE) {
-      (function(chunk) { p = p.then(function() { return processChunk(chunk); }); })(ids.slice(ci, ci + CHUNK_SIZE));
-    }
-    p.then(function() { _ganttStateHist._fetchedAt = Date.now(); });
+    return YT_API._fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId, _ytApiDeps());
   }
 
   /* v6.1.0 D80 (F3) — sync Assignee из YouTrack: source-of-truth = YT.

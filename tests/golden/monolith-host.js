@@ -54,6 +54,7 @@ const BRIDGE_SCRIPTS = [
   'revalidation.js',
   'history-io.js',
   'pick.js',
+  'youtrack-api.js',
 ];
 
 const GM_HOOK = `
