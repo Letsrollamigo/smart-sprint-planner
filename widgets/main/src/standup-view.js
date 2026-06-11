@@ -170,8 +170,101 @@ function renderStandupView(deps) {
   _renderStandupBucket('standupBucketNotStarted', 'standupBucketNotStarted', classified.notStarted, rk, deps);
 }
 
+function _populateStandupRoleSel(deps) {
+  var sel = document.getElementById('standupRoleSel');
+  if (!sel) return;
+  var activeRoles = deps.getActiveRoles();
+  sel.innerHTML = '';
+  activeRoles.forEach(function(r) {
+    var o = document.createElement('option');
+    o.value = r.key; o.textContent = r.label;
+    sel.appendChild(o);
+  });
+  var _activeSubtab = deps.state.getActiveSubtab();
+  if (_activeSubtab && activeRoles.some(function(r){ return r.key === _activeSubtab; })) {
+    sel.value = _activeSubtab;
+  }
+  sel.onchange = function() { try { renderStandupView(deps); } catch(_){} };
+}
+
+/* v2.2.4 — фикс: раньше слался { sprintId } на /refresh-assignees, а handler ждёт
+   { issueIds, fieldName, stateFieldName } и отдаёт { assignees } → запрос всегда падал
+   (стендап-refresh не работал с full-rebuild v2.1.0). Теперь корректный контракт:
+     • state (ось бакетов done/inflight/notStarted) — для выбранной роли rk в _roleItems[rk]
+       (чистая keyed-модель, персист sprint-data) — работает для любой роли селектора;
+     • assignee — только для текущей роли через _currentRolePP + saveCurrentRoleState
+       (канон-персист). Для не-текущей роли assignee не мутируем (избегаем tangled
+       personalPlanning-персиста — техдолг в COMMON_ROADMAP); бакетинг идёт по state. */
+function doStandupRefresh(deps) {
+  if (!deps.state.getSprint()) return Promise.resolve();
+  var sel = document.getElementById('standupRoleSel');
+  var rk = (sel && sel.value) || deps.state.getActiveSubtab() || '';
+  if (!rk) { var ar = deps.getActiveRoles(); rk = ar.length ? ar[0].key : ''; }
+  var role = deps.ALL_ROLES.find(function (r) { return r.key === rk; });
+  if (!role) return Promise.resolve();
+  var _settings = deps.state.getSettings();
+  var fieldName = _settings && _settings[role.userField];
+  if (!fieldName) { deps.toast(deps.T('toastSyncFromYtNoField'), 'warn'); return Promise.resolve(); }
+  var _roleItems = deps.state.getRoleItems();
+  var roleItems = (_roleItems && _roleItems[rk]) || [];
+  var ids = roleItems
+    .filter(function (i) { return i && i.issueId && deps.ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; })
+    .map(function (i) { return i.issueId; });
+  if (!ids.length) { renderStandupView(deps); return Promise.resolve(); }
+  var stateField = (_settings && _settings.fieldState) || '';
+  var rec = deps.state.getCurrentSprintRoleRec();
+  var isCur = !!(rec && (rec.roleKey || deps.state.getActiveSubtab()) === rk);
+  var btn = document.getElementById('standupRefreshBtn');
+  return deps.withLoader(btn, function () {
+    return deps.apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: stateField })
+      .then(function (res) {
+        if (!res || !res.success) { deps.toast(deps.T('toastSyncFromYtErr')); return; }
+        var assignees = res.assignees || {};
+        var pp = isCur ? deps.state.getCurrentRolePP() : null;
+        if (isCur && !pp) { pp = { resourcesByAssignee: {}, taskAssignments: {} }; deps.state.setCurrentRolePP(pp); }
+        if (pp && !pp.taskAssignments) pp.taskAssignments = {};
+        var byId = {};
+        roleItems.forEach(function (it) { if (it && it.issueId) byId[it.issueId] = it; });
+        var changed = 0;
+        Object.keys(assignees).forEach(function (id) {
+          var e = assignees[id];
+          if (pp) { /* assignee — только текущая роль (канон-персист) */
+            var login = (e && e.login) || null;
+            var ta = pp.taskAssignments[id] || (pp.taskAssignments[id] = {});
+            if ((ta.assignee || null) !== login) {
+              ta.assignee = login;
+              ta.assigneeName = login ? ((e && (e.fullName || e.login)) || login) : '';
+              delete ta.ganttColor;
+              changed++;
+            }
+          }
+          if (stateField && e && e.state && byId[id]) { /* state — любая роль */
+            var ns = e.state.localizedName || e.state.name || '';
+            if (ns && ns !== (byId[id].state || '')) {
+              byId[id].state = ns;
+              byId[id].stateLocalized = ns;
+              var sc = e.state.color;
+              byId[id].stateColor = (sc && (sc.background || sc.foreground))
+                ? { background: sc.background || null, foreground: sc.foreground || null } : null;
+              changed++;
+            }
+          }
+        });
+        if (!changed) { renderStandupView(deps); deps.toast(deps.T('toastSyncFromYtNoChange'), 'info'); return; }
+        deps.markDirty('roleItems');
+        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(function () {});
+        if (isCur) deps.saveCurrentRoleState();
+        renderStandupView(deps);
+        deps.toast(deps.T('toastStandupRefreshed'), 'success');
+      })
+      .catch(function (e) { deps.diag('standup refresh err: ' + e, 'err'); deps.toast(deps.T('toastSyncFromYtErr')); });
+  });
+}
+
 const api = {
   renderStandupView,
+  doStandupRefresh,
+  _populateStandupRoleSel,
 };
 
 if (typeof window !== 'undefined') {
