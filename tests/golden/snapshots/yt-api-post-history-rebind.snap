@@ -1,0 +1,7 @@
+{
+  "cleanup": [
+    "currentRole"
+  ],
+  "reboundToFresh": true,
+  "recItemsLen": 2
+}
