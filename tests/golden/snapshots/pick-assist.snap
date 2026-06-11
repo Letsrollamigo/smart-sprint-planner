@@ -1,0 +1,32 @@
+{
+  "success": {
+    "query": "#Unr",
+    "caret": 4,
+    "suggestions": [
+      {
+        "option": "Unresolved",
+        "prefix": "#"
+      }
+    ]
+  },
+  "degraded": {
+    "query": "x",
+    "caret": 1,
+    "suggestions": []
+  },
+  "request": {
+    "path": "search/assist",
+    "body": {
+      "query": "#Unr",
+      "caret": 4,
+      "ignoreUnresolvedSetting": true,
+      "folders": [
+        {
+          "$type": "Project",
+          "id": "gm-project-id"
+        }
+      ]
+    },
+    "fields": "$type,id,suggestions($type,caret,completionStart,completionEnd,matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "shapes": {
+    "id": "i-1",
+    "idReadable": "GM-S1",
+    "summary": "trimmed summary",
+    "state": {
+      "name": "Открыта"
+    },
+    "priority": "P-Major",
+    "xpriority": "plain-string",
+    "system": "Core",
+    "externalTicketId": "EXT-77"
+  },
+  "fallbacks": {
+    "id": "i-2",
+    "idReadable": "GM-S2",
+    "summary": null,
+    "state": {
+      "name": "В работе"
+    },
+    "priority": null,
+    "xpriority": null,
+    "system": null,
+    "externalTicketId": null
+  }
+}

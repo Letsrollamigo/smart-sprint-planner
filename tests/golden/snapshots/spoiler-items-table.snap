@@ -1,0 +1,91 @@
+{
+  "sortKey": "off",
+  "stickyHeader": false,
+  "emptyText": "Нет задач",
+  "itemKeys": [
+    "GM-H1",
+    "GM-H2"
+  ],
+  "columns": [
+    {
+      "id": "id",
+      "title": "№ задачи",
+      "sortable": false,
+      "className": "td-id",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<a href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-H1</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-H2</a>"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "title": "Название",
+      "sortable": false,
+      "className": "td-title ssp-col-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Историческая задача анализа",
+        "Историческая задача без alloc"
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Приоритет",
+      "sortable": false,
+      "className": "td-hist-narrow",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Значительный",
+        "Обычная"
+      ]
+    },
+    {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": "td-hist-narrow",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Исправлена",
+        "Исправлена"
+      ]
+    },
+    {
+      "id": "incStatus",
+      "title": "Статус включения",
+      "sortable": false,
+      "className": "td-hist-inc",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Включена планово",
+        "Включена планово"
+      ]
+    },
+    {
+      "id": "delta",
+      "title": "Ресурс<br>Анализ",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "0м"
+        },
+        {
+          "html": "10ч"
+        }
+      ]
+    }
+  ]
+}

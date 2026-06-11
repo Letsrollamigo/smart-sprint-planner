@@ -1,0 +1,32 @@
+{
+  "analysis": {
+    "resource": 40,
+    "totalAlloc": 118,
+    "taskCount": 4,
+    "overlimit": true
+  },
+  "testing": {
+    "resource": 20,
+    "totalAlloc": 26,
+    "taskCount": 2,
+    "overlimit": true
+  },
+  "devBack": {
+    "resource": 80,
+    "totalAlloc": 55,
+    "taskCount": 2,
+    "overlimit": false
+  },
+  "devFront": {
+    "resource": 0,
+    "totalAlloc": 4,
+    "taskCount": 1,
+    "overlimit": false
+  },
+  "devIos": {
+    "resource": 0,
+    "totalAlloc": 0,
+    "taskCount": 0,
+    "overlimit": false
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "calls": [
+    {
+      "kind": "app",
+      "path": "backend-project/sprint-data",
+      "opts": {
+        "scope": true
+      }
+    },
+    {
+      "kind": "app",
+      "path": "backend-project/field-values?fieldName=My%20Field",
+      "opts": {
+        "method": "POST",
+        "body": {
+          "a": 1
+        },
+        "scope": true
+      }
+    },
+    {
+      "kind": "app",
+      "path": "backend-global/sprint-data",
+      "opts": {
+        "query": {
+          "projectKey": "GM"
+        }
+      }
+    },
+    {
+      "kind": "app",
+      "path": "backend-global/field-values",
+      "opts": {
+        "query": {
+          "fieldName": "My Field",
+          "x": "Ю",
+          "projectKey": "GM"
+        }
+      }
+    },
+    {
+      "kind": "app",
+      "path": "backend-global/history",
+      "opts": {
+        "query": {
+          "a": "1",
+          "b": 2,
+          "projectKey": "GM"
+        },
+        "method": "POST"
+      }
+    }
+  ]
+}

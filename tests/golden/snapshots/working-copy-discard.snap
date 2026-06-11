@@ -1,0 +1,48 @@
+{
+  "modalKeys": [
+    "gm-hist-2026-05_analysis"
+  ],
+  "afterCancel": {
+    "draftKept": true,
+    "flagKept": true
+  },
+  "draftRemoved": true,
+  "histFlagCleared": true,
+  "activeKeyCleared": true,
+  "sprintReloaded": "reloaded-sprint",
+  "orphansApplied": [
+    "GM-ORF"
+  ],
+  "calls": {
+    "modal": [
+      "gm-hist-2026-05_analysis"
+    ],
+    "apiPost": [
+      {
+        "path": "history"
+      },
+      {
+        "path": "history"
+      },
+      {
+        "path": "working-drafts",
+        "action": "delete",
+        "key": "gm-hist-2026-05_analysis"
+      }
+    ],
+    "apiGet": [
+      "sprint-data"
+    ],
+    "toasts": [
+      {
+        "msg": "Рабочая копия отменена. Базовый снимок не изменён.",
+        "type": "info"
+      }
+    ],
+    "renders": [
+      "hideWcBanner",
+      "history",
+      "plannerRoles"
+    ]
+  }
+}

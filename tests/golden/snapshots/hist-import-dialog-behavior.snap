@@ -1,0 +1,27 @@
+{
+  "cancel": {
+    "result": "null"
+  },
+  "replace": {
+    "result": {
+      "action": "replace"
+    },
+    "pendingRecordCount": 3,
+    "modalsOpened": 2,
+    "secondModalId": "importReplaceHist"
+  },
+  "merge": {
+    "result": {
+      "action": "merge"
+    },
+    "submitCalls": [
+      {
+        "sel": [
+          "ext1"
+        ],
+        "mode": "overwrite",
+        "fileRecordCount": 3
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "nonArray": {
+    "hist": {
+      "_sprintKey": "sk-nonarray",
+      "_fetchedAt": 1780315200000,
+      "GM-1": {
+        "sinceTs": null,
+        "prev": null,
+        "prevColor": null
+      },
+      "GM-2": {
+        "sinceTs": null,
+        "prev": null,
+        "prevColor": null
+      }
+    },
+    "dom": "<span data-gantt-hist-since=\"GM-1\"></span><div data-gantt-hist-prev=\"GM-1\">переходов не было</div><span data-gantt-hist-since=\"GM-2\"></span><div data-gantt-hist-prev=\"GM-2\">переходов не было</div>"
+  },
+  "rejected": {
+    "hist": {
+      "_sprintKey": "sk-err",
+      "_fetchedAt": 1780315200000
+    },
+    "dom": "<span data-gantt-hist-since=\"GM-3\"></span><div data-gantt-hist-prev=\"GM-3\"></div>",
+    "diagTail": [
+      {
+        "msg": "_fetchGanttStateHistory err: activities down",
+        "type": "warn"
+      }
+    ]
+  }
+}

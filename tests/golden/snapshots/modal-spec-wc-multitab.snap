@@ -1,0 +1,38 @@
+{
+  "spec": {
+    "id": "wcMultiTab",
+    "type": "informational",
+    "title": "Открыто в другой вкладке",
+    "body": {
+      "kind": "text",
+      "text": "Эта рабочая копия уже редактируется в другой вкладке. Продолжить здесь? Изменения в другой вкладке могут быть перезаписаны."
+    },
+    "buttons": [
+      {
+        "id": "continue",
+        "text": "Продолжить здесь",
+        "variant": "primary",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "readonly",
+        "text": "Открыть только для просмотра",
+        "variant": "secondary",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": true,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "continue": [
+      true
+    ],
+    "readonly": [
+      false
+    ],
+    "escape": []
+  }
+}

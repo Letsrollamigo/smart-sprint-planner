@@ -1,0 +1,271 @@
+<table style="border-collapse:collapse;min-width:600px;font-size:12px">
+<thead>
+<tr>
+<th style="min-width:180px;max-width:220px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);position:sticky;left:0;z-index:2;white-space:nowrap;font-weight:600;font-size:12px">Задача / Исполнитель</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">22.05</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">23.05</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">24.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">25.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">26.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">27.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">28.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">29.05</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">30.05</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">31.05</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">1.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">2.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">3.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">4.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">5.06</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">6.06</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">7.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">8.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">9.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">10.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">11.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">12.06</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">13.06</th>
+<th style="min-width:34px;padding:4px 3px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--muted);text-align:center;white-space:nowrap">14.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">15.06</th>
+<th style="min-width:34px;padding:4px 3px;background:var(--surface2);border:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);text-align:center;white-space:nowrap">16.06</th>
+</tr>
+</thead>
+<tbody>
+<tr data-gantt-issue="GM-10">
+<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:220px;overflow:hidden" title="Бэкенд расчёта ёмкости">
+<a href="#" target="_blank" class="link" style="font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GM-10</a>
+<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">gm_user_1</div>
+<div style="margin-top:2px;white-space:nowrap;overflow:hidden">
+<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:10px;line-height:1.4;background:#c8c8c8;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
+<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#1a1a1a;flex-shrink:0">
+</span>In Progress</span>
+<span data-gantt-hist-since="GM-10" style="color:var(--muted);font-size:10px;margin-left:4px">
+</span>
+</div>
+<div data-gantt-hist-prev="GM-10" style="color:var(--muted);font-size:10px;margin-top:1px;white-space:normal">загрузка истории…</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:4px;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:999px 0 0 999px;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-10" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:4px;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0 999px 999px 0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+</tr>
+<tr data-gantt-issue="GM-11">
+<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:220px;overflow:hidden" title="Эндпоинт истории спринтов">
+<a href="#" target="_blank" class="link" style="font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">GM-11</a>
+<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">gm_user_2</div>
+<div style="margin-top:2px;white-space:nowrap;overflow:hidden">
+<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:10px;line-height:1.4;background:#c8c8c8;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">
+<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#1a1a1a;flex-shrink:0">
+</span>Open</span>
+<span data-gantt-hist-since="GM-11" style="color:var(--muted);font-size:10px;margin-left:4px">
+</span>
+</div>
+<div data-gantt-hist-prev="GM-11" style="color:var(--muted);font-size:10px;margin-top:1px;white-space:normal">загрузка истории…</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:4px;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:999px 0 0 999px;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+<td class="gantt-cell" data-issue="GM-11" data-inbar="1" style="padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:pointer;position:relative;overflow:hidden;">
+<div style="position:absolute;top:50%;left:0;right:4px;transform:translateY(-50%);height:60%;background:#9aa3ad;border-radius:0 999px 999px 0;box-shadow:0 2px 6px rgba(0,0,0,.18);pointer-events:none">
+</div>
+</td>
+</tr>
+</tbody>
+</table>

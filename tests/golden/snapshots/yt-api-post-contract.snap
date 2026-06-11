@@ -1,0 +1,21 @@
+{
+  "request": {
+    "kind": "app",
+    "path": "backend-project/sprint-data",
+    "opts": {
+      "method": "POST",
+      "body": {
+        "sprint": {
+          "x": 1
+        }
+      },
+      "query": {
+        "action": "validate"
+      },
+      "scope": true
+    }
+  },
+  "rejected": "validation_failed",
+  "rejectedErrField": "custom_err",
+  "rejectedUnknown": "unknown_error"
+}

@@ -1,0 +1,58 @@
+{
+  "noMeta": {
+    "toasts": [],
+    "cleaned": [],
+    "sprintReplaced": false
+  },
+  "versionMismatch": {
+    "toasts": [],
+    "cleaned": [],
+    "sprintReplaced": false
+  },
+  "noDirty": {
+    "toasts": [],
+    "cleaned": [],
+    "sprintReplaced": false
+  },
+  "stale": {
+    "toasts": [
+      {
+        "msg": "Серверные данные обновлены другим пользователем — черновик не накатывается",
+        "type": "warn"
+      }
+    ],
+    "cleaned": [
+      "sprint",
+      "roleItems",
+      "currentRole"
+    ],
+    "sprintReplaced": false
+  },
+  "restored": {
+    "toasts": [
+      {
+        "msg": "Восстановлены несохранённые изменения от<ts>",
+        "type": "info"
+      }
+    ],
+    "cleaned": [],
+    "sprintReplaced": true
+  },
+  "restoredState": {
+    "sprintName": "Draft sprint",
+    "roleItems": {
+      "analysis": [
+        {
+          "issueId": "GM-D1",
+          "title": "Из черновика",
+          "inclusionStatus": "INC_PLANNED"
+        }
+      ]
+    },
+    "currentRolePP": {
+      "roleKey": "devBack"
+    },
+    "currentRoleNkcKey": "june",
+    "restoreFlagReset": true
+  }
+}
