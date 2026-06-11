@@ -3770,21 +3770,6 @@
     }
   }
 
-  function _populateStandupRoleSel() {
-    var sel = document.getElementById('standupRoleSel');
-    if (!sel) return;
-    var activeRoles = getActiveRoles();
-    sel.innerHTML = '';
-    activeRoles.forEach(function(r) {
-      var o = document.createElement('option');
-      o.value = r.key; o.textContent = r.label;
-      sel.appendChild(o);
-    });
-    if (_activeSubtab && activeRoles.some(function(r){ return r.key === _activeSubtab; })) {
-      sel.value = _activeSubtab;
-    }
-    sel.onchange = function() { try { renderStandupView(); } catch(_){} };
-  }
   document.querySelectorAll('.planning-level-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var lvl = btn.dataset.level || 'roles';
@@ -4186,98 +4171,38 @@
 
 
   /* ═══ Stand-up view ════════════════════════════════════════
-     Рендер-семейство Stand-up вынесено в widgets/main/src/standup-view.js
-     (window.__SSP_STANDUP_VIEW) — Тир D слайс 1, ступень 1. Делегатор;
-     контекст собирается в _standupDeps на вызове, стейт модуль читает
-     через аксессоры deps.state в момент обращения. */
+     Рендер-семейство и контроллеры Stand-up вынесены в
+     widgets/main/src/standup-view.js (window.__SSP_STANDUP_VIEW) —
+     Тир D слайс 1, ступень 1. Делегаторы; контекст собирается в
+     _standupDeps на вызове, стейт модуль читает через аксессоры
+     deps.state в момент обращения. Шаренные сервисы (роли, канон-чтение
+     PP, персист, лоадер, тосты) остаются здесь и идут через deps. */
   var STANDUP_VIEW = (typeof window !== 'undefined' && window.__SSP_STANDUP_VIEW) || {};
   function _standupDeps() {
     return {
       T: T, esc: esc, fmtHours: fmtHours,
+      toast: toast, diag: diag, withLoader: withLoader,
+      ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
       getActiveRoles: getActiveRoles,
       getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
+      saveCurrentRoleState: saveCurrentRoleState,
+      markDirty: _markDirty,
+      apiPost: apiPost,
       state: {
         getSettings: function () { return _settings; },
         getSprint: function () { return _sprint; },
         getRoleItems: function () { return _roleItems; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentRolePP: function () { return _currentRolePP; },
+        setCurrentRolePP: function (pp) { _currentRolePP = pp; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
       },
     };
   }
   function renderStandupView() { return STANDUP_VIEW.renderStandupView(_standupDeps()); }
+  function doStandupRefresh() { return STANDUP_VIEW.doStandupRefresh(_standupDeps()); }
+  function _populateStandupRoleSel() { return STANDUP_VIEW._populateStandupRoleSel(_standupDeps()); }
 
-  /* v2.2.4 — фикс: раньше слался { sprintId } на /refresh-assignees, а handler ждёт
-     { issueIds, fieldName, stateFieldName } и отдаёт { assignees } → запрос всегда падал
-     (стендап-refresh не работал с full-rebuild v2.1.0). Теперь корректный контракт:
-       • state (ось бакетов done/inflight/notStarted) — для выбранной роли rk в _roleItems[rk]
-         (чистая keyed-модель, персист sprint-data) — работает для любой роли селектора;
-       • assignee — только для текущей роли через _currentRolePP + saveCurrentRoleState
-         (канон-персист). Для не-текущей роли assignee не мутируем (избегаем tangled
-         personalPlanning-персиста — техдолг в COMMON_ROADMAP); бакетинг идёт по state. */
-  function doStandupRefresh() {
-    if (!_sprint) return Promise.resolve();
-    var sel = document.getElementById('standupRoleSel');
-    var rk = (sel && sel.value) || _activeSubtab || '';
-    if (!rk) { var ar = getActiveRoles(); rk = ar.length ? ar[0].key : ''; }
-    var role = ALL_ROLES.find(function (r) { return r.key === rk; });
-    if (!role) return Promise.resolve();
-    var fieldName = _settings && _settings[role.userField];
-    if (!fieldName) { toast(T('toastSyncFromYtNoField'), 'warn'); return Promise.resolve(); }
-    var roleItems = (_roleItems && _roleItems[rk]) || [];
-    var ids = roleItems
-      .filter(function (i) { return i && i.issueId && ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; })
-      .map(function (i) { return i.issueId; });
-    if (!ids.length) { renderStandupView(); return Promise.resolve(); }
-    var stateField = (_settings && _settings.fieldState) || '';
-    var isCur = !!(_currentSprintRoleRec && (_currentSprintRoleRec.roleKey || _activeSubtab) === rk);
-    var btn = document.getElementById('standupRefreshBtn');
-    return withLoader(btn, function () {
-      return apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: stateField })
-        .then(function (res) {
-          if (!res || !res.success) { toast(T('toastSyncFromYtErr')); return; }
-          var assignees = res.assignees || {};
-          var pp = isCur ? _currentRolePP : null;
-          if (isCur && !pp) { _currentRolePP = pp = { resourcesByAssignee: {}, taskAssignments: {} }; }
-          if (pp && !pp.taskAssignments) pp.taskAssignments = {};
-          var byId = {};
-          roleItems.forEach(function (it) { if (it && it.issueId) byId[it.issueId] = it; });
-          var changed = 0;
-          Object.keys(assignees).forEach(function (id) {
-            var e = assignees[id];
-            if (pp) { /* assignee — только текущая роль (канон-персист) */
-              var login = (e && e.login) || null;
-              var ta = pp.taskAssignments[id] || (pp.taskAssignments[id] = {});
-              if ((ta.assignee || null) !== login) {
-                ta.assignee = login;
-                ta.assigneeName = login ? ((e && (e.fullName || e.login)) || login) : '';
-                delete ta.ganttColor;
-                changed++;
-              }
-            }
-            if (stateField && e && e.state && byId[id]) { /* state — любая роль */
-              var ns = e.state.localizedName || e.state.name || '';
-              if (ns && ns !== (byId[id].state || '')) {
-                byId[id].state = ns;
-                byId[id].stateLocalized = ns;
-                var sc = e.state.color;
-                byId[id].stateColor = (sc && (sc.background || sc.foreground))
-                  ? { background: sc.background || null, foreground: sc.foreground || null } : null;
-                changed++;
-              }
-            }
-          });
-          if (!changed) { renderStandupView(); toast(T('toastSyncFromYtNoChange'), 'info'); return; }
-          _markDirty('roleItems');
-          apiPost('sprint-data', { roleItems: _roleItems }).catch(function () {});
-          if (isCur) saveCurrentRoleState();
-          renderStandupView();
-          toast(T('toastStandupRefreshed'), 'success');
-        })
-        .catch(function (e) { diag('standup refresh err: ' + e, 'err'); toast(T('toastSyncFromYtErr')); });
-    });
-  }
 
 
 
