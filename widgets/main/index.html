@@ -1186,7 +1186,7 @@
     .ssp-settings-form .card-subtitle { font-size: 12px; }
     .ssp-settings-form .hint { font-size: 12px; }
 
-    /* 5c — нативные multi-select (каскад/rollup/standup) и DTA-таблица.
+    /* 5c — нативные multi-select (каскад/rollup/standup; фоллбек без вендора) и DTA-таблица.
        #43 W2 (A-5): 96px резервировали ~5 пустых рядов; floor 60px + cap 200px
        (size у select адаптивный по числу опций, CSS — страховка). */
     .ssp-settings-form .ssp-multiselect {
@@ -1195,6 +1195,20 @@
       border-radius: var(--radius, 4px); background: var(--content-background, #fff);
     }
     .ssp-settings-form .ssp-multiselect option { padding: 2px 6px; }
+    /* #43 W3 — Ring Select в форме настроек: на всю ширину ячейки грида
+       (вендорный Select size=FULL + страховка); листбокс порядка rollup. */
+    .ssp-settings-form .ssp-form-select { width: 100%; max-width: 100%; }
+    .ssp-settings-form .ssp-form-select button { max-width: 100%; }
+    .ssp-rollup-order {
+      border: 1px solid var(--border, #e0e0e0); border-radius: var(--radius, 4px);
+      background: var(--content-background, #fff);
+      min-height: 60px; max-height: 200px; overflow-y: auto;
+    }
+    .ssp-rollup-order:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .ssp-rollup-order__item { padding: 4px 8px; font-size: 12px; cursor: pointer; }
+    .ssp-rollup-order__item:hover { background: var(--surface-hover, rgba(128,128,128,.12)); }
+    .ssp-rollup-order__item.active { background: var(--ring-selected-background-color, rgba(0,114,255,.12)); font-weight: 600; }
+    .ssp-rollup-order__empty { padding: 12px; font-size: 12px; color: var(--muted); font-style: italic; text-align: center; }
     /* DTA-таблица: ограничена по ширине (2 поля + delete не должны распирать модалку),
        поля заполняют свои ячейки на 100%. */
     .ssp-settings-form .ssp-dta-table { max-width: 680px; }
