@@ -14,7 +14,6 @@ import './icons.generated.js';
 import './i18n-bridge.js';
 import './ring-class-helpers.js';
 import './toast-pure.js';
-import './modal-pure.js';
 import './sort-pure.js';
 import './period-pure.js';
 import './enum-locale-pure.js';

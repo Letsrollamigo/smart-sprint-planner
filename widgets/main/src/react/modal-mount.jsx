@@ -185,10 +185,9 @@ function SspModal({ spec, onClose }) {
   );
 }
 
-/* ВНИМАНИЕ: имя — НЕ `__SSP_MODAL`. Это имя уже занято legacy-monolith.js
-   (фасад `{open:_appModalOpen, close:_appModalClose, stack, getFocusable}`,
-   грузится последним → затёр бы наш мост). Новый декларативный spec-API —
-   отдельный глобал `__SSP_RING_MODAL` (corp: `__SCBT_RING_MODAL`). */
+/* Имя `__SSP_RING_MODAL` (corp: `__SCBT_RING_MODAL`) — историческое:
+   `__SSP_MODAL` был занят легаси-фасадом монолита (снесён при декомпозиции);
+   глобал оставлен как есть ради стабильности контракта. */
 window.__SSP_RING_MODAL = {
   open(spec) {
     const id = 'modal-' + spec.id;

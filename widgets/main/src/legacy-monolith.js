@@ -781,7 +781,7 @@
   function uid()        { return UTIL_PURE.uid(); }
 
   /* Форматирование/парсинг периодов вынесено в widgets/main/src/period-pure.js
-     (window.__SSP_PERIOD_PURE) — паттерн как TOAST_PURE/MODAL_PURE/sort-pure.
+     (window.__SSP_PERIOD_PURE) — паттерн как TOAST_PURE/sort-pure.
      Здесь — тонкие делегаторы: call-sites без изменений, function-декларации
      сохраняют hoisting. Единицы локали резолвятся внутри модуля через window.__SSP_T. */
   var PERIOD_PURE = (typeof window !== 'undefined' && window.__SSP_PERIOD_PURE) || {};
@@ -1197,198 +1197,12 @@
      модулей без breaking change существующего глобального toast(). */
   try { window.__SSP_TOAST = toastApi; } catch(_) {}
 
-  /* ═══════════════════════════════════════════════════════════
-     v1.9.11 — Modal stack, focus trap, scroll lock, backdrop (B-32)
-     ═══════════════════════════════════════════════════════════
-     Pure helpers — widgets/main/src/modal-pure.js (window.__SSP_MODAL_PURE).
-     В IIFE — DOM-bound обёртки: _appModalOpen() / _appModalClose() / Escape handler.
-     Backward-compat: _showOverlay() остаётся, _appModalOpen внутри вызывает его. */
-  var MODAL_PURE = (typeof window !== 'undefined' && window.__SSP_MODAL_PURE) || {};
-  var _modalStack = []; // массив overlay DOM-элементов, last = topmost
-  var _bodyLockCount = 0;
-  var CANCEL_SELECTOR = (MODAL_PURE.CANCEL_BUTTON_SELECTOR) ||
-    'button[id$="Cancel"], button[id$="CancelBtn"], button[id$="No"], ' +
-    'button[id$="CloseBtn"], button[id$="Close"], button[id^="close"]';
-
-  /* Возвращает массив focusable элементов внутри container — visible и не disabled. */
-  function _getFocusable(container) {
-    if (!container) return [];
-    var sel = 'a[href]:not([disabled]), button:not([disabled]), ' +
-              'input:not([disabled]):not([type="hidden"]), select:not([disabled]), ' +
-              'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    var nodes = container.querySelectorAll(sel);
-    var out = [];
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-      if (el.hidden) continue;
-      /* offsetParent === null означает display:none у self или предка
-         (исключение: position:fixed элементы — у них offsetParent всегда null
-         даже когда visible, поэтому проверяем computed display отдельно). */
-      var visible = el.offsetParent !== null;
-      if (!visible) {
-        try {
-          var cs = window.getComputedStyle(el);
-          visible = cs && cs.display !== 'none' && cs.visibility !== 'hidden';
-        } catch(_) {}
-      }
-      if (visible) out.push(el);
-    }
-    return out;
-  }
-
-  /* Создаёт focus trap для container. Возвращает { activate, deactivate }. */
-  function _createFocusTrap(container) {
-    var prevActive = (typeof document !== 'undefined') ? document.activeElement : null;
-
-    function onKeydown(e) {
-      if (e.key !== 'Tab') return;
-      var focusable = _getFocusable(container);
-      if (focusable.length === 0) { e.preventDefault(); return; }
-      var first = focusable[0];
-      var last  = focusable[focusable.length - 1];
-      var active = document.activeElement;
-      if (e.shiftKey && (active === first || !container.contains(active))) {
-        e.preventDefault(); last.focus();
-      } else if (!e.shiftKey && (active === last || !container.contains(active))) {
-        e.preventDefault(); first.focus();
-      }
-    }
-
-    return {
-      activate: function() {
-        container.addEventListener('keydown', onKeydown);
-        /* setTimeout(0) даёт браузеру отрендерить overlay перед focus() — иначе
-           focus может уйти на скрытый элемент (display:none → flex transition).
-           v2.0.0 R2 fix (D3-r6): {preventScroll:true} — БЕЗ него browser auto-scroll'ит
-           iframe чтобы focused element был visible, что в cross-origin sandbox YT widget
-           проявляется как «откидывание таблицы/Ганта к верху» при открытии любой модалки
-           (modal mounted at default top, focus moves there, iframe scrolls to expose). */
-        setTimeout(function() {
-          var focusable = _getFocusable(container);
-          var target = focusable[0] || container;
-          try { target.focus({ preventScroll: true }); } catch(_) {
-            try { target.focus(); } catch(__) {}   /* fallback для старых browsers */
-          }
-        }, 0);
-        container.__sspReturnFocus = prevActive;
-      },
-      deactivate: function() {
-        container.removeEventListener('keydown', onKeydown);
-      }
-    };
-  }
-
-  /* Body scroll lock — отключён в v1.9.11 post-smoke fix v2.
-     В YT widget iframe-контексте body lock не имеет смысла: iframe не имеет
-     собственного scroll'а (scroll живёт в parent doc, который мы не контролируем
-     из-за cross-origin), iframe растянут на content. Любые попытки lock'а
-     (position:fixed или overflow:hidden) либо no-op, либо потенциально интерферят
-     с click handlers в iframe (наблюдалось в smoke v1.9.11 round 1+2 —
-     «Очистить черновик» не запускал handler).
-     Reference counting остаётся как защита от рекурсии — но action no-op. */
-  function _bodyScrollLock(lock) {
-    if (lock) _bodyLockCount++;
-    else _bodyLockCount = Math.max(0, _bodyLockCount - 1);
-    /* no-op в iframe-контексте — но оставляем функцию для contract'а и testability */
-  }
-
-  /* Backdrop click handler — закрывает overlay только если клик строго по backdrop'у. */
-  function _onBackdropMousedown(e) {
-    var isBackdrop = MODAL_PURE.isBackdropClick
-      ? MODAL_PURE.isBackdropClick(e.target, e.currentTarget)
-      : (e.target === e.currentTarget);
-    if (!isBackdrop) return;
-    var overlay = e.currentTarget;
-    var cancelBtn = overlay.querySelector(CANCEL_SELECTOR);
-    if (cancelBtn) {
-      try { cancelBtn.click(); } catch(_) { _appModalClose(overlay); }
-    } else {
-      _appModalClose(overlay);
-    }
-  }
-
-  /* Идемпотентная attach-логика — ставит ARIA, stack, scroll lock, focus trap, backdrop.
-     Вызывается из _showOverlay() (после classList.remove('hidden')) автоматически — это
-     позволяет существующим 100+ call-sites _showOverlay() / classList.remove('hidden')
-     получить новую UX без переписывания каждого. */
-  function _modalAutoAttach(el) {
-    if (!el || el.__sspTrap) return;
-
-    /* ARIA-defaults (если в HTML не выставлены явно). */
-    if (!el.hasAttribute('role')) el.setAttribute('role', 'dialog');
-    if (!el.hasAttribute('aria-modal')) el.setAttribute('aria-modal', 'true');
-
-    /* Idempotent stack push. */
-    if (MODAL_PURE.pushUnique) MODAL_PURE.pushUnique(_modalStack, el);
-    else if (_modalStack.indexOf(el) === -1) _modalStack.push(el);
-
-    /* Body scroll lock — на момент первой модалки. */
-    if (_modalStack.length === 1) _bodyScrollLock(true);
-
-    /* Focus trap. */
-    el.__sspTrap = _createFocusTrap(el);
-    el.__sspTrap.activate();
-
-    /* Backdrop click — opt-in через data-dismiss-on-backdrop="true". */
-    var dataVal = el.getAttribute('data-dismiss-on-backdrop');
-    var dismissOnBackdrop = MODAL_PURE.parseBackdropOptIn
-      ? MODAL_PURE.parseBackdropOptIn(dataVal)
-      : (dataVal === 'true');
-    if (dismissOnBackdrop && !el.__sspBackdropBound) {
-      el.addEventListener('mousedown', _onBackdropMousedown);
-      el.__sspBackdropBound = true;
-    }
-  }
-
-  /* Снимает focus trap, lock, listeners, восстанавливает фокус. Вызывается из
-     MutationObserver при добавлении .hidden класса — т.е. автоматически при
-     existing legacy `el.classList.add('hidden')` close-сайтах. */
-  function _modalAutoDetach(el) {
-    if (!el) return;
-    /* v2.0.0 — cleanup iframe-aware positioner listeners + inline styles. */
-    if (el.__sspPositioner) {
-      try { window.removeEventListener('scroll', el.__sspPositioner, true); } catch(_){}
-      try { window.removeEventListener('resize', el.__sspPositioner); } catch(_){}
-      if (el.__sspPositionInterval) {
-        clearInterval(el.__sspPositionInterval);
-        el.__sspPositionInterval = null;
-      }
-      el.__sspPositioner = null;
-      try {
-        el.style.position = ''; el.style.top = ''; el.style.left = '';
-        el.style.right = ''; el.style.minHeight = ''; el.style.height = '';
-        el.style.alignItems = '';
-        el.style.paddingTop = '';   /* v2.0.0 R2 D3-r5: cleanup click-anchored padding */
-      } catch(_){}
-    }
-    if (!el.__sspTrap) return;
-
-    el.__sspTrap.deactivate();
-    el.__sspTrap = null;
-
-    if (el.__sspBackdropBound) {
-      el.removeEventListener('mousedown', _onBackdropMousedown);
-      el.__sspBackdropBound = false;
-    }
-
-    if (MODAL_PURE.popItem) MODAL_PURE.popItem(_modalStack, el);
-    else {
-      var idx = _modalStack.indexOf(el);
-      if (idx >= 0) _modalStack.splice(idx, 1);
-    }
-
-    if (_modalStack.length === 0) _bodyScrollLock(false);
-
-    if (el.__sspReturnFocus && document.body.contains(el.__sspReturnFocus)) {
-      /* v2.0.0 R2 fix (D3-r6): preventScroll чтобы close модала не скроллил iframe
-         обратно к кнопке-открывателю (которая может быть вне visible portion). */
-      try { el.__sspReturnFocus.focus({ preventScroll: true }); } catch(_) {
-        try { el.__sspReturnFocus.focus(); } catch(__) {}
-      }
-      el.__sspReturnFocus = null;
-    }
-  }
-
+  /* Легаси-модал-фасад B-32 (открытие/закрытие .overlay, модальный стек,
+     focus trap, scroll lock, MutationObserver-detach, одноимённый глобал,
+     pure-хелперы modal-pure.js) демонтирован при декомпозиции:
+     .overlay-элементов в DOM не осталось (#32 Phase 6), потребителей у
+     фасада не было — все модалки на __SSP_RING_MODAL
+     (см. tests/golden/modal-facade.golden.test.js). */
   /* Phase 1 #32 — декларативный spec-API поверх __SSP_RING_MODAL.
      Возвращает { close(), update(partial) }. Fallback — no-op (Ring не подключён). */
   function openModal(spec) {
@@ -1396,70 +1210,6 @@
     return { close: function() {}, update: function() {} };
   }
 
-  /* Открывает overlay (public API). v2.0.0: .overlay/.dyn-modal-overlay → Ring Dialog bridge.
-     Legacy: .settings-overlay и не-overlay элементы идут через _showOverlay как раньше. */
-  function _appModalOpen(idOrEl, opts) {
-    opts = opts || {};
-    var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
-    if (!el) return null;
-
-    /* Bridge __SSP_DIALOG демонтирован (Phase 6 — де-гибридизация #32). Все модалки переехали
-       на __SSP_RING_MODAL (декларативный openModal). Остаётся только legacy-путь через _showOverlay
-       для settingsOverlay / .overlay-элементов, открываемых старым API (__SSP_MODAL фасад). */
-    _showOverlay(el);
-    if (opts.dismissOnBackdrop === true && !el.__sspBackdropBound) {
-      el.addEventListener('mousedown', _onBackdropMousedown);
-      el.__sspBackdropBound = true;
-    }
-    return el;
-  }
-
-  /* Закрывает overlay (public API). v2.0.0: Ring Dialog path через per-overlay observer. */
-  function _appModalClose(idOrEl) {
-    var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
-    if (!el) return;
-    el.classList.add('hidden'); /* Legacy path — глобальный _modalObserver вызовет _modalAutoDetach. */
-  }
-
-  /* Глобальный observer — наблюдает за добавлением .hidden класса на overlay-элементы.
-     Это даёт authokativnaya точку detach без необходимости менять 100+ legacy close-сайтов
-     (el.classList.add('hidden')). Вызывается из init flow (см. ниже DOMContentLoaded path). */
-  var _modalObserver = null;
-  function _initModalCloseObserver() {
-    if (_modalObserver || typeof MutationObserver !== 'function') return;
-    _modalObserver = new MutationObserver(function(mutations) {
-      for (var i = 0; i < mutations.length; i++) {
-        var m = mutations[i];
-        if (m.type !== 'attributes' || m.attributeName !== 'class') continue;
-        var el = m.target;
-        if (!el) continue;
-        var isHidden = el.classList.contains('hidden');
-        if (isHidden && el.__sspTrap) {
-          /* .hidden добавлен на видимую модалку — close path. */
-          _modalAutoDetach(el);
-        } else if (!isHidden && !el.__sspTrap) {
-          /* .hidden снят с скрытой модалки — legacy open path (например, через
-             o.classList.remove('hidden')). Auto-attach UX-helpers. */
-          _modalAutoAttach(el);
-        }
-      }
-    });
-    /* Наблюдаем все известные типы overlay'ев. Idempotent — повторный init no-op. */
-    var overlays = document.querySelectorAll('.overlay, .settings-overlay, .dyn-modal-overlay');
-    for (var i = 0; i < overlays.length; i++) {
-      _modalObserver.observe(overlays[i], { attributes: true, attributeFilter: ['class'] });
-    }
-  }
-
-  /* Public namespace для консоли + других модулей. */
-  try {
-    window.__SSP_MODAL = {
-      open:  _appModalOpen,
-      close: _appModalClose,
-      stack: _modalStack,
-      getFocusable: _getFocusable
-    };
-  } catch(_) {}
 
   /* ═══════════════════════════════════════════════════════════
      v5.0.3 — Локальный черновик в localStorage
@@ -2023,103 +1773,7 @@
       nodes[i].classList.add('hidden');
     }
   }
-  /* v6.3.0 D102/D104/D107 — overlay viewport реальный фикс.
-     Корень: YT widget iframe растянут по контенту → внутреннего scroll нет, `position:fixed`
-     overlay позиционируется относительно iframe document. Когда outer YT page scroll'нул iframe,
-     `position:fixed` overlay уходит выше outer viewport.
-     v6.2.1 D97 (scrollIntoView внутри iframe) + v6.2.2 D100 (window.frameElement.scrollIntoView)
-     не работают: первый scroll'ит iframe document (где prokrutki нет), второй — `frameElement`
-     может быть undefined (cross-origin sandbox YT).
-     Реальное решение: `document.documentElement.getBoundingClientRect().top` внутри same-origin
-     iframe равен -outerScrollY (отрицательный, если iframe scrolled вниз outer'ом). На основе
-     этого вычисляем abs. позицию overlay'я в текущей видимой части outer viewport и
-     перекрываем CSS-fixed через inline absolute. Fallback chain: frameElement → scrollIntoView.
-   */
-  /* v6.3.1 D113 — overlay/toast viewport: CSS-only позиционирование (overlay
-     `position:absolute top:0` крепится к верху body iframe = верху main виджета),
-     плюс трёхуровневый scroll outer page чтобы iframe top попал в outer viewport.
-     Был баг v6.3.0 D102: inline-style `_positionOverlayInView` пытался вычислить
-     visibleTopInDoc через getBoundingClientRect, но в растянутом iframe это даёт
-     неконсистентные значения (rect.top бывает 0 если iframe не имеет outer-scroll
-     контекста), и overlay перекрывал CSS неправильным top → виден частично/невиден. */
-  function _scrollFrameIntoView() {
-    var any = false;
-    /* (1) Scroll iframe document к началу (на случай internal scroll). */
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); any = true; }
-    catch(_){
-      try { window.scrollTo(0, 0); any = true; } catch(__){}
-    }
-    /* (2) Scroll outer YT page через iframe element (same-origin). */
-    try {
-      if (window.frameElement && typeof window.frameElement.scrollIntoView === 'function') {
-        window.frameElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        any = true;
-      }
-    } catch(_){}
-    /* v6.3.2 D122 — (3) Дополнительный fallback: если frameElement доступен,
-       но scrollIntoView не сработал (некоторые YT окружения возвращают true,
-       но реально не scrollят) — явно вычисляем absolute Y координату iframe
-       в parent document и делаем window.parent.scrollTo. Same-origin only. */
-    try {
-      if (window.parent && window.parent !== window && window.frameElement) {
-        var iframeRect = window.frameElement.getBoundingClientRect();
-        var parentScrollY = (window.parent.pageYOffset
-          || (window.parent.document && window.parent.document.documentElement && window.parent.document.documentElement.scrollTop)
-          || 0);
-        /* Цель: iframe top = top outer viewport (с небольшим запасом 16px). */
-        var targetY = parentScrollY + iframeRect.top - 16;
-        if (targetY < 0) targetY = 0;
-        if (typeof window.parent.scrollTo === 'function') {
-          try { window.parent.scrollTo({ top: targetY, behavior: 'smooth' }); }
-          catch(_){ window.parent.scrollTo(0, targetY); }
-          any = true;
-        }
-      }
-    } catch(_){}
-    return any;
-  }
-  function _showOverlay(idOrEl) {
-    var el = (typeof idOrEl === 'string') ? document.getElementById(idOrEl) : idOrEl;
-    if (!el) return;
-    /* Очищаем inline-style остатки от старого _positionOverlayInView (D102 v6.3.0). */
-    try {
-      el.style.position = ''; el.style.top = ''; el.style.left = '';
-      el.style.right = ''; el.style.bottom = ''; el.style.minHeight = '';
-      el.style.height = '';
-    } catch(_){}
-    el.classList.remove('hidden');
-    /* v2.0.0 R2 fix (D3-r5) — _scrollFrameIntoView убран: см. _appModalOpen для деталей. */
-    /* v1.9.11 (B-32) — auto-attach UX-helpers (focus trap / scroll lock / backdrop / ARIA).
-       Idempotent: повторный show уже visible overlay не дублирует state. */
-    if (typeof _modalAutoAttach === 'function') {
-      try { _modalAutoAttach(el); } catch(_){}
-    }
-    /* v2.0.0 R2 fix (D3-r5) — Click-anchored overlay positioning через padding-top.
-       Сохраняет overlay в native size (CSS: position fixed; inset:0; backdrop) → backdrop
-       покрывает весь iframe. Content (.modal/.confirm-box/.dyn-modal-box) сдвигается через
-       align-items:flex-start + paddingTop = anchorY - contentH/2.
-       Old D2 logic читало parent + frameElement (BLOCKED в cross-origin sandbox YT iframe) и
-       fallback'ился на iframe auto-grow 4000+ px → overlay min-height=4000px → content в Y=2000+. */
-    if (el.classList.contains('overlay') || el.classList.contains('dyn-modal-overlay') || el.classList.contains('settings-overlay')) {
-      var positionOverlay = function() {
-        /* Найти actual content (modal/confirm-box/dyn-modal-box) внутри overlay для measure */
-        var content = el.querySelector('.modal, .confirm-box, .dyn-modal-box');
-        var contentH = content ? content.offsetHeight : (el.offsetHeight || 300);
-        var anchorY = (window.__SSP_MODAL_ANCHOR && window.__SSP_MODAL_ANCHOR.getCenterY())
-          || (window.innerHeight / 2);
-        var padTop = Math.max(20, anchorY - contentH / 2);
-        /* НЕ трогать position/top/height/inset overlay — оставить CSS defaults для backdrop */
-        el.style.alignItems = 'flex-start';
-        el.style.paddingTop = padTop + 'px';
-      };
-      requestAnimationFrame(positionOverlay);
-      var positionInterval = setInterval(positionOverlay, 100);
-      el.__sspPositioner = positionOverlay;
-      el.__sspPositionInterval = positionInterval;
-      window.addEventListener('scroll', positionOverlay, true);
-      window.addEventListener('resize', positionOverlay);
-    }
-  }
+  /* Хелперы скролла/показа легаси-оверлеев демонтированы вместе с модал-фасадом. */
   function openReassignModal(issueId) {
     if (!_currentRolePP) {
       diag('openReassignModal: no _currentRolePP', 'warn');
@@ -3102,7 +2756,6 @@
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     bindEmptyStateCtas(); // #43 W2 (B-2/D-1) — CTA статических empty-state'ов (идемпотентно)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
-    _initModalCloseObserver(); // v1.9.11 (B-32) — auto-detach focus trap / scroll lock при classList.add('hidden')
     /* v5.0.3 — обновить индикатор черновика ПОСЛЕ applyI18N (иначе applyI18N
        не затрагивает текст бейджа без data-i18n, но переключение языка
        должно перенарисовать локализованную подпись с актуальным timestamp). */
@@ -3114,40 +2767,8 @@
     if (openBtn  && !openBtn._sspBound)  { openBtn.addEventListener('click',  openSettingsModal);    openBtn._sspBound  = true; }
     /* v5.0.3 — bind кнопок локального черновика */
     bindClearDraftHandlers();
-    /* v5.0.1 — Esc для закрытия overlay
-       v1.9.9 — расширено: ловит любой visible .overlay, не только settingsOverlay.
-       v1.9.11 (B-32) — переписано на _modalStack-aware: предпочитаем стак (надёжнее
-       чем DOM-order assumption), fallback на querySelectorAll если в стаке пусто
-       (например, overlay открыт legacy-путём без _appModalOpen). Уважаем
-       data-no-escape="true" для блокирующих модалок (wcMultiTab). */
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
-
-      /* 1) Прежде всего смотрим в _modalStack — он содержит модалки, открытые
-            через _appModalOpen(). Top = последняя пушнутая. */
-      var topOv = null;
-      if (_modalStack && _modalStack.length) {
-        topOv = _modalStack[_modalStack.length - 1];
-        /* Если top уже скрыта (что-то закрыло иначе) — пропадает из стака на следующий цикл. */
-        if (topOv && topOv.classList.contains('hidden')) topOv = null;
-      }
-      /* 2) Fallback на DOM-обход — для overlay'ев, открытых старым путём. */
-      if (!topOv) {
-        var overlays = document.querySelectorAll('.overlay:not(.hidden)');
-        if (!overlays.length) return;
-        topOv = overlays[overlays.length - 1];
-      }
-
-      /* Блокирующие модалки (например, wcMultiTab) — пропускаем Escape. */
-      if (topOv.dataset && topOv.dataset.noEscape === 'true') return;
-
-      var cancelBtn = topOv.querySelector(CANCEL_SELECTOR);
-      if (cancelBtn) {
-        try { cancelBtn.click(); } catch(_) { _appModalClose(topOv); }
-      } else {
-        _appModalClose(topOv);
-      }
-    });
+    /* Легаси Escape-хендлер (.overlay/модальный стек) демонтирован с модал-фасадом —
+       Ring-модалки закрывает их собственный capture-listener (modal-mount.jsx). */
 
     /* ── Version badge ──
        v5.6.0 (D40, закрывает KL#3 v5.4.0 полностью): _loadAppVersion() с TTL-кешем 5 мин
