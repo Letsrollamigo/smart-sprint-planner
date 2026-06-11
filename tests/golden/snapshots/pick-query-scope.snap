@@ -1,0 +1,35 @@
+{
+  "withProject": {
+    "empty": {
+      "fullQuery": "project: GM",
+      "fingerprint": "project: GM|GM"
+    },
+    "text": {
+      "fullQuery": "project: GM #Unresolved сортировать по: обновлена",
+      "fingerprint": "project: GM #Unresolved сортировать по: обновлена|GM"
+    },
+    "hasProjectPrefix": {
+      "fullQuery": "PROJECT: OTHER #Unresolved",
+      "fingerprint": "PROJECT: OTHER #Unresolved|GM"
+    },
+    "scope": {
+      "folders": [
+        {
+          "$type": "Project",
+          "id": "gm-project-id"
+        }
+      ],
+      "projectId": "GM"
+    }
+  },
+  "noProject": {
+    "text": {
+      "fullQuery": "#Unresolved",
+      "fingerprint": "#Unresolved|"
+    },
+    "scope": {
+      "folders": [],
+      "projectId": null
+    }
+  }
+}
