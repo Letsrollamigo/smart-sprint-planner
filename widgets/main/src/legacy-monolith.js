@@ -1750,79 +1750,25 @@
   function _blockEq(a, b)  { return HASH_PURE._blockEq(a, b); }
   function _mapById(arr)   { return HASH_PURE._mapById(arr); }
   function _numEq(a, b)    { return HASH_PURE._numEq(a, b); }
-  /* Уровни ре-валидации working copy. Чем глубже правка — тем ниже падает статус. */
+  /* Кластер ре-валидации working copy (уровни ре-валидации, хэш базового снимка,
+     overlimit-чек аллокаций) вынесен в widgets/main/src/revalidation.js
+     (window.__SSP_REVALIDATION) — Тир C. Делегаторы; state-контекст (роли,
+     статусы, доступ к _roleItems, hash-утилиты) собирается в _revalDeps на вызове. */
+  var REVALIDATION = (typeof window !== 'undefined' && window.__SSP_REVALIDATION) || {};
+  function _revalDeps() {
+    return {
+      allRoles: ALL_ROLES, status: STATUS, activeInc: ACTIVE_INC,
+      getRoleItemsArr: getRoleItemsArr, hash: HASH_PURE,
+    };
+  }
   function computeRequiredRevalidationLevel(snap, work) {
-    if (!snap || !work) return 'CONFIRMED_REVAL';
-    var rk   = snap.roleKey;
-    if (!rk) return 'NONE';
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var resK = role ? role.resKey : '';
-    var estK = 'estimate_' + rk;
-    var allK = 'alloc_'    + rk;
-
-    var sMap = _mapById(snap.items || []);
-    var wMap = _mapById(work.items || []);
-    var sIds = Object.keys(sMap), wIds = Object.keys(wMap);
-    var added = wIds.filter(function(id){ return !sMap[id]; });
-    var removed = sIds.filter(function(id){ return !wMap[id]; });
-    if (added.length || removed.length) return 'CONFIRMED_REVAL';
-
-    var allocChanged = false;
-    for (var i = 0; i < wIds.length; i++) {
-      var id = wIds[i], s = sMap[id], w = wMap[id];
-      if (s.inclusionStatus !== w.inclusionStatus) return 'CONFIRMED_REVAL';
-      if (!_numEq(s[estK], w[estK]))               return 'CONFIRMED_REVAL';
-      if (!_numEq(s[allK], w[allK]))               allocChanged = true;
-    }
-    var sRes = (resK && snap[resK] != null) ? snap[resK] : 0;
-    var wRes = (work.sprint && resK && work.sprint[resK] != null) ? work.sprint[resK] : 0;
-    if (!_numEq(sRes, wRes)) allocChanged = true;
-
-    var ws = work.sprint || {};
-    var metaChanged =
-         (snap.name             || null) !== (ws.name             || null)
-      || (snap.dateStart        || null) !== (ws.dateStart        || null)
-      || (snap.dateEnd          || null) !== (ws.dateEnd          || null)
-      || (snap.sprintFieldVal   || null) !== (ws.sprintFieldVal   || null)
-      || (snap.versionFieldVal  || null) !== (ws.versionFieldVal  || null)
-      || !_blockEq(snap.personalPlanning, work.personalPlanning)
-      || !_blockEq(snap.gantt,            work.gantt);
-
-    if (allocChanged) return 'ALLOCATED_REVAL';
-    if (metaChanged)  return 'META_ONLY';
-    return 'NONE';
+    return REVALIDATION.computeRequiredRevalidationLevel(snap, work, _revalDeps());
   }
   function applyRevalidationLevel(currentStatus, level) {
-    if (level === 'CONFIRMED_REVAL') return STATUS.PLANNING;
-    if (level === 'ALLOCATED_REVAL') {
-      return (currentStatus === STATUS.ALLOCATED) ? STATUS.CONFIRMED : currentStatus;
-    }
-    return currentStatus;
+    return REVALIDATION.applyRevalidationLevel(currentStatus, level, _revalDeps());
   }
-
-  /* Стабильный хэш базового снимка по полям, релевантным для diff.
-     НЕ включает confirmedAt/By/revisions/personalPlanning/gantt — изменения этих
-     полей не должны провоцировать conflict-модал. */
   function computeBaseSnapshotHash(snap) {
-    if (!snap) return '';
-    var rk = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var resK = role ? role.resKey : '';
-    var estK = 'estimate_' + rk;
-    var allK = 'alloc_' + rk;
-    var items = (snap.items || []).slice()
-      .sort(function(a, b){ return String(a.issueId||'').localeCompare(String(b.issueId||'')); })
-      .map(function(it){
-        return [it.issueId, it.inclusionStatus || '', (it[estK] != null ? it[estK] : ''), (it[allK] != null ? it[allK] : '')].join('|');
-      })
-      .join(';');
-    var head = [
-      snap.sprintId || '', snap.status || '',
-      snap.name || '', snap.dateStart || 0, snap.dateEnd || 0,
-      (resK && snap[resK] != null ? snap[resK] : 0),
-      snap.sprintFieldVal || '', snap.versionFieldVal || ''
-    ].join('|');
-    return _wcSha1Light(head + '##' + items);
+    return REVALIDATION.computeBaseSnapshotHash(snap, _revalDeps());
   }
 
   /* ═══ v5.3.0 — Working copy lifecycle ═══ */
@@ -8509,24 +8455,10 @@
   /**
    * Проверяет превышение аллокации у задач vs. ресурс роли.
    * Возвращает массив индексов задач с превышением.
+   * Тело — в widgets/main/src/revalidation.js (Тир C), см. _revalDeps выше.
    */
   function checkAllocOverlimit(rk) {
-    // Строка с задачей: превышение если аллокация задачи > дельта этой задачи (max(0, est-fact))
-    // Ресурс задачи = дельта между оценкой и фактом трудозатрат — именно это значение
-    // отображается в колонке «Ресурс Анализ» для каждой строки задачи.
-    var items = getRoleItemsArr(rk);
-    var overlimit = [];
-    items.forEach(function(item, idx) {
-      if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) return;
-      var alloc = item['alloc_'+rk];
-      var est   = item['estimate_'+rk] || 0;
-      var fact  = item['fact_'+rk] || 0;
-      var delta    = Math.max(0, est - fact);  // ресурс строки задачи
-      var allocVal = (alloc !== null && alloc !== undefined) ? alloc : delta;
-      // Аллокация задачи превышает дельту этой задачи
-      if (delta > 0 && allocVal > delta) overlimit.push(idx);
-    });
-    return overlimit;
+    return REVALIDATION.checkAllocOverlimit(rk, _revalDeps());
   }
 
   /**
