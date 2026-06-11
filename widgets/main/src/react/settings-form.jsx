@@ -203,7 +203,9 @@ function capValues(arr) {
 
 /* Нативный multi-select (как legacy <select multiple>). options дополняется
    значениями из selected, которых в нём нет (поле сменилось — не теряем
-   сохранённый выбор, как _fillCascadeBundleSelect/_fill*Sel). */
+   сохранённый выбор, как _fillCascadeBundleSelect/_fill*Sel).
+   #43 W2 (A-5): дефолтный size адаптивный — короткие списки не резервируют
+   5-6 пустых рядов (3..6 рядов по числу опций; CSS-страховка min/max-height). */
 function MultiSelect(props) {
   const selected = props.selected || [];
   const opts = (props.options || []).slice();
@@ -211,7 +213,7 @@ function MultiSelect(props) {
   return (
     <select
       multiple
-      size={props.size || 6}
+      size={props.size || Math.min(Math.max(opts.length, 3), 6)}
       className="app-select ssp-multiselect"
       value={selected}
       onChange={(e) => props.onChange(Array.prototype.slice.call(e.target.selectedOptions).map((o) => o.value))}
@@ -345,11 +347,11 @@ function CascadeSection(props) {
       </div>
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblCascadeLevel2')}</label>
-        <MultiSelect options={bundle} selected={v.level2} onChange={(vals) => patch({ level2: vals })} size={5} />
+        <MultiSelect options={bundle} selected={v.level2} onChange={(vals) => patch({ level2: vals })} />
       </div>
       <div className="field" style={{ marginTop: '12px' }}>
         <label>{t('lblCascadeLevel3')}</label>
-        <MultiSelect options={bundle} selected={v.level3} onChange={(vals) => patch({ level3: vals })} size={5} />
+        <MultiSelect options={bundle} selected={v.level3} onChange={(vals) => patch({ level3: vals })} />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
         {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnCascadeLevelsOverlap')}</div> : null}
       </div>
@@ -471,7 +473,7 @@ function StandupSection(props) {
   return (
     <div className="field">
       <label>{t('lblStandupDoneStates')}</label>
-      <MultiSelect options={props.bundleStates || []} selected={props.value || []} onChange={props.onChange} size={6} />
+      <MultiSelect options={props.bundleStates || []} selected={props.value || []} onChange={props.onChange} />
       <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
     </div>
   );
@@ -758,10 +760,12 @@ function SettingsForm(props) {
 
   /* ── Конфиг секций (two-pane): id → title → node. Контент идентичен прежним
      Card-блокам; меняется только обёртка (nav-список слева + активная секция справа).
-     node вычисляется каждый рендер (дёшево) — все секции в одном scope. ── */
+     node вычисляется каждый рендер (дёшево) — все секции в одном scope.
+     nav (#43 W2, B-3) — короткий label левого списка (один ряд, ровный ритм);
+     полное название остаётся в pane__title. Без nav — в списке title. ── */
   const SECTIONS = [
     {
-      id: 'roles', title: t('cardRoles'),
+      id: 'roles', title: t('cardRoles'), nav: t('navRoles'),
       node: (
         <div className="roles-grid">
           {roles.map((r) => {
@@ -882,7 +886,7 @@ function SettingsForm(props) {
       ),
     },
     {
-      id: 'fact', title: t('cardFieldFact'), error: hasFactDup,
+      id: 'fact', title: t('cardFieldFact'), nav: t('navFieldFact'), error: hasFactDup,
       node: (
         <React.Fragment>
           <div className="form-grid ssp-role-grid">
@@ -898,7 +902,7 @@ function SettingsForm(props) {
       ),
     },
     {
-      id: 'norms', title: t('cardWorkloadSettings'),
+      id: 'norms', title: t('cardWorkloadSettings'), nav: t('navWorkloadSettings'),
       node: (
         <React.Fragment>
           <div className="form-grid form-grid--3">
@@ -941,19 +945,19 @@ function SettingsForm(props) {
       ),
     },
     {
-      id: 'dta', title: t('cardDta'), error: hasDtaDup,
+      id: 'dta', title: t('cardDta'), nav: t('navDta'), error: hasDtaDup,
       node: (
         <DtaSection t={t} value={dta} onChange={setDta} activeRoles={activeRoleList} uiLang={uiLang} hasDup={hasDtaDup} />
       ),
     },
     {
-      id: 'cascade', title: t('cardCascade'),
+      id: 'cascade', title: t('cardCascade'), nav: t('navCascade'),
       node: (
         <CascadeSection t={t} value={cascade} onChange={setCascade} enumFields={props.enumFields || []} loadFieldValues={props.loadFieldValues} />
       ),
     },
     {
-      id: 'rollup', title: t('cardStateRollup'), error: rollup.order.length === 1,
+      id: 'rollup', title: t('cardStateRollup'), nav: t('navStateRollup'), error: rollup.order.length === 1,
       node: (
         <StateRollupSection t={t} value={rollup} onChange={setRollup} bundleStates={bundleStates} cascadeHasHierarchy={cascadeHasHierarchy} />
       ),
@@ -1015,7 +1019,7 @@ function SettingsForm(props) {
               aria-current={s.id === active.id ? 'true' : undefined}
               onClick={() => setActiveSection(s.id)}
             >
-              <span className="ssp-settings-nav__label">{s.title}</span>
+              <span className="ssp-settings-nav__label">{s.nav || s.title}</span>
               {s.error ? <span className="ssp-settings-nav__dot" aria-hidden="true">●</span> : null}
             </button>
           ))}
