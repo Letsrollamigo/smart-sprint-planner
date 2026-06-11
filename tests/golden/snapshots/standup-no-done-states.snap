@@ -1,4 +1,54 @@
 {
-  "buckets": "\n        <div id=\"standupBucketDone\" class=\"card\" style=\"padding:10px 12px\"><div style=\"font-weight: 600; font-size: 12px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border,#e0e0e0);\">✅ Done (0)</div><div style=\"font-size: 11px; color: var(--muted,#888); text-align: center; padding: 12px 0px;\">—</div></div>\n        <div id=\"standupBucketInflight\" class=\"card\" style=\"padding:10px 12px\"><div style=\"font-weight: 600; font-size: 12px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border,#e0e0e0);\">🔄 В работе (2)</div><div style=\"padding: 5px 0px; border-bottom: 1px solid var(--border,#e0e0e0); font-size: 12px;\"><span style=\"color:var(--muted,#888);font-size:11px;float:right\">0м/15ч</span><span style=\"font-weight:600\">GM-2</span> <span title=\"Обследование интеграции с 1С\" style=\"color:var(--text)\">Обследование интеграции с 1С</span></div><div style=\"padding: 5px 0px; border-bottom: 1px solid var(--border,#e0e0e0); font-size: 12px;\"><span style=\"color:var(--muted,#888);font-size:11px;float:right\">0м/2ч</span><span style=\"font-weight:600\">GM-3</span> <span title=\"Ревью схемы данных\" style=\"color:var(--text)\">Ревью схемы данных</span></div></div>\n        <div id=\"standupBucketNotStarted\" class=\"card\" style=\"padding:10px 12px\"><div style=\"font-weight: 600; font-size: 12px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border,#e0e0e0);\">📋 Не начато (2)</div><div style=\"padding: 5px 0px; border-bottom: 1px solid var(--border,#e0e0e0); font-size: 12px;\"><span style=\"color:var(--muted,#888);font-size:11px;float:right\">0м/10ч</span><span style=\"font-weight:600\">GM-1</span> <span title=\"Анализ требований платёжного модуля\" style=\"color:var(--text)\">Анализ требований платёжного модуля</span></div><div style=\"padding: 5px 0px; border-bottom: 1px solid var(--border,#e0e0e0); font-size: 12px;\"><span style=\"color:var(--muted,#888);font-size:11px;float:right\">0м/100ч</span><span style=\"font-weight:600\">GM-4</span> <span title=\"Исключённая задача\" style=\"color:var(--text)\">Исключённая задача</span></div></div>\n      ",
+  "buckets": [
+    {
+      "id": "standupBucketDone",
+      "header": "✅ Done (0)",
+      "rows": []
+    },
+    {
+      "id": "standupBucketInflight",
+      "header": "🔄 В работе (2)",
+      "rows": [
+        {
+          "issueId": "GM-2",
+          "url": "",
+          "title": "Обследование интеграции с 1С",
+          "titleTrunc": "Обследование интеграции с 1С",
+          "hours": "0м/15ч",
+          "assignee": ""
+        },
+        {
+          "issueId": "GM-3",
+          "url": "",
+          "title": "Ревью схемы данных",
+          "titleTrunc": "Ревью схемы данных",
+          "hours": "0м/2ч",
+          "assignee": ""
+        }
+      ]
+    },
+    {
+      "id": "standupBucketNotStarted",
+      "header": "📋 Не начато (2)",
+      "rows": [
+        {
+          "issueId": "GM-1",
+          "url": "",
+          "title": "Анализ требований платёжного модуля",
+          "titleTrunc": "Анализ требований платёжного модуля",
+          "hours": "0м/10ч",
+          "assignee": ""
+        },
+        {
+          "issueId": "GM-4",
+          "url": "",
+          "title": "Исключённая задача",
+          "titleTrunc": "Исключённая задача",
+          "hours": "0м/100ч",
+          "assignee": ""
+        }
+      ]
+    }
+  ],
   "noDoneHintVisible": true
 }
