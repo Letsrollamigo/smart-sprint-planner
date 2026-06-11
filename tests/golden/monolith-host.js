@@ -51,6 +51,7 @@ const BRIDGE_SCRIPTS = [
   'share-url-pure.js',
   'modal-specs.js',
   'excel-export.js',
+  'revalidation.js',
 ];
 
 const GM_HOOK = `
