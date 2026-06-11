@@ -232,6 +232,34 @@
     });
   }
 
+  /** #43 W2 (B-2/D-1) — CTA статических empty-state'ов (index.html, data-ssp-cta).
+   *  focus-sprint — фокус на селектор спринта в шапке/рельсе;
+   *  goto-roles   — переключение на уровень «Роли» (planning-level state-tracker);
+   *  open-settings — programmatic click по #openSettingsBtn (видимость CTA
+   *  синхронизируется с серверной проверкой в renderPlanningRoles). */
+  function bindEmptyStateCtas() {
+    document.querySelectorAll('[data-ssp-cta]').forEach(function(btn) {
+      if (btn._sspCtaBound) return;
+      btn._sspCtaBound = true;
+      var kind = btn.getAttribute('data-ssp-cta');
+      btn.addEventListener('click', function() {
+        if (kind === 'focus-sprint') {
+          var sel = document.getElementById('widgetSprintSel');
+          if (sel) {
+            try { sel.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) { sel.scrollIntoView(); }
+            try { sel.focus(); } catch (_) {}
+          }
+        } else if (kind === 'goto-roles') {
+          var lvl = document.querySelector('.planning-level-btn[data-level="roles"]');
+          if (lvl) lvl.click();
+        } else if (kind === 'open-settings') {
+          var sBtn = document.getElementById('openSettingsBtn');
+          if (sBtn) sBtn.click();
+        }
+      });
+    });
+  }
+
   /** Обёртка для async-действий кнопки: показывает Ring LoaderInline, блокирует повторный клик,
    *  восстанавливает исходное состояние через .finally().
    *  v2.0.0 D125 Phase D3: делегирует в window.__SSP_LOADER (Ring LoaderInline).
@@ -1418,7 +1446,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.5.3';
+  var APP_VERSION = '2.5.4';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -3508,6 +3536,7 @@
     try { if (window.__SSP_SELECT)   window.__SSP_SELECT.mountAllIn(document); } catch (_) {}
     try { if (window.__SSP_COLLAPSE) window.__SSP_COLLAPSE.mountAllIn(document); } catch (_) {}
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
+    bindEmptyStateCtas(); // #43 W2 (B-2/D-1) — CTA статических empty-state'ов (идемпотентно)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
     _initModalCloseObserver(); // v1.9.11 (B-32) — auto-detach focus trap / scroll lock при classList.add('hidden')
     /* v5.0.3 — обновить индикатор черновика ПОСЛЕ applyI18N (иначе applyI18N
@@ -5364,7 +5393,14 @@
     var activeRoles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
     if (!activeRoles.length) {
       container.innerHTML = '';
-      if (noActiveEl) noActiveEl.classList.remove('hidden');
+      if (noActiveEl) {
+        noActiveEl.classList.remove('hidden');
+        /* #43 W2 — CTA «Открыть настройки» только тем, кому виден #openSettingsBtn
+           (серверная проверка check-settings-manager, см. refreshOpenSettingsBtn). */
+        var ctaEl = document.getElementById('planningRolesNoActiveCta');
+        var sBtn  = document.getElementById('openSettingsBtn');
+        if (ctaEl) ctaEl.style.display = (sBtn && sBtn.style.display !== 'none') ? '' : 'none';
+      }
       if (noSprintEl) noSprintEl.classList.add('hidden');
       return;
     }
@@ -6735,7 +6771,20 @@
 
     if (!has) {
       if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
-      host.innerHTML = '<div class="empty">'+esc(T('compSprintEmpty'))+'</div>';
+      /* #43 W2 (B-2/D-1) — структурный empty-state; CTA проксирует клик на
+         тулбарный pickBtn_<rk> (единая точка входа подбора задач). */
+      host.innerHTML = '<div class="ssp-empty">' +
+        '<div class="ssp-empty__icon" data-icon="task" aria-hidden="true"></div>' +
+        '<div class="ssp-empty__title">' + esc(T('compEmptyTitle')) + '</div>' +
+        '<div class="ssp-empty__desc">' + esc(T('compEmptyDesc')) + '</div>' +
+        '<button type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta">' + esc(T('btnPickTasks')) + '</button>' +
+        '</div>';
+      applyIcons();
+      var emptyCtaEl = host.querySelector('.ssp-empty__cta');
+      if (emptyCtaEl) emptyCtaEl.addEventListener('click', function() {
+        var pb = document.getElementById('pickBtn_' + rk);
+        if (pb) pb.click();
+      });
       var pagElEmpty = document.getElementById('planPag_'+rk);
       if (pagElEmpty) pagElEmpty.style.display = 'none';
       return;

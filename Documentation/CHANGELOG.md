@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.4] — 2026-06-11
+
+> **Density & empty states (#43, wave 2).**
+
+### Changed
+
+- **Settings navigation uses short single-line section labels** — even vertical rhythm in the left list; the full section title is shown in the pane header.
+- **Settings form fields fill each row evenly** — the layout switched to flex: the last incomplete row stretches to full width, no more gap on the right ("Other fields", "Capacity" and other sections).
+- **Multi-select lists are more compact** — height adapts to the number of options (3–6 rows); an empty list no longer reserves ~5 blank rows.
+- **Empty states redesigned** (role allocation / assignees / sprint composition / stand-up): an icon, a clear title, a short description and an action button — "Go to sprint selection", "Open settings" (visible to settings managers only), "Pick tasks", "Go to Roles".
+
+### Added
+
+- `calendar` and `warning` glyphs in the bundled SVG icon set.
+- 14 new localization keys (×15 languages) for empty states and short section labels.
+
+---
+
 ## [2.5.3] — 2026-06-09
 
 > **Accessibility & settings UI polish (#43, wave 1).**
