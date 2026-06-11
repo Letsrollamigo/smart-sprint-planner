@@ -18,6 +18,16 @@ import * as React from 'react';
 
 const noop = () => {};
 
+/* #43 W4 — i18n-контекст формы: даёт листовым контролам (FieldSelect/MultiSelect/
+   RingSelLite) доступ к t без прокидывания через ~40 колсайтов. Используется для
+   локализации placeholder'а поиска в попапах Ring Select (была en-заглушка
+   «Filter items» — known limitation W3). */
+const I18nCtx = React.createContext(null);
+function _filterCfg(t, data, threshold) {
+  if (data.length <= threshold) return false;
+  return t ? { placeholder: t('phFilterList') } : true;
+}
+
 function _btnCls(variant) {
   const b = 'ring-button-button ring-button-block ring-button-heightS';
   if (variant === 'primary') return b + ' ring-button-primaryBlock ring-button-flat ring-button-whiteText';
@@ -32,6 +42,7 @@ function _btnCls(variant) {
    clear + placeholder; поиск при длинных списках. Фоллбек — прежний нативный. */
 function FieldSelect({ value, onChange, names, placeholder }) {
   const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
+  const tCtx = React.useContext(I18nCtx);
   const list = Array.isArray(names) ? names : [];
   const missing = value && list.indexOf(value) < 0;
   if (!Select) {
@@ -50,7 +61,7 @@ function FieldSelect({ value, onChange, names, placeholder }) {
     <Select
       className="ssp-form-select" size="FULL"
       data={data} selected={selected}
-      clear filter={data.length > 10}
+      clear filter={_filterCfg(tCtx, data, 10)}
       label={placeholder || undefined}
       onSelect={(item) => onChange(item ? String(item.key) : '')}
     />
@@ -77,13 +88,18 @@ function NumField({ id, label, value, onChange, min, max, step }) {
    guard-fallback на прежний .role-check div, если вендор не загрузился. */
 function RoleCheck({ on, disabled, label, onToggle, tooltip, hint }) {
   const Checkbox = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Checkbox;
+  /* #43 W4 (B-5) — tooltip был только hover-title (недоступен SR/клавиатуре):
+     дублируем его скрытым описанием через aria-describedby. */
+  const tipId = React.useId();
+  const aria = tooltip ? { 'aria-describedby': tipId } : {};
   const box = Checkbox
     ? <Checkbox checked={!!on} disabled={!!disabled} label={label}
-                onChange={() => { if (!disabled) onToggle(); }} />
+                onChange={() => { if (!disabled) onToggle(); }} {...aria} />
     : (
       <div
         className={'role-check' + (on ? ' active' : '') + (disabled ? ' role-check--disabled' : '')}
         onClick={() => { if (!disabled) onToggle(); }}
+        {...aria}
       >
         <span className="role-check__cb"></span>
         <span className="role-check__label">{label}</span>
@@ -92,6 +108,7 @@ function RoleCheck({ on, disabled, label, onToggle, tooltip, hint }) {
   return (
     <div className="ssp-role-toggle" title={tooltip || undefined}>
       {box}
+      {tooltip ? <span id={tipId} className="ssp-sr-only">{tooltip}</span> : null}
       {hint ? <p className="hint" style={{ fontSize: '12px', color: 'var(--muted)', margin: '4px 0 0' }}>{hint}</p> : null}
     </div>
   );
@@ -164,8 +181,10 @@ function GrpMultiSelect(props) {
             <button type="button" className="grp-ms__tag-rm" title={t('btnResetGroup')} onClick={(e) => { e.stopPropagation(); removeTag(gid); }}>×</button>
           </span>
         ))}
+        {/* #43 W4 (G-2) — combobox/listbox-семантика кастомного мультиселекта групп */}
         <input
           type="text" className="grp-ms__input" autoComplete="off"
+          role="combobox" aria-expanded={open} aria-autocomplete="list"
           placeholder={t('phFilterGroups')} value={filter}
           onChange={(e) => setFilter(e.target.value)}
           onFocus={openDropdown}
@@ -173,7 +192,7 @@ function GrpMultiSelect(props) {
       </div>
       <div className={'grp-ms__dropdown' + (open ? ' open' : '')}>
         <div className="grp-ms__section-label">{t('grpTeams')}</div>
-        <div>
+        <div role="listbox" aria-multiselectable="true" aria-label={t('grpTeams')}>
           {!groups.length
             ? <div className="grp-ms__empty">{t('grpsNotLoaded')}</div>
             : (!matches.length
@@ -182,6 +201,7 @@ function GrpMultiSelect(props) {
                 const checked = value.ids.indexOf(g.id) >= 0;
                 return (
                   <div key={g.id} className={'grp-ms__item' + (checked ? ' grp-ms__item--checked' : '')}
+                       role="option" aria-selected={checked}
                        onClick={(e) => { e.stopPropagation(); toggleItem(g.id, g.name); }}>
                     <span className="grp-ms__item-cb"></span>
                     <GrpIcon />
@@ -224,6 +244,7 @@ function capValues(arr) {
    Фоллбек — прежний нативный <select multiple> с адаптивным size (W2 A-5). */
 function MultiSelect(props) {
   const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
+  const tCtx = React.useContext(I18nCtx);
   const selected = props.selected || [];
   const opts = (props.options || []).slice();
   selected.forEach((v) => { if (opts.indexOf(v) < 0) opts.push(v); });
@@ -245,7 +266,7 @@ function MultiSelect(props) {
   return (
     <Select
       className="ssp-form-select" size="FULL"
-      multiple filter
+      multiple filter={_filterCfg(tCtx, data, 0) || true}
       data={data} selected={sel}
       label={props.placeholder || undefined}
       onChange={(arr) => props.onChange((Array.isArray(arr) ? arr : []).map((x) => String(x.key)))}
@@ -258,6 +279,7 @@ function MultiSelect(props) {
    Фоллбек — нативный <select>. */
 function RingSelLite({ options, value, onChange, placeholder, clearable, disabled }) {
   const Select = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Select;
+  const tCtx = React.useContext(I18nCtx);
   const opts = options || [];
   if (!Select) {
     return (
@@ -274,7 +296,7 @@ function RingSelLite({ options, value, onChange, placeholder, clearable, disable
       className="ssp-form-select" size="FULL"
       data={data} selected={selected}
       clear={!!clearable} disabled={!!disabled}
-      filter={data.length > 10}
+      filter={_filterCfg(tCtx, data, 10)}
       label={placeholder || undefined}
       onSelect={(item) => onChange(item ? String(item.key) : '')}
     />
@@ -344,11 +366,12 @@ function DtaSection(props) {
         <RoleCheck on={v.warnings} label={t('lblDtaWarnings')} hint={t('hintDtaWarnings')} onToggle={() => patch({ warnings: !v.warnings })} />
       </div>
       <table className="ssp-dta-table" style={{ marginTop: '14px', width: '100%', borderCollapse: 'collapse' }}>
+        {/* #43 W4 (G-1) — scope=col связывает ячейки с заголовками для SR */}
         <thead>
           <tr>
-            <th>{t('dtaColType')}</th>
-            <th>{t('dtaColRole')}</th>
-            <th style={{ width: '34px' }}></th>
+            <th scope="col">{t('dtaColType')}</th>
+            <th scope="col">{t('dtaColRole')}</th>
+            <th scope="col" style={{ width: '34px' }} aria-label={t('btnDtaRemoveRow')}></th>
           </tr>
         </thead>
         <tbody>
@@ -360,10 +383,13 @@ function DtaSection(props) {
             return (
               <tr key={i}>
                 <td>
+                  {/* #43 W4 (G-3) — дубль типа: aria-invalid + связь с текстом ошибки */}
                   <input
                     type="text" className="app-select" maxLength={200}
                     value={r.type || ''} placeholder={t('dtaTypePlaceholder')}
                     style={dup ? { borderColor: 'var(--error)' } : undefined}
+                    aria-invalid={dup ? 'true' : undefined}
+                    aria-describedby={dup ? 'sspDtaDupErr' : undefined}
                     onChange={(e) => setRow(i, { type: e.target.value })}
                   />
                 </td>
@@ -387,7 +413,7 @@ function DtaSection(props) {
         </tbody>
       </table>
       <button type="button" className={_btnCls('secondary')} style={{ marginTop: '10px' }} onClick={addRow}>{t('btnDtaAddRow')}</button>
-      {props.hasDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('dtaErrDuplicate')}</div> : null}
+      {props.hasDup ? <div id="sspDtaDupErr" role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('dtaErrDuplicate')}</div> : null}
     </React.Fragment>
   );
 }
@@ -1076,6 +1102,7 @@ function SettingsForm(props) {
   const active = SECTIONS.filter((s) => s.id === activeSection)[0] || SECTIONS[0];
 
   return (
+    <I18nCtx.Provider value={t}>
     <div className="ssp-settings-form">
       {/* Явный × закрытия в правом верхнем углу (Ring showCloseButton отключён в
          openSettingsModal — был бледным и у самого края island, неинтуитивен). */}
@@ -1114,6 +1141,7 @@ function SettingsForm(props) {
         {hint ? <span className={hint.cls} style={{ marginLeft: '10px', fontSize: '12px' }}>{hint.text}</span> : null}
       </div>
     </div>
+    </I18nCtx.Provider>
   );
 }
 

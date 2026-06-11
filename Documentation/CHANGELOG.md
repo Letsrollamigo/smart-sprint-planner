@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.5.6] — 2026-06-11
+
+> **Final UX polish pass (#43, wave 4 — closing the audit tails).**
+
+### Changed
+
+- **Unified button style (E-1):** sprint-history buttons (Excel/JSON, Edit, Discard, Finish sprint) and header links (User guide, Feedback) now use the standard YouTrack button metrics; the color semantics are preserved. Decorative glyphs (✏/✓) removed from history buttons.
+- **The dropdown search box in settings is localized** — a "Filter…" placeholder instead of the component's English default (new key ×15 languages; removes the v2.5.5 known limitation).
+- **Shorter "Assign to people" button** (B-4).
+
+### Accessibility
+
+- DTA mapping table: column headers linked to cells (`scope="col"`, G-1); duplicate type announced (`aria-invalid` + `role="alert"`, G-3).
+- Group multi-select: `combobox`/`listbox`/`option` semantics with `aria-selected` (G-2).
+- Toggle hints exposed to screen readers (`aria-describedby`, B-5).
+- All animations respect the system "reduce motion" setting (I-2).
+
+### Other
+
+- A toast evicted from the queue (>3) leaves a trace in the diagnostic log (H-2).
+- Loading indication audited and found adequate: button loaders, >500 ms initial spinner, lazy group-load placeholder (D-2, verified).
+
+---
+
 ## [2.5.5] — 2026-06-11
 
 > **Unified dropdowns in settings (#43, wave 3).**

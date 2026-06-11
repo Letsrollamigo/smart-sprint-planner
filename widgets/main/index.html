@@ -96,6 +96,11 @@
       line-height: 0;
     }
     .ssp-icon svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+    /* #43 W4 (B-5) — визуально скрытый текст для screen-reader (aria-describedby). */
+    .ssp-sr-only {
+      position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
     .ssp-icon--12 { width: 12px; height: 12px; }
     .ssp-icon--20 { width: 20px; height: 20px; }
     .ssp-icon--missing { background: rgba(224,90,106,.3); border: 1px dashed var(--error); }
@@ -123,6 +128,16 @@
     .ssp-loader svg { width: 100%; height: 100%; }
     @keyframes ssp-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .ssp-loader { animation: none; opacity: 0.6; } }
+    /* #43 W4 (I-2) — глобальное отключение движения по системной настройке:
+       гасит все transition/animation виджета (точечные правила выше остаются). */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
 
     /* ── Обёртка страницы ── */
     .page {
@@ -1646,26 +1661,22 @@
       color: var(--primary); font-size: 11px; font-weight: 700;
       margin: 8px 16px 0;
     }
+    /* #43 W4 (E-1) — кнопки истории: метрики (паддинги/радиус/шрифт) — от базовых
+       Ring-классов; здесь остаётся только цветовая семантика поверх ring-ghost. */
     .btn--excel {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; font-size: 12px; border-radius: var(--radius);
-      border: 1px solid #1d6f42; color: #1d6f42; background: rgba(29,111,66,.1);
-      cursor: pointer; transition: background .15s; white-space: nowrap; flex-shrink: 0;
+      gap: 5px; flex-shrink: 0;
+      border: 1px solid #1d6f42 !important; color: #1d6f42 !important; background: rgba(29,111,66,.1);
     }
     .btn--excel:hover { background: rgba(29,111,66,.22); }
     .btn--excel svg { flex-shrink: 0; }
     .btn--edit-hist {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; font-size: 12px; border-radius: var(--radius);
-      border: 1px solid var(--warn); color: var(--warn); background: rgba(224,154,58,.1);
-      cursor: pointer; transition: background .15s; white-space: nowrap; flex-shrink: 0;
+      gap: 5px; flex-shrink: 0;
+      border: 1px solid var(--warn) !important; color: var(--warn) !important; background: rgba(224,154,58,.1);
     }
     .btn--edit-hist:hover { background: rgba(224,154,58,.22); }
     .btn--finish-hist {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; font-size: 12px; border-radius: var(--radius);
-      border: 1px solid var(--success); color: var(--success); background: rgba(76,175,125,.1);
-      cursor: pointer; transition: background .15s; white-space: nowrap; flex-shrink: 0;
+      gap: 5px; flex-shrink: 0;
+      border: 1px solid var(--success) !important; color: var(--success) !important; background: rgba(76,175,125,.1);
     }
     .btn--finish-hist:hover { background: rgba(76,175,125,.22); }
     .btn--disabled-overlimit { opacity: .6; cursor: not-allowed !important; }
@@ -2168,12 +2179,13 @@
               data-icon="settings" data-aria-label-key="aria.btnSettings"
               data-i18n="btnOpenSettings"
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
+      <!-- #43 W4 (E-1) — ссылки-кнопки на Ring-классах (единый вид с openSettingsBtn) -->
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
-         target="_blank" rel="noopener noreferrer" class="btn btn--sm" style="background:transparent;border-color:var(--border);color:var(--text)">
+         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
         <span data-i18n="linkGuide">Руководство пользователя</span>
       </a>
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/issues"
-         target="_blank" rel="noopener noreferrer" class="btn btn--sm">
+         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
         <span data-i18n="linkFeedback">Обратная связь</span>
       </a>
       <!-- Переключатель языка -->
