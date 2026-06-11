@@ -55,6 +55,7 @@ const BRIDGE_SCRIPTS = [
   'pick.js',
   'youtrack-api.js',
   'working-copy.js',
+  'standup-view.js',
 ];
 
 const GM_HOOK = `

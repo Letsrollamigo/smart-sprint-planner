@@ -1,0 +1,19 @@
+{
+  "hostPaths": [
+    "backend-project/refresh-assignees"
+  ],
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_1"
+    },
+    "GM-11": {
+      "assignee": "gm_user_2"
+    }
+  },
+  "toasts": [
+    [
+      "info",
+      "Расхождений с YouTrack нет."
+    ]
+  ]
+}
