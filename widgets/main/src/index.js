@@ -41,6 +41,7 @@ import './react/checkbox-mount.jsx';
 import './react/radio-mount.jsx';
 import './react/tabs-mount.jsx';
 import './react/table-mount.jsx';
+import './react/standup-view.jsx';
 import './react/input-mount.jsx';
 import './react/select-mount.jsx';
 import './react/collapse-mount.jsx';
