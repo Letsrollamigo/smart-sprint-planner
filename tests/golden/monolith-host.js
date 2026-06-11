@@ -49,6 +49,7 @@ const BRIDGE_SCRIPTS = [
   'migrate-pure.js',
   'refresh-merge-pure.js',
   'share-url-pure.js',
+  'modal-specs.js',
 ];
 
 const GM_HOOK = `
