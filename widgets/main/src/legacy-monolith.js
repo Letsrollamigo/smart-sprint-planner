@@ -798,6 +798,14 @@
   function localizeEnumVal(s) { return ENUM_PURE.localizeEnumVal(s); }
   function dispEnum(s) { return ENUM_PURE.dispEnum(s, _lang === 'ru'); }
 
+  /* Тир B — фабрики modal-спеков (WC-семейство, closeWc, confirmGoal, dynField,
+     importReplace) вынесены в widgets/main/src/modal-specs.js
+     (window.__SSP_MODAL_SPECS) — паттерн как PERIOD_PURE/UTIL_PURE. Делегаторы
+     у мест исходных деклараций: call-sites и hoisting без изменений; T/openModal
+     и downstream-колбэки инъектируются на вызове. Golden-контракты колбэков —
+     tests/golden/modal-specs.golden.test.js. */
+  var MODAL_SPECS = (typeof window !== 'undefined' && window.__SSP_MODAL_SPECS) || {};
+
   /* Date-хелперы вынесены в widgets/main/src/date-pure.js (window.__SSP_DATE_PURE) —
      паттерн как PERIOD_PURE. Делегаторы; все чистые (fmtDate/fmtDT — локаль ru-RU).
      toDateIn — локальное время (прежний UTC-дубль удалён). */
@@ -2157,66 +2165,19 @@
     });
   }
 
-  /* Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog).
-     Callback-контракты сохранены: conflict → 'overwrite'|'export'|'cancel'; multiTab/discard → boolean.
-     onClose гарантирует ровно один вызов callback на любом закрытии (кнопка/Escape). */
+  /* Phase 2 #32 — WC-семейство мигрировано на openModal(); Тир B — тела вынесены
+     в modal-specs.js. Callback-контракты сохранены: conflict → 'overwrite'|'export'|'cancel';
+     multiTab/discard → boolean; onClose гарантирует ровно один вызов callback. */
   function showWorkingCopyConflictModal(key, baseSnap, mySnap, callback) {
-    var cb = callback || function(){};
-    var who = (baseSnap && baseSnap.confirmedBy) || '?';
-    var decided = null;
-    openModal({
-      id: 'wcConflict',
-      type: 'confirm',
-      title: T('wcConflictTitle'),
-      body: { kind: 'text', text: T('wcConflictBody').replace('{who}', who) },
-      buttons: [
-        { id: 'overwrite', text: T('wcConflictOverwrite'), variant: 'danger',    onClick: function(h){ decided = 'overwrite'; h.close(); } },
-        { id: 'export',    text: T('wcConflictExportBoth'), variant: 'secondary', onClick: function(h){ decided = 'export';    h.close(); } },
-        { id: 'cancel',    text: T('wcConflictCancel'),     variant: 'primary',   onClick: function(h){ decided = 'cancel';    h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ cb(decided || 'cancel'); },   /* Escape/backdrop → безопасный 'cancel' */
-    });
+    return MODAL_SPECS.showWorkingCopyConflictModal(key, baseSnap, mySnap, callback, { t: T, openModal: openModal });
   }
 
   function showMultiTabConflictModal(key, callback) {
-    var cb = callback || function(){};
-    var decided = null;
-    openModal({
-      id: 'wcMultiTab',
-      type: 'informational',
-      title: T('wcMultiTabTitle'),
-      body: { kind: 'text', text: T('wcMultiTabBody') },
-      buttons: [
-        { id: 'continue', text: T('wcMultiTabContinue'), variant: 'primary',   onClick: function(h){ decided = true;  h.close(); } },
-        { id: 'readonly', text: T('wcMultiTabReadonly'), variant: 'secondary', onClick: function(h){ decided = false; h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: true,                                  /* no-escape: системно-блокирующая */
-      showCloseButton: false,
-      onClose: function(){ if (decided !== null) cb(decided); },  /* только явный выбор */
-    });
+    return MODAL_SPECS.showMultiTabConflictModal(key, callback, { t: T, openModal: openModal });
   }
 
   function showDiscardConfirmModal(key, callback) {
-    var cb = callback || function(){};
-    var confirmed = false;
-    openModal({
-      id: 'wcDiscard',
-      type: 'destructive',
-      title: T('wcDiscardConfirmTitle'),
-      body: { kind: 'text', text: T('wcDiscardConfirmBody') },
-      buttons: [
-        { id: 'confirm', text: T('wcDiscard'), variant: 'danger',  onClick: function(h){ confirmed = true;  h.close(); } },
-        { id: 'cancel',  text: T('btnNo'),     variant: 'primary', onClick: function(h){ confirmed = false; h.close(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ cb(confirmed); },              /* Escape/backdrop → false (отмена, безопасно) */
-    });
+    return MODAL_SPECS.showDiscardConfirmModal(key, callback, { t: T, openModal: openModal });
   }
 
   /* Wire-up button handlers (idempotent — guard через _sspBound) */
@@ -6588,42 +6549,11 @@
      existingOutcome — pre-select radio если outcome уже был записан ранее (re-finish flow).
      Возвращает Promise<{goalOutcome, goalRetroNote}|null>.
      null — пользователь нажал Отмена (спринт не завершается). */
+  /* Phase 2 #32 — мигрировано на openModal(); Тир B — тело в modal-specs.js.
+     Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
+     resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
   function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
-    return new Promise(function(resolve) {
-      /* Phase 2 #32 — мигрировано на openModal() (bespoke confirmGoalForm, настоящий React).
-         Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
-         resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
-      if (!window.__SSP_RING_MODAL) { resolve({ goalOutcome: 'achieved', goalRetroNote: '' }); return; }
-      var result = null;   /* null = отмена/escape; объект = подтверждение */
-      var h = openModal({
-        id: 'confirmGoal',
-        type: 'form',
-        title: T('dialogConfirmGoalTitle'),
-        body: { kind: 'component', name: 'confirmGoalForm', props: {
-          goalText: sprintGoalText || '',
-          goalLabel: T('histGoalLabel'),
-          goalNotSetText: T('histGoalNotSet'),
-          outcomeLabel: T('lblGoalOutcome'),
-          options: [
-            { value: 'achieved', label: T('optGoalAchieved') || '✅ Достигнута' },
-            { value: 'partial',  label: T('optGoalPartial')  || '⚖ Частично' },
-            { value: 'missed',   label: T('optGoalMissed')   || '❌ Не достигнута' },
-          ],
-          existingOutcome: existingOutcome || '',
-          retroLabel: T('lblGoalRetroNote'),
-          retroPlaceholder: T('phGoalRetroNote'),
-          cancelText: T('btnCancelGoal'),
-          confirmText: T('btnConfirmGoal'),
-          onConfirm: function(vals){ result = vals; h.close(); },
-          onCancel: function(){ result = null; h.close(); },
-        }},
-        buttons: [],
-        dismissOnBackdrop: false,
-        blockEscape: false,
-        showCloseButton: false,
-        onClose: function(){ resolve(result); },   /* единственная точка resolve (foundation-guarded) */
-      });
-    });
+    return MODAL_SPECS.openConfirmGoalDialog(sprintGoalText, existingOutcome, { t: T, openModal: openModal });
   }
 
   /* v1.9.0 D132 — bind Stand-up refresh button. */
@@ -7159,34 +7089,10 @@
      Контракт сохранён: callback(true, val) / callback(false, null). Для enum val = выбранное
      значение; для текстового ввода val = parsePeriod(ввод) (как в legacy). form-тип:
      backdrop ✅ / escape ✅ / close-X ✅; Escape/backdrop = отмена (callback(false,null)). */
+  /* Тир B — тело в modal-specs.js; enum/text-режимы и done-гард сохранены. */
   function showDynFieldConfirm(title, desc, enumValues, currentVal, callback) {
-    var cb = callback || function(){};
-    var isEnum = !!enumValues;
-    var done = false;
-    var h = openModal({
-      id: 'dynField',
-      type: 'form',
-      title: title,
-      body: { kind: 'component', name: 'dynFieldForm', props: {
-        desc: desc,
-        mode: isEnum ? 'enum' : 'text',
-        options: isEnum ? enumValues.map(function(v){ return { value: v, label: localizeEnumVal(v) || v }; }) : [],
-        initialValue: isEnum ? (currentVal || (enumValues[0] || '')) : (currentVal ? fmtPeriod(currentVal) : ''),
-        placeholder: T('phPeriod'),
-        applyText: T('btnYesUpdate'),
-        cancelText: T('btnNo'),
-        onApply: function(raw){
-          done = true; h.close();
-          cb(true, isEnum ? raw : parsePeriod(raw));
-        },
-        onCancel: function(){ done = true; h.close(); cb(false, null); },
-      }},
-      buttons: [],
-      dismissOnBackdrop: true,
-      blockEscape: false,
-      showCloseButton: true,
-      onClose: function(){ if (!done) cb(false, null); },
-    });
+    return MODAL_SPECS.showDynFieldConfirm(title, desc, enumValues, currentVal, callback,
+      { t: T, openModal: openModal, localizeEnumVal: localizeEnumVal, fmtPeriod: fmtPeriod, parsePeriod: parsePeriod });
   }
 
   function loadEnumBundle(fieldName, cb) {
@@ -8747,24 +8653,13 @@
   /* ── Полное восстановление (replace-all) ──
      Phase 3 #32 — importReplaceHist мигрирован на openModal() (generic lines-confirm,
      destructive-тип: backdrop ❌ / escape ✅ / close-X ❌). Escape/отмена очищает pending. */
+  /* Тир B — тело в modal-specs.js; downstream-стейт инъектируется колбэками:
+     yes → _doImportReplaceAll (сам чистит pending), отмена/escape → сброс pending. */
   function _openImportReplaceConfirm() {
-    var confirmed = false;
-    openModal({
-      id: 'importReplaceHist',
-      type: 'destructive',
-      title: T('importReplaceTitle'),
-      body: { kind: 'lines', lines: [
-        { html: T('importReplaceWarn'), style: { color: 'var(--error)' } },
-        { text: T('importReplaceInfo'), style: { marginTop: '8px', fontSize: '13px', color: 'var(--muted)' } },
-      ]},
-      buttons: [
-        { id: 'cancel', text: T('btnCancel'),     variant: 'secondary', onClick: function(hh){ confirmed = false; hh.close(); } },
-        { id: 'yes',    text: T('btnYesReplace'), variant: 'danger',    onClick: function(hh){ confirmed = true;  hh.close(); _doImportReplaceAll(); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ if (!confirmed) _importHistPending = null; },
+    return MODAL_SPECS.openImportReplaceConfirm({
+      t: T, openModal: openModal,
+      onReplace: function(){ _doImportReplaceAll(); },
+      onAbandon: function(){ _importHistPending = null; },
     });
   }
   function _doImportReplaceAll() {
@@ -9204,20 +9099,9 @@
      через _setHistoricalReadOnly + _applyHybridSprintMode заменил функционально. */
 
   /* Soft-warn модал перед сменой спринта при активной WC (D28). */
+  /* Тир B — тело в modal-specs.js; cb только по явному клику (confirm/cancel). */
   function showCloseWorkingCopyModal(cb) {
-    openModal({
-      id: 'closeWc',
-      type: 'confirm',
-      title: T('wcCloseTitle'),
-      body: { kind: 'text', text: T('wcCloseBody') },
-      buttons: [
-        { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); cb(false); } },
-        { id: 'confirm', text: T('wcCloseConfirm'), variant: 'primary', onClick: function(h) { h.close(); cb(true); } },
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-    });
+    return MODAL_SPECS.showCloseWorkingCopyModal(cb, { t: T, openModal: openModal });
   }
 
   /* Идемпотентный рендер шапки виджета.
