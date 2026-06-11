@@ -1,0 +1,70 @@
+{
+  "activeKey": "gm-hist-2026-05_analysis",
+  "sprint": {
+    "sprintId": "gm-hist-2026-05",
+    "name": "WC renamed",
+    "status": "PLANNING",
+    "resourceAnalysis": 1800,
+    "legacyFlagsGone": true
+  },
+  "analysisItems": [
+    {
+      "issueId": "GM-H1",
+      "title": "Историческая задача анализа",
+      "inclusionStatus": "INC_PLANNED",
+      "addedAt": 1779494400000,
+      "addedBy": "gm_user_validator",
+      "estimate_analysis": 600,
+      "fact_analysis": 600,
+      "alloc_analysis": 777,
+      "priority": "Major",
+      "state": "Fixed"
+    },
+    {
+      "issueId": "GM-H2",
+      "title": "Историческая задача без alloc",
+      "inclusionStatus": "INC_PLANNED",
+      "addedAt": 1779494400000,
+      "addedBy": "gm_user_validator",
+      "estimate_analysis": 900,
+      "fact_analysis": 300,
+      "alloc_analysis": null,
+      "priority": "Normal",
+      "state": "Fixed"
+    }
+  ],
+  "testingFromHistSnap": [
+    "GM-H5"
+  ],
+  "devBackIsolated": [],
+  "devFrontIsolated": [],
+  "uiExpanded": true,
+  "calls": {
+    "apiPost": [
+      {
+        "path": "history",
+        "keys": [
+          "history"
+        ]
+      },
+      {
+        "path": "sprint-data",
+        "keys": [
+          "sprint",
+          "roleItems"
+        ]
+      }
+    ],
+    "renders": [
+      "planningRoles",
+      "planningRoles",
+      "planningRoles",
+      "wcBanner",
+      "rolePlannerHeader:analysis",
+      "roleComposition:analysis",
+      "roleRemaining:analysis",
+      "history"
+    ],
+    "diag": []
+  }
+}
