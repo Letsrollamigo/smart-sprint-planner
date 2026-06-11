@@ -1048,9 +1048,14 @@
     t._isParent = owner.isParent;
     owner.stackEl.appendChild(t.el);
 
-    /* Evict до push'а — иначе превысим лимит на 1 toast на время transition'а. */
+    /* Evict до push'а — иначе превысим лимит на 1 toast на время transition'а.
+       #43 W4 (H-2) — вытеснение не молчит: след в диагностическом логе. */
     var evictIdx = selectToastToEvict(_toastQueue, TOAST_LIMIT);
-    if (evictIdx >= 0) _dismissToast(_toastQueue[evictIdx]);
+    if (evictIdx >= 0) {
+      var evT = _toastQueue[evictIdx];
+      try { diag('toast evicted (queue>' + TOAST_LIMIT + '): [' + evT.type + '] ' + String(evT.text || '').slice(0, 80), 'info'); } catch(_) {}
+      _dismissToast(evT);
+    }
 
     _toastQueue.push(t);
 
@@ -1110,7 +1115,7 @@
     if (!svc || typeof svc.addAlert !== 'function') return null; // нет Ring → caller уходит в legacy
     var ringType = _RING_TOAST_TYPE[type] || 'message';
     var timeout = computeToastDuration(type, duration);
-    var entry = { key: null, type: type };
+    var entry = { key: null, type: type, msg: String(text || '') }; /* msg — для H-2 diag-следа при evict */
     try {
       entry.key = svc.addAlert(text, ringType, timeout, {
         onClose: function() {
@@ -1127,6 +1132,8 @@
       var ev = _ringToastKeys[evictIdx];
       _ringToastKeys.splice(evictIdx, 1); // снимаем сразу, чтобы не зациклить (onClose async)
       try { svc.remove(ev.key); } catch(_) {}
+      /* #43 W4 (H-2) — вытеснение из очереди не молчит: след в диагностическом логе. */
+      try { diag('toast evicted (queue>' + TOAST_LIMIT + '): [' + ev.type + '] ' + String(ev.msg || '').slice(0, 80), 'info'); } catch(_) {}
     }
     _repositionToastSoon();
     return entry.key;
@@ -1446,7 +1453,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.5.5';
+  var APP_VERSION = '2.5.6';
 
   /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
      Round-robin по индексу логина в отсортированном списке роли. Контролируемая
@@ -7863,14 +7870,14 @@
     var ctrl = document.createElement('div'); ctrl.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
 
     var xlsBtn = document.createElement('button');
-    xlsBtn.className = 'btn--excel'; xlsBtn.title = T('btnExcelTitle');
+    xlsBtn.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--excel'; /* #43 W4 (E-1) — Ring-база + цветовой модификатор */ xlsBtn.title = T('btnExcelTitle');
     xlsBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+
       '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'+
       '<line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg> Excel';
     xlsBtn.addEventListener('click', (function(r){ return function(e){ e.stopPropagation(); exportSprintToExcel(r); }; })(rec));
 
     var jsonBtn = document.createElement('button');
-    jsonBtn.className = 'btn--excel'; jsonBtn.title = T('btnExportSprintJsonTitle') || 'Экспорт спринта в JSON';
+    jsonBtn.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--excel'; jsonBtn.title = T('btnExportSprintJsonTitle') || 'Экспорт спринта в JSON';
     jsonBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+
       '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'+
       '<line x1="8" y1="13" x2="16" y2="13"/></svg> JSON';
@@ -7881,7 +7888,7 @@
       var wcDraft = (rec.hasWorkingCopy && _workingDrafts[rec.sprintId]) ? _workingDrafts[rec.sprintId] : null;
       var myLogin = (_currentUser && _currentUser.login) || '';
       var editBtn = document.createElement('button');
-      editBtn.className = 'btn--edit-hist';
+      editBtn.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--edit-hist';
       if (wcDraft && wcDraft.editorLogin && wcDraft.editorLogin !== myLogin) {
         /* Чужая working copy — disabled */
         editBtn.disabled = true;
@@ -7897,7 +7904,7 @@
       /* v5.3.0 — кнопка «Отменить правку» (только владельцу working copy) */
       if (wcDraft && wcDraft.editorLogin === myLogin) {
         var discardBtn = document.createElement('button');
-        discardBtn.className = 'btn--edit-hist';
+        discardBtn.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--edit-hist';
         discardBtn.style.borderColor = 'var(--error,#e05a6a)';
         discardBtn.style.color = 'var(--error,#e05a6a)';
         discardBtn.textContent = T('wcDiscard');
@@ -7907,7 +7914,7 @@
     }
     if (rec.status !== STATUS.FINISHED) {
       var finBtn = document.createElement('button');
-      finBtn.className = 'btn--finish-hist'; finBtn.textContent = T('btnFinishSprint');
+      finBtn.className = 'ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--finish-hist'; finBtn.textContent = T('btnFinishSprint');
       finBtn.addEventListener('click', (function(r,i){ return function(e){ e.stopPropagation(); finishHistorySprint(r, i); }; })(rec, idx));
       ctrl.appendChild(finBtn);
     }
