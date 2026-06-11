@@ -1,0 +1,55 @@
+{
+  "spec": {
+    "id": "confirmGoal",
+    "type": "form",
+    "title": "Подтверждение результата спринта",
+    "body": {
+      "kind": "component",
+      "name": "confirmGoalForm",
+      "props": {
+        "goalText": "Цель спринта GM",
+        "goalLabel": "🎯 Цель",
+        "goalNotSetText": "Цель спринта не была задана",
+        "outcomeLabel": "Результат по цели",
+        "options": [
+          {
+            "value": "achieved",
+            "label": "✅ Достигнута"
+          },
+          {
+            "value": "partial",
+            "label": "⚖ Частично"
+          },
+          {
+            "value": "missed",
+            "label": "❌ Не достигнута"
+          }
+        ],
+        "existingOutcome": "partial",
+        "retroLabel": "Заметка ретроспективы (опционально)",
+        "retroPlaceholder": "Что сработало / не сработало для достижения цели",
+        "cancelText": "Отмена",
+        "confirmText": "Подтвердить спринт",
+        "onConfirm": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "confirmed": {
+      "goalOutcome": "missed",
+      "goalRetroNote": "ретро-заметка"
+    },
+    "cancelled": null,
+    "escaped": null,
+    "fallbackNoRing": {
+      "goalOutcome": "achieved",
+      "goalRetroNote": ""
+    }
+  }
+}

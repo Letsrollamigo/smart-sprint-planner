@@ -1,0 +1,40 @@
+{
+  "spec": {
+    "id": "wcDiscard",
+    "type": "destructive",
+    "title": "Отменить правку?",
+    "body": {
+      "kind": "text",
+      "text": "Все несохранённые изменения рабочей копии будут потеряны. Базовая запись истории не пострадает."
+    },
+    "buttons": [
+      {
+        "id": "confirm",
+        "text": "Отменить правку",
+        "variant": "danger",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "cancel",
+        "text": "Нет",
+        "variant": "primary",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "confirm": [
+      true
+    ],
+    "cancel": [
+      false
+    ],
+    "escape": [
+      false
+    ]
+  }
+}

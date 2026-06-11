@@ -1,0 +1,49 @@
+{
+  "spec": {
+    "id": "wcConflict",
+    "type": "confirm",
+    "title": "Конфликт версий",
+    "body": {
+      "kind": "text",
+      "text": "Базовая запись была изменена (GM Editor) после открытия рабочей копии."
+    },
+    "buttons": [
+      {
+        "id": "overwrite",
+        "text": "Перезаписать своими изменениями",
+        "variant": "danger",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "export",
+        "text": "Скачать обе версии в Excel",
+        "variant": "secondary",
+        "onClick": "<fn>"
+      },
+      {
+        "id": "cancel",
+        "text": "Отменить",
+        "variant": "primary",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "overwrite": [
+      "overwrite"
+    ],
+    "exportBoth": [
+      "export"
+    ],
+    "cancel": [
+      "cancel"
+    ],
+    "escape": [
+      "cancel"
+    ]
+  }
+}

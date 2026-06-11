@@ -1,0 +1,87 @@
+{
+  "specEnum": {
+    "id": "dynField",
+    "type": "form",
+    "title": "GM Поле",
+    "body": {
+      "kind": "component",
+      "name": "dynFieldForm",
+      "props": {
+        "desc": "Описание",
+        "mode": "enum",
+        "options": [
+          {
+            "value": "Normal",
+            "label": "Обычная"
+          },
+          {
+            "value": "Critical",
+            "label": "Критическая"
+          }
+        ],
+        "initialValue": "Critical",
+        "placeholder": "напр. 16ч / 90м",
+        "applyText": "Да, обновить",
+        "cancelText": "Нет",
+        "onApply": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": true,
+    "blockEscape": false,
+    "showCloseButton": true,
+    "onClose": "<fn>"
+  },
+  "specText": {
+    "id": "dynField",
+    "type": "form",
+    "title": "GM Поле",
+    "body": {
+      "kind": "component",
+      "name": "dynFieldForm",
+      "props": {
+        "desc": "Описание",
+        "mode": "text",
+        "options": [],
+        "initialValue": "8ч",
+        "placeholder": "напр. 16ч / 90м",
+        "applyText": "Да, обновить",
+        "cancelText": "Нет",
+        "onApply": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": true,
+    "blockEscape": false,
+    "showCloseButton": true,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "applyEnum": [
+      [
+        true,
+        "Normal"
+      ]
+    ],
+    "applyText": [
+      [
+        true,
+        960
+      ]
+    ],
+    "cancel": [
+      [
+        false,
+        null
+      ]
+    ],
+    "escape": [
+      [
+        false,
+        null
+      ]
+    ]
+  }
+}
