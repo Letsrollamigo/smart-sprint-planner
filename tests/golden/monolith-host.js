@@ -53,6 +53,7 @@ const BRIDGE_SCRIPTS = [
   'excel-export.js',
   'revalidation.js',
   'history-io.js',
+  'pick.js',
 ];
 
 const GM_HOOK = `

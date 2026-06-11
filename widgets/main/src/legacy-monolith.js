@@ -7278,292 +7278,47 @@
   /* clearOverlay migrated to openModal() — clearNo/clearYes handlers removed (Phase 1 #32). */
 
   /* ═══ Подбор задач (Phase 4 #32 — bespoke React pickPicker, см. modal-bodies.jsx) ═══
-     openPickModal(rk, role) монтирует Ring-модалку; data-layer (_pickSearch / _pickLoadAll /
-     _pickAddSelected) — Promise-колбэки в props. Старые DOM-listener'ы (close/cancel/search/
-     keydown/prev/next/addPicked) и UI-функции (renderPickResults/updatePickAllIndicator)
-     удалены вместе с #pickOverlay HTML — закрывает гибрид B10/B11. */
-
-  /* v5.0.3 → Phase 4 — построение query + fingerprint; rawQ передаётся из React-компонента
-     (DOM-инпут pickQuery удалён вместе с #pickOverlay). */
-  function _buildPickQuery(rawQ) {
-    var q = (rawQ || '').trim();
-    var projectId = _ctx && _ctx.project ? (_ctx.project.shortName || _ctx.project.id) : null;
-    var fullQuery = q;
-    if (projectId && q.toLowerCase().indexOf('project:') < 0) {
-      fullQuery = 'project: ' + projectId + (q ? ' ' + q : '');
-    }
-    return { fullQuery: fullQuery, fingerprint: fullQuery + '|' + (projectId || '') };
-  }
-
-  /* #33 — скоуп поиска. Два независимых канала (не пересекаются, не трогают каретку):
-       folders   → контекст подсказок search/assist (значения статусов/полей под проект)
-       projectId → префикс выборки issues (через _buildPickQuery)
-     Сейчас оба производны от текущего проекта. Фундамент под кросс-проект: позже сюда
-     подставляется набор проектов (folders:[p1..pn]) — data-слой не переписывается. */
-  function _buildPickScope() {
-    var p = (_ctx && _ctx.project) || null;
+     Кластер (query/scope/assist/meta/search/loadAll/add/модалка) вынесен в
+     widgets/main/src/pick.js (window.__SSP_PICK) — Тир C. Делегаторы; контекст
+     собирается в _pickDeps на вызове. Кэш-стейт подбора (_pickAllResults /
+     _pickQueryFingerprint / _currentPickRole / _selectedIds / _pickAllInFlight)
+     остаётся здесь — модуль ходит к нему через аксессоры deps.state. _mapIssueMeta
+     включён в pick.js: его единственные потребители — _pickSearch/_pickLoadAll. */
+  var PICK = (typeof window !== 'undefined' && window.__SSP_PICK) || {};
+  function _pickDeps() {
     return {
-      /* $type:'Project' обязателен — search/assist без дискриминатора IssueFolder
-         отвечает 500 InstantiationException (проверено live-probe на стенде, #33). */
-      folders:   p && p.id ? [{ $type: 'Project', id: p.id }] : [],
-      projectId: p ? (p.shortName || p.id) : null
+      t: T, toast: toast, diag: diag,
+      ctx: _ctx, settings: _settings, currentUser: _currentUser,
+      host: _host, pickPage: PICK_PAGE, maxPickTotal: MAX_PICK_TOTAL,
+      inc: INC, ytBase: _ytBase, draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
+      sprint: _sprint, roleItems: _roleItems,
+      getRoleItemsArr: getRoleItemsArr, apiPost: apiPost, openModal: openModal, roleLabel: roleLabel,
+      markDirty: _markDirty, draftSet: _draftSet,
+      renderRoleComposition: renderRoleComposition,
+      updateRoleRemaining: updateRoleRemaining,
+      refreshRoleEstimates: refreshRoleEstimates,
+      pickAssist: _pickAssist, pickSearch: _pickSearch,
+      pickLoadAll: _pickLoadAll, pickAddSelected: _pickAddSelected,
+      state: {
+        getCache: function(){ return _pickAllResults; },
+        setCache: function(m){ _pickAllResults = m; },
+        getFingerprint: function(){ return _pickQueryFingerprint; },
+        setFingerprint: function(s){ _pickQueryFingerprint = s; },
+        getCurrentRole: function(){ return _currentPickRole; },
+        setCurrentRole: function(rk){ _currentPickRole = rk; },
+        setSelectedIds: function(s){ _selectedIds = s; },
+        setAllInFlight: function(b){ _pickAllInFlight = b; },
+      },
     };
   }
-
-  /* #33 — data-source подсказок для Ring QueryAssist. Мост к нативному YT endpoint
-     POST /api/search/assist: на каждый ввод/движение каретки отдаёт подсказки с
-     позициями достройки и диапазонами совпадений (автокомплит + подсветка + синтаксис
-     YouTrack «из коробки»). Контракт возврата 1:1 с QueryAssistResponse Ring UI.
-     folders — отдельным полем тела (скоуп подсказок под проект), query/caret не трогаем.
-     Ошибка/недоступность assist → пустые подсказки (поле и список продолжают работать). */
-  var ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completionEnd,' +
-                      'matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)';
-  function _pickAssist(req) {
-    var query = (req && req.query) || '';
-    var caret = (req && typeof req.caret === 'number') ? req.caret : query.length;
-    var scope = _buildPickScope();
-    var body = { query: query, caret: caret, ignoreUnresolvedSetting: true };
-    if (scope.folders && scope.folders.length) body.folders = scope.folders;
-    return _host.fetchYouTrack('search/assist', {
-      method: 'POST',
-      query: { fields: ASSIST_FIELDS },
-      body: body,
-      headers: { 'Content-Type': 'application/json' }
-    }).then(function (res) {
-      return { query: query, caret: caret, suggestions: (res && res.suggestions) || [] };
-    }).catch(function (err) {
-      diag('_pickAssist: search/assist failed — ' + (err && err.message ? err.message : err), 'warn');
-      return { query: query, caret: caret, suggestions: [] };
-    });
-  }
-
-  /* v5.0.3 — преобразование сырого issue из YouTrack-API в meta-объект для UI/кэша */
-  function _mapIssueMeta(iss) {
-    var cfs = iss.customFields || [];
-    function cfValPres(names) {
-      if (!names || !names.length) return null;
-      for (var ni = 0; ni < names.length; ni++) {
-        var target = names[ni]; if (!target) continue;
-        var f = null;
-        for (var ci = 0; ci < cfs.length; ci++) {
-          var cf = cfs[ci];
-          var fn = (cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.name) || cf.name || '';
-          if (fn === target) { f = cf; break; }
-        }
-        if (f && f.value !== null && f.value !== undefined) {
-          var v = f.value;
-          if (typeof v === 'string') return v;
-          if (v && v.localizedName) return v.localizedName;
-          if (v && v.presentation)  return v.presentation;
-          if (v && v.name)          return v.name;
-        }
-      }
-      return null;
-    }
-    var stateField    = _settings && _settings.fieldState            || null;
-    var priorityField = _settings && _settings.fieldPriority         || null;
-    var xpField       = _settings && _settings.fieldXPriority        || null;
-    var systemField   = _settings && _settings.fieldSystem           || null;
-    /* v1.8.0 D130 — Etap В.2 — external ticket ID field. */
-    var extTicketField = _settings && _settings.fieldExternalTicketId || null;
-    return {
-      id:               iss.id,
-      idReadable:       iss.idReadable || iss.id,
-      summary:          (iss.summary && iss.summary.trim()) || null,
-      state:          { name: cfValPres(stateField ? [stateField, 'State','Состояние'] : ['State','Состояние']) || '—' },
-      priority:       cfValPres(priorityField  ? [priorityField,'Priority','Приоритет'] : ['Priority','Приоритет']),
-      xpriority:      cfValPres(xpField        ? [xpField,'Сквозной приоритет'] : ['Сквозной приоритет']),
-      system:         systemField    ? cfValPres([systemField])    : null,
-      externalTicketId: extTicketField ? cfValPres([extTicketField]) : null,
-    };
-  }
-
-  /* Phase 4 — data-layer для pickPicker: одна страница → {items, hasMore}.
-     Поиск НЕ переписан (#33 отдельно): тот же fetchYouTrack + _mapIssueMeta + кэш _pickAllResults.
-     isAdded вычисляется здесь (роль знает существующий состав). Ошибка → reject (компонент ловит). */
-  function _pickSearch(rawQ, page) {
-    var qInfo = _buildPickQuery(rawQ);
-    if (qInfo.fingerprint !== _pickQueryFingerprint) {
-      _pickAllResults = new Map();
-      _pickQueryFingerprint = qInfo.fingerprint;
-    }
-    var skip = (Math.max(1, page) - 1) * PICK_PAGE;
-    return _host.fetchYouTrack('issues', {
-      query: {
-        fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))',
-        query: qInfo.fullQuery,
-        $skip: skip,
-        $top: PICK_PAGE + 1
-      }
-    }).then(function(issues) {
-      if (!Array.isArray(issues) || !issues.length) return { items: [], hasMore: false };
-      var hasMore = issues.length > PICK_PAGE;
-      if (hasMore) issues = issues.slice(0, PICK_PAGE);
-      var mapped = issues.map(_mapIssueMeta);
-      mapped.forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
-      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
-      var items = mapped.map(function(it){
-        return {
-          idReadable: it.idReadable,
-          isAdded: existing.has(it.idReadable),
-          state: (it.state && it.state.name) ? it.state.name : '—',
-          summary: it.summary || it.idReadable || '',
-          priority: it.priority || ''
-        };
-      });
-      return { items: items, hasMore: hasMore };
-    });
-  }
-
-  /* v5.0.3 → Phase 4 — подгрузка ВСЕХ страниц текущего запроса для master «Выбрать все».
-     Возвращает addable id'ы (за вычетом уже добавленных в роль) + capped. Тосты loading/
-     loaded/limit/err — здесь (компонент держит только busy-флаг). Прерывается на MAX_PICK_TOTAL. */
-  function _pickLoadAll(rawQ) {
-    var qInfo = _buildPickQuery(rawQ);
-    if (qInfo.fingerprint !== _pickQueryFingerprint) {
-      _pickAllResults = new Map();
-      _pickQueryFingerprint = qInfo.fingerprint;
-    }
-    toast(T('toastPickAllLoading'), 'info');
-    var pageIdx = Math.ceil(_pickAllResults.size / PICK_PAGE) || 0;
-    var capped = false;
-    function loop() {
-      if (_pickAllResults.size >= MAX_PICK_TOTAL) {
-        capped = true;
-        return Promise.resolve();
-      }
-      return _host.fetchYouTrack('issues', {
-        query: {
-          fields: 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,login))',
-          query: qInfo.fullQuery,
-          $skip: pageIdx * PICK_PAGE,
-          $top: PICK_PAGE + 1
-        }
-      }).then(function(issues){
-        if (!Array.isArray(issues) || !issues.length) return;
-        var hasMore = issues.length > PICK_PAGE;
-        if (hasMore) issues = issues.slice(0, PICK_PAGE);
-        issues.map(_mapIssueMeta).forEach(function(it){ _pickAllResults.set(it.idReadable, it); });
-        pageIdx++;
-        if (hasMore) return loop();
-      });
-    }
-    return loop().then(function(){
-      var existing = new Set(getRoleItemsArr(_currentPickRole || '').map(function(i){ return i.issueId; }));
-      var ids = [];
-      _pickAllResults.forEach(function(_, id){ if (!existing.has(id)) ids.push(id); });
-      if (capped) toast(T('toastPickAllLimit').replace('{n}', String(MAX_PICK_TOTAL)), 'warn');
-      else        toast(T('toastPickAllLoaded').replace('{n}', String(ids.length)), 'success');
-      return { ids: ids, capped: capped };
-    }).catch(function(err){
-      toast(T('toastPickAllErr') + ': ' + (err && err.message ? err.message : err), 'error');
-      throw err;
-    });
-  }
-
-  /* updatePickAllIndicator + renderPickResults удалены (Phase 4 #32) — tri-state master
-     и рендеринг результатов теперь в bespoke React-компоненте pickPicker (derived tri-state,
-     нативные чекбоксы на React-стейте). Гибрид dataset-мост/MutationObserver/двойная
-     делегация (корень B11) больше не существует. */
-
-  /* renderPickResults удалён (Phase 4 #32) — рендеринг результатов + tri-state master
-     теперь в bespoke React-компоненте pickPicker (modal-bodies.jsx). */
-
-  /* Phase 4 — добавление выбранных задач в роль (рефактор бывшего addPickedBtn-листенера).
-     selectedIds — массив issueId из компонента; мета берётся из кумулятивного кэша
-     _pickAllResults (заполнен _pickSearch/_pickLoadAll). Закрытие модалки — у вызывающего. */
-  function _pickAddSelected(rk, selectedIds) {
-    if (!rk || !selectedIds || !selectedIds.length) { toast(T('toastPickAtLeastOne')); return; }
-    var existing = new Set(getRoleItemsArr(rk).map(function(i){ return i.issueId; }));
-    var newIds = selectedIds.filter(function(id){ return !existing.has(id); });
-    newIds.forEach(function(issueId) {
-      /* мета из кумулятивного кэша всех загруженных страниц */
-      var issue = _pickAllResults.get(issueId);
-      if (!issue) {
-        diag('_pickAddSelected: missing meta for ' + issueId + ' — using stub', 'err');
-        toast(T('toastPickPageMetaLost'), 'warn');
-        issue = { idReadable: issueId, summary: issueId, priority: '', state: { name: '' }, xpriority: '', system: '' };
-      }
-      /* v5.0.3 — НЕ кладём sprintId на item: backend whitelist (ALLOWED_ITEM_KEYS) его не
-         содержит, validateItem отвергнет item целиком.
-         v5.0.3 (5c) — дефолт INC_PLANNED (не PENDING): иначе валидация «нет активных задач». */
-      var newItem = {
-        issueId:  issueId,
-        url:      _ytBase + '/issue/' + issueId,
-        title:    issue && issue.summary    ? issue.summary    : issueId,
-        priority: issue && issue.priority   ? issue.priority   : '',
-        xpriority:issue && issue.xpriority  ? issue.xpriority  : '',
-        state:    issue && issue.state      ? issue.state.name : '',
-        system:   issue && issue.system     ? issue.system     : '',
-        inclusionStatus: INC.PLANNED,
-        addedAt: Date.now(),
-        addedBy: _currentUser ? _currentUser.login : null,
-      };
-      /* v1.8.0 D130 — Etap В.2 — externalTicketId если маппинг настроен. */
-      if (_settings && _settings.fieldExternalTicketId && issue && issue.externalTicketId) {
-        newItem.externalTicketId = issue.externalTicketId;
-      }
-      newItem['estimate_'+rk] = null;
-      newItem['fact_'+rk]     = null;
-      newItem['alloc_'+rk]    = null; // null → при рендере = дельта по умолчанию
-      getRoleItemsArr(rk).push(newItem);
-    });
-    var skipped = selectedIds.length - newIds.length;
-    _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set();
-    if (newIds.length) {
-      _markDirty('roleItems');
-      _draftSet('roleItems', _roleItems);
-      _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    }
-    /* v5.0.3 — сохраняем _sprint вместе с roleItems (на свежем проекте sprintId не перегенерится). */
-    apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }).then(function() {
-      renderRoleComposition(rk);
-      updateRoleRemaining(rk);
-      toast(T('toastPickDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
-      if (newIds.length) refreshRoleEstimates(rk);
-    });
-  }
-
-  /* Phase 4 — открытие модалки подбора (bespoke React pickPicker через openModal). */
-  function openPickModal(rk, role) {
-    _currentPickRole = rk;
-    _selectedIds = new Set();
-    _pickAllResults = new Map(); _pickQueryFingerprint = ''; _pickAllInFlight = false;
-    var h = openModal({
-      id: 'pick',
-      type: 'selection',
-      dialogClass: 'ssp-ring-modal--wide',
-      title: T('pickModalTitle') + ' — ' + roleLabel(role),
-      body: { kind: 'component', name: 'pickPicker', props: {
-        labels: {
-          searchText:      T('btnFind'),
-          placeholder:     T('phPickQuery'),
-          emptyInitial:    T('emptyPickResults'),
-          searching:       T('pickSearching'),
-          notFound:        T('tasksNotFound'),
-          errorPrefix:     T('pickError'),
-          thState:         T('thState'),
-          thTitle:         T('thTitle'),
-          thPriority:      T('thPriority'),
-          selectAllTitle:  T('titlePickAll'),
-          alreadyInSprint: T('alreadyInSprint'),
-          pageOf:          T('pageOf'),
-          closeText:       T('btnClose'),
-          addText:         T('btnAddPicked'),
-        },
-        onAssist:  function(req){ return _pickAssist(req); },
-        onSearch:  function(q, page){ return _pickSearch(q, page); },
-        onLoadAll: function(q){ return _pickLoadAll(q); },
-        onAdd:     function(ids){ _pickAddSelected(rk, ids); h.close(); },
-        onCancel:  function(){ h.close(); },
-      }},
-      buttons: [],
-      dismissOnBackdrop: true,
-      blockEscape: false,
-      showCloseButton: true,
-      onClose: function(){ _pickAllResults = new Map(); _pickQueryFingerprint = ''; _selectedIds = new Set(); },
-    });
-  }
+  function _buildPickQuery(rawQ) { return PICK._buildPickQuery(rawQ, _pickDeps()); }
+  function _buildPickScope() { return PICK._buildPickScope(_pickDeps()); }
+  function _pickAssist(req) { return PICK._pickAssist(req, _pickDeps()); }
+  function _mapIssueMeta(iss) { return PICK._mapIssueMeta(iss, _pickDeps()); }
+  function _pickSearch(rawQ, page) { return PICK._pickSearch(rawQ, page, _pickDeps()); }
+  function _pickLoadAll(rawQ) { return PICK._pickLoadAll(rawQ, _pickDeps()); }
+  function _pickAddSelected(rk, selectedIds) { return PICK._pickAddSelected(rk, selectedIds, _pickDeps()); }
+  function openPickModal(rk, role) { return PICK.openPickModal(rk, role, _pickDeps()); }
 
   /* ═══ ИСТОРИЯ ═══════════════════════════════════════════════ */
   function renderHistory() {
