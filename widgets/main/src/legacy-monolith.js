@@ -3770,21 +3770,6 @@
     }
   }
 
-  function _populateStandupRoleSel() {
-    var sel = document.getElementById('standupRoleSel');
-    if (!sel) return;
-    var activeRoles = getActiveRoles();
-    sel.innerHTML = '';
-    activeRoles.forEach(function(r) {
-      var o = document.createElement('option');
-      o.value = r.key; o.textContent = r.label;
-      sel.appendChild(o);
-    });
-    if (_activeSubtab && activeRoles.some(function(r){ return r.key === _activeSubtab; })) {
-      sel.value = _activeSubtab;
-    }
-    sel.onchange = function() { try { renderStandupView(); } catch(_){} };
-  }
   document.querySelectorAll('.planning-level-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var lvl = btn.dataset.level || 'roles';
@@ -4185,228 +4170,39 @@
 
 
 
-  /* v1.9.0 D132 — Stand-up assist: helpers + render. */
-
-
-  function _stateRollupFallbackDone() {
-    var order = (_settings && Array.isArray(_settings.stateRollupOrder)) ? _settings.stateRollupOrder : [];
-    return order.length >= 2 ? order.slice(-2) : (order.length === 1 ? order.slice(-1) : []);
+  /* ═══ Stand-up view ════════════════════════════════════════
+     Рендер-семейство и контроллеры Stand-up вынесены в
+     widgets/main/src/standup-view.js (window.__SSP_STANDUP_VIEW) —
+     Тир D слайс 1, ступень 1. Делегаторы; контекст собирается в
+     _standupDeps на вызове, стейт модуль читает через аксессоры
+     deps.state в момент обращения. Шаренные сервисы (роли, канон-чтение
+     PP, персист, лоадер, тосты) остаются здесь и идут через deps. */
+  var STANDUP_VIEW = (typeof window !== 'undefined' && window.__SSP_STANDUP_VIEW) || {};
+  function _standupDeps() {
+    return {
+      T: T, esc: esc, fmtHours: fmtHours,
+      toast: toast, diag: diag, withLoader: withLoader,
+      ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
+      getActiveRoles: getActiveRoles,
+      getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
+      saveCurrentRoleState: saveCurrentRoleState,
+      markDirty: _markDirty,
+      apiPost: apiPost,
+      state: {
+        getSettings: function () { return _settings; },
+        getSprint: function () { return _sprint; },
+        getRoleItems: function () { return _roleItems; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+        setCurrentRolePP: function (pp) { _currentRolePP = pp; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+      },
+    };
   }
+  function renderStandupView() { return STANDUP_VIEW.renderStandupView(_standupDeps()); }
+  function doStandupRefresh() { return STANDUP_VIEW.doStandupRefresh(_standupDeps()); }
+  function _populateStandupRoleSel() { return STANDUP_VIEW._populateStandupRoleSel(_standupDeps()); }
 
-  function _classifyStandupBuckets(taskAssignmentsMap, doneStates) {
-    var done = [], inflight = [], notStarted = [];
-    Object.keys(taskAssignmentsMap || {}).forEach(function(issueId) {
-      var a = taskAssignmentsMap[issueId];
-      if (!a) return;
-      var state = (a.state || '').trim();
-      var isDone = doneStates.length > 0 && doneStates.indexOf(state) >= 0;
-      if (isDone) { done.push(issueId); return; }
-      var factSum = 0;
-      Object.keys(a).forEach(function(k){ if (/^fact_/.test(k)) factSum += (a[k] || 0); });
-      if (factSum > 0 || a.inclusionStatus === 'IN_PROGRESS') {
-        inflight.push(issueId);
-      } else {
-        notStarted.push(issueId);
-      }
-    });
-    return { done: done, inflight: inflight, notStarted: notStarted };
-  }
-
-  /* Канон-источник personalPlanning роли для Stand-up (фикс tangled keyed-vs-single модели,
-     v2.2.4): текущая роль → live _currentRolePP; иначе → _getPersonalPlanningForCurrent (histRec
-     first, кэш _sprint.personalPlanning[rk] лишь fallback). Раньше Stand-up читал сырой кэш
-     напрямую — а saveCurrentRoleState затирает его single-объектом одной роли → assignee пропадал. */
-  function _standupPP(rk) {
-    if (_currentRolePP && _currentSprintRoleRec
-        && (_currentSprintRoleRec.roleKey || _activeSubtab) === rk) return _currentRolePP;
-    return (typeof _getPersonalPlanningForCurrent === 'function') ? _getPersonalPlanningForCurrent(rk) : null;
-  }
-
-  function _renderStandupBucket(containerId, titleKey, issueIds, rk) {
-    var el = document.getElementById(containerId);
-    if (!el) return;
-    var pp = _standupPP(rk);
-    var assignments = (pp && pp.taskAssignments) || {};
-    var roleItems   = (_roleItems && _roleItems[rk]) || [];
-    el.innerHTML = '';
-    var hdr = document.createElement('div');
-    hdr.style.cssText = 'font-weight:600;font-size:12px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border,#e0e0e0)';
-    hdr.textContent = T(titleKey) + ' (' + issueIds.length + ')';
-    el.appendChild(hdr);
-    if (!issueIds.length) {
-      var emp = document.createElement('div');
-      emp.style.cssText = 'font-size:11px;color:var(--muted,#888);text-align:center;padding:12px 0';
-      emp.textContent = '—';
-      el.appendChild(emp);
-      return;
-    }
-    issueIds.forEach(function(issueId) {
-      var a = assignments[issueId] || {};
-      var item = roleItems.find(function(i){ return i.issueId === issueId; });
-      var title = (item && item.title) || issueId;
-      var url   = (item && item.url)   || '';
-      var factSum = 0;
-      Object.keys(a).forEach(function(k){ if (/^fact_/.test(k)) factSum += (a[k] || 0); });
-      var planH = a['estimate_'+rk] || (item && item['estimate_'+rk]) || 0;
-      var row = document.createElement('div');
-      row.style.cssText = 'padding:5px 0;border-bottom:1px solid var(--border,#e0e0e0);font-size:12px;';
-      var idHtml = url
-        ? '<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" style="font-weight:600;color:var(--primary)">' + esc(issueId) + '</a>'
-        : '<span style="font-weight:600">' + esc(issueId) + '</span>';
-      var titleTrunc = title.length > 60 ? title.substring(0, 57) + '…' : title;
-      var hoursHtml = planH
-        ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + '/' + fmtHours(planH) + '</span>'
-        : (factSum ? '<span style="color:var(--muted,#888);font-size:11px;float:right">' + fmtHours(factSum) + '</span>' : '');
-      var assignee = a.assignee || (item && item.assignee) || '';
-      var assigneeHtml = assignee ? '<div style="font-size:11px;color:var(--muted,#888);margin-top:2px">@' + esc(assignee) + '</div>' : '';
-      row.innerHTML = hoursHtml + idHtml + ' <span title="'+esc(title)+'" style="color:var(--text)">'+esc(titleTrunc)+'</span>' + assigneeHtml;
-      el.appendChild(row);
-    });
-  }
-
-  function renderStandupView() {
-    var noSprint   = document.getElementById('standupNoSprint');
-    var emptyRole  = document.getElementById('standupEmptyRole');
-    var buckets    = document.getElementById('standupBuckets');
-    var noDoneHint = document.getElementById('standupNoDoneStatesHint');
-    var goalBanner = document.getElementById('standupGoalBanner');
-    var goalMissing= document.getElementById('standupGoalMissingHint');
-    var goalText   = document.getElementById('standupGoalText');
-    // Empty state: no sprint
-    if (!_sprint) {
-      if (noSprint)   noSprint.classList.remove('hidden');
-      if (emptyRole)  emptyRole.classList.add('hidden');
-      if (buckets)    buckets.style.display = 'none';
-      if (noDoneHint) noDoneHint.style.display = 'none';
-      if (goalBanner) goalBanner.style.display = 'none';
-      if (goalMissing)goalMissing.style.display = 'none';
-      return;
-    }
-    if (noSprint) noSprint.classList.add('hidden');
-    // Role selector
-    var sel = document.getElementById('standupRoleSel');
-    var rk = sel ? sel.value : (_activeSubtab || '');
-    if (!rk) {
-      var activeRoles = getActiveRoles();
-      rk = activeRoles.length ? activeRoles[0].key : '';
-    }
-    // Sprint goal banner
-    if (_sprint.sprintGoal) {
-      if (goalBanner) { goalBanner.style.display = ''; if (goalText) goalText.textContent = _sprint.sprintGoal; }
-      if (goalMissing) goalMissing.style.display = 'none';
-    } else {
-      if (goalBanner) goalBanner.style.display = 'none';
-      if (goalMissing) goalMissing.style.display = '';
-    }
-    // Empty state: no tasks in role
-    var pp = _standupPP(rk);  /* канон-источник (v2.2.4 фикс) — не сырой кэш _sprint.personalPlanning[rk] */
-    var assignments = (pp && pp.taskAssignments) || {};
-    var hasItems = Object.keys(assignments).length > 0;
-    var roleItems = (_roleItems && _roleItems[rk]) || [];
-    if (!hasItems && !roleItems.length) {
-      if (emptyRole)  emptyRole.classList.remove('hidden');
-      if (buckets)    buckets.style.display = 'none';
-      if (noDoneHint) noDoneHint.style.display = 'none';
-      return;
-    }
-    if (emptyRole) emptyRole.classList.add('hidden');
-    if (buckets)   buckets.style.display = '';
-    // Done states resolution
-    var doneStates = (_settings && Array.isArray(_settings.standupDoneStates) && _settings.standupDoneStates.length)
-      ? _settings.standupDoneStates
-      : _stateRollupFallbackDone();
-    if (noDoneHint) noDoneHint.style.display = doneStates.length ? 'none' : '';
-    // Build a unified map: combine personalPlanning.taskAssignments + roleItems for state
-    var unifiedMap = {};
-    roleItems.forEach(function(item) {
-      unifiedMap[item.issueId] = { state: item.state, inclusionStatus: item.inclusionStatus };
-      Object.keys(item).forEach(function(k){ if (/^(fact_|estimate_|alloc_)/.test(k)) unifiedMap[item.issueId][k] = item[k]; });
-    });
-    Object.keys(assignments).forEach(function(id) {
-      if (!unifiedMap[id]) return;  /* v2.2.5 — только обогащаем задачи состава роли исполнителем/состоянием;
-        «осиротевшие» назначения (issueId есть в taskAssignments, но нет в _roleItems[rk] — задача убрана
-        из состава, запись назначенца осталась) НЕ добавляем как title-less строки. До v2.2.4 баг был скрыт
-        пустым кэшем _sprint.personalPlanning[rk]; read-fix v2.2.4 вскрыл сирот. */
-      var a = assignments[id];
-      if (a.state) unifiedMap[id].state = a.state;
-      if (a.assignee) unifiedMap[id].assignee = a.assignee;
-    });
-    var classified = _classifyStandupBuckets(unifiedMap, doneStates);
-    _renderStandupBucket('standupBucketDone',       'standupBucketDone',       classified.done,       rk);
-    _renderStandupBucket('standupBucketInflight',   'standupBucketInflight',   classified.inflight,   rk);
-    _renderStandupBucket('standupBucketNotStarted', 'standupBucketNotStarted', classified.notStarted, rk);
-  }
-
-  /* v2.2.4 — фикс: раньше слался { sprintId } на /refresh-assignees, а handler ждёт
-     { issueIds, fieldName, stateFieldName } и отдаёт { assignees } → запрос всегда падал
-     (стендап-refresh не работал с full-rebuild v2.1.0). Теперь корректный контракт:
-       • state (ось бакетов done/inflight/notStarted) — для выбранной роли rk в _roleItems[rk]
-         (чистая keyed-модель, персист sprint-data) — работает для любой роли селектора;
-       • assignee — только для текущей роли через _currentRolePP + saveCurrentRoleState
-         (канон-персист). Для не-текущей роли assignee не мутируем (избегаем tangled
-         personalPlanning-персиста — техдолг в COMMON_ROADMAP); бакетинг идёт по state. */
-  function doStandupRefresh() {
-    if (!_sprint) return Promise.resolve();
-    var sel = document.getElementById('standupRoleSel');
-    var rk = (sel && sel.value) || _activeSubtab || '';
-    if (!rk) { var ar = getActiveRoles(); rk = ar.length ? ar[0].key : ''; }
-    var role = ALL_ROLES.find(function (r) { return r.key === rk; });
-    if (!role) return Promise.resolve();
-    var fieldName = _settings && _settings[role.userField];
-    if (!fieldName) { toast(T('toastSyncFromYtNoField'), 'warn'); return Promise.resolve(); }
-    var roleItems = (_roleItems && _roleItems[rk]) || [];
-    var ids = roleItems
-      .filter(function (i) { return i && i.issueId && ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; })
-      .map(function (i) { return i.issueId; });
-    if (!ids.length) { renderStandupView(); return Promise.resolve(); }
-    var stateField = (_settings && _settings.fieldState) || '';
-    var isCur = !!(_currentSprintRoleRec && (_currentSprintRoleRec.roleKey || _activeSubtab) === rk);
-    var btn = document.getElementById('standupRefreshBtn');
-    return withLoader(btn, function () {
-      return apiPost('refresh-assignees', { issueIds: ids, fieldName: fieldName, stateFieldName: stateField })
-        .then(function (res) {
-          if (!res || !res.success) { toast(T('toastSyncFromYtErr')); return; }
-          var assignees = res.assignees || {};
-          var pp = isCur ? _currentRolePP : null;
-          if (isCur && !pp) { _currentRolePP = pp = { resourcesByAssignee: {}, taskAssignments: {} }; }
-          if (pp && !pp.taskAssignments) pp.taskAssignments = {};
-          var byId = {};
-          roleItems.forEach(function (it) { if (it && it.issueId) byId[it.issueId] = it; });
-          var changed = 0;
-          Object.keys(assignees).forEach(function (id) {
-            var e = assignees[id];
-            if (pp) { /* assignee — только текущая роль (канон-персист) */
-              var login = (e && e.login) || null;
-              var ta = pp.taskAssignments[id] || (pp.taskAssignments[id] = {});
-              if ((ta.assignee || null) !== login) {
-                ta.assignee = login;
-                ta.assigneeName = login ? ((e && (e.fullName || e.login)) || login) : '';
-                delete ta.ganttColor;
-                changed++;
-              }
-            }
-            if (stateField && e && e.state && byId[id]) { /* state — любая роль */
-              var ns = e.state.localizedName || e.state.name || '';
-              if (ns && ns !== (byId[id].state || '')) {
-                byId[id].state = ns;
-                byId[id].stateLocalized = ns;
-                var sc = e.state.color;
-                byId[id].stateColor = (sc && (sc.background || sc.foreground))
-                  ? { background: sc.background || null, foreground: sc.foreground || null } : null;
-                changed++;
-              }
-            }
-          });
-          if (!changed) { renderStandupView(); toast(T('toastSyncFromYtNoChange'), 'info'); return; }
-          _markDirty('roleItems');
-          apiPost('sprint-data', { roleItems: _roleItems }).catch(function () {});
-          if (isCur) saveCurrentRoleState();
-          renderStandupView();
-          toast(T('toastStandupRefreshed'), 'success');
-        })
-        .catch(function (e) { diag('standup refresh err: ' + e, 'err'); toast(T('toastSyncFromYtErr')); });
-    });
-  }
 
 
 

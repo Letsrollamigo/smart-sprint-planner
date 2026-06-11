@@ -1,0 +1,50 @@
+{
+  "hostPaths": [
+    "backend-project/refresh-assignees",
+    "backend-project/sprint-data",
+    "backend-project/history",
+    "backend-project/sprint-data",
+    "backend-project/history",
+    "backend-project/history"
+  ],
+  "refreshBody": {
+    "issueIds": [
+      "GM-10",
+      "GM-11"
+    ],
+    "fieldName": "Backend Dev",
+    "stateFieldName": "State"
+  },
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_3",
+      "assigneeName": "GM User 3"
+    },
+    "GM-11": {
+      "assignee": "gm_user_2"
+    }
+  },
+  "items": [
+    {
+      "issueId": "GM-10",
+      "state": "Fixed",
+      "stateLocalized": "Fixed",
+      "stateColor": {
+        "background": "#e6ffe6",
+        "foreground": null
+      }
+    },
+    {
+      "issueId": "GM-11",
+      "state": "Open",
+      "stateLocalized": null,
+      "stateColor": null
+    }
+  ],
+  "toasts": [
+    [
+      "success",
+      "Stand-up обновлён"
+    ]
+  ]
+}
