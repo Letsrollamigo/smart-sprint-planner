@@ -1771,187 +1771,67 @@
     return REVALIDATION.computeBaseSnapshotHash(snap, _revalDeps());
   }
 
-  /* ═══ v5.3.0 — Working copy lifecycle ═══ */
-  function createWorkingDraftFromSnapshot(snap, idx) {
-    if (!snap || !snap.sprintId) return null;
-    var key = snap.sprintId;
-    var rk  = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return null;
-    var login = (_currentUser && _currentUser.login) || '';
-    var draft = {
-      schemaVersion:    1,
-      key:              key,
-      baseSnapshotHash: computeBaseSnapshotHash(snap),
-      baseStatusAtOpen: snap.status || STATUS.PLANNING,
-      createdAt:        Date.now(),
-      updatedAt:        Date.now(),
-      editorLogin:      login,
-      editorTabToken:   _thisTabToken,
-      sprint: {
-        sprintId:        snap.sprintId,
-        name:            snap.name || null,
-        dateStart:       snap.dateStart || null,
-        dateEnd:         snap.dateEnd || null,
-        sprintFieldVal:  snap.sprintFieldVal || null,
-        versionFieldVal: snap.versionFieldVal || null
+  /* ═══ v5.3.0 — Working copy lifecycle ═══
+     Стейт-машина рабочих копий (create/resume/discard/commit/restore/save) вынесена в
+     widgets/main/src/working-copy.js (window.__SSP_WORKING_COPY) — Тир C. Делегаторы;
+     контекст собирается в _wcDeps на вызове. Стейт (_workingDrafts/_history/_sprint/
+     _roleItems/_activeWorkingDraftKey/…) остаётся здесь — модуль ходит к нему через
+     аксессоры deps.state. Persistence-инфра (_workingDrafts load/flush/delete/
+     reconcile/gc) и syncWorkingDraftFromMemory остаются здесь же. */
+  var WC = (typeof window !== 'undefined' && window.__SSP_WORKING_COPY) || {};
+  function _wcDeps() {
+    return {
+      t: T, toast: toast, diag: diag,
+      allRoles: ALL_ROLES, status: STATUS, activeInc: ACTIVE_INC, draftVersion: DRAFT_VERSION,
+      deepClone: deepClone, apiGet: apiGet, apiPost: apiPost,
+      getRoleItemsArr: getRoleItemsArr, calcRemForRole: calcRemForRole,
+      isActiveSprintRecord: isActiveSprintRecord,
+      computeBaseSnapshotHash: computeBaseSnapshotHash,
+      computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
+      applyRevalidationLevel: applyRevalidationLevel,
+      workingDraftsScheduleFlush: _workingDraftsScheduleFlush,
+      workingDraftsDeleteOnBackend: _workingDraftsDeleteOnBackend,
+      draftGet: _draftGet, draftSet: _draftSet, markClean: _markClean,
+      showDiscardConfirmModal: showDiscardConfirmModal,
+      showWorkingCopyConflictModal: showWorkingCopyConflictModal,
+      exportConflictToExcel: exportConflictToExcel,
+      hideWorkingCopyBanner: hideWorkingCopyBanner,
+      renderWorkingCopyBanner: renderWorkingCopyBanner,
+      renderPlanningRoles: renderPlanningRoles,
+      renderRolePlannerHeader: renderRolePlannerHeader,
+      renderRoleComposition: renderRoleComposition,
+      updateRoleRemaining: updateRoleRemaining,
+      renderHistory: renderHistory,
+      renderPlannerRoles: renderPlannerRoles,
+      renderWidgetHeader: renderWidgetHeader,
+      state: {
+        getWorkingDrafts: function () { return _workingDrafts; },
+        getHistory: function () { return _history; },
+        getSprint: function () { return _sprint; },
+        setSprint: function (s) { _sprint = s; },
+        getRoleItems: function () { return _roleItems; },
+        setRoleItems: function (r) { _roleItems = r; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        setActiveWorkingDraftKey: function (k) { _activeWorkingDraftKey = k; },
+        getCurrentUser: function () { return _currentUser; },
+        getThisTabToken: function () { return _thisTabToken; },
+        getSettings: function () { return _settings; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+        setCurrentRolePP: function (v) { _currentRolePP = v; },
+        setCurrentRoleGantt: function (v) { _currentRoleGantt = v; },
+        setCurrentRoleNkcKey: function (v) { _currentRoleNkcKey = v; },
+        getBaseRevHash: function () { return _baseRevHash; },
+        setDraftRestoreInProgress: function (b) { _draftRestoreInProgress = b; },
+        getLang: function () { return _lang; },
+        getUiExpandedRoles: function () { return (typeof _uiExpandedRoles !== 'undefined') ? _uiExpandedRoles : undefined; },
       },
-      items: (snap.items || []).map(function(it){
-        var copy = {};
-        Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-        return copy;
-      }),
-      personalPlanning: snap.personalPlanning ? deepClone(snap.personalPlanning) : null,
-      gantt:            snap.gantt            ? deepClone(snap.gantt)            : null,
-      revisions:        (snap.revisions || []).slice()
     };
-    /* Скопировать ёмкость роли (resource<Role>) */
-    if (role.resKey) draft.sprint[role.resKey] = (snap[role.resKey] != null ? snap[role.resKey] : 0);
-
-    _workingDrafts[key] = draft;
-    if (idx != null && _history[idx]) {
-      _history[idx].hasWorkingCopy = true;
-      apiPost('history', { history: _history }).catch(function(){});
-    }
-    _workingDraftsScheduleFlush();
-    return draft;
   }
-
-  function resumeWorkingDraft(key, idx) {
-    var draft = _workingDrafts[key];
-    if (!draft) return;
-    var rk = (draft.items && draft.items.length) ? null : null;
-    /* Извлекаем roleKey из ключа: '<sprintId>_<roleKey>'. */
-    var snap = _history.find(function(s){ return s && s.sprintId === key; });
-    if (!snap) {
-      diag('resumeWorkingDraft: base snap not found for key='+key, 'err');
-      return;
-    }
-    rk = snap.roleKey;
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return;
-
-    _activeWorkingDraftKey = key;
-
-    /* Загрузить данные working copy в активный _sprint и _roleItems[rk]. */
-    _sprint = _sprint || {};
-    _sprint.sprintId        = key.replace('_' + rk, '');
-    _sprint.name            = draft.sprint.name;
-    _sprint.dateStart       = draft.sprint.dateStart;
-    _sprint.dateEnd         = draft.sprint.dateEnd;
-    _sprint.sprintFieldVal  = draft.sprint.sprintFieldVal;
-    _sprint.versionFieldVal = draft.sprint.versionFieldVal;
-    _sprint.status          = STATUS.PLANNING;  /* в working copy всегда PLANNING (lock-bypass) */
-    /* Все resource<Role> копируются */
-    ALL_ROLES.forEach(function(r){
-      if (draft.sprint[r.resKey] != null) _sprint[r.resKey] = draft.sprint[r.resKey];
-    });
-    /* Legacy флаги стираем — больше не нужны */
-    delete _sprint.editingFromHistory;
-    delete _sprint.historyIdx;
-
-    _roleItems[rk] = (draft.items || []).map(function(it){
-      var copy = {};
-      Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-      return copy;
-    });
-    /* v1.9.3 D134 — Etap О.2/П.2 fix: контаминация составов других ролей.
-       До v1.9.3 _roleItems[otherRk] оставался от предыдущего контекста (другой
-       спринт / роль), потому что resumeWorkingDraft грузил из draft только
-       активную rk. Симптом: открываешь на правку спринт А роль X → состав X
-       корректный (из draft), но спойлеры ролей Y и Z в Planning показывали
-       составы из спринта Б (что было активно до).
-
-       Источник истины для других ролей при открытии исторического спринта на
-       правку — последний history snapshot этого же sprintId для каждой роли.
-       Если snapshot отсутствует (роль никогда не редактировалась в спринте) —
-       пустой массив (а не stale данные предыдущего контекста).
-
-       Cherry-pick из proprietary v7.3.2 Этап П.2. */
-    var _sprintIdForOthers = _sprint.sprintId;
-    ALL_ROLES.forEach(function(r) {
-      if (r.key === rk) return; // активную роль уже загрузили выше из draft
-      var otherSnapId = _sprintIdForOthers + '_' + r.key;
-      var otherSnap = Array.isArray(_history)
-        ? _history.find(function(h){ return h && h.sprintId === otherSnapId; })
-        : null;
-      if (otherSnap && Array.isArray(otherSnap.items)) {
-        _roleItems[r.key] = otherSnap.items.map(function(it){
-          var copy = {};
-          Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-          return copy;
-        });
-      } else {
-        _roleItems[r.key] = [];
-      }
-    });
-    if (draft.personalPlanning) _sprint.personalPlanning = deepClone(draft.personalPlanning);
-    if (draft.gantt)            _sprint.gantt            = deepClone(draft.gantt);
-
-    /* Sync на бэкенд _sprint+_roleItems */
-    apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems })
-      .catch(function(e){ diag('resumeWorkingDraft: sprint-data sync failed: '+(e&&e.message?e.message:e),'err'); });
-
-    /* v5.6.0 — Этап 4 (4c): переключение на tab-planning > Роли + раскрытие accordion-карточки.
-       Legacy tab-planner и subtabs физически удалены. */
-    var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
-    if (planBtn) planBtn.click();
-    var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
-    if (rolesBtn) rolesBtn.click();
-    if (typeof _uiExpandedRoles !== 'undefined') {
-      _uiExpandedRoles[rk] = true;
-      var ui = _draftGet('ui') || {};
-      ui.expandedRoles = Object.keys(_uiExpandedRoles).filter(function(k){ return _uiExpandedRoles[k]; });
-      _draftSet('ui', ui);
-    }
-    if (typeof renderPlanningRoles === 'function') {
-      try { renderPlanningRoles(); } catch(e){ diag('renderPlanningRoles err: '+e,'err'); }
-    }
-
-    if (typeof renderWorkingCopyBanner === 'function') renderWorkingCopyBanner();
-    if (typeof renderRolePlannerHeader === 'function') renderRolePlannerHeader(rk);
-    if (typeof renderRoleComposition  === 'function') renderRoleComposition(rk);
-    if (typeof updateRoleRemaining    === 'function') updateRoleRemaining(rk);
-    if (typeof renderHistory          === 'function') renderHistory();
-  }
-
-  function discardWorkingDraft(key) {
-    if (typeof showDiscardConfirmModal === 'function') {
-      showDiscardConfirmModal(key, function(confirmed){
-        if (!confirmed) return;
-        _doDiscardWorkingDraft(key);
-      });
-    } else {
-      _doDiscardWorkingDraft(key);
-    }
-  }
-  function _doDiscardWorkingDraft(key) {
-    delete _workingDrafts[key];
-    var idx = _history.findIndex(function(s){ return s && s.sprintId === key; });
-    if (idx >= 0) {
-      _history[idx].hasWorkingCopy = false;
-      apiPost('history', { history: _history }).catch(function(){});
-    }
-    _workingDraftsDeleteOnBackend(key);
-    if (_activeWorkingDraftKey === key) {
-      _activeWorkingDraftKey = null;
-      if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-      /* Перезагрузить активный спринт */
-      apiGet('sprint-data').then(function(r){
-        if (r && r.success) {
-          _sprint    = r.sprint    || null;
-          _roleItems = r.roleItems || {};
-          /* v5.9.0 — D59: orphans из backend. */
-          if (_sprint && Array.isArray(r.orphanGanttIssues) && r.orphanGanttIssues.length) {
-            _sprint._orphanGanttIssues = r.orphanGanttIssues;
-          }
-          if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
-        }
-      }).catch(function(){});
-    }
-    if (typeof renderHistory === 'function') renderHistory();
-    try { toast(T('wcDiscardedToast'), 'info'); } catch(_){}
-  }
+  function createWorkingDraftFromSnapshot(snap, idx) { return WC.createWorkingDraftFromSnapshot(snap, idx, _wcDeps()); }
+  function resumeWorkingDraft(key, idx) { return WC.resumeWorkingDraft(key, idx, _wcDeps()); }
+  function discardWorkingDraft(key) { return WC.discardWorkingDraft(key, _wcDeps()); }
+  function _doDiscardWorkingDraft(key) { return WC._doDiscardWorkingDraft(key, _wcDeps()); }
 
   function syncWorkingDraftFromMemory(rk) {
     if (!_activeWorkingDraftKey) return;
@@ -1982,63 +1862,9 @@
     if (typeof renderWorkingCopyBanner === 'function') renderWorkingCopyBanner();
   }
 
-  /* Commit working copy → overwrite базового snap + revisions[].
-     Уровень ре-валидации применяется к статусу. */
+  /* Commit working copy → overwrite базового snap + revisions[] — вынесен в working-copy.js. */
   function _commitWorkingCopy(rk, idx, draft, snapFromCurrent) {
-    var baseSnap = _history[idx];
-    if (!baseSnap) return;
-    var level = computeRequiredRevalidationLevel(baseSnap, draft);
-    var newStatus = applyRevalidationLevel(baseSnap.status, level);
-    diag('[COMMIT-WC] role='+rk+' baseStatus='+baseSnap.status+' level='+level+' newStatus='+newStatus+' snapFromStatus='+(snapFromCurrent&&snapFromCurrent.status), 'info');
-    var finalSnap = snapFromCurrent;
-    finalSnap.status = newStatus;
-    if (level !== 'NONE' && level !== 'META_ONLY') {
-      finalSnap.confirmedAt = Date.now();
-      finalSnap.confirmedBy = (_currentUser && (_currentUser.fullName || _currentUser.login)) || baseSnap.confirmedBy || '';
-    } else {
-      finalSnap.confirmedAt = baseSnap.confirmedAt;
-      finalSnap.confirmedBy = baseSnap.confirmedBy;
-    }
-    /* v1.8.1 — не записывать revision с level='NONE' (no-op commit без реальных изменений).
-       Ранее: при closing working copy без правок level='NONE' приводил к invalid_history_structure
-       (backend whitelist его отвергал). Теперь добавляем revision ТОЛЬКО для значимых уровней. */
-    var newRevisions = (baseSnap.revisions || []).slice();
-    if (level !== 'NONE') {
-      newRevisions.push({
-        at:    Date.now(),
-        by:    (_currentUser && _currentUser.login) || '',
-        level: level
-      });
-    }
-    finalSnap.revisions = newRevisions.slice(-200);  /* лимит 200 ревизий — защита от runaway */
-    finalSnap.hasWorkingCopy = false;
-    if (baseSnap.finishedAt) finalSnap.finishedAt = baseSnap.finishedAt;
-    if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
-
-    _history[idx] = finalSnap;
-    delete _workingDrafts[draft.key];
-    _workingDraftsScheduleFlush();
-    _workingDraftsDeleteOnBackend(draft.key);
-    _activeWorkingDraftKey = null;
-
-    if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-
-    return apiPost('history', { history: _history }).then(function(){
-      if (typeof renderHistory === 'function') renderHistory();
-      if (typeof renderRoleComposition === 'function') renderRoleComposition(rk);
-      /* v1.8.1 — после commit working copy шапка должна пересчитаться, иначе
-         бейдж в main-виджете висит на старом статусе (например "Черновик"), даже
-         когда таблица истории уже показывает новый (CONFIRMED/ALLOCATED). */
-      if (typeof renderWidgetHeader === 'function') {
-        try { renderWidgetHeader(); } catch(_){}
-      }
-      try {
-        var statusLabelKey = 'status_' + newStatus;
-        var levelKey       = 'wcLevel_' + level;
-        toast(T('wcRevalidatedToast').replace('{status}', T(statusLabelKey)).replace('{level}', T(levelKey)),
-              level === 'CONFIRMED_REVAL' ? 'warn' : 'info');
-      } catch(_){}
-    });
+    return WC._commitWorkingCopy(rk, idx, draft, snapFromCurrent, _wcDeps());
   }
 
   /* ═══ v5.3.0 — UI: working copy banner ═══ */
@@ -2660,53 +2486,7 @@
 
   /* v5.0.3 — Восстановление черновика из localStorage в state.
      Вызывается из init после loadAllData, до рендера UI. */
-  function restoreDraftIfAny() {
-    var meta = _draftGet('meta');
-    if (!meta) { diag('draft: no meta in localStorage','info'); return; }
-    diag('draft: meta found, savedAt='+meta.savedAt+' version='+meta.version+' baseRevHash='+meta.baseRevHash, 'info');
-    if (meta.version !== DRAFT_VERSION) {
-      diag('draft: schema version mismatch, ignoring', 'info');
-      return;
-    }
-    var dirty = _draftGet('dirty') || {};
-    var hasAny = !!(dirty.sprint || dirty.roleItems || dirty.currentRole);
-    diag('draft: dirty='+JSON.stringify(dirty)+' hasAny='+hasAny, 'info');
-    if (!hasAny) return;
-    /* Конфликт: серверная версия изменилась — не накатываем черновик, чтобы не затереть чужие правки */
-    if (meta.baseRevHash && meta.baseRevHash !== _baseRevHash) {
-      try { toast(T('toastDraftStale'), 'warn'); } catch(_){}
-      _markClean('sprint'); _markClean('roleItems'); _markClean('currentRole');
-      diag('draft: stale, skipping restore (serverHash='+_baseRevHash+', draftBase='+meta.baseRevHash+')', 'info');
-      return;
-    }
-    _draftRestoreInProgress = true;
-    try {
-      if (dirty.sprint) {
-        var d = _draftGet('sprint');
-        if (d && typeof d === 'object') _sprint = d;
-      }
-      if (dirty.roleItems) {
-        var dr = _draftGet('roleItems');
-        if (dr && typeof dr === 'object') _roleItems = dr;
-      }
-      if (dirty.currentRole) {
-        var dd = _draftGet('currentRole');
-        if (dd && typeof dd === 'object') {
-          _currentRolePP    = dd.pp    || null;
-          _currentRoleGantt = dd.gantt || null;
-          if (dd.nkcKey) _currentRoleNkcKey = dd.nkcKey;
-          /* _currentSprintRoleRec восстанавливается через ui.distribSprintId в restoreUiState */
-        }
-      }
-      var ts;
-      try { ts = new Date(meta.savedAt).toLocaleString(_lang === 'en' ? 'en-US' : 'ru-RU'); }
-      catch(_) { ts = String(meta.savedAt); }
-      try { toast(T('toastDraftRestored').replace('{ts}', ts), 'info'); } catch(_){}
-      diag('draft: restored sections '+JSON.stringify(dirty), 'ok');
-    } finally {
-      _draftRestoreInProgress = false;
-    }
-  }
+  function restoreDraftIfAny() { return WC.restoreDraftIfAny(_wcDeps()); }
 
   /* ════ #25 Ф2 — каркас дашборда (рельс + пейн), ТОЛЬКО global-режим ════
      _buildGlobalDashShell строит .ssp-dash (grid) единожды на init при _mode==='global'
@@ -7079,128 +6859,7 @@
   }
 
   function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated) {
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role || !_sprint) return Promise.resolve();
-    var items = getRoleItemsArr(rk);
-    var activeItems = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var rem = calcRemForRole(rk);
-    var isOverLimit = rem < 0;
-
-    /* v1.9.3 D134 — Etap О.1 fix: per-role status в snapshot, не глобальный _sprint.status.
-       До v1.9.3 snapshot ЛЮБОЙ роли получал status = _sprint.status. После
-       doValidateRole(rk1) → _sprint.status = CONFIRMED, и при ближайшем save другой
-       роли rk2 (refresh / save header / commit working copy / etc.) её snapshot
-       получал status = CONFIRMED — хотя rk2 не валидировалась. Контаминация была
-       визуально скрыта v1.8.1 фиксом renderRoleStatusBadge (читает per-role из
-       _history), но снимок в _history оставался поражённым → History spoiler и
-       Excel export показывали неверный статус.
-
-       Cherry-pick из proprietary v7.3.1 Этап О.1: добавлен параметр wasValidated
-       (true только при вызове из doValidateRole), статус резолвится per-role:
-         - wasValidated=true → CONFIRMED (single source of truth для validate)
-         - иначе → existing snap.status из _history (preserve) ИЛИ PLANNING для нового
-       Архитектурно правильное решение (deep refactor на _sprint.statusByRole[rk])
-       отложено; quick fix через explicit param достаточен для всех known call-sites. */
-    var resolvedStatus;
-    if (wasValidated === true) {
-      resolvedStatus = STATUS.CONFIRMED;
-    } else {
-      var existingSnap = _history.find(function(s){ return s && s.sprintId === (_sprint.sprintId + '_' + rk); });
-      resolvedStatus = (existingSnap && existingSnap.status) ? existingSnap.status : STATUS.PLANNING;
-    }
-    var snap = {
-      sprintId:     _sprint.sprintId + '_' + rk,
-      roleKey:      rk,
-      roleLabel:    role.label,
-      dateStart:    _sprint.dateStart,
-      dateEnd:      _sprint.dateEnd,
-      name:         _sprint.name || null,
-      status:       resolvedStatus,
-      confirmedAt:  Date.now(),
-      confirmedBy:  _currentUser ? (_currentUser.fullName || _currentUser.login) : null,
-      isOverLimit:  isOverLimit,
-      settings:     _settings,
-      sprintFieldVal:   _sprint.sprintFieldVal || null,
-      versionFieldVal:  _sprint.versionFieldVal || null,
-    };
-    snap[role.resKey] = _sprint[role.resKey] || 0;
-    snap[role.remKey] = rem;
-    snap.items = items.map(function(i) {
-      var obj = {
-        issueId:  i.issueId,
-        url:      i.url,
-        title:    i.title,
-        priority: i.priority,
-        xpriority:i.xpriority,
-        state:    i.state,
-        system:   i.system,
-        inclusionStatus: i.inclusionStatus,
-      };
-      /* v1.8.0 D130 — Etap В.2 — фиксируем externalTicketId в snapshot.
-         Раньше поле не копировалось в snap.items, поэтому история не содержала
-         значений нового поля даже когда оно было задано на live item. */
-      if (i.externalTicketId !== undefined && i.externalTicketId !== null && i.externalTicketId !== '') {
-        obj.externalTicketId = i.externalTicketId;
-      }
-      obj['estimate_'+rk] = i['estimate_'+rk];
-      obj['fact_'+rk]     = i['fact_'+rk];
-      obj['alloc_'+rk]    = i['alloc_'+rk] !== undefined ? i['alloc_'+rk] : null;
-      return obj;
-    });
-    // v6.1.0 D69 — сохранять только personalPlanning. Поле `gantt` удалено из snap-whitelist
-    // в v5.9.0 (D60); запись `snap.gantt` ломала validateHistory → invalid_history_structure
-    // → каскад #4/#6/#7/#10 в v6.0.0 testbench. Источник истины для назначений и дат —
-    // personalPlanning[*].taskAssignments[issueId].{assignee,startDate,endDate}.
-    var ppToSnap    = (isActiveSprintRecord(_currentSprintRoleRec) && _currentRolePP)
-      ? _currentRolePP
-      : (_sprint.personalPlanning || null);
-    snap.personalPlanning = deepClone(ppToSnap);
-    /* v1.9.0 D132 — Freeze sprint goal + inject outcome/retro from confirm dialog. */
-    if (_sprint.sprintGoal) snap.sprintGoal = _sprint.sprintGoal;
-    if (goalFields) {
-      if (goalFields.goalOutcome)  snap.goalOutcome  = goalFields.goalOutcome;
-      if (goalFields.goalRetroNote) snap.goalRetroNote = goalFields.goalRetroNote;
-    }
-
-    /* v5.3.0 — Если активна working copy на этот ключ — commit-flow с ре-валидацией.
-       Иначе — обычный insert/overwrite. Legacy ветка editingFromHistory удалена. */
-    var snapKey = snap.sprintId;
-    if (overrideIdx === undefined && _activeWorkingDraftKey === snapKey && _workingDrafts[snapKey]) {
-      var draft = _workingDrafts[snapKey];
-      var commitIdx = _history.findIndex(function(h){ return h.sprintId === snapKey; });
-      if (commitIdx >= 0) {
-        var baseSnap = _history[commitIdx];
-        /* Conflict detection: hash базового снимка изменился? */
-        var currentHash = computeBaseSnapshotHash(baseSnap);
-        if (draft.baseSnapshotHash && currentHash !== draft.baseSnapshotHash) {
-          if (typeof showWorkingCopyConflictModal === 'function') {
-            showWorkingCopyConflictModal(snapKey, baseSnap, snap, function(decision){
-              if (decision === 'overwrite') {
-                _commitWorkingCopy(rk, commitIdx, draft, snap);
-              } else if (decision === 'export' && typeof exportConflictToExcel === 'function') {
-                /* v5.7.0 — KL#5: один xlsx с двумя листами + diff-маркер. */
-                exportConflictToExcel(baseSnap, snap);
-              }
-              /* 'cancel' → ничего */
-            });
-            return Promise.resolve();
-          }
-        }
-        return _commitWorkingCopy(rk, commitIdx, draft, snap);
-      }
-      /* Орфан: working copy без базового снимка — fallback на обычный insert */
-      diag('saveRoleHistorySnapshot: working copy without base snap, fallback to insert', 'warn');
-    }
-    var idx = -1;
-    if (overrideIdx !== undefined) {
-      idx = overrideIdx;
-    } else {
-      idx = _history.findIndex(function(h){ return h.sprintId === snap.sprintId; });
-    }
-    if (idx >= 0) _history[idx] = snap; else _history.unshift(snap);
-    return apiPost('history', { history: _history }).then(function() {
-      renderHistory();
-    });
+    return WC.saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, _wcDeps());
   }
 
   /* clearOverlay migrated to openModal() — clearNo/clearYes handlers removed (Phase 1 #32). */

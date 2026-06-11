@@ -30,6 +30,7 @@ import './revalidation.js';
 import './history-io.js';
 import './pick.js';
 import './youtrack-api.js';
+import './working-copy.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
