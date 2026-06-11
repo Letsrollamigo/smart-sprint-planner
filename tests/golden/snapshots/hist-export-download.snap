@@ -1,0 +1,16 @@
+{
+  "downloads": [
+    {
+      "fileName": "ssp-history_GM Project_2026-06-01.json",
+      "format": "ssp-sprint-history",
+      "recordCount": 2,
+      "anonymized": false
+    },
+    {
+      "fileName": "ssp-history_GM Project_2026-06-01.json",
+      "format": "ssp-sprint-history",
+      "recordCount": 2,
+      "anonymized": true
+    }
+  ]
+}

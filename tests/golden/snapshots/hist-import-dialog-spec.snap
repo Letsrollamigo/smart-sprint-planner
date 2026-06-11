@@ -1,0 +1,81 @@
+{
+  "id": "importHist",
+  "type": "form",
+  "title": "Импорт истории спринтов",
+  "body": {
+    "kind": "component",
+    "name": "importHistForm",
+    "props": {
+      "infoRows": [
+        {
+          "label": "Проект:",
+          "value": "EXT Project",
+          "bold": true
+        },
+        {
+          "label": "Инстанс:",
+          "value": "http://other-instance:9090"
+        },
+        {
+          "label": "Дата экспорта:",
+          "value": "29.05.2026, 03:26"
+        },
+        {
+          "label": "Версия плагина:",
+          "value": "99.0.0"
+        },
+        {
+          "label": "Спринтов:",
+          "value": "2"
+        }
+      ],
+      "anonText": "🔒 Обезличенный файл",
+      "warnings": [
+        {
+          "text": "ℹ Файл из другой ветки плагина (scbt-sprint-history). Импорт разрешён.",
+          "color": "var(--primary,#0d6efd)"
+        },
+        {
+          "text": "⚠ Файл из другого YouTrack-инстанса. Ссылки на задачи ведут в источник.",
+          "color": "var(--warn-text,#b36800)"
+        },
+        {
+          "text": "⚠ Версия плагина в файле (99.0.0) новее установленной. Возможна потеря данных.",
+          "color": "var(--warn-text,#b36800)"
+        }
+      ],
+      "groups": [
+        {
+          "baseId": "ext1",
+          "name": "Ext Sprint 1",
+          "dateText": "17.05.2026",
+          "collision": false
+        },
+        {
+          "baseId": "gm-hist-2026-05",
+          "name": "Collision Sprint",
+          "dateText": "05.05.2026",
+          "collision": true
+        }
+      ],
+      "labels": {
+        "collisionBadge": "дубль",
+        "modeLabel": "При совпадении sprintId:",
+        "modeSkip": "Пропустить дубли",
+        "modeOverwrite": "Перезаписать дубли",
+        "replaceText": "Полное восстановление…",
+        "replaceTitle": "Сотрёт всю историю и заменит файлом (требуются права historyManager)",
+        "cancelText": "Отмена",
+        "submitText": "Импортировать"
+      },
+      "onSubmit": "<fn>",
+      "onReplace": "<fn>",
+      "onCancel": "<fn>"
+    }
+  },
+  "buttons": [],
+  "dismissOnBackdrop": true,
+  "blockEscape": false,
+  "showCloseButton": true,
+  "onClose": "<fn>"
+}

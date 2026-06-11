@@ -1,0 +1,17 @@
+{
+  "anonymized": [
+    {
+      "sprintId": "gm_anon_1_analysis",
+      "name": "Anon S1",
+      "settings": {
+        "workdayHours": 8,
+        "fieldAnalysis": "Оценка Анализ"
+      }
+    },
+    {
+      "sprintId": "gm_anon_2_testing",
+      "name": "Anon S2 (без settings)"
+    }
+  ],
+  "sourceUntouched": true
+}
