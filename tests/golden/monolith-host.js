@@ -55,6 +55,7 @@ const BRIDGE_SCRIPTS = [
   'history-io.js',
   'pick.js',
   'youtrack-api.js',
+  'working-copy.js',
 ];
 
 const GM_HOOK = `
