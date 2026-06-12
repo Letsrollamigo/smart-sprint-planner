@@ -6490,7 +6490,6 @@
     var ta  = (_currentRolePP.taskAssignments || {});
     /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
     if (typeof multiKeySort === 'function') active = multiKeySort(active, undefined, ta);
-    var gt  = (_currentRoleGantt && _currentRoleGantt.tasks) ? _currentRoleGantt.tasks : {};
 
     // Задачи с назначенными датами
     var ganttItems = active.map(function(item) {
@@ -6614,8 +6613,8 @@
     container.innerHTML = html;
 
     /* v5.7.0 — Этап 5 (D46): dblclick по бару открывает модал переназначения,
-       а не toggle цвета. Старая модель _currentRoleGantt.tasks[].color на запись не используется
-       (на чтение остаётся для backward-compat при rollback). */
+       а не toggle цвета. Старая модель _currentRoleGantt.tasks[].color рендером
+       не используется вовсе (поле может оставаться в персисте legacy-записей). */
     var _ganttCells = container.querySelectorAll('.gantt-cell[data-inbar="1"]');
     _ganttCells.forEach(function(cell) {
       var _clickTimer = null;
