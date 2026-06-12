@@ -4295,6 +4295,16 @@
       showDynFieldConfirm: showDynFieldConfirm,
       updateRoleRemaining: updateRoleRemaining,
       renderRoleComposition: renderRoleComposition,
+      toast: toast, openModal: openModal, statusLabel: statusLabel,
+      getActiveRoles: getActiveRoles, safeLs: safeLs,
+      draftGet: _draftGet, draftSet: _draftSet,
+      renderRolePlannerHeader: renderRolePlannerHeader,
+      applyEditorRightsToUI: applyEditorRightsToUI,
+      populatePlanningRoleSel: populatePlanningRoleSel,
+      refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
+      openPickModal: openPickModal, refreshFromYouTrack: refreshFromYouTrack,
+      doValidateRole: doValidateRole, doNewSprint: doNewSprint,
+      doSaveRoleHeader: doSaveRoleHeader,
       PAGE_SIZE: PAGE_SIZE, INC: INC, STATUS: STATUS, ALL_ROLES: ALL_ROLES,
       state: {
         getSettings: function () { return _settings; },
@@ -4304,6 +4314,9 @@
         getServerSnapshotRoleItems: function () { return _serverSnapshotRoleItems; },
         getRoleItems: function () { return _roleItems; },
         getUiExpandedRoles: function () { return _uiExpandedRoles; },
+        setActiveSubtab: function (rk) { _activeSubtab = rk; },
+        getIsEditor: function () { return _isEditor; },
+        getIsValidator: function () { return _isValidator; },
       },
     };
   }
@@ -4318,134 +4331,12 @@
 
   function _updateRoleAccordionStats(rk) { return ROLECOMP_VIEW.updateRoleAccordionStats(rk, _roleCompDeps()); }
 
-  function renderPlanningRoles() {
-    var container = document.getElementById('roleAccordions');
-    var noSprintEl = document.getElementById('planningRolesNoSprint');
-    var noActiveEl = document.getElementById('planningRolesNoActive');
-    if (!container) return;
-    var activeRoles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-    if (!activeRoles.length) {
-      container.innerHTML = '';
-      if (noActiveEl) {
-        noActiveEl.classList.remove('hidden');
-        /* #43 W2 — CTA «Открыть настройки» только тем, кому виден #openSettingsBtn
-           (серверная проверка check-settings-manager, см. refreshOpenSettingsBtn). */
-        var ctaEl = document.getElementById('planningRolesNoActiveCta');
-        var sBtn  = document.getElementById('openSettingsBtn');
-        if (ctaEl) ctaEl.style.display = (sBtn && sBtn.style.display !== 'none') ? '' : 'none';
-      }
-      if (noSprintEl) noSprintEl.classList.add('hidden');
-      return;
-    }
-    if (noActiveEl) noActiveEl.classList.add('hidden');
-    if (!_currentSprintId) {
-      container.innerHTML = '';
-      if (noSprintEl) noSprintEl.classList.remove('hidden');
-      return;
-    }
-    if (noSprintEl) noSprintEl.classList.add('hidden');
-    var html = activeRoles.map(function(role){ return renderRoleAccordion(role.key); }).join('');
-    container.innerHTML = html;
-    _bindAccordionHandlers();
-  }
+  /* Уровень «Роли» (карточки + аккордеон-обвязка) — в rolecomposition-view.js
+     (Тир D слайс 3, коммит Б). Делегатор: 5 внешних callers (applyI18N, WC-deps,
+     level-switch, renderPlannerRoles, refresh) не трогаются. */
+  function renderPlanningRoles() { return ROLECOMP_VIEW.renderPlanningRoles(_roleCompDeps()); }
 
-  function _bindAccordionHandlers() {
-    document.querySelectorAll('#roleAccordions .planning-role-toggle').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        if (e && e.preventDefault) e.preventDefault();
-        var rk = btn.dataset.roleKey;
-        if (!rk) return;
-        _uiExpandedRoles[rk] = !_uiExpandedRoles[rk];
-        var expandedList = Object.keys(_uiExpandedRoles).filter(function(k){ return _uiExpandedRoles[k]; });
-        var ui = _draftGet('ui') || {}; ui.expandedRoles = expandedList; _draftSet('ui', ui);
-        var card = btn.closest('.planning-role-card');
-        if (card) {
-          card.classList.toggle('expanded', !!_uiExpandedRoles[rk]);
-          var chev = card.querySelector('.planning-role-chevron');
-          if (chev) chev.textContent = _uiExpandedRoles[rk] ? '▼' : '▶';
-          /* v5.6.0 — Этап 4 (4d): создаём slot для buildRolePanel при первом раскрытии,
-             если его ещё нет (template создаёт slot только при initial expanded=true). */
-          if (_uiExpandedRoles[rk]) {
-            var bodyEl = card.querySelector('.planning-role-body');
-            if (!bodyEl) {
-              bodyEl = document.createElement('div');
-              bodyEl.className = 'planning-role-body';
-              bodyEl.setAttribute('data-role-body', rk);
-              card.appendChild(bodyEl);
-            }
-          }
-        }
-        /* v5.6.0 — Этап 4 (4d): монтаж/демонтаж editable body после toggle */
-        if (typeof _mountExpandedRoleBodies === 'function') {
-          try { _mountExpandedRoleBodies(); } catch(err){ diag('mount role bodies on toggle err: '+err,'err'); }
-        }
-      });
-    });
-    /* v5.6.0 — Этап 4 (4c): handler .planning-role-openOld удалён вместе с кнопкой. */
-    document.querySelectorAll('#roleAccordions .planning-role-jumpPeople').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        if (e && e.stopPropagation) e.stopPropagation();
-        var rk = btn.dataset.roleKey;
-        /* v1.8.1 — явно зафиксировать целевую роль ДО переключения уровня, иначе
-           refreshPlanningPeopleForCurrentSprint берёт rk из sel.value/_activeSubtab,
-           а они хранят последнюю использованную роль (баг #3 из v1.8.1 acceptance). */
-        safeLs.set('ssp_lastActiveRole', rk);
-        _activeSubtab = rk;
-        var peopleSel = document.getElementById('planningRoleSel');
-        if (peopleSel) {
-          if (!peopleSel.options.length && typeof populatePlanningRoleSel === 'function') {
-            try { populatePlanningRoleSel(); } catch(_){}
-          }
-          if (peopleSel.querySelector('option[value="'+rk+'"]')) peopleSel.value = rk;
-        }
-        var lvlBtn = document.querySelector('.planning-level-btn[data-level="people"]');
-        if (lvlBtn && lvlBtn.style.display !== 'none' && !lvlBtn.classList.contains('hidden')) lvlBtn.click();
-        /* Явный refresh с переданным rk — на случай если levelBtn.click() не вызвал refresh. */
-        if (typeof refreshPlanningPeopleForCurrentSprint === 'function') {
-          try { refreshPlanningPeopleForCurrentSprint(rk); } catch(_){}
-        }
-      });
-    });
-    /* v5.6.0 — Этап 4 (4d): после рендера accordion — монтируем full editable buildRolePanel
-       в раскрытые карточки. Свёрнутые карточки очищают тело (для экономии DOM). */
-    if (typeof _mountExpandedRoleBodies === 'function') {
-      try { _mountExpandedRoleBodies(); } catch(e){ diag('mount role bodies err: '+e,'err'); }
-    }
-  }
 
-  /* v5.6.0 — Этап 4 (4d): монтаж полного editable buildRolePanel(role) в раскрытые
-     accordion-карточки. Каждая карточка с .expanded получает уникальный buildRolePanel
-     (id внутри функции содержат roleKey, поэтому коллизий нет даже при одновременном
-     раскрытии нескольких ролей). После монтажа — устанавливаем _activeSubtab и
-     applyEditorRightsToUI для применения прав редактора. */
-  function _mountExpandedRoleBodies() {
-    document.querySelectorAll('.planning-role-card.expanded .planning-role-body').forEach(function(host){
-      var rk = host.getAttribute('data-role-body');
-      if (!rk) return;
-      /* Идемпотентность: если уже примонтирован — пропускаем (не пере-рендерим).
-         Mark через data-mounted=1. */
-      if (host.dataset.mounted === '1') return;
-      var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-      if (!role) return;
-      try {
-        /* Сохраняем кнопку «Перейти в Люди» (data-keep="actions") если она есть */
-        var keepActions = host.querySelector('.planning-role-body__actions');
-        host.innerHTML = '';
-        host.appendChild(buildRolePanel(role));
-        if (keepActions) host.appendChild(keepActions);
-        host.dataset.mounted = '1';
-        _activeSubtab = rk;
-        if (typeof applyEditorRightsToUI === 'function') applyEditorRightsToUI();
-      } catch(e) { diag('_mountExpandedRoleBodies err for rk='+rk+': '+e, 'err'); }
-    });
-    /* Свёрнутые карточки — сброс mounted флага (на случай повторного раскрытия — пере-рендер свежим состоянием) */
-    document.querySelectorAll('.planning-role-card:not(.expanded) .planning-role-body').forEach(function(host){
-      if (host.dataset.mounted === '1') {
-        host.dataset.mounted = '';
-        host.innerHTML = '';
-      }
-    });
-  }
 
   /* ═══ v5.5.0 — Этап 3c: уровень «Люди» ═══
      Селектор роли + empty-state + summary card. Editable работа с _currentRolePP остаётся
@@ -4972,269 +4863,10 @@
     }
   }
 
-  /* ── Построить панель для одной роли ── */
-  function buildRolePanel(role) {
-    var dynEdit = _settings && _settings.dynEditEnabled;
-    var frag = document.createDocumentFragment();
-
-    /* === Блок: трёхколоночный layout === */
-    var cols = document.createElement('div');
-    cols.className = 'planner-cols';
-
-    /* Колонка 1: Статус планирования */
-    var colStatus = document.createElement('div');
-    colStatus.className = 'card';
-    colStatus.style.marginBottom = '0';
-    colStatus.innerHTML = '<div class="card-title">'+T('cardStatusPlanning')+'</div>';
-    var statusRow = document.createElement('div');
-    statusRow.className = 'status-row';
-    statusRow.style.flexDirection = 'column';
-    statusRow.style.alignItems = 'flex-start';
-    statusRow.style.gap = '10px';
-
-    /* v5.2.0 — селектор статуса упразднён: после удаления PLANNED у него осталась
-       одна опция, теряет смысл. Переход PLANNING→CONFIRMED идёт только через
-       кнопку «Валидировать». Текущий статус показывается через statusBadge. */
-
-    var statusBadge = document.createElement('span');
-    statusBadge.id = 'statusBadge_'+role.key;
-    statusBadge.className = 's-badge s-badge--planning';
-    statusBadge.textContent = statusLabel(STATUS.PLANNING);
-
-    var newSprintBtn = document.createElement('button');
-    newSprintBtn.className = 'ring-button-button ring-button-block ring-button-heightS new-sprint-btn';
-    newSprintBtn.id = 'newSprintBtn_'+role.key;
-    newSprintBtn.style.display = 'none';
-    newSprintBtn.textContent = T('btnNewSprint');
-
-    var saveHeaderBtn = document.createElement('button');
-    saveHeaderBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn';
-    saveHeaderBtn.id = 'saveHeaderBtn_'+role.key;
-    saveHeaderBtn.textContent = T('btnSaveParams');
-
-    statusRow.appendChild(statusBadge);
-    statusRow.appendChild(newSprintBtn);
-    statusRow.appendChild(saveHeaderBtn);
-    colStatus.appendChild(statusRow);
-
-    /* Колонка 2: Доступные ресурсы */
-    var colRes = document.createElement('div');
-    colRes.className = 'card';
-    colRes.style.marginBottom = '0';
-    colRes.innerHTML = '<div class="card-title">'+T('cardAvailRes')+'</div>';
-    var resField = document.createElement('div');
-    resField.className = 'field';
-    resField.innerHTML = '<label for="res_'+role.key+'">'+esc(roleLabel(role))+'</label>'+
-      '<input type="text" id="res_'+role.key+'" placeholder="'+T('phPeriod')+'"/>';
-    colRes.appendChild(resField);
-
-    /* Колонка 3: Остатки ресурсов */
-    var colRem = document.createElement('div');
-    colRem.className = 'card';
-    colRem.style.marginBottom = '0';
-    colRem.innerHTML = '<div class="card-title">'+T('cardRemRes')+'</div>';
-    var remCard = document.createElement('div');
-    remCard.className = 'remain-card';
-    remCard.id = 'rc_'+role.key;
-    remCard.innerHTML = '<div class="remain-card__label">'+esc(roleLabel(role))+'</div>'+
-      '<div class="remain-card__val" id="rem_'+role.key+'">—</div>';
-    colRem.appendChild(remCard);
-
-    cols.appendChild(colStatus);
-    cols.appendChild(colRes);
-    cols.appendChild(colRem);
-    frag.appendChild(cols);
-
-    /* === Блок: Состав спринта === */
-    var compCard = document.createElement('div');
-    compCard.className = 'card';
-    var compTitle = document.createElement('div');
-    compTitle.className = 'card-title';
-    compTitle.textContent = T('cardComposition') + ' — ' + roleLabel(role);
-    compCard.appendChild(compTitle);
-
-    var toolbar = document.createElement('div');
-    toolbar.className = 'toolbar';
-    toolbar.style.marginBottom = '14px';
-
-    var pickBtn = document.createElement('button');
-    pickBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn';
-    pickBtn.id = 'pickBtn_'+role.key;
-    pickBtn.textContent = T('btnPickTasks');
-
-    /* S6 #35 — кнопка «Обновить из задачи» теперь в обоих режимах (inline и обычный):
-       единый refreshFromYouTrack тянет полный срез и в inline безопасен (dirty-guard). */
-    var refreshBtn = document.createElement('button');
-    refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-    refreshBtn.id = 'refreshBtn_'+role.key;
-    refreshBtn.disabled = true;
-    refreshBtn.textContent = T('btnRefreshFromTask');
-
-    var recalcBtn = document.createElement('button');
-    recalcBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-    recalcBtn.id = 'recalcBtn_'+role.key;
-    recalcBtn.disabled = true;
-    recalcBtn.textContent = T('btnRecalc');
-
-    var clearBtn = document.createElement('button');
-    clearBtn.className = 'ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn';
-    clearBtn.id = 'clearBtn_'+role.key;
-    clearBtn.disabled = true;
-    clearBtn.textContent = T('btnClear');
-
-    var spacer = document.createElement('div');
-    spacer.style.flex = '1';
-
-    var validateBtn = document.createElement('button');
-    validateBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText validate-btn';
-    validateBtn.id = 'validateBtn_'+role.key;
-    validateBtn.textContent = T('btnValidate');
-
-    toolbar.appendChild(pickBtn);
-    if (refreshBtn) toolbar.appendChild(refreshBtn);
-    toolbar.appendChild(recalcBtn);
-    toolbar.appendChild(clearBtn);
-    toolbar.appendChild(spacer);
-    toolbar.appendChild(validateBtn);
-    compCard.appendChild(toolbar);
-
-    /* v2.1.0 E4 — Ring Table host (replaces native <table>/<thead>/<tbody>).
-       renderRoleComposition() mounts Ring Table via window.__SSP_TABLE.mountAt
-       with columns built from buildRoleCompositionColumns(role, dynEdit). */
-    var tblWrap = document.createElement('div');
-    tblWrap.className = 'tbl-wrap';
-    var host = document.createElement('div');
-    host.id = 'compHost_'+role.key;
-    host.setAttribute('data-ssp-table-host', '');
-    host.innerHTML = '<div class="empty">'+esc(T('compEmpty'))+'</div>';
-    tblWrap.appendChild(host);
-    compCard.appendChild(tblWrap);
-
-    var pag = document.createElement('div');
-    pag.className = 'pagination';
-    pag.id = 'planPag_'+role.key;
-    pag.style.display = 'none';
-    pag.innerHTML = '<button class="ring-button-button ring-button-block ring-button-heightS" id="planPrev_'+role.key+'">‹</button>'+
-      '<span id="planPageInfo_'+role.key+'"></span>'+
-      '<button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_'+role.key+'">›</button>';
-    compCard.appendChild(pag);
-    frag.appendChild(compCard);
-
-    /* === Навесить события === */
-    setTimeout(function() {
-      wireRolePanel(role, dynEdit);
-      renderRolePlannerHeader(role.key);
-      renderRoleComposition(role.key);
-      updateRoleRemaining(role.key);
-    }, 0);
-
-    return frag;
-  }
+  /* Панель роли (buildRolePanel/wireRolePanel) — в rolecomposition-view.js
+     (Тир D слайс 3, коммит Б); монтируется модульным _mountExpandedRoleBodies. */
 
 
-  function wireRolePanel(role, dynEdit) {
-    var rk = role.key;
-
-    /* Кнопка Подобрать задачи */
-    var pickBtn = document.getElementById('pickBtn_'+rk);
-    if (pickBtn) {
-      pickBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoEditRights'), 'warn'); return; }
-        openPickModal(rk, role);
-      });
-    }
-
-    /* Кнопка Обновить данные */
-    var refreshBtn = document.getElementById('refreshBtn_'+rk);
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        refreshFromYouTrack(); /* #35 — единый путь: весь спринт, обе вкладки + Гант */
-      });
-    }
-
-    /* Кнопка Пересчитать */
-    var recalcBtn = document.getElementById('recalcBtn_'+rk);
-    if (recalcBtn) {
-      recalcBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        updateRoleRemaining(rk);
-        toast(T('toastRecalcDone'), 'success');
-      });
-    }
-
-    /* Кнопка Очистить */
-    var clearBtn = document.getElementById('clearBtn_'+rk);
-    if (clearBtn) {
-      clearBtn.addEventListener('click', (function(roleKey) { return function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        openModal({
-          id: 'clear',
-          type: 'confirm',
-          title: T('confirmClearTask'),
-          body: { kind: 'text', text: T('confirmClearTask') },
-          buttons: [
-            { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
-            { id: 'confirm', text: T('btnYesClear'), variant: 'danger', onClick: function(h) {
-              h.close();
-              _roleItems[roleKey] = [];
-              apiPost('sprint-data', { roleItems: _roleItems }).then(function() {
-                renderRoleComposition(roleKey);
-                updateRoleRemaining(roleKey);
-                toast(T('toastCleared'), 'success');
-              });
-            }},
-          ],
-          dismissOnBackdrop: false,
-          blockEscape: false,
-          showCloseButton: false,
-        });
-      }; })(rk));
-    }
-
-    /* Кнопка Валидировать */
-    var validateBtn = document.getElementById('validateBtn_'+rk);
-    if (validateBtn) {
-      validateBtn.addEventListener('click', function() {
-        if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); return; }
-        doValidateRole(rk);
-      });
-    }
-
-    /* Кнопка Новый спринт */
-    var newSprintBtn = document.getElementById('newSprintBtn_'+rk);
-    if (newSprintBtn) {
-      newSprintBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        doNewSprint(rk);
-      });
-    }
-
-    /* Кнопка Сохранить параметры */
-    var saveHeaderBtn = document.getElementById('saveHeaderBtn_'+rk);
-    if (saveHeaderBtn) {
-      saveHeaderBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        doSaveRoleHeader(rk);
-      });
-    }
-
-    /* Пагинация */
-    var prevBtn = document.getElementById('planPrev_'+rk);
-    var nextBtn = document.getElementById('planNext_'+rk);
-    if (prevBtn) prevBtn.addEventListener('click', function() {
-      var page = (_roleItems[rk] && _roleItems[rk]._page) || 1;
-      if (!_roleItems[rk]) return;
-      _roleItems[rk]._page = Math.max(1, page - 1);
-      renderRoleComposition(rk);
-    });
-    if (nextBtn) nextBtn.addEventListener('click', function() {
-      var page = (_roleItems[rk] && _roleItems[rk]._page) || 1;
-      if (!_roleItems[rk]) return;
-      _roleItems[rk]._page = page + 1;
-      renderRoleComposition(rk);
-    });
-  }
 
   /* #25 Ф2 fix — источник intro-полей (Название/Даты/Цель) = выбранный спринт:
      активный _sprint, если он и есть _currentSprintId; иначе снапшот истории.
