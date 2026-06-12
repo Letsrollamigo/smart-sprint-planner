@@ -1,0 +1,14 @@
+{
+  "afterInfo": {
+    "ariaLive": "polite",
+    "role": "status"
+  },
+  "afterError": {
+    "ariaLive": "assertive",
+    "role": "alert"
+  },
+  "afterReset": {
+    "ariaLive": "polite",
+    "role": "status"
+  }
+}
