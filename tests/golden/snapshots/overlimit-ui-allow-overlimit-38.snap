@@ -1,0 +1,13 @@
+{
+  "borders": {
+    "GM-5": "var(--error)",
+    "GM-6": "var(--error)"
+  },
+  "btn": {
+    "disabled": false,
+    "overlimitClass": false,
+    "title": ""
+  },
+  "modalIds": [],
+  "guardKeys": []
+}
