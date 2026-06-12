@@ -1,0 +1,16 @@
+{
+  "log": [
+    {
+      "doNewSprint": "analysis"
+    },
+    {
+      "doNewSprint": "analysis"
+    },
+    {
+      "setDashNode": "sprint-params"
+    },
+    {
+      "toast": "warn"
+    }
+  ]
+}

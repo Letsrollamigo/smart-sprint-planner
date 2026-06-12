@@ -1,0 +1,22 @@
+{
+  "projectMode": {
+    "display": "none",
+    "disabled": false,
+    "title": null
+  },
+  "globalNoNav": {
+    "display": "none",
+    "disabled": false,
+    "title": null
+  },
+  "globalWithSprint": {
+    "display": "",
+    "disabled": false,
+    "title": "Поделитесь ссылкой после сохранения спринта"
+  },
+  "globalNoSprint": {
+    "display": "",
+    "disabled": true,
+    "title": "Сначала откройте спринт"
+  }
+}
