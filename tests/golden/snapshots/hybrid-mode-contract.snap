@@ -1,0 +1,22 @@
+{
+  "active": {
+    "planning": false,
+    "gantt": false
+  },
+  "historicalNoWc": {
+    "planning": true,
+    "gantt": true
+  },
+  "historicalMyWc": {
+    "planning": false,
+    "gantt": false
+  },
+  "historicalForeignWc": {
+    "planning": true,
+    "gantt": true
+  },
+  "historicalNoUser": {
+    "planning": false,
+    "gantt": false
+  }
+}

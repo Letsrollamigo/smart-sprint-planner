@@ -1,0 +1,9 @@
+{
+  "select": "<option value=\"\" disabled=\"\">— нет активных спринтов —</option>",
+  "selectedValue": "",
+  "selectDisabled": true,
+  "badge": "<span id=\"widgetSprintBadge\" class=\"widget-header__badge widget-header__badge--planning hidden\" data-i18n-title=\"hintBadgeAggregated\" title=\"Минимальный статус по активным ролям\"></span>",
+  "wcHidden": true,
+  "currentSprintIdAfter": null,
+  "uiDraftCurrentSprintId": null
+}
