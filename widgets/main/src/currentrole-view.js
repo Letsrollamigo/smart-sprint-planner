@@ -141,75 +141,57 @@ function updateCurrentRoleAssigneeRemain(deps) {
    (.currentRole-grade-sel, .currentRole-manual-res, .currentRole-del-assignee)
    are preserved. Cell handlers — single event-delegated listener on host,
    bound idempotently on first render. */
-function renderCurrentRoleAssigneeTable(deps) {
+/* Ступень 2 (Тир D слайс 2): вся cell-логика — в vm-билдере; колонки таблицы —
+   тупой маппинг row.cells[col.id]. Значения ячеек байт-в-байт прежние,
+   контракт «модуль → __SSP_TABLE» не менялся — оракул (materializeTable)
+   остаётся diff 0. */
+function _vmCell(row, c) { return row.cells[c.id]; }
+
+function _buildAssigneeTableVm(deps) {
   var T = deps.T, esc = deps.esc;
-  var host = document.getElementById('currentRoleAssigneeHost');
-  if (!host) return;
   var _settings = deps.state.getSettings();
   var _currentRolePP = deps.state.getCurrentRolePP();
   var manualMode = !!(_settings && _settings.manualPersonalResource);
   var showByProj = !!(_settings && _settings.fieldSystem && _settings.personalPlanningEnabled);
 
   if (!_currentRolePP || !Object.keys(_currentRolePP.resourcesByAssignee || {}).length) {
-    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
-    host.innerHTML = '<div class="empty">' + esc(T('emptyAssignees')) + '</div>';
-    return;
+    return { empty: true };
   }
 
-  /* Build items array — pre-computed derived values to keep cell renderers cheap. */
-  var items = Object.keys(_currentRolePP.resourcesByAssignee).map(function (login) {
+  /* Строки vm — pre-computed derived values + готовые cell-значения. */
+  var rows = Object.keys(_currentRolePP.resourcesByAssignee).map(function (login) {
     var entry  = _currentRolePP.resourcesByAssignee[login];
     var used   = calcAssigneeUsed(login, deps);
     var remain = Math.round((entry.resource - used) * 100) / 100;
-    return {
-      login: login,
-      entry: entry,
-      used: used,
-      remain: remain,
-    };
-  });
-
-  var columns = [];
-  columns.push({
-    id: 'assigneeName', title: T('thTeamMember'), sortable: false,
-    getValue: function (item) { return esc(item.entry.assigneeName || item.login); }
-  });
-  columns.push({
-    id: 'grade', title: T('thGrade'), sortable: false,
-    getValue: function (item) {
-      var currentGrade = deps.migrateGrade(item.entry.grade);
-      var html = '<select class="currentRole-grade-sel" data-login="' + esc(item.login) + '" style="width:100%;font-size:12px">' +
+    var cells = {};
+    cells.assigneeName = esc(entry.assigneeName || login);
+    var currentGrade = deps.migrateGrade(entry.grade);
+    cells.grade = { __html:
+      '<select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' +
         GRADES_LOCAL.map(function (g) {
           return '<option value="' + g + '"' + (currentGrade === g ? ' selected' : '') + '>' + esc(T('grade' + g)) + '</option>';
         }).join('') +
-        '</select>';
-      return { __html: html };
+        '</select>'
+    };
+    if (manualMode) {
+      var manualVal = (typeof entry.manualResource === 'number') ? entry.manualResource
+                     : (typeof entry.resource === 'number' ? entry.resource : 0);
+      cells.resource = { __html:
+        '<input type="number" min="0" step="0.25" class="currentRole-manual-res" ' +
+          'data-login="' + esc(login) + '" ' +
+          'value="' + round2(manualVal) + '" ' +
+          'style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/>'
+      };
+    } else {
+      cells.resource = round2(entry.resource);
     }
-  });
-  columns.push({
-    id: 'resource', title: T('thResourceH'), sortable: false, className: 'td-num',
-    getValue: function (item) {
-      if (manualMode) {
-        var manualVal = (typeof item.entry.manualResource === 'number') ? item.entry.manualResource
-                       : (typeof item.entry.resource === 'number' ? item.entry.resource : 0);
-        return { __html:
-          '<input type="number" min="0" step="0.25" class="currentRole-manual-res" ' +
-            'data-login="' + esc(item.login) + '" ' +
-            'value="' + round2(manualVal) + '" ' +
-            'style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/>'
-        };
-      }
-      return round2(item.entry.resource);
-    }
-  });
-  if (showByProj) {
-    columns.push({
-      id: 'allocByProject', title: T('thAllocByProject'), sortable: false, className: 'td-alloc-by-sys',
-      getValue: function (item) {
-        var rows = calcAssigneeAllocByProject(item.login, deps);
-        if (!rows.length) return { __html: '<span style="color:var(--muted)">—</span>' };
+    if (showByProj) {
+      var rowsBySys = calcAssigneeAllocByProject(login, deps);
+      if (!rowsBySys.length) {
+        cells.allocByProject = { __html: '<span style="color:var(--muted)">—</span>' };
+      } else {
         var hSuf = T('hourShort');
-        var rowsHtml = rows.map(function (r) {
+        cells.allocByProject = { __html: rowsBySys.map(function (r) {
           var sysLabel = r.system === '__none__' ? T('allocBySysNoProject') : r.system;
           var pctStr = (r.percent === null) ? '' : (' · ' + r.percent + '%');
           var over = (r.percent !== null && r.percent > 100);
@@ -217,39 +199,54 @@ function renderCurrentRoleAssigneeTable(deps) {
                     (over ? ' alloc-by-sys-row--over' : '') +
                     (r.system === '__none__' ? ' alloc-by-sys-row--nosys' : '');
           return '<div class="' + cls + '">' + esc(sysLabel) + ' · ' + round2(r.hours) + hSuf + pctStr + (over ? ' ⚠' : '') + '</div>';
-        }).join('');
-        return { __html: rowsHtml };
+        }).join('') };
       }
-    });
+    }
+    var remainColor = remain < 0 ? 'var(--error)' : 'var(--success)';
+    cells.remain = { __html: '<span style="color:' + remainColor + '">' + round2(remain) + '</span>' };
+    cells['delete'] = { __html:
+      '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" ' +
+        'data-login="' + esc(login) + '" ' +
+        'title="' + esc(T('confirmDelAssignee').replace('?', '')) + '" ' +
+        'aria-label="' + esc(T('aria.btnDeleteRow')) + '">' +
+        deps.icon('trash', T('aria.btnDeleteRow')).outerHTML +
+      '</button>'
+    };
+    return { login: login, cells: cells };
+  });
+
+  return { showByProj: showByProj, rows: rows };
+}
+
+function renderCurrentRoleAssigneeTable(deps) {
+  var T = deps.T, esc = deps.esc;
+  var host = document.getElementById('currentRoleAssigneeHost');
+  if (!host) return;
+  var vm = _buildAssigneeTableVm(deps);
+
+  if (vm.empty) {
+    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
+    host.innerHTML = '<div class="empty">' + esc(T('emptyAssignees')) + '</div>';
+    return;
   }
-  columns.push({
-    id: 'remain', title: T('thRemainH'), sortable: false, className: 'td-num',
-    getValue: function (item) {
-      var color = item.remain < 0 ? 'var(--error)' : 'var(--success)';
-      return { __html: '<span style="color:' + color + '">' + round2(item.remain) + '</span>' };
-    }
-  });
-  columns.push({
-    id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
-    getValue: function (item) {
-      return { __html:
-        '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-del-assignee" ' +
-          'data-login="' + esc(item.login) + '" ' +
-          'title="' + esc(T('confirmDelAssignee').replace('?', '')) + '" ' +
-          'aria-label="' + esc(T('aria.btnDeleteRow')) + '">' +
-          deps.icon('trash', T('aria.btnDeleteRow')).outerHTML +
-        '</button>'
-      };
-    }
-  });
+
+  var columns = [];
+  columns.push({ id: 'assigneeName', title: T('thTeamMember'), sortable: false, getValue: _vmCell });
+  columns.push({ id: 'grade', title: T('thGrade'), sortable: false, getValue: _vmCell });
+  columns.push({ id: 'resource', title: T('thResourceH'), sortable: false, className: 'td-num', getValue: _vmCell });
+  if (vm.showByProj) {
+    columns.push({ id: 'allocByProject', title: T('thAllocByProject'), sortable: false, className: 'td-alloc-by-sys', getValue: _vmCell });
+  }
+  columns.push({ id: 'remain', title: T('thRemainH'), sortable: false, className: 'td-num', getValue: _vmCell });
+  columns.push({ id: 'delete', title: '', sortable: false, className: 'ssp-col-action', getValue: _vmCell });
 
   if (window.__SSP_TABLE) {
     window.__SSP_TABLE.mountAt(host, {
-      items: items,
+      items: vm.rows,
       columns: columns,
       sortKey: 'off',
       onSort: function () {},
-      getItemKey: function (item) { return item.login; },
+      getItemKey: function (row) { return row.login; },
       stickyHeader: true,
       emptyText: T('emptyAssignees'),
     });
@@ -357,22 +354,15 @@ function renderCurrentRoleAssigneeTable(deps) {
    and data-attrs (.currentRole-task-assignee, data-ssp-datepicker-host)
    are preserved. Cell change handlers — single event-delegated listener
    on host, bound idempotently on first render. */
-function renderCurrentRoleTaskTable(deps) {
+function _buildTaskTableVm(deps) {
   var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl, toDateIn = deps.toDateIn, dispEnum = deps.dispEnum;
-  var host = document.getElementById('currentRoleTaskHost');
-  if (!host) return;
   var _currentSprintRoleRec = deps.state.getCurrentSprintRoleRec();
   var _currentRolePP = deps.state.getCurrentRolePP();
   var _settings = deps.state.getSettings();
   var _sprint = deps.state.getSprint();
-  /* DatePicker mount/unmount lifecycle is owned by SspDatePickerCell (React
-     useEffect cleanup). NO manual __SSP_DATEPICKER.unmountAll / mountAllIn
-     calls here — that would double-mount or strip stable roots. */
-  if (!_currentSprintRoleRec) {
-    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
-    host.innerHTML = '<div class="empty">' + esc(T('emptyTaskCurrentRole')) + '</div>';
-    return;
-  }
+
+  if (!_currentSprintRoleRec) return { empty: 'noRec' };
+
   var rec = _currentSprintRoleRec;
   var rk  = rec.roleKey || (_currentRolePP && _currentRolePP.roleKey) || (deps.getActiveRoles()[0] || deps.ALL_ROLES[0]).key;
   /* v5.0.3 — если запись соответствует активному _sprint, берём live items
@@ -384,11 +374,8 @@ function renderCurrentRoleTaskTable(deps) {
   /* v6.1.0 D81 (F4) — multi-key sort на «Люди». Ring Table получает items
      уже отсортированными; sortKey/sortOrder только для header affordance. */
   if (typeof deps.multiKeySort === 'function') active = deps.multiKeySort(active, undefined, ta);
-  if (!active.length) {
-    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
-    host.innerHTML = '<div class="empty">' + esc(T('currentRoleNoTasks')) + '</div>';
-    return;
-  }
+  if (!active.length) return { empty: 'noTasks' };
+
   var rba = (_currentRolePP && _currentRolePP.resourcesByAssignee) ? _currentRolePP.resourcesByAssignee : {};
   var assigneeOptions = Object.keys(rba);
   var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
@@ -406,112 +393,120 @@ function renderCurrentRoleTaskTable(deps) {
     return '<span ' + style + ' title="' + safe + '">' + safe + '</span>';
   }
 
-  var columns = [];
-  columns.push({
-    id: 'id', title: T('thId'), sortable: true, className: 'td-id',
-    getValue: function (item) {
-      return { __html: '<a href="' + safeUrl(item.url || '') + '" target="_blank" class="link">' + esc(item.issueId) + '</a>' };
+  var hasExternalTicket = !!(_settings && _settings.fieldExternalTicketId);
+  var hasXPriority = !!(_settings && _settings.fieldXPriority);
+  var hasSystem = !!(_settings && _settings.fieldSystem);
+
+  var rows = active.map(function (item) {
+    var taEntry = ta[item.issueId] || {};
+    var cells = {};
+    cells.id = { __html: '<a href="' + safeUrl(item.url || '') + '" target="_blank" class="link">' + esc(item.issueId) + '</a>' };
+    if (hasExternalTicket) {
+      cells.externalTicketId = { __html: _renderExternalTicketInner(item.externalTicketId) };
     }
-  });
-  if (_settings && _settings.fieldExternalTicketId) {
-    columns.push({
-      id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true,
-      getValue: function (item) { return { __html: _renderExternalTicketInner(item.externalTicketId) }; }
-    });
-  }
-  columns.push({
-    /* min-width keeps task titles legible (default Ring cell collapses to text wrap on every word). */
-    id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
-    getValue: function (item) {
-      var taEntry = ta[item.issueId] || {};
-      var ts = taEntry.dateStart || null;
-      var te = taEntry.dateEnd   || null;
-      var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
-      var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
-      return { __html: esc(item.title || '') + warn };
+    var ts = taEntry.dateStart || null;
+    var te = taEntry.dateEnd   || null;
+    var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
+    var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
+    cells.title = { __html: esc(item.title || '') + warn };
+    cells.priority = esc(dispEnum(item.priority) || '—');
+    if (hasXPriority) {
+      cells.xpriority = esc(dispEnum(item.xpriority) || '—');
     }
-  });
-  columns.push({
-    id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority',
-    getValue: function (item) { return esc(dispEnum(item.priority) || '—'); }
-  });
-  if (_settings && _settings.fieldXPriority) {
-    columns.push({
-      id: 'xpriority', title: T('thXpriority'), sortable: true, className: 'td-xpriority',
-      getValue: function (item) { return esc(dispEnum(item.xpriority) || '—'); }
-    });
-  }
-  columns.push({
-    id: 'allocH', title: T('thAllocH'), sortable: false, className: 'td-num',
-    getValue: function (item) {
-      var alloc = item['alloc_' + rk];
-      var est = item['estimate_' + rk];
-      var fact = item['fact_' + rk];
-      var allocVal = (alloc !== null && alloc !== undefined) ? alloc : Math.max(0, (est || 0) - (fact || 0));
-      return (allocVal / 60).toFixed(2);
+    var alloc = item['alloc_' + rk];
+    var est = item['estimate_' + rk];
+    var fact = item['fact_' + rk];
+    var allocVal = (alloc !== null && alloc !== undefined) ? alloc : Math.max(0, (est || 0) - (fact || 0));
+    cells.allocH = (allocVal / 60).toFixed(2);
+    if (hasSystem) {
+      cells.system = esc(item.system || '—');
     }
-  });
-  if (_settings && _settings.fieldSystem) {
-    columns.push({
-      id: 'system', title: T('thSystem'), sortable: true, className: 'td-system',
-      getValue: function (item) { return esc(item.system || '—'); }
-    });
-  }
-  /* v1.10.0 B-23 — assignee sortable. compareAssignee применён в multiKeySort
-     выше; здесь sortable: true только для header affordance + onSort callback. */
-  columns.push({
-    id: 'assignee', title: T('thAssignee'), sortable: true,
-    getValue: function (item) {
-      var taEntry = ta[item.issueId] || {};
-      var html = '<select class="currentRole-task-assignee assigner-btn" data-issue="' + esc(item.issueId) + '" style="width:100%;font-size:12px">' +
+    cells.assignee = { __html:
+      '<select class="currentRole-task-assignee assigner-btn" data-issue="' + esc(item.issueId) + '" style="width:100%;font-size:12px">' +
         '<option value="">' + esc(T('phNotAssigned')) + '</option>' +
         assigneeOptions.map(function (login) {
           var entry = rba[login];
           return '<option value="' + esc(login) + '"' + (taEntry.assignee === login ? ' selected' : '') + '>' + esc(entry.assigneeName || login) + '</option>';
         }).join('') +
-        '</select>';
-      return { __html: html };
-    }
+        '</select>'
+    };
+    /* __type: 'datepicker' marker → SspDatePickerCell preserves DatePicker
+       React root across Ring Table row re-renders (focus changes). HTML
+       string would tear the inner mount down — see D7 lesson #24. */
+    cells.dateStart = {
+      __type: 'datepicker',
+      issue: item.issueId,
+      className: 'currentRole-task-date currentRole-task-start',
+      dateValue: ts ? toDateIn(ts) : sprintStartDate,
+      min: sprintStartDate,
+      max: sprintEndDate,
+    };
+    cells.dateEnd = {
+      __type: 'datepicker',
+      issue: item.issueId,
+      className: 'currentRole-task-date currentRole-task-end',
+      dateValue: te ? toDateIn(te) : sprintEndDate,
+      min: sprintStartDate,
+      max: sprintEndDate,
+    };
+    return { issueId: item.issueId, cells: cells };
   });
-  columns.push({
-    id: 'dateStart', title: T('thStart'), sortable: false, className: 'td-date td-start',
-    getValue: function (item) {
-      var taEntry = ta[item.issueId] || {};
-      var ts = taEntry.dateStart || null;
-      /* __type: 'datepicker' marker → SspDatePickerCell preserves DatePicker
-         React root across Ring Table row re-renders (focus changes). HTML
-         string would tear the inner mount down — see D7 lesson #24. */
-      return {
-        __type: 'datepicker',
-        issue: item.issueId,
-        className: 'currentRole-task-date currentRole-task-start',
-        dateValue: ts ? toDateIn(ts) : sprintStartDate,
-        min: sprintStartDate,
-        max: sprintEndDate,
-      };
-    }
-  });
-  columns.push({
-    id: 'dateEnd', title: T('thFinish'), sortable: false, className: 'td-date td-end',
-    getValue: function (item) {
-      var taEntry = ta[item.issueId] || {};
-      var te = taEntry.dateEnd || null;
-      return {
-        __type: 'datepicker',
-        issue: item.issueId,
-        className: 'currentRole-task-date currentRole-task-end',
-        dateValue: te ? toDateIn(te) : sprintEndDate,
-        min: sprintStartDate,
-        max: sprintEndDate,
-      };
-    }
-  });
+
+  return {
+    rows: rows,
+    sortKey: deps.getSortKey(),
+    hasExternalTicket: hasExternalTicket,
+    hasXPriority: hasXPriority,
+    hasSystem: hasSystem,
+  };
+}
+
+function renderCurrentRoleTaskTable(deps) {
+  var T = deps.T, esc = deps.esc;
+  var host = document.getElementById('currentRoleTaskHost');
+  if (!host) return;
+  /* DatePicker mount/unmount lifecycle is owned by SspDatePickerCell (React
+     useEffect cleanup). NO manual __SSP_DATEPICKER.unmountAll / mountAllIn
+     calls here — that would double-mount or strip stable roots. */
+  var vm = _buildTaskTableVm(deps);
+
+  if (vm.empty === 'noRec') {
+    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
+    host.innerHTML = '<div class="empty">' + esc(T('emptyTaskCurrentRole')) + '</div>';
+    return;
+  }
+  if (vm.empty === 'noTasks') {
+    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
+    host.innerHTML = '<div class="empty">' + esc(T('currentRoleNoTasks')) + '</div>';
+    return;
+  }
+
+  var columns = [];
+  columns.push({ id: 'id', title: T('thId'), sortable: true, className: 'td-id', getValue: _vmCell });
+  if (vm.hasExternalTicket) {
+    columns.push({ id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true, getValue: _vmCell });
+  }
+  /* min-width keeps task titles legible (default Ring cell collapses to text wrap on every word). */
+  columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
+  columns.push({ id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority', getValue: _vmCell });
+  if (vm.hasXPriority) {
+    columns.push({ id: 'xpriority', title: T('thXpriority'), sortable: true, className: 'td-xpriority', getValue: _vmCell });
+  }
+  columns.push({ id: 'allocH', title: T('thAllocH'), sortable: false, className: 'td-num', getValue: _vmCell });
+  if (vm.hasSystem) {
+    columns.push({ id: 'system', title: T('thSystem'), sortable: true, className: 'td-system', getValue: _vmCell });
+  }
+  /* v1.10.0 B-23 — assignee sortable. compareAssignee применён в multiKeySort
+     в vm-билдере; здесь sortable: true только для header affordance + onSort callback. */
+  columns.push({ id: 'assignee', title: T('thAssignee'), sortable: true, getValue: _vmCell });
+  columns.push({ id: 'dateStart', title: T('thStart'), sortable: false, className: 'td-date td-start', getValue: _vmCell });
+  columns.push({ id: 'dateEnd', title: T('thFinish'), sortable: false, className: 'td-date td-end', getValue: _vmCell });
 
   if (window.__SSP_TABLE) {
     window.__SSP_TABLE.mountAt(host, {
-      items: active,
+      items: vm.rows,
       columns: columns,
-      sortKey: deps.getSortKey(),
+      sortKey: vm.sortKey,
       onSort: function (nextKey) {
         /* IIFE owns sort state. nextKey is already cycled (off↔active) by table-mount. */
         deps.setSortKey(nextKey);
@@ -521,7 +516,7 @@ function renderCurrentRoleTaskTable(deps) {
           renderCurrentRoleTaskTable(deps);
         }
       },
-      getItemKey: function (item) { return item.issueId; },
+      getItemKey: function (row) { return row.issueId; },
       stickyHeader: true,
       emptyText: T('currentRoleNoTasks'),
     });
