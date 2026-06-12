@@ -1,0 +1,25 @@
+{
+  "modalId": "delHist",
+  "modalType": "destructive",
+  "buttonIds": [
+    "cancel",
+    "confirm"
+  ],
+  "log": [
+    {
+      "modalClosed": true
+    },
+    {
+      "apiPost": "history",
+      "historyLen": 0
+    },
+    {
+      "setCurrentSprintId": "gm-sprint-2026-06",
+      "confirmed": true
+    },
+    {
+      "toast": "success"
+    }
+  ],
+  "historyLenAfter": 0
+}

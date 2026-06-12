@@ -1,0 +1,83 @@
+<div class="spoiler">
+<div class="spoiler__head">
+<div class="spoiler__meta">
+<div class="spoiler__mi">
+<span class="spoiler__ml">Название</span>
+<span class="spoiler__mv" style="font-weight:600">GM Synthetic June 2026</span>
+</div>
+<div class="spoiler__mi">
+<span class="spoiler__ml">Роль</span>
+<span class="spoiler__mv">Анализ</span>
+</div>
+<div class="spoiler__mi">
+<span class="spoiler__ml">Начало</span>
+<span class="spoiler__mv">11.06.2026</span>
+</div>
+<div class="spoiler__mi">
+<span class="spoiler__ml">Окончание</span>
+<span class="spoiler__mv">25.06.2026</span>
+</div>
+<div class="spoiler__mi">
+<span class="spoiler__ml">Статус</span>
+<span class="spoiler__mv">
+<span class="s-badge s-badge--confirmed">Состав согласован</span>
+<span class="wc-has-copy-pill" title="Редактирует: gm_other_editor, 12.06.2026, 00:46">✏ Есть рабочая копия</span>
+</span>
+</div>
+<div class="spoiler__mi">
+<span class="spoiler__ml">Задач</span>
+<span class="spoiler__mv">0</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--edit-hist" disabled="" title="Уже редактирует gm_other_editor">Редактировать</button>
+<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--finish-hist">Завершить спринт</button>
+<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--excel" title="Сохранить в Excel">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+</path>
+<polyline points="14 2 14 8 20 8">
+</polyline>
+<line x1="8" y1="13" x2="16" y2="13">
+</line>
+<line x1="8" y1="17" x2="16" y2="17">
+</line>
+<line x1="10" y1="9" x2="8" y2="9">
+</line>
+</svg> Excel</button>
+<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat editor-btn btn--excel" title="Экспорт спринта в JSON">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+</path>
+<polyline points="14 2 14 8 20 8">
+</polyline>
+<line x1="8" y1="13" x2="16" y2="13">
+</line>
+</svg> JSON</button>
+<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly" title="Удалить" aria-label="Удалить строку">
+<span class="ssp-icon" role="img" aria-label="Удалить строку">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+<path fill-rule="evenodd" d="M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z" clip-rule="evenodd">
+</path>
+</svg>
+</span>
+</button>
+<span class="spoiler__arrow">▶</span>
+</div>
+</div>
+<div class="spoiler__body">
+<div class="spoiler__name">GM Synthetic June 2026</div>
+<div class="spoiler__role-label">Анализ</div>
+<div class="spoiler__confirmed">Подтверждён: gm_user_validator · 11.06.2026, 07:00</div>
+<div class="wc-spoiler-toggle" style="display: flex; gap: 14px; align-items: center; padding: 6px 16px 0px; font-size: 12px;">
+<span data-ssp-radio-host="" data-name="wc-source-gm-syn-2026-06_analysis" data-value="snap" data-options-json="[{&quot;value&quot;:&quot;snap&quot;,&quot;label&quot;:&quot;Снимок&quot;},{&quot;value&quot;:&quot;wc&quot;,&quot;label&quot;:&quot;Рабочая копия&quot;}]" style="display: inline-flex; gap: 14px;">
+</span>
+</div>
+<div class="wc-spoiler-notice hidden" style="margin: 6px 16px 0px; padding: 6px 10px; border-radius: 4px; background: rgba(255, 200, 80, 0.18); color: rgb(138, 101, 0); font-size: 11px;">Это незавершённая правка от gm_other_editor, 12.06.2026, 00:46</div>
+<div>
+<div class="tbl-wrap">
+<div class="empty">Нет задач</div>
+</div>
+</div>
+</div>
+</div>
