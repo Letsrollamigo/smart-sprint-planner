@@ -56,6 +56,7 @@ const BRIDGE_SCRIPTS = [
   'youtrack-api.js',
   'working-copy.js',
   'standup-view.js',
+  'currentrole-view.js',
 ];
 
 const GM_HOOK = `
