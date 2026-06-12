@@ -1,0 +1,34 @@
+{
+  "confirmed": {
+    "estimate": 480,
+    "updateFieldCalls": [
+      {
+        "iid": "GM-1",
+        "fieldName": "Analysis Estimation",
+        "value": 480,
+        "type": "period"
+      }
+    ]
+  },
+  "declined": {
+    "estimate": 900,
+    "revertedInput": "15ч"
+  },
+  "confirmSpecs": [
+    {
+      "title": "Обновить значение поля",
+      "desc": "Обновить оценку задачи GM-1 до «8ч»?",
+      "enumValues": null,
+      "currentVal": null
+    },
+    {
+      "title": "Обновить значение поля",
+      "desc": "Обновить оценку задачи GM-2 до «99ч»?",
+      "enumValues": null,
+      "currentVal": null
+    }
+  ],
+  "apiPostPaths": [
+    "sprint-data"
+  ]
+}

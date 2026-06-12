@@ -1,0 +1,26 @@
+{
+  "before": {
+    "nums": [
+      "40",
+      "118 / 40",
+      "4"
+    ],
+    "warn": true
+  },
+  "overlimit": {
+    "nums": [
+      "40",
+      "160 / 40",
+      "4"
+    ],
+    "warn": true
+  },
+  "restored": {
+    "nums": [
+      "40",
+      "118 / 40",
+      "4"
+    ],
+    "warn": true
+  }
+}
