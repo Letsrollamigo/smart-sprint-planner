@@ -789,7 +789,6 @@
   var _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
   var _draftPending = false;
   var _draftFlushTimer = null;
-  var _draftLoaded = false; // true после первого GET /draft в init
 
   function _draftSet(suffix, value) {
     if (!_draft) _draft = {};
@@ -841,11 +840,9 @@
         _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
         diag('draft: no data on backend','info');
       }
-      _draftLoaded = true;
     }).catch(function(e){
       diag('draft load failed: '+(e&&e.message?e.message:e),'err');
       _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-      _draftLoaded = true;
     });
   }
   function _draftClearOnBackend() {
@@ -2475,7 +2472,6 @@
     _serverSnapshotRoleItems = null;
     _baseRevHash = '';
     _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-    _draftLoaded = false;
     _draftPending = false;
     _currentSprintId = null;
     _activeSubtab = null;
