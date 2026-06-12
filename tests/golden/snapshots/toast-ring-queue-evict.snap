@@ -1,0 +1,24 @@
+{
+  "afterOverflow": {
+    "removed": [
+      "k1"
+    ],
+    "diag": [
+      {
+        "msg": "toast evicted (queue>3): [info] первый",
+        "level": "info"
+      }
+    ]
+  },
+  "afterError": {
+    "removed": [
+      "k2"
+    ],
+    "diag": [
+      {
+        "msg": "toast evicted (queue>3): [success] второй",
+        "level": "info"
+      }
+    ]
+  }
+}

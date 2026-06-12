@@ -1,0 +1,46 @@
+{
+  "addAlert": [
+    {
+      "key": "k1",
+      "text": "строка · с переносами · и ещё",
+      "type": "message",
+      "timeout": 4000,
+      "hasOnClose": true
+    },
+    {
+      "key": "k2",
+      "text": "предупреждение",
+      "type": "warning",
+      "timeout": 6000,
+      "hasOnClose": true
+    },
+    {
+      "key": "k3",
+      "text": "ошибка",
+      "type": "error",
+      "timeout": 0,
+      "hasOnClose": true
+    },
+    {
+      "key": "k4",
+      "text": "успех",
+      "type": "success",
+      "timeout": 4000,
+      "hasOnClose": true
+    },
+    {
+      "key": "k5",
+      "text": "дефолтный тип",
+      "type": "message",
+      "timeout": 4000,
+      "hasOnClose": true
+    }
+  ],
+  "returnedKeys": [
+    "k1",
+    "k2",
+    "k3",
+    "k4",
+    "k5"
+  ]
+}

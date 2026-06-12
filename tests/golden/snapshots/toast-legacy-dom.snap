@@ -1,0 +1,18 @@
+<div class="toast toast--info toast--in" role="status">
+<div class="toast__text">обычное сообщение · вторая строка</div>
+<button type="button" class="toast__close" aria-label="Закрыть">
+<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+<path d="M12.5 3.5L8 8l4.5 4.5-.5.5L7.5 8.5 3 13l-.5-.5L7 8 2.5 3.5l.5-.5L7.5 7.5 12 3z">
+</path>
+</svg>
+</button>
+</div>
+<div class="toast toast--error toast--in" role="alert" aria-live="assertive">
+<div class="toast__text">сообщение об ошибке</div>
+<button type="button" class="toast__close" aria-label="Закрыть">
+<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+<path d="M12.5 3.5L8 8l4.5 4.5-.5.5L7.5 8.5 3 13l-.5-.5L7 8 2.5 3.5l.5-.5L7.5 7.5 12 3z">
+</path>
+</svg>
+</button>
+</div>
