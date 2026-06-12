@@ -3219,185 +3219,36 @@
   });
 
   /* ═══ Проверка прав ════════════════════════════════════════ */
-  /**
-   * [P1-1] Проверка прав валидатора — исключительно через backend GET /check-validator.
-   * Сервер читает группы из сохранённых настроек (ctx.project.extensionProperties),
-   * клиент не передаёт список групп — их нельзя подменить.
-   */
-  function checkValidatorNow() {
-    return _backendCall('check-validator', { method: 'GET' })
-      .then(function(r){ return !!(r && r.isValidator); })
-      .catch(function(){ return false; });
+  /* Вынесено в permissions.js (Фаза 5 слайс 2, коммит Б) за мост
+     window.__SSP_PERMISSIONS; golden-контракты — permissions-share.golden.test.js
+     (идут через эти делегаторы). Deps-фабрика per-call: флаги прав и кэш
+     промиса остаются в стейт-ядре монолита (их читают guard'ы контроллеров
+     и deps-фабрики других модулей; сброс — _resetProjectStateCaches). */
+  var PERMISSIONS = (typeof window !== 'undefined' && window.__SSP_PERMISSIONS) || {};
+  function _permsDeps() {
+    return {
+      T: T, diag: diag,
+      backendCall: _backendCall,
+      state: {
+        getIsEditor: function () { return _isEditor; },
+        setIsEditor: function (v) { _isEditor = v; },
+        getIsValidator: function () { return _isValidator; },
+        setIsValidator: function (v) { _isValidator = v; },
+        getIsAssigner: function () { return _isAssigner; },
+        setIsAssigner: function (v) { _isAssigner = v; },
+        getPermissionsCheckPromise: function () { return _permissionsCheckPromise; },
+        setPermissionsCheckPromise: function (p) { _permissionsCheckPromise = p; },
+        getActiveSubtab: function () { return _activeSubtab; },
+      },
+    };
   }
-
-  /**
-   * [P1-1] Проверка прав редактора — исключительно через backend GET /check-editor.
-   * Сервер сверяет ctx.currentUser.groups с настроенными группами редактирования.
-   */
-  function checkEditorRightsNow() {
-    return _backendCall('check-editor', { method: 'GET' })
-      .then(function(r){ return !!(r && r.isEditor); })
-      .catch(function(){ return false; });
-  }
-
-  function checkSettingsManager() {
-    diag('checkSettingsManager: запрос...', 'info');
-    return _backendCall('check-settings-manager', { method: 'GET' })
-      .then(function(r) {
-      var msg = 'checkSettingsManager: canManage=' + (r && r.canManage) +
-        ' group="' + (r && r.groupName || '') + '"';
-      diag(msg, (r && r.canManage) ? 'ok' : 'err');
-      return !!(r && r.canManage);
-    }).catch(function(e) {
-      diag('checkSettingsManager ERR: ' + String(e) + ' — фоллбек: запрещаем', 'err');
-      return false;
-    });
-  }
-
-  function checkValidator() {
-    checkValidatorNow().then(function(ok){
-      _isValidator = ok;
-      diag('checkValidator: isValidator='+ok, ok?'ok':'err');
-    });
-  }
-
-  function checkEditorRights() {
-    checkEditorRightsNow().then(function(ok){
-      _isEditor = ok;
-      diag('checkEditorRights: isEditor='+ok, ok?'ok':'err');
-      applyEditorRightsToUI();
-    });
-  }
-
-  /* v6.1.0 D82 (F5) — assigner-роль. Иерархия editor⊃assigner⊃viewer.
-     Backend GET /check-assigner возвращает { isAssigner }, наследование на frontend
-     учитывается в applyEditorRightsToUI (assigner-btn enabled if editor OR assigner). */
-  function checkAssignerRightsNow() {
-    return _backendCall('check-assigner', { method: 'GET' })
-      .then(function (r) {
-      return !!(r && r.isAssigner);
-    }).catch(function () { return false; });
-  }
-  function checkAssignerRights() {
-    checkAssignerRightsNow().then(function (ok) {
-      _isAssigner = ok;
-      diag('checkAssignerRights: isAssigner=' + ok, ok ? 'ok' : 'info');
-      try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch (_) {}
-      applyEditorRightsToUI();
-    });
-  }
-
-  /* v2.0.0 Phase D3 — Singleton permission check.
-     Запускает все 3 async permission checks одним батчем, кэширует Promise.
-     Повторные вызовы возвращают тот же Promise (no duplicate API calls).
-     Critical click-handlers могут .then() для guard'ов без race. */
-  function _startPermissionsCheck() {
-    if (_permissionsCheckPromise) return _permissionsCheckPromise;
-    var validator = (typeof checkValidatorNow === 'function')
-      ? checkValidatorNow().then(function(ok){ _isValidator = ok; })
-      : Promise.resolve();
-    var editor = (typeof checkEditorRightsNow === 'function')
-      ? checkEditorRightsNow().then(function(ok){ _isEditor = ok; })
-      : Promise.resolve();
-    var assigner = (typeof checkAssignerRightsNow === 'function')
-      ? checkAssignerRightsNow().then(function(ok){ _isAssigner = ok; })
-      : Promise.resolve();
-    _permissionsCheckPromise = Promise.all([validator, editor, assigner]).then(function() {
-      try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch(_){}
-      if (typeof applyEditorRightsToUI === 'function') { try { applyEditorRightsToUI(); } catch(_){} }
-    });
-    return _permissionsCheckPromise;
-  }
-
-  /* Применить права редактора к кнопкам активной подвкладки.
-     v5.6.0 — Этап 4 (4d): legacy #subtab-panel-<rk> удалён, panel теперь — раскрытая
-     accordion-карточка `.planning-role-card.expanded[data-role-key=<rk>] .planning-role-body`
-     (для уровня «Роли») или `#planningPeopleContent` (для уровня «Люди»). Если ничего
-     из этого не активно — применяем ко всему #tab-planning + #tab-gantt (например, после
-     reload прав). */
-  function applyEditorRightsToUI() {
-    var roleKey = _activeSubtab;
-    var panel = null;
-    if (roleKey) {
-      panel = document.querySelector('.planning-role-card.expanded[data-role-key="'+roleKey+'"] .planning-role-body');
-    }
-    if (!panel) {
-      panel = document.getElementById('planningPeopleContent');
-    }
-    if (!panel) {
-      /* Fallback — применяем ко всем editor-btn в #tab-planning и #tab-gantt */
-      var roots = [];
-      var p1 = document.getElementById('tab-planning'); if (p1) roots.push(p1);
-      var p2 = document.getElementById('tab-gantt');    if (p2) roots.push(p2);
-      roots.forEach(_applyEditorRightsTo);
-    } else {
-      _applyEditorRightsTo(panel);
-    }
-    /* v5.9.0 — расширение на overlay'и: editor-кнопки в #reassignOverlay/#clearAssigneesOverlay/etc.
-       должны дизейблиться так же, как в основных вкладках. Settings-overlay (отдельный класс
-       .settings-overlay без `.overlay`) НЕ затрагивается — управляется собственным flow check'ов. */
-    var ovs = document.querySelectorAll('.overlay:not(.settings-overlay)');
-    for (var i = 0; i < ovs.length; i++) _applyEditorRightsTo(ovs[i]);
-  }
-  function _applyEditorRightsTo(panel) {
-    if (!panel) return;
-    var editorBtns = panel.querySelectorAll('.editor-btn');
-    editorBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-        btn.disabled = false;
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-        // НЕ ставим btn.disabled = true, чтобы показывался тултип
-      }
-    });
-    var validateBtns = panel.querySelectorAll('.validate-btn');
-    validateBtns.forEach(function(btn) {
-      if (_isValidator) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsVal'));
-      }
-    });
-    var newSprintBtns = panel.querySelectorAll('.new-sprint-btn');
-    newSprintBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-      }
-    });
-    var saveHeaderBtns = panel.querySelectorAll('.save-header-btn');
-    saveHeaderBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-      }
-    });
-    /* v6.1.0 D82 (F5) — assigner-btn включён если editor OR assigner. */
-    var assignerBtns = panel.querySelectorAll('.assigner-btn');
-    assignerBtns.forEach(function (el) {
-      if (_isEditor || _isAssigner) {
-        el.classList.remove('btn--disabled-rights');
-        el.removeAttribute('data-tooltip');
-        el.disabled = false;
-        try { el.readOnly = false; } catch (_) {}
-      } else {
-        el.classList.add('btn--disabled-rights');
-        el.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-        try { el.readOnly = true; } catch (_) {}
-      }
-    });
-  }
+  function checkValidatorNow() { return PERMISSIONS.checkValidatorNow(_permsDeps()); }
+  function checkSettingsManager() { return PERMISSIONS.checkSettingsManager(_permsDeps()); }
+  function checkValidator() { return PERMISSIONS.checkValidator(_permsDeps()); }
+  function checkEditorRights() { return PERMISSIONS.checkEditorRights(_permsDeps()); }
+  function checkAssignerRights() { return PERMISSIONS.checkAssignerRights(_permsDeps()); }
+  function _startPermissionsCheck() { return PERMISSIONS._startPermissionsCheck(_permsDeps()); }
+  function applyEditorRightsToUI() { return PERMISSIONS.applyEditorRightsToUI(_permsDeps()); }
 
   /* ═══════════════════════════════════════════════════════════
      v5.0.1 — SETTINGS OVERLAY (внутри ssp-main).
