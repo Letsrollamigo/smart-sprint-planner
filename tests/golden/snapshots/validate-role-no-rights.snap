@@ -1,0 +1,13 @@
+{
+  "toasts": [
+    {
+      "msg": "Недостаточно прав на валидацию",
+      "type": null
+    }
+  ],
+  "isValidator": false,
+  "statusUnchanged": "ALLOCATED",
+  "apiCalls": 0,
+  "checkValidatorCalls": 1,
+  "snapshotCalls": 0
+}

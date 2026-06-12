@@ -1,0 +1,18 @@
+{
+  "borders": {
+    "GM-5": "var(--error)",
+    "GM-6": "var(--error)",
+    "GM-404": ""
+  },
+  "btn": {
+    "disabled": true,
+    "overlimitClass": true,
+    "title": "Аллокация одной или нескольких задач превышает ресурс (дельту) этой задачи"
+  },
+  "modalIds": [
+    "overlimit"
+  ],
+  "guardKeys": [
+    "testing:gm-sprint-2026-06"
+  ]
+}

@@ -1061,7 +1061,7 @@
      «Применить» обновляет _currentRolePP.taskAssignments[issueId].assignee, инвалидирует ganttColor cache,
      ставит dirty-флаг, зовёт saveCurrentRoleState() и ре-рендерит Гант (+ опционально таблицу Людей). */
   /* Phase 2 #32 — reassign мигрирован на openModal() (bespoke reassignForm).
-     hideReassignModal закрывает Ring-модалку через stored handle (паттерн _overlimitModalHandle). */
+     hideReassignModal закрывает Ring-модалку через stored handle. */
   var _reassignModalHandle = null;
   function hideReassignModal() {
     if (_reassignModalHandle) { try { _reassignModalHandle.close(); } catch(_){} }
@@ -4323,71 +4323,47 @@
   }
 
   /* ── Валидация роли ── */
-  function doValidateRole(rk) {
-    if (!_settings) { toast(T('toastFillSettings')); return Promise.resolve(); }
-    if (!_sprint || !_sprint.dateStart || !_sprint.dateEnd) { toast(T('toastFillDates')); return Promise.resolve(); }
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return Promise.resolve();
-    if (!(_sprint[role.resKey] > 0)) { toast(T('toastFillResource')); return Promise.resolve(); }
-    var active = getRoleItemsArr(rk).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    if (!active.length) { toast(T('toastNoActiveTasks')); return Promise.resolve(); }
-
-    var btn = document.getElementById('validateBtn_'+rk);
-    return withLoader(btn, function() {
-      return checkValidatorNow().then(function(ok) {
-        _isValidator = ok;
-        if (!ok) { toast(T('toastNoValidRights')); return; }
-        _sprint.status = STATUS.CONFIRMED;
-        diag('[VALIDATE-COMPOSITION] role='+rk+' set _sprint.status='+_sprint.status+' wcKey='+_activeWorkingDraftKey, 'info');
-        // v5.0 — отправляем с ?action=validate + полный sprint+roleItems,
-        // чтобы сервер мог посчитать overlimit и вернуть warnings.
-        return apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }, { action: 'validate' })
-          .then(function(resp) {
-            // Server-side warn: показываем все полученные warnings (например, overlimit:devPlatform)
-            if (resp && Array.isArray(resp.warnings) && resp.warnings.length) {
-              resp.warnings.forEach(function(w) {
-                if (typeof w === 'string' && w.indexOf('overlimit:') === 0) {
-                  var rkw = w.split(':')[1] || '';
-                  var roleW = ALL_ROLES.find(function(r){ return r.key === rkw; });
-                  var label = roleW ? (roleW.label) : rkw;
-                  toast(T('overlimitWarnSrv').replace('{role}', label), 'err');
-                }
-              });
-            }
-            /* v1.9.3 D134 — Etap О.1: передаём wasValidated=true чтобы snapshot
-               получил CONFIRMED. Все остальные call-sites saveRoleHistorySnapshot
-               (refresh, working-copy commit, manual save) — без флага → per-role
-               preserve existing status или PLANNING для нового snap. */
-            return saveRoleHistorySnapshot(rk, undefined, undefined, /* wasValidated */ true);
-          }).then(function() {
-            /* Диаг после snapshot: что в _history для этой роли? */
-            var _diagSnap = _history.find(function(h){ return h && h.sprintId === _sprint.sprintId + '_' + rk; });
-            diag('[VALIDATE-COMPOSITION] role='+rk+' after snap: _history.status='+(_diagSnap?_diagSnap.status:'NOT_FOUND')+' _sprint.status='+_sprint.status, 'info');
-            /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
-               Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
-            if (_sprint) {
-              _sprint.editingFromHistory = false;
-              delete _sprint.historyIdx;
-            }
-            _activeWorkingDraftKey = null;
-            if (typeof hideWorkingCopyBanner === 'function') hideWorkingCopyBanner();
-            var editBanner = document.getElementById('editHistBanner');
-            if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
-            renderRoleStatusBadge(rk);
-            if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-            var ss = document.getElementById('sprintStatus_'+rk);
-            if (ss) ss.style.display = 'none';
-            var newBtn = document.getElementById('newSprintBtn_'+rk);
-            if (newBtn) newBtn.style.display = '';
-            toast(T('toastSprintConfirmed').replace('{role}', roleLabel(role)), 'success');
-          }).catch(function(e) {
-            toast(T('toastSaveError')+': '+(e&&e.message?e.message:String(e)), 'error');
-          });
-      }).catch(function() {
-        toast(T('toastCheckError'));
-      });
-    });
+  /* ═══ Validation-контроллер — вынесен в validation-controller.js (Фаза 5
+     слайс 4, коммит Б) за мост window.__SSP_VALIDATION_CTRL; golden-контракты —
+     validation.golden.test.js (идут через эти делегаторы). Deps-фабрика
+     per-call: стейт зоны (_sprint/_settings/_history/_roleItems, _isValidator,
+     _activeWorkingDraftKey, guard _overlimitModalShownFor) остаётся в
+     стейт-ядре (его трогают другие контроллеры, ресет per-project и gm-хук
+     голденов); showOverlimitModal приватна модулю; document-листенеры зоны
+     регистрирует VALIDATION_CTRL.install из прежней точки init (ниже,
+     после wrapper'а renderRoleComposition). ═══ */
+  var VALIDATION_CTRL = (typeof window !== 'undefined' && window.__SSP_VALIDATION_CTRL) || {};
+  function _validationDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      withLoader: withLoader, roleLabel: roleLabel,
+      getRoleItemsArr: getRoleItemsArr,
+      checkValidatorNow: checkValidatorNow,
+      apiPost: apiPost,
+      saveRoleHistorySnapshot: saveRoleHistorySnapshot,
+      hideWorkingCopyBanner: hideWorkingCopyBanner,
+      renderWidgetHeader: renderWidgetHeader,
+      renderRoleStatusBadge: renderRoleStatusBadge,
+      checkAllocOverlimit: checkAllocOverlimit,
+      calcRemForRole: calcRemForRole,
+      openModal: openModal,
+      markDirty: _markDirty,
+      draftSaveDebounced: _draftSaveDebounced,
+      safeLs: safeLs,
+      ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC, STATUS: STATUS,
+      state: {
+        getSettings: function () { return _settings; },
+        getSprint: function () { return _sprint; },
+        getRoleItems: function () { return _roleItems; },
+        getHistory: function () { return _history; },
+        setIsValidator: function (v) { _isValidator = v; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        setActiveWorkingDraftKey: function (v) { _activeWorkingDraftKey = v; },
+        getOverlimitModalShownFor: function () { return _overlimitModalShownFor; },
+      },
+    };
   }
+  function doValidateRole(rk) { return VALIDATION_CTRL.doValidateRole(rk, _validationDeps()); }
 
   function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated) {
     return WC.saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, _wcDeps());
@@ -4843,147 +4819,19 @@
     return REVALIDATION.checkAllocOverlimit(rk, _revalDeps());
   }
 
-  /**
-   * Обновляет visual-состояние строк с превышением и кнопки валидации.
-   * Вызывается после каждого изменения аллокации.
-   */
-  function updateAllocOverlimitUI(rk) {
-    /* v2.1.0 E4 — Ring Table owns DOM; per-row <tr data-alloc-gi> is gone.
-       We look up alloc inputs directly by data-iid and apply the visual to
-       the input border. Per-row overlimit badge on title cell is degraded
-       (Ring Table cells have no stable per-row container we can append into
-       without disturbing React reconciliation). Validate button disabling
-       and the overlimit modal still work via checkAllocOverlimit(rk). */
-    var host = document.getElementById('compHost_'+rk);
-    var items = getRoleItemsArr(rk);
-    var anyOverlimit = false;
+  /* Детектор перелимита + блокировка кнопки валидации (вкл. B13-агрегат,
+     #38 и overlimit-модалку) — вынесен в validation-controller.js. Делегатор
+     нужен wrapper'у renderRoleComposition (ниже) и голденам. */
+  function updateAllocOverlimitUI(rk) { return VALIDATION_CTRL.updateAllocOverlimitUI(rk, _validationDeps()); }
 
-    if (host) {
-      var allocInputs = host.querySelectorAll('input.alloc-input[data-iid]');
-      allocInputs.forEach(function(inp) {
-        var iid = inp.getAttribute('data-iid');
-        var item = null;
-        for (var i = 0; i < items.length; i++) {
-          if (items[i] && items[i].issueId === iid) { item = items[i]; break; }
-        }
-        if (!item) return;
-        if (ACTIVE_INC.indexOf(item.inclusionStatus) < 0) {
-          inp.style.borderColor = '';
-          return;
-        }
-        var alloc = item['alloc_'+rk];
-        var est   = item['estimate_'+rk];
-        var fact  = item['fact_'+rk];
-        var delta    = Math.max(0, (est||0) - (fact||0));
-        var allocVal = (alloc !== null && alloc !== undefined) ? alloc : delta;
-        var isOver = delta > 0 && allocVal > delta;
-        if (isOver) anyOverlimit = true;
-        inp.style.borderColor = isOver ? 'var(--error)' : '';
-      });
-    }
+  /* v5.2.0 — Overlimit-модал (showOverlimitModal) ПРИВАТЕН validation-controller.js:
+     единственный вход — updateAllocOverlimitUI. Объявление _overlimitModalShownFor —
+     выше, среди стейт-var'ов ядра (его трогает gm-хук голденов; per-project ресет
+     его и раньше не сбрасывал — ключ включает sprintId). */
 
-    /* Fallback global check — host may not be visible yet (collapsed role
-       card), but validate button state still needs to reflect overlimit. */
-    if (!anyOverlimit) {
-      /* B13 — per-task delta-проверка слепа при пустых est/fact (delta=0).
-         Дополняем агрегатом: Σalloc активных задач > ресурс роли. Канон —
-         calcRemForRole (та же формула, что красит карточку «Остатки» в red),
-         поэтому детектор и индикатор остатка всегда согласованы. */
-      anyOverlimit = checkAllocOverlimit(rk).length > 0 || calcRemForRole(rk) < 0;
-    }
-
-    // Блокировка валидации: аллокация задачи > ресурс роли
-    /* #38 — если включено «разрешить планирование с превышением лимитов»,
-       детекция остаётся (красные бордеры/карточка остатка выше — индикация),
-       но валидацию НЕ блокируем и overlimit-модалку НЕ показываем. */
-    var allowOver = !!(_settings && _settings.allowOverlimitPlanning);
-    var validateBtn = document.getElementById('validateBtn_'+rk);
-    if (validateBtn) {
-      if (anyOverlimit && !allowOver) {
-        validateBtn.disabled = true;
-        validateBtn.title = T('overlimitTooltip');
-        validateBtn.classList.add('btn--disabled-overlimit');
-        /* v5.2.0 — для валидированных статусов вместо тихого revert показываем модал.
-           Guard `_overlimitModalShownFor` предотвращает повторное открытие при каждом
-           blur. Сбрасывается в else-ветке при устранении overlimit. */
-        if (_sprint && (_sprint.status === STATUS.CONFIRMED || _sprint.status === STATUS.ALLOCATED)) {
-          var modalKey = rk + ':' + (_sprint.sprintId || _sprint.dateStart || 'cur');
-          if (!_overlimitModalShownFor[modalKey]) {
-            showOverlimitModal(rk);
-            _overlimitModalShownFor[modalKey] = true;
-          }
-        }
-      } else {
-        validateBtn.disabled = false;
-        validateBtn.title = '';
-        validateBtn.classList.remove('btn--disabled-overlimit');
-        /* v5.2.0 — overlimit устранён, разрешаем модал показывать снова при следующем превышении */
-        if (_sprint) {
-          var modalKey2 = rk + ':' + (_sprint.sprintId || _sprint.dateStart || 'cur');
-          delete _overlimitModalShownFor[modalKey2];
-        }
-      }
-    }
-  }
-
-  /* ════════════════════════════════════════════════════════════
-     v5.2.0 — Overlimit-модал (замена тихого status revert)
-     Объявление _overlimitModalShownFor перенесено выше — рядом с
-     инициализацией _sprint (см. ~878), чтобы быть доступным
-     до первого вызова updateAllocOverlimitUI.
-     ════════════════════════════════════════════════════════════ */
-
-  var _overlimitModalHandle = null;
-
-  function showOverlimitModal(rk) {
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var rl = role ? roleLabel(role) : rk;
-    var bodyText = T('overlimitModalBodyTpl').replace('{role}', rl);
-    _overlimitModalHandle = openModal({
-      id: 'overlimit',
-      type: 'confirm',
-      title: bodyText,
-      body: { kind: 'text', text: bodyText },
-      buttons: [
-        { id: 'downgrade', text: T('overlimitModalDowngrade'), variant: 'danger', onClick: function(h) {
-          h.close(); _overlimitModalHandle = null;
-          if (_sprint) {
-            _sprint.status = STATUS.PLANNING;
-            if (typeof _markDirty === 'function') _markDirty('sprint');
-            if (typeof _draftSaveDebounced === 'function') {
-              _draftSaveDebounced('sprint', function(){ return _sprint; });
-            }
-            ALL_ROLES.forEach(function(r) {
-              var active = _settings && _settings.activeRoles && _settings.activeRoles[r.key];
-              if (active && document.getElementById('statusBadge_'+r.key)) {
-                renderRoleStatusBadge(r.key);
-              }
-            });
-            if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-            diag('Status downgraded to PLANNING by user (overlimit modal)', 'info');
-            toast(T('toastOverlimitDowngraded'), 'warn');
-          }
-        }},
-        { id: 'cancel', text: T('overlimitModalCancel'), variant: 'primary', onClick: function(h) {
-          h.close(); _overlimitModalHandle = null;
-        }},
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-    });
-  }
-
-
-  /* v5.2.0 — единоразовый onboarding при первой встрече с ALLOCATED-спринтом
-     (после релиза 5.2.0 поведение строк изменилось: lock + readonly).
-     Хранится в localStorage по фиксированному ключу — повторно не показывается. */
-  function maybeShowAllocatedLockHint() {
-    if (safeLs.get('ssp_allocLockHintShown')) return;
-    if (!_sprint || _sprint.status !== STATUS.ALLOCATED) return;
-    toast(T('toastAllocatedLockHint'), 'info');
-    safeLs.set('ssp_allocLockHintShown', '1');
-  }
+  /* v5.2.0 — onboarding-подсказка ALLOCATED-lock — вынесена в validation-controller.js.
+     Делегатор нужен init-флоу загрузки проекта (см. _loadAndRenderProject-цепочку). */
+  function maybeShowAllocatedLockHint() { return VALIDATION_CTRL.maybeShowAllocatedLockHint(_validationDeps()); }
 
   /* v2.1.0 E4 — Ring Table owns row DOM; data-alloc-gi tagging is gone.
      Post-render hook now only triggers overlimit check (input border + validate
@@ -4994,23 +4842,11 @@
     updateAllocOverlimitUI(rk);
   };
 
-  /* Патч: после изменения аллокации (blur на alloc-input) — тоже проверить */
-  document.addEventListener('blur', function(e) {
-    if (e.target && e.target.classList && e.target.classList.contains('alloc-input')) {
-      var rk2 = e.target.dataset.rk;
-      if (rk2) {
-        // Небольшая задержка чтобы значение уже было сохранено в _roleItems
-        setTimeout(function() { updateAllocOverlimitUI(rk2); }, 50);
-      }
-    }
-  }, true);
-
-  document.addEventListener('change', function(e) {
-    if (e.target && e.target.classList && e.target.classList.contains('inc-sel')) {
-      var rk2 = e.target.dataset.rk;
-      if (rk2) setTimeout(function() { updateAllocOverlimitUI(rk2); }, 50);
-    }
-  }, true);
+  /* Document-листенеры зоны (blur alloc-input / change inc-sel → отложенный
+     пересчёт перелимита 50мс) регистрирует модуль — из той же точки init,
+     где зона регистрировала их раньше (порядок регистрации сохранён;
+     install-once паттерн мостов E3). Deps — фабрикой в момент выстрела. */
+  if (VALIDATION_CTRL.install) VALIDATION_CTRL.install(_validationDeps);
 
 
   /* v4.0.0-патч спойлера истории снесён как мёртвый код (Тир D слайс 4):

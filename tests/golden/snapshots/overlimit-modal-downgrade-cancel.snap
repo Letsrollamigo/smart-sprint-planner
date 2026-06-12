@@ -1,0 +1,52 @@
+{
+  "afterDowngrade": {
+    "status": "PLANNING",
+    "markDirty": [
+      "sprint"
+    ],
+    "draftSave": [
+      {
+        "suffix": "sprint",
+        "getterSprintId": "gm-sprint-2026-06"
+      }
+    ],
+    "badges": [],
+    "renderHeader": 1,
+    "closes": 1,
+    "toasts": [
+      {
+        "msg": "Статус спринта понижен из-за перелимита. Устраните и валидируйте заново.",
+        "type": "warn"
+      }
+    ]
+  },
+  "afterCancel": {
+    "status": "ALLOCATED",
+    "closes": 2,
+    "toastCount": 1
+  },
+  "buttonContract": [
+    {
+      "id": "overlimit",
+      "type": "confirm",
+      "buttonIds": [
+        "downgrade:danger",
+        "cancel:primary"
+      ],
+      "dismissOnBackdrop": false,
+      "blockEscape": false,
+      "showCloseButton": false
+    },
+    {
+      "id": "overlimit",
+      "type": "confirm",
+      "buttonIds": [
+        "downgrade:danger",
+        "cancel:primary"
+      ],
+      "dismissOnBackdrop": false,
+      "blockEscape": false,
+      "showCloseButton": false
+    }
+  ]
+}
