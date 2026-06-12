@@ -6473,187 +6473,39 @@
   /* Кеш истории переходов состояний для Ганта: { [issueId]: {sinceTs, prev, prevColor}, _sprintKey, _fetchedAt } */
   var _ganttStateHist = {};
 
-  function renderGanttChart() {
-    var container = document.getElementById('ganttContainer');
-    var emptyEl   = document.getElementById('ganttEmpty');
-    if (!_currentSprintRoleRec || !_currentRolePP) {
-      if (emptyEl) emptyEl.style.display = '';
-      return;
-    }
-    var rec = _currentSprintRoleRec;
-    var rk  = rec.roleKey || (getActiveRoles()[0] || ALL_ROLES[0]).key;
-    /* v5.0.3 — если запись соответствует активному _sprint, берём live items
-       из _roleItems[rk] (могут быть свежее snapshot); иначе — items из истории. */
-    var _isActiveSprint = isActiveSprintRecord(rec);
-    var items = _isActiveSprint ? getRoleItemsArr(rk) : (rec.items || []);
-    var active = items.filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var ta  = (_currentRolePP.taskAssignments || {});
-    /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
-    if (typeof multiKeySort === 'function') active = multiKeySort(active, undefined, ta);
-
-    // Задачи с назначенными датами
-    var ganttItems = active.map(function(item) {
-      var issueId = item.issueId;
-      var ta_entry = ta[issueId] || {};
-      var sprintStart = rec.dateStart || (_sprint && _sprint.dateStart);
-      var sprintEnd   = rec.dateEnd   || (_sprint && _sprint.dateEnd);
-      var start = ta_entry.dateStart || sprintStart;
-      var end   = ta_entry.dateEnd   || sprintEnd;
-      /* v2.1.14 — цвет полосы = родной цвет состояния YT (item.stateColor).
-         Fallback — нейтральный серый при отсутствии state или цвета. */
-      var bg = (item.stateColor && item.stateColor.background)
-        ? item.stateColor.background
-        : ASSIGNEE_FALLBACK_COLOR;
-      return {
-        issueId:        issueId,
-        title:          item.title || issueId,
-        url:            item.url || '',
-        assignee:       ta_entry.assigneeName || ta_entry.assignee || T('ganttBarTooltipUnassigned'),
-        start:          start,
-        end:            end,
-        bg:             bg,
-        state:          item.state || '',
-        stateLocalized: item.stateLocalized || item.state || '',
-        stateColor:     item.stateColor || null,
-        stateFieldId:   item.stateFieldId || null,
-      };
-    }).filter(function(g){ return g.start && g.end; });
-
-    if (!ganttItems.length) {
-      if (emptyEl) emptyEl.style.display = '';
-      container.innerHTML = '';
-      container.appendChild(emptyEl || document.createTextNode(T('histNoDates')));
-      return;
-    }
-    if (emptyEl) emptyEl.style.display = 'none';
-
-    // Определить диапазон
-    var minTs = Math.min.apply(null, ganttItems.map(function(g){ return g.start; }));
-    var maxTs = Math.max.apply(null, ganttItems.map(function(g){ return g.end;   }));
-    var dayMs = 86400000;
-    var totalDays = Math.max(1, Math.ceil((maxTs - minTs) / dayMs)) + 1;
-
-    // ── Цвета Ганта: цвет полосы — родной stateColor задачи (v2.1.14), вычислен в map выше.
-
-    // Построить HTML-таблицу Ганта
-    var html = '<table style="border-collapse:collapse;min-width:600px;font-size:12px">';
-
-    // Шапка: дни
-    html += '<thead><tr>';
-    html += '<th style="min-width:180px;max-width:220px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);position:sticky;left:0;z-index:2;white-space:nowrap;font-weight:600;font-size:12px">'+T('ganttColTask')+'</th>';
-    for (var d = 0; d < totalDays; d++) {
-      var dayTs = minTs + d * dayMs;
-      var dayDate = new Date(dayTs);
-      var dayLabel = (dayDate.getDate()) + '.' + String(dayDate.getMonth()+1).padStart(2,'0');
-      var isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
-      // Даты — чёрный читаемый шрифт; выходные чуть светлее
-      var dateColor = isWeekend ? 'var(--muted)' : 'var(--text)';
-      var dateBg    = isWeekend ? 'rgba(255,255,255,.03)' : 'var(--surface2)';
-      html += '<th style="min-width:34px;padding:4px 3px;background:'+dateBg+';border:1px solid var(--border);font-weight:700;font-size:11px;color:'+dateColor+';text-align:center;white-space:nowrap">'+dayLabel+'</th>';
-    }
-    html += '</tr></thead><tbody>';
-
-    ganttItems.forEach(function(g) {
-      var startDay = Math.round((g.start - minTs) / dayMs);
-      var endDay   = Math.round((g.end   - minTs) / dayMs);
-      /* цвет уже вычислен в g.bg (stateColor задачи, v2.1.14) */
-
-      html += '<tr data-gantt-issue="'+esc(g.issueId)+'">';
-      html += '<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:220px;overflow:hidden" title="'+esc(g.title)+'">' +
-              '<a href="'+safeUrl(g.url)+'" target="_blank" class="link" style="font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.issueId)+'</a>' +
-              '<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(g.assignee)+'</div>' +
-              _renderGanttStateBadge(g, _isActiveSprint) +
-              '</td>';
-
-      for (var d2 = 0; d2 < totalDays; d2++) {
-        var inBar   = d2 >= startDay && d2 <= endDay;
-        var isStart = d2 === startDay;
-        var isEnd   = d2 === endDay;
-        var isSingle = isStart && isEnd;
-
-        // Стиль ячейки — нейтральный, без фона; полоса рисуется внутренним div-ом
-        var cellStyle = 'padding:0;border:1px solid var(--border);min-width:34px;height:36px;cursor:'+(inBar?'pointer':'default')+';position:relative;overflow:hidden;';
-
-        var innerDiv = '';
-        if (inBar) {
-          // Высота полосы — 60% высоты ячейки, центрируется через flex
-          // border-radius: pill на торцах, прямая линия посередине
-          var r = '999px';
-          var br;
-          if (isSingle) {
-            br = r;                                  // полная пилюля
-          } else if (isStart) {
-            br = r+' 0 0 '+r;                        // скруглён только левый торец
-          } else if (isEnd) {
-            br = '0 '+r+' '+r+' 0';                  // скруглён только правый торец
-          } else {
-            br = '0';                                 // середина — без скругления
-          }
-          // Ячейка занимает полную ширину; start/end добавляют padding чтобы торец не упирался
-          var pl = isStart  ? '4px' : '0';
-          var pr = isEnd    ? '4px' : '0';
-          // Между ячейками полосы нет горизонтального зазора — overflow:hidden обеспечивает ровный стык
-          innerDiv = '<div style="'+
-            'position:absolute;top:50%;left:'+pl+';right:'+pr+';'+
-            'transform:translateY(-50%);'+
-            'height:60%;'+
-            'background:'+g.bg+';'+
-            'border-radius:'+br+';'+
-            'box-shadow:0 2px 6px rgba(0,0,0,.18);'+
-            'pointer-events:none'+
-          '"></div>';
-        }
-
-        html += '<td class="gantt-cell" data-issue="'+esc(g.issueId)+'" data-inbar="'+(inBar?'1':'0')+'" style="'+cellStyle+'">'+innerDiv+'</td>';
-      }
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-
-    container.innerHTML = html;
-
-    /* v5.7.0 — Этап 5 (D46): dblclick по бару открывает модал переназначения,
-       а не toggle цвета. Старая модель _currentRoleGantt.tasks[].color рендером
-       не используется вовсе (поле может оставаться в персисте legacy-записей). */
-    var _ganttCells = container.querySelectorAll('.gantt-cell[data-inbar="1"]');
-    _ganttCells.forEach(function(cell) {
-      var _clickTimer = null;
-      cell.addEventListener('click', function() {
-        if (_clickTimer) return;
-        var issueId = cell.getAttribute('data-issue');
-        _clickTimer = setTimeout(function() {
-          _clickTimer = null;
-          _startPermissionsCheck().then(function() {
-            if (!(_settings && _settings.dynEditEnabled)) {
-              try { toast(T('ganttReassignDisabledByInlineEdit'), 'warn'); } catch(_){}
-              return;
-            }
-            if (typeof _isEditor !== 'undefined' && _isEditor === false) {
-              try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
-              return;
-            }
-            var ganttPanel = document.getElementById('tab-gantt');
-            if (ganttPanel && ganttPanel.classList.contains('readonly-mode')) {
-              try { toast(T('ganttReassignNoRights'), 'warn'); } catch(_){}
-              return;
-            }
-            if (typeof openReassignModal === 'function') openReassignModal(issueId);
-          });
-        }, 250);
-      });
-    });
-    if (_isActiveSprint && _settings && _settings.fieldState) {
-      var _histIds = ganttItems.map(function(g){ return g.issueId; });
-      var _histStates = {};
-      var _stateFieldId = '';
-      ganttItems.forEach(function(g){
-        _histStates[g.issueId] = g.stateLocalized || g.state || '';
-        if (!_stateFieldId && g.stateFieldId) _stateFieldId = g.stateFieldId;
-      });
-      var _histKey = (_currentSprintId || '') + ':' + rk;
-      _fetchGanttStateHistory(_histIds, _histKey, false, _histStates, _stateFieldId);
-    }
+  /* ═══ Gantt view ═══
+     renderGanttChart + бейдж состояния (#20) + DOM-аппликатор history-строк
+     вынесены в widgets/main/src/gantt-view.js (window.__SSP_GANTT_VIEW) —
+     Тир D слайс 6, ступень 1. Делегатор; deps собираются на вызове, стейт
+     модуль читает через аксессоры deps.state в момент обращения (настройки и
+     права в click-хендлере реассайна — на момент клика). Кэш _ganttStateHist
+     и его аксессоры остаются здесь (_ytApiDeps, Тир C); реассайн-модал,
+     permissions-проверка и history-фетч — через deps. */
+  var GANTT_VIEW = (typeof window !== 'undefined' && window.__SSP_GANTT_VIEW) || {};
+  function _ganttDeps() {
+    return {
+      T: T, esc: esc, safeUrl: safeUrl, toast: toast,
+      multiKeySort: multiKeySort,
+      ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
+      ASSIGNEE_FALLBACK_COLOR: ASSIGNEE_FALLBACK_COLOR,
+      fmtGanttDate: _fmtGanttDate, ganttDaysAgo: _ganttDaysAgo,
+      fetchGanttStateHistory: _fetchGanttStateHistory,
+      getActiveRoles: getActiveRoles,
+      getRoleItemsArr: getRoleItemsArr,
+      isActiveSprintRecord: isActiveSprintRecord,
+      startPermissionsCheck: _startPermissionsCheck,
+      openReassignModal: openReassignModal,
+      state: {
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getSprint: function () { return _sprint; },
+        getSettings: function () { return _settings; },
+        getIsEditor: function () { return _isEditor; },
+      },
+    };
   }
+  function renderGanttChart() { return GANTT_VIEW.renderGanttChart(_ganttDeps()); }
 
   /* v5.4.0 — Удалены: вторичный tab-btn handler инициализации distrib (его задача
      теперь в основном handler 2791-2818 через ветку refreshDistribForCurrentSprint())
@@ -6696,44 +6548,11 @@
   function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts); }
   function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
-  function _renderGanttStateBadge(g, activeSprint) {
-    if (!g || (!g.state && !g.stateLocalized)) return '';
-    var label  = g.stateLocalized || g.state;
-    var pillBg = (g.stateColor && g.stateColor.background) ? g.stateColor.background : '#c8c8c8';
-    var pillFg = (g.stateColor && g.stateColor.foreground) ? g.stateColor.foreground : '#1a1a1a';
-    var pillHtml =
-      '<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;' +
-      'font-size:10px;line-height:1.4;background:' + pillBg + ';color:' + pillFg + ';' +
-      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' +
-      '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + pillFg + ';flex-shrink:0"></span>' +
-      esc(label) + '</span>';
-    var sinceSpan = activeSprint
-      ? '<span data-gantt-hist-since="' + esc(g.issueId) + '" style="color:var(--muted);font-size:10px;margin-left:4px"></span>'
-      : '';
-    var prevDiv = activeSprint
-      ? '<div data-gantt-hist-prev="' + esc(g.issueId) + '" style="color:var(--muted);font-size:10px;margin-top:1px;white-space:normal">' + esc(T('ganttStateLoading')) + '</div>'
-      : '';
-    return '<div style="margin-top:2px;white-space:nowrap;overflow:hidden">' + pillHtml + sinceSpan + '</div>' + prevDiv;
-  }
-
+  /* _renderGanttStateBadge — внутренняя функция gantt-view.js (единственный
+     потребитель — сам Гант). _updateGanttHistDOM — делегатор: его зовёт
+     youtrack-api через _ytApiDeps по мере прихода чанков activities (#20). */
   function _updateGanttHistDOM(container, issueId, hist) {
-    var sinceEl = container.querySelector('[data-gantt-hist-since="' + issueId + '"]');
-    var prevEl  = container.querySelector('[data-gantt-hist-prev="'  + issueId + '"]');
-    if (sinceEl) {
-      sinceEl.textContent = hist.sinceTs ? T('ganttStateSince').replace('{date}', _fmtGanttDate(hist.sinceTs)) : '';
-    }
-    if (prevEl) {
-      if (!hist.prev) {
-        prevEl.textContent = T('ganttStateNoTransitions');
-      } else {
-        var dotBg  = (hist.prevColor && hist.prevColor.background) ? hist.prevColor.background : ASSIGNEE_FALLBACK_COLOR;
-        var ago    = hist.sinceTs ? _ganttDaysAgo(hist.sinceTs) : null;
-        var agoStr = ago !== null ? (' · ' + T('ganttStateAgo').replace('{n}', String(ago))) : '';
-        prevEl.innerHTML =
-          '<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:' + dotBg + ';margin-right:3px;vertical-align:middle"></span>' +
-          esc(T('ganttStateWas').replace('{state}', hist.prev)) + agoStr;
-      }
-    }
+    return GANTT_VIEW._updateGanttHistDOM(container, issueId, hist, _ganttDeps());
   }
 
   /* #20 — история переходов состояний вынесена в widgets/main/src/youtrack-api.js

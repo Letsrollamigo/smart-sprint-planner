@@ -35,6 +35,7 @@ import './currentrole-view.js';
 import './rolecomposition-view.js';
 import './history-view.js';
 import './header-view.js';
+import './gantt-view.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
