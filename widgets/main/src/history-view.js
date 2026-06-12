@@ -16,6 +16,72 @@
    на каждом вызове. */
 'use strict';
 
+/* Ступень 2 (vm-граница): вся cell-логика items-таблицы записи — в
+   _buildHistoryItemsVm (строки с готовыми значениями ячеек, флаги опциональных
+   колонок, заголовок дельта-колонки, summary); колонки __SSP_TABLE — тупой
+   маппинг row.cells[col.id] (_vmCell). Значения ячеек байт-в-байт прежние —
+   оракул materializeTable сохранён (как слайсы 2–3). */
+function _vmCell(row, c) { return row.cells[c.id]; }
+
+function _buildHistoryItemsVm(items, rk, rec, deps) {
+  var T = deps.T, esc = deps.esc;
+  if (!items || !items.length) return { empty: true, summaryHtml: null };
+  var sD = items.filter(function(i){ return deps.ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; }).reduce(function(s,i){ return s+(i['estimate_'+rk]||0); }, 0);
+  var summaryHtml = '<span><b>'+esc(rec.roleLabel||rk)+':</b> '+deps.fmtPeriod(sD)+'</span>';
+  /* v1.8.0 D130 — externalTicketId column visible if setting configured.
+     v1.8.1 — XPriority column в истории тоже опциональна. */
+  var _settings = deps.state.getSettings();
+  var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
+  var hasXPri      = !!(_settings && _settings.fieldXPriority);
+
+  function _renderExternalTicketInner(val) {
+    if (!val) return '<span style="color:var(--muted)">—</span>';
+    var safe = esc(String(val));
+    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
+    if (/^https?:\/\//i.test(val)) {
+      return '<span '+style+' title="'+safe+'"><a href="'+deps.safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
+    }
+    return '<span '+style+' title="'+safe+'">'+safe+'</span>';
+  }
+  function histDelta(v) {
+    if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
+    var s = deps.fmtHoursOnly(Math.abs(v));
+    return v < 0 ? '<span class="delta-neg">−'+s+'</span>' : s;
+  }
+
+  var rows = items.map(function(item) {
+    var est  = item['estimate_'+rk];
+    var fact = item['fact_'+rk];
+    var delta = (est !== null && est !== undefined)
+      ? (fact !== null && fact !== undefined ? (est||0)-(fact||0) : (est||0))
+      : null;
+    return {
+      iid: item.issueId,
+      cells: {
+        id: { __html: '<a href="'+deps.safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a>' },
+        externalTicketId: { __html: _renderExternalTicketInner(item.externalTicketId) },
+        title: esc(item.title || ''),
+        priority: esc(deps.dispEnum(item.priority) || '—'),
+        xpriority: esc(deps.dispEnum(item.xpriority) || '—'),
+        state: esc(deps.dispEnum(item.state) || '—'),
+        incStatus: esc(item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—'),
+        delta: { __html: histDelta(delta) },
+      },
+    };
+  });
+  /* fmtThLabel returns 'Ресурс<br>{label}'. table-mount.jsx auto-detects
+     <br> in column.title and generates getHeaderValue with React <br/>
+     elements (lesson #26). */
+  return {
+    empty: false,
+    summaryHtml: summaryHtml,
+    hasExtTicket: hasExtTicket,
+    hasXPri: hasXPri,
+    deltaColTitle: deps.fmtThLabel(rec.roleLabel || rk),
+    rows: rows,
+  };
+}
+
 function renderHistory(deps) {
   var T = deps.T;
   var container = document.getElementById('historyList');
@@ -301,7 +367,9 @@ function buildSpoiler(rec, idx, deps) {
 
   /* Локальный helper для рендера блока «summary + таблица задач».
      Используется как для базового снимка (rec.items), так и для working copy
-     (draft.items). Принимает items+roleKey, рендерит в itemsSlot. */
+     (draft.items). Принимает items+roleKey, рендерит в itemsSlot.
+     Cell-логика — в _buildHistoryItemsVm (ступень 2), здесь — DOM-обвязка
+     и тупой маппинг колонок. */
   function __renderHistoryItemsBlock(items, rk) {
     /* v2.0.0 D128 D7 — read-only Ring Table replaces native <table>.
        Unmount prior Ring roots before clearing slot (lesson D5 #21). */
@@ -309,94 +377,34 @@ function buildSpoiler(rec, idx, deps) {
       try { window.__SSP_TABLE.unmountAllIn(itemsSlot); } catch(_) {}
     }
     itemsSlot.innerHTML = '';
-    if (items && items.length) {
+    var vm = _buildHistoryItemsVm(items, rk, rec, deps);
+    if (vm.summaryHtml) {
       var sumDiv = document.createElement('div'); sumDiv.className = 'spoiler__summary';
-      var sD = items.filter(function(i){ return deps.ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; }).reduce(function(s,i){ return s+(i['estimate_'+rk]||0); }, 0);
-      sumDiv.innerHTML = '<span><b>'+esc(rec.roleLabel||rk)+':</b> '+deps.fmtPeriod(sD)+'</span>';
+      sumDiv.innerHTML = vm.summaryHtml;
       itemsSlot.appendChild(sumDiv);
     }
     var tw = document.createElement('div'); tw.className = 'tbl-wrap';
-    if (!items || !items.length) {
+    if (vm.empty) {
       tw.innerHTML = '<div class="empty">'+esc(T('histNoTasks'))+'</div>';
       itemsSlot.appendChild(tw);
       return;
     }
-    /* v1.8.0 D130 — externalTicketId column visible if setting configured.
-       v1.8.1 — XPriority column в истории тоже опциональна. */
-    var _settings = deps.state.getSettings();
-    var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
-    var hasXPri      = !!(_settings && _settings.fieldXPriority);
-
-    function _renderExternalTicketInner(val) {
-      if (!val) return '<span style="color:var(--muted)">—</span>';
-      var safe = esc(String(val));
-      var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
-      if (/^https?:\/\//i.test(val)) {
-        return '<span '+style+' title="'+safe+'"><a href="'+deps.safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
-      }
-      return '<span '+style+' title="'+safe+'">'+safe+'</span>';
-    }
-    function histDelta(v) {
-      if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
-      var s = deps.fmtHoursOnly(Math.abs(v));
-      return v < 0 ? '<span class="delta-neg">−'+s+'</span>' : s;
-    }
 
     var cols = [];
-    cols.push({
-      id: 'id', title: T('histColNum'), sortable: false, className: 'td-id',
-      getValue: function(item) {
-        return { __html: '<a href="'+deps.safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a>' };
-      }
-    });
-    if (hasExtTicket) {
-      cols.push({
-        id: 'externalTicketId', title: T('thExternalTicketId'), sortable: false, className: 'td-hist-ext',
-        getValue: function(item) { return { __html: _renderExternalTicketInner(item.externalTicketId) }; }
-      });
+    cols.push({ id: 'id', title: T('histColNum'), sortable: false, className: 'td-id', getValue: _vmCell });
+    if (vm.hasExtTicket) {
+      cols.push({ id: 'externalTicketId', title: T('thExternalTicketId'), sortable: false, className: 'td-hist-ext', getValue: _vmCell });
     }
-    cols.push({
-      /* ssp-col-title — хук ширины/кегля «Название» (#42 v2.3.2); в corp-форке
-         истории этого хука нет — легитимное межфорковое расхождение (DIFF_MAP). */
-      id: 'title', title: T('histColTitle'), sortable: false, className: 'td-title ssp-col-title',
-      getValue: function(item) { return esc(item.title || ''); }
-    });
-    cols.push({
-      id: 'priority', title: T('histColPriority'), sortable: false, className: 'td-hist-narrow',
-      getValue: function(item) { return esc(deps.dispEnum(item.priority) || '—'); }
-    });
-    if (hasXPri) {
-      cols.push({
-        id: 'xpriority', title: T('histColXpriority'), sortable: false, className: 'td-hist-narrow',
-        getValue: function(item) { return esc(deps.dispEnum(item.xpriority) || '—'); }
-      });
+    /* ssp-col-title — хук ширины/кегля «Название» (#42 v2.3.2); в corp-форке
+       истории этого хука нет — легитимное межфорковое расхождение (DIFF_MAP). */
+    cols.push({ id: 'title', title: T('histColTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
+    cols.push({ id: 'priority', title: T('histColPriority'), sortable: false, className: 'td-hist-narrow', getValue: _vmCell });
+    if (vm.hasXPri) {
+      cols.push({ id: 'xpriority', title: T('histColXpriority'), sortable: false, className: 'td-hist-narrow', getValue: _vmCell });
     }
-    cols.push({
-      id: 'state', title: T('histColState'), sortable: false, className: 'td-hist-narrow',
-      getValue: function(item) { return esc(deps.dispEnum(item.state) || '—'); }
-    });
-    cols.push({
-      id: 'incStatus', title: T('histColIncStatus'), sortable: false, className: 'td-hist-inc',
-      getValue: function(item) { return esc(item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—'); }
-    });
-    /* fmtThLabel returns 'Ресурс<br>{label}'. table-mount.jsx auto-detects
-       <br> in column.title and generates getHeaderValue with React <br/>
-       elements (lesson #26). */
-    cols.push({
-      id: 'delta',
-      title: deps.fmtThLabel(rec.roleLabel || rk),
-      sortable: false,
-      className: 'td-num',
-      headerClassName: 'td-num',
-      getValue: function(item) {
-        var est  = item['estimate_'+rk];
-        var fact = item['fact_'+rk];
-        var delta = (est !== null && est !== undefined)
-          ? (fact !== null && fact !== undefined ? (est||0)-(fact||0) : (est||0))
-          : null;
-        return { __html: histDelta(delta) };
-      }
-    });
+    cols.push({ id: 'state', title: T('histColState'), sortable: false, className: 'td-hist-narrow', getValue: _vmCell });
+    cols.push({ id: 'incStatus', title: T('histColIncStatus'), sortable: false, className: 'td-hist-inc', getValue: _vmCell });
+    cols.push({ id: 'delta', title: vm.deltaColTitle, sortable: false, className: 'td-num', headerClassName: 'td-num', getValue: _vmCell });
 
     /* Internal host div для Ring Table. Уникальный (per spoiler instance). */
     var host = document.createElement('div');
@@ -406,11 +414,11 @@ function buildSpoiler(rec, idx, deps) {
 
     if (window.__SSP_TABLE) {
       window.__SSP_TABLE.mountAt(host, {
-        items: items.slice(),
+        items: vm.rows,
         columns: cols,
         sortKey: 'off',
         onSort: function() { /* no-op — history is read-only, headers not sortable */ },
-        getItemKey: function(item) { return item.issueId; },
+        getItemKey: function(row) { return row.iid; },
         stickyHeader: false,
         emptyText: T('histNoTasks'),
       });
