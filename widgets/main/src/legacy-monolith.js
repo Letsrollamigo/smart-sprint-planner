@@ -1228,30 +1228,10 @@
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
   var APP_VERSION = '2.5.6';
 
-  /* v5.7.0 — Этап 5 (D47): фиксированная палитра 12 цветов для ассайни.
-     Round-robin по индексу логина в отсортированном списке роли. Контролируемая
-     контрастность; повторение цветов при >12 ассайни допустимо (визуальный hint, не unique-id).
-     Hash→index fallback используется когда контекст ассайни роли недоступен. */
-  var ASSIGNEE_PALETTE = [
-    '#5b7de8', '#e05a6a', '#48b974', '#f0a23a',
-    '#9c6ade', '#1ea7c4', '#d65a9b', '#7a8a99',
-    '#c97a4a', '#5fa86d', '#8a6ad3', '#d9534f'
-  ];
+  /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
+     сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
+     stateColor задачи YT; серый fallback остаётся (Гант + история состояний #20). */
   var ASSIGNEE_FALLBACK_COLOR = '#9aa3ad'; /* серый — для нераспределённых задач */
-
-  function assigneeColorOf(login, allLogins) {
-    if (!login) return ASSIGNEE_FALLBACK_COLOR;
-    if (!Array.isArray(allLogins) || !allLogins.length) {
-      /* fallback: hash login → индекс палитры */
-      var h = 0;
-      for (var i = 0; i < login.length; i++) h = (h * 31 + login.charCodeAt(i)) >>> 0;
-      return ASSIGNEE_PALETTE[h % ASSIGNEE_PALETTE.length];
-    }
-    var sorted = allLogins.slice().sort();
-    var idx = sorted.indexOf(login);
-    if (idx < 0) return assigneeColorOf(login, null);
-    return ASSIGNEE_PALETTE[idx % ASSIGNEE_PALETTE.length];
-  }
 
   /* v5.6.0 — D40, закрывает KL#3 v5.4.0 полностью.
      TTL-кеш в localStorage.ssp_app_version_cache (5 мин). Cache hit → синхронная
@@ -1784,7 +1764,7 @@
     var entry = _currentRolePP.taskAssignments[issueId] || {};
     entry.assignee     = login || '';
     entry.assigneeName = login ? ((ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login) : '';
-    /* Инвалидация cache — цвет пересчитается через assigneeColorOf */
+    /* Инвалидация legacy-кэша цвета бара (поле не читается с v2.1.14) */
     delete entry.ganttColor;
     _currentRolePP.taskAssignments[issueId] = entry;
     /* Прокидываем _currentRolePP обратно в personalPlanning записи и в _sprint.personalPlanning
@@ -6314,7 +6294,7 @@
        { assignee: 'login', assigneeName: 'Display Name',
          dateStart: <ts>, dateEnd: <ts>,
          ganttColor?: '#abcdef'  // опциональный кеш, инвалидируется на любой write через delete entry.ganttColor;
-                                // primary источник цвета — assignee через assigneeColorOf(login, allLogins). }
+                                // primary источник цвета бара — родной stateColor задачи (v2.1.14). }
      Старая модель `_currentRoleGantt.tasks[id].color` (blue/red) — устранена в v5.7.0;
      поле остаётся на чтение для backward-compat (orphan detection — backend D59 v5.9.0). */
   function emptyPP() {
@@ -6511,10 +6491,6 @@
     /* v6.1.0 D81 (F4) — multi-key sort на Ганте. */
     if (typeof multiKeySort === 'function') active = multiKeySort(active, undefined, ta);
     var gt  = (_currentRoleGantt && _currentRoleGantt.tasks) ? _currentRoleGantt.tasks : {};
-    /* v5.7.0 — Этап 5 (D47): allLogins для round-robin палитры цветов.
-       Стабильная сортировка: тот же логин получает один и тот же цвет независимо от состава. */
-    var ra  = (_currentRolePP.resourcesByAssignee) || {};
-    var allLogins = Object.keys(ra);
 
     // Задачи с назначенными датами
     var ganttItems = active.map(function(item) {
@@ -6558,9 +6534,7 @@
     var dayMs = 86400000;
     var totalDays = Math.max(1, Math.ceil((maxTs - minTs) / dayMs)) + 1;
 
-    // ── Цвета Ганта
-    // v5.7.0 — Этап 5 (D47): hardcoded словарь GANTT_COLORS удалён.
-    // Цвет полосы — per-assignee, вычислен в map выше через assigneeColorOf(login, allLogins).
+    // ── Цвета Ганта: цвет полосы — родной stateColor задачи (v2.1.14), вычислен в map выше.
 
     // Построить HTML-таблицу Ганта
     var html = '<table style="border-collapse:collapse;min-width:600px;font-size:12px">';
@@ -6583,7 +6557,7 @@
     ganttItems.forEach(function(g) {
       var startDay = Math.round((g.start - minTs) / dayMs);
       var endDay   = Math.round((g.end   - minTs) / dayMs);
-      /* v5.7.0 — Этап 5: цвет уже вычислен в g.bg через assigneeColorOf */
+      /* цвет уже вычислен в g.bg (stateColor задачи, v2.1.14) */
 
       html += '<tr data-gantt-issue="'+esc(g.issueId)+'">';
       html += '<td style="padding:4px 8px;border:1px solid var(--border);position:sticky;left:0;background:var(--surface);z-index:1;max-width:220px;overflow:hidden" title="'+esc(g.title)+'">' +
