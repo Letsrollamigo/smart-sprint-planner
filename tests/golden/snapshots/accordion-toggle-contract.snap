@@ -1,0 +1,23 @@
+{
+  "expanded": {
+    "cardExpanded": true,
+    "chevron": "▼",
+    "uiExpandedRoles": {
+      "analysis": true
+    },
+    "draftUiExpandedRoles": [
+      "analysis"
+    ],
+    "mounted": "1",
+    "activeSubtab": "analysis",
+    "keepActionsPreserved": true
+  },
+  "collapsed": {
+    "cardExpanded": false,
+    "chevron": "▶",
+    "uiExpandedAnalysis": false,
+    "draftUiExpandedRoles": [],
+    "mounted": "",
+    "bodyEmpty": true
+  }
+}

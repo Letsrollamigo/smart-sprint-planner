@@ -1,0 +1,13 @@
+{
+  "settingsBtnHidden": {
+    "states": {
+      "noSprintHidden": true,
+      "noActiveHidden": false
+    },
+    "containerEmpty": true,
+    "ctaDisplay": "none"
+  },
+  "settingsBtnVisible": {
+    "ctaDisplay": ""
+  }
+}
