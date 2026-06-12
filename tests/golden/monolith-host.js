@@ -59,6 +59,7 @@ const BRIDGE_SCRIPTS = [
   'currentrole-view.js',
   'rolecomposition-view.js',
   'history-view.js',
+  'header-view.js',
 ];
 
 const GM_HOOK = `
