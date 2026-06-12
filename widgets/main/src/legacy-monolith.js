@@ -2173,18 +2173,9 @@
       tgl.setAttribute('aria-expanded', v ? 'false' : 'true');
     }
   }
-  /* #25 Ф2 п.6 — полное имя текущего спринта под селектором (нативный <select> обрезает;
-     показываем выбранный текст отдельной подписью с переносом до 4 строк). Только global-рельс. */
-  function _updateRailSprintName() {
-    var el = document.getElementById('sspRailSprintName');
-    if (!el) return;
-    var sel = document.getElementById('widgetSprintSel');
-    var txt = '';
-    if (sel && sel.value && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]) {
-      txt = (sel.options[sel.selectedIndex].textContent || '').trim();
-    }
-    el.textContent = txt;
-  }
+  /* #25 Ф2 п.6 — подпись полного имени спринта в рельсе: вынесена в header-view.js
+     (Тир D слайс 5, ступень 1); делегатор для callers init-зоны рельса. */
+  function _updateRailSprintName() { return HEADER_VIEW._updateRailSprintName(); }
   /* ════ #25 Ф2 Этап 3+4+7 — дерево навигации + dashNode-стейт ════
      Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
@@ -6067,90 +6058,35 @@
 
   /* ═══════════════════════════════════════════════════════════
      v5.4.0 — ОБЩИЙ КОНТЕКСТ СПРИНТА (Этап 2)
-     Helpers для шапки виджета и getter'ов «логического спринта».
      Журнал решений: D25 (empty-state без авто-создания), D26 (per-project,
      не per-role в селекторе), D27 (минимальный статус по ролям + tooltip),
      D28 (soft-warn при смене с активной WC), D29 (silent миграция).
-     ═══════════════════════════════════════════════════════════ */
-
-  /* Ранг статусов для агрегации бейджа (D27): чем меньше rank — тем «менее продвинут». */
-  var STATUS_RANK = { PLANNING: 0, CONFIRMED: 1, ALLOCATED: 2, FINISHED: 3 };
-
-  /* Уникальные id «логических спринтов» (без суффикса _<roleKey>),
-     отсортированные по свежести (активный _sprint первым, далее по rec.confirmedAt). */
-  function getLogicalSprintIds() {
-    var seen = {};
-    var entries = []; // {id, sortKey}
-    if (_sprint && _sprint.sprintId) {
-      seen[_sprint.sprintId] = true;
-      entries.push({ id: _sprint.sprintId, sortKey: Date.now() });
-    }
-    if (Array.isArray(_history)) {
-      _history.forEach(function(rec) {
-        if (!rec || !rec.sprintId) return;
-        var logical = String(rec.sprintId).split('_')[0];
-        if (seen[logical]) return;
-        seen[logical] = true;
-        entries.push({ id: logical, sortKey: rec.confirmedAt || 0 });
-      });
-    }
-    entries.sort(function(a, b) { return b.sortKey - a.sortKey; });
-    return entries.map(function(e) { return e.id; });
+     ── Шапка виджета: view вынесен в header-view.js
+     (window.__SSP_HEADER_VIEW) — Тир D слайс 5, ступень 1.
+     Делегаторы; контекст собирается в _headerDeps() на вызове, стейт модуль
+     читает get/set-аксессорами в момент обращения (raw-сеттер _currentSprintId —
+     для D72-сброса и fallback'а рендера, НЕ контроллер setCurrentSprintId).
+     Хелперы getSprintRolesEntries/getSprintMeta/hasWorkingCopyForSprint и
+     STATUS_RANK живут в модуле (внешних callers в монолите нет). Контроллер
+     setCurrentSprintId и init-бинды (bindWidgetHeader) остаются в монолите. */
+  var HEADER_VIEW = (typeof window !== 'undefined' && window.__SSP_HEADER_VIEW) || {};
+  function _headerDeps() {
+    return {
+      T: T, esc: esc, diag: diag, fmtDate: fmtDate,
+      statusLabel: statusLabel, roleLabel: roleLabel,
+      getActiveRoles: getActiveRoles,
+      ALL_ROLES: ALL_ROLES, STATUS: STATUS,
+      draft: { get: _draftGet, set: _draftSet },
+      state: {
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+        getWorkingDrafts: function () { return _workingDrafts; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        setCurrentSprintId: function (v) { _currentSprintId = v; },
+      },
+    };
   }
-
-  /* Все per-role записи _history для логического id (rec.sprintId === <id>_<roleKey>). */
-  function getSprintRolesEntries(logicalId) {
-    if (!logicalId || !Array.isArray(_history)) return [];
-    return _history.filter(function(rec) {
-      return rec && rec.sprintId && String(rec.sprintId).indexOf(logicalId + '_') === 0;
-    });
-  }
-
-  /* Метаданные «логического спринта» для шапки.
-     status = минимальный по STATUS_RANK среди не-FINAL ролей (D27).
-     Возвращает null, если все роли FINAL (такой спринт не показываем в селекторе). */
-  function getSprintMeta(logicalId) {
-    if (!logicalId) return null;
-    var entries = getSprintRolesEntries(logicalId);
-    var meta = { name: '', dateStart: null, dateEnd: null,
-                 status: 'PLANNING', statusByRole: {} };
-    if (_sprint && _sprint.sprintId === logicalId) {
-      meta.name      = _sprint.name      || '';
-      meta.dateStart = _sprint.dateStart || null;
-      meta.dateEnd   = _sprint.dateEnd   || null;
-    }
-    var minRank = Infinity;
-    entries.forEach(function(rec) {
-      if (!rec.status || rec.status === STATUS.FINISHED) return;
-      if (!meta.name      && rec.name)      meta.name      = rec.name;
-      if (!meta.dateStart && rec.dateStart) meta.dateStart = rec.dateStart;
-      if (!meta.dateEnd   && rec.dateEnd)   meta.dateEnd   = rec.dateEnd;
-      var rank = STATUS_RANK[rec.status];
-      if (rank != null && rank < minRank) { minRank = rank; meta.status = rec.status; }
-      if (rec.roleKey) meta.statusByRole[rec.roleKey] = rec.status;
-    });
-    /* Особый случай: только активный _sprint без role-snapshot'ов в _history.
-       Это первая загрузка только что созданного спринта — возвращаем PLANNING-meta
-       по данным _sprint, чтобы строка появилась в селекторе. */
-    if (minRank === Infinity) {
-      if (_sprint && _sprint.sprintId === logicalId && meta.name) {
-        meta.status = _sprint.status || 'PLANNING';
-        return meta;
-      }
-      return null;
-    }
-    return meta;
-  }
-
-  /* Есть ли для данного логического спринта хотя бы одна working copy (любая роль). */
-  function hasWorkingCopyForSprint(logicalId) {
-    if (!logicalId || !_workingDrafts) return false;
-    var keys = Object.keys(_workingDrafts);
-    for (var i = 0; i < keys.length; i++) {
-      if (keys[i].indexOf(logicalId + '_') === 0) return true;
-    }
-    return false;
-  }
+  function getLogicalSprintIds() { return HEADER_VIEW.getLogicalSprintIds(_headerDeps()); }
 
   /* Единая точка изменения _currentSprintId. Возвращает true если switch произошёл,
      false если был отменён (модал «Закрыть рабочую копию?» — D28). */
@@ -6226,117 +6162,9 @@
     return MODAL_SPECS.showCloseWorkingCopyModal(cb, { t: T, openModal: openModal });
   }
 
-  /* Идемпотентный рендер шапки виджета.
-     Вызывается при init, после loadAllData, при смене селектора, после
-     saveRoleHistorySnapshot/finishHistorySprint/_workingDraftsScheduleFlush. */
-  function renderWidgetHeader() {
-    var headerEl = document.getElementById('widgetHeader');
-    if (!headerEl) return;
-    var sel    = document.getElementById('widgetSprintSel');
-    var badge  = document.getElementById('widgetSprintBadge');
-    var wcInd  = document.getElementById('widgetWcIndicator');
-    if (!sel || !badge || !wcInd) return;
-
-    /* 1. Заполняем селектор */
-    var ids = getLogicalSprintIds();
-    /* Фильтруем id с meta=null (все роли FINAL) */
-    var visibleIds = [];
-    var metaCache = {};
-    ids.forEach(function(id) {
-      var m = getSprintMeta(id);
-      if (m) { visibleIds.push(id); metaCache[id] = m; }
-    });
-
-    sel.innerHTML = '';
-    if (!visibleIds.length) {
-      /* v6.1.0 D72 — нет видимых спринтов → сбросить _currentSprintId, иначе он
-         продолжает указывать на удалённую/невидимую запись и ломает рендер вкладок. */
-      if (_currentSprintId) {
-        _currentSprintId = null;
-        var ui0 = _draftGet('ui') || {}; ui0.currentSprintId = null; _draftSet('ui', ui0);
-      }
-      var opt0 = document.createElement('option');
-      opt0.value = ''; opt0.disabled = true; opt0.selected = true;
-      opt0.textContent = T('phNoSprintsActive');
-      sel.appendChild(opt0); sel.disabled = true;
-    } else {
-      sel.disabled = false;
-      visibleIds.forEach(function(id) {
-        var m = metaCache[id];
-        var opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = (m.name || id) +
-          (m.dateStart ? ' · ' + fmtDate(m.dateStart) : '') +
-          (m.dateEnd   ? ' — ' + fmtDate(m.dateEnd)   : '');
-        sel.appendChild(opt);
-      });
-      /* Восстановить _currentSprintId, если он валиден; иначе взять первый */
-      if (_currentSprintId && visibleIds.indexOf(_currentSprintId) >= 0) {
-        sel.value = _currentSprintId;
-      } else {
-        sel.value = visibleIds[0];
-        _currentSprintId = visibleIds[0];
-        var ui = _draftGet('ui') || {}; ui.currentSprintId = _currentSprintId; _draftSet('ui', ui);
-      }
-    }
-
-    /* 2. Бейджи статуса — список per-role (v1.8.1).
-       Раньше — единый агрегированный бейдж с min(STATUS_RANK) среди ролей. Это
-       вводило в заблуждение: при одной аллоцированной и одной черновой роли в шапке
-       висел «Черновик». Теперь — explicit список «Роль: Статус».
-       Источник статуса каждой роли:
-         - запись в _history (per-role snapshot) — берём её status (включая FINISHED);
-         - если записи нет — PLANNING (роль ещё не валидирована). */
-    if (_currentSprintId) {
-      var activeRoles = (typeof getActiveRoles === 'function' && getActiveRoles().length)
-        ? getActiveRoles()
-        : ALL_ROLES;
-      var entries = (typeof getSprintRolesEntries === 'function')
-        ? getSprintRolesEntries(_currentSprintId)
-        : [];
-      var statusByRole = {};
-      entries.forEach(function(rec) {
-        if (rec && rec.roleKey && rec.status) statusByRole[rec.roleKey] = rec.status;
-      });
-      badge.classList.remove('hidden');
-      badge.classList.remove('widget-header__badge--planning',
-        'widget-header__badge--confirmed',
-        'widget-header__badge--allocated',
-        'widget-header__badge--finished');
-      badge.removeAttribute('title');
-      /* v1.8.1 — inline-стили убраны, layout управляется через CSS .widget-header__badge
-         (flex-wrap + flex-basis:100%). Inline-style раньше дублировал и конфликтовал с CSS,
-         из-за чего при 4+ ролях бейджи наезжали на селектор спринта. */
-      badge.removeAttribute('style');
-      var _diagDump = activeRoles.map(function(role) {
-        return role.key + '=' + (statusByRole[role.key] || 'PLANNING(default)');
-      }).join(', ');
-      diag('[RENDER-HEADER] sprintId='+_currentSprintId+' entries='+entries.length+' roles=['+_diagDump+']', 'info');
-      badge.innerHTML = activeRoles.map(function(role) {
-        var st = statusByRole[role.key] || 'PLANNING';
-        var stLabel = (typeof statusLabel === 'function') ? statusLabel(st) : st;
-        var rLabel  = (typeof roleLabel === 'function') ? roleLabel(role) : (role.label || role.key);
-        var cls     = 's-badge s-badge--' + String(st).toLowerCase();
-        return '<span class="'+cls+'" title="'+esc(rLabel + ': ' + stLabel)+'">'
-             +    '<span style="opacity:.7">'+esc(rLabel)+':</span> '+esc(stLabel)
-             + '</span>';
-      }).join('');
-    } else {
-      badge.classList.add('hidden');
-      badge.innerHTML = '';
-    }
-
-    /* 3. WC indicator */
-    if (_currentSprintId && hasWorkingCopyForSprint(_currentSprintId)) {
-      wcInd.classList.remove('hidden');
-    } else {
-      wcInd.classList.add('hidden');
-    }
-    /* Кнопка «+ Новый спринт» — visibility управляется .editor-btn classом
-       через общую цепочку init (как остальные editor-кнопки виджета). */
-    /* #25 Ф2 п.6 — синхронизировать подпись полного имени спринта в global-рельсе. */
-    if (typeof _updateRailSprintName === 'function') { try { _updateRailSprintName(); } catch(_){} }
-  }
+  /* Идемпотентный рендер шапки виджета — вынесен в header-view.js (делегатор;
+     16 callers по всему монолиту + _wcDeps/_historyDeps + golden gm.call). */
+  function renderWidgetHeader() { return HEADER_VIEW.renderWidgetHeader(_headerDeps()); }
 
   /* Bind listeners шапки виджета (idempotent) */
   (function bindWidgetHeader() {
