@@ -33,6 +33,7 @@ import './working-copy.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
+import './history-view.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';

@@ -1,0 +1,134 @@
+{
+  "sortKey": "off",
+  "stickyHeader": false,
+  "emptyText": "Нет задач",
+  "itemKeys": [
+    "GM-S1",
+    "GM-S2",
+    "GM-S3"
+  ],
+  "columns": [
+    {
+      "id": "id",
+      "title": "№ задачи",
+      "sortable": false,
+      "className": "td-id",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<a href=\"https://yt.local/issue/GM-S1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-S1</a>"
+        },
+        {
+          "html": "<a href=\"https://yt.local/issue/GM-S2\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-S2</a>"
+        },
+        {
+          "html": "<a href=\"https://yt.local/issue/GM-S3\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-S3</a>"
+        }
+      ]
+    },
+    {
+      "id": "externalTicketId",
+      "title": "Внешний ID",
+      "sortable": false,
+      "className": "td-hist-ext",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"https://jira.local/browse/EXT-1\"><a href=\"https://jira.local/browse/EXT-1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">https://jira.local/browse/EXT-1</a></span>"
+        },
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"EXT-плоский-идентификатор\">EXT-плоский-идентификатор</span>"
+        },
+        {
+          "html": "<span style=\"color:var(--muted)\">—</span>"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "title": "Название",
+      "sortable": false,
+      "className": "td-title ssp-col-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Синтетическая задача GM-S1",
+        "Синтетическая задача GM-S2",
+        "Синтетическая задача GM-S3"
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Приоритет",
+      "sortable": false,
+      "className": "td-hist-narrow",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Значительный",
+        "Значительный",
+        "Значительный"
+      ]
+    },
+    {
+      "id": "xpriority",
+      "title": "Сквозной приоритет",
+      "sortable": false,
+      "className": "td-hist-narrow",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Высокий",
+        "—",
+        "—"
+      ]
+    },
+    {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": "td-hist-narrow",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Открыта",
+        "Открыта",
+        "Открыта"
+      ]
+    },
+    {
+      "id": "incStatus",
+      "title": "Статус включения",
+      "sortable": false,
+      "className": "td-hist-inc",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Включена планово",
+        "Включена планово",
+        "Включена планово"
+      ]
+    },
+    {
+      "id": "delta",
+      "title": "Ресурс<br>Анализ",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span class=\"delta-neg\">−5ч</span>"
+        },
+        {
+          "html": "10ч"
+        },
+        {
+          "html": "<span style=\"color:var(--muted)\">—</span>"
+        }
+      ]
+    }
+  ]
+}
