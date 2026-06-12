@@ -548,7 +548,6 @@
      pill «Уже редактирует {who}» и cross-user lock на кнопке «Открыть на правку»). */
   var _workingDrafts            = {};     // { '<sprintId>_<roleKey>': workingDraft }
   var _workingDraftsDirty       = false;
-  var _workingDraftsFlushTimer  = null;
   var _workingDraftsLoaded      = false;
   var _activeWorkingDraftKey    = null;   // если != null — идёт правка working copy
   var _thisTabToken             = (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -772,7 +771,6 @@
       });
     } catch(e) { diag('loadAppVersion sync err: '+e, 'err'); }
   }
-  var _draftSaveTimers = {};
   var _baseRevHash = '';
   var _serverSnapshotSprint    = null;
   var _serverSnapshotRoleItems = null;
@@ -788,193 +786,73 @@
      debounced flush отправляет всё одним POST. */
   var _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
   var _draftPending = false;
-  var _draftFlushTimer = null;
-  var _draftLoaded = false; // true после первого GET /draft в init
 
-  function _draftSet(suffix, value) {
-    if (!_draft) _draft = {};
-    _draft[suffix] = value;
-    diag('draft SET '+suffix+' (in-memory)', 'ok');
-    _draftScheduleFlush();
+  /* ═══ Persistence-инфра черновиков и working copies ═══════════
+     Вынесено в draft-store.js (Фаза 5 слайс 3, коммит Б) за мост
+     window.__SSP_DRAFT_STORE; golden-контракты — draft-store.golden.test.js
+     (идут через эти делегаторы; _workingDraftsFlushNow — golden-вход).
+     Deps-фабрика per-call: стейт черновика и working copies остаётся в
+     стейт-ядре монолита (его пишут init-restore и _resetProjectStateCaches,
+     читают gm-хук голденов и deps-фабрики других модулей); модуль ходит
+     get/set-аксессорами в момент обращения. Таймеры flush 300мс и
+     debounce 800мс уехали в приватный стейт модуля. Внутренние
+     _draftDel/_draftScheduleFlush/syncWorkingDraftFromMemory приватны
+     модулю — внешних вызовов в монолите нет. */
+  var DRAFT_STORE = (typeof window !== 'undefined' && window.__SSP_DRAFT_STORE) || {};
+  function _draftStoreDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      apiGet: apiGet, apiPost: apiPost,
+      safeLs: safeLs, deepClone: deepClone,
+      allRoles: ALL_ROLES, draftVersion: DRAFT_VERSION,
+      renderWidgetHeader: renderWidgetHeader,
+      renderWorkingCopyBanner: renderWorkingCopyBanner,
+      refreshDirtyIndicator: refreshDirtyIndicator,
+      state: {
+        getDraft: function () { return _draft; },
+        setDraft: function (d) { _draft = d; },
+        getDraftPending: function () { return _draftPending; },
+        setDraftPending: function (b) { _draftPending = b; },
+        getDraftRestoreInProgress: function () { return _draftRestoreInProgress; },
+        getWorkingDrafts: function () { return _workingDrafts; },
+        setWorkingDrafts: function (m) { _workingDrafts = m; },
+        getWorkingDraftsDirty: function () { return _workingDraftsDirty; },
+        setWorkingDraftsDirty: function (b) { _workingDraftsDirty = b; },
+        getWorkingDraftsLoaded: function () { return _workingDraftsLoaded; },
+        setWorkingDraftsLoaded: function (b) { _workingDraftsLoaded = b; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getThisTabToken: function () { return _thisTabToken; },
+        getHistory: function () { return _history; },
+        getSprint: function () { return _sprint; },
+        getRoleItems: function () { return _roleItems; },
+        getBaseRevHash: function () { return _baseRevHash; },
+        /* raw-сеттер (как state.setCurrentSprintId хедер-вью) — НЕ контроллер
+           setCurrentSprintId монолита: тот сам зовёт рендер шапки. */
+        setCurrentSprintId: function (id) { _currentSprintId = id; },
+      },
+    };
   }
-  function _draftGet(suffix) {
-    return _draft ? (_draft[suffix] !== undefined ? _draft[suffix] : null) : null;
-  }
-  function _draftDel(suffix) {
-    if (_draft) delete _draft[suffix];
-    _draftScheduleFlush();
-  }
-  function _draftScheduleFlush() {
-    if (_draftRestoreInProgress) return;
-    _draftPending = true;
-    clearTimeout(_draftFlushTimer);
-    /* Короткая задержка (300мс), чтобы аккумулировать несколько _draftSet
-       в один POST (например, dirty + roleItems + meta пишутся подряд). */
-    _draftFlushTimer = setTimeout(_draftFlushNow, 300);
-  }
-  function _draftFlushNow() {
-    if (!_draftPending) return;
-    var sz = JSON.stringify(_draft || {}).length;
-    if (sz > 200 * 1024) {
-      try { toast(T('toastDraftTooLarge'), 'warn'); } catch(_){}
-      return;
-    }
-    _draftPending = false;
-    diag('draft FLUSH → backend (size='+sz+'B)', 'info');
-    apiPost('draft', { data: _draft })
-      .catch(function(e){ diag('draft flush failed: '+(e&&e.message?e.message:e),'err'); });
-  }
-  function _draftLoadFromBackend() {
-    return apiGet('draft').then(function(r){
-      var slot = (r && r.data) || null;
-      if (slot && typeof slot === 'object') {
-        _draft = {
-          meta:      slot.meta      || null,
-          ui:        slot.ui        || null,
-          sprint:    slot.sprint    || null,
-          roleItems: slot.roleItems || null,
-          currentRole: slot.currentRole || null,
-          dirty:     slot.dirty     || null
-        };
-        diag('draft loaded from backend (meta='+(slot.meta?'yes':'no')+')', 'ok');
-      } else {
-        _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-        diag('draft: no data on backend','info');
-      }
-      _draftLoaded = true;
-    }).catch(function(e){
-      diag('draft load failed: '+(e&&e.message?e.message:e),'err');
-      _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-      _draftLoaded = true;
-    });
-  }
-  function _draftClearOnBackend() {
-    /* Полная очистка: POST /draft?action=clear */
-    return apiPost('draft', {}, { action: 'clear' }).then(function(){
-      _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-    });
-  }
+  function _draftSet(suffix, value) { return DRAFT_STORE.draftSet(suffix, value, _draftStoreDeps()); }
+  function _draftGet(suffix) { return DRAFT_STORE.draftGet(suffix, _draftStoreDeps()); }
+  function _draftFlushNow() { return DRAFT_STORE.draftFlushNow(_draftStoreDeps()); }
+  function _draftLoadFromBackend() { return DRAFT_STORE.draftLoadFromBackend(_draftStoreDeps()); }
+  function _draftClearOnBackend() { return DRAFT_STORE.draftClearOnBackend(_draftStoreDeps()); }
 
   /* ═══════════════════════════════════════════════════════════
      v5.3.0 — Working copies persistence (immutable snapshots, D3/b)
      ═══════════════════════════════════════════════════════════
-     Аналогично _draft, но:
-     • Multi-user видимость (карта общая по проекту, не per-login).
-     • Backend (`ssp_workdrafts`): viewer GET, validator POST, владелец/settingsManager DELETE.
-     • Дроссель flush 300мс. */
-  function _workingDraftsLoadFromBackend() {
-    return apiGet('working-drafts').then(function(r){
-      var data = (r && r.data) || {};
-      _workingDrafts = (data && typeof data === 'object' && !Array.isArray(data)) ? data : {};
-      _workingDraftsLoaded = true;
-      var n = Object.keys(_workingDrafts).length;
-      diag('working-drafts loaded ('+n+' entries)', 'ok');
-    }).catch(function(e){
-      diag('working-drafts load failed: '+(e&&e.message?e.message:e), 'err');
-      _workingDrafts = {};
-      _workingDraftsLoaded = true;
-    });
-  }
-  function _workingDraftsScheduleFlush() {
-    _workingDraftsDirty = true;
-    if (_workingDraftsFlushTimer) clearTimeout(_workingDraftsFlushTimer);
-    _workingDraftsFlushTimer = setTimeout(_workingDraftsFlushNow, 300);
-  }
-  function _workingDraftsFlushNow() {
-    if (!_workingDraftsDirty) return;
-    _workingDraftsDirty = false;
-    return apiPost('working-drafts', { data: _workingDrafts }).then(function(){
-      /* v5.4.0 — синхронизировать индикатор WC в шапке виджета */
-      if (typeof renderWidgetHeader === 'function') {
-        try { renderWidgetHeader(); } catch(_){}
-      }
-      /* v5.5.0 — D37: cross-tab signal через localStorage. Вторая вкладка той же
-         страницы получит storage-event и обновит свой индикатор без F5. */
-      Object.keys(_workingDrafts || {}).forEach(function(k){
-        safeLs.set('ssp:wc-touched:' + k, String(Date.now()));
-      });
-    }).catch(function(e){
-      var reason = (e && e.reason) || (e && e.error) || '';
-      if (String(reason).indexOf('working_drafts_too_large') >= 0
-          || String(reason).indexOf('working_draft_too_large') >= 0) {
-        try { toast(T('wcStorageQuotaExceeded'), 'warn'); } catch(_){}
-      } else {
-        diag('working-drafts flush failed: '+(e&&e.message?e.message:e), 'err');
-      }
-      /* Не теряем dirty — следующий debounced flush попробует снова */
-      _workingDraftsDirty = true;
-    });
-  }
-  function _workingDraftsDeleteOnBackend(key) {
-    if (!key) return Promise.resolve();
-    return apiPost('working-drafts', null, { action: 'delete', key: key })
-      .catch(function(e){
-        diag('working-drafts delete failed for '+key+': '+(e&&e.message?e.message:e), 'err');
-      });
-  }
-  /* Двусторонний sync hasWorkingCopy на снимках ↔ Object.keys(_workingDrafts).
-     Удаляет orphan working copies (без базового снимка); выравнивает флаг
-     hasWorkingCopy на снимках. Вызывается один раз после init. */
-  function reconcileHasWorkingCopyFlag() {
-    if (!_workingDraftsLoaded) return;
-    var historyChanged = false, draftsChanged = false;
-    /* 1) Drafts без snap → orphan, удалить */
-    Object.keys(_workingDrafts).forEach(function(key){
-      var found = _history.some(function(snap){ return snap && snap.sprintId === key; });
-      if (!found) {
-        diag('working-drafts: orphan removed: '+key, 'warn');
-        delete _workingDrafts[key];
-        draftsChanged = true;
-      }
-    });
-    /* 2) Snap.hasWorkingCopy выровнять */
-    _history.forEach(function(snap){
-      if (!snap) return;
-      var actual = !!_workingDrafts[snap.sprintId];
-      if (!!snap.hasWorkingCopy !== actual) {
-        snap.hasWorkingCopy = actual;
-        historyChanged = true;
-      }
-    });
-    if (draftsChanged) _workingDraftsScheduleFlush();
-    if (historyChanged) {
-      apiPost('history', { history: _history }).catch(function(e){
-        diag('history flush after reconcile failed: '+(e&&e.message?e.message:e), 'err');
-      });
-    }
-  }
-  /* Lazy purge: удаляет working copies со updatedAt > 30 дней назад.
-     Без фоновых таймеров — один проход на init. Сводный toast. */
-  function gcWorkingDrafts() {
-    if (!_workingDraftsLoaded) return;
-    var now = Date.now();
-    var TTL = 30 * 24 * 3600 * 1000;
-    var removed = [];
-    Object.keys(_workingDrafts).forEach(function(key){
-      var d = _workingDrafts[key];
-      if (!d) { delete _workingDrafts[key]; removed.push(key); return; }
-      if ((now - (d.updatedAt || 0)) > TTL) {
-        delete _workingDrafts[key];
-        removed.push(key);
-      }
-    });
-    if (removed.length) {
-      diag('working-drafts GC: removed '+removed.length+' stale entries', 'info');
-      _workingDraftsScheduleFlush();
-      /* Снять hasWorkingCopy с соответствующих снимков */
-      var historyChanged = false;
-      _history.forEach(function(snap){
-        if (snap && removed.indexOf(snap.sprintId) >= 0 && snap.hasWorkingCopy) {
-          snap.hasWorkingCopy = false;
-          historyChanged = true;
-        }
-      });
-      if (historyChanged) {
-        apiPost('history', { history: _history }).catch(function(){});
-      }
-      try { toast(T('wcGcDiscarded').replace('{n}', removed.length), 'info'); } catch(_){}
-    }
-  }
+     Аналогично _draft, но multi-user видимость (карта общая по проекту,
+     не per-login); backend: viewer GET, validator POST, владелец/
+     settingsManager DELETE; дроссель flush 300мс. Реализация — в
+     draft-store.js (см. блок-комментарий моста выше); карта _workingDrafts
+     и флаги остаются в стейт-ядре. */
+  function _workingDraftsLoadFromBackend() { return DRAFT_STORE.workingDraftsLoadFromBackend(_draftStoreDeps()); }
+  function _workingDraftsScheduleFlush() { return DRAFT_STORE.workingDraftsScheduleFlush(_draftStoreDeps()); }
+  function _workingDraftsFlushNow() { return DRAFT_STORE.workingDraftsFlushNow(_draftStoreDeps()); }
+  function _workingDraftsDeleteOnBackend(key) { return DRAFT_STORE.workingDraftsDeleteOnBackend(key, _draftStoreDeps()); }
+  function reconcileHasWorkingCopyFlag() { return DRAFT_STORE.reconcileHasWorkingCopyFlag(_draftStoreDeps()); }
+  function gcWorkingDrafts() { return DRAFT_STORE.gcWorkingDrafts(_draftStoreDeps()); }
   /* Простой 32-битный хэш (FNV-1a) для conflict detection.
      Используется только для сравнения версий, не для криптографии. */
   /* Hash/equality/diff-утилиты рабочих копий вынесены в widgets/main/src/hash-pure.js
@@ -1012,7 +890,8 @@
      контекст собирается в _wcDeps на вызове. Стейт (_workingDrafts/_history/_sprint/
      _roleItems/_activeWorkingDraftKey/…) остаётся здесь — модуль ходит к нему через
      аксессоры deps.state. Persistence-инфра (_workingDrafts load/flush/delete/
-     reconcile/gc) и syncWorkingDraftFromMemory остаются здесь же. */
+     reconcile/gc) и syncWorkingDraftFromMemory — в draft-store.js (Фаза 5 слайс 3),
+     делегаторы выше. */
   var WC = (typeof window !== 'undefined' && window.__SSP_WORKING_COPY) || {};
   function _wcDeps() {
     return {
@@ -1068,34 +947,8 @@
   function discardWorkingDraft(key) { return WC.discardWorkingDraft(key, _wcDeps()); }
   function _doDiscardWorkingDraft(key) { return WC._doDiscardWorkingDraft(key, _wcDeps()); }
 
-  function syncWorkingDraftFromMemory(rk) {
-    if (!_activeWorkingDraftKey) return;
-    var draft = _workingDrafts[_activeWorkingDraftKey];
-    if (!draft) return;
-    draft.updatedAt = Date.now();
-    draft.editorTabToken = _thisTabToken;
-    if (_sprint) {
-      draft.sprint.name            = _sprint.name || null;
-      draft.sprint.dateStart       = _sprint.dateStart || null;
-      draft.sprint.dateEnd         = _sprint.dateEnd || null;
-      draft.sprint.sprintFieldVal  = _sprint.sprintFieldVal || null;
-      draft.sprint.versionFieldVal = _sprint.versionFieldVal || null;
-      ALL_ROLES.forEach(function(r){
-        if (_sprint[r.resKey] != null) draft.sprint[r.resKey] = _sprint[r.resKey];
-      });
-      if (_sprint.personalPlanning) draft.personalPlanning = deepClone(_sprint.personalPlanning);
-      if (_sprint.gantt)            draft.gantt            = deepClone(_sprint.gantt);
-    }
-    if (rk && _roleItems[rk]) {
-      draft.items = _roleItems[rk].map(function(it){
-        var copy = {};
-        Object.keys(it).forEach(function(k){ copy[k] = it[k]; });
-        return copy;
-      });
-    }
-    _workingDraftsScheduleFlush();
-    if (typeof renderWorkingCopyBanner === 'function') renderWorkingCopyBanner();
-  }
+  /* syncWorkingDraftFromMemory — приватен draft-store.js (единственный
+     вызов — WC-путь _markDirty внутри модуля). */
 
   /* Commit working copy → overwrite базового snap + revisions[] — вынесен в working-copy.js. */
   function _commitWorkingCopy(rk, idx, draft, snapFromCurrent) {
@@ -1385,49 +1238,12 @@
     apiPost('sprint-data', { settings: _settings }).catch(function(){});
   }
 
-  function _draftSaveDebounced(suffix, valueGetter, delayMs) {
-    if (_draftRestoreInProgress) return;
-    clearTimeout(_draftSaveTimers[suffix]);
-    _draftSaveTimers[suffix] = setTimeout(function(){
-      _draftSet(suffix, valueGetter());
-      _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    }, delayMs || 800);
-  }
-  function _markDirty(section) {
-    if (_draftRestoreInProgress) return;
-    var d = _draftGet('dirty') || {};
-    d[section] = true;
-    _draftSet('dirty', d);
-    refreshDirtyIndicator();
-    /* v5.3.0 — если активна working copy, любое dirty-событие синхронизирует
-       in-memory _sprint/_roleItems в _workingDrafts[key]. Roleкей берём из активной
-       подвкладки или из ключа working copy. Защищаемся try/catch чтобы не сорвать flow. */
-    if (_activeWorkingDraftKey) {
-      try {
-        var rk = _activeSubtab;
-        if (!rk) {
-          var draft = _workingDrafts[_activeWorkingDraftKey];
-          if (draft) {
-            var snap = _history.find(function(s){ return s && s.sprintId === _activeWorkingDraftKey; });
-            if (snap) rk = snap.roleKey;
-          }
-        }
-        if (rk) syncWorkingDraftFromMemory(rk);
-      } catch(e) {
-        diag('syncWorkingDraftFromMemory failed: '+(e&&e.message?e.message:e), 'err');
-      }
-    }
-  }
-  function _markClean(section) {
-    var d = _draftGet('dirty') || {};
-    d[section] = false;
-    _draftSet('dirty', d);
-    refreshDirtyIndicator();
-  }
-  function _draftIsDirty() {
-    var d = _draftGet('dirty') || {};
-    return !!(d.sprint || d.roleItems || d.currentRole);
-  }
+  /* Debounce-персист, dirty-механика и WC-sync — в draft-store.js
+     (Фаза 5 слайс 3); делегаторы на мосту DRAFT_STORE (объявлен выше). */
+  function _draftSaveDebounced(suffix, valueGetter, delayMs) { return DRAFT_STORE.draftSaveDebounced(suffix, valueGetter, delayMs, _draftStoreDeps()); }
+  function _markDirty(section) { return DRAFT_STORE.markDirty(section, _draftStoreDeps()); }
+  function _markClean(section) { return DRAFT_STORE.markClean(section, _draftStoreDeps()); }
+  function _draftIsDirty() { return DRAFT_STORE.draftIsDirty(_draftStoreDeps()); }
   /* Простой числовой хеш (FNV-1a) для сравнения версий состояния */
   function computeRevHash(sprint, roleItems) { return HASH_PURE.computeRevHash(sprint, roleItems); }
   /* v5.0.3 — Multi-state индикатор черновика:
@@ -1466,17 +1282,7 @@
       if (meta) btn.classList.remove('hidden'); else btn.classList.add('hidden');
     }
   }
-  function clearDraftStorage() {
-    ['meta','ui','sprint','roleItems','currentRole','dirty'].forEach(function(suf){ _draftDel(suf); });
-    /* v6.1.0 D72 — сбросить in-memory state виджета. Иначе после ручной очистки истории
-       в backend (через storage props) + click «Очистить черновик» в widget-header'е
-       оставался артефакт удалённого спринта (_currentSprintId указывал в пустоту,
-       селектор не перерисовывался). */
-    _currentSprintId = null;
-    if (typeof renderWidgetHeader === 'function') {
-      try { renderWidgetHeader(); } catch (_) {}
-    }
-  }
+  function clearDraftStorage() { return DRAFT_STORE.clearDraftStorage(_draftStoreDeps()); }
 
   /* v5.0.3 — bind live-listeners на стабильные инпуты шапки спринта.
      Идемпотентно (через _sspDraftBound). Вызывается после init и после
@@ -2475,7 +2281,6 @@
     _serverSnapshotRoleItems = null;
     _baseRevHash = '';
     _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
-    _draftLoaded = false;
     _draftPending = false;
     _currentSprintId = null;
     _activeSubtab = null;

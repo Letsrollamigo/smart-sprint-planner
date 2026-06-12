@@ -1,0 +1,26 @@
+{
+  "postsNoPending": 0,
+  "oversized": {
+    "posts": 0,
+    "toasts": [
+      {
+        "msg": "Черновик слишком большой для локального хранения",
+        "type": "warn"
+      }
+    ],
+    "pendingStays": true
+  },
+  "afterReject": {
+    "pending": false,
+    "diagTail": [
+      {
+        "msg": "draft FLUSH → backend (size=98B)",
+        "level": "info"
+      },
+      {
+        "msg": "draft flush failed: gm-api-reject",
+        "level": "err"
+      }
+    ]
+  }
+}

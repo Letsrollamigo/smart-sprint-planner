@@ -1,0 +1,58 @@
+{
+  "api": [
+    {
+      "fn": "get",
+      "path": "draft"
+    }
+  ],
+  "loaded": {
+    "meta": {
+      "savedAt": 5
+    },
+    "ui": {
+      "activeTab": "gantt"
+    },
+    "sprint": {
+      "name": "S"
+    },
+    "roleItems": {
+      "analysis": []
+    },
+    "currentRole": {
+      "pp": 1
+    },
+    "dirty": {
+      "sprint": true
+    }
+  },
+  "emptyResponse": {
+    "meta": null,
+    "ui": null,
+    "sprint": null,
+    "roleItems": null,
+    "currentRole": null,
+    "dirty": null
+  },
+  "afterReject": {
+    "meta": null,
+    "ui": null,
+    "sprint": null,
+    "roleItems": null,
+    "currentRole": null,
+    "dirty": null
+  },
+  "diag": [
+    {
+      "msg": "draft loaded from backend (meta=yes)",
+      "level": "ok"
+    },
+    {
+      "msg": "draft: no data on backend",
+      "level": "info"
+    },
+    {
+      "msg": "draft load failed: gm-api-reject",
+      "level": "err"
+    }
+  ]
+}
