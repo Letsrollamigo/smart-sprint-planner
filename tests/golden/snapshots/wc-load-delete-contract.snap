@@ -1,0 +1,40 @@
+{
+  "loadedOk": {
+    "map": {
+      "k1": {
+        "key": "k1"
+      }
+    },
+    "loaded": true
+  },
+  "loadedGarbage": {},
+  "loadedReject": {
+    "map": {},
+    "loaded": true
+  },
+  "deleteApi": [
+    {
+      "fn": "post",
+      "path": "working-drafts",
+      "body": null,
+      "query": {
+        "action": "delete",
+        "key": "gm-wc-a"
+      }
+    }
+  ],
+  "diag": [
+    {
+      "msg": "working-drafts loaded (1 entries)",
+      "level": "ok"
+    },
+    {
+      "msg": "working-drafts loaded (0 entries)",
+      "level": "ok"
+    },
+    {
+      "msg": "working-drafts load failed: gm-api-reject",
+      "level": "err"
+    }
+  ]
+}

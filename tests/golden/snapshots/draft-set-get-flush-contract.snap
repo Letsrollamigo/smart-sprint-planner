@@ -1,0 +1,58 @@
+{
+  "armedAfterSeries": {
+    "delays": [
+      300
+    ],
+    "cleared": [
+      1,
+      2
+    ]
+  },
+  "api": [
+    {
+      "fn": "post",
+      "path": "draft",
+      "body": {
+        "data": {
+          "meta": {
+            "savedAt": 1,
+            "version": 1,
+            "baseRevHash": "h"
+          },
+          "ui": {
+            "activeTab": "planning"
+          },
+          "sprint": {
+            "name": "GM Draft Sprint"
+          },
+          "roleItems": null,
+          "currentRole": null,
+          "dirty": null
+        }
+      }
+    }
+  ],
+  "pendingAfterFlush": false,
+  "getKnown": {
+    "name": "GM Draft Sprint"
+  },
+  "getMissing": null,
+  "diag": [
+    {
+      "msg": "draft SET sprint (in-memory)",
+      "level": "ok"
+    },
+    {
+      "msg": "draft SET ui (in-memory)",
+      "level": "ok"
+    },
+    {
+      "msg": "draft SET meta (in-memory)",
+      "level": "ok"
+    },
+    {
+      "msg": "draft FLUSH → backend (size=167B)",
+      "level": "info"
+    }
+  ]
+}

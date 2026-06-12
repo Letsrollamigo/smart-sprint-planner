@@ -1,0 +1,37 @@
+{
+  "armedBoth": {
+    "delays": [
+      800,
+      250
+    ],
+    "cleared": []
+  },
+  "rearmed": {
+    "delays": [
+      250,
+      800
+    ],
+    "cleared": [
+      1
+    ]
+  },
+  "draftAfterFire": {
+    "meta": {
+      "savedAt": 1780315200000,
+      "version": 1,
+      "baseRevHash": "gm-base-hash"
+    },
+    "ui": null,
+    "sprint": {
+      "name": "S2"
+    },
+    "roleItems": null,
+    "currentRole": {
+      "pp": 2
+    },
+    "dirty": null
+  },
+  "armedDuringRestore": [
+    300
+  ]
+}

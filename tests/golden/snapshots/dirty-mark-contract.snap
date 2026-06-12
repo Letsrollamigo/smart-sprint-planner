@@ -1,0 +1,28 @@
+{
+  "afterDirtySprint": {
+    "dirty": {
+      "sprint": true
+    },
+    "isDirty": true,
+    "indicatorCalls": 1
+  },
+  "uiOnly": {
+    "dirty": {
+      "sprint": false,
+      "ui": true
+    },
+    "isDirty": false
+  },
+  "roleItemsDirty": true,
+  "duringRestore": {
+    "sprint": false,
+    "ui": true,
+    "roleItems": true
+  },
+  "cleanDuringRestore": {
+    "sprint": false,
+    "ui": true,
+    "roleItems": false
+  },
+  "indicatorCallsTotal": 5
+}

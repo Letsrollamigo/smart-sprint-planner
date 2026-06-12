@@ -1,0 +1,28 @@
+{
+  "api": [
+    {
+      "fn": "post",
+      "path": "draft",
+      "body": {},
+      "query": {
+        "action": "clear"
+      }
+    }
+  ],
+  "afterBackendClear": {
+    "meta": null,
+    "ui": null,
+    "sprint": null,
+    "roleItems": null,
+    "currentRole": null,
+    "dirty": null
+  },
+  "afterStorageClear": {
+    "draft": {},
+    "currentSprintId": null,
+    "headerRerenders": 1,
+    "flushArmed": [
+      300
+    ]
+  }
+}
