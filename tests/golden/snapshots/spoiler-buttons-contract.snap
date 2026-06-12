@@ -1,0 +1,23 @@
+{
+  "log": [
+    [
+      "edit",
+      "gm-syn-2026-06_analysis",
+      3
+    ],
+    [
+      "finish",
+      "gm-syn-2026-06_analysis",
+      3
+    ],
+    [
+      "excel",
+      "gm-syn-2026-06_analysis"
+    ],
+    [
+      "json",
+      "gm-syn-2026-06_analysis"
+    ]
+  ],
+  "openAfterClicks": false
+}

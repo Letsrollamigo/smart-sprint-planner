@@ -1,0 +1,16 @@
+{
+  "page1": {
+    "count": 10,
+    "info": "Стр. 1 / 2",
+    "prevDisabled": true,
+    "nextDisabled": false,
+    "pagDisplay": "flex"
+  },
+  "page2": {
+    "count": 3,
+    "info": "Стр. 2 / 2",
+    "prevDisabled": false,
+    "nextDisabled": true
+  },
+  "clampedTo": 2
+}
