@@ -4266,234 +4266,77 @@
      Состояние раскрытия персистится в ui.expandedRoles[] (массив roleKey). */
   var _uiExpandedRoles = Object.create(null);
 
-  function computeRoleQuickStats(rk) {
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    /* v6.3.1 D115 — если выбран исторический спринт в widget-header (т.е.
-       _currentSprintId !== _sprint.sprintId), читаем данные из соответствующего
-       snapshot _history[i] вместо live _sprint/_roleItems. Иначе пользователь
-       видит данные активного спринта вместо выбранного. */
-    var isHistoricalView = _currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId;
-    if (isHistoricalView) {
-      var histSnap = (Array.isArray(_history) ? _history : []).find(function(h){
-        return h && h.sprintId === _currentSprintId + '_' + rk;
-      });
-      if (histSnap) {
-        var resH = (role && histSnap[role.resKey] != null) ? Number(histSnap[role.resKey]) / 60 : 0;
-        if (!isFinite(resH)) resH = 0;
-        var itemsH = Array.isArray(histSnap.items) ? histSnap.items : [];
-        var totH = 0;
-        itemsH.forEach(function(it){
-          var alloc = it && it['alloc_'+rk];
-          var a = (alloc !== null && alloc !== undefined)
-            ? alloc / 60
-            : Math.max(0, (it['estimate_'+rk] || 0) - (it['fact_'+rk] || 0)) / 60;
-          if (isFinite(a)) totH += a;
-        });
-        return { resource: resH, totalAlloc: totH, taskCount: itemsH.length, overlimit: (resH > 0) && (totH > resH + 0.001) };
-      }
-      /* нет снапшота для этой роли в выбранном спринте — пустой stat */
-      return { resource: 0, totalAlloc: 0, taskCount: 0, overlimit: false };
-    }
-    var resource = 0;
-    if (role && _sprint && _sprint[role.resKey] != null) {
-      resource = Number(_sprint[role.resKey]) / 60;
-      if (!isFinite(resource)) resource = 0;
-    }
-    var items = (typeof getRoleItemsArr === 'function') ? (getRoleItemsArr(rk) || []) : [];
-    var totalAlloc = 0;
-    items.forEach(function(it){
-      var alloc = it && it['alloc_'+rk];
-      var a = (alloc !== null && alloc !== undefined)
-        ? alloc / 60
-        : Math.max(0, (it['estimate_'+rk] || 0) - (it['fact_'+rk] || 0)) / 60;
-      if (isFinite(a)) totalAlloc += a;
-    });
-    var overlimit = (resource > 0) && (totalAlloc > resource + 0.001);
-    return { resource: resource, totalAlloc: totalAlloc, taskCount: items.length, overlimit: overlimit };
+  /* ═══ Planning-core view ═══════════════════════════════════
+     Уровень «Роли»: accordion-карточки (quick-stats) и таблица состава роли
+     вынесены в widgets/main/src/rolecomposition-view.js
+     (window.__SSP_ROLECOMP_VIEW) — Тир D слайс 3, ступень 1.
+     Делегаторы; контекст собирается в _roleCompDeps на вызове, стейт модуль
+     читает через аксессоры deps.state в момент обращения. Стейт раскрытия
+     _uiExpandedRoles остаётся здесь (init-restore пишет его до модуля,
+     _rerenderAllSortableTables/applyI18N читают) — модуль мутирует его поля
+     по ссылке через get-аксессор. deps.renderRoleComposition отдаёт wrapped-
+     версию (рендер + updateAllocOverlimitUI) — самовызовы модуля обязаны
+     проходить пост-обработку перелимита, как в оригинале. */
+  var ROLECOMP_VIEW = (typeof window !== 'undefined' && window.__SSP_ROLECOMP_VIEW) || {};
+  function _roleCompDeps() {
+    return {
+      T: T, esc: esc, safeUrl: safeUrl, diag: diag,
+      icon: icon, applyIcons: applyIcons,
+      roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
+      fmtThLabel: fmtThLabel, localizeEnumVal: localizeEnumVal,
+      fmtPeriod: fmtPeriod, parsePeriod: parsePeriod, fmtHoursOnly: fmtHoursOnly,
+      formatHoursLight: _formatHoursLight,
+      multiKeySort: multiKeySort, getSortKey: getSortKey, setSortKey: setSortKey,
+      rerenderAllSortableTables: _rerenderAllSortableTables,
+      getRoleItemsArr: getRoleItemsArr,
+      markDirty: _markDirty, draftSaveDebounced: _draftSaveDebounced,
+      apiPost: apiPost,
+      loadEnumBundle: loadEnumBundle, updateIssueField: updateIssueField,
+      showDynFieldConfirm: showDynFieldConfirm,
+      updateRoleRemaining: updateRoleRemaining,
+      renderRoleComposition: renderRoleComposition,
+      toast: toast, openModal: openModal, statusLabel: statusLabel,
+      getActiveRoles: getActiveRoles, safeLs: safeLs,
+      draftGet: _draftGet, draftSet: _draftSet,
+      renderRolePlannerHeader: renderRolePlannerHeader,
+      applyEditorRightsToUI: applyEditorRightsToUI,
+      populatePlanningRoleSel: populatePlanningRoleSel,
+      refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
+      openPickModal: openPickModal, refreshFromYouTrack: refreshFromYouTrack,
+      doValidateRole: doValidateRole, doNewSprint: doNewSprint,
+      doSaveRoleHeader: doSaveRoleHeader,
+      PAGE_SIZE: PAGE_SIZE, INC: INC, STATUS: STATUS, ALL_ROLES: ALL_ROLES,
+      state: {
+        getSettings: function () { return _settings; },
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getServerSnapshotRoleItems: function () { return _serverSnapshotRoleItems; },
+        getRoleItems: function () { return _roleItems; },
+        getUiExpandedRoles: function () { return _uiExpandedRoles; },
+        setActiveSubtab: function (rk) { _activeSubtab = rk; },
+        getIsEditor: function () { return _isEditor; },
+        getIsValidator: function () { return _isValidator; },
+      },
+    };
   }
 
   function _formatHoursLight(n) { return UTIL_PURE.formatHoursLight(n); }
 
-  function renderRoleAccordion(rk) {
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (!role) return '';
-    var stats = computeRoleQuickStats(rk);
-    var expanded = !!_uiExpandedRoles[rk];
-    var label = (typeof roleLabel === 'function') ? roleLabel(role) : role.label || rk;
-    var resStr   = _formatHoursLight(stats.resource);
-    var allocStr = _formatHoursLight(stats.totalAlloc);
-    var html = ''
-      + '<div class="planning-role-card' + (expanded ? ' expanded' : '') + '" data-role-key="' + rk + '">'
-      +   '<button class="planning-role-toggle" type="button" data-role-key="' + rk + '">'
-      +     '<span class="planning-role-chevron">' + (expanded ? '▼' : '▶') + '</span>'
-      +     '<span class="planning-role-name">' + esc(label) + '</span>'
-      +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
-      +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
-      +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
-      +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
-      +   '</button>'
-      +   '<div class="planning-role-body" data-role-body="' + rk + '">'
-      /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
-         В C4 (4d) сюда монтируется полный editable buildRolePanel(role). */
-      +     '<div class="planning-role-body__actions">'
-      +       '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
-      +     '</div>'
-      +   '</div>'
-      + '</div>';
-    return html;
-  }
+  /* Делегатор-точка входа calc-голденов (как calcAssigneeUsed в слайсе 2);
+     прод-callers — внутри модуля. */
+  function computeRoleQuickStats(rk) { return ROLECOMP_VIEW.computeRoleQuickStats(rk, _roleCompDeps()); }
 
-  function _updateRoleAccordionStats(rk) {
-    var card = document.querySelector('.planning-role-card[data-role-key="' + rk + '"]');
-    if (!card) return;
-    var stats = computeRoleQuickStats(rk);
-    var resStr   = _formatHoursLight(stats.resource);
-    var allocStr = _formatHoursLight(stats.totalAlloc);
-    var nums = card.querySelectorAll('.planning-role-toggle .planning-role-stat__num');
-    if (nums[0]) nums[0].textContent = resStr;
-    if (nums[1]) nums[1].textContent = allocStr + ' / ' + resStr;
-    if (nums[2]) nums[2].textContent = String(stats.taskCount);
-    var warn = card.querySelector('.planning-role-toggle .planning-role-warn');
-    if (stats.overlimit) {
-      if (!warn) {
-        warn = document.createElement('span');
-        warn.className = 'planning-role-warn';
-        warn.textContent = T('planningRoleStatOverlimit');
-        card.querySelector('.planning-role-toggle').appendChild(warn);
-      }
-    } else if (warn) {
-      warn.parentNode.removeChild(warn);
-    }
-  }
+  function renderRoleAccordion(rk) { return ROLECOMP_VIEW.renderRoleAccordion(rk, _roleCompDeps()); }
 
-  function renderPlanningRoles() {
-    var container = document.getElementById('roleAccordions');
-    var noSprintEl = document.getElementById('planningRolesNoSprint');
-    var noActiveEl = document.getElementById('planningRolesNoActive');
-    if (!container) return;
-    var activeRoles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-    if (!activeRoles.length) {
-      container.innerHTML = '';
-      if (noActiveEl) {
-        noActiveEl.classList.remove('hidden');
-        /* #43 W2 — CTA «Открыть настройки» только тем, кому виден #openSettingsBtn
-           (серверная проверка check-settings-manager, см. refreshOpenSettingsBtn). */
-        var ctaEl = document.getElementById('planningRolesNoActiveCta');
-        var sBtn  = document.getElementById('openSettingsBtn');
-        if (ctaEl) ctaEl.style.display = (sBtn && sBtn.style.display !== 'none') ? '' : 'none';
-      }
-      if (noSprintEl) noSprintEl.classList.add('hidden');
-      return;
-    }
-    if (noActiveEl) noActiveEl.classList.add('hidden');
-    if (!_currentSprintId) {
-      container.innerHTML = '';
-      if (noSprintEl) noSprintEl.classList.remove('hidden');
-      return;
-    }
-    if (noSprintEl) noSprintEl.classList.add('hidden');
-    var html = activeRoles.map(function(role){ return renderRoleAccordion(role.key); }).join('');
-    container.innerHTML = html;
-    _bindAccordionHandlers();
-  }
+  function _updateRoleAccordionStats(rk) { return ROLECOMP_VIEW.updateRoleAccordionStats(rk, _roleCompDeps()); }
 
-  function _bindAccordionHandlers() {
-    document.querySelectorAll('#roleAccordions .planning-role-toggle').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        if (e && e.preventDefault) e.preventDefault();
-        var rk = btn.dataset.roleKey;
-        if (!rk) return;
-        _uiExpandedRoles[rk] = !_uiExpandedRoles[rk];
-        var expandedList = Object.keys(_uiExpandedRoles).filter(function(k){ return _uiExpandedRoles[k]; });
-        var ui = _draftGet('ui') || {}; ui.expandedRoles = expandedList; _draftSet('ui', ui);
-        var card = btn.closest('.planning-role-card');
-        if (card) {
-          card.classList.toggle('expanded', !!_uiExpandedRoles[rk]);
-          var chev = card.querySelector('.planning-role-chevron');
-          if (chev) chev.textContent = _uiExpandedRoles[rk] ? '▼' : '▶';
-          /* v5.6.0 — Этап 4 (4d): создаём slot для buildRolePanel при первом раскрытии,
-             если его ещё нет (template создаёт slot только при initial expanded=true). */
-          if (_uiExpandedRoles[rk]) {
-            var bodyEl = card.querySelector('.planning-role-body');
-            if (!bodyEl) {
-              bodyEl = document.createElement('div');
-              bodyEl.className = 'planning-role-body';
-              bodyEl.setAttribute('data-role-body', rk);
-              card.appendChild(bodyEl);
-            }
-          }
-        }
-        /* v5.6.0 — Этап 4 (4d): монтаж/демонтаж editable body после toggle */
-        if (typeof _mountExpandedRoleBodies === 'function') {
-          try { _mountExpandedRoleBodies(); } catch(err){ diag('mount role bodies on toggle err: '+err,'err'); }
-        }
-      });
-    });
-    /* v5.6.0 — Этап 4 (4c): handler .planning-role-openOld удалён вместе с кнопкой. */
-    document.querySelectorAll('#roleAccordions .planning-role-jumpPeople').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        if (e && e.stopPropagation) e.stopPropagation();
-        var rk = btn.dataset.roleKey;
-        /* v1.8.1 — явно зафиксировать целевую роль ДО переключения уровня, иначе
-           refreshPlanningPeopleForCurrentSprint берёт rk из sel.value/_activeSubtab,
-           а они хранят последнюю использованную роль (баг #3 из v1.8.1 acceptance). */
-        safeLs.set('ssp_lastActiveRole', rk);
-        _activeSubtab = rk;
-        var peopleSel = document.getElementById('planningRoleSel');
-        if (peopleSel) {
-          if (!peopleSel.options.length && typeof populatePlanningRoleSel === 'function') {
-            try { populatePlanningRoleSel(); } catch(_){}
-          }
-          if (peopleSel.querySelector('option[value="'+rk+'"]')) peopleSel.value = rk;
-        }
-        var lvlBtn = document.querySelector('.planning-level-btn[data-level="people"]');
-        if (lvlBtn && lvlBtn.style.display !== 'none' && !lvlBtn.classList.contains('hidden')) lvlBtn.click();
-        /* Явный refresh с переданным rk — на случай если levelBtn.click() не вызвал refresh. */
-        if (typeof refreshPlanningPeopleForCurrentSprint === 'function') {
-          try { refreshPlanningPeopleForCurrentSprint(rk); } catch(_){}
-        }
-      });
-    });
-    /* v5.6.0 — Этап 4 (4d): после рендера accordion — монтируем full editable buildRolePanel
-       в раскрытые карточки. Свёрнутые карточки очищают тело (для экономии DOM). */
-    if (typeof _mountExpandedRoleBodies === 'function') {
-      try { _mountExpandedRoleBodies(); } catch(e){ diag('mount role bodies err: '+e,'err'); }
-    }
-  }
+  /* Уровень «Роли» (карточки + аккордеон-обвязка) — в rolecomposition-view.js
+     (Тир D слайс 3, коммит Б). Делегатор: 5 внешних callers (applyI18N, WC-deps,
+     level-switch, renderPlannerRoles, refresh) не трогаются. */
+  function renderPlanningRoles() { return ROLECOMP_VIEW.renderPlanningRoles(_roleCompDeps()); }
 
-  /* v5.6.0 — Этап 4 (4d): монтаж полного editable buildRolePanel(role) в раскрытые
-     accordion-карточки. Каждая карточка с .expanded получает уникальный buildRolePanel
-     (id внутри функции содержат roleKey, поэтому коллизий нет даже при одновременном
-     раскрытии нескольких ролей). После монтажа — устанавливаем _activeSubtab и
-     applyEditorRightsToUI для применения прав редактора. */
-  function _mountExpandedRoleBodies() {
-    document.querySelectorAll('.planning-role-card.expanded .planning-role-body').forEach(function(host){
-      var rk = host.getAttribute('data-role-body');
-      if (!rk) return;
-      /* Идемпотентность: если уже примонтирован — пропускаем (не пере-рендерим).
-         Mark через data-mounted=1. */
-      if (host.dataset.mounted === '1') return;
-      var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-      if (!role) return;
-      try {
-        /* Сохраняем кнопку «Перейти в Люди» (data-keep="actions") если она есть */
-        var keepActions = host.querySelector('.planning-role-body__actions');
-        host.innerHTML = '';
-        host.appendChild(buildRolePanel(role));
-        if (keepActions) host.appendChild(keepActions);
-        host.dataset.mounted = '1';
-        _activeSubtab = rk;
-        if (typeof applyEditorRightsToUI === 'function') applyEditorRightsToUI();
-      } catch(e) { diag('_mountExpandedRoleBodies err for rk='+rk+': '+e, 'err'); }
-    });
-    /* Свёрнутые карточки — сброс mounted флага (на случай повторного раскрытия — пере-рендер свежим состоянием) */
-    document.querySelectorAll('.planning-role-card:not(.expanded) .planning-role-body').forEach(function(host){
-      if (host.dataset.mounted === '1') {
-        host.dataset.mounted = '';
-        host.innerHTML = '';
-      }
-    });
-  }
+
 
   /* ═══ v5.5.0 — Этап 3c: уровень «Люди» ═══
      Селектор роли + empty-state + summary card. Editable работа с _currentRolePP остаётся
@@ -5020,269 +4863,10 @@
     }
   }
 
-  /* ── Построить панель для одной роли ── */
-  function buildRolePanel(role) {
-    var dynEdit = _settings && _settings.dynEditEnabled;
-    var frag = document.createDocumentFragment();
-
-    /* === Блок: трёхколоночный layout === */
-    var cols = document.createElement('div');
-    cols.className = 'planner-cols';
-
-    /* Колонка 1: Статус планирования */
-    var colStatus = document.createElement('div');
-    colStatus.className = 'card';
-    colStatus.style.marginBottom = '0';
-    colStatus.innerHTML = '<div class="card-title">'+T('cardStatusPlanning')+'</div>';
-    var statusRow = document.createElement('div');
-    statusRow.className = 'status-row';
-    statusRow.style.flexDirection = 'column';
-    statusRow.style.alignItems = 'flex-start';
-    statusRow.style.gap = '10px';
-
-    /* v5.2.0 — селектор статуса упразднён: после удаления PLANNED у него осталась
-       одна опция, теряет смысл. Переход PLANNING→CONFIRMED идёт только через
-       кнопку «Валидировать». Текущий статус показывается через statusBadge. */
-
-    var statusBadge = document.createElement('span');
-    statusBadge.id = 'statusBadge_'+role.key;
-    statusBadge.className = 's-badge s-badge--planning';
-    statusBadge.textContent = statusLabel(STATUS.PLANNING);
-
-    var newSprintBtn = document.createElement('button');
-    newSprintBtn.className = 'ring-button-button ring-button-block ring-button-heightS new-sprint-btn';
-    newSprintBtn.id = 'newSprintBtn_'+role.key;
-    newSprintBtn.style.display = 'none';
-    newSprintBtn.textContent = T('btnNewSprint');
-
-    var saveHeaderBtn = document.createElement('button');
-    saveHeaderBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn';
-    saveHeaderBtn.id = 'saveHeaderBtn_'+role.key;
-    saveHeaderBtn.textContent = T('btnSaveParams');
-
-    statusRow.appendChild(statusBadge);
-    statusRow.appendChild(newSprintBtn);
-    statusRow.appendChild(saveHeaderBtn);
-    colStatus.appendChild(statusRow);
-
-    /* Колонка 2: Доступные ресурсы */
-    var colRes = document.createElement('div');
-    colRes.className = 'card';
-    colRes.style.marginBottom = '0';
-    colRes.innerHTML = '<div class="card-title">'+T('cardAvailRes')+'</div>';
-    var resField = document.createElement('div');
-    resField.className = 'field';
-    resField.innerHTML = '<label for="res_'+role.key+'">'+esc(roleLabel(role))+'</label>'+
-      '<input type="text" id="res_'+role.key+'" placeholder="'+T('phPeriod')+'"/>';
-    colRes.appendChild(resField);
-
-    /* Колонка 3: Остатки ресурсов */
-    var colRem = document.createElement('div');
-    colRem.className = 'card';
-    colRem.style.marginBottom = '0';
-    colRem.innerHTML = '<div class="card-title">'+T('cardRemRes')+'</div>';
-    var remCard = document.createElement('div');
-    remCard.className = 'remain-card';
-    remCard.id = 'rc_'+role.key;
-    remCard.innerHTML = '<div class="remain-card__label">'+esc(roleLabel(role))+'</div>'+
-      '<div class="remain-card__val" id="rem_'+role.key+'">—</div>';
-    colRem.appendChild(remCard);
-
-    cols.appendChild(colStatus);
-    cols.appendChild(colRes);
-    cols.appendChild(colRem);
-    frag.appendChild(cols);
-
-    /* === Блок: Состав спринта === */
-    var compCard = document.createElement('div');
-    compCard.className = 'card';
-    var compTitle = document.createElement('div');
-    compTitle.className = 'card-title';
-    compTitle.textContent = T('cardComposition') + ' — ' + roleLabel(role);
-    compCard.appendChild(compTitle);
-
-    var toolbar = document.createElement('div');
-    toolbar.className = 'toolbar';
-    toolbar.style.marginBottom = '14px';
-
-    var pickBtn = document.createElement('button');
-    pickBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn';
-    pickBtn.id = 'pickBtn_'+role.key;
-    pickBtn.textContent = T('btnPickTasks');
-
-    /* S6 #35 — кнопка «Обновить из задачи» теперь в обоих режимах (inline и обычный):
-       единый refreshFromYouTrack тянет полный срез и в inline безопасен (dirty-guard). */
-    var refreshBtn = document.createElement('button');
-    refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-    refreshBtn.id = 'refreshBtn_'+role.key;
-    refreshBtn.disabled = true;
-    refreshBtn.textContent = T('btnRefreshFromTask');
-
-    var recalcBtn = document.createElement('button');
-    recalcBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-    recalcBtn.id = 'recalcBtn_'+role.key;
-    recalcBtn.disabled = true;
-    recalcBtn.textContent = T('btnRecalc');
-
-    var clearBtn = document.createElement('button');
-    clearBtn.className = 'ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn';
-    clearBtn.id = 'clearBtn_'+role.key;
-    clearBtn.disabled = true;
-    clearBtn.textContent = T('btnClear');
-
-    var spacer = document.createElement('div');
-    spacer.style.flex = '1';
-
-    var validateBtn = document.createElement('button');
-    validateBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText validate-btn';
-    validateBtn.id = 'validateBtn_'+role.key;
-    validateBtn.textContent = T('btnValidate');
-
-    toolbar.appendChild(pickBtn);
-    if (refreshBtn) toolbar.appendChild(refreshBtn);
-    toolbar.appendChild(recalcBtn);
-    toolbar.appendChild(clearBtn);
-    toolbar.appendChild(spacer);
-    toolbar.appendChild(validateBtn);
-    compCard.appendChild(toolbar);
-
-    /* v2.1.0 E4 — Ring Table host (replaces native <table>/<thead>/<tbody>).
-       renderRoleComposition() mounts Ring Table via window.__SSP_TABLE.mountAt
-       with columns built from buildRoleCompositionColumns(role, dynEdit). */
-    var tblWrap = document.createElement('div');
-    tblWrap.className = 'tbl-wrap';
-    var host = document.createElement('div');
-    host.id = 'compHost_'+role.key;
-    host.setAttribute('data-ssp-table-host', '');
-    host.innerHTML = '<div class="empty">'+esc(T('compEmpty'))+'</div>';
-    tblWrap.appendChild(host);
-    compCard.appendChild(tblWrap);
-
-    var pag = document.createElement('div');
-    pag.className = 'pagination';
-    pag.id = 'planPag_'+role.key;
-    pag.style.display = 'none';
-    pag.innerHTML = '<button class="ring-button-button ring-button-block ring-button-heightS" id="planPrev_'+role.key+'">‹</button>'+
-      '<span id="planPageInfo_'+role.key+'"></span>'+
-      '<button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_'+role.key+'">›</button>';
-    compCard.appendChild(pag);
-    frag.appendChild(compCard);
-
-    /* === Навесить события === */
-    setTimeout(function() {
-      wireRolePanel(role, dynEdit);
-      renderRolePlannerHeader(role.key);
-      renderRoleComposition(role.key);
-      updateRoleRemaining(role.key);
-    }, 0);
-
-    return frag;
-  }
+  /* Панель роли (buildRolePanel/wireRolePanel) — в rolecomposition-view.js
+     (Тир D слайс 3, коммит Б); монтируется модульным _mountExpandedRoleBodies. */
 
 
-  function wireRolePanel(role, dynEdit) {
-    var rk = role.key;
-
-    /* Кнопка Подобрать задачи */
-    var pickBtn = document.getElementById('pickBtn_'+rk);
-    if (pickBtn) {
-      pickBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoEditRights'), 'warn'); return; }
-        openPickModal(rk, role);
-      });
-    }
-
-    /* Кнопка Обновить данные */
-    var refreshBtn = document.getElementById('refreshBtn_'+rk);
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        refreshFromYouTrack(); /* #35 — единый путь: весь спринт, обе вкладки + Гант */
-      });
-    }
-
-    /* Кнопка Пересчитать */
-    var recalcBtn = document.getElementById('recalcBtn_'+rk);
-    if (recalcBtn) {
-      recalcBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        updateRoleRemaining(rk);
-        toast(T('toastRecalcDone'), 'success');
-      });
-    }
-
-    /* Кнопка Очистить */
-    var clearBtn = document.getElementById('clearBtn_'+rk);
-    if (clearBtn) {
-      clearBtn.addEventListener('click', (function(roleKey) { return function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        openModal({
-          id: 'clear',
-          type: 'confirm',
-          title: T('confirmClearTask'),
-          body: { kind: 'text', text: T('confirmClearTask') },
-          buttons: [
-            { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
-            { id: 'confirm', text: T('btnYesClear'), variant: 'danger', onClick: function(h) {
-              h.close();
-              _roleItems[roleKey] = [];
-              apiPost('sprint-data', { roleItems: _roleItems }).then(function() {
-                renderRoleComposition(roleKey);
-                updateRoleRemaining(roleKey);
-                toast(T('toastCleared'), 'success');
-              });
-            }},
-          ],
-          dismissOnBackdrop: false,
-          blockEscape: false,
-          showCloseButton: false,
-        });
-      }; })(rk));
-    }
-
-    /* Кнопка Валидировать */
-    var validateBtn = document.getElementById('validateBtn_'+rk);
-    if (validateBtn) {
-      validateBtn.addEventListener('click', function() {
-        if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); return; }
-        doValidateRole(rk);
-      });
-    }
-
-    /* Кнопка Новый спринт */
-    var newSprintBtn = document.getElementById('newSprintBtn_'+rk);
-    if (newSprintBtn) {
-      newSprintBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        doNewSprint(rk);
-      });
-    }
-
-    /* Кнопка Сохранить параметры */
-    var saveHeaderBtn = document.getElementById('saveHeaderBtn_'+rk);
-    if (saveHeaderBtn) {
-      saveHeaderBtn.addEventListener('click', function() {
-        if (!_isEditor) { toast(T('toastNoRightsShort'), 'warn'); return; }
-        doSaveRoleHeader(rk);
-      });
-    }
-
-    /* Пагинация */
-    var prevBtn = document.getElementById('planPrev_'+rk);
-    var nextBtn = document.getElementById('planNext_'+rk);
-    if (prevBtn) prevBtn.addEventListener('click', function() {
-      var page = (_roleItems[rk] && _roleItems[rk]._page) || 1;
-      if (!_roleItems[rk]) return;
-      _roleItems[rk]._page = Math.max(1, page - 1);
-      renderRoleComposition(rk);
-    });
-    if (nextBtn) nextBtn.addEventListener('click', function() {
-      var page = (_roleItems[rk] && _roleItems[rk]._page) || 1;
-      if (!_roleItems[rk]) return;
-      _roleItems[rk]._page = page + 1;
-      renderRoleComposition(rk);
-    });
-  }
 
   /* #25 Ф2 fix — источник intro-полей (Название/Даты/Цель) = выбранный спринт:
      активный _sprint, если он и есть _currentSprintId; иначе снапшот истории.
@@ -5660,442 +5244,16 @@
     });
   }
 
-  /* ── v1.8.0 D130 — Etap В.2 — External ticket ID cell renderer (module-level).
-     Used in role composition, assignee view, and history tables.
-     - empty/undefined → muted '—'
-     - http(s) URL     → clickable <a> (target=_blank, rel=noopener)
-     - plain string    → truncated text with full value in title tooltip
-     esc() is mandatory on every path — this is a user-controlled string from a YT custom field. */
-  /* v2.1.0 E4 — inner-only variant for Ring Table cell (without <td> wrapper). */
-  function _renderExternalTicketInnerHtml(val) {
-    if (!val) return '<span style="color:var(--muted)">—</span>';
-    var safe = esc(String(val));
-    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
-    if (/^https?:\/\//i.test(val)) {
-      return '<span '+style+' title="'+safe+'"><a href="'+safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
-    }
-    return '<span '+style+' title="'+safe+'">'+safe+'</span>';
-  }
-
   /* ── Таблица состава для роли ── */
   function getRoleItemsArr(rk) {
     if (!_roleItems[rk]) _roleItems[rk] = [];
     return _roleItems[rk];
   }
 
-  /* v2.1.0 E4 — Hybrid controlled-mode Ring Table for renderRoleComposition.
-     Ring renders 8-13 dynamic cols (base + optional externalTicketId / system
-     / xpriority). IIFE owns sort state (getSortKey / multiKeySort) and all
-     edit handlers. Cell renderers return { __html } for native HTML; per-row
-     delete buttons and dyn-enum cells wired via DOM Level 0 .onclick after
-     each Ring re-render (MutationObserver — lesson #27).
-     Sort: Ring header click → onSort callback → setSortKey → _rerenderAllSortableTables.
-     Pagination: external #planPag_<rk> div (sibling of host), unchanged. */
-  function renderRoleComposition(rk) {
-    var host = document.getElementById('compHost_'+rk);
-    if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
-    /* #25 Ф2 fix — в «историческом виде» (выбран не активный _sprint, без рабочей копии)
-       состав читаем из снапшота истории (read-only display), а не из _roleItems активного
-       спринта. Иначе шапка показывала счёт снапшота (computeRoleQuickStats), а таблица —
-       пустой _roleItems → «Состав спринта пуст». Архитектура не меняется: редактирование
-       не-активного спринта по-прежнему только через рабочую копию (read-only снимается там).
-       .slice() — чтобы не мутировать _history (items._page ставится ниже). */
-    var isHistoricalView = _currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId;
-    var items;
-    if (isHistoricalView) {
-      var _hsnap = (Array.isArray(_history) ? _history : []).find(function(h){
-        return h && h.sprintId === _currentSprintId + '_' + rk;
-      });
-      items = (_hsnap && Array.isArray(_hsnap.items)) ? _hsnap.items.slice() : [];
-    } else {
-      items = getRoleItemsArr(rk);
-    }
-    var has = items.length > 0;
-    diag('renderRoleComposition('+rk+'): items.length='+items.length+' host=yes has='+has, 'info');
-    var clearBtn  = document.getElementById('clearBtn_'+rk);
-    var recalcBtn = document.getElementById('recalcBtn_'+rk);
-    var refreshBtn = document.getElementById('refreshBtn_'+rk);
-    if (clearBtn)  clearBtn.disabled  = !has;
-    if (recalcBtn) recalcBtn.disabled = !has;
-    if (refreshBtn) refreshBtn.disabled = !has;
-
-    if (!has) {
-      if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
-      /* #43 W2 (B-2/D-1) — структурный empty-state; CTA проксирует клик на
-         тулбарный pickBtn_<rk> (единая точка входа подбора задач). */
-      host.innerHTML = '<div class="ssp-empty">' +
-        '<div class="ssp-empty__icon" data-icon="task" aria-hidden="true"></div>' +
-        '<div class="ssp-empty__title">' + esc(T('compEmptyTitle')) + '</div>' +
-        '<div class="ssp-empty__desc">' + esc(T('compEmptyDesc')) + '</div>' +
-        '<button type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta">' + esc(T('btnPickTasks')) + '</button>' +
-        '</div>';
-      applyIcons();
-      var emptyCtaEl = host.querySelector('.ssp-empty__cta');
-      if (emptyCtaEl) emptyCtaEl.addEventListener('click', function() {
-        var pb = document.getElementById('pickBtn_' + rk);
-        if (pb) pb.click();
-      });
-      var pagElEmpty = document.getElementById('planPag_'+rk);
-      if (pagElEmpty) pagElEmpty.style.display = 'none';
-      return;
-    }
-
-    var pageNum = items._page || 1;
-    var total = Math.ceil(items.length / PAGE_SIZE);
-    pageNum = Math.min(pageNum, total);
-    items._page = pageNum;
-    /* v6.1.0 D81 (F4) — multi-key sort применяется поверх items до пагинации.
-       Если sort выключен — порядок storage. Сортировка не мутирует _roleItems[rk]. */
-    var sortedItems = (typeof multiKeySort === 'function') ? multiKeySort(items) : items;
-    var start = (pageNum - 1) * PAGE_SIZE;
-    var page  = sortedItems.slice(start, start + PAGE_SIZE);
-    var dynEdit = _settings && _settings.dynEditEnabled;
-
-    function fmtDelta(val) {
-      if (val === null || val === undefined) return '<span style="color:var(--muted)">—</span>';
-      var s = fmtHoursOnly(Math.abs(val));
-      if (val < 0) return '<span class="delta-neg">−'+s+'</span>';
-      return s;
-    }
-
-    /* v5.0.3 — серверный snapshot для сравнения и подсветки dirty rows.
-       Ring Table per-row className via column.className isn't per-cell; we
-       wrap each cell in a span carrying tr--dirty-row class for visual.
-       Lock+dirty visual semantics moved to td-level span wrappers. */
-    var snapItems = (_serverSnapshotRoleItems && _serverSnapshotRoleItems[rk]) || [];
-    var snapByIssue = {};
-    snapItems.forEach(function(it){ if (it && it.issueId) snapByIssue[it.issueId] = it; });
-    /* v5.2.0 — после ALLOCATED таблица read-only. Для перехода в edit-режим
-       пользователь жмёт «Открыть на правку» в истории (текущая логика сбрасывает
-       статус в PLANNING → lock автоматически снимается). Полная working-copy логика — v5.3.0. */
-    var isLocked = !!(_sprint && _sprint.status === STATUS.ALLOCATED);
-    var roAttr = isLocked ? ' readonly="readonly" tabindex="-1"' : '';
-    var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
-
-    /* Pre-compute per-item derived data so cell renderers stay cheap. */
-    var pageData = page.map(function(item) {
-      var est  = item['estimate_'+rk];
-      var fact = item['fact_'+rk];
-      var delta = (est !== null && est !== undefined)
-        ? ((fact !== null && fact !== undefined) ? ((est||0) - (fact||0)) : (est||0))
-        : null;
-      var alloc = item['alloc_'+rk];
-      var allocDefault = (delta !== null && delta !== undefined) ? Math.max(0, delta) : null;
-      var allocVal = (alloc !== null && alloc !== undefined) ? alloc : allocDefault;
-      var allocDisplay = allocVal !== null && allocVal !== undefined ? fmtPeriod(allocVal) : '';
-      var snap = snapByIssue[item.issueId];
-      var isDirty = !snap || JSON.stringify({a:item['alloc_'+rk], i:item.inclusionStatus, e:item['estimate_'+rk], f:item['fact_'+rk]})
-                          !== JSON.stringify({a:snap['alloc_'+rk], i:snap.inclusionStatus, e:snap['estimate_'+rk], f:snap['fact_'+rk]});
-      return {
-        item: item, est: est, fact: fact, delta: delta,
-        allocDisplay: allocDisplay, isDirty: isDirty, iid: item.issueId,
-      };
-    });
-
-    var columns = [];
-    columns.push({
-      id: 'id', title: T('thId'), sortable: true, className: 'td-id',
-      getValue: function(row) {
-        return { __html: '<a href="'+safeUrl(row.item.url)+'" target="_blank" class="link">'+esc(row.iid)+'</a>' };
-      }
-    });
-    if (_settings && _settings.fieldExternalTicketId) {
-      columns.push({
-        id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true,
-        getValue: function(row) { return { __html: _renderExternalTicketInnerHtml(row.item.externalTicketId) }; }
-      });
-    }
-    if (_settings && _settings.fieldSystem) {
-      columns.push({
-        id: 'system', title: T('thSystem'), sortable: false,
-        getValue: function(row) {
-          if (dynEdit) {
-            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(row.item.system||'—')+'</span>' };
-          }
-          return esc(row.item.system||'—');
-        }
-      });
-    }
-    columns.push({
-      id: 'priority', title: T('thPriority'), sortable: true,
-      getValue: function(row) {
-        if (dynEdit && _settings && _settings.fieldPriority) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(dispEnum(row.item.priority)||'—')+'</span>' };
-        }
-        return esc(dispEnum(row.item.priority)||'—');
-      }
-    });
-    if (_settings && _settings.fieldXPriority) {
-      columns.push({
-        id: 'xpriority', title: T('thXpriority'), sortable: true,
-        getValue: function(row) {
-          if (dynEdit) {
-            return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(dispEnum(row.item.xpriority)||'—')+'</span>' };
-          }
-          return esc(dispEnum(row.item.xpriority)||'—');
-        }
-      });
-    }
-    columns.push({
-      id: 'state', title: T('thState'), sortable: false,
-      getValue: function(row) {
-        if (dynEdit && _settings && _settings.fieldState) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(dispEnum(row.item.state)||'—')+'</span>' };
-        }
-        return esc(dispEnum(row.item.state)||'—');
-      }
-    });
-    columns.push({
-      id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
-      getValue: function(row) { return esc(row.item.title||''); }
-    });
-    if (dynEdit) {
-      columns.push({
-        id: 'estimate', title: T('thEstimate'), sortable: false, className: 'td-num',
-        getValue: function(row) {
-          var estDisplay = row.est !== null && row.est !== undefined ? fmtPeriod(row.est) : '';
-          /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
-             have their own background and native inputs inherit it (looking
-             black in dark theme). Force surface/text vars on inputs. */
-          return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
-        }
-      });
-      columns.push({
-        id: 'fact', title: T('thFact'), sortable: false, className: 'td-num',
-        getValue: function(row) {
-          return { __html: row.fact !== null && row.fact !== undefined ? fmtHoursOnly(row.fact) : '<span style="color:var(--muted)">—</span>' };
-        }
-      });
-      columns.push({
-        id: 'resource', title: T('thResource'), sortable: false, className: 'td-num',
-        getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
-      });
-    } else {
-      columns.push({
-        id: 'resource', title: fmtThLabel(roleLabel(ALL_ROLES.find(function(r){return r.key===rk;}) || {key:rk,labelKey:rk})), sortable: false, className: 'td-num',
-        getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
-      });
-    }
-    columns.push({
-      id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num',
-      getValue: function(row) {
-        return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
-      }
-    });
-    columns.push({
-      id: 'incStatus', title: T('thIncStatus'), sortable: false,
-      getValue: function(row) {
-        var html = '<select class="inc-sel" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'">'+
-          Object.values(INC).map(function(v){return '<option value="'+v+'"'+(row.item.inclusionStatus===v?' selected':'')+'>'+esc(incLabel(v))+'</option>';}).join('')+
-          '</select>';
-        return { __html: html };
-      }
-    });
-    columns.push({
-      id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
-      getValue: function(row) {
-        return { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
-      }
-    });
-
-    if (window.__SSP_TABLE) {
-      window.__SSP_TABLE.mountAt(host, {
-        items: pageData,
-        columns: columns,
-        sortKey: (typeof getSortKey === 'function') ? getSortKey() : 'off',
-        onSort: function(nextKey) {
-          if (typeof setSortKey === 'function') setSortKey(nextKey);
-          if (typeof _rerenderAllSortableTables === 'function') _rerenderAllSortableTables();
-          else renderRoleComposition(rk);
-        },
-        getItemKey: function(row) { return row.iid; },
-        stickyHeader: true,
-        emptyText: T('compSprintEmpty'),
-      });
-    }
-
-    /* v1.6.2 D127 — стабильный lookup по issueId; индекс в _roleItems[rk] не совпадает
-       с позицией в DOM-таблице, когда применена сортировка через multiKeySort. */
-    function _findIdxByIid(rkx, iidx) {
-      var arr = getRoleItemsArr(rkx);
-      for (var __i = 0; __i < arr.length; __i++) {
-        if (arr[__i] && arr[__i].issueId === iidx) return __i;
-      }
-      return -1;
-    }
-
-    // Навесить события
-    /* Event delegation on host (idempotent). Ring Table does not intercept
-       change / focusout events — only clicks. Inputs/selects work via host
-       delegation; delete buttons + dyn-enum spans use direct DOM Level 0
-       .onclick via MutationObserver rebind (lesson #27). focusout bubbles
-       (unlike blur) and gives us the same semantics as legacy blur handlers. */
-    if (!host.__sspCompHandlersBound) {
-      host.__sspCompHandlersBound = true;
-
-      host.addEventListener('change', function(ev) {
-        var t = ev.target;
-        if (!t || !t.matches || !t.matches('select.inc-sel[data-iid]')) return;
-        var rk2 = t.dataset.rk;
-        var iid = t.dataset.iid;
-        var idx = _findIdxByIid(rk2, iid);
-        if (idx < 0) { diag('inc-sel change: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-        getRoleItemsArr(rk2)[idx].inclusionStatus = t.value;
-        updateRoleRemaining(rk2);
-        _markDirty('roleItems');
-        _draftSaveDebounced('roleItems', function(){ return _roleItems; });
-        apiPost('sprint-data', { roleItems: _roleItems });
-      });
-
-      host.addEventListener('focusout', function(ev) {
-        var t = ev.target;
-        if (!t || !t.matches) return;
-        if (t.readOnly) return;
-        /* Аллокация: blur-обработчик (оба режима) */
-        if (t.matches('input.alloc-input[data-iid]')) {
-          var rk2  = t.dataset.rk;
-          var iid  = t.dataset.iid;
-          var idx  = _findIdxByIid(rk2, iid);
-          if (idx < 0) { diag('alloc-input focusout: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-          var item = getRoleItemsArr(rk2)[idx];
-          if (!item) return;
-          var newVal = parsePeriod(t.value);
-          var oldVal = item['alloc_'+rk2];
-          if (t.value.trim() === '') newVal = null;
-          if (newVal === oldVal) return;
-          item['alloc_'+rk2] = newVal;
-          if (newVal === null) {
-            var est  = item['estimate_'+rk2];
-            var fact = item['fact_'+rk2];
-            var delta = (est !== null && est !== undefined)
-              ? Math.max(0, (est||0)-(fact||0))
-              : null;
-            t.value = delta !== null ? fmtPeriod(delta) : '';
-          } else {
-            t.value = fmtPeriod(newVal);
-          }
-          updateRoleRemaining(rk2);
-          _markDirty('roleItems');
-          _draftSaveDebounced('roleItems', function(){ return _roleItems; });
-          apiPost('sprint-data', { roleItems: _roleItems });
-          return;
-        }
-        /* dynEdit: оценка-period blur */
-        if (t.matches('input.dyn-period-input[data-iid]')) {
-          var rk3 = t.dataset.rk;
-          var iid3 = t.dataset.iid;
-          var idx3 = _findIdxByIid(rk3, iid3);
-          if (idx3 < 0) { diag('dyn-period-input focusout: item iid='+iid3+' not found in role '+rk3,'warn'); return; }
-          var newVal3 = parsePeriod(t.value);
-          var item3 = getRoleItemsArr(rk3)[idx3];
-          var oldVal3 = item3['estimate_'+rk3];
-          if (newVal3 === oldVal3) return;
-          var inpEl = t;
-          showDynFieldConfirm(
-            T('dynModalTitle'),
-            T('dynConfirmEst') + ' ' + item3.issueId + ' ' + T('dynConfirmEstTo') + fmtPeriod(newVal3) + '»?',
-            null, null,
-            function(confirmed) {
-              if (confirmed) {
-                item3['estimate_'+rk3] = newVal3;
-                updateIssueField(item3.issueId, _settings[ALL_ROLES.find(function(r){return r.key===rk3;}).fieldEst], newVal3, 'period');
-                updateRoleRemaining(rk3);
-                renderRoleComposition(rk3);
-                apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rk3); });
-              } else {
-                inpEl.value = oldVal3 !== null && oldVal3 !== undefined ? fmtPeriod(oldVal3) : '';
-              }
-            }
-          );
-          return;
-        }
-      });
-    }
-
-    /* v2.1.14 — Ring Table на mousedown по содержимому ячейки делает focus/re-render
-       строки → кнопка пересоздаётся между mousedown и mouseup → браузер НЕ генерирует
-       `click` на первом клике (mousedown/mouseup на разных DOM-элементах; доказано
-       инструментально: mousedown✅ mouseup✅ click❌). Старый per-button .onclick и
-       click-делегация срабатывали только со 2-го клика (pre-existing класс, как B11).
-       Fix: слушаем MOUSEDOWN (приходит всегда, первым) в CAPTURE — данные уже доступны
-       (data-iid/rk), действие выполняется сразу. preventDefault гасит Ring row-focus,
-       stopPropagation — Ring синтетику. Делегация переживает re-render.
-       Инпуты/селекты (alloc-input/inc-sel) НЕ трогаем — им нужен нативный фокус/change.
-       Только левая кнопка (ev.button===0). */
-    if (!host.__sspCompCaptureBound) {
-      host.__sspCompCaptureBound = true;
-      host.addEventListener('mousedown', function(ev) {
-        if (ev.button !== 0) return;
-        var tgt = ev.target;
-        if (!tgt || typeof tgt.closest !== 'function') return;
-
-        var delBtn = tgt.closest('button.del-item-btn[data-iid]');
-        if (delBtn && host.contains(delBtn)) {
-          ev.preventDefault(); ev.stopPropagation();
-          var rk2 = delBtn.dataset.rk, iid = delBtn.dataset.iid;
-          var idx = _findIdxByIid(rk2, iid);
-          if (idx < 0) { diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
-          getRoleItemsArr(rk2).splice(idx, 1);
-          renderRoleComposition(rk2);
-          updateRoleRemaining(rk2);
-          _markDirty('roleItems');
-          _draftSaveDebounced('roleItems', function(){ return _roleItems; });
-          apiPost('sprint-data', { roleItems: _roleItems });
-          return;
-        }
-
-        var cell = tgt.closest('span.dyn-enum-cell[data-iid]');
-        if (cell && host.contains(cell)) {
-          ev.preventDefault(); ev.stopPropagation();
-          var rkc = cell.dataset.rk, iidc = cell.dataset.iid;
-          var idxc = _findIdxByIid(rkc, iidc);
-          if (idxc < 0) { diag('dyn-enum-cell click: item iid='+iidc+' not found in role '+rkc,'warn'); return; }
-          var dataField = cell.dataset.field;
-          var item     = getRoleItemsArr(rkc)[idxc];
-          var fieldName = _settings && _settings[dataField];
-          if (!fieldName) return;
-          var fieldTitleMap = { fieldState: T('dynFieldState'), fieldPriority: T('dynFieldPriority'), fieldXPriority: T('dynFieldXpriority'), fieldSystem: T('dynFieldSystem') };
-          var itemKeyMap  = { fieldState: 'state', fieldPriority: 'priority', fieldXPriority: 'xpriority', fieldSystem: 'system' };
-          var fieldTitle  = fieldTitleMap[dataField] || dataField;
-          var itemKey     = itemKeyMap[dataField] || dataField;
-          var curVal      = item[itemKey];
-          loadEnumBundle(fieldName, function(values) {
-            showDynFieldConfirm(
-              T('dynModalTitle') + ' «' + fieldTitle + '»',
-              T('dynIssuePrefix') + item.issueId,
-              values, curVal,
-              function(confirmed, newVal) {
-                if (confirmed && newVal !== null) {
-                  item[itemKey] = newVal;
-                  cell.textContent = localizeEnumVal(newVal) || newVal;
-                  updateIssueField(item.issueId, fieldName, newVal, 'enum');
-                  apiPost('sprint-data', { roleItems: _roleItems }).then(function(){ renderRoleComposition(rkc); });
-                }
-              }
-            );
-          });
-          return;
-        }
-      }, true);
-    }
-
-    // Пагинация
-    var pagEl = document.getElementById('planPag_'+rk);
-    if (pagEl) {
-      if (total > 1) {
-        pagEl.style.display = 'flex';
-        var infoEl = document.getElementById('planPageInfo_'+rk);
-        if (infoEl) infoEl.textContent = T('pageOf') + pageNum + T('pageOfSep') + total;
-        var prevEl = document.getElementById('planPrev_'+rk);
-        var nextEl = document.getElementById('planNext_'+rk);
-        if (prevEl) prevEl.disabled = pageNum <= 1;
-        if (nextEl) nextEl.disabled = pageNum >= total;
-      } else {
-        pagEl.style.display = 'none';
-      }
-    }
-    _updateRoleAccordionStats(rk);
-  }
+  /* Состав роли (Ring Table, event-делегаты, пагинация) — в rolecomposition-view.js
+     (Тир D слайс 3). Делегатор сохраняет hoisting и 18 call-sites; переопределение
+     ниже (v2.1.0 E4) оборачивает его пост-обработкой updateAllocOverlimitUI. */
+  function renderRoleComposition(rk) { return ROLECOMP_VIEW.renderRoleComposition(rk, _roleCompDeps()); }
 
   /* ── Динамическое модальное окно ──
      Phase 3 #32 — мигрировано на openModal() (bespoke dynFieldForm, настоящий React).

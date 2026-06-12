@@ -1,0 +1,17 @@
+{
+  "inclusionStatus": "INC_EXCLUDED",
+  "remainCalls": [
+    "analysis"
+  ],
+  "dirty": {
+    "roleItems": true
+  },
+  "apiPostLog": [
+    {
+      "path": "sprint-data",
+      "keys": [
+        "roleItems"
+      ]
+    }
+  ]
+}

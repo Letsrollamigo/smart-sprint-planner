@@ -1,0 +1,30 @@
+{
+  "cards": [
+    {
+      "rk": "analysis",
+      "expanded": false,
+      "chevron": "▶",
+      "hasJumpPeople": true
+    },
+    {
+      "rk": "testing",
+      "expanded": false,
+      "chevron": "▶",
+      "hasJumpPeople": true
+    },
+    {
+      "rk": "devBack",
+      "expanded": false,
+      "chevron": "▶",
+      "hasJumpPeople": true
+    },
+    {
+      "rk": "devFront",
+      "expanded": false,
+      "chevron": "▶",
+      "hasJumpPeople": true
+    }
+  ],
+  "noSprintHidden": true,
+  "noActiveHidden": true
+}

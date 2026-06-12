@@ -1,0 +1,17 @@
+{
+  "afterSet": {
+    "alloc": 720,
+    "inputValue": "12ч"
+  },
+  "afterClear": {
+    "alloc": null,
+    "inputValue": "10ч"
+  },
+  "repeatBlurAfterClearPersists": true,
+  "allocAfterRepeatBlur": 600,
+  "apiPostPaths": [
+    "sprint-data",
+    "sprint-data",
+    "sprint-data"
+  ]
+}

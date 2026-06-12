@@ -1,0 +1,48 @@
+{
+  "page1": {
+    "display": "flex",
+    "info": "Стр. 1 / 2",
+    "prevDisabled": true,
+    "nextDisabled": false,
+    "itemKeys": [
+      "GMP-1",
+      "GMP-2",
+      "GMP-3",
+      "GMP-4",
+      "GMP-5",
+      "GMP-6",
+      "GMP-7",
+      "GMP-8",
+      "GMP-9",
+      "GMP-10",
+      "GMP-11",
+      "GMP-12",
+      "GMP-13",
+      "GMP-14",
+      "GMP-15",
+      "GMP-16",
+      "GMP-17",
+      "GMP-18",
+      "GMP-19",
+      "GMP-20",
+      "GMP-21",
+      "GMP-22",
+      "GMP-23",
+      "GMP-24",
+      "GMP-25"
+    ]
+  },
+  "page2": {
+    "display": "flex",
+    "info": "Стр. 2 / 2",
+    "prevDisabled": false,
+    "nextDisabled": true,
+    "itemKeys": [
+      "GMP-26",
+      "GMP-27",
+      "GMP-28",
+      "GMP-29",
+      "GMP-30"
+    ]
+  }
+}

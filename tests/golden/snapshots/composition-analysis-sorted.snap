@@ -1,0 +1,10 @@
+{
+  "sortKey": "priority",
+  "itemKeys": [
+    "GM-4",
+    "GM-1",
+    "GM-2",
+    "GM-3"
+  ],
+  "sortKeyAfterOnSort": "id"
+}
