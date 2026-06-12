@@ -73,8 +73,6 @@
   var SORT_PURE = (typeof window !== 'undefined' && window.__SSP_SORT_PURE) || {};
   /* #35 — чистое ядро слияния «Обновить из задачи» (refresh-merge-pure.js). */
   var REFRESH_MERGE_PURE = (typeof window !== 'undefined' && window.__SSP_REFRESH_MERGE_PURE) || {};
-  /* #36 — чистое ядро deep-link share-URL (share-url-pure.js): parse/build search ↔ state. */
-  var SHARE_URL_PURE = (typeof window !== 'undefined' && window.__SSP_SHARE_URL_PURE) || {};
   /* #36 — share-параметры из URL, считанные ОДИН раз на init (consumed в _loadAndRenderProject). */
   var _pendingShareParams = null;
   /* #36 — guard авто-синка state→URL: выключен во время init-restore (иначе _applyActiveProject
@@ -2407,137 +2405,43 @@
   }
 
   /* ═══ #36 Share-URL (deep-link + handoff) ═══════════════════════════════
-     host.navigation доступен только в global-режиме (MAIN_MENU_ITEM). getAppLocation()
-     АСИНХРОНЕН (Promise) — проверено V0-A 2026-06-09. YT добавляет app_-префикс к ключам
-     в видимой строке, но get/replaceAppLocation работают с чистыми ключами симметрично. */
-
-  function _navAvailable() {
-    return !!(_host && _host.navigation && typeof _host.navigation.getAppLocation === 'function');
+     Вынесено в share-controller.js (Фаза 5 слайс 2, коммит В) за мост
+     window.__SSP_SHARE_CTRL (⚠️ _SHARE_APP_PATH per-fork — DIFF_MAP §9);
+     golden-контракты — permissions-share.golden.test.js (идут через эти
+     делегаторы). Deps-фабрика per-call: стейт share-цепочки (_host/_mode/
+     _urlSyncEnabled/проект/спринт/_ytBase/_sprint/_history) остаётся в
+     монолите — init-restore пишет _urlSyncEnabled/_pendingShareParams. */
+  var SHARE_CTRL = (typeof window !== 'undefined' && window.__SSP_SHARE_CTRL) || {};
+  function _shareDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      state: {
+        getHost: function () { return _host; },
+        getMode: function () { return _mode; },
+        getUrlSyncEnabled: function () { return _urlSyncEnabled; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getYtBase: function () { return _ytBase; },
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+      },
+    };
   }
-
-  /* URL → state: читает search один раз на init. Возвращает Promise<{projectKey,sprintId,node,focus}>. */
-  function _readShareParams() {
-    if (typeof SHARE_URL_PURE.parseShareSearch !== 'function' || !_navAvailable()) return Promise.resolve({});
-    try {
-      return Promise.resolve(_host.navigation.getAppLocation())
-        .then(function (loc) { return SHARE_URL_PURE.parseShareSearch(loc && loc.search) || {}; })
-        .catch(function () { return {}; });
-    } catch (_) { return Promise.resolve({}); }
-  }
-
-  /* Внутренний id активного узла дерева (для билда URL). */
-  function _currentDashNode() {
-    try {
-      var act = document.querySelector('.ssp-tree [data-node].active');
-      if (act && act.dataset && act.dataset.node) return act.dataset.node;
-    } catch (_) {}
-    return null;
-  }
-
-  /* state → URL: replaceAppLocation (без записи в history). No-op до _urlSyncEnabled / вне global. */
-  function _syncStateToUrl() {
-    if (!_urlSyncEnabled || _mode !== 'global' || !_navAvailable()) return;
-    if (typeof _host.navigation.replaceAppLocation !== 'function') return;
-    if (typeof SHARE_URL_PURE.buildShareSearch !== 'function') return;
-    try {
-      var search = SHARE_URL_PURE.buildShareSearch({
-        projectKey: _activeProjectKey,
-        sprintId:   _currentSprintId,
-        node:       _currentDashNode()
-      });
-      _host.navigation.replaceAppLocation({ search: search });
-    } catch (_) {}
-  }
-
-  /* Валиден ли sprintId (base-UUID) среди доступных: активный спринт или запись истории. */
-  function _validSprintId(id) {
-    if (!id) return false;
-    if (_sprint && _sprint.sprintId === id) return true;
-    if (Array.isArray(_history)) {
-      return _history.some(function (rec) {
-        return rec && rec.sprintId && String(rec.sprintId).split('_')[0] === id;
-      });
-    }
-    return false;
-  }
-
-  /* Применить focus=role:K / user:L — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
-  function _applyShareFocus(focus) {
-    if (typeof SHARE_URL_PURE.parseFocus !== 'function') return;
-    var f = SHARE_URL_PURE.parseFocus(focus);
-    if (!f) return;
-    setTimeout(function () {
-      try {
-        var el = null;
-        if (f.kind === 'role') {
-          el = document.querySelector('.planning-role-card[data-role-key="' + f.value + '"]');
-        } else if (f.kind === 'user') {
-          /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
-          el = document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]');
-        }
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ssp-focus-flash');
-        setTimeout(function () { try { el.classList.remove('ssp-focus-flash'); } catch (_) {} }, 1600);
-      } catch (_) {}
-    }, 200);
-  }
+  function _navAvailable() { return SHARE_CTRL._navAvailable(_shareDeps()); }
+  function _readShareParams() { return SHARE_CTRL._readShareParams(_shareDeps()); }
+  function _syncStateToUrl() { return SHARE_CTRL._syncStateToUrl(_shareDeps()); }
+  function _validSprintId(id) { return SHARE_CTRL._validSprintId(id, _shareDeps()); }
+  function _applyShareFocus(focus) { return SHARE_CTRL._applyShareFocus(focus, _shareDeps()); }
+  /* Делегатор-точка входа share-голденов (как computeRoleQuickStats в слайсе 3);
+     прод-caller — _onShareClick внутри модуля. */
+  function _buildShareHref() { return SHARE_CTRL._buildShareHref(_shareDeps()); }
+  function _onShareClick() { return SHARE_CTRL._onShareClick(_shareDeps()); }
 
   /* Состояние кнопки «Поделиться» в рельсе (#36) — вынесено в header-view.js
      (Тир D слайс 5, ступень 1, коммит В); делегатор для callers share-цепочки
      и init-зоны рельса. */
   function _updateShareBtnState() { return HEADER_VIEW._updateShareBtnState(_headerDeps()); }
 
-  /* Клик по «Поделиться»: копирует текущий deep-link URL + toast. Без модалки/dropdown (D4).
-     ВАЖНО (V0-смоук 2026-06-09): iframe виджета YT идёт без allow="clipboard-write" в
-     Permissions-Policy → navigator.clipboard.writeText БЛОКИРУЕТСЯ (и в проде, не только в
-     автоматизации). Поэтому primary-путь — синхронный execCommand('copy') в gesture'е (он
-     не гейтится clipboard-write policy); async Clipboard API — лишь enhancement-fallback. */
-  function _execCopy(text) {
-    try {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      try { ta.setSelectionRange(0, text.length); } catch (_) {}
-      var done = false;
-      try { done = document.execCommand('copy'); } catch (_) { done = false; }
-      document.body.removeChild(ta);
-      return !!done;
-    } catch (_) { return false; }
-  }
-  /* #36 v2.5.2 — shareable URL РЕКОНСТРУИРУЕМ из состояния, НЕ из window.location.href:
-     виджет живёт в sandboxed about:srcdoc-iframe → window.location.href = "about:srcdoc#…"
-     (адрес iframe, не родительский YT-URL). Собираем: ytBase + путь app/widget +
-     app_-префиксные параметры (YT в реальном URL префиксует ключи app_; getAppLocation
-     читает их обратно без префикса — V0-A 2026-06-09). */
-  var _SHARE_APP_PATH = '/app/smart-sprint-planner/ssp-main-global/';
-  function _buildShareHref() {
-    var base = String(_ytBase || '').replace(/\/+$/, '');
-    var raw = (typeof SHARE_URL_PURE.buildShareSearch === 'function')
-      ? SHARE_URL_PURE.buildShareSearch({ projectKey: _activeProjectKey, sprintId: _currentSprintId, node: _currentDashNode() })
-      : '';
-    var prefixed = raw ? raw.split('&').map(function (p) { return 'app_' + p; }).join('&') : '';
-    return base + _SHARE_APP_PATH + (prefixed ? '?' + prefixed : '');
-  }
-  function _onShareClick() {
-    var href = _buildShareHref();
-    try { diag('share copy: ' + href, 'info'); } catch (_) {}
-    function ok()  { try { toast(T('shareCopyOk')); } catch (_) {} }
-    function err() { try { toast(T('shareCopyErr')); } catch (_) {} }
-    /* 1) синхронный execCommand в gesture'е (работает в sandboxed iframe без clipboard-write) */
-    if (_execCopy(href)) { ok(); return; }
-    /* 2) fallback — async Clipboard API (если вдруг доступен) */
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(href).then(ok, err);
-      } else {
-        err();
-      }
-    } catch (_) { err(); }
-  }
 
   function _onProjectPicked(newKey) {
     if (!newKey || newKey === _activeProjectKey) return;
