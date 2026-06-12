@@ -14,9 +14,9 @@
    _sprint/_history) остаётся в монолите — get-аксессоры читаются строго в момент
    вызова (init-restore переключает _urlSyncEnabled уже после install модуля).
 
-   ⚠️ _SHARE_APP_PATH — per-fork константа (DIFF_MAP §9): corp
-   /app/smart-sprint-planner/ vs community /app/smart-sprint-planner/ —
-   namespace-sed зеркала её НЕ покрывает, при зеркалировании фиксировать вручную. */
+   ⚠️ _SHARE_APP_PATH — per-fork константа (DIFF_MAP §9): различается ИМЕНЕМ
+   приложения между форками, а не только префиксом — зеркалится sed-заменой
+   имени приложения ДО namespace-префиксов; дифф зоны при зеркале обязателен. */
 'use strict';
 
 var SHARE_URL_PURE = (typeof window !== 'undefined' && window.__SSP_SHARE_URL_PURE) || {};
