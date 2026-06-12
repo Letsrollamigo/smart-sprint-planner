@@ -838,7 +838,9 @@
      - Path A (parent/top doc host) сохранён для cross-origin-friendly сценариев,
        но переведён на тот же DOM-контракт (toast-stack + .toast__text + .toast__close).
      - Path B (local iframe) — теперь не click-anchored, а bottom-right fixed
-       через #toastStack контейнер в index.html. _lastClickX/_lastClickY удалены.
+       через #toastStack контейнер в index.html. Клик-координаты были удалены
+       (Y-трек возвращён post-smoke фиксом v1.9.11 ниже; X не нужен — стак
+       позиционируется только по вертикали).
      - ARIA: контейнер role="status" aria-live="polite" (один анонс per toast).
        Error переопределяет на role="alert" aria-live="assertive" на самом toast'е.
      - prefers-reduced-motion: убираем translateX, только opacity (CSS-level). */
@@ -899,11 +901,10 @@
      от точки клика, гарантированно в visible region (т.к. user только что туда
      кликнул и нажатие было в visible viewport).
      Fallback: если кликов ещё не было — 50% высоты iframe (приблизительный центр). */
-  var _lastClickX = 0, _lastClickY = 0;
+  var _lastClickY = 0;
   try {
     document.addEventListener('mousedown', function(e) {
       if (typeof e.clientY === 'number' && !isNaN(e.clientY)) {
-        _lastClickX = e.clientX;
         _lastClickY = e.clientY;
       }
     }, true);
