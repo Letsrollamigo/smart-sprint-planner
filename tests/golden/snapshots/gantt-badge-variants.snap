@@ -1,0 +1,18 @@
+{
+  "GM-30": {
+    "assignee": "Не назначен",
+    "bg": "#e6f4ea",
+    "badge": {
+      "label": "В работе",
+      "pillBg": "#e6f4ea",
+      "pillFg": "#137333",
+      "hist": true,
+      "loadingText": "загрузка истории…"
+    }
+  },
+  "GM-31": {
+    "assignee": "Не назначен",
+    "bg": "#9aa3ad",
+    "badge": null
+  }
+}

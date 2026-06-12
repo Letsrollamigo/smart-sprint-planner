@@ -207,14 +207,26 @@ test('golden: doStandupRefresh — нет изменений (без перси�
   });
 });
 
+/* ── Гант, ступень 2 (React, #39): оракул = vm-контракт «gantt-view.js →
+   __SSP_GANTT_MOUNT» (recording-стаб харнесса стэшит vm на
+   #ganttContainer.__sspGanttVm). Снапшоты регенерированы со ступени 1
+   (innerHTML → структурный vm) с ручным ревью паритета: те же задачи/ось
+   дат/позиции полос/цвета/бейджи. Empty-ветки (gantt-empty, gantt-no-dates) —
+   по-прежнему vanilla-DOM, их контракт не менялся. История #20: фетч-пинок
+   ушёл за коммит DOM — в тестах зовётся vm.onAfterRender(). ── */
+
+function ganttVm(document) {
+  return document.getElementById('ganttContainer').__sspGanttVm;
+}
+
 test('golden: renderGanttChart — devBack активного спринта', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   fx.applyPeopleState(gm);
   gm.call('renderGanttChart');
-  const container = document.getElementById('ganttContainer');
-  assert.ok(container.innerHTML.length > 0, 'gantt must render rows');
-  checkHtmlSnapshot('gantt-devback', container.innerHTML);
+  const vm = ganttVm(document);
+  assert.ok(vm && vm.rows.length > 0, 'gantt must render rows');
+  checkJsonSnapshot('gantt-devback', vm);
 });
 
 test('golden: renderGanttChart — нет данных роли (empty)', () => {
@@ -563,4 +575,159 @@ test('golden: контракт кнопки «Создать новый спри
   click();
 
   checkJsonSnapshot('new-sprint-btn-contract', { log: log });
+});
+
+/* ════ Тир D слайс 6 — Гант: ветки бейджа (#20) / реассайн-контракт (D46) ════
+   Добраны до выноса (ступень 1, innerHTML), на ступени 2 переведены на
+   vm-контракт моста с ручным ревью паритета. Entry-point — renderGanttChart
+   (делегатор) + gm.set стейта и recording-стабов сервисов. */
+
+/** Item девбэка с гант-полями состояния (#20); даты берутся из rec/sprint. */
+function ganttItem(issueId, over) {
+  return Object.assign({
+    issueId: issueId,
+    title: 'Гант ' + issueId,
+    url: 'http://localhost:8080/issue/' + issueId,
+    inclusionStatus: 'INC_PLANNED',
+    estimate_devBack: 600, fact_devBack: 0, alloc_devBack: null,
+    priority: 'Normal',
+  }, over || {});
+}
+
+test('golden: renderGanttChart — бейдж состояния: родной stateColor / без state (#20)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const items = fx.buildRoleItems();
+  items.devBack = [
+    ganttItem('GM-30', {
+      state: 'In Progress', stateLocalized: 'В работе',
+      stateColor: { background: '#e6f4ea', foreground: '#137333' },
+      stateFieldId: 'fld-state-1',
+    }),
+    ganttItem('GM-31', {}), /* без state → бейдж не рендерится вовсе */
+  ];
+  gm.set({ _roleItems: items });
+  gm.call('renderGanttChart');
+  const out = {};
+  ganttVm(document).rows.forEach(function (r) {
+    out[r.issueId] = { assignee: r.assignee, bg: r.bg, badge: r.badge };
+  });
+  checkJsonSnapshot('gantt-badge-variants', out);
+});
+
+test('golden: renderGanttChart — исторический спринт: items из снапшота записи, без history-фетча', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const rec = fx.buildCurrentRoleRec();
+  rec.sprintId = fx.HIST_SPRINT_ID + '_devBack'; /* isActiveSprintRecord → false */
+  rec.items = [ganttItem('GM-40', {
+    state: 'Fixed', stateLocalized: 'Готово',
+    stateColor: { background: '#d7e9f7', foreground: '#1f6feb' },
+  })];
+  const fetchCalls = [];
+  gm.set({
+    _currentSprintRoleRec: rec,
+    _fetchGanttStateHistory: function () { fetchCalls.push(1); },
+  });
+  gm.call('renderGanttChart');
+  const vm = ganttVm(document);
+  vm.onAfterRender(); /* пинок фетча: у исторического fetchPlan = null */
+  checkJsonSnapshot('gantt-historical', {
+    renderedIssues: vm.rows.map(function (r) { return r.issueId; }),
+    /* бейдж с hist:false — БЕЗ since/prev-плейсхолдеров истории */
+    firstRow: vm.rows[0],
+    fetchCalls: fetchCalls.length,
+  });
+});
+
+test('golden: renderGanttChart — нет дат ни в записи, ни в спринте → empty-ветка', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const rec = fx.buildCurrentRoleRec();
+  rec.dateStart = null; rec.dateEnd = null;
+  const sprint = fx.buildSprint();
+  sprint.dateStart = null; sprint.dateEnd = null;
+  gm.set({ _currentSprintRoleRec: rec, _sprint: sprint });
+  gm.call('renderGanttChart');
+  checkJsonSnapshot('gantt-no-dates', {
+    emptyShown: document.getElementById('ganttEmpty').style.display !== 'none',
+    containerChildIsEmptyEl:
+      document.getElementById('ganttContainer').firstChild === document.getElementById('ganttEmpty'),
+  });
+});
+
+test('golden: renderGanttChart — контракт вызова history-фетча (#20) и его деградация без fieldState', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const items = fx.buildRoleItems();
+  items.devBack = [
+    ganttItem('GM-30', { state: 'In Progress', stateLocalized: 'В работе', stateFieldId: 'fld-state-1' }),
+    ganttItem('GM-31', { state: 'Open' }),
+  ];
+  const fetchCalls = [];
+  gm.set({
+    _roleItems: items,
+    _fetchGanttStateHistory: function () { fetchCalls.push(Array.prototype.slice.call(arguments)); },
+  });
+  gm.call('renderGanttChart');
+  ganttVm(document).onAfterRender(); /* ступень 2: фетч стартует после коммита DOM */
+  const withField = fetchCalls.slice();
+
+  /* fieldState не настроен → фетч не зовётся вовсе */
+  const settings = fx.buildSettings();
+  settings.fieldState = '';
+  gm.set({ _settings: settings });
+  gm.call('renderGanttChart');
+  ganttVm(document).onAfterRender();
+  checkJsonSnapshot('gantt-hist-fetch-contract', {
+    withFieldState: withField,
+    afterFieldStateCleared: fetchCalls.length - withField.length,
+    rowsStillRendered: ganttVm(document).rows.length,
+  });
+});
+
+test('golden: renderGanttChart — контракт reassign-клика: 4 ветки (D46)', async () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const log = [];
+  gm.set({
+    _startPermissionsCheck: function () { log.push('permCheck'); return Promise.resolve(); },
+    toast: function (msg, kind) { log.push({ toast: kind }); },
+    openReassignModal: function (issueId) { log.push({ reassign: issueId }); },
+  });
+  gm.call('renderGanttChart');
+  const vm = ganttVm(document);
+  /* ступень 2: клик — контракт vm.onCellClick(issueId, cellEl); cellEl — ключ
+     per-cell дебаунса (в React его даёт e.currentTarget ячейки) */
+  const cellEl = document.createElement('td');
+  const click = function () { vm.onCellClick(vm.rows[0].issueId, cellEl); };
+  const wait = function () { return new Promise(function (r) { setTimeout(r, 320); }); };
+
+  /* 1. dynEditEnabled выключен (дефолт фикстуры) → warn-тост, модал не зовётся */
+  log.push('ветка: inline-edit OFF');
+  click(); await wait();
+
+  /* 2. inline-edit ON, но _isEditor === false → warn-тост прав */
+  const s2 = fx.buildSettings(); s2.dynEditEnabled = true;
+  gm.set({ _settings: s2, _isEditor: false });
+  log.push('ветка: не редактор');
+  click(); await wait();
+
+  /* 3. редактор, но панель Ганта в readonly-mode (D34) → warn-тост прав */
+  gm.set({ _isEditor: true });
+  document.getElementById('tab-gantt').classList.add('readonly-mode');
+  log.push('ветка: readonly-mode');
+  click(); await wait();
+
+  /* 4. все условия сняты → openReassignModal(issueId ячейки) */
+  document.getElementById('tab-gantt').classList.remove('readonly-mode');
+  log.push('ветка: реассайн разрешён');
+  click(); await wait();
+
+  checkJsonSnapshot('gantt-reassign-contract', { cellIssue: vm.rows[0].issueId, log: log });
 });
