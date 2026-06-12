@@ -1,0 +1,60 @@
+<div class="ssp-dp-hdr" style="display:flex;align-items:center;justify-content:space-between;padding:2px 0">
+<button type="button" class="ssp-dp-nav ssp-dp-prev" aria-label="prev month" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">‹</button>
+<span class="ssp-dp-title" style="font-weight:600;text-transform:capitalize">июнь 2026 г.</span>
+<button type="button" class="ssp-dp-nav ssp-dp-next" aria-label="next month" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">›</button>
+</div>
+<div class="ssp-dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:6px">
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">пн</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">вт</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">ср</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">чт</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">пт</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">сб</div>
+<div style="text-align:center;color:var(--muted,#999);font-size:11px;padding:2px 0;text-transform:capitalize">вс</div>
+<div class="ssp-dp-day" data-iso="2026-06-01" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none;border:1px solid var(--accent,#0d6efd)">1</div>
+<div class="ssp-dp-day" data-iso="2026-06-02" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">2</div>
+<div class="ssp-dp-day" data-iso="2026-06-03" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">3</div>
+<div class="ssp-dp-day" data-iso="2026-06-04" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">4</div>
+<div class="ssp-dp-day" data-iso="2026-06-05" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none;background:var(--accent,#0d6efd);color:#fff">5</div>
+<div class="ssp-dp-day" data-iso="2026-06-06" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">6</div>
+<div class="ssp-dp-day" data-iso="2026-06-07" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">7</div>
+<div class="ssp-dp-day" data-iso="2026-06-08" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">8</div>
+<div class="ssp-dp-day" data-iso="2026-06-09" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">9</div>
+<div class="ssp-dp-day" data-iso="2026-06-10" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">10</div>
+<div class="ssp-dp-day" data-iso="2026-06-11" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">11</div>
+<div class="ssp-dp-day" data-iso="2026-06-12" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">12</div>
+<div class="ssp-dp-day" data-iso="2026-06-13" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">13</div>
+<div class="ssp-dp-day" data-iso="2026-06-14" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">14</div>
+<div class="ssp-dp-day" data-iso="2026-06-15" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">15</div>
+<div class="ssp-dp-day" data-iso="2026-06-16" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">16</div>
+<div class="ssp-dp-day" data-iso="2026-06-17" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">17</div>
+<div class="ssp-dp-day" data-iso="2026-06-18" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">18</div>
+<div class="ssp-dp-day" data-iso="2026-06-19" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">19</div>
+<div class="ssp-dp-day" data-iso="2026-06-20" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">20</div>
+<div class="ssp-dp-day" data-iso="2026-06-21" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">21</div>
+<div class="ssp-dp-day" data-iso="2026-06-22" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">22</div>
+<div class="ssp-dp-day" data-iso="2026-06-23" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">23</div>
+<div class="ssp-dp-day" data-iso="2026-06-24" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">24</div>
+<div class="ssp-dp-day" data-iso="2026-06-25" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">25</div>
+<div class="ssp-dp-day" data-iso="2026-06-26" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">26</div>
+<div class="ssp-dp-day" data-iso="2026-06-27" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">27</div>
+<div class="ssp-dp-day" data-iso="2026-06-28" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">28</div>
+<div class="ssp-dp-day" data-iso="2026-06-29" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">29</div>
+<div class="ssp-dp-day" data-iso="2026-06-30" style="text-align:center;padding:5px 0;border-radius:3px;cursor:pointer;user-select:none">30</div>
+<div class="ssp-dp-day" data-iso="2026-07-01" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">1</div>
+<div class="ssp-dp-day" data-iso="2026-07-02" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">2</div>
+<div class="ssp-dp-day" data-iso="2026-07-03" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">3</div>
+<div class="ssp-dp-day" data-iso="2026-07-04" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">4</div>
+<div class="ssp-dp-day" data-iso="2026-07-05" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">5</div>
+<div class="ssp-dp-day" data-iso="2026-07-06" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">6</div>
+<div class="ssp-dp-day" data-iso="2026-07-07" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">7</div>
+<div class="ssp-dp-day" data-iso="2026-07-08" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">8</div>
+<div class="ssp-dp-day" data-iso="2026-07-09" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">9</div>
+<div class="ssp-dp-day" data-iso="2026-07-10" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">10</div>
+<div class="ssp-dp-day" data-iso="2026-07-11" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">11</div>
+<div class="ssp-dp-day" data-iso="2026-07-12" style="text-align:center;padding:5px 0;border-radius:3px;cursor:not-allowed;user-select:none;color:var(--muted,#bbb);opacity:.35;pointer-events:none">12</div>
+</div>
+<div class="ssp-dp-actions" style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border,#eee)">
+<button type="button" class="ssp-dp-clear" style="background:none;border:1px solid var(--border,#ddd);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;color:inherit">Очистить</button>
+<button type="button" class="ssp-dp-today" style="background:none;border:1px solid var(--border,#ddd);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px;color:inherit">Сегодня</button>
+</div>

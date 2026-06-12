@@ -1,0 +1,6 @@
+{
+  "classes": [
+    "toast toast--info toast--out",
+    "toast toast--error toast--out"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "afterToday": {
+    "value": "2026-06-01",
+    "display": "none"
+  },
+  "afterClear": {
+    "value": "",
+    "display": "none"
+  },
+  "events": [
+    "change:2026-06-01",
+    "change:"
+  ]
+}
