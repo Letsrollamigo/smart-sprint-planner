@@ -1,0 +1,291 @@
+{
+  "sortKey": "off",
+  "stickyHeader": true,
+  "emptyText": "Состав спринта пуст. Нажмите «+ Подобрать задачи».",
+  "itemKeys": [
+    "GM-1",
+    "GM-2",
+    "GM-3",
+    "GM-4"
+  ],
+  "columns": [
+    {
+      "id": "id",
+      "title": "ID",
+      "sortable": true,
+      "className": "td-id",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-1</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-2</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-3</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-4</a>"
+        }
+      ]
+    },
+    {
+      "id": "externalTicketId",
+      "title": "Внешний ID",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"https://ext.example.com/T-1\"><a href=\"https://ext.example.com/T-1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">https://ext.example.com/T-1</a></span>"
+        },
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"EXT-PLAIN-2\">EXT-PLAIN-2</span>"
+        },
+        {
+          "html": "<span style=\"color:var(--muted)\">—</span>"
+        },
+        {
+          "html": "<span style=\"color:var(--muted)\">—</span>"
+        }
+      ]
+    },
+    {
+      "id": "system",
+      "title": "Система",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-1\" data-rk=\"analysis\" data-field=\"fieldSystem\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">CRM</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-2\" data-rk=\"analysis\" data-field=\"fieldSystem\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Billing</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-3\" data-rk=\"analysis\" data-field=\"fieldSystem\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">—</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-4\" data-rk=\"analysis\" data-field=\"fieldSystem\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">—</span>"
+        }
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Приоритет",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-1\" data-rk=\"analysis\" data-field=\"fieldPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Значительный</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-2\" data-rk=\"analysis\" data-field=\"fieldPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Обычная</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-3\" data-rk=\"analysis\" data-field=\"fieldPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Незначительный</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-4\" data-rk=\"analysis\" data-field=\"fieldPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Show-stopper</span>"
+        }
+      ]
+    },
+    {
+      "id": "xpriority",
+      "title": "Сквозной<br>приоритет",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-1\" data-rk=\"analysis\" data-field=\"fieldXPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">X1</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-2\" data-rk=\"analysis\" data-field=\"fieldXPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">—</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-3\" data-rk=\"analysis\" data-field=\"fieldXPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">—</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-4\" data-rk=\"analysis\" data-field=\"fieldXPriority\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">—</span>"
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-1\" data-rk=\"analysis\" data-field=\"fieldState\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Открыта</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-2\" data-rk=\"analysis\" data-field=\"fieldState\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">В работе</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-3\" data-rk=\"analysis\" data-field=\"fieldState\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Исправлена</span>"
+        },
+        {
+          "html": "<span class=\"dyn-enum-cell\" data-iid=\"GM-4\" data-rk=\"analysis\" data-field=\"fieldState\" style=\"cursor:pointer;text-decoration:underline dotted;color:var(--primary)\">Открыта</span>"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "title": "Название",
+      "sortable": false,
+      "className": "td-title ssp-col-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Анализ требований платёжного модуля",
+        "Обследование интеграции с 1С",
+        "Ревью схемы данных",
+        "Исключённая задача"
+      ]
+    },
+    {
+      "id": "estimate",
+      "title": "Оценка",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<input type=\"text\" class=\"dyn-period-input\" data-iid=\"GM-1\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"dyn-period-input\" data-iid=\"GM-2\" data-rk=\"analysis\" value=\"15ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"dyn-period-input\" data-iid=\"GM-3\" data-rk=\"analysis\" value=\"2ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"dyn-period-input\" data-iid=\"GM-4\" data-rk=\"analysis\" value=\"100ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        }
+      ]
+    },
+    {
+      "id": "fact",
+      "title": "Факт",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "0м"
+        },
+        {
+          "html": "5ч"
+        },
+        {
+          "html": "4ч"
+        },
+        {
+          "html": "0м"
+        }
+      ]
+    },
+    {
+      "id": "resource",
+      "title": "Ресурс",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "10ч"
+        },
+        {
+          "html": "10ч"
+        },
+        {
+          "html": "<span class=\"delta-neg\">−2ч</span>"
+        },
+        {
+          "html": "100ч"
+        }
+      ]
+    },
+    {
+      "id": "allocation",
+      "title": "Аллокация",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-1\" data-rk=\"analysis\" value=\"8ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-2\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-3\" data-rk=\"analysis\" value=\"0м\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        },
+        {
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-4\" data-rk=\"analysis\" value=\"100ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
+        }
+      ]
+    },
+    {
+      "id": "incStatus",
+      "title": "Статус<br>включения",
+      "sortable": false,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-1\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\" selected>Включена планово</option><option value=\"INC_UNPLANNED\">Включена внепланово</option><option value=\"INC_EXCLUDED\">Исключена из спринта</option></select>"
+        },
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-2\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\" selected>Включена планово</option><option value=\"INC_UNPLANNED\">Включена внепланово</option><option value=\"INC_EXCLUDED\">Исключена из спринта</option></select>"
+        },
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-3\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\">Включена планово</option><option value=\"INC_UNPLANNED\" selected>Включена внепланово</option><option value=\"INC_EXCLUDED\">Исключена из спринта</option></select>"
+        },
+        {
+          "html": "<select class=\"inc-sel\" data-iid=\"GM-4\" data-rk=\"analysis\"><option value=\"INC_PENDING\">Ожидает распределения</option><option value=\"INC_PLANNED\">Включена планово</option><option value=\"INC_UNPLANNED\">Включена внепланово</option><option value=\"INC_EXCLUDED\" selected>Исключена из спринта</option></select>"
+        }
+      ]
+    },
+    {
+      "id": "delete",
+      "title": "",
+      "sortable": false,
+      "className": "ssp-col-action",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-1\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        },
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-2\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        },
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-3\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        },
+        {
+          "html": "<button class=\"ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn\" data-iid=\"GM-4\" data-rk=\"analysis\" title=\"Удалить\" aria-label=\"Удалить строку\"><span class=\"ssp-icon\" role=\"img\" aria-label=\"Удалить строку\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7 1.756h2a.75.75 0 0 1 .75.75v.25h-3.5v-.25a.75.75 0 0 1 .75-.75Zm-2 .75a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v.512h2a1 1 0 0 1 1 1v2.485h-1v6.37a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6.37H2V4.018a1 1 0 0 1 1-1h2v-.512Zm8 1.512H3v1.234h10V4.018Zm-8.75 8.854V6.503h7.5v6.37a.75.75 0 0 1-.75.75H5a.75.75 0 0 1-.75-.75Zm2.25-5.42a.5.5 0 0 0-.5.5v3.551a.5.5 0 0 0 1 0v-3.55a.5.5 0 0 0-.5-.5Zm2.5.5a.5.5 0 1 1 1 0v3.551a.5.5 0 0 1-1 0v-3.55Z\" clip-rule=\"evenodd\"></path></svg></span></button>"
+        }
+      ]
+    }
+  ]
+}

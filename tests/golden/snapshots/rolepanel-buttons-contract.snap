@@ -1,0 +1,57 @@
+{
+  "noRights": {
+    "toasts": [
+      {
+        "msg": "Недостаточно прав на редактирование",
+        "type": "warn"
+      },
+      {
+        "msg": "Недостаточно прав",
+        "type": "warn"
+      },
+      {
+        "msg": "Недостаточно прав на валидацию",
+        "type": "warn"
+      }
+    ],
+    "ctlCalls": [],
+    "remainCalls": [
+      "analysis"
+    ]
+  },
+  "withRights": {
+    "toasts": [
+      {
+        "msg": "Остаток пересчитан",
+        "type": "success"
+      }
+    ],
+    "ctlCalls": [
+      "pick:analysis",
+      "validate:analysis",
+      "newSprint:analysis",
+      "saveHeader:analysis",
+      "refresh"
+    ],
+    "remainCalls": [
+      "analysis",
+      "analysis"
+    ]
+  },
+  "clear": {
+    "modalId": "clear",
+    "modalType": "confirm",
+    "buttonIds": [
+      "cancel",
+      "confirm"
+    ],
+    "itemsAfterClear": 0,
+    "apiPostPaths": [
+      "sprint-data"
+    ]
+  },
+  "pagination": {
+    "afterNext": 1,
+    "afterPrev": 1
+  }
+}

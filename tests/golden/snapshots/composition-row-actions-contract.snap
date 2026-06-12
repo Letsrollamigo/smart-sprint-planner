@@ -1,0 +1,24 @@
+{
+  "afterDelete": {
+    "ids": [
+      "GM-1",
+      "GM-2",
+      "GM-4"
+    ],
+    "apiPostPaths": [
+      "sprint-data"
+    ]
+  },
+  "dynEnum": {
+    "priority": "Critical",
+    "cellText": "Критическая",
+    "updateFieldCalls": [
+      {
+        "iid": "GM-1",
+        "fieldName": "Priority",
+        "value": "Critical",
+        "type": "enum"
+      }
+    ]
+  }
+}

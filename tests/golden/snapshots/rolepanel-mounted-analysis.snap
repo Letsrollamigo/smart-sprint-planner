@@ -1,0 +1,50 @@
+<div class="planner-cols">
+<div class="card" style="margin-bottom: 0px;">
+<div class="card-title">Статус планирования</div>
+<div class="status-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+<span id="statusBadge_analysis" class="s-badge s-badge--planning">Черновик</span>
+<button class="ring-button-button ring-button-block ring-button-heightS new-sprint-btn btn--disabled-rights" id="newSprintBtn_analysis" style="" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Новый спринт</button>
+<button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn btn--disabled-rights" id="saveHeaderBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Сохранить параметры</button>
+</div>
+</div>
+<div class="card" style="margin-bottom: 0px;">
+<div class="card-title">Доступные ресурсы</div>
+<div class="field">
+<label for="res_analysis">Анализ</label>
+<input type="text" id="res_analysis" placeholder="напр. 16ч / 90м" title="">
+</div>
+</div>
+<div class="card" style="margin-bottom: 0px;">
+<div class="card-title">Остатки ресурсов</div>
+<div class="remain-card" id="rc_analysis">
+<div class="remain-card__label">Анализ</div>
+<div class="remain-card__val" id="rem_analysis">22ч</div>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Состав спринта — Анализ</div>
+<div class="toolbar" style="margin-bottom: 14px;">
+<button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn btn--disabled-rights" id="pickBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">+ Подобрать задачи</button>
+<button class="ring-button-button ring-button-block ring-button-heightS editor-btn btn--disabled-rights" id="refreshBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Обновить из задачи</button>
+<button class="ring-button-button ring-button-block ring-button-heightS editor-btn btn--disabled-rights" id="recalcBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">∑ Пересчитать остаток</button>
+<button class="ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn btn--disabled-rights" id="clearBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Очистить</button>
+<div style="flex: 1 1 0%;">
+</div>
+<button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText validate-btn btn--disabled-rights" id="validateBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Валидация спринта»" title="">Валидировать</button>
+</div>
+<div class="tbl-wrap">
+<div id="compHost_analysis" data-ssp-table-host="">
+<div class="empty">Состав пуст</div>
+</div>
+</div>
+<div class="pagination" id="planPag_analysis" style="display: none;">
+<button class="ring-button-button ring-button-block ring-button-heightS" id="planPrev_analysis">‹</button>
+<span id="planPageInfo_analysis">
+</span>
+<button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_analysis">›</button>
+</div>
+</div>
+<div class="planning-role-body__actions">
+<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="analysis">Распределить по исполнителям</button>
+</div>

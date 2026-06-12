@@ -1,0 +1,11 @@
+{
+  "validateDisabled": true,
+  "overlimitClass": true,
+  "title": "Аллокация одной или нескольких задач превышает ресурс (дельту) этой задачи",
+  "overlimitModalIds": [
+    "overlimit"
+  ],
+  "modalShownGuard": {
+    "testing:gm-sprint-2026-06": true
+  }
+}
