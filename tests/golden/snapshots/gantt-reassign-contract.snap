@@ -1,0 +1,25 @@
+{
+  "cellIssue": "GM-10",
+  "log": [
+    "ветка: inline-edit OFF",
+    "permCheck",
+    {
+      "toast": "warn"
+    },
+    "ветка: не редактор",
+    "permCheck",
+    {
+      "toast": "warn"
+    },
+    "ветка: readonly-mode",
+    "permCheck",
+    {
+      "toast": "warn"
+    },
+    "ветка: реассайн разрешён",
+    "permCheck",
+    {
+      "reassign": "GM-10"
+    }
+  ]
+}

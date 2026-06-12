@@ -60,6 +60,7 @@ const BRIDGE_SCRIPTS = [
   'rolecomposition-view.js',
   'history-view.js',
   'header-view.js',
+  'gantt-view.js',
 ];
 
 const GM_HOOK = `
@@ -169,6 +170,13 @@ function createHost(opts) {
   window.__SSP_STANDUP_MOUNT = {
     mountAt: rec('STANDUP', 'mountAt', function (host, vm) { if (host) host.__sspStandupVm = vm || null; }),
     unmountAt: rec('STANDUP', 'unmountAt', function (host) { if (host) { try { delete host.__sspStandupVm; } catch (_) {} } }),
+  };
+  /* Гант (Тир D слайс 6, ступень 2, #39): gantt-view.js строит vm и отдаёт мосту —
+     стаб стэшит vm на host (host.__sspGanttVm), голдены характеризуют контракт
+     «модуль → __SSP_GANTT_MOUNT» (React-сторона — react/gantt-view.jsx — живьём). */
+  window.__SSP_GANTT_MOUNT = {
+    mountAt: rec('GANTT', 'mountAt', function (host, vm) { if (host) host.__sspGanttVm = vm || null; }),
+    unmountAt: rec('GANTT', 'unmountAt', function (host) { if (host) { try { delete host.__sspGanttVm; } catch (_) {} } }),
   };
   const modalLog = [];
   window.__SSP_RING_MODAL = {

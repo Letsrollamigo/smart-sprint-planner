@@ -1,0 +1,19 @@
+{
+  "withFieldState": [
+    [
+      [
+        "GM-30",
+        "GM-31"
+      ],
+      "gm-sprint-2026-06:devBack",
+      false,
+      {
+        "GM-30": "В работе",
+        "GM-31": "Open"
+      },
+      "fld-state-1"
+    ]
+  ],
+  "afterFieldStateCleared": 0,
+  "rowsStillRendered": 2
+}
