@@ -539,10 +539,14 @@ function _renderExternalTicketInnerHtml(val, deps) {
    mousedown-capture delegation (v2.1.14).
    Sort: Ring header click → onSort callback → setSortKey → rerenderAllSortableTables.
    Pagination: external #planPag_<rk> div (sibling of host), unchanged. */
-function renderRoleComposition(rk, deps) {
-  var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl, diag = deps.diag;
-  var host = document.getElementById('compHost_'+rk);
-  if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
+/* Ступень 2 (Тир D слайс 3): вся cell-логика — в vm-билдере; колонки таблицы —
+   тупой маппинг row.cells[col.id] (_vmCell). Значения ячеек байт-в-байт прежние,
+   контракт «модуль → __SSP_TABLE» не менялся — оракул (materializeTable)
+   остаётся diff 0. */
+function _vmCell(row, c) { return row.cells[c.id]; }
+
+function _buildRoleCompositionVm(rk, deps) {
+  var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl;
   var _settings = deps.state.getSettings();
   var _sprint = deps.state.getSprint();
   var _currentSprintId = deps.state.getCurrentSprintId();
@@ -563,35 +567,7 @@ function renderRoleComposition(rk, deps) {
   } else {
     items = deps.getRoleItemsArr(rk);
   }
-  var has = items.length > 0;
-  diag('renderRoleComposition('+rk+'): items.length='+items.length+' host=yes has='+has, 'info');
-  var clearBtn  = document.getElementById('clearBtn_'+rk);
-  var recalcBtn = document.getElementById('recalcBtn_'+rk);
-  var refreshBtn = document.getElementById('refreshBtn_'+rk);
-  if (clearBtn)  clearBtn.disabled  = !has;
-  if (recalcBtn) recalcBtn.disabled = !has;
-  if (refreshBtn) refreshBtn.disabled = !has;
-
-  if (!has) {
-    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
-    /* #43 W2 (B-2/D-1) — структурный empty-state; CTA проксирует клик на
-       тулбарный pickBtn_<rk> (единая точка входа подбора задач). */
-    host.innerHTML = '<div class="ssp-empty">' +
-      '<div class="ssp-empty__icon" data-icon="task" aria-hidden="true"></div>' +
-      '<div class="ssp-empty__title">' + esc(T('compEmptyTitle')) + '</div>' +
-      '<div class="ssp-empty__desc">' + esc(T('compEmptyDesc')) + '</div>' +
-      '<button type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta">' + esc(T('btnPickTasks')) + '</button>' +
-      '</div>';
-    deps.applyIcons();
-    var emptyCtaEl = host.querySelector('.ssp-empty__cta');
-    if (emptyCtaEl) emptyCtaEl.addEventListener('click', function() {
-      var pb = document.getElementById('pickBtn_' + rk);
-      if (pb) pb.click();
-    });
-    var pagElEmpty = document.getElementById('planPag_'+rk);
-    if (pagElEmpty) pagElEmpty.style.display = 'none';
-    return;
-  }
+  if (!items.length) return { empty: true, itemCount: 0 };
 
   var pageNum = items._page || 1;
   var total = Math.ceil(items.length / deps.PAGE_SIZE);
@@ -626,8 +602,14 @@ function renderRoleComposition(rk, deps) {
   var roAttr = isLocked ? ' readonly="readonly" tabindex="-1"' : '';
   var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
 
-  /* Pre-compute per-item derived data so cell renderers stay cheap. */
-  var pageData = page.map(function(item) {
+  var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
+  var hasSystem    = !!(_settings && _settings.fieldSystem);
+  var hasXPriority = !!(_settings && _settings.fieldXPriority);
+
+  /* Строки vm: pre-computed derived values + готовые cell-значения
+     (esc-строки и { __html } байт-в-байт как прежние column.getValue). */
+  var rows = page.map(function(item) {
+    var iid  = item.issueId;
     var est  = item['estimate_'+rk];
     var fact = item['fact_'+rk];
     var delta = (est !== null && est !== undefined)
@@ -637,124 +619,128 @@ function renderRoleComposition(rk, deps) {
     var allocDefault = (delta !== null && delta !== undefined) ? Math.max(0, delta) : null;
     var allocVal = (alloc !== null && alloc !== undefined) ? alloc : allocDefault;
     var allocDisplay = allocVal !== null && allocVal !== undefined ? deps.fmtPeriod(allocVal) : '';
-    var snap = snapByIssue[item.issueId];
+    var snap = snapByIssue[iid];
     var isDirty = !snap || JSON.stringify({a:item['alloc_'+rk], i:item.inclusionStatus, e:item['estimate_'+rk], f:item['fact_'+rk]})
                         !== JSON.stringify({a:snap['alloc_'+rk], i:snap.inclusionStatus, e:snap['estimate_'+rk], f:snap['fact_'+rk]});
-    return {
-      item: item, est: est, fact: fact, delta: delta,
-      allocDisplay: allocDisplay, isDirty: isDirty, iid: item.issueId,
-    };
+
+    var cells = {};
+    cells.id = { __html: '<a href="'+safeUrl(item.url)+'" target="_blank" class="link">'+esc(iid)+'</a>' };
+    if (hasExtTicket) {
+      cells.externalTicketId = { __html: _renderExternalTicketInnerHtml(item.externalTicketId, deps) };
+    }
+    if (hasSystem) {
+      cells.system = dynEdit
+        ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span>' }
+        : esc(item.system||'—');
+    }
+    cells.priority = (dynEdit && _settings && _settings.fieldPriority)
+      ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.priority)||'—')+'</span>' }
+      : esc(deps.dispEnum(item.priority)||'—');
+    if (hasXPriority) {
+      cells.xpriority = dynEdit
+        ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.xpriority)||'—')+'</span>' }
+        : esc(deps.dispEnum(item.xpriority)||'—');
+    }
+    cells.state = (dynEdit && _settings && _settings.fieldState)
+      ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(deps.dispEnum(item.state)||'—')+'</span>' }
+      : esc(deps.dispEnum(item.state)||'—');
+    cells.title = esc(item.title||'');
+    if (dynEdit) {
+      var estDisplay = est !== null && est !== undefined ? deps.fmtPeriod(est) : '';
+      /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
+         have their own background and native inputs inherit it (looking
+         black in dark theme). Force surface/text vars on inputs. */
+      cells.estimate = { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+      cells.fact = { __html: fact !== null && fact !== undefined ? deps.fmtHoursOnly(fact) : '<span style="color:var(--muted)">—</span>' };
+    }
+    cells.resource = { __html: fmtDelta(delta) };
+    cells.allocation = { __html: '<input type="text" class="alloc-input" data-iid="'+esc(iid)+'" data-rk="'+rk+'" value="'+esc(allocDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
+    cells.incStatus = { __html: '<select class="inc-sel" data-iid="'+esc(iid)+'" data-rk="'+rk+'">'+
+      Object.values(deps.INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(deps.incLabel(v))+'</option>';}).join('')+
+      '</select>' };
+    cells['delete'] = { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(iid)+'" data-rk="'+rk+'" title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+deps.icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
+
+    return { iid: iid, isDirty: isDirty, cells: cells };
   });
 
+  return {
+    empty: false,
+    itemCount: items.length,
+    pageNum: pageNum,
+    total: total,
+    dynEdit: dynEdit,
+    hasExtTicket: hasExtTicket,
+    hasSystem: hasSystem,
+    hasXPriority: hasXPriority,
+    /* Заголовок resource-колонки не-dynEdit режима зависит от роли — часть vm. */
+    resourceColTitle: dynEdit
+      ? T('thResource')
+      : deps.fmtThLabel(deps.roleLabel(deps.ALL_ROLES.find(function(r){return r.key===rk;}) || {key:rk,labelKey:rk})),
+    rows: rows,
+  };
+}
+
+function renderRoleComposition(rk, deps) {
+  var T = deps.T, esc = deps.esc, diag = deps.diag;
+  var host = document.getElementById('compHost_'+rk);
+  if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
+  var vm = _buildRoleCompositionVm(rk, deps);
+  var has = !vm.empty;
+  diag('renderRoleComposition('+rk+'): items.length='+vm.itemCount+' host=yes has='+has, 'info');
+  var clearBtn  = document.getElementById('clearBtn_'+rk);
+  var recalcBtn = document.getElementById('recalcBtn_'+rk);
+  var refreshBtn = document.getElementById('refreshBtn_'+rk);
+  if (clearBtn)  clearBtn.disabled  = !has;
+  if (recalcBtn) recalcBtn.disabled = !has;
+  if (refreshBtn) refreshBtn.disabled = !has;
+
+  if (!has) {
+    if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }
+    /* #43 W2 (B-2/D-1) — структурный empty-state; CTA проксирует клик на
+       тулбарный pickBtn_<rk> (единая точка входа подбора задач). */
+    host.innerHTML = '<div class="ssp-empty">' +
+      '<div class="ssp-empty__icon" data-icon="task" aria-hidden="true"></div>' +
+      '<div class="ssp-empty__title">' + esc(T('compEmptyTitle')) + '</div>' +
+      '<div class="ssp-empty__desc">' + esc(T('compEmptyDesc')) + '</div>' +
+      '<button type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta">' + esc(T('btnPickTasks')) + '</button>' +
+      '</div>';
+    deps.applyIcons();
+    var emptyCtaEl = host.querySelector('.ssp-empty__cta');
+    if (emptyCtaEl) emptyCtaEl.addEventListener('click', function() {
+      var pb = document.getElementById('pickBtn_' + rk);
+      if (pb) pb.click();
+    });
+    var pagElEmpty = document.getElementById('planPag_'+rk);
+    if (pagElEmpty) pagElEmpty.style.display = 'none';
+    return;
+  }
+
   var columns = [];
-  columns.push({
-    id: 'id', title: T('thId'), sortable: true, className: 'td-id',
-    getValue: function(row) {
-      return { __html: '<a href="'+safeUrl(row.item.url)+'" target="_blank" class="link">'+esc(row.iid)+'</a>' };
-    }
-  });
-  if (_settings && _settings.fieldExternalTicketId) {
-    columns.push({
-      id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true,
-      getValue: function(row) { return { __html: _renderExternalTicketInnerHtml(row.item.externalTicketId, deps) }; }
-    });
+  columns.push({ id: 'id', title: T('thId'), sortable: true, className: 'td-id', getValue: _vmCell });
+  if (vm.hasExtTicket) {
+    columns.push({ id: 'externalTicketId', title: T('thExternalTicketId'), sortable: true, getValue: _vmCell });
   }
-  if (_settings && _settings.fieldSystem) {
-    columns.push({
-      id: 'system', title: T('thSystem'), sortable: false,
-      getValue: function(row) {
-        if (dynEdit) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(row.item.system||'—')+'</span>' };
-        }
-        return esc(row.item.system||'—');
-      }
-    });
+  if (vm.hasSystem) {
+    columns.push({ id: 'system', title: T('thSystem'), sortable: false, getValue: _vmCell });
   }
-  columns.push({
-    id: 'priority', title: T('thPriority'), sortable: true,
-    getValue: function(row) {
-      if (dynEdit && _settings && _settings.fieldPriority) {
-        return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(row.item.priority)||'—')+'</span>' };
-      }
-      return esc(deps.dispEnum(row.item.priority)||'—');
-    }
-  });
-  if (_settings && _settings.fieldXPriority) {
-    columns.push({
-      id: 'xpriority', title: T('thXpriority'), sortable: true,
-      getValue: function(row) {
-        if (dynEdit) {
-          return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(row.item.xpriority)||'—')+'</span>' };
-        }
-        return esc(deps.dispEnum(row.item.xpriority)||'—');
-      }
-    });
+  columns.push({ id: 'priority', title: T('thPriority'), sortable: true, getValue: _vmCell });
+  if (vm.hasXPriority) {
+    columns.push({ id: 'xpriority', title: T('thXpriority'), sortable: true, getValue: _vmCell });
   }
-  columns.push({
-    id: 'state', title: T('thState'), sortable: false,
-    getValue: function(row) {
-      if (dynEdit && _settings && _settings.fieldState) {
-        return { __html: '<span class="dyn-enum-cell" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(deps.dispEnum(row.item.state)||'—')+'</span>' };
-      }
-      return esc(deps.dispEnum(row.item.state)||'—');
-    }
-  });
-  columns.push({
-    id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title',
-    getValue: function(row) { return esc(row.item.title||''); }
-  });
-  if (dynEdit) {
-    columns.push({
-      id: 'estimate', title: T('thEstimate'), sortable: false, className: 'td-num',
-      getValue: function(row) {
-        var estDisplay = row.est !== null && row.est !== undefined ? deps.fmtPeriod(row.est) : '';
-        /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells
-           have their own background and native inputs inherit it (looking
-           black in dark theme). Force surface/text vars on inputs. */
-        return { __html: '<input type="text" class="dyn-period-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(estDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
-      }
-    });
-    columns.push({
-      id: 'fact', title: T('thFact'), sortable: false, className: 'td-num',
-      getValue: function(row) {
-        return { __html: row.fact !== null && row.fact !== undefined ? deps.fmtHoursOnly(row.fact) : '<span style="color:var(--muted)">—</span>' };
-      }
-    });
-    columns.push({
-      id: 'resource', title: T('thResource'), sortable: false, className: 'td-num',
-      getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
-    });
-  } else {
-    columns.push({
-      id: 'resource', title: deps.fmtThLabel(deps.roleLabel(deps.ALL_ROLES.find(function(r){return r.key===rk;}) || {key:rk,labelKey:rk})), sortable: false, className: 'td-num',
-      getValue: function(row) { return { __html: fmtDelta(row.delta) }; }
-    });
+  columns.push({ id: 'state', title: T('thState'), sortable: false, getValue: _vmCell });
+  columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
+  if (vm.dynEdit) {
+    columns.push({ id: 'estimate', title: T('thEstimate'), sortable: false, className: 'td-num', getValue: _vmCell });
+    columns.push({ id: 'fact', title: T('thFact'), sortable: false, className: 'td-num', getValue: _vmCell });
   }
-  columns.push({
-    id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num',
-    getValue: function(row) {
-      return { __html: '<input type="text" class="alloc-input" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" value="'+esc(row.allocDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
-    }
-  });
-  columns.push({
-    id: 'incStatus', title: T('thIncStatus'), sortable: false,
-    getValue: function(row) {
-      var html = '<select class="inc-sel" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'">'+
-        Object.values(deps.INC).map(function(v){return '<option value="'+v+'"'+(row.item.inclusionStatus===v?' selected':'')+'>'+esc(deps.incLabel(v))+'</option>';}).join('')+
-        '</select>';
-      return { __html: html };
-    }
-  });
-  columns.push({
-    id: 'delete', title: '', sortable: false, className: 'ssp-col-action',
-    getValue: function(row) {
-      return { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(row.iid)+'" data-rk="'+rk+'" title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+deps.icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
-    }
-  });
+  columns.push({ id: 'resource', title: vm.resourceColTitle, sortable: false, className: 'td-num', getValue: _vmCell });
+  columns.push({ id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num', getValue: _vmCell });
+  columns.push({ id: 'incStatus', title: T('thIncStatus'), sortable: false, getValue: _vmCell });
+  columns.push({ id: 'delete', title: '', sortable: false, className: 'ssp-col-action', getValue: _vmCell });
 
   if (window.__SSP_TABLE) {
     window.__SSP_TABLE.mountAt(host, {
-      items: pageData,
+      items: vm.rows,
       columns: columns,
       sortKey: (typeof deps.getSortKey === 'function') ? deps.getSortKey() : 'off',
       onSort: function(nextKey) {
@@ -940,14 +926,14 @@ function renderRoleComposition(rk, deps) {
   // Пагинация
   var pagEl = document.getElementById('planPag_'+rk);
   if (pagEl) {
-    if (total > 1) {
+    if (vm.total > 1) {
       pagEl.style.display = 'flex';
       var infoEl = document.getElementById('planPageInfo_'+rk);
-      if (infoEl) infoEl.textContent = T('pageOf') + pageNum + T('pageOfSep') + total;
+      if (infoEl) infoEl.textContent = T('pageOf') + vm.pageNum + T('pageOfSep') + vm.total;
       var prevEl = document.getElementById('planPrev_'+rk);
       var nextEl = document.getElementById('planNext_'+rk);
-      if (prevEl) prevEl.disabled = pageNum <= 1;
-      if (nextEl) nextEl.disabled = pageNum >= total;
+      if (prevEl) prevEl.disabled = vm.pageNum <= 1;
+      if (nextEl) nextEl.disabled = vm.pageNum >= vm.total;
     } else {
       pagEl.style.display = 'none';
     }
