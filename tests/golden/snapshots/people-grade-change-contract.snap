@@ -1,0 +1,9 @@
+{
+  "grade": "Senior",
+  "resource": 108.75,
+  "manualResource": 12,
+  "apiPostPaths": [
+    "history",
+    "sprint-data"
+  ]
+}
