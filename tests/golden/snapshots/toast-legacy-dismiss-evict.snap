@@ -1,0 +1,30 @@
+{
+  "afterClick": {
+    "classes": [
+      "toast toast--info toast--out",
+      "toast toast--warn toast--in"
+    ]
+  },
+  "afterOverflow": {
+    "classes": [
+      "toast toast--info toast--out",
+      "toast toast--warn toast--out",
+      "toast toast--info toast--in",
+      "toast toast--info toast--in",
+      "toast toast--info toast--in"
+    ],
+    "texts": [
+      "первый",
+      "второй",
+      "третий",
+      "четвёртый",
+      "пятый"
+    ],
+    "diag": [
+      {
+        "msg": "toast evicted (queue>3): [warn] второй",
+        "level": "info"
+      }
+    ]
+  }
+}
