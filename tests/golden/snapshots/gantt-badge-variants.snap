@@ -1,4 +1,18 @@
 {
-  "GM-30": "<a href=\"http://localhost:8080/issue/GM-30\" target=\"_blank\" class=\"link\" style=\"font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">GM-30</a><div style=\"font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">Не назначен</div><div style=\"margin-top:2px;white-space:nowrap;overflow:hidden\"><span style=\"display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:10px;line-height:1.4;background:#e6f4ea;color:#137333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%\"><span style=\"display:inline-block;width:5px;height:5px;border-radius:50%;background:#137333;flex-shrink:0\"></span>В работе</span><span data-gantt-hist-since=\"GM-30\" style=\"color:var(--muted);font-size:10px;margin-left:4px\"></span></div><div data-gantt-hist-prev=\"GM-30\" style=\"color:var(--muted);font-size:10px;margin-top:1px;white-space:normal\">загрузка истории…</div>",
-  "GM-31": "<a href=\"http://localhost:8080/issue/GM-31\" target=\"_blank\" class=\"link\" style=\"font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">GM-31</a><div style=\"font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">Не назначен</div>"
+  "GM-30": {
+    "assignee": "Не назначен",
+    "bg": "#e6f4ea",
+    "badge": {
+      "label": "В работе",
+      "pillBg": "#e6f4ea",
+      "pillFg": "#137333",
+      "hist": true,
+      "loadingText": "загрузка истории…"
+    }
+  },
+  "GM-31": {
+    "assignee": "Не назначен",
+    "bg": "#9aa3ad",
+    "badge": null
+  }
 }

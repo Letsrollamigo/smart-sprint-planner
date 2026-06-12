@@ -207,14 +207,26 @@ test('golden: doStandupRefresh — нет изменений (без перси�
   });
 });
 
+/* ── Гант, ступень 2 (React, #39): оракул = vm-контракт «gantt-view.js →
+   __SSP_GANTT_MOUNT» (recording-стаб харнесса стэшит vm на
+   #ganttContainer.__sspGanttVm). Снапшоты регенерированы со ступени 1
+   (innerHTML → структурный vm) с ручным ревью паритета: те же задачи/ось
+   дат/позиции полос/цвета/бейджи. Empty-ветки (gantt-empty, gantt-no-dates) —
+   по-прежнему vanilla-DOM, их контракт не менялся. История #20: фетч-пинок
+   ушёл за коммит DOM — в тестах зовётся vm.onAfterRender(). ── */
+
+function ganttVm(document) {
+  return document.getElementById('ganttContainer').__sspGanttVm;
+}
+
 test('golden: renderGanttChart — devBack активного спринта', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   fx.applyPeopleState(gm);
   gm.call('renderGanttChart');
-  const container = document.getElementById('ganttContainer');
-  assert.ok(container.innerHTML.length > 0, 'gantt must render rows');
-  checkHtmlSnapshot('gantt-devback', container.innerHTML);
+  const vm = ganttVm(document);
+  assert.ok(vm && vm.rows.length > 0, 'gantt must render rows');
+  checkJsonSnapshot('gantt-devback', vm);
 });
 
 test('golden: renderGanttChart — нет данных роли (empty)', () => {
@@ -565,10 +577,10 @@ test('golden: контракт кнопки «Создать новый спри
   checkJsonSnapshot('new-sprint-btn-contract', { log: log });
 });
 
-/* ════ Тир D слайс 6 — Гант (добор до выноса) ════
-   Ветки renderGanttChart / бейджа состояния (#20) / реассайн-контракта (D46).
-   Тесты идут ТОЛЬКО через выживающий entry-point renderGanttChart (делегатор
-   после выноса) + gm.set стейта и recording-стабов сервисов. */
+/* ════ Тир D слайс 6 — Гант: ветки бейджа (#20) / реассайн-контракт (D46) ════
+   Добраны до выноса (ступень 1, innerHTML), на ступени 2 переведены на
+   vm-контракт моста с ручным ревью паритета. Entry-point — renderGanttChart
+   (делегатор) + gm.set стейта и recording-стабов сервисов. */
 
 /** Item девбэка с гант-полями состояния (#20); даты берутся из rec/sprint. */
 function ganttItem(issueId, over) {
@@ -598,8 +610,8 @@ test('golden: renderGanttChart — бейдж состояния: родной s
   gm.set({ _roleItems: items });
   gm.call('renderGanttChart');
   const out = {};
-  document.querySelectorAll('#ganttContainer tr[data-gantt-issue]').forEach(function (r) {
-    out[r.getAttribute('data-gantt-issue')] = r.querySelector('td').innerHTML;
+  ganttVm(document).rows.forEach(function (r) {
+    out[r.issueId] = { assignee: r.assignee, bg: r.bg, badge: r.badge };
   });
   checkJsonSnapshot('gantt-badge-variants', out);
 });
@@ -620,12 +632,12 @@ test('golden: renderGanttChart — исторический спринт: items 
     _fetchGanttStateHistory: function () { fetchCalls.push(1); },
   });
   gm.call('renderGanttChart');
-  const row = document.querySelector('#ganttContainer tr[data-gantt-issue]');
+  const vm = ganttVm(document);
+  vm.onAfterRender(); /* пинок фетча: у исторического fetchPlan = null */
   checkJsonSnapshot('gantt-historical', {
-    renderedIssue: row.getAttribute('data-gantt-issue'),
-    /* бейдж БЕЗ since/prev-плейсхолдеров истории */
-    firstCell: row.querySelector('td').innerHTML,
-    liveItemsLeaked: !!document.querySelector('[data-gantt-issue="GM-10"]'),
+    renderedIssues: vm.rows.map(function (r) { return r.issueId; }),
+    /* бейдж с hist:false — БЕЗ since/prev-плейсхолдеров истории */
+    firstRow: vm.rows[0],
     fetchCalls: fetchCalls.length,
   });
 });
@@ -662,6 +674,7 @@ test('golden: renderGanttChart — контракт вызова history-фет�
     _fetchGanttStateHistory: function () { fetchCalls.push(Array.prototype.slice.call(arguments)); },
   });
   gm.call('renderGanttChart');
+  ganttVm(document).onAfterRender(); /* ступень 2: фетч стартует после коммита DOM */
   const withField = fetchCalls.slice();
 
   /* fieldState не настроен → фетч не зовётся вовсе */
@@ -669,10 +682,11 @@ test('golden: renderGanttChart — контракт вызова history-фет�
   settings.fieldState = '';
   gm.set({ _settings: settings });
   gm.call('renderGanttChart');
+  ganttVm(document).onAfterRender();
   checkJsonSnapshot('gantt-hist-fetch-contract', {
     withFieldState: withField,
     afterFieldStateCleared: fetchCalls.length - withField.length,
-    rowsStillRendered: document.querySelectorAll('#ganttContainer tr[data-gantt-issue]').length,
+    rowsStillRendered: ganttVm(document).rows.length,
   });
 });
 
@@ -687,8 +701,11 @@ test('golden: renderGanttChart — контракт reassign-клика: 4 ве�
     openReassignModal: function (issueId) { log.push({ reassign: issueId }); },
   });
   gm.call('renderGanttChart');
-  const cell = document.querySelector('#ganttContainer .gantt-cell[data-inbar="1"]');
-  const click = function () { cell.dispatchEvent(new window.Event('click')); };
+  const vm = ganttVm(document);
+  /* ступень 2: клик — контракт vm.onCellClick(issueId, cellEl); cellEl — ключ
+     per-cell дебаунса (в React его даёт e.currentTarget ячейки) */
+  const cellEl = document.createElement('td');
+  const click = function () { vm.onCellClick(vm.rows[0].issueId, cellEl); };
   const wait = function () { return new Promise(function (r) { setTimeout(r, 320); }); };
 
   /* 1. dynEditEnabled выключен (дефолт фикстуры) → warn-тост, модал не зовётся */
@@ -712,5 +729,5 @@ test('golden: renderGanttChart — контракт reassign-клика: 4 ве�
   log.push('ветка: реассайн разрешён');
   click(); await wait();
 
-  checkJsonSnapshot('gantt-reassign-contract', { cellIssue: cell.getAttribute('data-issue'), log: log });
+  checkJsonSnapshot('gantt-reassign-contract', { cellIssue: vm.rows[0].issueId, log: log });
 });

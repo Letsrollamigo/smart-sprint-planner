@@ -6548,9 +6548,9 @@
   function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts); }
   function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
-  /* _renderGanttStateBadge — внутренняя функция gantt-view.js (единственный
-     потребитель — сам Гант). _updateGanttHistDOM — делегатор: его зовёт
-     youtrack-api через _ytApiDeps по мере прихода чанков activities (#20). */
+  /* Бейдж состояния (#20) — данные в vm gantt-view.js, рендер — react/gantt-view.jsx.
+     _updateGanttHistDOM — делегатор: его зовёт youtrack-api через _ytApiDeps
+     по мере прихода чанков activities (#20). */
   function _updateGanttHistDOM(container, issueId, hist) {
     return GANTT_VIEW._updateGanttHistDOM(container, issueId, hist, _ganttDeps());
   }
