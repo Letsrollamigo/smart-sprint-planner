@@ -1,0 +1,23 @@
+{
+  "perTaskAggregate": {
+    "btn": {
+      "disabled": true,
+      "overlimitClass": true,
+      "title": "Аллокация одной или нескольких задач превышает ресурс (дельту) этой задачи"
+    },
+    "modalIds": [
+      "overlimit"
+    ]
+  },
+  "b13Aggregate": {
+    "btn": {
+      "disabled": true,
+      "overlimitClass": true,
+      "title": "Аллокация одной или нескольких задач превышает ресурс (дельту) этой задачи"
+    },
+    "aggregates": {
+      "checkLen": 0,
+      "calcRem": -360
+    }
+  }
+}

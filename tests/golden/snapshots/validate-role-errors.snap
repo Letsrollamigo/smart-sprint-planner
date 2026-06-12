@@ -1,0 +1,21 @@
+{
+  "checkErr": {
+    "toasts": [
+      {
+        "msg": "Ошибка проверки прав",
+        "type": null
+      }
+    ],
+    "apiCalls": 0
+  },
+  "saveErr": {
+    "toasts": [
+      {
+        "msg": "Ошибка сохранения: : gm-api-reject",
+        "type": "error"
+      }
+    ],
+    "statusAfter": "CONFIRMED",
+    "snapshotCalls": 0
+  }
+}

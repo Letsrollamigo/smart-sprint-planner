@@ -1,0 +1,15 @@
+{
+  "borders": {
+    "GM-1": "",
+    "GM-2": "",
+    "GM-3": "",
+    "GM-4": ""
+  },
+  "btn": {
+    "disabled": false,
+    "overlimitClass": false,
+    "title": ""
+  },
+  "modalIds": [],
+  "guardKeys": []
+}

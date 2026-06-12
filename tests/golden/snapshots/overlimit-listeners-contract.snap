@@ -1,0 +1,18 @@
+{
+  "delaysAfterBlur": [
+    50
+  ],
+  "afterBlur": {
+    "btn": {
+      "disabled": true,
+      "overlimitClass": true,
+      "title": "Аллокация одной или нескольких задач превышает ресурс (дельту) этой задачи"
+    },
+    "modalCount": 1
+  },
+  "delaysAfterChange": [
+    50
+  ],
+  "modalCountAfterChange": 1,
+  "timersAfterForeignEvents": []
+}

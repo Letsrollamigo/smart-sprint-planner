@@ -1,0 +1,23 @@
+{
+  "toasts": [
+    {
+      "msg": "Заполните настройки плагина",
+      "type": null
+    },
+    {
+      "msg": "Заполните даты спринта",
+      "type": null
+    },
+    {
+      "msg": "Заполните доступные ресурсы",
+      "type": null
+    },
+    {
+      "msg": "Нет активных задач в составе",
+      "type": null
+    }
+  ],
+  "ghostRoleSilent": true,
+  "apiCalls": 0,
+  "checkValidatorCalls": 0
+}
