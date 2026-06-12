@@ -564,3 +564,153 @@ test('golden: контракт кнопки «Создать новый спри
 
   checkJsonSnapshot('new-sprint-btn-contract', { log: log });
 });
+
+/* ════ Тир D слайс 6 — Гант (добор до выноса) ════
+   Ветки renderGanttChart / бейджа состояния (#20) / реассайн-контракта (D46).
+   Тесты идут ТОЛЬКО через выживающий entry-point renderGanttChart (делегатор
+   после выноса) + gm.set стейта и recording-стабов сервисов. */
+
+/** Item девбэка с гант-полями состояния (#20); даты берутся из rec/sprint. */
+function ganttItem(issueId, over) {
+  return Object.assign({
+    issueId: issueId,
+    title: 'Гант ' + issueId,
+    url: 'http://localhost:8080/issue/' + issueId,
+    inclusionStatus: 'INC_PLANNED',
+    estimate_devBack: 600, fact_devBack: 0, alloc_devBack: null,
+    priority: 'Normal',
+  }, over || {});
+}
+
+test('golden: renderGanttChart — бейдж состояния: родной stateColor / без state (#20)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const items = fx.buildRoleItems();
+  items.devBack = [
+    ganttItem('GM-30', {
+      state: 'In Progress', stateLocalized: 'В работе',
+      stateColor: { background: '#e6f4ea', foreground: '#137333' },
+      stateFieldId: 'fld-state-1',
+    }),
+    ganttItem('GM-31', {}), /* без state → бейдж не рендерится вовсе */
+  ];
+  gm.set({ _roleItems: items });
+  gm.call('renderGanttChart');
+  const out = {};
+  document.querySelectorAll('#ganttContainer tr[data-gantt-issue]').forEach(function (r) {
+    out[r.getAttribute('data-gantt-issue')] = r.querySelector('td').innerHTML;
+  });
+  checkJsonSnapshot('gantt-badge-variants', out);
+});
+
+test('golden: renderGanttChart — исторический спринт: items из снапшота записи, без history-фетча', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const rec = fx.buildCurrentRoleRec();
+  rec.sprintId = fx.HIST_SPRINT_ID + '_devBack'; /* isActiveSprintRecord → false */
+  rec.items = [ganttItem('GM-40', {
+    state: 'Fixed', stateLocalized: 'Готово',
+    stateColor: { background: '#d7e9f7', foreground: '#1f6feb' },
+  })];
+  const fetchCalls = [];
+  gm.set({
+    _currentSprintRoleRec: rec,
+    _fetchGanttStateHistory: function () { fetchCalls.push(1); },
+  });
+  gm.call('renderGanttChart');
+  const row = document.querySelector('#ganttContainer tr[data-gantt-issue]');
+  checkJsonSnapshot('gantt-historical', {
+    renderedIssue: row.getAttribute('data-gantt-issue'),
+    /* бейдж БЕЗ since/prev-плейсхолдеров истории */
+    firstCell: row.querySelector('td').innerHTML,
+    liveItemsLeaked: !!document.querySelector('[data-gantt-issue="GM-10"]'),
+    fetchCalls: fetchCalls.length,
+  });
+});
+
+test('golden: renderGanttChart — нет дат ни в записи, ни в спринте → empty-ветка', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const rec = fx.buildCurrentRoleRec();
+  rec.dateStart = null; rec.dateEnd = null;
+  const sprint = fx.buildSprint();
+  sprint.dateStart = null; sprint.dateEnd = null;
+  gm.set({ _currentSprintRoleRec: rec, _sprint: sprint });
+  gm.call('renderGanttChart');
+  checkJsonSnapshot('gantt-no-dates', {
+    emptyShown: document.getElementById('ganttEmpty').style.display !== 'none',
+    containerChildIsEmptyEl:
+      document.getElementById('ganttContainer').firstChild === document.getElementById('ganttEmpty'),
+  });
+});
+
+test('golden: renderGanttChart — контракт вызова history-фетча (#20) и его деградация без fieldState', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const items = fx.buildRoleItems();
+  items.devBack = [
+    ganttItem('GM-30', { state: 'In Progress', stateLocalized: 'В работе', stateFieldId: 'fld-state-1' }),
+    ganttItem('GM-31', { state: 'Open' }),
+  ];
+  const fetchCalls = [];
+  gm.set({
+    _roleItems: items,
+    _fetchGanttStateHistory: function () { fetchCalls.push(Array.prototype.slice.call(arguments)); },
+  });
+  gm.call('renderGanttChart');
+  const withField = fetchCalls.slice();
+
+  /* fieldState не настроен → фетч не зовётся вовсе */
+  const settings = fx.buildSettings();
+  settings.fieldState = '';
+  gm.set({ _settings: settings });
+  gm.call('renderGanttChart');
+  checkJsonSnapshot('gantt-hist-fetch-contract', {
+    withFieldState: withField,
+    afterFieldStateCleared: fetchCalls.length - withField.length,
+    rowsStillRendered: document.querySelectorAll('#ganttContainer tr[data-gantt-issue]').length,
+  });
+});
+
+test('golden: renderGanttChart — контракт reassign-клика: 4 ветки (D46)', async () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const log = [];
+  gm.set({
+    _startPermissionsCheck: function () { log.push('permCheck'); return Promise.resolve(); },
+    toast: function (msg, kind) { log.push({ toast: kind }); },
+    openReassignModal: function (issueId) { log.push({ reassign: issueId }); },
+  });
+  gm.call('renderGanttChart');
+  const cell = document.querySelector('#ganttContainer .gantt-cell[data-inbar="1"]');
+  const click = function () { cell.dispatchEvent(new window.Event('click')); };
+  const wait = function () { return new Promise(function (r) { setTimeout(r, 320); }); };
+
+  /* 1. dynEditEnabled выключен (дефолт фикстуры) → warn-тост, модал не зовётся */
+  log.push('ветка: inline-edit OFF');
+  click(); await wait();
+
+  /* 2. inline-edit ON, но _isEditor === false → warn-тост прав */
+  const s2 = fx.buildSettings(); s2.dynEditEnabled = true;
+  gm.set({ _settings: s2, _isEditor: false });
+  log.push('ветка: не редактор');
+  click(); await wait();
+
+  /* 3. редактор, но панель Ганта в readonly-mode (D34) → warn-тост прав */
+  gm.set({ _isEditor: true });
+  document.getElementById('tab-gantt').classList.add('readonly-mode');
+  log.push('ветка: readonly-mode');
+  click(); await wait();
+
+  /* 4. все условия сняты → openReassignModal(issueId ячейки) */
+  document.getElementById('tab-gantt').classList.remove('readonly-mode');
+  log.push('ветка: реассайн разрешён');
+  click(); await wait();
+
+  checkJsonSnapshot('gantt-reassign-contract', { cellIssue: cell.getAttribute('data-issue'), log: log });
+});
