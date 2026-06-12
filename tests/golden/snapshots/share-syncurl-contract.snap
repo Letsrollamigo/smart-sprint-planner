@@ -1,0 +1,9 @@
+{
+  "afterDisabled": 0,
+  "afterProjectMode": 0,
+  "replaceLog": [
+    {
+      "search": "projectKey=GM&sprintId=s-77&node=planning.roles"
+    }
+  ]
+}

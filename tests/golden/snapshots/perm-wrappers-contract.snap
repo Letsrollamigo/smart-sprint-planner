@@ -1,0 +1,22 @@
+{
+  "flags": {
+    "isValidator": true,
+    "isEditor": false,
+    "isAssigner": true
+  },
+  "bodyHasAssignerRights": true,
+  "diag": [
+    {
+      "msg": "checkValidator: isValidator=true",
+      "level": "ok"
+    },
+    {
+      "msg": "checkEditorRights: isEditor=false",
+      "level": "err"
+    },
+    {
+      "msg": "checkAssignerRights: isAssigner=true",
+      "level": "ok"
+    }
+  ]
+}

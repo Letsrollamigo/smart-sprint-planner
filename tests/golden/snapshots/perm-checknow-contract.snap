@@ -1,0 +1,36 @@
+{
+  "backend": [
+    {
+      "path": "check-validator",
+      "method": "GET"
+    },
+    {
+      "path": "check-settings-manager",
+      "method": "GET"
+    }
+  ],
+  "results": {
+    "okValidator": true,
+    "okManager": true,
+    "emptyValidator": false,
+    "rejManager": false
+  },
+  "diag": [
+    {
+      "msg": "checkSettingsManager: запрос...",
+      "level": "info"
+    },
+    {
+      "msg": "checkSettingsManager: canManage=true group=\"Админы планера\"",
+      "level": "ok"
+    },
+    {
+      "msg": "checkSettingsManager: запрос...",
+      "level": "info"
+    },
+    {
+      "msg": "checkSettingsManager ERR: Error: gm-backend-reject — фоллбек: запрещаем",
+      "level": "err"
+    }
+  ]
+}
