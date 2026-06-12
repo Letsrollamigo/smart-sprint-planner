@@ -1,0 +1,20 @@
+{
+  "quota": {
+    "toasts": [
+      {
+        "msg": "Достигнут лимит хранилища рабочих копий. Удалите старые незавершённые правки.",
+        "type": "warn"
+      }
+    ],
+    "dirtyRestored": true
+  },
+  "generic": {
+    "diagTail": [
+      {
+        "msg": "working-drafts flush failed: gm-api-reject",
+        "level": "err"
+      }
+    ],
+    "dirtyRestored": true
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "synced": {
+    "key": "gm-hist-2026-05_analysis",
+    "sprint": {
+      "name": "GM Sprint June 2026",
+      "dateStart": 1779408000000,
+      "dateEnd": 1781568000000,
+      "sprintFieldVal": "GM Sprint June 2026",
+      "versionFieldVal": "v2026.06",
+      "resourceAnalysis": 2400,
+      "resourceTesting": 1200,
+      "resourceDevBack": 4800,
+      "resourceDevFront": 0
+    },
+    "items": [
+      {
+        "issueId": "GM-1",
+        "title": "Анализ требований платёжного модуля",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 600,
+        "fact_analysis": 0,
+        "alloc_analysis": 480,
+        "priority": "Major",
+        "state": "Open"
+      },
+      {
+        "issueId": "GM-2",
+        "title": "Обследование интеграции с 1С",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 900,
+        "fact_analysis": 300,
+        "alloc_analysis": null,
+        "priority": "Normal",
+        "state": "In Progress"
+      },
+      {
+        "issueId": "GM-3",
+        "title": "Ревью схемы данных",
+        "inclusionStatus": "INC_UNPLANNED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 120,
+        "fact_analysis": 240,
+        "alloc_analysis": null,
+        "priority": "Minor",
+        "state": "Fixed"
+      },
+      {
+        "issueId": "GM-4",
+        "title": "Исключённая задача",
+        "inclusionStatus": "INC_EXCLUDED",
+        "addedAt": 1779494400000,
+        "addedBy": "gm_user_validator",
+        "estimate_analysis": 6000,
+        "fact_analysis": 0,
+        "alloc_analysis": 6000,
+        "priority": "Show-stopper",
+        "state": "Open"
+      }
+    ],
+    "updatedAt": 1780315200000,
+    "editorTabToken": "gm-tab-token",
+    "personalPlanning": {
+      "devBack": {
+        "nkcKey": "june",
+        "people": [
+          {
+            "name": "gm_user_1",
+            "grade": "Senior",
+            "kpe": 1,
+            "participation": 1,
+            "nkc": 168
+          },
+          {
+            "name": "gm_user_2",
+            "grade": "Middle",
+            "kpe": 0.8,
+            "participation": 0.5,
+            "nkc": 168
+          }
+        ],
+        "taskAssignments": {
+          "GM-10": {
+            "assignee": "gm_user_1"
+          },
+          "GM-11": {
+            "assignee": "gm_user_2"
+          }
+        }
+      }
+    }
+  },
+  "syncedBySnapRole": {
+    "itemsLen": 4,
+    "tokenStamped": "gm-tab-token"
+  },
+  "ghostDirty": {
+    "sprint": true,
+    "roleItems": true
+  },
+  "wcFlushArmed": [
+    300,
+    300
+  ]
+}

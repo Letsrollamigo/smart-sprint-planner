@@ -1,0 +1,33 @@
+{
+  "armed": {
+    "delays": [
+      300
+    ],
+    "cleared": [
+      1
+    ]
+  },
+  "api": [
+    {
+      "fn": "post",
+      "path": "working-drafts",
+      "body": {
+        "data": {
+          "gm-wc-a": {
+            "key": "gm-wc-a"
+          },
+          "gm-wc-b": {
+            "key": "gm-wc-b"
+          }
+        }
+      }
+    }
+  ],
+  "dirtyAfter": false,
+  "headerRerenders": 1,
+  "crossTabKeys": [
+    "ssp:wc-touched:gm-wc-a",
+    "ssp:wc-touched:gm-wc-b"
+  ],
+  "secondFlushPosts": 1
+}

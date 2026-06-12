@@ -1,0 +1,109 @@
+{
+  "guardedDrafts": [
+    "orphan_x"
+  ],
+  "draftsAfter": [
+    "gm-hist-2026-05_analysis"
+  ],
+  "flags": {
+    "hist0": true,
+    "hist1": false
+  },
+  "flushArmed": [
+    300
+  ],
+  "api": [
+    {
+      "fn": "post",
+      "path": "history",
+      "body": {
+        "history": [
+          {
+            "sprintId": "gm-hist-2026-05_analysis",
+            "roleKey": "analysis",
+            "roleLabel": "Анализ",
+            "name": "GM Hist May 2026",
+            "status": "FINISHED",
+            "dateStart": 1776556800000,
+            "dateEnd": 1778889600000,
+            "finishedAt": 1778889600000,
+            "finishedBy": "gm_user_validator",
+            "confirmedAt": 1776556800000,
+            "confirmedBy": "gm_user_validator",
+            "resourceAnalysis": 1800,
+            "remainAnalysis": 300,
+            "hasWorkingCopy": true,
+            "items": [
+              {
+                "issueId": "GM-H1",
+                "title": "Историческая задача анализа",
+                "inclusionStatus": "INC_PLANNED",
+                "addedAt": 1779494400000,
+                "addedBy": "gm_user_validator",
+                "estimate_analysis": 600,
+                "fact_analysis": 600,
+                "alloc_analysis": 600,
+                "priority": "Major",
+                "state": "Fixed"
+              },
+              {
+                "issueId": "GM-H2",
+                "title": "Историческая задача без alloc",
+                "inclusionStatus": "INC_PLANNED",
+                "addedAt": 1779494400000,
+                "addedBy": "gm_user_validator",
+                "estimate_analysis": 900,
+                "fact_analysis": 300,
+                "alloc_analysis": null,
+                "priority": "Normal",
+                "state": "Fixed"
+              }
+            ],
+            "personalPlanning": {},
+            "revisions": [],
+            "pluginVersion": "2.5.6"
+          },
+          {
+            "sprintId": "gm-hist-2026-05_testing",
+            "roleKey": "testing",
+            "roleLabel": "Тестирование",
+            "name": "GM Hist May 2026",
+            "status": "FINISHED",
+            "dateStart": 1776556800000,
+            "dateEnd": 1778889600000,
+            "finishedAt": 1778889600000,
+            "finishedBy": "gm_user_validator",
+            "confirmedAt": 1776556800000,
+            "confirmedBy": "gm_user_validator",
+            "resourceTesting": 1200,
+            "remainTesting": 0,
+            "hasWorkingCopy": false,
+            "items": [
+              {
+                "issueId": "GM-H5",
+                "title": "Исторический регресс",
+                "inclusionStatus": "INC_PLANNED",
+                "addedAt": 1779494400000,
+                "addedBy": "gm_user_validator",
+                "estimate_testing": 1200,
+                "fact_testing": 1200,
+                "alloc_testing": 1200,
+                "priority": "Major",
+                "state": "Fixed"
+              }
+            ],
+            "personalPlanning": {},
+            "revisions": [],
+            "pluginVersion": "2.5.6"
+          }
+        ]
+      }
+    }
+  ],
+  "diag": [
+    {
+      "msg": "working-drafts: orphan removed: orphan_x",
+      "level": "warn"
+    }
+  ]
+}
