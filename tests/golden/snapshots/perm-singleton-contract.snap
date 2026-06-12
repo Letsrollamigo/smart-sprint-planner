@@ -1,0 +1,26 @@
+{
+  "backend": [
+    {
+      "path": "check-validator",
+      "method": "GET"
+    },
+    {
+      "path": "check-editor",
+      "method": "GET"
+    },
+    {
+      "path": "check-assigner",
+      "method": "GET"
+    }
+  ],
+  "samePromiseWhilePending": true,
+  "samePromiseAfterResolve": true,
+  "callsAfterSettle": 3,
+  "callsAfterThird": 3,
+  "flags": {
+    "isValidator": true,
+    "isEditor": true,
+    "isAssigner": false
+  },
+  "bodyHasAssignerRights": true
+}

@@ -57,6 +57,8 @@ const BRIDGE_SCRIPTS = [
   'pick.js',
   'youtrack-api.js',
   'working-copy.js',
+  'permissions.js',
+  'share-controller.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',

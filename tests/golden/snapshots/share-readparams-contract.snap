@@ -1,0 +1,10 @@
+{
+  "parsed": {
+    "projectKey": "GM",
+    "sprintId": "s1",
+    "node": "planning-standup",
+    "focus": "role:dev"
+  },
+  "invalids": {},
+  "noNav": {}
+}
