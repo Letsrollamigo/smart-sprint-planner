@@ -1,0 +1,162 @@
+{
+  "none": {
+    "editor-btn": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "validate-btn": {
+      "cls": "validate-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Валидация спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "new-sprint-btn": {
+      "cls": "new-sprint-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "save-header-btn": {
+      "cls": "save-header-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "assigner-btn": {
+      "cls": "assigner-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": true
+    }
+  },
+  "editorOnly": {
+    "editor-btn": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "validate-btn": {
+      "cls": "validate-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Валидация спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "new-sprint-btn": {
+      "cls": "new-sprint-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "save-header-btn": {
+      "cls": "save-header-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "assigner-btn": {
+      "cls": "assigner-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": false
+    }
+  },
+  "validatorOnly": {
+    "editor-btn": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "validate-btn": {
+      "cls": "validate-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "new-sprint-btn": {
+      "cls": "new-sprint-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "save-header-btn": {
+      "cls": "save-header-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "assigner-btn": {
+      "cls": "assigner-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": true
+    }
+  },
+  "assignerOnly": {
+    "editor-btn": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "validate-btn": {
+      "cls": "validate-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Валидация спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "new-sprint-btn": {
+      "cls": "new-sprint-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "save-header-btn": {
+      "cls": "save-header-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "assigner-btn": {
+      "cls": "assigner-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": false
+    }
+  },
+  "editorPlusAssigner": {
+    "editor-btn": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "validate-btn": {
+      "cls": "validate-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Валидация спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "new-sprint-btn": {
+      "cls": "new-sprint-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "save-header-btn": {
+      "cls": "save-header-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "assigner-btn": {
+      "cls": "assigner-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": false
+    }
+  }
+}

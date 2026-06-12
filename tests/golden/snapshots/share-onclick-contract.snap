@@ -1,0 +1,31 @@
+{
+  "afterOk": {
+    "copied": [
+      {
+        "cmd": "copy",
+        "value": "http://localhost:8080/app/smart-sprint-planner/ssp-main-global/?app_projectKey=GM&app_sprintId=s-1"
+      }
+    ],
+    "toasts": [
+      {
+        "msg": "Ссылка скопирована",
+        "type": null
+      }
+    ],
+    "textareaLeft": false,
+    "diagShare": [
+      {
+        "msg": "share copy: http://localhost:8080/app/smart-sprint-planner/ssp-main-global/?app_projectKey=GM&app_sprintId=s-1",
+        "level": "info"
+      }
+    ]
+  },
+  "afterFail": {
+    "toasts": [
+      {
+        "msg": "Не удалось скопировать ссылку",
+        "type": null
+      }
+    ]
+  }
+}

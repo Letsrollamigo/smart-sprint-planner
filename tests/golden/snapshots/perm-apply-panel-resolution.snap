@@ -1,0 +1,62 @@
+{
+  "viaCard": {
+    "cardEditor": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "outside": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    },
+    "overlay": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "settingsOverlay": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    }
+  },
+  "viaPeople": {
+    "people": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "outside": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    }
+  },
+  "viaFallback": {
+    "planningValidate": {
+      "cls": "validate-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Валидация спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "ganttEditor": {
+      "cls": "editor-btn btn--disabled-rights",
+      "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта»",
+      "disabled": false,
+      "readOnly": null
+    },
+    "outside": {
+      "cls": "editor-btn",
+      "tooltip": null,
+      "disabled": false,
+      "readOnly": null
+    }
+  }
+}
