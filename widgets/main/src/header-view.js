@@ -111,60 +111,48 @@ function _updateRailSprintName() {
   el.textContent = txt;
 }
 
-/* Идемпотентный рендер шапки виджета.
-   Вызывается при init, после loadAllData, при смене селектора, после
-   saveRoleHistorySnapshot/finishHistorySprint/_workingDraftsScheduleFlush. */
-function renderWidgetHeader(deps) {
-  var headerEl = document.getElementById('widgetHeader');
-  if (!headerEl) return;
-  var sel    = document.getElementById('widgetSprintSel');
-  var badge  = document.getElementById('widgetSprintBadge');
-  var wcInd  = document.getElementById('widgetWcIndicator');
-  if (!sel || !badge || !wcInd) return;
+/* ═══ Ступень 2 (vm-граница): вся compute-логика шапки — в _buildHeaderVm
+   (опции селектора с meta-фильтром FINISHED-only id, резолюция текущего
+   спринта: D72-сброс/восстановление/fallback на первый видимый, html
+   per-role бейджей v1.8.1, diag-строка, флаг WC-индикатора); рендер —
+   тупой DOM-аппликатор vm (включая отложенные state-мутации резолюции —
+   мутирует аппликатор, vm-builder pure). Значения DOM байт-в-байт
+   прежние — оракул сохранён (как слайсы 2–4). ═══ */
+function _buildHeaderVm(deps) {
   var T = deps.T, esc = deps.esc, fmtDate = deps.fmtDate;
 
-  /* 1. Заполняем селектор */
+  /* 1. Опции селектора: id с meta=null (все роли FINAL) отфильтрованы. */
   var ids = getLogicalSprintIds(deps);
-  /* Фильтруем id с meta=null (все роли FINAL) */
   var visibleIds = [];
   var metaCache = {};
   ids.forEach(function(id) {
     var m = getSprintMeta(id, deps);
     if (m) { visibleIds.push(id); metaCache[id] = m; }
   });
-
-  sel.innerHTML = '';
-  if (!visibleIds.length) {
-    /* v6.1.0 D72 — нет видимых спринтов → сбросить _currentSprintId, иначе он
-       продолжает указывать на удалённую/невидимую запись и ломает рендер вкладок. */
-    if (deps.state.getCurrentSprintId()) {
-      deps.state.setCurrentSprintId(null);
-      var ui0 = deps.draft.get('ui') || {}; ui0.currentSprintId = null; deps.draft.set('ui', ui0);
-    }
-    var opt0 = document.createElement('option');
-    opt0.value = ''; opt0.disabled = true; opt0.selected = true;
-    opt0.textContent = T('phNoSprintsActive');
-    sel.appendChild(opt0); sel.disabled = true;
-  } else {
-    sel.disabled = false;
-    visibleIds.forEach(function(id) {
-      var m = metaCache[id];
-      var opt = document.createElement('option');
-      opt.value = id;
-      opt.textContent = (m.name || id) +
+  var vm = { options: [], empty: !visibleIds.length };
+  visibleIds.forEach(function(id) {
+    var m = metaCache[id];
+    vm.options.push({
+      value: id,
+      text: (m.name || id) +
         (m.dateStart ? ' · ' + fmtDate(m.dateStart) : '') +
-        (m.dateEnd   ? ' — ' + fmtDate(m.dateEnd)   : '');
-      sel.appendChild(opt);
+        (m.dateEnd   ? ' — ' + fmtDate(m.dateEnd)   : ''),
     });
-    /* Восстановить _currentSprintId, если он валиден; иначе взять первый */
-    var cur = deps.state.getCurrentSprintId();
-    if (cur && visibleIds.indexOf(cur) >= 0) {
-      sel.value = cur;
-    } else {
-      sel.value = visibleIds[0];
-      deps.state.setCurrentSprintId(visibleIds[0]);
-      var ui = deps.draft.get('ui') || {}; ui.currentSprintId = visibleIds[0]; deps.draft.set('ui', ui);
-    }
+  });
+
+  /* Резолюция _currentSprintId (мутации применяет аппликатор):
+     D72 — нет видимых спринтов → сброс null; невалидный → первый видимый. */
+  var cur = deps.state.getCurrentSprintId();
+  if (vm.empty) {
+    vm.emptyText = T('phNoSprintsActive');
+    vm.resolvedSprintId = null;
+    vm.needsPersist = !!cur;
+  } else if (cur && visibleIds.indexOf(cur) >= 0) {
+    vm.resolvedSprintId = cur;
+    vm.needsPersist = false;
+  } else {
+    vm.resolvedSprintId = visibleIds[0];
+    vm.needsPersist = true;
   }
 
   /* 2. Бейджи статуса — список per-role (v1.8.1).
@@ -174,7 +162,7 @@ function renderWidgetHeader(deps) {
      Источник статуса каждой роли:
        - запись в _history (per-role snapshot) — берём её status (включая FINISHED);
        - если записи нет — PLANNING (роль ещё не валидирована). */
-  var curId = deps.state.getCurrentSprintId();
+  var curId = vm.resolvedSprintId;
   if (curId) {
     var activeRoles = (typeof deps.getActiveRoles === 'function' && deps.getActiveRoles().length)
       ? deps.getActiveRoles()
@@ -184,6 +172,72 @@ function renderWidgetHeader(deps) {
     entries.forEach(function(rec) {
       if (rec && rec.roleKey && rec.status) statusByRole[rec.roleKey] = rec.status;
     });
+    var _diagDump = activeRoles.map(function(role) {
+      return role.key + '=' + (statusByRole[role.key] || 'PLANNING(default)');
+    }).join(', ');
+    vm.diagLine = '[RENDER-HEADER] sprintId='+curId+' entries='+entries.length+' roles=['+_diagDump+']';
+    vm.badgeVisible = true;
+    vm.badgeHtml = activeRoles.map(function(role) {
+      var st = statusByRole[role.key] || 'PLANNING';
+      var stLabel = (typeof deps.statusLabel === 'function') ? deps.statusLabel(st) : st;
+      var rLabel  = (typeof deps.roleLabel === 'function') ? deps.roleLabel(role) : (role.label || role.key);
+      var cls     = 's-badge s-badge--' + String(st).toLowerCase();
+      return '<span class="'+cls+'" title="'+esc(rLabel + ': ' + stLabel)+'">'
+           +    '<span style="opacity:.7">'+esc(rLabel)+':</span> '+esc(stLabel)
+           + '</span>';
+    }).join('');
+  } else {
+    vm.diagLine = null;
+    vm.badgeVisible = false;
+    vm.badgeHtml = '';
+  }
+
+  /* 3. WC indicator */
+  vm.wcVisible = !!(curId && hasWorkingCopyForSprint(curId, deps));
+  return vm;
+}
+
+/* Идемпотентный рендер шапки виджета — DOM-аппликатор vm.
+   Вызывается при init, после loadAllData, при смене селектора, после
+   saveRoleHistorySnapshot/finishHistorySprint/_workingDraftsScheduleFlush. */
+function renderWidgetHeader(deps) {
+  var headerEl = document.getElementById('widgetHeader');
+  if (!headerEl) return;
+  var sel    = document.getElementById('widgetSprintSel');
+  var badge  = document.getElementById('widgetSprintBadge');
+  var wcInd  = document.getElementById('widgetWcIndicator');
+  if (!sel || !badge || !wcInd) return;
+
+  var vm = _buildHeaderVm(deps);
+
+  /* 1. Селектор + отложенные state-мутации резолюции (D72-сброс / fallback). */
+  sel.innerHTML = '';
+  if (vm.empty) {
+    if (vm.needsPersist) {
+      deps.state.setCurrentSprintId(null);
+      var ui0 = deps.draft.get('ui') || {}; ui0.currentSprintId = null; deps.draft.set('ui', ui0);
+    }
+    var opt0 = document.createElement('option');
+    opt0.value = ''; opt0.disabled = true; opt0.selected = true;
+    opt0.textContent = vm.emptyText;
+    sel.appendChild(opt0); sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    vm.options.forEach(function(o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.text;
+      sel.appendChild(opt);
+    });
+    sel.value = vm.resolvedSprintId;
+    if (vm.needsPersist) {
+      deps.state.setCurrentSprintId(vm.resolvedSprintId);
+      var ui = deps.draft.get('ui') || {}; ui.currentSprintId = vm.resolvedSprintId; deps.draft.set('ui', ui);
+    }
+  }
+
+  /* 2. Бейджи статуса */
+  if (vm.badgeVisible) {
     badge.classList.remove('hidden');
     badge.classList.remove('widget-header__badge--planning',
       'widget-header__badge--confirmed',
@@ -194,26 +248,15 @@ function renderWidgetHeader(deps) {
        (flex-wrap + flex-basis:100%). Inline-style раньше дублировал и конфликтовал с CSS,
        из-за чего при 4+ ролях бейджи наезжали на селектор спринта. */
     badge.removeAttribute('style');
-    var _diagDump = activeRoles.map(function(role) {
-      return role.key + '=' + (statusByRole[role.key] || 'PLANNING(default)');
-    }).join(', ');
-    deps.diag('[RENDER-HEADER] sprintId='+curId+' entries='+entries.length+' roles=['+_diagDump+']', 'info');
-    badge.innerHTML = activeRoles.map(function(role) {
-      var st = statusByRole[role.key] || 'PLANNING';
-      var stLabel = (typeof deps.statusLabel === 'function') ? deps.statusLabel(st) : st;
-      var rLabel  = (typeof deps.roleLabel === 'function') ? deps.roleLabel(role) : (role.label || role.key);
-      var cls     = 's-badge s-badge--' + String(st).toLowerCase();
-      return '<span class="'+cls+'" title="'+esc(rLabel + ': ' + stLabel)+'">'
-           +    '<span style="opacity:.7">'+esc(rLabel)+':</span> '+esc(stLabel)
-           + '</span>';
-    }).join('');
+    deps.diag(vm.diagLine, 'info');
+    badge.innerHTML = vm.badgeHtml;
   } else {
     badge.classList.add('hidden');
     badge.innerHTML = '';
   }
 
   /* 3. WC indicator */
-  if (curId && hasWorkingCopyForSprint(curId, deps)) {
+  if (vm.wcVisible) {
     wcInd.classList.remove('hidden');
   } else {
     wcInd.classList.add('hidden');
