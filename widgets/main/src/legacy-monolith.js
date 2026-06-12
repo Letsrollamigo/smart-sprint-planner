@@ -6438,67 +6438,12 @@
   }, true);
 
 
-  /* ═══════════════════════════════════════════════════════════
-     v4.0.0 — ИСТОРИЯ: Аллокация + Исполнитель + скрыть Edit
-     ═══════════════════════════════════════════════════════════ */
-
-  /* Патч buildSpoiler — переопределяем целиком для добавления колонок */
-  var _origBuildSpoiler = buildSpoiler;
-  buildSpoiler = function(rec, idx) {
-    var wrap = _origBuildSpoiler(rec, idx);
-
-    // Скрыть кнопку «Редактировать» для FINISHED спринтов
-    if (rec.status === STATUS.FINISHED) {
-      var editBtn = wrap.querySelector('.btn--edit-hist');
-      if (editBtn) editBtn.style.display = 'none';
-    }
-
-    // Добавить колонки Аллокация и Исполнитель в таблицу задач
-    var tbl = wrap.querySelector('table.tbl');
-    if (!tbl) return wrap;
-    var thead = tbl.querySelector('thead tr');
-    if (thead) {
-      var thAlloc = document.createElement('th');
-      thAlloc.textContent = T('histColAlloc');
-      thAlloc.style.cssText = 'min-width:90px';
-      var thAssignee = document.createElement('th');
-      thAssignee.textContent = T('histColAssignee');
-      thAssignee.style.cssText = 'min-width:110px';
-      thead.appendChild(thAlloc);
-      thead.appendChild(thAssignee);
-    }
-
-    var rk = rec.roleKey;
-    var pp = rec.personalPlanning || null;
-    var taskAssignments = pp ? (pp.taskAssignments || {}) : {};
-
-    var trs = tbl.querySelectorAll('tbody tr');
-    trs.forEach(function(tr, i) {
-      var item = rec.items ? rec.items[i] : null;
-      var issueId = item ? item.issueId : null;
-
-      // Аллокация
-      var tdAlloc = document.createElement('td');
-      tdAlloc.className = 'td-num';
-      var allocVal = item ? item['alloc_'+rk] : null;
-      tdAlloc.textContent = (allocVal !== null && allocVal !== undefined) ? fmtPeriod(allocVal) : '—';
-      tr.appendChild(tdAlloc);
-
-      // Исполнитель
-      var tdAssignee = document.createElement('td');
-      if (issueId && taskAssignments[issueId]) {
-        tdAssignee.textContent = taskAssignments[issueId].assigneeName || taskAssignments[issueId].assignee || '—';
-      } else {
-        tdAssignee.textContent = '—';
-        tdAssignee.style.color = 'var(--muted)';
-      }
-      tr.appendChild(tdAssignee);
-    });
-
-    return wrap;
-  };
-
-  /* editHistorySprint уже патчнут выше для восстановления alloc и v4-блоков */
+  /* v4.0.0-патч спойлера истории снесён как мёртвый код (Тир D слайс 4):
+     обе его ветки давно no-op — кнопка правки для FINISHED-записей не создаётся
+     самим рендером (гейт прав/статуса), а native-таблица items заменена Ring Table
+     (v2.0.0 D128) — синхронный DOM-запрос патча не находил целей. Утрата колонок
+     «Аллокация»/«Исполнитель» в таблице истории — pre-existing с v2.0.0, в бэклоге.
+     (editHistorySprint патчнут выше — для восстановления alloc и v4-блоков, жив.) */
 
 
   /* ═══════════════════════════════════════════════════════════
