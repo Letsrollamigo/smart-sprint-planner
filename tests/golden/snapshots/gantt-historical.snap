@@ -1,0 +1,6 @@
+{
+  "renderedIssue": "GM-40",
+  "firstCell": "<a href=\"http://localhost:8080/issue/GM-40\" target=\"_blank\" class=\"link\" style=\"font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">GM-40</a><div style=\"font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">Не назначен</div><div style=\"margin-top:2px;white-space:nowrap;overflow:hidden\"><span style=\"display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:10px;line-height:1.4;background:#d7e9f7;color:#1f6feb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%\"><span style=\"display:inline-block;width:5px;height:5px;border-radius:50%;background:#1f6feb;flex-shrink:0\"></span>Готово</span></div>",
+  "liveItemsLeaked": false,
+  "fetchCalls": 0
+}
