@@ -1,0 +1,10 @@
+{
+  "order": [
+    "REC-B",
+    "REC-C",
+    "REC-A"
+  ],
+  "migratedRoleKey": "analysis",
+  "migratedRoleLabel": "Анализ",
+  "pagDisplay": "none"
+}

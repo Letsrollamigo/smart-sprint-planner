@@ -1,0 +1,164 @@
+{
+  "wcItems": {
+    "sortKey": "off",
+    "stickyHeader": false,
+    "emptyText": "Нет задач",
+    "itemKeys": [
+      "GM-W1"
+    ],
+    "columns": [
+      {
+        "id": "id",
+        "title": "№ задачи",
+        "sortable": false,
+        "className": "td-id",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          {
+            "html": "<a href=\"https://yt.local/issue/GM-W1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-W1</a>"
+          }
+        ]
+      },
+      {
+        "id": "title",
+        "title": "Название",
+        "sortable": false,
+        "className": "td-title ssp-col-title",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Синтетическая задача GM-W1"
+        ]
+      },
+      {
+        "id": "priority",
+        "title": "Приоритет",
+        "sortable": false,
+        "className": "td-hist-narrow",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Значительный"
+        ]
+      },
+      {
+        "id": "state",
+        "title": "Состояние",
+        "sortable": false,
+        "className": "td-hist-narrow",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Открыта"
+        ]
+      },
+      {
+        "id": "incStatus",
+        "title": "Статус включения",
+        "sortable": false,
+        "className": "td-hist-inc",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Включена планово"
+        ]
+      },
+      {
+        "id": "delta",
+        "title": "Ресурс<br>Анализ",
+        "sortable": false,
+        "className": "td-num",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          {
+            "html": "10ч"
+          }
+        ]
+      }
+    ]
+  },
+  "wcNoticeHidden": false,
+  "snapItems": {
+    "sortKey": "off",
+    "stickyHeader": false,
+    "emptyText": "Нет задач",
+    "itemKeys": [
+      "GM-S1"
+    ],
+    "columns": [
+      {
+        "id": "id",
+        "title": "№ задачи",
+        "sortable": false,
+        "className": "td-id",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          {
+            "html": "<a href=\"https://yt.local/issue/GM-S1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-S1</a>"
+          }
+        ]
+      },
+      {
+        "id": "title",
+        "title": "Название",
+        "sortable": false,
+        "className": "td-title ssp-col-title",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Синтетическая задача GM-S1"
+        ]
+      },
+      {
+        "id": "priority",
+        "title": "Приоритет",
+        "sortable": false,
+        "className": "td-hist-narrow",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Значительный"
+        ]
+      },
+      {
+        "id": "state",
+        "title": "Состояние",
+        "sortable": false,
+        "className": "td-hist-narrow",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Открыта"
+        ]
+      },
+      {
+        "id": "incStatus",
+        "title": "Статус включения",
+        "sortable": false,
+        "className": "td-hist-inc",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          "Включена планово"
+        ]
+      },
+      {
+        "id": "delta",
+        "title": "Ресурс<br>Анализ",
+        "sortable": false,
+        "className": "td-num",
+        "rightAlign": false,
+        "header": null,
+        "cells": [
+          {
+            "html": "<span class=\"delta-neg\">−5ч</span>"
+          }
+        ]
+      }
+    ]
+  },
+  "snapNoticeHidden": true
+}
