@@ -571,7 +571,6 @@
      Pre-existing baseline: D2 baseline тоже подвержен race, но +1.4KB LoaderInline в D3
      сдвинул timing и сделал race наблюдаемой. Future-proof для D4-D7 яруса 3. */
   var _permissionsCheckPromise = null;
-  var _permissionsReady = false;
   var _histPage = 1;
   var _selectedIds = new Set(); /* Phase 4 #32: _pickPage/_pickResults/_pickHasMore переехали в React-стейт pickPicker */
   /* v5.0.3 — кэш метаданных всех загруженных страниц текущего запроса
@@ -2583,7 +2582,6 @@
     _currentRoleGantt = null;
     _ganttStateHist = {};
     _permissionsCheckPromise = null;
-    _permissionsReady = false;
     _isValidator = false;
     _isEditor = false;
     _isAssigner = false;
@@ -3305,7 +3303,6 @@
       ? checkAssignerRightsNow().then(function(ok){ _isAssigner = ok; })
       : Promise.resolve();
     _permissionsCheckPromise = Promise.all([validator, editor, assigner]).then(function() {
-      _permissionsReady = true;
       try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch(_){}
       if (typeof applyEditorRightsToUI === 'function') { try { applyEditorRightsToUI(); } catch(_){} }
     });
