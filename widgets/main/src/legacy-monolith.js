@@ -6161,9 +6161,6 @@
       showCloseWorkingCopyModal(function(ok) {
         if (!ok) return; // селектор откатится в обработчике change
         _activeWorkingDraftKey = null;
-        if (typeof updateWorkingCopyBanner === 'function') {
-          try { updateWorkingCopyBanner(); } catch(_){}
-        }
         setCurrentSprintId(newId, { confirmed: true });
       });
       return false;
