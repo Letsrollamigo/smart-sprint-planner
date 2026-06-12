@@ -12,9 +12,9 @@
  * подхватывается, паттерн recording-тоста слайса 1). Навигация хоста (#36) —
  * recording-стаб _host.navigation; SHARE_URL_PURE — настоящий модуль.
  *
- * ⚠️ Снапшот share-href-contract фиксирует per-fork _SHARE_APP_PATH
- * (corp /app/smart-sprint-planner/ vs comm /app/smart-sprint-planner/ —
- * DIFF_MAP §9, sed НЕ покрывает) — на зеркале регенерируется точечно.
+ * ⚠️ Снапшоты share-href-contract/share-onclick-contract фиксируют per-fork
+ * _SHARE_APP_PATH (DIFF_MAP §9): путь различается именем приложения —
+ * зеркалятся sed-заменой имени приложения ДО namespace-префиксов.
  */
 'use strict';
 
