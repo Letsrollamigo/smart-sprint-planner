@@ -1,0 +1,21 @@
+{
+  "scheduled": [
+    200
+  ],
+  "afterFind": {
+    "classFlash": "planning-role-card ssp-focus-flash",
+    "scrolls": [
+      {
+        "behavior": "smooth",
+        "block": "center"
+      }
+    ],
+    "nextDelays": [
+      1600
+    ]
+  },
+  "afterUnflash": {
+    "classFlash": "planning-role-card"
+  },
+  "timersAfterInvalid": 0
+}

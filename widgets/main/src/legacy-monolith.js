@@ -73,8 +73,6 @@
   var SORT_PURE = (typeof window !== 'undefined' && window.__SSP_SORT_PURE) || {};
   /* #35 — чистое ядро слияния «Обновить из задачи» (refresh-merge-pure.js). */
   var REFRESH_MERGE_PURE = (typeof window !== 'undefined' && window.__SSP_REFRESH_MERGE_PURE) || {};
-  /* #36 — чистое ядро deep-link share-URL (share-url-pure.js): parse/build search ↔ state. */
-  var SHARE_URL_PURE = (typeof window !== 'undefined' && window.__SSP_SHARE_URL_PURE) || {};
   /* #36 — share-параметры из URL, считанные ОДИН раз на init (consumed в _loadAndRenderProject). */
   var _pendingShareParams = null;
   /* #36 — guard авто-синка state→URL: выключен во время init-restore (иначе _applyActiveProject
@@ -571,7 +569,6 @@
      Pre-existing baseline: D2 baseline тоже подвержен race, но +1.4KB LoaderInline в D3
      сдвинул timing и сделал race наблюдаемой. Future-proof для D4-D7 яруса 3. */
   var _permissionsCheckPromise = null;
-  var _permissionsReady = false;
   var _histPage = 1;
   var _selectedIds = new Set(); /* Phase 4 #32: _pickPage/_pickResults/_pickHasMore переехали в React-стейт pickPicker */
   /* v5.0.3 — кэш метаданных всех загруженных страниц текущего запроса
@@ -2408,137 +2405,43 @@
   }
 
   /* ═══ #36 Share-URL (deep-link + handoff) ═══════════════════════════════
-     host.navigation доступен только в global-режиме (MAIN_MENU_ITEM). getAppLocation()
-     АСИНХРОНЕН (Promise) — проверено V0-A 2026-06-09. YT добавляет app_-префикс к ключам
-     в видимой строке, но get/replaceAppLocation работают с чистыми ключами симметрично. */
-
-  function _navAvailable() {
-    return !!(_host && _host.navigation && typeof _host.navigation.getAppLocation === 'function');
+     Вынесено в share-controller.js (Фаза 5 слайс 2, коммит В) за мост
+     window.__SSP_SHARE_CTRL (⚠️ _SHARE_APP_PATH per-fork — DIFF_MAP §9);
+     golden-контракты — permissions-share.golden.test.js (идут через эти
+     делегаторы). Deps-фабрика per-call: стейт share-цепочки (_host/_mode/
+     _urlSyncEnabled/проект/спринт/_ytBase/_sprint/_history) остаётся в
+     монолите — init-restore пишет _urlSyncEnabled/_pendingShareParams. */
+  var SHARE_CTRL = (typeof window !== 'undefined' && window.__SSP_SHARE_CTRL) || {};
+  function _shareDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      state: {
+        getHost: function () { return _host; },
+        getMode: function () { return _mode; },
+        getUrlSyncEnabled: function () { return _urlSyncEnabled; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getYtBase: function () { return _ytBase; },
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+      },
+    };
   }
-
-  /* URL → state: читает search один раз на init. Возвращает Promise<{projectKey,sprintId,node,focus}>. */
-  function _readShareParams() {
-    if (typeof SHARE_URL_PURE.parseShareSearch !== 'function' || !_navAvailable()) return Promise.resolve({});
-    try {
-      return Promise.resolve(_host.navigation.getAppLocation())
-        .then(function (loc) { return SHARE_URL_PURE.parseShareSearch(loc && loc.search) || {}; })
-        .catch(function () { return {}; });
-    } catch (_) { return Promise.resolve({}); }
-  }
-
-  /* Внутренний id активного узла дерева (для билда URL). */
-  function _currentDashNode() {
-    try {
-      var act = document.querySelector('.ssp-tree [data-node].active');
-      if (act && act.dataset && act.dataset.node) return act.dataset.node;
-    } catch (_) {}
-    return null;
-  }
-
-  /* state → URL: replaceAppLocation (без записи в history). No-op до _urlSyncEnabled / вне global. */
-  function _syncStateToUrl() {
-    if (!_urlSyncEnabled || _mode !== 'global' || !_navAvailable()) return;
-    if (typeof _host.navigation.replaceAppLocation !== 'function') return;
-    if (typeof SHARE_URL_PURE.buildShareSearch !== 'function') return;
-    try {
-      var search = SHARE_URL_PURE.buildShareSearch({
-        projectKey: _activeProjectKey,
-        sprintId:   _currentSprintId,
-        node:       _currentDashNode()
-      });
-      _host.navigation.replaceAppLocation({ search: search });
-    } catch (_) {}
-  }
-
-  /* Валиден ли sprintId (base-UUID) среди доступных: активный спринт или запись истории. */
-  function _validSprintId(id) {
-    if (!id) return false;
-    if (_sprint && _sprint.sprintId === id) return true;
-    if (Array.isArray(_history)) {
-      return _history.some(function (rec) {
-        return rec && rec.sprintId && String(rec.sprintId).split('_')[0] === id;
-      });
-    }
-    return false;
-  }
-
-  /* Применить focus=role:K / user:L — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
-  function _applyShareFocus(focus) {
-    if (typeof SHARE_URL_PURE.parseFocus !== 'function') return;
-    var f = SHARE_URL_PURE.parseFocus(focus);
-    if (!f) return;
-    setTimeout(function () {
-      try {
-        var el = null;
-        if (f.kind === 'role') {
-          el = document.querySelector('.planning-role-card[data-role-key="' + f.value + '"]');
-        } else if (f.kind === 'user') {
-          /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
-          el = document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]');
-        }
-        if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ssp-focus-flash');
-        setTimeout(function () { try { el.classList.remove('ssp-focus-flash'); } catch (_) {} }, 1600);
-      } catch (_) {}
-    }, 200);
-  }
+  function _navAvailable() { return SHARE_CTRL._navAvailable(_shareDeps()); }
+  function _readShareParams() { return SHARE_CTRL._readShareParams(_shareDeps()); }
+  function _syncStateToUrl() { return SHARE_CTRL._syncStateToUrl(_shareDeps()); }
+  function _validSprintId(id) { return SHARE_CTRL._validSprintId(id, _shareDeps()); }
+  function _applyShareFocus(focus) { return SHARE_CTRL._applyShareFocus(focus, _shareDeps()); }
+  /* Делегатор-точка входа share-голденов (как computeRoleQuickStats в слайсе 3);
+     прод-caller — _onShareClick внутри модуля. */
+  function _buildShareHref() { return SHARE_CTRL._buildShareHref(_shareDeps()); }
+  function _onShareClick() { return SHARE_CTRL._onShareClick(_shareDeps()); }
 
   /* Состояние кнопки «Поделиться» в рельсе (#36) — вынесено в header-view.js
      (Тир D слайс 5, ступень 1, коммит В); делегатор для callers share-цепочки
      и init-зоны рельса. */
   function _updateShareBtnState() { return HEADER_VIEW._updateShareBtnState(_headerDeps()); }
 
-  /* Клик по «Поделиться»: копирует текущий deep-link URL + toast. Без модалки/dropdown (D4).
-     ВАЖНО (V0-смоук 2026-06-09): iframe виджета YT идёт без allow="clipboard-write" в
-     Permissions-Policy → navigator.clipboard.writeText БЛОКИРУЕТСЯ (и в проде, не только в
-     автоматизации). Поэтому primary-путь — синхронный execCommand('copy') в gesture'е (он
-     не гейтится clipboard-write policy); async Clipboard API — лишь enhancement-fallback. */
-  function _execCopy(text) {
-    try {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
-      document.body.appendChild(ta);
-      ta.focus(); ta.select();
-      try { ta.setSelectionRange(0, text.length); } catch (_) {}
-      var done = false;
-      try { done = document.execCommand('copy'); } catch (_) { done = false; }
-      document.body.removeChild(ta);
-      return !!done;
-    } catch (_) { return false; }
-  }
-  /* #36 v2.5.2 — shareable URL РЕКОНСТРУИРУЕМ из состояния, НЕ из window.location.href:
-     виджет живёт в sandboxed about:srcdoc-iframe → window.location.href = "about:srcdoc#…"
-     (адрес iframe, не родительский YT-URL). Собираем: ytBase + путь app/widget +
-     app_-префиксные параметры (YT в реальном URL префиксует ключи app_; getAppLocation
-     читает их обратно без префикса — V0-A 2026-06-09). */
-  var _SHARE_APP_PATH = '/app/smart-sprint-planner/ssp-main-global/';
-  function _buildShareHref() {
-    var base = String(_ytBase || '').replace(/\/+$/, '');
-    var raw = (typeof SHARE_URL_PURE.buildShareSearch === 'function')
-      ? SHARE_URL_PURE.buildShareSearch({ projectKey: _activeProjectKey, sprintId: _currentSprintId, node: _currentDashNode() })
-      : '';
-    var prefixed = raw ? raw.split('&').map(function (p) { return 'app_' + p; }).join('&') : '';
-    return base + _SHARE_APP_PATH + (prefixed ? '?' + prefixed : '');
-  }
-  function _onShareClick() {
-    var href = _buildShareHref();
-    try { diag('share copy: ' + href, 'info'); } catch (_) {}
-    function ok()  { try { toast(T('shareCopyOk')); } catch (_) {} }
-    function err() { try { toast(T('shareCopyErr')); } catch (_) {} }
-    /* 1) синхронный execCommand в gesture'е (работает в sandboxed iframe без clipboard-write) */
-    if (_execCopy(href)) { ok(); return; }
-    /* 2) fallback — async Clipboard API (если вдруг доступен) */
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(href).then(ok, err);
-      } else {
-        err();
-      }
-    } catch (_) { err(); }
-  }
 
   function _onProjectPicked(newKey) {
     if (!newKey || newKey === _activeProjectKey) return;
@@ -2583,7 +2486,6 @@
     _currentRoleGantt = null;
     _ganttStateHist = {};
     _permissionsCheckPromise = null;
-    _permissionsReady = false;
     _isValidator = false;
     _isEditor = false;
     _isAssigner = false;
@@ -3221,186 +3123,36 @@
   });
 
   /* ═══ Проверка прав ════════════════════════════════════════ */
-  /**
-   * [P1-1] Проверка прав валидатора — исключительно через backend GET /check-validator.
-   * Сервер читает группы из сохранённых настроек (ctx.project.extensionProperties),
-   * клиент не передаёт список групп — их нельзя подменить.
-   */
-  function checkValidatorNow() {
-    return _backendCall('check-validator', { method: 'GET' })
-      .then(function(r){ return !!(r && r.isValidator); })
-      .catch(function(){ return false; });
+  /* Вынесено в permissions.js (Фаза 5 слайс 2, коммит Б) за мост
+     window.__SSP_PERMISSIONS; golden-контракты — permissions-share.golden.test.js
+     (идут через эти делегаторы). Deps-фабрика per-call: флаги прав и кэш
+     промиса остаются в стейт-ядре монолита (их читают guard'ы контроллеров
+     и deps-фабрики других модулей; сброс — _resetProjectStateCaches). */
+  var PERMISSIONS = (typeof window !== 'undefined' && window.__SSP_PERMISSIONS) || {};
+  function _permsDeps() {
+    return {
+      T: T, diag: diag,
+      backendCall: _backendCall,
+      state: {
+        getIsEditor: function () { return _isEditor; },
+        setIsEditor: function (v) { _isEditor = v; },
+        getIsValidator: function () { return _isValidator; },
+        setIsValidator: function (v) { _isValidator = v; },
+        getIsAssigner: function () { return _isAssigner; },
+        setIsAssigner: function (v) { _isAssigner = v; },
+        getPermissionsCheckPromise: function () { return _permissionsCheckPromise; },
+        setPermissionsCheckPromise: function (p) { _permissionsCheckPromise = p; },
+        getActiveSubtab: function () { return _activeSubtab; },
+      },
+    };
   }
-
-  /**
-   * [P1-1] Проверка прав редактора — исключительно через backend GET /check-editor.
-   * Сервер сверяет ctx.currentUser.groups с настроенными группами редактирования.
-   */
-  function checkEditorRightsNow() {
-    return _backendCall('check-editor', { method: 'GET' })
-      .then(function(r){ return !!(r && r.isEditor); })
-      .catch(function(){ return false; });
-  }
-
-  function checkSettingsManager() {
-    diag('checkSettingsManager: запрос...', 'info');
-    return _backendCall('check-settings-manager', { method: 'GET' })
-      .then(function(r) {
-      var msg = 'checkSettingsManager: canManage=' + (r && r.canManage) +
-        ' group="' + (r && r.groupName || '') + '"';
-      diag(msg, (r && r.canManage) ? 'ok' : 'err');
-      return !!(r && r.canManage);
-    }).catch(function(e) {
-      diag('checkSettingsManager ERR: ' + String(e) + ' — фоллбек: запрещаем', 'err');
-      return false;
-    });
-  }
-
-  function checkValidator() {
-    checkValidatorNow().then(function(ok){
-      _isValidator = ok;
-      diag('checkValidator: isValidator='+ok, ok?'ok':'err');
-    });
-  }
-
-  function checkEditorRights() {
-    checkEditorRightsNow().then(function(ok){
-      _isEditor = ok;
-      diag('checkEditorRights: isEditor='+ok, ok?'ok':'err');
-      applyEditorRightsToUI();
-    });
-  }
-
-  /* v6.1.0 D82 (F5) — assigner-роль. Иерархия editor⊃assigner⊃viewer.
-     Backend GET /check-assigner возвращает { isAssigner }, наследование на frontend
-     учитывается в applyEditorRightsToUI (assigner-btn enabled if editor OR assigner). */
-  function checkAssignerRightsNow() {
-    return _backendCall('check-assigner', { method: 'GET' })
-      .then(function (r) {
-      return !!(r && r.isAssigner);
-    }).catch(function () { return false; });
-  }
-  function checkAssignerRights() {
-    checkAssignerRightsNow().then(function (ok) {
-      _isAssigner = ok;
-      diag('checkAssignerRights: isAssigner=' + ok, ok ? 'ok' : 'info');
-      try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch (_) {}
-      applyEditorRightsToUI();
-    });
-  }
-
-  /* v2.0.0 Phase D3 — Singleton permission check.
-     Запускает все 3 async permission checks одним батчем, кэширует Promise.
-     Повторные вызовы возвращают тот же Promise (no duplicate API calls).
-     Critical click-handlers могут .then() для guard'ов без race. */
-  function _startPermissionsCheck() {
-    if (_permissionsCheckPromise) return _permissionsCheckPromise;
-    var validator = (typeof checkValidatorNow === 'function')
-      ? checkValidatorNow().then(function(ok){ _isValidator = ok; })
-      : Promise.resolve();
-    var editor = (typeof checkEditorRightsNow === 'function')
-      ? checkEditorRightsNow().then(function(ok){ _isEditor = ok; })
-      : Promise.resolve();
-    var assigner = (typeof checkAssignerRightsNow === 'function')
-      ? checkAssignerRightsNow().then(function(ok){ _isAssigner = ok; })
-      : Promise.resolve();
-    _permissionsCheckPromise = Promise.all([validator, editor, assigner]).then(function() {
-      _permissionsReady = true;
-      try { document.body.classList.toggle('has-assigner-rights', !!(_isEditor || _isAssigner)); } catch(_){}
-      if (typeof applyEditorRightsToUI === 'function') { try { applyEditorRightsToUI(); } catch(_){} }
-    });
-    return _permissionsCheckPromise;
-  }
-
-  /* Применить права редактора к кнопкам активной подвкладки.
-     v5.6.0 — Этап 4 (4d): legacy #subtab-panel-<rk> удалён, panel теперь — раскрытая
-     accordion-карточка `.planning-role-card.expanded[data-role-key=<rk>] .planning-role-body`
-     (для уровня «Роли») или `#planningPeopleContent` (для уровня «Люди»). Если ничего
-     из этого не активно — применяем ко всему #tab-planning + #tab-gantt (например, после
-     reload прав). */
-  function applyEditorRightsToUI() {
-    var roleKey = _activeSubtab;
-    var panel = null;
-    if (roleKey) {
-      panel = document.querySelector('.planning-role-card.expanded[data-role-key="'+roleKey+'"] .planning-role-body');
-    }
-    if (!panel) {
-      panel = document.getElementById('planningPeopleContent');
-    }
-    if (!panel) {
-      /* Fallback — применяем ко всем editor-btn в #tab-planning и #tab-gantt */
-      var roots = [];
-      var p1 = document.getElementById('tab-planning'); if (p1) roots.push(p1);
-      var p2 = document.getElementById('tab-gantt');    if (p2) roots.push(p2);
-      roots.forEach(_applyEditorRightsTo);
-    } else {
-      _applyEditorRightsTo(panel);
-    }
-    /* v5.9.0 — расширение на overlay'и: editor-кнопки в #reassignOverlay/#clearAssigneesOverlay/etc.
-       должны дизейблиться так же, как в основных вкладках. Settings-overlay (отдельный класс
-       .settings-overlay без `.overlay`) НЕ затрагивается — управляется собственным flow check'ов. */
-    var ovs = document.querySelectorAll('.overlay:not(.settings-overlay)');
-    for (var i = 0; i < ovs.length; i++) _applyEditorRightsTo(ovs[i]);
-  }
-  function _applyEditorRightsTo(panel) {
-    if (!panel) return;
-    var editorBtns = panel.querySelectorAll('.editor-btn');
-    editorBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-        btn.disabled = false;
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-        // НЕ ставим btn.disabled = true, чтобы показывался тултип
-      }
-    });
-    var validateBtns = panel.querySelectorAll('.validate-btn');
-    validateBtns.forEach(function(btn) {
-      if (_isValidator) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsVal'));
-      }
-    });
-    var newSprintBtns = panel.querySelectorAll('.new-sprint-btn');
-    newSprintBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-      }
-    });
-    var saveHeaderBtns = panel.querySelectorAll('.save-header-btn');
-    saveHeaderBtns.forEach(function(btn) {
-      if (_isEditor) {
-        btn.classList.remove('btn--disabled-rights');
-        btn.removeAttribute('data-tooltip');
-      } else {
-        btn.classList.add('btn--disabled-rights');
-        btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-      }
-    });
-    /* v6.1.0 D82 (F5) — assigner-btn включён если editor OR assigner. */
-    var assignerBtns = panel.querySelectorAll('.assigner-btn');
-    assignerBtns.forEach(function (el) {
-      if (_isEditor || _isAssigner) {
-        el.classList.remove('btn--disabled-rights');
-        el.removeAttribute('data-tooltip');
-        el.disabled = false;
-        try { el.readOnly = false; } catch (_) {}
-      } else {
-        el.classList.add('btn--disabled-rights');
-        el.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
-        try { el.readOnly = true; } catch (_) {}
-      }
-    });
-  }
+  function checkValidatorNow() { return PERMISSIONS.checkValidatorNow(_permsDeps()); }
+  function checkSettingsManager() { return PERMISSIONS.checkSettingsManager(_permsDeps()); }
+  function checkValidator() { return PERMISSIONS.checkValidator(_permsDeps()); }
+  function checkEditorRights() { return PERMISSIONS.checkEditorRights(_permsDeps()); }
+  function checkAssignerRights() { return PERMISSIONS.checkAssignerRights(_permsDeps()); }
+  function _startPermissionsCheck() { return PERMISSIONS._startPermissionsCheck(_permsDeps()); }
+  function applyEditorRightsToUI() { return PERMISSIONS.applyEditorRightsToUI(_permsDeps()); }
 
   /* ═══════════════════════════════════════════════════════════
      v5.0.1 — SETTINGS OVERLAY (внутри ssp-main).

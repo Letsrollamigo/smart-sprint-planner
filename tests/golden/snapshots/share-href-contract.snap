@@ -1,0 +1,6 @@
+{
+  "full": "http://localhost:8080/app/smart-sprint-planner/ssp-main-global/?app_projectKey=DEMOClone&app_sprintId=abc-123&app_node=planning.standup",
+  "unknownNode": "http://localhost:8080/app/smart-sprint-planner/ssp-main-global/?app_projectKey=DEMOClone&app_sprintId=abc-123",
+  "noSprintNoNode": "http://localhost:8080/app/smart-sprint-planner/ssp-main-global/?app_projectKey=DEMOClone",
+  "empty": "http://localhost:8080/app/smart-sprint-planner/ssp-main-global/"
+}

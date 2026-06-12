@@ -32,6 +32,8 @@ import './history-io.js';
 import './pick.js';
 import './youtrack-api.js';
 import './working-copy.js';
+import './permissions.js';
+import './share-controller.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
