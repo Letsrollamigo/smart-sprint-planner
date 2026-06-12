@@ -1617,46 +1617,11 @@
     return WC._commitWorkingCopy(rk, idx, draft, snapFromCurrent, _wcDeps());
   }
 
-  /* ═══ v5.3.0 — UI: working copy banner ═══ */
-  function renderWorkingCopyBanner() {
-    var banner = document.getElementById('wcBanner');
-    if (!banner) return;
-    if (!_activeWorkingDraftKey) { banner.classList.add('hidden'); return; }
-    var draft = _workingDrafts[_activeWorkingDraftKey];
-    if (!draft) { banner.classList.add('hidden'); return; }
-    var snap = _history.find(function(s){ return s && s.sprintId === _activeWorkingDraftKey; });
-    if (!snap) { banner.classList.add('hidden'); return; }
-
-    var role = ALL_ROLES.find(function(r){ return r.key === snap.roleKey; });
-    var rl   = role ? roleLabel(role) : (snap.roleKey || '');
-    var sn   = snap.name || (draft.sprint && draft.sprint.name) || T('unnamedSprint');
-    var dt   = fmtDate(snap.confirmedAt);
-    var txt  = T('wcBannerTextTpl').replace('{sprint}', sn).replace('{role}', rl).replace('{date}', dt);
-    var textEl = document.getElementById('wcBannerText');
-    if (textEl) textEl.textContent = txt;
-
-    var level = computeRequiredRevalidationLevel(snap, draft);
-    var pill = document.getElementById('wcBannerLevelPill');
-    if (pill) {
-      pill.classList.remove('wc-banner__pill--meta','wc-banner__pill--allocated','wc-banner__pill--confirmed');
-      if (level === 'CONFIRMED_REVAL') {
-        pill.classList.add('wc-banner__pill--confirmed');
-        pill.textContent = T('wcLevelConfirmedShort');
-      } else if (level === 'ALLOCATED_REVAL') {
-        pill.classList.add('wc-banner__pill--allocated');
-        pill.textContent = T('wcLevelAllocatedShort');
-      } else {
-        pill.classList.add('wc-banner__pill--meta');
-        pill.textContent = T('wcLevelMetaOnlyShort');
-      }
-      pill.title = T('wcLevel_' + level);
-    }
-    banner.classList.remove('hidden');
-  }
-  function hideWorkingCopyBanner() {
-    var b = document.getElementById('wcBanner');
-    if (b) b.classList.add('hidden');
-  }
+  /* ═══ v5.3.0 — UI: working copy banner — вынесен в header-view.js
+     (Тир D слайс 5, ступень 1, коммит В); делегаторы для callers
+     монолита и _wcDeps-фабрики working-copy. ═══ */
+  function renderWorkingCopyBanner() { return HEADER_VIEW.renderWorkingCopyBanner(_headerDeps()); }
+  function hideWorkingCopyBanner() { return HEADER_VIEW.hideWorkingCopyBanner(); }
 
   /* ═══ v5.3.0 — UI: модалки (diff, conflict, multi-tab, discard) ═══ */
   function diffItemsForUI(snap, working) { return HASH_PURE.diffItemsForUI(snap, working); }
@@ -3031,20 +2996,10 @@
     }, 200);
   }
 
-  /* Состояние кнопки «Поделиться» в рельсе: enabled только при выбранном спринте. */
-  function _updateShareBtnState() {
-    var btn = document.querySelector('.ssp-tree__item--share');
-    if (!btn) return;
-    /* #36 v2.5.2 — host.navigation присутствует только в YT ≥ 2026.1; на старых серверах
-       (прод 2025.3) deep-link не работает (ни синк, ни приём, ни корректная ссылка) →
-       ПРЯЧЕМ кнопку целиком, чтобы не висела мёртвой. Появится сама, когда сервер
-       апнут до 2026.1 (nav станет доступен) — без отдельного релиза. */
-    if (_mode !== 'global' || !_navAvailable()) { btn.style.display = 'none'; return; }
-    btn.style.display = '';
-    var ok = !!_currentSprintId;
-    btn.classList.toggle('ssp-tree__item--disabled', !ok);
-    btn.setAttribute('title', ok ? T('shareHandoffHint') : T('shareDisabledNoSprint'));
-  }
+  /* Состояние кнопки «Поделиться» в рельсе (#36) — вынесено в header-view.js
+     (Тир D слайс 5, ступень 1, коммит В); делегатор для callers share-цепочки
+     и init-зоны рельса. */
+  function _updateShareBtnState() { return HEADER_VIEW._updateShareBtnState(_headerDeps()); }
 
   /* Клик по «Поделиться»: копирует текущий deep-link URL + toast. Без модалки/dropdown (D4).
      ВАЖНО (V0-смоук 2026-06-09): iframe виджета YT идёт без allow="clipboard-write" в
@@ -4652,47 +4607,12 @@
     }
   })();
 
-  /* D34 — Hybrid поведение для исторических спринтов на уровне tab-planning.
-     При _currentSprintId !== _sprint.sprintId без своей WC — read-only.
-     При наличии собственной WC — automatic load + editable (логика v5.3.0).
-     Реальная подгрузка WC в _sprint остаётся через editHistorySprint в legacy tab-planner;
-     здесь применяется только UI-режим (классы readonly + видимость кнопок). */
-  function _hasMyActiveWcForSprint(sprintId) {
-    if (!sprintId) return false;
-    if (typeof _workingDrafts !== 'object' || _workingDrafts === null) return false;
-    /* v6.3.1 D121 — было `_me` (undefined), правильное имя — `_currentUser`.
-       Корень: `ReferenceError: _me is not defined` ловился try/catch в setCurrentSprintId,
-       но _applyHybridSprintMode прерывался → readonly-mode не применялся правильно при
-       переходе на исторические спринты. Найдено в diag-логе testbench v6.3.0 2026-05-08. */
-    var myLogin = (_currentUser && _currentUser.login) ? _currentUser.login : null;
-    var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-    for (var i = 0; i < roles.length; i++) {
-      var k = sprintId + '_' + roles[i].key;
-      var wd = _workingDrafts[k];
-      if (wd && (!myLogin || wd.editorLogin === myLogin)) return true;
-    }
-    return false;
-  }
-  /* v5.6.0 — Этап 4 (4d): класс .readonly-mode применяется к обеим editable-вкладкам:
-     #tab-planning (уровни Роли/Люди) И #tab-gantt (на верхнем уровне после Этапа 4).
-     CSS правило `.readonly-mode .gantt-cell { pointer-events: none; }` отключает dblclick;
-     `.readonly-mode #ganttUpdateBtn { display: none; }` скрывает кнопку обновления. */
-  function _setHistoricalReadOnly(on) {
-    var p1 = document.getElementById('tab-planning');
-    if (p1) p1.classList.toggle('readonly-mode', !!on);
-    var p2 = document.getElementById('tab-gantt');
-    if (p2) p2.classList.toggle('readonly-mode', !!on);
-    /* v5.7.0 — Этап 5: при переходе в read-only закрываем reassign-модал, если открыт */
-    if (on && typeof hideReassignModal === 'function') {
-      try { hideReassignModal(); } catch(_){}
-    }
-  }
-  function _applyHybridSprintMode(newId) {
-    var isHistorical = !!(newId && _sprint && _sprint.sprintId && newId !== _sprint.sprintId);
-    if (!isHistorical) { _setHistoricalReadOnly(false); return; }
-    var hasMyWc = _hasMyActiveWcForSprint(newId);
-    _setHistoricalReadOnly(!hasMyWc);
-  }
+  /* D34 — Hybrid поведение для исторических спринтов (read-only/editable по
+     наличию своей WC) — вынесено в header-view.js (Тир D слайс 5, ступень 1,
+     коммит В). Делегатор только у _applyHybridSprintMode (единственная
+     внешне-вызываемая точка — setCurrentSprintId); внутренние проверка моей WC
+     и аппликатор readonly-класса живут в модуле. */
+  function _applyHybridSprintMode(newId) { return HEADER_VIEW._applyHybridSprintMode(newId, _headerDeps()); }
 
   /* D37 — Cross-tab storage events: при изменении WC из другой вкладки браузера
      обновляем индикатор шапки виджета и текущий уровень планирования. */
@@ -6075,6 +5995,9 @@
       T: T, esc: esc, diag: diag, fmtDate: fmtDate,
       statusLabel: statusLabel, roleLabel: roleLabel,
       getActiveRoles: getActiveRoles,
+      computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
+      hideReassignModal: hideReassignModal,
+      navAvailable: _navAvailable,
       ALL_ROLES: ALL_ROLES, STATUS: STATUS,
       draft: { get: _draftGet, set: _draftSet },
       state: {
@@ -6083,6 +6006,9 @@
         getWorkingDrafts: function () { return _workingDrafts; },
         getCurrentSprintId: function () { return _currentSprintId; },
         setCurrentSprintId: function (v) { _currentSprintId = v; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getCurrentUser: function () { return _currentUser; },
+        getMode: function () { return _mode; },
       },
     };
   }
