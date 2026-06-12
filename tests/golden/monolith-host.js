@@ -60,6 +60,7 @@ const BRIDGE_SCRIPTS = [
   'draft-store.js',
   'permissions.js',
   'share-controller.js',
+  'validation-controller.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',

@@ -35,6 +35,7 @@ import './working-copy.js';
 import './draft-store.js';
 import './permissions.js';
 import './share-controller.js';
+import './validation-controller.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
