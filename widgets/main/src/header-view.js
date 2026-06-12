@@ -224,10 +224,120 @@ function renderWidgetHeader(deps) {
   if (typeof _updateRailSprintName === 'function') { try { _updateRailSprintName(); } catch(_){} }
 }
 
+/* ═══ Смежный шелл-хром (коммит В): WC-баннер, share-кнопка #36, hybrid D34 ═══ */
+
+/* ═══ v5.3.0 — UI: working copy banner ═══ */
+function renderWorkingCopyBanner(deps) {
+  var T = deps.T, fmtDate = deps.fmtDate;
+  var banner = document.getElementById('wcBanner');
+  if (!banner) return;
+  var _activeWorkingDraftKey = deps.state.getActiveWorkingDraftKey();
+  if (!_activeWorkingDraftKey) { banner.classList.add('hidden'); return; }
+  var draft = deps.state.getWorkingDrafts()[_activeWorkingDraftKey];
+  if (!draft) { banner.classList.add('hidden'); return; }
+  var snap = deps.state.getHistory().find(function(s){ return s && s.sprintId === _activeWorkingDraftKey; });
+  if (!snap) { banner.classList.add('hidden'); return; }
+
+  var role = deps.ALL_ROLES.find(function(r){ return r.key === snap.roleKey; });
+  var rl   = role ? deps.roleLabel(role) : (snap.roleKey || '');
+  var sn   = snap.name || (draft.sprint && draft.sprint.name) || T('unnamedSprint');
+  var dt   = fmtDate(snap.confirmedAt);
+  var txt  = T('wcBannerTextTpl').replace('{sprint}', sn).replace('{role}', rl).replace('{date}', dt);
+  var textEl = document.getElementById('wcBannerText');
+  if (textEl) textEl.textContent = txt;
+
+  var level = deps.computeRequiredRevalidationLevel(snap, draft);
+  var pill = document.getElementById('wcBannerLevelPill');
+  if (pill) {
+    pill.classList.remove('wc-banner__pill--meta','wc-banner__pill--allocated','wc-banner__pill--confirmed');
+    if (level === 'CONFIRMED_REVAL') {
+      pill.classList.add('wc-banner__pill--confirmed');
+      pill.textContent = T('wcLevelConfirmedShort');
+    } else if (level === 'ALLOCATED_REVAL') {
+      pill.classList.add('wc-banner__pill--allocated');
+      pill.textContent = T('wcLevelAllocatedShort');
+    } else {
+      pill.classList.add('wc-banner__pill--meta');
+      pill.textContent = T('wcLevelMetaOnlyShort');
+    }
+    pill.title = T('wcLevel_' + level);
+  }
+  banner.classList.remove('hidden');
+}
+function hideWorkingCopyBanner() {
+  var b = document.getElementById('wcBanner');
+  if (b) b.classList.add('hidden');
+}
+
+/* Состояние кнопки «Поделиться» в рельсе: enabled только при выбранном спринте. */
+function _updateShareBtnState(deps) {
+  var T = deps.T;
+  var btn = document.querySelector('.ssp-tree__item--share');
+  if (!btn) return;
+  /* #36 v2.5.2 — host.navigation присутствует только в YT ≥ 2026.1; на старых серверах
+     (прод 2025.3) deep-link не работает (ни синк, ни приём, ни корректная ссылка) →
+     ПРЯЧЕМ кнопку целиком, чтобы не висела мёртвой. Появится сама, когда сервер
+     апнут до 2026.1 (nav станет доступен) — без отдельного релиза. */
+  if (deps.state.getMode() !== 'global' || !deps.navAvailable()) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  var ok = !!deps.state.getCurrentSprintId();
+  btn.classList.toggle('ssp-tree__item--disabled', !ok);
+  btn.setAttribute('title', ok ? T('shareHandoffHint') : T('shareDisabledNoSprint'));
+}
+
+/* D34 — Hybrid поведение для исторических спринтов на уровне tab-planning.
+   При _currentSprintId !== _sprint.sprintId без своей WC — read-only.
+   При наличии собственной WC — automatic load + editable (логика v5.3.0).
+   Реальная подгрузка WC в _sprint остаётся через editHistorySprint в legacy tab-planner;
+   здесь применяется только UI-режим (классы readonly + видимость кнопок). */
+function _hasMyActiveWcForSprint(sprintId, deps) {
+  if (!sprintId) return false;
+  var _workingDrafts = deps.state.getWorkingDrafts();
+  if (typeof _workingDrafts !== 'object' || _workingDrafts === null) return false;
+  /* v6.3.1 D121 — было `_me` (undefined), правильное имя — `_currentUser`.
+     Корень: `ReferenceError: _me is not defined` ловился try/catch в setCurrentSprintId,
+     но _applyHybridSprintMode прерывался → readonly-mode не применялся правильно при
+     переходе на исторические спринты. Найдено в diag-логе testbench v6.3.0 2026-05-08. */
+  var _currentUser = deps.state.getCurrentUser();
+  var myLogin = (_currentUser && _currentUser.login) ? _currentUser.login : null;
+  var roles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : [];
+  for (var i = 0; i < roles.length; i++) {
+    var k = sprintId + '_' + roles[i].key;
+    var wd = _workingDrafts[k];
+    if (wd && (!myLogin || wd.editorLogin === myLogin)) return true;
+  }
+  return false;
+}
+/* v5.6.0 — Этап 4 (4d): класс .readonly-mode применяется к обеим editable-вкладкам:
+   #tab-planning (уровни Роли/Люди) И #tab-gantt (на верхнем уровне после Этапа 4).
+   CSS правило `.readonly-mode .gantt-cell { pointer-events: none; }` отключает dblclick;
+   `.readonly-mode #ganttUpdateBtn { display: none; }` скрывает кнопку обновления. */
+function _setHistoricalReadOnly(on, deps) {
+  var p1 = document.getElementById('tab-planning');
+  if (p1) p1.classList.toggle('readonly-mode', !!on);
+  var p2 = document.getElementById('tab-gantt');
+  if (p2) p2.classList.toggle('readonly-mode', !!on);
+  /* v5.7.0 — Этап 5: при переходе в read-only закрываем reassign-модал, если открыт */
+  if (on && typeof deps.hideReassignModal === 'function') {
+    try { deps.hideReassignModal(); } catch(_){}
+  }
+}
+function _applyHybridSprintMode(newId, deps) {
+  var _sprint = deps.state.getSprint();
+  var isHistorical = !!(newId && _sprint && _sprint.sprintId && newId !== _sprint.sprintId);
+  if (!isHistorical) { _setHistoricalReadOnly(false, deps); return; }
+  var hasMyWc = _hasMyActiveWcForSprint(newId, deps);
+  _setHistoricalReadOnly(!hasMyWc, deps);
+}
+
 const api = {
   renderWidgetHeader: renderWidgetHeader,
   getLogicalSprintIds: getLogicalSprintIds,
   _updateRailSprintName: _updateRailSprintName,
+  renderWorkingCopyBanner: renderWorkingCopyBanner,
+  hideWorkingCopyBanner: hideWorkingCopyBanner,
+  _updateShareBtnState: _updateShareBtnState,
+  _applyHybridSprintMode: _applyHybridSprintMode,
 };
 
 if (typeof window !== 'undefined') {
