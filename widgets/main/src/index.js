@@ -14,6 +14,7 @@ import './icons.generated.js';
 import './i18n-bridge.js';
 import './ring-class-helpers.js';
 import './toast-pure.js';
+import './toast-ring.js';
 import './datepicker-bridge.js';
 import './sort-pure.js';
 import './period-pure.js';
