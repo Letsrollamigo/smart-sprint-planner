@@ -1061,7 +1061,7 @@
      «Применить» обновляет _currentRolePP.taskAssignments[issueId].assignee, инвалидирует ganttColor cache,
      ставит dirty-флаг, зовёт saveCurrentRoleState() и ре-рендерит Гант (+ опционально таблицу Людей). */
   /* Phase 2 #32 — reassign мигрирован на openModal() (bespoke reassignForm).
-     hideReassignModal закрывает Ring-модалку через stored handle (паттерн _overlimitModalHandle). */
+     hideReassignModal закрывает Ring-модалку через stored handle. */
   var _reassignModalHandle = null;
   function hideReassignModal() {
     if (_reassignModalHandle) { try { _reassignModalHandle.close(); } catch(_){} }
@@ -4933,39 +4933,35 @@
      до первого вызова updateAllocOverlimitUI.
      ════════════════════════════════════════════════════════════ */
 
-  var _overlimitModalHandle = null;
-
   function showOverlimitModal(rk) {
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
     var rl = role ? roleLabel(role) : rk;
     var bodyText = T('overlimitModalBodyTpl').replace('{role}', rl);
-    _overlimitModalHandle = openModal({
+    openModal({
       id: 'overlimit',
       type: 'confirm',
       title: bodyText,
       body: { kind: 'text', text: bodyText },
       buttons: [
         { id: 'downgrade', text: T('overlimitModalDowngrade'), variant: 'danger', onClick: function(h) {
-          h.close(); _overlimitModalHandle = null;
+          h.close();
           if (_sprint) {
             _sprint.status = STATUS.PLANNING;
             if (typeof _markDirty === 'function') _markDirty('sprint');
             if (typeof _draftSaveDebounced === 'function') {
               _draftSaveDebounced('sprint', function(){ return _sprint; });
             }
-            ALL_ROLES.forEach(function(r) {
-              var active = _settings && _settings.activeRoles && _settings.activeRoles[r.key];
-              if (active && document.getElementById('statusBadge_'+r.key)) {
-                renderRoleStatusBadge(r.key);
-              }
-            });
+            /* Per-role бейдж-цикл снесён как мёртвый (Фаза 5 слайс 4): activeRoles —
+               массив, индексация строковым ключом всегда undefined → ветка unreachable
+               с введения (v5.2.0); карточные бейджи обновятся при следующем рендере
+               состава — pre-existing B24 в бэклоге. */
             if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
             diag('Status downgraded to PLANNING by user (overlimit modal)', 'info');
             toast(T('toastOverlimitDowngraded'), 'warn');
           }
         }},
         { id: 'cancel', text: T('overlimitModalCancel'), variant: 'primary', onClick: function(h) {
-          h.close(); _overlimitModalHandle = null;
+          h.close();
         }},
       ],
       dismissOnBackdrop: false,
