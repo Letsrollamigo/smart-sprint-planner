@@ -39,6 +39,7 @@ const BRIDGE_SCRIPTS = [
   'icons.generated.js',
   'ring-class-helpers.js',
   'toast-pure.js',
+  'datepicker-bridge.js',
   'sort-pure.js',
   'period-pure.js',
   'enum-locale-pure.js',
