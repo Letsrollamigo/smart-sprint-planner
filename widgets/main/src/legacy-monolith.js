@@ -7727,9 +7727,6 @@
     });
   });
 
-  /* ── Получить НКЧ в часах (вынесено в currentrole-view.js, Тир D слайс 2) ── */
-  function getCurrentRoleNkcHours() { return CURRENTROLE_VIEW.getCurrentRoleNkcHours(_currentRoleDeps()); }
-
   /* v5.0.3 (итерация 5) — Реализация ранее НЕ определённых функций.
      До этого были только typeof-гарды, которые всегда возвращали false →
      ресурсы в режиме usePersonalForResource не пересчитывались автоматически. */
@@ -7833,192 +7830,10 @@
     });
   })();
 
-  function doRecalcResource() {
-    if (!_currentRolePP || !Object.keys(_currentRolePP.resourcesByAssignee || {}).length) {
-      toast(T('toastAssigneesEmpty'));
-      return;
-    }
-    var nkc = getCurrentRoleNkcHours();
-    var kpeMap = _migrateKpeObject(_settings.kpe || {});
-    var mm = !!(_settings && _settings.manualPersonalResource);
-    Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-      if (mm) return;
-      var entry = _currentRolePP.resourcesByAssignee[login];
-      var g = _migrateGrade(entry.grade);
-      var kpe   = (kpeMap[g] !== undefined) ? kpeMap[g] : (KPE_DEFAULTS_LOCAL[g] || 0.65);
-      var rate  = _settings.rate         !== undefined ? _settings.rate         : 1;
-      var parti = _settings.participation !== undefined ? _settings.participation : 1;
-      entry.resource = nkc * kpe * rate * parti;
-    });
-    _currentRolePP.nkcKey = _currentRoleNkcKey;
-    _currentRolePP.calculatedAt = Date.now();
-    renderCurrentRoleAssigneeTable();
-    updateCurrentRoleTotals();
-    saveCurrentRoleState();
-    toast(T('toastResourceRecalc'), 'success');
-  }
+  function doRecalcResource() { return CURRENTROLE_VIEW.doRecalcResource(_currentRoleDeps()); }
 
   /* ─── «Подобрать исполнителей» — загрузить актуальный список из бандла поля ─── */
-  function doCurrentRoleCalc() {
-    if (!_currentSprintRoleRec) { toast(T('toastSelectSprint')); return; }
-    if (!_settings) { toast(T('toastFillSettings')); return; }
-
-    var rec = _currentSprintRoleRec;
-    var nkc = getCurrentRoleNkcHours();
-
-    // Сохраняем текущие грейды из снэпшота — они не должны теряться при перезагрузке
-    var savedGrades = {};
-    if (_currentRolePP && _currentRolePP.resourcesByAssignee) {
-      Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-        savedGrades[login] = _migrateGrade(_currentRolePP.resourcesByAssignee[login].grade) || 'Middle';
-      });
-    }
-    var manualMode = !!(_settings && _settings.manualPersonalResource);
-    var savedResources = {};
-    if (manualMode && _currentRolePP && _currentRolePP.resourcesByAssignee) {
-      Object.keys(_currentRolePP.resourcesByAssignee).forEach(function(login) {
-        var e = _currentRolePP.resourcesByAssignee[login];
-        savedResources[login] = { resource: e.resource, manualResource: e.manualResource };
-      });
-    }
-
-    // Определить роли спринта
-    var roles;
-    if (rec.roleKey) {
-      // Снэпшот из истории — одна конкретная роль
-      var singleRole = ALL_ROLES.find(function(r){ return r.key === rec.roleKey; });
-      roles = singleRole ? [singleRole] : [];
-    } else {
-      /* v5.6.0 — Этап 4 (4c): legacy #distribRoleSel удалён. Активная роль читается из
-         _activeSubtab (текущий уровень «Люди» или раскрытая accordion-карточка) или
-         localStorage.ssp_lastActiveRole. */
-      var selectedRoleKey = _activeSubtab;
-      if (!selectedRoleKey) {
-        selectedRoleKey = safeLs.get('ssp_lastActiveRole') || '';
-      }
-      if (selectedRoleKey) {
-        var selectedRole = ALL_ROLES.find(function(r){ return r.key === selectedRoleKey; });
-        roles = selectedRole ? [selectedRole] : getActiveRoles();
-      } else {
-        toast(T('toastSelectRoleFirst'));
-        return;
-      }
-    }
-
-    // Сохранить выбранную роль в PP для восстановления при следующем открытии
-    if (roles.length === 1 && _currentRolePP) {
-      _currentRolePP.roleKey = roles[0].key;
-    }
-
-    // Уникальные поля пользователей по ролям
-    var fieldNames = [];
-    roles.forEach(function(role) {
-      var fn = (_settings && role) ? (_settings[role.userField] || null) : null;
-      if (fn && fieldNames.indexOf(fn) < 0) fieldNames.push(fn);
-    });
-
-    if (!fieldNames.length) {
-      toast(T('toastNoUserField'));
-      return;
-    }
-
-    var pickBtn = document.getElementById('currentRolePickBtn');
-    var calcBtn = document.getElementById('currentRoleCalcBtn');
-    if (pickBtn) { pickBtn.disabled = true; pickBtn.textContent = T('toastPickLoading'); }
-    if (calcBtn) { calcBtn.disabled = true; }
-
-    // Параллельные запросы по всем полям
-    var promises = fieldNames.map(function(fn) {
-      return apiGet('get-user-field-values?fieldName=' + encodeURIComponent(fn))
-        .then(function(r) {
-          diag('get-user-field-values [' + fn + ']: ' + ((r && r.users) ? r.users.length : 0) + ' users', (r && r.users && r.users.length) ? 'ok' : 'warn');
-          return (r && r.users) ? r.users : [];
-        }).catch(function(e) {
-          diag('get-user-field-values [' + fn + '] ERR: ' + String(e), 'err');
-          return [];
-        });
-    });
-
-    Promise.all(promises).then(function(bundleResults) {
-      var assigneeSet = {};
-
-      // 1. Объединить пользователей из бандлов всех полей
-      bundleResults.forEach(function(users) {
-        users.forEach(function(u) {
-          var login = u.login || '';
-          if (!login || assigneeSet[login]) return;
-          // Сохранить грейд из снэпшота если был, иначе Middle (canonical default)
-          var grade = savedGrades[login] || 'Middle';
-          var kpeMap = _migrateKpeObject(_settings.kpe || {});
-          var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
-          var rate  = _settings.rate         !== undefined ? _settings.rate         : 1;
-          var parti = _settings.participation !== undefined ? _settings.participation : 1;
-          var computedRes = nkc * kpe * rate * parti;
-          var prevRes = manualMode ? savedResources[login] : null;
-          assigneeSet[login] = {
-            login:        login,
-            assigneeName: u.fullName || login,
-            grade:        grade,
-            resource:     (prevRes && typeof prevRes.resource === 'number') ? prevRes.resource : computedRes,
-          };
-          if (prevRes && typeof prevRes.manualResource === 'number') {
-            assigneeSet[login].manualResource = prevRes.manualResource;
-          }
-        });
-      });
-
-      // 2. Исполнители уже назначены в задачах, но не попали в бандл — добавить с пометкой
-      if (_currentRolePP && _currentRolePP.taskAssignments) {
-        Object.keys(_currentRolePP.taskAssignments).forEach(function(issueId) {
-          var ta = _currentRolePP.taskAssignments[issueId];
-          if (!ta || !ta.assignee || assigneeSet[ta.assignee]) return;
-          var grade = savedGrades[ta.assignee] || 'Middle';
-          var kpeMap = _migrateKpeObject(_settings.kpe || {});
-          var kpe   = (kpeMap[grade] !== undefined) ? kpeMap[grade] : (KPE_DEFAULTS_LOCAL[grade] || 0.65);
-          var rate  = _settings.rate !== undefined ? _settings.rate : 1;
-          var parti = _settings.participation !== undefined ? _settings.participation : 1;
-          var computedRes2 = nkc * kpe * rate * parti;
-          var prevRes2 = manualMode ? savedResources[ta.assignee] : null;
-          assigneeSet[ta.assignee] = {
-            login:        ta.assignee,
-            assigneeName: ta.assigneeName || ta.assignee,
-            grade:        grade,
-            resource:     (prevRes2 && typeof prevRes2.resource === 'number') ? prevRes2.resource : computedRes2,
-          };
-          if (prevRes2 && typeof prevRes2.manualResource === 'number') {
-            assigneeSet[ta.assignee].manualResource = prevRes2.manualResource;
-          }
-        });
-      }
-
-      if (!Object.keys(assigneeSet).length) {
-        toast(T('toastPickEmpty'));
-      } else {
-        toast(T('toastPickDone')+': ' + Object.keys(assigneeSet).length, 'success');
-      }
-
-      // 3. Обновить список — снэпшот полностью заменяется актуальным бандлом
-      _currentRolePP.resourcesByAssignee = assigneeSet;
-      _currentRolePP.nkcKey = _currentRoleNkcKey;
-      _currentRolePP.calculatedAt = Date.now();
-
-      renderCurrentRoleAssigneeTable();
-      renderCurrentRoleTaskTable();   // dropdown исполнителей в задачах обновится
-      updateCurrentRoleTotals();
-      saveCurrentRoleState();
-      var _rk = _currentSprintRoleRec ? _currentSprintRoleRec.roleKey : null;
-      if (_rk && typeof refreshPlanningPeopleForCurrentSprint === 'function') {
-        try { refreshPlanningPeopleForCurrentSprint(_rk); } catch(_){}
-      }
-
-    }).catch(function(e) {
-      toast(T('toastPickErr') + ': ' + (e && e.message ? e.message : String(e)));
-      diag('doCurrentRoleCalc ERR: ' + String(e), 'err');
-    }).finally(function() {
-      if (pickBtn) { pickBtn.disabled = false; pickBtn.textContent = T('btnPickAssignees'); }
-      if (calcBtn) { calcBtn.disabled = false; }
-    });
-  }
+  function doCurrentRoleCalc() { return CURRENTROLE_VIEW.doCurrentRoleCalc(_currentRoleDeps()); }
 
   /* ── Вспомогательные функции ── */
   function deepClone(obj) { return UTIL_PURE.deepClone(obj); }
@@ -8041,7 +7856,6 @@
      defined in all 15 locale dictionaries. Migration helper below translates
      legacy Cyrillic-keyed data on read so existing installs do not lose their
      KPE values or per-assignee grade selections. */
-  var KPE_DEFAULTS_LOCAL = { Intern: 0, Junior: 0.5, Middle: 0.65, Senior: 0.75 };
   /* _migrateGrade/_migrateKpeObject (+ legacy-мапа грейдов) вынесены в migrate-pure.js
      (window.__SSP_MIGRATE_PURE). Делегаторы; MIGRATE_PURE объявлен выше по файлу. */
   function _migrateGrade(g)       { return MIGRATE_PURE.migrateGrade(g); }
@@ -8073,6 +7887,8 @@
       isActiveSprintRecord: isActiveSprintRecord,
       saveCurrentRoleState: saveCurrentRoleState,
       updateIssueAssigneeField: updateIssueAssigneeField,
+      apiGet: apiGet, safeLs: safeLs,
+      refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
       state: {
         getSettings: function () { return _settings; },
         getSprint: function () { return _sprint; },
