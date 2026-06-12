@@ -1,0 +1,17 @@
+{
+  "noPP": {
+    "res": "—",
+    "rem": "—",
+    "remColor": null
+  },
+  "positive": {
+    "res": "56.00",
+    "rem": "1.00",
+    "remColor": "var(--success)"
+  },
+  "negative": {
+    "res": "26.00",
+    "rem": "-29.00",
+    "remColor": "var(--error)"
+  }
+}

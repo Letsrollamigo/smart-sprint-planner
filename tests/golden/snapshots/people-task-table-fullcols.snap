@@ -1,0 +1,208 @@
+{
+  "sortKey": "off",
+  "stickyHeader": true,
+  "emptyText": "Нет активных задач",
+  "itemKeys": [
+    "GM-10",
+    "GM-11",
+    "GM-12"
+  ],
+  "columns": [
+    {
+      "id": "id",
+      "title": "ID",
+      "sortable": true,
+      "className": "td-id",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-10</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-11</a>"
+        },
+        {
+          "html": "<a href=\"#\" target=\"_blank\" class=\"link\">GM-12</a>"
+        }
+      ]
+    },
+    {
+      "id": "externalTicketId",
+      "title": "Внешний ID",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"https://tracker.example.com/SD-77\"><a href=\"https://tracker.example.com/SD-77\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">https://tracker.example.com/SD-77</a></span>"
+        },
+        {
+          "html": "<span style=\"max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block\" title=\"SD-123\">SD-123</span>"
+        },
+        {
+          "html": "<span style=\"color:var(--muted)\">—</span>"
+        }
+      ]
+    },
+    {
+      "id": "title",
+      "title": "Название",
+      "sortable": false,
+      "className": "td-title ssp-col-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "Бэкенд расчёта ёмкости<span style=\"color:var(--error);font-size:11px;margin-left:4px\">⚠ outOfRangeWarn</span>"
+        },
+        {
+          "html": "Эндпоинт истории спринтов"
+        },
+        {
+          "html": "Задача без внешнего тикета"
+        }
+      ]
+    },
+    {
+      "id": "priority",
+      "title": "Приоритет",
+      "sortable": true,
+      "className": "td-priority",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Значительный",
+        "Обычная",
+        "Незначительный"
+      ]
+    },
+    {
+      "id": "xpriority",
+      "title": "Сквозной<br>приоритет",
+      "sortable": true,
+      "className": "td-xpriority",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Срочный",
+        "—",
+        "—"
+      ]
+    },
+    {
+      "id": "allocH",
+      "title": "Аллокация (ч)",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "15.00",
+        "40.00",
+        "2.00"
+      ]
+    },
+    {
+      "id": "system",
+      "title": "Система",
+      "sortable": true,
+      "className": "td-system",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Платёжный модуль",
+        "—",
+        "—"
+      ]
+    },
+    {
+      "id": "assignee",
+      "title": "Исполнитель",
+      "sortable": true,
+      "className": null,
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "html": "<select class=\"currentRole-task-assignee assigner-btn\" data-issue=\"GM-10\" style=\"width:100%;font-size:12px\"><option value=\"\">— не назначено —</option><option value=\"gm_user_1\" selected>gm_user_1</option><option value=\"gm_user_2\">gm_user_2</option></select>"
+        },
+        {
+          "html": "<select class=\"currentRole-task-assignee assigner-btn\" data-issue=\"GM-11\" style=\"width:100%;font-size:12px\"><option value=\"\">— не назначено —</option><option value=\"gm_user_1\">gm_user_1</option><option value=\"gm_user_2\" selected>gm_user_2</option></select>"
+        },
+        {
+          "html": "<select class=\"currentRole-task-assignee assigner-btn\" data-issue=\"GM-12\" style=\"width:100%;font-size:12px\"><option value=\"\">— не назначено —</option><option value=\"gm_user_1\">gm_user_1</option><option value=\"gm_user_2\">gm_user_2</option></select>"
+        }
+      ]
+    },
+    {
+      "id": "dateStart",
+      "title": "Старт",
+      "sortable": false,
+      "className": "td-date td-start",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "__type": "datepicker",
+          "issue": "GM-10",
+          "className": "currentRole-task-date currentRole-task-start",
+          "dateValue": "2026-05-23",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        },
+        {
+          "__type": "datepicker",
+          "issue": "GM-11",
+          "className": "currentRole-task-date currentRole-task-start",
+          "dateValue": "2026-05-24",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        },
+        {
+          "__type": "datepicker",
+          "issue": "GM-12",
+          "className": "currentRole-task-date currentRole-task-start",
+          "dateValue": "2026-05-22",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        }
+      ]
+    },
+    {
+      "id": "dateEnd",
+      "title": "Финиш",
+      "sortable": false,
+      "className": "td-date td-end",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        {
+          "__type": "datepicker",
+          "issue": "GM-10",
+          "className": "currentRole-task-date currentRole-task-end",
+          "dateValue": "2026-06-18",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        },
+        {
+          "__type": "datepicker",
+          "issue": "GM-11",
+          "className": "currentRole-task-date currentRole-task-end",
+          "dateValue": "2026-06-15",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        },
+        {
+          "__type": "datepicker",
+          "issue": "GM-12",
+          "className": "currentRole-task-date currentRole-task-end",
+          "dateValue": "2026-06-16",
+          "min": "2026-05-22",
+          "max": "2026-06-16"
+        }
+      ]
+    }
+  ]
+}
