@@ -1,0 +1,44 @@
+{
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "roleItems",
+        "sprint"
+      ],
+      "query": {
+        "action": "validate"
+      }
+    }
+  ],
+  "snapshotArgs": [
+    {
+      "rk": "analysis",
+      "overrideIdx": "<undefined>",
+      "goalFields": "<undefined>",
+      "wasValidated": true
+    }
+  ],
+  "isValidator": true,
+  "status": "CONFIRMED",
+  "editingFromHistory": false,
+  "historyIdxPresent": false,
+  "activeWorkingDraftKey": null,
+  "hideWcBanner": 1,
+  "renderHeader": 1,
+  "badges": [
+    "analysis"
+  ],
+  "dom": {
+    "editBannerDisplay": "none",
+    "editBannerText": "",
+    "sprintStatusDisplay": "none",
+    "newSprintBtnDisplay": ""
+  },
+  "toasts": [
+    {
+      "msg": "Спринт (Анализ) подтверждён. Запись сохранена.",
+      "type": "success"
+    }
+  ]
+}
