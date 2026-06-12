@@ -57,6 +57,7 @@ const BRIDGE_SCRIPTS = [
   'pick.js',
   'youtrack-api.js',
   'working-copy.js',
+  'draft-store.js',
   'permissions.js',
   'share-controller.js',
   'standup-view.js',
