@@ -1,0 +1,32 @@
+{
+  "afterSprint": {
+    "snapSprintSet": true,
+    "snapSprintMatches": true
+  },
+  "afterRoleItems": {
+    "snapRoleItemsSet": true
+  },
+  "afterCurrentRole": {
+    "snapPPSet": true,
+    "snapGanttSet": true
+  },
+  "cleanSections": [
+    "sprint",
+    "roleItems",
+    "currentRole"
+  ],
+  "draftSetKeys": [
+    "sprint",
+    "meta",
+    "roleItems",
+    "meta",
+    "currentRole",
+    "meta"
+  ],
+  "baseRevHashSet": true,
+  "roleCompRerender": [
+    "devBack",
+    "devBack",
+    "devBack"
+  ]
+}

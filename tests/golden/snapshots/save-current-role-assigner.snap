@@ -1,0 +1,22 @@
+{
+  "apiLog": [
+    {
+      "path": "history",
+      "bodyKeys": [
+        "history"
+      ],
+      "query": {
+        "action": "assignerSync"
+      }
+    },
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "sprint"
+      ],
+      "query": {
+        "action": "assignerSync"
+      }
+    }
+  ]
+}

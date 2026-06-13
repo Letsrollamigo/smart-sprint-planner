@@ -1,0 +1,8 @@
+{
+  "noSprintHidden": false,
+  "emptyHidden": true,
+  "contentHidden": true,
+  "roleRecNull": true,
+  "rolePPNull": true,
+  "roleGanttNull": true
+}

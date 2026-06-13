@@ -1,0 +1,13 @@
+{
+  "ret": true,
+  "currentSprintId": "gm-other-sprint",
+  "widgetHeader": 1,
+  "planningLevel": [
+    "roles"
+  ],
+  "hybrid": [
+    "gm-other-sprint"
+  ],
+  "syncUrl": 1,
+  "shareBtn": 1
+}
