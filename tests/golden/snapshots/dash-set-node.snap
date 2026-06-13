@@ -1,0 +1,25 @@
+{
+  "people": {
+    "dashnodeClass": "ssp-dashnode-planning-people",
+    "activeNode": "planning-people",
+    "persisted": "planning-people",
+    "clicks": [
+      "tab:planning",
+      "level:people"
+    ]
+  },
+  "gantt": {
+    "dashnodeClass": "ssp-dashnode-gantt",
+    "activeNode": "gantt",
+    "persisted": "gantt",
+    "clicks": [
+      "tab:gantt"
+    ]
+  },
+  "rejectShare": {
+    "bodyClassUnchanged": true,
+    "persistUnchanged": true,
+    "clicks": []
+  },
+  "syncCalls": 2
+}

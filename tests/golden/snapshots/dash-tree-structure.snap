@@ -1,0 +1,77 @@
+{
+  "digest": [
+    {
+      "node": "sprint-params",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__item",
+      "i18n": "treeSprintParams",
+      "text": "Параметры спринта"
+    },
+    {
+      "node": "planning-roles",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__child",
+      "i18n": "planningLevelRoles",
+      "text": "Аллокация общего ресурса"
+    },
+    {
+      "node": "planning-people",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__child",
+      "i18n": "planningLevelPeople",
+      "text": "Распределение по исполнителям"
+    },
+    {
+      "node": "planning-standup",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__child",
+      "i18n": "planningLevelStandup",
+      "text": "Stand-up"
+    },
+    {
+      "node": "gantt",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__item",
+      "i18n": "tabGantt",
+      "text": "Диаграмма Ганта"
+    },
+    {
+      "node": "history",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__item",
+      "i18n": "tabHistory",
+      "text": "История спринтов"
+    },
+    {
+      "node": "share",
+      "tag": "BUTTON",
+      "cls": "ssp-tree__item ssp-tree__item--share ssp-tree__item--disabled",
+      "i18n": "treeShare",
+      "text": "Поделиться"
+    }
+  ],
+  "groupSummaryI18n": "tabPlanning",
+  "groupOpen": true,
+  "callsWhileShareDisabled": [
+    {
+      "setDashNode": "sprint-params"
+    },
+    {
+      "setDashNode": "planning-people"
+    }
+  ],
+  "callsAfterEnableShare": [
+    {
+      "setDashNode": "sprint-params"
+    },
+    {
+      "setDashNode": "planning-people"
+    },
+    {
+      "setDashNode": "share"
+    },
+    {
+      "shareClick": true
+    }
+  ]
+}

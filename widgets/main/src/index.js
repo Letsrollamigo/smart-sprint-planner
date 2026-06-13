@@ -43,6 +43,7 @@ import './i18n-controller.js';
 import './history-controller.js';
 import './settings-controller.js';
 import './data-loaders.js';
+import './dash-shell.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
