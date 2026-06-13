@@ -289,48 +289,30 @@
 
   /** Initial mount spinner — показываем если первая загрузка занимает >500ms. */
 
-  /** Обходит все элементы с data-i18n и обновляет их текст/плейсхолдер.
-   *  v1.9.6: сохраняет .ssp-icon дочерние узлы при обновлении textContent (смена языка). */
-  function applyI18N() {
-    document.querySelectorAll('[data-i18n]').forEach(function(el) {
-      var key = el.getAttribute('data-i18n');
-      var val = T(key);
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.placeholder = val;
-      } else if (el.hasAttribute('data-i18n-html')) {
-        el.innerHTML = val;
-      } else {
-        var iconChild = el.querySelector('.ssp-icon');
-        if (iconChild) {
-          // Обновляем только текстовый узел, сохраняя icon span
-          var textNode = null;
-          for (var i = 0; i < el.childNodes.length; i++) {
-            if (el.childNodes[i].nodeType === Node.TEXT_NODE) { textNode = el.childNodes[i]; break; }
-          }
-          if (textNode) { textNode.textContent = ' ' + val; }
-          else { el.appendChild(document.createTextNode(' ' + val)); }
-        } else {
-          el.textContent = val;
-        }
-      }
-    });
-    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
-      el.title = T(el.getAttribute('data-i18n-title'));
-    });
-    document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-      el.placeholder = T(el.getAttribute('data-i18n-ph'));
-    });
-    /* v5.1.0 — i18n для tooltip-атрибута (data-tooltip → ::after) */
-    document.querySelectorAll('[data-i18n-tooltip]').forEach(function(el) {
-      el.setAttribute('data-tooltip', T(el.getAttribute('data-i18n-tooltip')));
-    });
-    /* v2.0.0 D5-B — i18n для Ring Checkbox/Radio host-spans: пишет в dataset.label,
-       MutationObserver в checkbox-mount.jsx подхватит и перерендерит метку. */
-    document.querySelectorAll('[data-i18n-label]').forEach(function(el) {
-      el.dataset.label = T(el.getAttribute('data-i18n-label'));
-    });
-    /* v5.10.0 — удалён мёртвый guard на renderDistribPanel + tab-distrib (оба удалены в v5.6.0). */
+  /* ═══ i18n-обвязка вынесена в i18n-controller.js (Фаза 5, зачистка «прочих» —
+     слайс 8) за мост window.__SSP_I18N_CTRL; golden — i18n.golden.test.js (через
+     делегаторы applyI18N/setLang/_populateLangSelect/_syncProjectDefaultLang).
+     Deps-фабрика per-call: стейт-примитивы (_lang/I18N) и инфра (_i18nBridge/
+     _doFullRerender/safeLs/_settings, читаемые повсеместно) остаются в стейт-ядре
+     за get/set-аксессорами. Все 4 — делегаторы (callers внутренние init/render).
+     Слой application-side; i18n-bridge.js — отдельная side-effect-инфра (ставит
+     window.__SSP_I18N__ ДО старта IIFE). ═══ */
+  var I18N_CTRL = (typeof window !== 'undefined' && window.__SSP_I18N_CTRL) || {};
+  function _i18nDeps() {
+    return {
+      T: T,
+      doFullRerender: _doFullRerender,
+      safeLs: safeLs,
+      I18N: I18N,
+      i18nBridge: _i18nBridge,
+      state: {
+        getLang: function () { return _lang; },
+        setLang: function (v) { _lang = v; },
+        getSettings: function () { return _settings; },
+      },
+    };
   }
+  function applyI18N() { return I18N_CTRL.applyI18N(_i18nDeps()); }
 
   /** v1.9.6 — icon-aware text setter: обновляет только текстовый узел кнопки, сохраняя .ssp-icon. */
   function setButtonText(btn, text) {
@@ -345,68 +327,14 @@
     btn.appendChild(document.createTextNode(' ' + text));
   }
 
-  /** Переключить язык. Если для языка нет inline-словаря (то есть это не EN/RU),
-      сначала асинхронно подгружает JSON через loader, затем выполняет полный rerender. */
-  function setLang(lang) {
-    var prev = _lang;
-    _lang = lang;
-    safeLs.set('ssp_lang', lang);
-    /* Обновить индикатор выбранного языка в переключателях (шапка + overlay-копия) */
-    var sel = document.getElementById('langSel');
-    if (sel) sel.value = lang;
-    var sel2 = document.getElementById('langSelSettings');
-    if (sel2) sel2.value = lang;
+  function setLang(lang) { return I18N_CTRL.setLang(lang, _i18nDeps()); }
 
-    /* Если словарь языка ещё не загружен — поднять его через loader, обновить I18N[lang],
-       потом запустить rerender. Для EN/RU словарь уже inline'нут в I18N → rerender сразу. */
-    if (!I18N[lang] && _i18nBridge && typeof _i18nBridge.loadDictionary === 'function') {
-      _i18nBridge.loadDictionary(lang).then(function (dict) {
-        I18N[lang] = dict || {};
-        _doFullRerender();
-      }).catch(function () {
-        /* Не удалось загрузить → откатываемся на предыдущий язык, чтобы UI не остался полу-переведённым. */
-        _lang = prev;
-        safeLs.set('ssp_lang', prev);
-        if (sel) sel.value = prev;
-        if (sel2) sel2.value = prev;
-      });
-      return;
-    }
-    _doFullRerender();
-  }
-
-  /* v1.1.0 — заполняет <select> 15 языками из window.__SSP_I18N_LANGS__.
-     Опции в формате `🇪🇸 Español (es)`. Сортировка приходит уже из bridge'а
-     (EN → RU → rest by ISO). Если уже содержит >2 опций — считаем заполненным
-     (повторно дёргаем безопасно — операция идемпотентна). */
-  function _populateLangSelect(el) {
-    if (!el) return;
-    var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || null;
-    if (!langs || !langs.length) return;
-    if (el.options && el.options.length === langs.length && el._sspPopulated) return;
-    var prevValue = el.value;
-    el.innerHTML = '';
-    for (var i = 0; i < langs.length; i++) {
-      var l = langs[i];
-      var opt = document.createElement('option');
-      opt.value = l.code;
-      opt.textContent = (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')';
-      el.appendChild(opt);
-    }
-    el._sspPopulated = true;
-    if (prevValue) el.value = prevValue;
-  }
+  function _populateLangSelect(el) { return I18N_CTRL._populateLangSelect(el, _i18nDeps()); }
 
   /* v1.1.0 — заполняет defaultLangSel (settings overlay) 15 ISO-опциями + первая
      "inherit-from-user" (value=""). Идемпотентно. */
 
-  /* v1.1.0 — после загрузки _settings — синхронизируем project-default в loader.
-     Loader использует это значение в getCurrentLang() цепочке fallback'ов. */
-  function _syncProjectDefaultLang() {
-    if (!_i18nBridge || typeof _i18nBridge.setProjectDefault !== 'function') return;
-    var v = (_settings && typeof _settings.defaultLang === 'string') ? _settings.defaultLang : '';
-    _i18nBridge.setProjectDefault(v || null);
-  }
+  function _syncProjectDefaultLang() { return I18N_CTRL._syncProjectDefaultLang(_i18nDeps()); }
 
   /* v1.4.1 D126 — пере-применить локализованный префикс T('labelProject') к шапке.
      До v1.4.1 projectNameLabel.textContent выставлялся один раз (на register/load)
