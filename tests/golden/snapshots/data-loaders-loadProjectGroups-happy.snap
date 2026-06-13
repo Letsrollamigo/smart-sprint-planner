@@ -1,0 +1,22 @@
+{
+  "fetched": [
+    {
+      "path": "groups",
+      "fields": "id,name"
+    }
+  ],
+  "projectGroups": [
+    {
+      "id": "g-1",
+      "name": "sprint-managers"
+    },
+    {
+      "id": "g-2",
+      "name": "g-2"
+    },
+    {
+      "id": "g-3",
+      "name": "trimmed"
+    }
+  ]
+}
