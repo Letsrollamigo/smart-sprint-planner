@@ -1,0 +1,23 @@
+{
+  "historyIds": [
+    "gm-hist-2026-05_analysis",
+    "gm-hist-2026-05_testing",
+    "gm-new-2026-06_devBack"
+  ],
+  "toasts": [
+    {
+      "msg": "Импортировано записей: 2",
+      "type": "success"
+    }
+  ],
+  "api": [
+    {
+      "path": "history",
+      "bodyKeys": [
+        "history"
+      ],
+      "historyLen": 3,
+      "query": null
+    }
+  ]
+}

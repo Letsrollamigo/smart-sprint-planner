@@ -1,0 +1,25 @@
+{
+  "historyIds": [
+    "gm-r1_analysis",
+    "gm-r2_testing"
+  ],
+  "pendingCleared": true,
+  "toasts": [
+    {
+      "msg": "История восстановлена из файла",
+      "type": "success"
+    }
+  ],
+  "api": [
+    {
+      "path": "history",
+      "bodyKeys": [
+        "history"
+      ],
+      "historyLen": 2,
+      "query": {
+        "action": "import-replace"
+      }
+    }
+  ]
+}
