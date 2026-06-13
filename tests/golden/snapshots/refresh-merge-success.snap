@@ -1,0 +1,107 @@
+{
+  "fetchLog": [
+    {
+      "path": "issues",
+      "top": 5,
+      "idsInQuery": 5,
+      "hasFields": true,
+      "busyAtCall": [
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "analysisItems": [
+    {
+      "issueId": "GM-1",
+      "estimate": 600
+    },
+    {
+      "issueId": "GM-2",
+      "estimate": 960
+    },
+    {
+      "issueId": "GM-3",
+      "estimate": 120
+    },
+    {
+      "issueId": "GM-4",
+      "estimate": 6000
+    }
+  ],
+  "devBackItems": [
+    {
+      "issueId": "GM-10",
+      "estimate": 1500,
+      "state": "Готово",
+      "stateLocalized": "Готово",
+      "stateColor": {
+        "background": "#e6ffe6",
+        "foreground": null
+      },
+      "priority": "Major",
+      "system": "CRM",
+      "externalTicketId": "EXT-77"
+    },
+    {
+      "issueId": "GM-11",
+      "estimate": 2400,
+      "state": "Open",
+      "stateLocalized": "<undefined>",
+      "stateColor": "<undefined>",
+      "priority": "Критическая",
+      "system": "<undefined>",
+      "externalTicketId": "<undefined>"
+    }
+  ],
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_1"
+    },
+    "GM-11": {
+      "assignee": "gm_user_3",
+      "assigneeName": "GM User 3"
+    }
+  },
+  "persist": {
+    "apiLog": [
+      {
+        "path": "sprint-data",
+        "bodyKeys": [
+          "roleItems"
+        ],
+        "query": null
+      }
+    ],
+    "hooks": {
+      "markDirty": [
+        "roleItems",
+        "currentRole"
+      ],
+      "planningRoles": 1,
+      "roleComposition": [
+        "devBack"
+      ],
+      "assigneeTable": 1,
+      "taskTable": 1,
+      "totals": 1,
+      "gantt": 1,
+      "saveCurrentRole": 1
+    },
+    "ganttHistFetchedAt": 0
+  },
+  "toasts": [
+    {
+      "msg": "Подтянуто из YouTrack: 4 изменений.",
+      "type": "success"
+    }
+  ],
+  "busyAfter": [
+    false,
+    false,
+    false,
+    false
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "toasts": [
+    {
+      "msg": "Ошибка синхронизации с YouTrack.",
+      "type": null
+    }
+  ],
+  "diag": [
+    {
+      "msg": "refreshFromYouTrack failed: gm-net-down",
+      "type": "err"
+    }
+  ],
+  "apiCalls": 0,
+  "busyAfter": [
+    false,
+    false,
+    false,
+    false
+  ]
+}

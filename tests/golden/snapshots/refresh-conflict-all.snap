@@ -1,0 +1,50 @@
+{
+  "modal": {
+    "id": "refreshConflict",
+    "type": "confirm",
+    "title": "Обновление из YouTrack",
+    "bodyText": "Обновление затронет 3 задач. Из них 2 содержат ваши несохранённые правки.",
+    "buttons": [
+      "all:danger",
+      "skip:primary",
+      "diff:secondary"
+    ],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": true
+  },
+  "busyAtModal": [
+    false,
+    false,
+    false,
+    false
+  ],
+  "closes": 1,
+  "analysisGm2Estimate": 960,
+  "devBackGm10Estimate": 1500,
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_1"
+    },
+    "GM-11": {
+      "assignee": "gm_user_3",
+      "assigneeName": "GM User 3"
+    }
+  },
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "roleItems"
+      ],
+      "query": null
+    }
+  ],
+  "saveCurrentRole": 1,
+  "toasts": [
+    {
+      "msg": "Подтянуто из YouTrack: 3 изменений.",
+      "type": "success"
+    }
+  ]
+}
