@@ -1,0 +1,9 @@
+{
+  "gantt": "gantt",
+  "history": "history",
+  "people": "planning-people",
+  "standup": "planning-standup",
+  "roles": "planning-roles",
+  "fallbackVarPeople": "planning-people",
+  "defaultRoles": "planning-roles"
+}
