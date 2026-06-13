@@ -1,0 +1,78 @@
+{
+  "apiLog": [
+    "sprint-data",
+    "history"
+  ],
+  "settings": {
+    "activeRoles": [
+      "analysis",
+      "testing"
+    ],
+    "personalPlanningEnabled": true
+  },
+  "sprint": {
+    "sprintId": "gm-s1",
+    "status": "planning",
+    "dateStart": 1779408000000,
+    "dateEnd": 1781568000000,
+    "_orphanGanttIssues": [
+      "GM-9"
+    ]
+  },
+  "roleItems": {
+    "analysis": [
+      {
+        "issueId": "GM-1",
+        "title": "A",
+        "inclusionStatus": "planned",
+        "url": "http://yt.local/issue/GM-1"
+      },
+      {
+        "issueId": "GM-2",
+        "title": "B",
+        "inclusionStatus": "unplanned",
+        "url": "http://yt.local/issue/GM-2"
+      }
+    ],
+    "testing": [
+      {
+        "issueId": "GM-5",
+        "title": "C",
+        "inclusionStatus": "excluded",
+        "url": "http://yt.local/issue/GM-5"
+      }
+    ]
+  },
+  "history": [
+    {
+      "sprintId": "h-2_testing",
+      "status": "allocated",
+      "confirmedAt": 200,
+      "items": []
+    },
+    {
+      "sprintId": "h-1_analysis",
+      "status": "finished",
+      "confirmedAt": 100,
+      "items": [
+        {
+          "issueId": "H-1",
+          "inclusionStatus": "planned"
+        }
+      ],
+      "_orphanGanttIssues": [
+        "H-9"
+      ]
+    }
+  ],
+  "enableDebugLog": true,
+  "tailHooks": [
+    "syncDefaultLang",
+    "featureBar",
+    "diagVis",
+    "wdLoad",
+    "reconcile",
+    "gc",
+    "migrateEditing"
+  ]
+}
