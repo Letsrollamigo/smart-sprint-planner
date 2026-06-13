@@ -1,0 +1,10 @@
+{
+  "modalId": "globalSwitchConfirm",
+  "type": "confirm",
+  "buttonIds": [
+    "cancel",
+    "ok"
+  ],
+  "dismissOnBackdrop": false,
+  "decidedAfterOk": "confirm"
+}

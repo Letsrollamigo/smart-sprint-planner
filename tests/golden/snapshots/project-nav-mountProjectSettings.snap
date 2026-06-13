@@ -1,0 +1,14 @@
+{
+  "mountLog": [
+    {
+      "name": "settingsForm",
+      "hasProps": true
+    },
+    {
+      "name": "settingsForm",
+      "hasProps": true
+    }
+  ],
+  "readonlyWhenManager": false,
+  "readonlyWhenNotManager": true
+}

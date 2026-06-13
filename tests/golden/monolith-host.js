@@ -69,6 +69,7 @@ const BRIDGE_SCRIPTS = [
   'settings-controller.js',
   'data-loaders.js',
   'dash-shell.js',
+  'project-nav.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',
