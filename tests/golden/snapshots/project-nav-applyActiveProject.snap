@@ -1,0 +1,10 @@
+{
+  "activeProjectKey": "DEMOClone",
+  "projectDisplayName": "Clone of Демопроект",
+  "pickerValue": "DEMOClone",
+  "lastKeyLs": "DEMOClone",
+  "hooks": [
+    "nameLabel",
+    "syncUrl"
+  ]
+}

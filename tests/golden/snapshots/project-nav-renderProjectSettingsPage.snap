@@ -1,0 +1,12 @@
+{
+  "bodyMode": true,
+  "bannerShown": true,
+  "loadersCalled": [
+    "fields",
+    "groups",
+    "i18n"
+  ],
+  "mountInline": [
+    "settingsForm"
+  ]
+}

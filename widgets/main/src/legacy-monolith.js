@@ -1717,181 +1717,69 @@
   });
   } /* /_loadAndRenderProject (#25 Ф1) */
 
-  /* ═══ #25 Ф1-A — проектный виджет = страница настроек (планер уехал в главное меню) ══ */
-
-  function _loadSettingsOnly() {
-    return apiGet('sprint-data').then(function (r) {
-      _settings = (r && r.settings) || null;
-    }).catch(function () {});
+  /* ═══ #25 Ф1 — global-picker + project-mode вынесены в project-nav.js (Фаза 5 слайс 14,
+     домен E6) за __SSP_PROJECT_NAV. _resetProjectStateCaches (стейт-резет, 22 var) и
+     _loadAndRenderProject (оркестратор старта) ОСТАЮТСЯ в ядре — приходят late-binding deps.
+     Стейт-var'ы (_settings/_activeProjectKey/_projectDisplayName/_globalProjects/
+     _pendingShareParams/_urlSyncEnabled/_lang/_host) — за state-аксессорами (их трогают
+     init-restore/detect-режима и share-deps). _NO_PROJECT_SENTINEL — object-ref (init-catch
+     сверяет идентичность). LS-ключ last-used per-fork → core-dep литерал.
+     Делегаторы: внешне-вызываемые init (_initGlobalProjectSelection/_renderProjectSettingsPage/
+     _syncAclFireAndForget) + golden-входы; _getLastProjectKey/_setLastProjectKey приватны модулю. */
+  var PROJECT_NAV = (typeof window !== 'undefined' && window.__SSP_PROJECT_NAV) || {};
+  function _projectNavDeps() {
+    return {
+      T: T, diag: diag,
+      apiGet: apiGet, apiPost: apiPost, safeLs: safeLs,
+      lastProjectLsKey: 'ssp_last_project_key',
+      NO_PROJECT_SENTINEL: _NO_PROJECT_SENTINEL,
+      /* loaders / settings / i18n / share / draft / chrome — core-делегаторы и функции ядра
+         (golden-стабы перехватывают; per-call фабрика читает текущий binding). */
+      loadProjectFields: loadProjectFields,
+      loadProjectGroups: loadProjectGroups,
+      buildSettingsFormProps: _buildSettingsFormProps,
+      populateLangSelect: _populateLangSelect,
+      setLang: setLang,
+      applyI18N: applyI18N,
+      applyIcons: applyIcons,
+      applyRingTheme: applyRingTheme,
+      loadAppVersion: _loadAppVersion,
+      readShareParams: _readShareParams,
+      syncStateToUrl: _syncStateToUrl,
+      draftIsDirty: _draftIsDirty,
+      updateProjectNameLabel: _updateProjectNameLabel,
+      openModal: openModal,
+      /* стейт-резет + оркестратор старта остаются в ядре (late-binding) */
+      resetProjectStateCaches: _resetProjectStateCaches,
+      loadAndRenderProject: _loadAndRenderProject,
+      state: {
+        getHost: function () { return _host; },
+        getLang: function () { return _lang; },
+        setSettings: function (v) { _settings = v; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        setActiveProjectKey: function (v) { _activeProjectKey = v; },
+        getProjectDisplayName: function () { return _projectDisplayName; },
+        setProjectDisplayName: function (v) { _projectDisplayName = v; },
+        getGlobalProjects: function () { return _globalProjects; },
+        setGlobalProjects: function (v) { _globalProjects = v; },
+        getPendingShareParams: function () { return _pendingShareParams; },
+        setPendingShareParams: function (v) { _pendingShareParams = v; },
+        setUrlSyncEnabled: function (v) { _urlSyncEnabled = v; },
+      },
+    };
   }
-
-  function _renderProjectSettingsPage() {
-    diag('project mode -> settings page', 'info');
-    return Promise.all([
-      loadProjectFields(),
-      _loadSettingsOnly(),
-      (typeof loadProjectGroups === 'function' ? loadProjectGroups().catch(function () {}) : Promise.resolve())
-    ]).then(function () {
-      return apiGet('check-settings-manager').catch(function () { return null; });
-    }).then(function (r) {
-      var canManage  = !!(r && r.canManage);
-      var configured = !!(r && r.configured);
-      document.body.classList.add('ssp-project-settings-mode');
-      var banner = document.getElementById('projectSettingsBanner');
-      if (banner) { banner.textContent = T('projectMovedToMenu'); banner.classList.remove('hidden'); }
-      try { _populateLangSelect(document.getElementById('langSel')); } catch (_) {}
-      var langSelEl = document.getElementById('langSel');
-      if (langSelEl) {
-        langSelEl.value = _lang;
-        if (!langSelEl._sspBound) { langSelEl.addEventListener('change', function () { setLang(langSelEl.value); }); langSelEl._sspBound = true; }
-      }
-      applyI18N();
-      try { applyIcons(); } catch (_) {}
-      try { applyRingTheme(); } catch (_) {}
-      if (typeof _loadAppVersion === 'function') { try { _loadAppVersion(); } catch (_) {} }
-      _mountProjectSettings(canManage, configured);
-      diag('project settings page rendered (canManage=' + canManage + ', configured=' + configured + ')', 'info');
-    });
-  }
-
-  function _mountProjectSettings(canManage, configured) {
-    var host = document.getElementById('projectSettingsHost');
-    if (!host) return;
-    var ro = !canManage || !configured;
-    host.classList.toggle('ssp-settings-readonly', ro);
-    if (!window.__SSP_RING_MODAL || typeof window.__SSP_RING_MODAL.mountInline !== 'function') {
-      host.textContent = T('settingsNotConfiguredHint');
-      return;
-    }
-    var props = _buildSettingsFormProps(function () { _renderProjectSettingsPage(); });
-    window.__SSP_RING_MODAL.mountInline(host, 'settingsForm', props);
-  }
-
-  /* ═══ #25 Ф1 — global-режим: picker проекта + смена проекта ════════════════ */
-
-  function _syncAclFireAndForget() {
-    try { apiPost('sync-acl', {}).then(function(){}, function(){}); } catch (_) {}
-  }
-
-  var _LAST_PROJECT_LS_KEY = 'ssp_last_project_key';
-  function _getLastProjectKey() { try { return safeLs.get(_LAST_PROJECT_LS_KEY) || null; } catch (_) { return null; } }
-  function _setLastProjectKey(k) { try { if (k) safeLs.set(_LAST_PROJECT_LS_KEY, k); } catch (_) {} }
-
-  function _loadGlobalProjectList() {
-    return _host.fetchYouTrack('admin/projects', { query: { fields: 'id,name,shortName,archived', '$top': 5000 } })
-      .then(function (list) {
-        var keys = [];
-        (list || []).forEach(function (p) {
-          if (p && p.shortName && !p.archived) keys.push(p.shortName);
-        });
-        if (!keys.length) return [];
-        return apiPost('filter-planner-projects', { keys: keys }).then(function (r) {
-          return (r && r.projects) || [];
-        });
-      }).catch(function (e) {
-        diag('loadGlobalProjectList ERR: ' + (e && e.message ? e.message : e), 'err');
-        return [];
-      });
-  }
-
-  function _renderProjectPicker() {
-    var wrap = document.getElementById('globalProjectPicker');
-    if (!wrap) return;
-    wrap.classList.remove('hidden');
-    var sel = document.getElementById('globalProjectSelect');
-    if (!sel) {
-      var label = document.createElement('span');
-      label.className = 'ssp-global-project-label';
-      label.setAttribute('data-i18n', 'globalProjectLabel');
-      label.textContent = T('globalProjectLabel');
-      sel = document.createElement('select');
-      sel.id = 'globalProjectSelect';
-      sel.className = 'ssp-global-project-select';
-      sel.addEventListener('change', function () { _onProjectPicked(sel.value); });
-      wrap.appendChild(label);
-      wrap.appendChild(sel);
-    }
-    sel.innerHTML = '';
-    var ph = document.createElement('option');
-    ph.value = '';
-    ph.setAttribute('data-i18n', 'globalProjectPlaceholder');
-    ph.textContent = T('globalProjectPlaceholder');
-    sel.appendChild(ph);
-    _globalProjects.forEach(function (p) {
-      var o = document.createElement('option');
-      o.value = p.key;
-      o.textContent = p.name + ' (' + p.key + ')';
-      sel.appendChild(o);
-    });
-    if (_activeProjectKey) sel.value = _activeProjectKey;
-  }
-
-  function _setPickerValue(k) {
-    var sel = document.getElementById('globalProjectSelect');
-    if (sel) sel.value = k || '';
-  }
-
-  function _setGlobalBanner(textKey, sub) {
-    var b = document.getElementById('globalNoProjectBanner');
-    if (!b) return;
-    if (textKey) {
-      var txt = T(textKey);
-      if (sub != null) txt = txt.replace('{key}', String(sub));   /* #36 — noAccessToProject {key} */
-      b.textContent = txt;
-      b.classList.remove('hidden');
-    } else b.classList.add('hidden');
-  }
-
-  function _initGlobalProjectSelection() {
-    _urlSyncEnabled = false;   /* #36 — не синкать URL во время init-restore (иначе затрём sprintId) */
-    return _readShareParams().then(function (share) {
-      /* #36 — restore триггерится только при наличии projectKey (ядро ссылки); иначе игнор. */
-      _pendingShareParams = (share && share.projectKey) ? share : null;
-      return _loadGlobalProjectList();
-    }).then(function (projects) {
-      _globalProjects = projects || [];
-      _renderProjectPicker();
-      if (!_globalProjects.length) {
-        _setGlobalBanner('globalNoProjects');
-        throw _NO_PROJECT_SENTINEL;
-      }
-      var share = _pendingShareParams || {};
-      var initKey = null;
-      /* #36 — projectKey из ссылки приоритетнее last-used */
-      if (share.projectKey) {
-        if (_globalProjects.some(function (p) { return p.key === share.projectKey; })) {
-          initKey = share.projectKey;
-        } else {
-          /* проект из ссылки недоступен/планер не подключён — banner, остаёмся на picker'е (D6) */
-          _setGlobalBanner('noAccessToProject', share.projectKey);
-          _pendingShareParams = null;
-          throw _NO_PROJECT_SENTINEL;
-        }
-      }
-      if (!initKey) {
-        var last = _getLastProjectKey();
-        if (last && _globalProjects.some(function (p) { return p.key === last; })) initKey = last;
-        else if (_globalProjects.length === 1) initKey = _globalProjects[0].key;
-      }
-      if (!initKey) {
-        _setGlobalBanner('globalPickPrompt');
-        throw _NO_PROJECT_SENTINEL;
-      }
-      _applyActiveProject(initKey);
-      _setGlobalBanner(null);
-      return _loadAndRenderProject();
-    });
-  }
-
-  function _applyActiveProject(key) {
-    _activeProjectKey = key;
-    _setPickerValue(key);
-    _setLastProjectKey(key);
-    var p = _globalProjects.filter(function (x) { return x.key === key; })[0];
-    _projectDisplayName = (p && p.name) ? p.name : key;
-    try { _updateProjectNameLabel(); } catch (_) {}
-    try { _syncStateToUrl(); } catch (_) {}   /* #36 — авто-синк state→URL (no-op до _urlSyncEnabled) */
-  }
+  /* project-режим: проектный виджет = страница настроек (Ф1-A) */
+  function _loadSettingsOnly()                          { return PROJECT_NAV._loadSettingsOnly(_projectNavDeps()); }
+  function _renderProjectSettingsPage()                 { return PROJECT_NAV._renderProjectSettingsPage(_projectNavDeps()); }
+  function _mountProjectSettings(canManage, configured) { return PROJECT_NAV._mountProjectSettings(_projectNavDeps(), canManage, configured); }
+  /* global-режим: picker проекта + смена проекта */
+  function _syncAclFireAndForget()                      { return PROJECT_NAV._syncAclFireAndForget(_projectNavDeps()); }
+  function _loadGlobalProjectList()                     { return PROJECT_NAV._loadGlobalProjectList(_projectNavDeps()); }
+  function _renderProjectPicker()                       { return PROJECT_NAV._renderProjectPicker(_projectNavDeps()); }
+  function _setPickerValue(k)                           { return PROJECT_NAV._setPickerValue(_projectNavDeps(), k); }
+  function _setGlobalBanner(textKey, sub)               { return PROJECT_NAV._setGlobalBanner(_projectNavDeps(), textKey, sub); }
+  function _initGlobalProjectSelection()                { return PROJECT_NAV._initGlobalProjectSelection(_projectNavDeps()); }
+  function _applyActiveProject(key)                     { return PROJECT_NAV._applyActiveProject(_projectNavDeps(), key); }
 
   /* ═══ #36 Share-URL (deep-link + handoff) ═══════════════════════════════
      Вынесено в share-controller.js (Фаза 5 слайс 2, коммит В) за мост
@@ -1932,28 +1820,12 @@
   function _updateShareBtnState() { return HEADER_VIEW._updateShareBtnState(_headerDeps()); }
 
 
-  function _onProjectPicked(newKey) {
-    if (!newKey || newKey === _activeProjectKey) return;
-    if (_draftIsDirty()) {
-      _confirmDiscardAndSwitch(
-        function onConfirm() { _switchToProject(newKey); },
-        function onCancel()  { _setPickerValue(_activeProjectKey); }
-      );
-    } else {
-      _switchToProject(newKey);
-    }
-  }
+  /* Обработчик выбора в picker'е + смена проекта — делегаторы project-nav.js (golden-входы). */
+  function _onProjectPicked(newKey) { return PROJECT_NAV._onProjectPicked(_projectNavDeps(), newKey); }
+  function _switchToProject(newKey) { return PROJECT_NAV._switchToProject(_projectNavDeps(), newKey); }
 
-  function _switchToProject(newKey) {
-    diag('switch project -> ' + newKey, 'info');
-    _resetProjectStateCaches();
-    _applyActiveProject(newKey);
-    _setGlobalBanner(null);
-    _loadAndRenderProject().catch(function (e) {
-      diag('switch load ERR: ' + (e && e.message ? e.message : e), 'err');
-    });
-  }
-
+  /* Полный сброс per-project состояния перед загрузкой другого проекта.
+     ОСТАЁТСЯ в ядре (стейт-резет 22 var) — в project-nav.js приходит late-binding deps. */
   function _resetProjectStateCaches() {
     _sprint = null;
     _roleItems = {};
@@ -1979,31 +1851,8 @@
     _isAssigner = false;
   }
 
-  function _confirmDiscardAndSwitch(onConfirm, onCancel) {
-    if (!window.__SSP_RING_MODAL) {
-      var ok = true;
-      try { ok = window.confirm(T('globalSwitchDiscardMsg')); } catch (_) { ok = true; }
-      if (ok) onConfirm(); else onCancel();
-      return;
-    }
-    var decided = false;
-    openModal({
-      id: 'globalSwitchConfirm',
-      type: 'confirm',
-      title: T('globalSwitchDiscardTitle'),
-      body: { kind: 'text', text: T('globalSwitchDiscardMsg') },
-      buttons: [
-        { id: 'cancel', text: T('globalSwitchCancel'), variant: 'secondary',
-          onClick: function (api) { decided = true; onCancel(); api.close(); } },
-        { id: 'ok', text: T('globalSwitchDiscardConfirm'), variant: 'primary',
-          onClick: function (api) { decided = true; onConfirm(); api.close(); } }
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: true,
-      onClose: function () { if (!decided) onCancel(); }
-    });
-  }
+  /* Модалка-предупреждение «черновик будет очищен» — делегатор project-nav.js (golden-вход). */
+  function _confirmDiscardAndSwitch(onConfirm, onCancel) { return PROJECT_NAV._confirmDiscardAndSwitch(_projectNavDeps(), onConfirm, onCancel); }
 
   /**
    * v5.0 — обновить видимость и поведение кнопки перехода в виджет настроек.

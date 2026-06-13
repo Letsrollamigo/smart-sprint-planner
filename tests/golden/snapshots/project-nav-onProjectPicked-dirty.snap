@@ -1,0 +1,12 @@
+{
+  "specs": [
+    {
+      "id": "globalSwitchConfirm",
+      "type": "confirm",
+      "buttons": [
+        "cancel",
+        "ok"
+      ]
+    }
+  ]
+}
