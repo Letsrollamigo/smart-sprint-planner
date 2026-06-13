@@ -154,7 +154,10 @@ function updateAllocOverlimitUI(rk, deps) {
          Guard `_overlimitModalShownFor` предотвращает повторное открытие при каждом
          blur. Сбрасывается в else-ветке при устранении overlimit. */
       var sprint = deps.state.getSprint();
-      if (sprint && (sprint.status === deps.STATUS.CONFIRMED || sprint.status === deps.STATUS.ALLOCATED)) {
+      /* B24/statusByRole — гейт показа модалки по PER-ROLE статусу (не глобальному):
+         downgrade-модалка нужна только если ЭТА роль уже валидирована (CONFIRMED/ALLOCATED). */
+      var roleStatus = (typeof deps.statusForRole === 'function') ? deps.statusForRole(rk) : (sprint && sprint.status);
+      if (sprint && (roleStatus === deps.STATUS.CONFIRMED || roleStatus === deps.STATUS.ALLOCATED)) {
         var modalKey = rk + ':' + (sprint.sprintId || sprint.dateStart || 'cur');
         var shown = deps.state.getOverlimitModalShownFor();
         if (!shown[modalKey]) {
@@ -192,19 +195,14 @@ function showOverlimitModal(rk, deps) {
     buttons: [
       { id: 'downgrade', text: T('overlimitModalDowngrade'), variant: 'danger', onClick: function(h) {
         h.close();
-        var sprint = deps.state.getSprint();
-        if (sprint) {
-          sprint.status = deps.STATUS.PLANNING;
-          if (typeof deps.markDirty === 'function') deps.markDirty('sprint');
-          if (typeof deps.draftSaveDebounced === 'function') {
-            deps.draftSaveDebounced('sprint', function(){ return deps.state.getSprint(); });
-          }
-          /* Per-role бейдж-цикл снесён как мёртвый (Фаза 5 слайс 4, коммит А):
-             activeRoles — массив, индексация строковым ключом всегда undefined →
-             ветка была unreachable с введения (v5.2.0); карточные бейджи обновятся
-             при следующем рендере состава — pre-existing B24 в бэклоге. */
-          if (typeof deps.renderWidgetHeader === 'function') { try { deps.renderWidgetHeader(); } catch(_){} }
-          deps.diag('Status downgraded to PLANNING by user (overlimit modal)', 'info');
+        /* B24/statusByRole — понизить статус ТОЛЬКО перелимитной роли rk: запись
+           per-role в _history[<sprintId>_<rk>].status + persist + ре-рендер бейджа роли
+           и шапки (setRoleStatus). Раньше менялся лишь глобальный _sprint.status, а
+           per-role бейдж (читает _history) не обновлялся — ветка обновления бейджей была
+           доказуемо мёртвой (B24). Понижаем только rk, остальные роли не трогаем. */
+        if (typeof deps.setRoleStatus === 'function') {
+          deps.setRoleStatus(rk, deps.STATUS.PLANNING);
+          deps.diag('Status downgraded to PLANNING (per-role '+rk+', overlimit modal)', 'info');
           deps.toast(T('toastOverlimitDowngraded'), 'warn');
         }
       }},
@@ -224,7 +222,12 @@ function showOverlimitModal(rk, deps) {
 function maybeShowAllocatedLockHint(deps) {
   if (deps.safeLs.get('ssp_allocLockHintShown')) return;
   var sprint = deps.state.getSprint();
-  if (!sprint || sprint.status !== deps.STATUS.ALLOCATED) return;
+  /* statusByRole — lock теперь per-role: хинт показываем, когда ХОТЯ БЫ одна активная
+     роль ALLOCATED (её таблица read-only). Раньше — по глобальному _sprint.status. */
+  var anyAllocated = (typeof deps.statusForRole === 'function' && typeof deps.getActiveRoles === 'function')
+    ? deps.getActiveRoles().some(function (r) { return deps.statusForRole(r.key) === deps.STATUS.ALLOCATED; })
+    : (sprint && sprint.status === deps.STATUS.ALLOCATED);
+  if (!sprint || !anyAllocated) return;
   deps.toast(deps.T('toastAllocatedLockHint'), 'info');
   deps.safeLs.set('ssp_allocLockHintShown', '1');
 }
