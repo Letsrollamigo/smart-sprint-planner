@@ -1287,189 +1287,38 @@
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
   var SSP_DASH_NODES = ['sprint-params','planning-roles','planning-people','planning-standup','gantt','history'];
 
-  function _buildDashTree() {
-    var tree = document.createElement('div');
-    tree.className = 'ssp-tree'; tree.setAttribute('role','tree');
-
-    /* нативная Ring-иконка (SVG из __SSP_ICONS через icon()), а не emoji */
-    function _treeIcon(iconName) {
-      var ic = (typeof icon === 'function') ? icon(iconName) : document.createElement('span');
-      ic.classList.add('ssp-tree__icon');
-      return ic;
-    }
-    function mkItem(nodeId, labelKey, iconName, extraClass) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'ssp-tree__item' + (extraClass ? ' ' + extraClass : '');
-      b.dataset.node = nodeId;
-      if (iconName) b.appendChild(_treeIcon(iconName));
-      var t = document.createElement('span'); t.setAttribute('data-i18n', labelKey); t.textContent = T(labelKey);
-      b.appendChild(t);
-      b.addEventListener('click', function(){ if (!b.classList.contains('ssp-tree__item--disabled')) _setDashNode(nodeId); });
-      return b;
-    }
-    function mkChild(nodeId, labelKey, iconName) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'ssp-tree__child'; b.dataset.node = nodeId;
-      if (iconName) b.appendChild(_treeIcon(iconName));
-      var t = document.createElement('span'); t.setAttribute('data-i18n', labelKey); t.textContent = T(labelKey);
-      b.appendChild(t);
-      b.addEventListener('click', function(){ _setDashNode(nodeId); });
-      return b;
-    }
-
-    /* 1. Параметры спринта (D6) */
-    tree.appendChild(mkItem('sprint-params', 'treeSprintParams', 'settings'));
-
-    /* 2. Планирование (раскрывающаяся группа с детьми Роли/Люди/Stand-up) */
-    var grp = document.createElement('details'); grp.className = 'ssp-tree__group'; grp.open = true;
-    var sum = document.createElement('summary'); sum.className = 'ssp-tree__group-summary';
-    sum.appendChild(_treeIcon('task'));
-    var sumTxt = document.createElement('span'); sumTxt.setAttribute('data-i18n','tabPlanning'); sumTxt.textContent = T('tabPlanning');
-    sum.appendChild(sumTxt); grp.appendChild(sum);
-    var kids = document.createElement('div'); kids.className = 'ssp-tree__children';
-    kids.appendChild(mkChild('planning-roles',   'planningLevelRoles',   'group'));
-    kids.appendChild(mkChild('planning-people',  'planningLevelPeople',  'user'));
-    kids.appendChild(mkChild('planning-standup', 'planningLevelStandup', 'comment'));
-    grp.appendChild(kids);
-    tree.appendChild(grp);
-
-    /* 3. Гант / История */
-    tree.appendChild(mkItem('gantt',   'tabGantt',   'bars'));
-    tree.appendChild(mkItem('history', 'tabHistory', 'history'));
-
-    /* 4. Поделиться (#36) — копирует текущий deep-link URL; enable/disable по наличию спринта.
-       mkItem-клик зовёт _setDashNode('share') (no-op, не в SSP_DASH_NODES); добавляем copy-handler. */
-    var share = mkItem('share', 'treeShare', 'share', 'ssp-tree__item--share ssp-tree__item--disabled');
-    share.addEventListener('click', function(){
-      if (!share.classList.contains('ssp-tree__item--disabled')) _onShareClick();
-    });
-    tree.appendChild(share);
-
-    return tree;
+  /* #25 Ф2 dash-shell вынесен в dash-shell.js (Фаза 5 слайс 13, домен E6) за __SSP_DASH_SHELL.
+     SSP_DASH_NODES остаётся в ядре (читается init-зоной _loadAndRenderProject) — приходит депом.
+     Делегаторы: _buildGlobalDashShell/_setDashNode/_deriveDashNodeFromTabLevel — init-оркестровка;
+     _buildDashTree — golden-вход + внутренний вызов из шелла. Кросс-кластерные хуки (setDashNode/
+     onShareClick/syncStateToUrl/draft/rail-collapsed/updateRailSprintName/updateShareBtnState/diag)
+     роутятся через core-делегаторы, чтобы golden-стабы их перехватывали. */
+  var DASH_SHELL = (typeof window !== 'undefined' && window.__SSP_DASH_SHELL) || {};
+  function _dashDeps() {
+    return {
+      T: T,
+      icon: icon,
+      diag: diag,
+      SSP_DASH_NODES: SSP_DASH_NODES,
+      setDashNode: _setDashNode,
+      onShareClick: _onShareClick,
+      draftGet: _draftGet,
+      draftSet: _draftSet,
+      syncStateToUrl: _syncStateToUrl,
+      getRailCollapsed: getRailCollapsed,
+      setRailCollapsed: setRailCollapsed,
+      applyRailCollapsed: _applyRailCollapsed,
+      updateRailSprintName: _updateRailSprintName,
+      updateShareBtnState: _updateShareBtnState,
+      state: {
+        getPlanningLevel: function () { return _planningLevel; },
+      },
+    };
   }
-
-  function _deriveDashNodeFromTabLevel() {
-    /* Маппинг устаревшего состояния (activeTab/planningLevel) в новое dashNode. */
-    var ui = _draftGet('ui') || {};
-    var t = ui.activeTab || 'planning';
-    if (t === 'gantt')   return 'gantt';
-    if (t === 'history') return 'history';
-    var lvl = ui.planningLevel || _planningLevel || 'roles';
-    if (lvl === 'people')  return 'planning-people';
-    if (lvl === 'standup') return 'planning-standup';
-    return 'planning-roles';
-  }
-
-  function _setDashNode(nodeId) {
-    if (SSP_DASH_NODES.indexOf(nodeId) < 0) return;   /* share/disabled — no-op */
-    /* подсветка дерева */
-    document.querySelectorAll('.ssp-tree [data-node]').forEach(function(n){
-      n.classList.toggle('active', n.dataset.node === nodeId);
-    });
-    /* body-класс для CSS-стейта (для #sprintIntroCard и др.) */
-    var cls = document.body.className.replace(/\bssp-dashnode-\S+/g, '').replace(/\s+/g,' ').trim();
-    document.body.className = cls + ' ssp-dashnode-' + nodeId;
-    /* делегирование на скрытые tracker-узлы (callsite'ы целы) */
-    function _clickTab(t) { var el = document.querySelector('.tab-btn[data-tab="'+t+'"]'); if (el && !el.classList.contains('active')) el.click(); }
-    function _clickLevel(l){ var el = document.querySelector('.planning-level-btn[data-level="'+l+'"]'); if (el && !el.classList.contains('active')) el.click(); }
-    if (nodeId === 'sprint-params')    { _clickTab('planning'); }
-    else if (nodeId === 'planning-roles')   { _clickTab('planning'); _clickLevel('roles'); }
-    else if (nodeId === 'planning-people')  { _clickTab('planning'); _clickLevel('people'); }
-    else if (nodeId === 'planning-standup') { _clickTab('planning'); _clickLevel('standup'); }
-    else if (nodeId === 'gantt')            { _clickTab('gantt'); }
-    else if (nodeId === 'history')          { _clickTab('history'); }
-    /* persist */
-    try { var ui = _draftGet('ui') || {}; ui.dashNode = nodeId; _draftSet('ui', ui); } catch(_){}
-    /* #36 — отразить узел в URL (no-op до _urlSyncEnabled / вне global) */
-    try { _syncStateToUrl(); } catch(_){}
-  }
-
-  function _buildGlobalDashShell() {
-    var page = document.querySelector('.page');
-    if (!page || document.querySelector('.ssp-dash')) return;   /* идемпотентно */
-    function _el(cls) { var d = document.createElement('div'); if (cls) d.className = cls; return d; }
-
-    var dash = _el('ssp-dash');
-    var rail = _el('ssp-rail'); rail.id = 'sspRail';
-    var pane = _el('ssp-pane'); pane.id = 'sspPane';
-
-    /* Этап 2 — захватываем существующие узлы chrome/контекста/навигации (move, не recreate:
-       id/классы/обработчики и серверная видимость #openSettingsBtn сохраняются). */
-    var pageHeader  = page.querySelector('.page-header');          /* иконка/title/версия (+ picker/links внутри) */
-    var picker      = document.getElementById('globalProjectPicker');
-    var headerLinks = page.querySelector('.page-header__links');   /* Настройки/Руководство/Обр.связь/язык/Очистить */
-    var widgetHdr   = document.getElementById('widgetHeader');     /* спринт-селектор/бейдж/WC/новый */
-    var statusBar   = document.getElementById('widgetStatusBarSpoiler')  /* спойлер «Статус активности модулей» */
-                    || document.getElementById('widgetStatusBar');       /* fallback, если обёртки нет */
-    var tabs        = page.querySelector('.tabs');                 /* tracker-табы + Ring-Tabs host #sspTabsHost */
-
-    /* ── Голова рельса: кнопка «свернуть» + бренд (.page-header) ── */
-    var head = _el('ssp-rail__head');
-    var tgl = document.createElement('button');
-    tgl.type = 'button'; tgl.className = 'ssp-rail__toggle'; tgl.id = 'sspRailToggle';
-    head.appendChild(tgl);
-    /* picker и links вытаскиваем из .page-header ДО переноса бренда (иначе уедут вместе с ним) */
-    if (pageHeader)  head.appendChild(pageHeader);
-    /* утилиты — компактной группой сразу под брендом. В auto-grow iframe нет
-       фиксированного «дна экрана», поэтому классический «низ сайдбара» не прижать —
-       наверху аккуратнее (см. правку 2026-06-06 по фидбэку владельца). */
-    var utils = _el('ssp-rail__utils');
-    if (headerLinks) utils.appendChild(headerLinks);
-    /* спойлер «Статус активности модулей» — под пикером языка (в utils-зоне, по фидбэку) */
-    if (statusBar) utils.appendChild(statusBar);
-    /* контекст: проект-пикер + логические карточки спринта */
-    var ctx = _el('ssp-rail__context');
-    if (picker)      ctx.appendChild(picker);
-    if (widgetHdr) {
-      var _sprintBox = widgetHdr.querySelector('.widget-header__sprint');  /* селектор + имя спринта */
-      var _badge     = widgetHdr.querySelector('.widget-header__badge');   /* #widgetSprintBadge — статусы ролей */
-      var _wc        = widgetHdr.querySelector('.widget-header__wc');       /* #widgetWcIndicator — рабочая копия */
-      var _newBtn    = widgetHdr.querySelector('.widget-header__new');      /* #widgetNewSprintBtn */
-      /* п.6 — подпись полного имени спринта внутри спринт-блока (под селектором) */
-      if (_sprintBox && !document.getElementById('sspRailSprintName')) {
-        var _nm = document.createElement('div');
-        _nm.id = 'sspRailSprintName'; _nm.className = 'ssp-rail-sprint-name';
-        _sprintBox.appendChild(_nm);
-      }
-      /* Карточка 1 = сам #widgetHeader (renderWidgetHeader проверяет его наличие):
-         имя спринта + рабочая копия (WC над статусами ролей). */
-      if (_sprintBox) widgetHdr.appendChild(_sprintBox);   /* порядок: спринт первым */
-      if (_wc)        widgetHdr.appendChild(_wc);            /* WC сразу под спринтом */
-      /* Карточка 2 = статусы ролей спринта (отдельный блок). */
-      var _card2 = _el('ssp-rail-card ssp-rail-card--badges');
-      if (_badge) _card2.appendChild(_badge);
-
-      ctx.appendChild(widgetHdr);                /* блок 1: спринт + WC */
-      ctx.appendChild(_card2);                   /* блок 2: статусы ролей */
-      if (_newBtn) ctx.appendChild(_newBtn);     /* «Новый спринт» — отдельной строкой */
-    }
-    /* ── Навигация (Этап 3+4+7 — дерево D5/D6/Ф2.5) ── */
-    var nav = _el('ssp-rail__nav');
-    if (tabs) nav.appendChild(tabs);            /* tracker-узлы сохраняются для callsite'ов (скрыты CSS) */
-    nav.appendChild(_buildDashTree());
-
-    rail.appendChild(head);
-    rail.appendChild(utils);
-    rail.appendChild(ctx);
-    rail.appendChild(nav);
-
-    /* Остаток .page (баннеры, projectSettings*, tab-panel'ы, #diagWrap) → пейн. */
-    while (page.firstChild) { pane.appendChild(page.firstChild); }
-
-    dash.appendChild(rail); dash.appendChild(pane);
-    page.appendChild(dash);
-
-    tgl.addEventListener('click', function() {
-      setRailCollapsed(!dash.classList.contains('ssp-rail-collapsed'));
-      _applyRailCollapsed(getRailCollapsed());
-    });
-    _applyRailCollapsed(getRailCollapsed());
-    _updateRailSprintName();
-    /* #36 v2.5.2 — сразу выставить видимость кнопки «Поделиться» по наличию host.navigation
-       (на YT<2026.1 спрятать немедленно, не дожидаясь выбора проекта). */
-    try { _updateShareBtnState(); } catch (_) {}
-    diag('#25 Ф2 dash shell built (global): chrome/context/nav → rail', 'ok');
-  }
+  function _buildDashTree()              { return DASH_SHELL._buildDashTree(_dashDeps()); }
+  function _deriveDashNodeFromTabLevel() { return DASH_SHELL._deriveDashNodeFromTabLevel(_dashDeps()); }
+  function _setDashNode(nodeId)          { return DASH_SHELL._setDashNode(_dashDeps(), nodeId); }
+  function _buildGlobalDashShell()       { return DASH_SHELL._buildGlobalDashShell(_dashDeps()); }
 
   /* v5.0.3 — Восстановление UI-навигации (активная вкладка/подвкладка/спринт-селектор).
      Вызывается после рендера, поскольку DOM подвкладок строится в renderPlannerRoles. */
