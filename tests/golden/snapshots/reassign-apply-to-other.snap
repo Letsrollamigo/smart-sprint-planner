@@ -1,0 +1,31 @@
+{
+  "before": {
+    "taskAssignmentGM10": {
+      "assignee": "gm_user_2",
+      "assigneeName": "gm_user_2"
+    },
+    "ganttColorPresent": false,
+    "recPPSyncedToCurrentPP": true,
+    "sprintPPSyncedToCurrentPP": true,
+    "dirtyDevBack": true,
+    "closeCalled": [
+      0
+    ],
+    "deps": {
+      "save": 1,
+      "assignee": [
+        {
+          "id": "GM-10",
+          "login": "gm_user_2",
+          "rk": "devBack"
+        }
+      ],
+      "gantt": 1,
+      "table": 0
+    },
+    "timerDelays": [
+      0
+    ]
+  },
+  "dirtyDevBackAfterFlush": "<cleared>"
+}

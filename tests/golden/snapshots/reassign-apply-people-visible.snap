@@ -1,0 +1,11 @@
+{
+  "peopleTableRendered": 1,
+  "ganttRendered": 1,
+  "assignee": [
+    {
+      "id": "GM-11",
+      "login": "gm_user_1",
+      "rk": "devBack"
+    }
+  ]
+}

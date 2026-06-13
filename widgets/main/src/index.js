@@ -38,6 +38,7 @@ import './share-controller.js';
 import './validation-controller.js';
 import './refresh-controller.js';
 import './sprint-controller.js';
+import './reassign-controller.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
