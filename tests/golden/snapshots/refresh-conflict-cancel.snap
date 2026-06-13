@@ -1,0 +1,20 @@
+{
+  "analysisGm2Estimate": 900,
+  "devBackGm10Estimate": 1200,
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_1"
+    },
+    "GM-11": {
+      "assignee": "gm_user_2"
+    }
+  },
+  "apiCalls": 0,
+  "toasts": [],
+  "busyAfter": [
+    false,
+    false,
+    false,
+    false
+  ]
+}
