@@ -1,6 +1,6 @@
 // AUTOGEN by scripts/build-icons.js — DO NOT EDIT MANUALLY.
 // To update: edit widgets/main/src/icons/*.svg, then run `npm run build:icons`.
-// Устанавливает window.__SSP_ICONS до исполнения IIFE legacy-monolith.js (аналог i18n-bridge).
+// Устанавливает window.__SSP_ICONS до исполнения IIFE core.js (аналог i18n-bridge).
 if (typeof window !== 'undefined') {
   window.__SSP_ICONS = {
   'add': "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" fill=\"currentColor\" viewBox=\"0 0 16 16\"><path fill-rule=\"evenodd\" d=\"M7.632.375c.346 0 .625.28.625.625v12.8a.625.625 0 1 1-1.25 0V1c0-.345.28-.625.625-.625Z\" clip-rule=\"evenodd\"/><path fill-rule=\"evenodd\" d=\"M1.002 7.625c0-.345.28-.625.625-.625h12.204a.625.625 0 1 1 0 1.25H1.627a.625.625 0 0 1-.625-.625Z\" clip-rule=\"evenodd\"/></svg>",

@@ -1,7 +1,7 @@
 /* Permissions-кластер: backend-проверки прав (validator/editor/assigner/
    settings-manager), синглтон-батч _startPermissionsCheck и применение прав
    к editor/validate/assigner-кнопкам активной панели. Вынесено из
-   legacy-monolith.js (Фаза 5 слайс 2, коммит Б) за мост
+   core.js (Фаза 5 слайс 2, коммит Б) за мост
    window.__SSP_PERMISSIONS; golden-характеризация —
    tests/golden/permissions-share.golden.test.js (через делегаторы монолита).
 

@@ -1,6 +1,6 @@
 /* #36 Share-URL (deep-link + handoff): чтение share-параметров с init,
    авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться»
-   и фокус-подсветка role:K/user:L. Вынесено из legacy-monolith.js
+   и фокус-подсветка role:K/user:L. Вынесено из core.js
    (Фаза 5 слайс 2, коммит В) за мост window.__SSP_SHARE_CTRL;
    golden-характеризация — tests/golden/permissions-share.golden.test.js
    (через делегаторы монолита).

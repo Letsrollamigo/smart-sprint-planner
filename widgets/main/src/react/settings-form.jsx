@@ -1,7 +1,7 @@
 /* v2.2.0 Phase 5 #32 — bespoke SettingsForm для openModal(body.kind:'component').
    Полная де-гибридизация settingsOverlay: вся форма настроек рендерится настоящим
    React внутри Ring Dialog (вместо vanilla .settings-overlay + applySettingsUI/
-   collectSettings из DOM). Компонент изолирован от IIFE legacy-monolith — ВСЁ
+   collectSettings из DOM). Компонент изолирован от IIFE core.js — ВСЁ
    приходит через body.props (initial-настройки, списки полей, i18n-функция t,
    колбэки onSave/onClose). Регистрируется в реестре modal-mount.jsx.
 

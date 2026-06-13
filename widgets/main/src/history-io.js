@@ -1,5 +1,5 @@
 'use strict';
-// History export/import cluster (#27) extracted from widgets/main/src/legacy-monolith.js (Tier C).
+// History export/import cluster (#27) extracted from widgets/main/src/core.js (Tier C).
 // Browser bridge: window.__SSP_HISTORY_IO. Golden-tested in
 // tests/golden/history-io.golden.test.js (envelope, anonymize, preflight matrix,
 // file stem, download capture, import dialog spec + cancel/replace/merge contracts).

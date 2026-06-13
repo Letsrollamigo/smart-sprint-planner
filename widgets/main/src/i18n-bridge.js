@@ -1,9 +1,9 @@
 /* widgets/main/src/i18n-bridge.js
    Side-effect модуль: ставит i18n loader API + inlined dicts на window.__SSP_*
-   ДО того как IIFE legacy-monolith.js начнёт исполняться.
+   ДО того как IIFE core.js начнёт исполняться.
 
    ES module side-effects выполняются в порядке объявления import'ов в index.js.
-   Поэтому этот файл должен импортироваться РАНЬШЕ './legacy-monolith.js'. */
+   Поэтому этот файл должен импортироваться РАНЬШЕ './core.js'. */
 
 import * as i18nLoader from './i18n/loader.js';
 import { LANGS } from './i18n/languages.js';

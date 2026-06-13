@@ -1,5 +1,5 @@
 'use strict';
-// Modal-spec factories extracted from widgets/main/src/legacy-monolith.js (Tier B).
+// Modal-spec factories extracted from widgets/main/src/core.js (Tier B).
 // Browser bridge: window.__SSP_MODAL_SPECS. Golden-tested in
 // tests/golden/modal-specs.golden.test.js (spec shapes + callback contracts).
 //

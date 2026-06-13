@@ -1,12 +1,12 @@
 'use strict';
 // Pure helpers for multi-key task sort logic. Unit-tested in isolation via tests/unit/sort-pure.test.js.
-// Browser bridge: window.__SSP_SORT_PURE — consumed by widgets/main/src/legacy-monolith.js.
+// Browser bridge: window.__SSP_SORT_PURE — consumed by widgets/main/src/core.js.
 //
-// Mirrors the implementation in legacy-monolith.js (multiKeySort) so the same
+// Mirrors the implementation in core.js (multiKeySort) so the same
 // comparators can be validated end-to-end without DOM. When the IIFE-side gets a
 // new sort key, mirror it here too and add tests.
 
-// Valid sort keys in cycle order (matches SORT_KEYS_CYCLE in legacy-monolith.js).
+// Valid sort keys in cycle order (matches SORT_KEYS_CYCLE in core.js).
 const SORT_KEYS_CYCLE = Object.freeze([
   'off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee'
 ]);
@@ -71,7 +71,7 @@ function isValidSortKey(key) {
 
 // Full multi-key task sort. `primary` MUST be resolved by the caller — the IIFE
 // delegator passes getSortKey() when it is omitted, so this pure function never
-// reads sort state. Faithful port of multiKeySort in legacy-monolith.js: the
+// reads sort state. Faithful port of multiKeySort in core.js: the
 // secondary keys always order by descending priority, and an unrecognised
 // primary falls through to the 'xpriority' default branch.
 function multiKeySort(items, primary, taMap) {
