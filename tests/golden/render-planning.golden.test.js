@@ -36,6 +36,23 @@ test('golden: renderRoleAccordion по активным ролям', () => {
   checkJsonSnapshot('role-accordion', out);
 });
 
+test('golden: B22 — renderPlannerRoles заполняет intro-поля «Параметры спринта» при холодном init без драфта', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  /* эмулируем холодный init: поля #sprintIntroCard пусты (до фикса так и оставались). */
+  ['sprintName', 'dateStart', 'dateEnd', 'sprintGoal'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  gm.call('renderPlannerRoles');
+  /* Статические поля #sprintIntroCard заполняются из активного _sprint.
+     (#sprintGoal — Ring Input host, в golden-стабе не монтируется → вне ассертов; в
+     реальном виджете заполняется тем же renderRolePlannerHeader через goalEl-guard.) */
+  assert.strictEqual(document.getElementById('sprintName').value, 'GM Sprint June 2026', 'sprintName заполнен из активного _sprint');
+  assert.ok(document.getElementById('dateStart').value, 'dateStart заполнен');
+  assert.ok(document.getElementById('dateEnd').value, 'dateEnd заполнен');
+});
+
 test('golden: renderRoleComposition — непустой состав (контракт Ring Table)', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);

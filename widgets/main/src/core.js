@@ -2330,6 +2330,19 @@
     if (typeof renderSprintIntroExtras === 'function') {
       try { renderSprintIntroExtras(); } catch(_){}
     }
+    /* B22 — заполнить общие intro-поля «Параметры спринта» (название/даты/цель) на
+       холодном init независимо от наличия content-драфта. renderRolePlannerHeader
+       читает _sprint/_history (не draft), но на init не вызывался (карточки ролей не
+       раскрыты, currentSprintId ещё не восстановлен). Здесь per-role элементы (res_/
+       sprintStatus_/statusBadge_) ещё не отрендерены → renderRolePlannerHeader заполнит
+       только статические поля #sprintIntroCard. Идемпотентно (повтор просто переустановит
+       .value). При !_sprint — early-return внутри, empty-state сохранён. */
+    if (typeof renderRolePlannerHeader === 'function' && typeof getActiveRoles === 'function') {
+      try {
+        var _arIntro = getActiveRoles();
+        if (_arIntro && _arIntro.length) renderRolePlannerHeader(_arIntro[0].key);
+      } catch(_){}
+    }
     if (typeof renderPlanningRoles === 'function') {
       try { renderPlanningRoles(); } catch(e){ diag('renderPlanningRoles err: '+e,'err'); }
     }
