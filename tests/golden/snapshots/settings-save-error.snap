@@ -1,0 +1,35 @@
+{
+  "result": {
+    "success": false,
+    "reason": "whitelist-violation"
+  },
+  "apiPost": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "settings"
+      ],
+      "hasSettings": true,
+      "savedAtFrozen": true,
+      "query": null
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Ошибка сохранения",
+      "type": "err"
+    }
+  ],
+  "settingsUntouched": true,
+  "postSaveSkipped": {
+    "syncLang": 0,
+    "featureBar": 0,
+    "checkValidator": 0,
+    "checkEditor": 0,
+    "checkAssigner": 0,
+    "ppVisibility": 0,
+    "clearHistBtn": 0,
+    "renderRoles": 0,
+    "diagVis": 0
+  }
+}

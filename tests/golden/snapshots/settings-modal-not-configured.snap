@@ -1,0 +1,17 @@
+{
+  "specs": [
+    {
+      "id": "settingsAccess",
+      "type": "info",
+      "title": "Smart Sprint Planner: настройки",
+      "dialogClass": null,
+      "dismissOnBackdrop": true,
+      "showCloseButton": true,
+      "bodyKind": "text",
+      "bodyText": "Администратор проекта должен задать группу управления настройками в Project Settings → Apps → Sprint Planner. До этого момента плагин в режиме read-only.",
+      "buttonIds": [
+        "ok"
+      ]
+    }
+  ]
+}
