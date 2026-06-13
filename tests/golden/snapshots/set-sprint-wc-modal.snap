@@ -1,0 +1,12 @@
+{
+  "ret1": false,
+  "idAfterModal": "gm-sprint-2026-06",
+  "idAfterCancel": "gm-sprint-2026-06",
+  "modalId": "closeWc",
+  "modalButtons": [
+    "cancel",
+    "confirm"
+  ],
+  "wcKeyAfterConfirm": null,
+  "idAfterConfirm": "gm-other-sprint"
+}

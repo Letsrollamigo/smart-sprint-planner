@@ -1,0 +1,38 @@
+{
+  "dirty": [
+    "currentRole"
+  ],
+  "debounced": [
+    {
+      "key": "currentRole",
+      "keys": [
+        "gantt",
+        "nkcKey",
+        "pp",
+        "sprintRecKey"
+      ]
+    }
+  ],
+  "apiLog": [
+    {
+      "path": "history",
+      "bodyKeys": [
+        "history"
+      ],
+      "query": null
+    },
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "sprint"
+      ],
+      "query": null
+    }
+  ],
+  "roleTotals": 1,
+  "accordionStats": [
+    "devBack"
+  ],
+  "sprintPPSet": true,
+  "applyPersonalRes": 0
+}

@@ -1,0 +1,26 @@
+{
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "roleItems",
+        "sprint"
+      ],
+      "query": null
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Новый спринт создан",
+      "type": "success"
+    }
+  ],
+  "sprintName": "Новый спринт (не сохранён)",
+  "statusPlanning": "PLANNING",
+  "roleItemsEmpty": true,
+  "currentSprintIdSynced": true,
+  "plannerHeader": [
+    "analysis"
+  ],
+  "widgetHeader": 1
+}

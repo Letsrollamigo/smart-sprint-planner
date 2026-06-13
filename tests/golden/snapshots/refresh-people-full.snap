@@ -1,0 +1,14 @@
+{
+  "emptyHidden": true,
+  "contentHidden": false,
+  "activeSubtab": "devBack",
+  "rolePPSet": true,
+  "assigneeTable": 1,
+  "taskTable": 1,
+  "roleTotals": 1,
+  "resMode": [
+    "devBack"
+  ],
+  "orphanBanner": 1,
+  "editorRights": 1
+}
