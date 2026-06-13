@@ -1,0 +1,30 @@
+{
+  "ytLog": [
+    {
+      "path": "admin/projects",
+      "fields": "id,name,shortName,archived",
+      "top": 5000
+    }
+  ],
+  "apiLog": [
+    {
+      "post": "filter-planner-projects",
+      "body": {
+        "keys": [
+          "DEMO",
+          "DEMOClone"
+        ]
+      }
+    }
+  ],
+  "result": [
+    {
+      "key": "DEMO",
+      "name": "Демопроект"
+    },
+    {
+      "key": "DEMOClone",
+      "name": "Clone"
+    }
+  ]
+}
