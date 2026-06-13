@@ -65,6 +65,7 @@ const BRIDGE_SCRIPTS = [
   'sprint-controller.js',
   'reassign-controller.js',
   'i18n-controller.js',
+  'history-controller.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',
