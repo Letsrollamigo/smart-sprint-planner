@@ -67,6 +67,7 @@ const BRIDGE_SCRIPTS = [
   'i18n-controller.js',
   'history-controller.js',
   'settings-controller.js',
+  'data-loaders.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',
