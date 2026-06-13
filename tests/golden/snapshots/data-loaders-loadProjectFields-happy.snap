@@ -1,0 +1,24 @@
+{
+  "apiLog": [
+    "project-fields"
+  ],
+  "projectFields": [
+    {
+      "name": "Sprints",
+      "type": "version"
+    },
+    {
+      "name": "State",
+      "type": "state"
+    },
+    {
+      "name": "Estimation",
+      "type": "period"
+    }
+  ],
+  "projectDisplayName": "Демопроект DEMOClone",
+  "hooks": [
+    "nameLabel",
+    "ytBase"
+  ]
+}

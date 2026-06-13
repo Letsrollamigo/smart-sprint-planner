@@ -2247,173 +2247,55 @@
 
 
   /* ── Загрузка данных ── */
-  function loadMe() {
-    return _host.fetchYouTrack('users/me', { query: { fields: 'id,login,fullName' } })
-      .then(function(u){ _currentUser = u; diag('me=' + (u&&u.login?u.login:'?'), 'ok'); })
-      .catch(function(e){ _currentUser = {login: 'unknown'}; diag('me ERR: ' + String(e), 'err'); });
+  var DATA_LOADERS = (typeof window !== 'undefined' && window.__SSP_DATA_LOADERS) || {};
+  function _loadersDeps() {
+    return {
+      apiGet: apiGet,
+      diag: diag,
+      T: T,
+      uid: uid,
+      ALL_ROLES: ALL_ROLES,
+      STATUS: STATUS,
+      migrateStatus: migrateStatus,
+      migrateInc: migrateInc,
+      updateProjectNameLabel: _updateProjectNameLabel,
+      ytBaseFromProject: _ytBaseFromProject,
+      syncProjectDefaultLang: _syncProjectDefaultLang,
+      refreshFeatureStatusBar: _refreshFeatureStatusBar,
+      applyDiagLogVisibility: _applyDiagLogVisibility,
+      workingDraftsLoadFromBackend: _workingDraftsLoadFromBackend,
+      reconcileHasWorkingCopyFlag: reconcileHasWorkingCopyFlag,
+      gcWorkingDrafts: gcWorkingDrafts,
+      migrateEditingFromHistoryV52: migrateEditingFromHistoryV52,
+      state: {
+        getHost:               function () { return _host; },
+        getYtBase:             function () { return _ytBase; },
+        getSettings:           function () { return _settings; },
+        getSprint:             function () { return _sprint; },
+        getRoleItems:          function () { return _roleItems; },
+        getEnableDebugLog:     function () { return _enableDebugLog; },
+        setCurrentUser:        function (v) { _currentUser = v; },
+        setProjectFields:      function (v) { _projectFields = v; },
+        setProjectDisplayName: function (v) { _projectDisplayName = v; },
+        setProjectGroups:      function (v) { _projectGroups = v; },
+        setSettings:           function (v) { _settings = v; },
+        setSprint:             function (v) { _sprint = v; },
+        setRoleItems:          function (v) { _roleItems = v; },
+        setHistory:            function (v) { _history = v; },
+        setEnableDebugLog:     function (v) { _enableDebugLog = v; },
+      },
+    };
   }
-
-  function loadProjectFields() {
-    return apiGet('project-fields').then(function(r) {
-      if (r && r.success) {
-        _projectFields = r.fields || [];
-        diag('Fields loaded: '+_projectFields.length,'ok');
-        if (r.projectName) {
-          /* v1.4.1 — раньше textContent выставлялся только если он пустой; теперь
-             всегда обновляем кэш и пере-применяем helper, чтобы projectNameLabel
-             корректно перерисовывался при последующих setLang(). */
-          _projectDisplayName = r.projectName;
-          _updateProjectNameLabel();
-        }
-        _ytBaseFromProject();
-      }
-    }).catch(function(){});
-  }
-
-  function loadProjectGroups() {
-    return _host.fetchYouTrack('groups', {
-      query: { fields: 'id,name', $top: 5000 }
-    }).then(function(g){
-      var raw = Array.isArray(g) ? g : [];
-      _projectGroups = raw
-        .filter(function(gr){ return !!gr.id; })
-        .map(function(gr) {
-          var name = (gr.name && gr.name.trim()) ? gr.name.trim() : gr.id;
-          return { id: gr.id, name: name };
-        });
-      diag('Groups loaded: ' + _projectGroups.length, 'ok');
-      // v5.0: рендер multi-select групп выполняется в виджете настроек.
-      // В main.js _projectGroups держится только как справочник для отображения
-      // имён групп (например, в баннерах прав).
-    }).catch(function(e){ _projectGroups = []; diag('Groups ERR: ' + String(e), 'err'); });
-  }
-
-  /* v1.3.1 — Status-bar активных функциональных модулей. Обновляет
-     визуальное состояние (зелёная/красная точка + локализованный лейбл
-     on/off) для 4 chip'ов в widget-statusbar. Вызывается после каждого
-     обновления _settings (initial load, save) и после applyI18N (смена
-     языка, чтобы локализованный «on/off» подхватился). */
-  function _refreshFeatureStatusBar() {
-    var bar = document.getElementById('widgetStatusBar');
-    if (!bar) return;
-    /* Если _settings ещё не загружено (init не закончен) — оставляем все
-       chip'ы в нейтральном состоянии. */
-    var s = _settings || {};
-    var modules = [
-      { id: 'ssbInline',   on: !!s.dynEditEnabled },
-      { id: 'ssbPersonal', on: !!s.personalPlanningEnabled },
-      { id: 'ssbDta',         on: !!s.dtaEnabled },
-      { id: 'ssbCascade',     on: !!s.cascadeAggregationEnabled },
-      { id: 'ssbStateRollup', on: !!s.stateRollupEnabled }, /* v1.7.0 D128 */
-      { id: 'ssbOverlimit', on: !!s.allowOverlimitPlanning } /* #38 */
-    ];
-    modules.forEach(function(m) {
-      var el = document.getElementById(m.id);
-      if (!el) return;
-      el.classList.toggle('ssb-on',  m.on);
-      el.classList.toggle('ssb-off', !m.on);
-      var stateEl = el.querySelector('.ssb-chip__state');
-      if (stateEl) {
-        var key = m.on ? 'ssbOn' : 'ssbOff';
-        stateEl.setAttribute('data-i18n', key);
-        stateEl.textContent = T(key);
-      }
-    });
-  }
-
-  function loadAllData() {
-    return apiGet('sprint-data').then(function(r) {
-      if (r && r.success) {
-        _settings = r.settings || null;
-        /* v1.1.0 — после загрузки _settings подтянуть project-default язык в loader.
-           Если localStorage.ssp_lang уже есть, project-default сработает только для
-           НОВЫХ пользователей через цепочку getCurrentLang(). */
-        _syncProjectDefaultLang();
-        /* v1.3.1 — обновить status-bar активных модулей сразу после load. */
-        _refreshFeatureStatusBar();
-        _sprint   = r.sprint   || null;
-        // roleItems хранится в r.roleItems (новый формат)
-        if (r.roleItems) {
-          _roleItems = r.roleItems;
-        } else if (r.items && Array.isArray(r.items)) {
-          // Обратная совместимость: все items попадают в 'analysis' (первая роль)
-          _roleItems = { analysis: r.items };
-        } else {
-          _roleItems = {};
-        }
-        /* v5.0.3 диагностика — структура _roleItems после load */
-        try {
-          var rkSummary = Object.keys(_roleItems).map(function(rk){
-            return rk+'='+(_roleItems[rk] ? _roleItems[rk].length : 'null');
-          }).join(', ');
-          diag('loadAllData: _sprint='+(_sprint?_sprint.sprintId:'null')+' _roleItems={'+rkSummary+'}', 'info');
-        } catch(_){}
-        if (!_sprint) {
-          _sprint = { sprintId: uid(), dateStart: null, dateEnd: null, status: STATUS.PLANNING };
-        }
-        // v5.0 — defensive миграция статусов и inclusion-статусов:
-        // backend нормализует на чтении, но мы дублируем как защиту от стэйла кэшей.
-        if (_sprint.status) _sprint.status = migrateStatus(_sprint.status);
-        ALL_ROLES.forEach(function(role) {
-          var items = _roleItems[role.key] || [];
-          items.forEach(function(item) {
-            if (item.inclusionStatus) item.inclusionStatus = migrateInc(item.inclusionStatus);
-            if (!item.url || item.url.indexOf('/null/') >= 0 || item.url.indexOf('/undefined/') >= 0) {
-              item.url = _ytBase + '/issue/' + item.issueId;
-            }
-            /* v5.0.3 — defensive: strip sprintId, который раньше клиент клал на items.
-               backend `ALLOWED_ITEM_KEYS` не содержит этот ключ → следующий POST бы валился.
-               Удаляем тут, чтобы in-memory было чистое для записи. */
-            if (item.sprintId !== undefined) delete item.sprintId;
-          });
-        });
-        _enableDebugLog = !!(r.enableDebugLog);
-        /* v5.9.0 — D59: backend централизованно вычисляет orphan-задачи (legacy gantt.tasks
-           без taskAssignments) и кладёт массив issueId в r.orphanGanttIssues. Frontend
-           прокидывает на _sprint, баннер рендерится через _renderOrphanGanttBanner. */
-        if (_sprint && Array.isArray(r.orphanGanttIssues) && r.orphanGanttIssues.length) {
-          _sprint._orphanGanttIssues = r.orphanGanttIssues;
-        }
-        /* v5.0.3 — diag panel ВСЕГДА видна (collapsed по умолчанию). Пользователь
-           сам разворачивает при необходимости. enableDebugLog по-прежнему влияет
-           на server-side log verbosity, но не на видимость UI-панели. */
-        var diagWrap = document.getElementById('diagWrap');
-        if (diagWrap) diagWrap.style.display = '';
-        try { _applyDiagLogVisibility(); } catch(_){}
-        diag('Data loaded. settings='+(!!_settings)+' debugLog='+_enableDebugLog, 'ok');
-      }
-    }).then(function(){
-      return apiGet('history').then(function(r){
-        if(r&&r.success) {
-          _history = (r.history || []).sort(function(a,b){ return (b.confirmedAt || 0) - (a.confirmedAt || 0); });
-          // v5.0 — defensive миграция истории
-          var ogMap = (r.orphanGanttBySprintId && typeof r.orphanGanttBySprintId === 'object')
-                      ? r.orphanGanttBySprintId : null;
-          _history.forEach(function(rec){
-            if (rec.status) rec.status = migrateStatus(rec.status);
-            if (Array.isArray(rec.items)) {
-              rec.items.forEach(function(it){
-                if (it.inclusionStatus) it.inclusionStatus = migrateInc(it.inclusionStatus);
-              });
-            }
-            /* v5.9.0 — D59: per-snapshot orphan-флаг из backend response. */
-            if (ogMap && rec && rec.sprintId && Array.isArray(ogMap[rec.sprintId]) && ogMap[rec.sprintId].length) {
-              rec._orphanGanttIssues = ogMap[rec.sprintId];
-            }
-          });
-        }
-      });
-    }).then(function(){
-      /* v5.3.0 — параллельно с историей: working copies (immutable snapshots model). */
-      return _workingDraftsLoadFromBackend().then(function(){
-        /* После загрузки и _history, и _workingDrafts — выровнять флаги hasWorkingCopy
-           и удалить orphan/stale (>30 дней) drafts. Идёт ДО миграции v5.2→v5.3. */
-        try { reconcileHasWorkingCopyFlag(); } catch(e){ diag('reconcile failed: '+e,'err'); }
-        try { gcWorkingDrafts(); }            catch(e){ diag('gc failed: '+e,'err'); }
-        try { migrateEditingFromHistoryV52(); } catch(e){ diag('v5.2 migration failed: '+e,'err'); }
-      });
-    }).catch(function(e){ diag('loadAllData ERR: '+e,'err'); });
-  }
+  /* Делегаторы: loadProjectGroups/_refreshFeatureStatusBar — внешние callers
+     (settings-controller через _settingsDeps); loadMe/loadProjectFields/loadAllData —
+     init/bind-оркестровка ядра (_loadAndRenderProject/_renderProjectSettingsPage/
+     bindClearDraftHandlers). _applyDiagLogVisibility остаётся в ядре (его разделяет
+     diag-export-IIFE) — приходит в loadAllData депом. */
+  function loadMe()                   { return DATA_LOADERS.loadMe(_loadersDeps()); }
+  function loadProjectFields()        { return DATA_LOADERS.loadProjectFields(_loadersDeps()); }
+  function loadProjectGroups()        { return DATA_LOADERS.loadProjectGroups(_loadersDeps()); }
+  function _refreshFeatureStatusBar() { return DATA_LOADERS._refreshFeatureStatusBar(_loadersDeps()); }
+  function loadAllData()              { return DATA_LOADERS.loadAllData(_loadersDeps()); }
 
   /* ═══ Диагностика ══════════════════════════════════════════ */
   /* v5.0.1 hotfix: элементы #diagToggle/#diagClearBtn были внутри удалённой

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ssbInline",
+    "on": true,
+    "off": false,
+    "stateI18n": "ssbOn"
+  },
+  {
+    "id": "ssbPersonal",
+    "on": false,
+    "off": true,
+    "stateI18n": "ssbOff"
+  },
+  {
+    "id": "ssbDta",
+    "on": true,
+    "off": false,
+    "stateI18n": "ssbOn"
+  },
+  {
+    "id": "ssbCascade",
+    "on": false,
+    "off": true,
+    "stateI18n": "ssbOff"
+  },
+  {
+    "id": "ssbStateRollup",
+    "on": true,
+    "off": false,
+    "stateI18n": "ssbOn"
+  },
+  {
+    "id": "ssbOverlimit",
+    "on": false,
+    "off": true,
+    "stateI18n": "ssbOff"
+  }
+]
