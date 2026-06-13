@@ -1161,6 +1161,25 @@
       el.addEventListener('change', handler);
     });
   }
+  /* B23 — backend-clear (action=clear) + перезагрузка серверной версии + ре-снапшот/ре-рендер.
+     Вынесено из confirm-onClick, чтобы вызывать и из «чистой» ветки обработчика (без confirm). */
+  function _performDraftBackendClear() {
+    return _draftClearOnBackend().then(function(){
+      return loadAllData();
+    }).then(function(){
+      _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
+      _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
+      _baseRevHash = computeRevHash(_sprint, _roleItems);
+      try {
+        if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
+        if (typeof renderHistory === 'function')      renderHistory();
+      } catch(_){}
+      refreshDirtyIndicator();
+      try { toast(T('toastDraftCleared'), 'success'); } catch(_){}
+    }).catch(function(e){
+      try { toast(T('toastDraftClearErr')+': '+(e&&e.message?e.message:e), 'error'); } catch(_){}
+    });
+  }
   function bindClearDraftHandlers() {
     var btn = document.getElementById('clearDraftBtn');
     if (btn && !btn._sspBound) {
@@ -1168,10 +1187,22 @@
       btn.addEventListener('click', function(){
         var dirty = _draftGet('dirty') || {};
         var meta  = _draftGet('meta');
-        if (!meta || !_draftIsDirty()) {
+        /* B23 — кнопка «Сбросить черновик к серверной версии» ВСЕГДА чистит backend
+           (action=clear) + перезагружает серверную версию. Раньше «чистая» ветка
+           (meta есть, но контент не dirty — типично в global-рельсе, где dirty только
+           ui) уходила в clearDraftStorage (in-memory + отложенный flush), который
+           непрерывно затирался ui-перезаписью рельса → слот на бэке не удалялся,
+           savedAt оставался прежним. */
+        if (!meta) {
+          /* на бэке черновика нет — только локальный ui-артефакт */
           clearDraftStorage();
           refreshDirtyIndicator();
           try { toast(T('toastDraftCleared'), 'info'); } catch(_){}
+          return;
+        }
+        if (!_draftIsDirty()) {
+          /* контент не изменён — терять нечего, backend-clear без confirm */
+          _performDraftBackendClear();
           return;
         }
         var ts = '';
@@ -1193,22 +1224,8 @@
             { id: 'cancel', text: T('btnCancel'), variant: 'secondary', onClick: function(h) { h.close(); } },
             { id: 'confirm', text: T('btnYesClearDraft'), variant: 'danger', onClick: function(h) {
               h.close();
-              /* v5.0.3 — backend-clear + перезагрузка серверной версии */
-              _draftClearOnBackend().then(function(){
-                return loadAllData();
-              }).then(function(){
-                _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
-                _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
-                _baseRevHash = computeRevHash(_sprint, _roleItems);
-                try {
-                  if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
-                  if (typeof renderHistory === 'function')      renderHistory();
-                } catch(_){}
-                refreshDirtyIndicator();
-                try { toast(T('toastDraftCleared'), 'success'); } catch(_){}
-              }).catch(function(e){
-                try { toast(T('toastDraftClearErr')+': '+(e&&e.message?e.message:e), 'error'); } catch(_){}
-              });
+              /* контент изменён → backend-clear + перезагрузка серверной версии */
+              _performDraftBackendClear();
             }},
           ],
           dismissOnBackdrop: false,
