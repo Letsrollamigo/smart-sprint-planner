@@ -3,8 +3,9 @@
   "stickyHeader": false,
   "emptyText": "Нет задач",
   "itemKeys": [
-    "GM-H1",
-    "GM-H2"
+    "GM-A1",
+    "GM-A2",
+    "GM-A3"
   ],
   "columns": [
     {
@@ -16,10 +17,13 @@
       "header": null,
       "cells": [
         {
-          "html": "<a href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-H1</a>"
+          "html": "<a href=\"https://yt.local/issue/GM-A1\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-A1</a>"
         },
         {
-          "html": "<a href=\"#\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-H2</a>"
+          "html": "<a href=\"https://yt.local/issue/GM-A2\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-A2</a>"
+        },
+        {
+          "html": "<a href=\"https://yt.local/issue/GM-A3\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"link\">GM-A3</a>"
         }
       ]
     },
@@ -31,8 +35,9 @@
       "rightAlign": false,
       "header": null,
       "cells": [
-        "Историческая задача анализа",
-        "Историческая задача без alloc"
+        "Синтетическая задача GM-A1",
+        "Синтетическая задача GM-A2",
+        "Синтетическая задача GM-A3"
       ]
     },
     {
@@ -44,7 +49,8 @@
       "header": null,
       "cells": [
         "Значительный",
-        "Обычная"
+        "Значительный",
+        "Значительный"
       ]
     },
     {
@@ -55,8 +61,9 @@
       "rightAlign": false,
       "header": null,
       "cells": [
-        "Исправлена",
-        "Исправлена"
+        "Открыта",
+        "Открыта",
+        "Открыта"
       ]
     },
     {
@@ -67,6 +74,7 @@
       "rightAlign": false,
       "header": null,
       "cells": [
+        "Включена планово",
         "Включена планово",
         "Включена планово"
       ]
@@ -79,8 +87,9 @@
       "rightAlign": false,
       "header": null,
       "cells": [
+        "8ч",
         "10ч",
-        "10ч"
+        "5ч"
       ]
     },
     {
@@ -91,7 +100,8 @@
       "rightAlign": false,
       "header": null,
       "cells": [
-        "—",
+        "Иван Аналитик",
+        "Пётр Второй, gm_user_3",
         "—"
       ]
     },
@@ -104,10 +114,13 @@
       "header": null,
       "cells": [
         {
-          "html": "0м"
+          "html": "6ч 40м"
         },
         {
           "html": "10ч"
+        },
+        {
+          "html": "5ч"
         }
       ]
     }
