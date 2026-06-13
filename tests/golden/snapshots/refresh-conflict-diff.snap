@@ -1,0 +1,48 @@
+{
+  "modalIds": [
+    "refreshConflict",
+    "refreshDiff",
+    "refreshConflict"
+  ],
+  "diffContract": {
+    "id": "refreshDiff",
+    "type": "read-only",
+    "title": "Различия с YouTrack",
+    "bodyComponent": "wcDiffView",
+    "buttonsCount": 0,
+    "dismissOnBackdrop": true,
+    "props": {
+      "added": [],
+      "removed": [],
+      "changed": [
+        {
+          "title": "Бэкенд расчёта ёмкости",
+          "fields": [
+            {
+              "name": "Оценка",
+              "from": "20ч",
+              "to": "25ч"
+            }
+          ]
+        },
+        {
+          "title": "Эндпоинт истории спринтов",
+          "fields": [
+            {
+              "name": "Исполнитель",
+              "from": "gm_user_2",
+              "to": "gm_user_3"
+            }
+          ]
+        }
+      ],
+      "labels": {
+        "added": "Добавлены задачи",
+        "removed": "Удалены задачи",
+        "changed": "Изменены задачи",
+        "noChanges": "Различий нет — рабочая копия идентична снимку.",
+        "close": "Закрыть"
+      }
+    }
+  }
+}

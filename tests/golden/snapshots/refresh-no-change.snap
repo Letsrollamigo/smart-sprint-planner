@@ -1,0 +1,17 @@
+{
+  "toasts": [
+    {
+      "msg": "Расхождений с YouTrack нет.",
+      "type": "info"
+    }
+  ],
+  "apiCalls": 0,
+  "saveCurrentRole": 0,
+  "markDirty": [],
+  "busyAfter": [
+    false,
+    false,
+    false,
+    false
+  ]
+}

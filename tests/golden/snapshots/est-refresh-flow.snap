@@ -1,0 +1,128 @@
+{
+  "fetchLog": [
+    {
+      "path": "issues/GM-1",
+      "hasFields": true,
+      "btnBusy": {
+        "disabled": true,
+        "html": "<span class=\"spinner\"></span> Обновление…"
+      }
+    },
+    {
+      "path": "issues/GM-2",
+      "hasFields": true,
+      "btnBusy": {
+        "disabled": true,
+        "html": "<span class=\"spinner\"></span> Обновление…"
+      }
+    },
+    {
+      "path": "issues/GM-3",
+      "hasFields": true,
+      "btnBusy": {
+        "disabled": true,
+        "html": "<span class=\"spinner\"></span> Обновление…"
+      }
+    },
+    {
+      "path": "issues/GM-4",
+      "hasFields": true,
+      "btnBusy": {
+        "disabled": true,
+        "html": "<span class=\"spinner\"></span> Обновление…"
+      }
+    }
+  ],
+  "items": [
+    {
+      "issueId": "GM-1",
+      "estimate": null,
+      "fact": 60,
+      "priority": "Высокий",
+      "xpriority": "X1",
+      "state": "Открыта",
+      "stateLocalized": "Открыта",
+      "stateColor": {
+        "background": "#ffffff",
+        "foreground": null
+      },
+      "stateFieldId": "fld-State",
+      "system": "CRM",
+      "externalTicketId": "EXT-1",
+      "url": "http://gm-base/issue/GM-1",
+      "title": "Анализ требований платёжного модуля"
+    },
+    {
+      "issueId": "GM-2",
+      "estimate": 999,
+      "fact": null,
+      "priority": "",
+      "xpriority": "",
+      "state": "",
+      "stateLocalized": "",
+      "stateColor": null,
+      "stateFieldId": null,
+      "system": "",
+      "externalTicketId": "",
+      "url": "http://gm-base/issue/GM-2",
+      "title": "Обследование интеграции с 1С (YT)"
+    },
+    {
+      "issueId": "GM-3",
+      "estimate": 120,
+      "fact": 240,
+      "priority": "Minor",
+      "xpriority": "<undefined>",
+      "state": "Fixed",
+      "stateLocalized": "<undefined>",
+      "stateColor": "<undefined>",
+      "stateFieldId": "<undefined>",
+      "system": "<undefined>",
+      "externalTicketId": "<undefined>",
+      "url": "<undefined>",
+      "title": "Ревью схемы данных"
+    },
+    {
+      "issueId": "GM-4",
+      "estimate": 11,
+      "fact": null,
+      "priority": "",
+      "xpriority": "",
+      "state": "",
+      "stateLocalized": "",
+      "stateColor": null,
+      "stateFieldId": null,
+      "system": "",
+      "externalTicketId": "",
+      "url": "http://gm-base/issue/GM-4",
+      "title": "Исключённая задача"
+    }
+  ],
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "roleItems"
+      ],
+      "query": null
+    }
+  ],
+  "renders": {
+    "roleComposition": [
+      "analysis"
+    ],
+    "updateRemaining": [
+      "analysis"
+    ]
+  },
+  "btnAfter": {
+    "disabled": false,
+    "text": "Обновить из задачи"
+  },
+  "toasts": [
+    {
+      "msg": "Оценки обновлены",
+      "type": "success"
+    }
+  ]
+}

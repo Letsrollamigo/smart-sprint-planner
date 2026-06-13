@@ -1,0 +1,19 @@
+{
+  "analysisGm2Estimate": 960,
+  "devBackGm10Estimate": 1200,
+  "taskAssignments": {
+    "GM-10": {
+      "assignee": "gm_user_1"
+    },
+    "GM-11": {
+      "assignee": "gm_user_2"
+    }
+  },
+  "apiCalls": 1,
+  "toasts": [
+    {
+      "msg": "Подтянуто из YouTrack: 1 изменений.",
+      "type": "success"
+    }
+  ]
+}
