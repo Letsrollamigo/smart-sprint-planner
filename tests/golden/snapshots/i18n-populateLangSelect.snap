@@ -1,0 +1,19 @@
+{
+  "firstFill": [
+    {
+      "value": "en",
+      "text": "🇬🇧 English (en)"
+    },
+    {
+      "value": "ru",
+      "text": "🇷🇺 Русский (ru)"
+    },
+    {
+      "value": "es",
+      "text": "🇪🇸 Español (es)"
+    }
+  ],
+  "countAfterFirst": 3,
+  "countAfterSecond": 3,
+  "populatedFlag": true
+}
