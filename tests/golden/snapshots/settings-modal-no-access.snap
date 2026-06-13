@@ -1,0 +1,17 @@
+{
+  "specs": [
+    {
+      "id": "settingsAccess",
+      "type": "info",
+      "title": "Smart Sprint Planner: настройки",
+      "dialogClass": null,
+      "dismissOnBackdrop": true,
+      "showCloseButton": true,
+      "bodyKind": "text",
+      "bodyText": "Обратитесь к администратору проекта. Управление настройками плагина разрешено только участникам выделенной группы. (Требуется членство в группе: sprint-managers)",
+      "buttonIds": [
+        "ok"
+      ]
+    }
+  ]
+}
