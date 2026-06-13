@@ -1693,25 +1693,10 @@
          применяется через setCurrentSprintId → _applyHybridSprintMode. */
     } catch(e) { diag('restoreUiState err: '+e, 'err'); }
   }
-  /* Снять dirty + обновить snapshot + обновить кэш черновика — после успешного apiPost */
-  function markSavedAndCleanup(section) {
-    _markClean(section);
-    if (section === 'sprint')    { _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null; _draftSet('sprint',    _sprint);    }
-    if (section === 'roleItems') { _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null; _draftSet('roleItems', _roleItems); }
-    if (section === 'currentRole')   {
-      _serverSnapshotCurrentRolePP    = _currentRolePP    ? deepClone(_currentRolePP)    : null;
-      _serverSnapshotCurrentRoleGantt = _currentRoleGantt ? deepClone(_currentRoleGantt) : null;
-      _draftSet('currentRole', { pp: _currentRolePP, gantt: _currentRoleGantt, nkcKey: _currentRoleNkcKey,
-                              sprintRecKey: _currentSprintRoleRec ? _currentSprintRoleRec.sprintId : null });
-    }
-    _baseRevHash = computeRevHash(_sprint, _roleItems);
-    _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    refreshDirtyIndicator();
-    /* Перерисовать активную таблицу состава, чтобы снять подсветку tr--dirty-row */
-    if (_activeSubtab && typeof renderRoleComposition === 'function') {
-      try { renderRoleComposition(_activeSubtab); } catch(_){}
-    }
-  }
+  /* Снять dirty + обновить snapshot + обновить кэш черновика — после успешного apiPost.
+     Вынесен в sprint-controller.js (Фаза 5 слайс 6) за __SSP_SPRINT_CTRL; делегатор
+     выживает — golden-вход youtrack-api (_ytApiDeps его зовёт) + gm.set голденов. */
+  function markSavedAndCleanup(section) { return SPRINT_CTRL.markSavedAndCleanup(section, _sprintDeps()); }
   /* `deepClone` определён ниже как function declaration (hoisted),
      поэтому доступен из обработчиков выше по тексту. */
 
@@ -3437,75 +3422,11 @@
      показываем #planningPeopleContent (с реальными #currentRoleAssigneeBody/#currentRoleTaskBody),
      рендерим renderCurrentRoleAssigneeTable/renderCurrentRoleTaskTable + updateCurrentRoleTotals
      + _renderResourceModeIndicator. При отсутствии PP — empty-state с CTA. */
-  function refreshPlanningPeopleForCurrentSprint(roleKey) {
-    var sel = document.getElementById('planningRoleSel');
-    if (!sel) return;
-    if (!sel.options.length) populatePlanningRoleSel();
-    /* v6.1.0 D73 — fallback на активную роль из «Ролей» / последнюю активную, чтобы
-       при переключении уровня «Роли» → «Люди» dropdown #planningRoleSel автоматически
-       подтягивал текущую роль и _currentSprintRoleRec не оставался пустым (баг #8). */
-    var rk = roleKey || sel.value || _activeSubtab || safeLs.get('ssp_lastActiveRole') || '';
-    if (rk && sel.value !== rk) sel.value = rk;
-    if (!rk) return;
-    safeLs.set('ssp_lastActiveRole', rk);
-    var noSprintEl = document.getElementById('planningPeopleNoSprint');
-    var emptyEl    = document.getElementById('planningPeopleEmpty');
-    var contentEl  = document.getElementById('planningPeopleContent');
-    if (!_currentSprintId) {
-      if (noSprintEl) noSprintEl.classList.remove('hidden');
-      if (emptyEl)    emptyEl.classList.add('hidden');
-      if (contentEl)  contentEl.classList.add('hidden');
-      _currentSprintRoleRec = null; _currentRolePP = null; _currentRoleGantt = null;
-      return;
-    }
-    if (noSprintEl) noSprintEl.classList.add('hidden');
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    var roleName = role ? ((typeof roleLabel === 'function') ? roleLabel(role) : (role.label || rk)) : rk;
-    var pp = _getPersonalPlanningForCurrent(rk);
-    var hasPP = pp && pp.resourcesByAssignee && Object.keys(pp.resourcesByAssignee).length > 0;
-    if (!hasPP) {
-      if (emptyEl) {
-        emptyEl.classList.remove('hidden');
-        var titleEl = document.getElementById('planningPeopleEmptyTitle');
-        if (titleEl) titleEl.textContent = T('planningPeopleEmptyTitleTpl').replace('{role}', roleName);
-      }
-      if (contentEl) contentEl.classList.add('hidden');
-      /* НЕ сбрасываем _currentSprintRoleRec — пользователь может ткнуть CTA, который вызовет doCurrentRoleCalc.
-         doCurrentRoleCalc проверяет _currentSprintRoleRec на null и берёт его из _findHistRecForCurrent(rk). */
-      _currentSprintRoleRec = _findHistRecForCurrent(rk);
-      _currentRolePP    = (_currentSprintRoleRec && _currentSprintRoleRec.personalPlanning) ? deepClone(_currentSprintRoleRec.personalPlanning) : (typeof emptyPP === 'function' ? emptyPP() : { resourcesByAssignee:{}, taskAssignments:{} });
-      _currentRoleGantt = (_currentSprintRoleRec && _currentSprintRoleRec.gantt) ? deepClone(_currentSprintRoleRec.gantt) : { tasks:{}, updatedAt:null };
-      _activeSubtab = rk;
-      _renderOrphanGanttBanner(_currentSprintRoleRec); /* v5.7.0 — Этап 5 */
-      return;
-    }
-    if (emptyEl) emptyEl.classList.add('hidden');
-    if (contentEl) contentEl.classList.remove('hidden');
-    /* Контекст для render-функций (читают из _currentRole*; v5.10.0 — ранее _distrib*) */
-    _currentSprintRoleRec = _findHistRecForCurrent(rk);
-    _currentRolePP    = deepClone(pp);
-    _currentRoleGantt = (_currentSprintRoleRec && _currentSprintRoleRec.gantt) ? deepClone(_currentSprintRoleRec.gantt) : { tasks:{}, updatedAt:null };
-    _currentRoleNkcKey = (_currentRolePP.nkcKey) || _currentRoleNkcKey || 'other';
-    var nkcSel = document.getElementById('currentRoleNkcSel');
-    if (nkcSel && nkcSel.querySelector('option[value="'+_currentRoleNkcKey+'"]')) {
-      nkcSel.value = _currentRoleNkcKey;
-    }
-    _activeSubtab = rk;
-    if (typeof renderCurrentRoleAssigneeTable === 'function') {
-      try { renderCurrentRoleAssigneeTable(); } catch(e){ diag('renderCurrentRoleAssigneeTable err: '+e,'err'); }
-    }
-    if (typeof renderCurrentRoleTaskTable === 'function') {
-      try { renderCurrentRoleTaskTable(); } catch(e){ diag('renderCurrentRoleTaskTable err: '+e,'err'); }
-    }
-    if (typeof updateCurrentRoleTotals === 'function') {
-      try { updateCurrentRoleTotals(); } catch(e){ diag('updateCurrentRoleTotals err: '+e,'err'); }
-    }
-    _renderResourceModeIndicator(rk, _currentRolePP);
-    _renderOrphanGanttBanner(_currentSprintRoleRec); /* v5.7.0 — Этап 5 */
-    if (typeof applyEditorRightsToUI === 'function') {
-      try { applyEditorRightsToUI(); } catch(_){}
-    }
-  }
+  /* Context-loader вкладки «Люди» — вынесен в sprint-controller.js (Фаза 5 слайс 6)
+     за __SSP_SPRINT_CTRL; делегатор (callers: rolecomposition-view ×2 / currentrole-view ×2
+     / монолит ×3). Стейт зоны (_currentSprintRoleRec/_currentRolePP/_currentRoleGantt/
+     _currentRoleNkcKey/_activeSubtab) пишется через сеттеры _sprintDeps().state. */
+  function refreshPlanningPeopleForCurrentSprint(roleKey) { return SPRINT_CTRL.refreshPlanningPeopleForCurrentSprint(roleKey, _sprintDeps()); }
 
   /* Handler селектора роли + handler кнопок empty-state CTA / open-in-legacy.
      Привязываем один раз — defensive pattern: если DOM уже готов — сразу,
@@ -3917,185 +3838,16 @@
     val.textContent = fmtHours(rem);
   }
 
-  /* ── Сохранить параметры спринта для роли ── */
-  function doSaveRoleHeader(rk) {
-    /* v1.8.2 — inline-error helper. Глобальный toast при validation попадает в position:fixed
-       которое в YT-iframe иногда уходит за viewport главного окна (особенно при 2+ ролях
-       когда контент длинный). Inline-error всегда рядом с проблемным полем + scrollIntoView. */
-    function _clearFieldErrors() {
-      ['sprintName','dateStart','dateEnd'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('field-err-input');
-      });
-      var en = document.getElementById('errName'); if (en) en.textContent = '';
-      var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
-    }
-    function _showFieldError(fieldId, errSpanId, msgKey) {
-      var fld = document.getElementById(fieldId);
-      var err = document.getElementById(errSpanId);
-      if (err) err.textContent = T(msgKey);
-      if (fld) {
-        fld.classList.add('field-err-input');
-        try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
-        try { fld.focus(); } catch(_){}
-      }
-      /* Toast оставляем как дублирующий сигнал — но основной visual cue теперь inline. */
-      toast(T(msgKey), 'warn');
-    }
-    _clearFieldErrors();
-    var s = document.getElementById('dateStart').value;
-    var e = document.getElementById('dateEnd').value;
-    /* v1.6.2 D126 — обязательные поля: название + даты начала/окончания. */
-    var nameVal = (document.getElementById('sprintName').value || '').trim();
-    var draftName = T('newSprintDraftName');
-    if (!nameVal || nameVal === draftName) {
-      _showFieldError('sprintName', 'errName', 'toastSprintNameRequired');
-      return;
-    }
-    if (!s) {
-      _showFieldError('dateStart', 'errDate', 'toastSprintDateStartRequired');
-      return;
-    }
-    if (!e) {
-      _showFieldError('dateEnd', 'errDate', 'toastSprintDateEndRequired');
-      return;
-    }
-    if (s && e && fromDateIn(e) < fromDateIn(s)) {
-      _showFieldError('dateEnd', 'errDate', 'toastDateError');
-      return;
-    }
-    _clearFieldErrors();
-    _sprint.name      = nameVal.substring(0,60);
-    _sprint.dateStart = fromDateIn(s);
-    _sprint.dateEnd   = fromDateIn(e);
-    var role = ALL_ROLES.find(function(r){ return r.key === rk; });
-    if (role) {
-      var resEl = document.getElementById('res_'+rk);
-      if (resEl) _sprint[role.resKey] = parsePeriod(resEl.value);
-    }
-    var ss = document.getElementById('sprintStatus_'+rk);
-    if (_sprint.status !== STATUS.CONFIRMED && _sprint.status !== STATUS.ALLOCATED && ss) _sprint.status = ss.value;
-    // Сохранить поля Спринт / Версия
-    var sprintFv = document.getElementById('sprintFieldVal');
-    var versionFv = document.getElementById('versionFieldVal');
-    if (sprintFv) _sprint.sprintFieldVal = sprintFv.value || null;
-    if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
-    /* v1.9.0 D132 — Сохранить sprint goal (shared field, same for all roles). */
-    var _goalEl = document.getElementById('sprintGoal');
-    var _goalVal = _goalEl ? (_goalEl.value || '').trim() : '';
-    _sprint.sprintGoal = _goalVal || undefined;
-    _sprint.updatedAt = Date.now();
-    _sprint.updatedBy = _currentUser ? _currentUser.login : null;
-
-    var btn = document.getElementById('saveHeaderBtn_'+rk);
-    /* v5.0.3 — пометить dirty + записать в localStorage. apiPost-успех снимет dirty. */
-    _markDirty('sprint');
-    _draftSet('sprint', _sprint);
-    _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    return withLoader(btn, function() {
-      return apiPost('sprint-data', { sprint: _sprint }).then(function() {
-        updateRoleRemaining(rk);
-        renderRoleStatusBadge(rk);
-        toast(T('toastSprintSaved'), 'success');
-        /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты
-           сразу после сохранения параметров. Раньше изменения подхватывались только после
-           перезахода на вкладку. Дополнительно: убеждаемся что _currentSprintId указывает
-           на _sprint.sprintId (для свежесозданного спринта). */
-        if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
-          _currentSprintId = _sprint.sprintId;
-          var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
-        }
-        if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-      }).catch(function(e) {
-        toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
-      });
-    });
-  }
+  /* ── Сохранить параметры спринта для роли ── (вынесен в sprint-controller.js,
+     Фаза 5 слайс 6; делегатор — caller rolecomposition-view). */
+  function doSaveRoleHeader(rk) { return SPRINT_CTRL.doSaveRoleHeader(rk, _sprintDeps()); }
 
   /* v1.8.5 D130 — Сохранить общие поля «Вводных данных по спринту» без role-resource части.
      Отдельная кнопка #saveSprintIntroBtn в карточке card-sprint-intro: общие поля живут наверху,
      раньше save-кнопка находилась только внутри per-role аккордеона (#saveHeaderBtn_<rk>), что
      противоречило principle of least surprise. Per-role кнопка продолжает сохранять и общие поля,
      и role-specific resource — изменений в doSaveRoleHeader нет. */
-  function doSaveSprintIntro() {
-    function _clearFieldErrors() {
-      ['sprintName','dateStart','dateEnd'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('field-err-input');
-      });
-      var en = document.getElementById('errName'); if (en) en.textContent = '';
-      var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
-      var ei = document.getElementById('errSprintIntro'); if (ei) ei.textContent = '';
-    }
-    function _showFieldError(fieldId, errSpanId, msgKey) {
-      var fld = document.getElementById(fieldId);
-      var err = document.getElementById(errSpanId);
-      if (err) err.textContent = T(msgKey);
-      if (fld) {
-        fld.classList.add('field-err-input');
-        try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
-        try { fld.focus(); } catch(_){}
-      }
-      toast(T(msgKey), 'warn');
-    }
-    _clearFieldErrors();
-    var s = document.getElementById('dateStart').value;
-    var e = document.getElementById('dateEnd').value;
-    var nameVal = (document.getElementById('sprintName').value || '').trim();
-    var draftName = T('newSprintDraftName');
-    if (!nameVal || nameVal === draftName) {
-      _showFieldError('sprintName', 'errName', 'toastSprintNameRequired');
-      return;
-    }
-    if (!s) {
-      _showFieldError('dateStart', 'errDate', 'toastSprintDateStartRequired');
-      return;
-    }
-    if (!e) {
-      _showFieldError('dateEnd', 'errDate', 'toastSprintDateEndRequired');
-      return;
-    }
-    if (s && e && fromDateIn(e) < fromDateIn(s)) {
-      _showFieldError('dateEnd', 'errDate', 'toastDateError');
-      return;
-    }
-    _clearFieldErrors();
-    _sprint.name      = nameVal.substring(0,60);
-    _sprint.dateStart = fromDateIn(s);
-    _sprint.dateEnd   = fromDateIn(e);
-    var sprintFv  = document.getElementById('sprintFieldVal');
-    var versionFv = document.getElementById('versionFieldVal');
-    if (sprintFv)  _sprint.sprintFieldVal  = sprintFv.value  || null;
-    if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
-    /* v1.9.0 D132 — Sprint goal: read + soft-warn if empty. */
-    var _goalElI = document.getElementById('sprintGoal');
-    var _goalValI = _goalElI ? (_goalElI.value || '').trim() : '';
-    _sprint.sprintGoal = _goalValI || undefined;
-    _sprint.updatedAt = Date.now();
-    _sprint.updatedBy = _currentUser ? _currentUser.login : null;
-
-    var btn = document.getElementById('saveSprintIntroBtn');
-    var origLabel = btn ? btn.textContent : null;
-    if (btn) { btn.disabled = true; btn.textContent = T('toastSaving'); }
-    _markDirty('sprint');
-    _draftSet('sprint', _sprint);
-    _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
-    apiPost('sprint-data', { sprint: _sprint }).then(function() {
-      if (btn) { btn.disabled = false; btn.textContent = origLabel || T('btnSaveSprintIntro'); }
-      toast(T('toastSprintSaved'), 'success');
-      /* v1.9.0 D132 — Soft-warn если sprint goal не задан. */
-      if (!_goalValI) { setTimeout(function(){ toast(T('toastSprintGoalMissing'), 'warn'); }, 400); }
-      /* Sync header + currentSprintId (как в doSaveRoleHeader при new-sprint flow). */
-      if (_sprint && _sprint.sprintId && _currentSprintId !== _sprint.sprintId) {
-        _currentSprintId = _sprint.sprintId;
-        var _uiNew = _draftGet('ui') || {}; _uiNew.currentSprintId = _currentSprintId; _draftSet('ui', _uiNew);
-      }
-      if (typeof renderWidgetHeader === 'function') { try { renderWidgetHeader(); } catch(_){} }
-    }).catch(function(err) {
-      if (btn) { btn.disabled = false; btn.textContent = origLabel || T('btnSaveSprintIntro'); }
-      toast(T('toastSaveError')+': '+(err&&err.message?err.message:err));
-    });
-  }
+  function doSaveSprintIntro() { return SPRINT_CTRL.doSaveSprintIntro(_sprintDeps()); }
 
   /* v1.9.1 D133 — Диалог подтверждения результата спринта при завершении (Finish sprint).
      sprintGoalText — текст цели из history-записи (rec.sprintGoal).
@@ -4143,62 +3895,7 @@
      При повторном клике без сохранения — перезаписываем тот же черновик, не плодим entries.
      После создания/переиспользования — переключаемся на вкладку Планирование уровень Роли
      (нажатие кнопки на любой вкладке должно приводить к планированию). */
-  function doNewSprint(rk) {
-    var draftName = T('newSprintDraftName');
-    var isActiveDraft = _sprint &&
-      _sprint.status === STATUS.PLANNING &&
-      (!_sprint.name || _sprint.name === draftName);
-
-    if (isActiveDraft) {
-      // Переиспользуем тот же sprintId, обнуляем поля черновика.
-      _sprint.name = draftName;
-      _sprint.dateStart = null;
-      _sprint.dateEnd = null;
-      ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
-    } else {
-      _sprint = {
-        sprintId: uid(),
-        name: draftName,
-        dateStart: null, dateEnd: null,
-        status: STATUS.PLANNING
-      };
-      ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
-    }
-    _roleItems = {};
-    var editBanner = document.getElementById('editHistBanner');
-    if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
-
-    /* v1.8.1 — синхронизируем _currentSprintId на свежесозданный спринт, иначе
-       селектор «Текущий спринт» в шапке виджета остаётся на предыдущем редактируемом. */
-    if (_sprint && _sprint.sprintId) {
-      _currentSprintId = _sprint.sprintId;
-      var _uiNS = _draftGet('ui') || {}; _uiNS.currentSprintId = _currentSprintId; _draftSet('ui', _uiNS);
-    }
-
-    /* Переключаемся на Планирование → Роли (с любой вкладки). */
-    var planBtn = document.querySelector('.tab-btn[data-tab="planning"]');
-    if (planBtn && !planBtn.classList.contains('active')) planBtn.click();
-    var rolesBtn = document.querySelector('.planning-level-btn[data-level="roles"]');
-    if (rolesBtn) rolesBtn.click();
-
-    var postData = { sprint: _sprint, roleItems: _roleItems };
-    apiPost('sprint-data', postData).then(function() {
-      getActiveRoles().forEach(function(r) {
-        renderRolePlannerHeader(r.key);
-        renderRoleComposition(r.key);
-        updateRoleRemaining(r.key);
-      });
-      if (typeof renderWidgetHeader === 'function') {
-        try { renderWidgetHeader(); } catch(_){}
-      }
-      toast(T('toastSprintCreated'), 'success');
-      /* Фокус на поле названия — пользователь сразу видит, что нужно ввести. */
-      setTimeout(function() {
-        var nameEl = document.getElementById('sprintName');
-        if (nameEl) { try { nameEl.focus(); nameEl.select(); } catch(_){} }
-      }, 50);
-    });
-  }
+  function doNewSprint(rk) { return SPRINT_CTRL.doNewSprint(rk, _sprintDeps()); }
 
   /* ── Таблица состава для роли ── */
   function getRoleItemsArr(rk) {
@@ -4831,67 +4528,11 @@
 
   /* Единая точка изменения _currentSprintId. Возвращает true если switch произошёл,
      false если был отменён (модал «Закрыть рабочую копию?» — D28). */
-  function setCurrentSprintId(newId, opts) {
-    opts = opts || {};
-    if (newId === _currentSprintId) return true;
-    if (_activeWorkingDraftKey && !opts.confirmed) {
-      showCloseWorkingCopyModal(function(ok) {
-        if (!ok) return; // селектор откатится в обработчике change
-        _activeWorkingDraftKey = null;
-        setCurrentSprintId(newId, { confirmed: true });
-      });
-      return false;
-    }
-    _currentSprintId = newId || null;
-    var ui = _draftGet('ui') || {}; ui.currentSprintId = _currentSprintId; _draftSet('ui', ui);
-    if (typeof renderWidgetHeader === 'function') {
-      try { renderWidgetHeader(); } catch(e){ diag('renderWidgetHeader err: '+e,'err'); }
-    }
-    /* Императивный re-render активной вкладки.
-       v5.6.0 — Этап 4: legacy ветки 'planner' и 'distrib' удалены; добавлена 'gantt'. */
-    var activeBtn = document.querySelector('.tab-btn.active');
-    var activeTab = activeBtn ? activeBtn.dataset.tab : null;
-    if (activeTab === 'planning') {
-      try { _renderPlanningLevel(_planningLevel); } catch(e){ diag('planning re-render err: '+e,'err'); }
-      /* B9 fix v2.1.10 — read intro from selected sprint, not stale _sprint global.
-         _sprint = working sprint only; not updated on dropdown switch.
-         1. newId === _sprint.sprintId → use _sprint (in-flight edits, B8 preserved).
-         2. else → first _history record for newId (shares name/dates/goal). */
-      var introSrc = null;
-      if (_sprint && _sprint.sprintId === newId) {
-        introSrc = _sprint;
-      } else if (Array.isArray(_history) && newId) {
-        introSrc = _history.find(function(rec) {
-          return rec && rec.sprintId && String(rec.sprintId).split('_')[0] === newId;
-        });
-      }
-      if (introSrc) {
-        var nameEl = document.getElementById('sprintName');
-        if (nameEl) nameEl.value = introSrc.name || '';
-        var dsEl = document.getElementById('dateStart');
-        if (dsEl) dsEl.value = toDateIn(introSrc.dateStart);
-        var deEl = document.getElementById('dateEnd');
-        if (deEl) deEl.value = toDateIn(introSrc.dateEnd);
-        var goalEl = document.getElementById('sprintGoal');
-        if (goalEl) goalEl.value = introSrc.sprintGoal || '';
-        if (typeof renderSprintIntroExtras === 'function') { try { renderSprintIntroExtras(); } catch(_){} }
-      }
-    } else if (activeTab === 'gantt') {
-      try {
-        var rkG = safeLs.get('ssp_lastActiveRole')
-               || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
-        if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
-      } catch(e){ diag('gantt re-render err: '+e,'err'); }
-    } else if (activeTab === 'history') {
-      try { renderHistory(); } catch(e){ diag('renderHistory err: '+e,'err'); }
-    }
-    /* v5.5.0 — D34: применить hybrid-режим (read-only / editable) для нового _currentSprintId */
-    try { _applyHybridSprintMode(_currentSprintId); } catch(e){ diag('hybrid sprint mode err: '+e,'err'); }
-    /* #36 — синк sprintId в URL + обновить кнопку «Поделиться» (enabled при наличии спринта) */
-    try { _syncStateToUrl(); } catch(_){}
-    try { _updateShareBtnState(); } catch(_){}
-    return true;
-  }
+  /* D28-флоу смены спринта — вынесен в sprint-controller.js (Фаза 5 слайс 6) за
+     __SSP_SPRINT_CTRL; делегатор (callers: монолит share-apply/init-бинды + history-view).
+     ⚠️ Это контроллер (зовёт рендер + WC-protection), НЕ raw-сеттер _currentSprintId
+     header-вью/draft-store (те пишут id через deps.state.setCurrentSprintId). */
+  function setCurrentSprintId(newId, opts) { return SPRINT_CTRL.setCurrentSprintId(newId, opts, _sprintDeps()); }
 
   /* v5.6.0 — Этап 4 (4c): refreshPlannerForCurrentSprint удалена.
      Баннер #plannerHistoricalNotice физически удалён в C2 (4b). Hybrid режим v5.5.0 (D34)
@@ -5203,64 +4844,10 @@
       .catch(function(e){ diag('update-issue-field failed: '+e, 'err'); });
   }
 
-  /* ── Сохранить состояние personalPlanning / gantt ── */
-  function saveCurrentRoleState() {
-    if (!_currentSprintRoleRec) return;
-    /* v5.0.3 — отметить dirty и запушить в backend draft debounce'ом */
-    _markDirty('currentRole');
-    _draftSaveDebounced('currentRole', function(){
-      return { pp: _currentRolePP, gantt: _currentRoleGantt, nkcKey: _currentRoleNkcKey,
-               sprintRecKey: _currentSprintRoleRec ? _currentSprintRoleRec.sprintId : null };
-    });
-    /* v6.3.0 D109 — после изменений на «Распределение по исполнителям» обновлять
-       summary в шапке (currentRoleTotalResource/Remain) + accordion-карточку этой роли
-       на подвкладке «Аллокация общего ресурса», чтобы цифры там не отставали. */
-    try {
-      if (typeof updateCurrentRoleTotals === 'function') updateCurrentRoleTotals();
-      var _rkForStats = _currentSprintRoleRec && _currentSprintRoleRec.roleKey;
-      if (_rkForStats && typeof _updateRoleAccordionStats === 'function') {
-        _updateRoleAccordionStats(_rkForStats);
-      }
-    } catch(e){ diag('saveCurrentRoleState stats refresh err: '+e,'err'); }
-
-    /* v6.1.0 D82 (F5) — assigner-роль (variant b): assigner НЕ имеет editor-прав, поэтому
-       обычные POST /history и POST /sprint-data вернут 403. Используем action=assignerSync —
-       backend перезапишет ТОЛЬКО personalPlanning в существующих записях. */
-    var assignerOnly = !_isEditor && _isAssigner;
-
-    /* v5.0.3 — теперь все варианты — записи истории. Обновляем запись в _history.
-       Если запись соответствует активному _sprint — также обновляем _sprint.personalPlanning. */
-    var histRec = _history.find(function(r){ return r.sprintId === _currentSprintRoleRec.sprintId; });
-    if (histRec) {
-      histRec.personalPlanning = deepClone(_currentRolePP);
-    }
-    if (assignerOnly) {
-      var minimalHistory = histRec
-        ? [{ sprintId: histRec.sprintId, personalPlanning: deepClone(_currentRolePP) }]
-        : [];
-      apiPost('history', { history: minimalHistory }, { action: 'assignerSync' })
-        .catch(function (e) { diag('saveCurrentRoleState(history,assignerSync) failed: ' + e, 'err'); });
-    } else {
-      apiPost('history', { history: _history })
-        .catch(function (e) { diag('saveCurrentRoleState(history) failed: ' + e, 'err'); });
-    }
-
-    if (isActiveSprintRecord(_currentSprintRoleRec)) {
-      _sprint.personalPlanning = deepClone(_currentRolePP);
-      if (assignerOnly) {
-        apiPost('sprint-data', { sprint: { personalPlanning: deepClone(_currentRolePP) } }, { action: 'assignerSync' })
-          .catch(function (e) { diag('saveCurrentRoleState(sprint,assignerSync) failed: ' + e, 'err'); });
-      } else {
-        apiPost('sprint-data', { sprint: _sprint })
-          .then(function () {
-            if (_settings && _settings.usePersonalForResource && typeof applyPersonalResourceToInputs === 'function') {
-              applyPersonalResourceToInputs();
-            }
-          })
-          .catch(function (e) { diag('saveCurrentRoleState(active-sync) failed: ' + e, 'err'); });
-      }
-    }
-  }
+  /* ── Сохранить состояние personalPlanning / gantt ── (вынесен в sprint-controller.js,
+     Фаза 5 слайс 6; делегатор — МАКС callers всего проекта: currentrole-view ×7,
+     standup-view, refresh-controller late-binding dep). */
+  function saveCurrentRoleState() { return SPRINT_CTRL.saveCurrentRoleState(_sprintDeps()); }
 
   /* ── Валидировать распределение ── */
   document.getElementById('currentRoleValidateBtn').addEventListener('click', function() {
@@ -5444,6 +5031,81 @@
     };
   }
   function refreshFromYouTrack() { return REFRESH_CTRL.refreshFromYouTrack(_refreshDeps()); }
+
+  /* ═══ Sprint-контроллер (спринт-CRUD) — вынесен в sprint-controller.js (Фаза 5 слайс 6,
+     домен E1-sprint, ПОСЛЕДНИЙ подслайс E1) за мост window.__SSP_SPRINT_CTRL;
+     golden-контракты — sprint.golden.test.js (идут через делегаторы выше: markSavedAndCleanup/
+     saveCurrentRoleState/refreshPlanningPeopleForCurrentSprint/doSaveRoleHeader/doSaveSprintIntro/
+     doNewSprint/setCurrentSprintId). Deps-фабрика per-call: стейт зоны (_currentSprintId/_sprint/
+     _roleItems/_serverSnapshot-снимки/_currentRole-стейт/_activeSubtab/_activeWorkingDraftKey/
+     _history/_baseRevHash) остаётся в стейт-ядре за get/set-аксессорами (его трогают gm-хук
+     голденов, другие контроллеры и ресет per-project); рекурсия setCurrentSprintId (WC-коллбек)
+     замыкается на делегатор модуля с теми же deps. ═══ */
+  var SPRINT_CTRL = (typeof window !== 'undefined' && window.__SSP_SPRINT_CTRL) || {};
+  function _sprintDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      deepClone: deepClone, computeRevHash: computeRevHash,
+      fromDateIn: fromDateIn, toDateIn: toDateIn, parsePeriod: parsePeriod, uid: uid,
+      markClean: _markClean, markDirty: _markDirty,
+      draftSet: _draftSet, draftGet: _draftGet, draftSaveDebounced: _draftSaveDebounced,
+      refreshDirtyIndicator: refreshDirtyIndicator,
+      withLoader: withLoader, apiPost: apiPost,
+      renderRoleComposition: renderRoleComposition, renderWidgetHeader: renderWidgetHeader,
+      renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge,
+      updateRoleRemaining: updateRoleRemaining, renderSprintIntroExtras: renderSprintIntroExtras,
+      renderPlanningLevel: _renderPlanningLevel, refreshGanttForCurrentSprint: refreshGanttForCurrentSprint,
+      renderHistory: renderHistory, applyHybridSprintMode: _applyHybridSprintMode,
+      syncStateToUrl: _syncStateToUrl, updateShareBtnState: _updateShareBtnState,
+      showCloseWorkingCopyModal: showCloseWorkingCopyModal,
+      getActiveRoles: getActiveRoles, safeLs: safeLs, roleLabel: roleLabel, emptyPP: emptyPP,
+      populatePlanningRoleSel: populatePlanningRoleSel,
+      getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
+      findHistRecForCurrent: _findHistRecForCurrent,
+      renderCurrentRoleAssigneeTable: renderCurrentRoleAssigneeTable,
+      renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
+      updateCurrentRoleTotals: updateCurrentRoleTotals,
+      renderResourceModeIndicator: _renderResourceModeIndicator,
+      renderOrphanGanttBanner: _renderOrphanGanttBanner,
+      applyEditorRightsToUI: applyEditorRightsToUI,
+      updateRoleAccordionStats: _updateRoleAccordionStats,
+      isActiveSprintRecord: isActiveSprintRecord,
+      applyPersonalResourceToInputs: applyPersonalResourceToInputs,
+      STATUS: STATUS, ALL_ROLES: ALL_ROLES, DRAFT_VERSION: DRAFT_VERSION,
+      state: {
+        getCurrentSprintId: function () { return _currentSprintId; },
+        setCurrentSprintId: function (v) { _currentSprintId = v; },
+        getSprint: function () { return _sprint; },
+        setSprint: function (v) { _sprint = v; },
+        getRoleItems: function () { return _roleItems; },
+        setRoleItems: function (v) { _roleItems = v; },
+        getHistory: function () { return _history; },
+        getSettings: function () { return _settings; },
+        getCurrentUser: function () { return _currentUser; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        setActiveWorkingDraftKey: function (v) { _activeWorkingDraftKey = v; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        setCurrentSprintRoleRec: function (v) { _currentSprintRoleRec = v; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+        setCurrentRolePP: function (v) { _currentRolePP = v; },
+        getCurrentRoleGantt: function () { return _currentRoleGantt; },
+        setCurrentRoleGantt: function (v) { _currentRoleGantt = v; },
+        getCurrentRoleNkcKey: function () { return _currentRoleNkcKey; },
+        setCurrentRoleNkcKey: function (v) { _currentRoleNkcKey = v; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        setActiveSubtab: function (v) { _activeSubtab = v; },
+        setServerSnapshotSprint: function (v) { _serverSnapshotSprint = v; },
+        setServerSnapshotRoleItems: function (v) { _serverSnapshotRoleItems = v; },
+        setServerSnapshotCurrentRolePP: function (v) { _serverSnapshotCurrentRolePP = v; },
+        setServerSnapshotCurrentRoleGantt: function (v) { _serverSnapshotCurrentRoleGantt = v; },
+        getBaseRevHash: function () { return _baseRevHash; },
+        setBaseRevHash: function (v) { _baseRevHash = v; },
+        getIsEditor: function () { return _isEditor; },
+        getIsAssigner: function () { return _isAssigner; },
+        getPlanningLevel: function () { return _planningLevel; },
+      },
+    };
+  }
 
   /* S6 #35 — syncAssigneesFromYouTrack удалён: assignee-логика поглощена единым
      refreshFromYouTrack (field-class merge). Все три кнопки (roles/people/Гант) → refreshFromYouTrack.
