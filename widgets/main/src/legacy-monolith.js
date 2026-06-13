@@ -509,12 +509,6 @@
   var _diagLines = [];
   var _enableDebugLog = false;
   var _activeSubtab = null;
-  // v5.0.1 — состояние settings-overlay (multi-select групп). Объявлено в основной
-  // state-секции вместо локального скоупа SETTINGS OVERLAY, чтобы избежать TypeError
-  // "Cannot set properties of undefined (setting 'ids')" если applySettingsUI
-  // вызывается из необычной точки или JS-runtime YouTrack ведёт себя неожиданно.
-  var _valGroupsState        = { ids: [], names: [] };
-  var _editGroupsState       = { ids: [], names: [] };
   /* v6.1.0 D82 (F5) — assigner-роль. */
   var _settingsLoaded  = false;
 
@@ -2192,17 +2186,6 @@
   }
 
   /**
-   * v5.0.1 — открытие/закрытие settings-overlay внутри ssp-main.
-   * Открытие выполняет повторную серверную проверку через /check-settings-manager.
-   * Закрытие — просто скрывает overlay, никакой mutation. Никаких deep-link/новых tab.
-   */
-
-  /**
-   * v5.0.1 — bind интерактивных элементов settings-формы (один раз, через _sspBound).
-   * Эти три чекбокса рендерятся прямо в HTML (не через JS), поэтому их bind
-   * не делается в renderRolesGrid и должен быть отдельным.
-   */
-  /**
    * v5.0.1 — управление видимостью вкладки «Распределение задач».
    * Зависит от _settings.personalPlanningEnabled. Вызывается:
    *   - после init/loadAllData (стартовая видимость);
@@ -2220,164 +2203,48 @@
   }
 
 
-  /**
-   * v5.1.0 — Применить parent/child зависимости feature-flags в overlay.
-   * Дочерний usePersonalForResource блокируется (визуально + пointer-events) при
-   * выключенном parent personalPlanning. Читает текущее DOM-состояние чекбокса parent
-   * (а не _settings), чтобы реагировать на ещё не сохранённые правки в форме.
-   */
-
-
-  /* ═══ v2.2.0 Phase 5 #32 — settingsOverlay → bespoke SettingsForm в Ring Dialog ═══
-     openSettingsModal заменяет vanilla openSettingsOverlay: 3 состояния доступа
-     (not-configured / denied → kind:'text'; canManage → component 'settingsForm').
-     Старый openSettingsOverlay/applySettingsUI/collectSettings/doSaveSettings + DOM
-     #settingsOverlay живут параллельно до Phase 6 (demount). */
-
-  /* Списки имён полей проекта по типам (зеркалит фильтр fillFieldSelect). */
-  function _buildFieldsByType() {
-    function ofTypes(allowed) {
-      var out = [];
-      (_projectFields || []).forEach(function (f) {
-        var ty = (f.type || '').toLowerCase();
-        if (allowed.some(function (at) { return ty.indexOf((at || '').toLowerCase()) >= 0; })) out.push(f.name);
-      });
-      return out;
-    }
+  /* ═══ Форма настроек проекта — вынесена в settings-controller.js
+     (window.__SSP_SETTINGS_CTRL) — Фаза 5 слайс 11. Делегаторы; контекст
+     собирается в _settingsDeps на вызове. Стейт (_settings/_projectFields/
+     _projectGroups/_lang) остаётся в стейт-ядре за deps.state-аксессорами;
+     _fieldValuesCache — shared с intro-view, идёт object-ref'ом через deps. ══ */
+  var SETTINGS_CTRL = (typeof window !== 'undefined' && window.__SSP_SETTINGS_CTRL) || {};
+  function _settingsDeps() {
     return {
-      priority:         ofTypes(['enum']),
-      xpriority:        ofTypes(['enum']),
-      state:            ofTypes(['state', 'enum']),
-      system:           ofTypes(['enum', 'owned']),
-      externalTicketId: ofTypes(['string']),
-      sprint:           ofTypes(['enum']),
-      version:          ofTypes(['version', 'build']),
-      period:           ofTypes(['period']),
-      user:             ofTypes(['user']),
-      /* 5c — cascade kind-field (enum-поля проекта). */
-      enumFields:       ofTypes(['enum']),
-    };
-  }
-
-  /* Сохранение settings из bespoke-формы. Возвращает Promise<{success}|{success:false,reason}>.
-     Дословно зеркалит post-save хвост doSaveSettings (cache-invalidate, _settings,
-     project-default lang, feature-bar, soft-warn, права/видимость, re-render). */
-  function _saveSettingsData(data) {
-    data.savedAt = Date.now();
-    return apiPost('sprint-data', { settings: data }).then(function (resp) {
-      if (!resp || !resp.success) {
-        var reason = (resp && resp.reason) || (resp && resp.error) || 'unknown';
-        toast(T('toastSettingsErr'), 'err');
-        return { success: false, reason: reason };
-      }
-      try {
-        if (_settings && (_settings.fieldSprint  !== data.fieldSprint))  invalidateFieldValuesCache(_settings.fieldSprint);
-        if (_settings && (_settings.fieldVersion !== data.fieldVersion)) invalidateFieldValuesCache(_settings.fieldVersion);
-      } catch (_) {}
-      _settings = data;
-      _syncProjectDefaultLang();
-      _refreshFeatureStatusBar();
-      var bc = document.getElementById('bannerCfg');
-      if (bc) bc.classList.add('hidden');
-      toast(T('toastSettingsSaved'), 'success');
-      var missingRequired = [];
-      if (!data.fieldPriority) missingRequired.push(T('fldPriority'));
-      if (!data.fieldState)    missingRequired.push(T('fldState'));
-      if (missingRequired.length) {
-        setTimeout(function () {
-          toast(T('toastRequiredFieldsMissing') + ': ' + missingRequired.join(', '), 'warn');
-        }, 400);
-      }
-      checkValidator();
-      checkEditorRights();
-      checkAssignerRights();
-      applyPersonalPlanningVisibility();
-      refreshClearHistoryBtn();
-      renderPlannerRoles();
-      try { _applyDiagLogVisibility(); } catch (_) {}
-      return { success: true };
-    });
-  }
-
-  /* #25 Ф1-A — сборка props формы настроек (модалка global + inline-страница проекта). */
-  function _buildSettingsFormProps(onCloseFn) {
-    var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || [];
-    var defaultLangOptions = langs.map(function (l) {
-      return { value: l.code, label: (l.flag ? l.flag + ' ' : '') + l.native + ' (' + l.code + ')' };
-    });
-    return {
-      initial:            _settings || {},
-      roles:              ALL_ROLES,
-      fieldsByType:       _buildFieldsByType(),
-      defaultLangOptions: defaultLangOptions,
-      uiLang:             _lang,
-      t:                  T,
-      initialGroups:      _projectGroups || [],
-      loadGroups:         function () { return loadProjectGroups().then(function () { return _projectGroups; }); },
-      enumFields:         (_buildFieldsByType().enumFields) || [],
-      stateFieldName:     (_settings && typeof _settings.fieldState === 'string' && _settings.fieldState) ? _settings.fieldState : 'State',
-      loadFieldValues:    function (fieldName) {
-        if (!fieldName) return Promise.resolve([]);
-        if (_fieldValuesCache[fieldName]) return Promise.resolve(_fieldValuesCache[fieldName].values || []);
-        return apiGet('field-values?fieldName=' + encodeURIComponent(fieldName)).then(function (r) {
-          if (r && r.success && r.values) _fieldValuesCache[fieldName] = r;
-          return (r && r.values) || [];
-        }).catch(function () { return []; });
+      T: T, diag: diag, toast: toast, openModal: openModal,
+      apiGet: apiGet, apiPost: apiPost,
+      ALL_ROLES: ALL_ROLES,
+      fieldValuesCache: _fieldValuesCache,
+      loadProjectGroups: loadProjectGroups,
+      setLang: setLang,
+      invalidateFieldValuesCache: invalidateFieldValuesCache,
+      syncProjectDefaultLang: _syncProjectDefaultLang,
+      refreshFeatureStatusBar: _refreshFeatureStatusBar,
+      checkValidator: checkValidator,
+      checkEditorRights: checkEditorRights,
+      checkAssignerRights: checkAssignerRights,
+      applyPersonalPlanningVisibility: applyPersonalPlanningVisibility,
+      refreshClearHistoryBtn: refreshClearHistoryBtn,
+      renderPlannerRoles: renderPlannerRoles,
+      applyDiagLogVisibility: _applyDiagLogVisibility,
+      state: {
+        getSettings:      function () { return _settings; },
+        setSettings:      function (v) { _settings = v; },
+        getProjectFields: function () { return _projectFields; },
+        getProjectGroups: function () { return _projectGroups; },
+        getLang:          function () { return _lang; },
       },
-      onUiLangChange:     function (lang) { setLang(lang); },
-      onSave:             _saveSettingsData,
-      onClose:            onCloseFn,
     };
   }
+  /* Делегаторы: openSettingsModal/_buildSettingsFormProps — реальные callers
+     (init-bind openSettingsBtn / project-mode _mountProjectSettings);
+     _saveSettingsData/_buildFieldsByType — golden-входы (внутри модуля зовутся
+     свои функции напрямую через deps). */
+  function _buildFieldsByType() { return SETTINGS_CTRL._buildFieldsByType(_settingsDeps()); }
+  function _saveSettingsData(data) { return SETTINGS_CTRL._saveSettingsData(data, _settingsDeps()); }
+  function _buildSettingsFormProps(onCloseFn) { return SETTINGS_CTRL.buildSettingsFormProps(onCloseFn, _settingsDeps()); }
+  function openSettingsModal() { return SETTINGS_CTRL.openSettingsModal(_settingsDeps()); }
 
-  function openSettingsModal() {
-    apiGet('check-settings-manager').then(function (r) {
-      diag('settingsModal open: configured=' + (r && r.configured) + ' canManage=' + (r && r.canManage), 'info');
-
-      if (!r || !r.configured) {
-        openModal({
-          id: 'settingsAccess', type: 'info', title: T('appTitleSettings'),
-          body: { kind: 'text', text: T('settingsNotConfiguredHint') },
-          buttons: [{ id: 'ok', text: T('btnCancel'), variant: 'primary', onClick: function (h) { h.close(); } }],
-          dismissOnBackdrop: true, showCloseButton: true,
-        });
-        return;
-      }
-      if (!r.canManage) {
-        var txt = T('settingsNoAccessHint');
-        if (r.groupName) txt += ' (' + T('settingsNoAccessGroup').replace('{group}', r.groupName) + ')';
-        openModal({
-          id: 'settingsAccess', type: 'info', title: T('appTitleSettings'),
-          body: { kind: 'text', text: txt },
-          buttons: [{ id: 'ok', text: T('btnCancel'), variant: 'primary', onClick: function (h) { h.close(); } }],
-          dismissOnBackdrop: true, showCloseButton: true,
-        });
-        return;
-      }
-
-      /* canManage → форма. Lazy-load групп (для 5b multi-select). */
-      if (typeof loadProjectGroups === 'function' && !window._sspGroupsLoaded) {
-        window._sspGroupsLoaded = true;
-        loadProjectGroups().catch(function (e) { diag('lazy loadProjectGroups err: ' + e, 'err'); });
-      }
-
-      var handle = openModal({
-        id: 'settings', type: 'form', title: T('appTitleSettings'),
-        dialogClass: 'ssp-ring-modal--wide ssp-ring-modal--settings',
-        body: { kind: 'component', name: 'settingsForm',
-          props: _buildSettingsFormProps(function () { if (handle) handle.close(); }) },
-        buttons: [],
-        dismissOnBackdrop: false,
-        blockEscape: false,
-        /* showCloseButton:false — форма рисует свой явный × (ssp-settings-close). */
-        showCloseButton: false,
-        onClose: function () { /* idемпотентный close из foundation */ },
-      });
-    }).catch(function (e) {
-      diag('openSettingsModal check ERR: ' + String(e), 'err');
-      toast(T('toastInitError') + (e && e.message ? e.message : String(e)), 'err');
-    });
-  }
 
   /* ── Загрузка данных ── */
   function loadMe() {
@@ -2798,208 +2665,6 @@
   function checkAssignerRights() { return PERMISSIONS.checkAssignerRights(_permsDeps()); }
   function _startPermissionsCheck() { return PERMISSIONS._startPermissionsCheck(_permsDeps()); }
   function applyEditorRightsToUI() { return PERMISSIONS.applyEditorRightsToUI(_permsDeps()); }
-
-  /* ═══════════════════════════════════════════════════════════
-     v5.0.1 — SETTINGS OVERLAY (внутри ssp-main).
-     Источник правды для авторизации — backend GET /check-settings-manager.
-     UI-элементы: кнопка #openSettingsBtn в шапке, оверлей #settingsOverlay,
-     форма #settingsForm с 7 collapsible-карточками.
-     ИБ: при canManage:false форма не рендерится; повторная проверка выполняется
-     каждый раз при открытии overlay.
-  ═══════════════════════════════════════════════════════════ */
-
-  /* v5.0.1 — переменные _valGroupsState/_editGroupsState/_settingsLoaded
-     перенесены в основную state-секцию (см. ~стр. 779). Здесь они НЕ объявляются,
-     чтобы избежать тонких эффектов hoisting'а в YouTrack-runtime. */
-
-  /* ── Рендер 9 чек-боксов ролей ── */
-  function renderRolesGrid() {
-    var grid = document.getElementById('rolesGrid');
-    if (!grid) return;
-    var active = (_settings && _settings.activeRoles) || [];
-    var html = '';
-    ALL_ROLES.forEach(function (role) {
-      var isActive = active.indexOf(role.key) >= 0;
-      html += '<div class="role-check' + (isActive ? ' active' : '') + '" data-role="' + esc(role.key) + '">'
-            + '<span class="role-check__cb"></span>'
-            + '<span class="role-check__label">' + esc(roleLabel(role)) + '</span>'
-            + '</div>';
-    });
-    grid.innerHTML = html;
-    grid.querySelectorAll('.role-check').forEach(function (el) {
-      el.addEventListener('click', function () {
-        el.classList.toggle('active');
-        renderDynamicRoleFields();
-      });
-    });
-  }
-
-  /* ── Заполнить один select полями проекта по типу ── */
-  function fillFieldSelect(selectEl, allowedTypes, currentValue) {
-    if (!selectEl) return;
-    var typesArr = Array.isArray(allowedTypes) ? allowedTypes : [allowedTypes];
-    var opts = '<option value="">' + esc(T('phNotSelected')) + '</option>';
-    var has = false;
-    _projectFields.forEach(function (f) {
-      var t = (f.type || '').toLowerCase();
-      var ok = typesArr.some(function (at) { return t.indexOf((at || '').toLowerCase()) >= 0; });
-      if (!ok) return;
-      var sel = (f.name === currentValue) ? ' selected' : '';
-      opts += '<option value="' + esc(f.name) + '"' + sel + '>' + esc(f.name) + '</option>';
-      has = true;
-    });
-    if (!has && currentValue) {
-      // Поле было сохранено, но удалено/изменён тип — оставляем placeholder и помечаем для bannerCfg
-      opts += '<option value="' + esc(currentValue) + '" selected>' + esc(currentValue) + ' ⚠</option>';
-    }
-    selectEl.innerHTML = opts;
-  }
-
-  /* ── Перерендер динамических секций по активным ролям ── */
-  function renderDynamicRoleFields() {
-    var activeKeys = [];
-    document.querySelectorAll('#rolesGrid .role-check.active').forEach(function (el) {
-      activeKeys.push(el.getAttribute('data-role'));
-    });
-    var active = ALL_ROLES.filter(function (r) { return activeKeys.indexOf(r.key) >= 0; });
-
-    function renderBlock(gridId, idPrefix) {
-      var grid = document.getElementById(gridId);
-      if (!grid) return;
-      var html = '';
-      active.forEach(function (role) {
-        var fieldId = 's_' + idPrefix + '_' + role.key;
-        html += '<div class="field">'
-              + '<label for="' + esc(fieldId) + '">' + esc(roleLabel(role)) + '</label>'
-              + '<select id="' + esc(fieldId) + '"></select>'
-              + '</div>';
-      });
-      grid.innerHTML = html;
-    }
-    renderBlock('gridFieldEst',  'est');
-    renderBlock('gridFieldFact', 'fact');
-    renderBlock('gridUserFields','user');
-
-    active.forEach(function (role) {
-      fillFieldSelect(document.getElementById('s_est_'  + role.key), 'period',  _settings && _settings[role.fieldEst]);
-      fillFieldSelect(document.getElementById('s_fact_' + role.key), 'period',  _settings && _settings[role.fieldFact]);
-      fillFieldSelect(document.getElementById('s_user_' + role.key), 'user',    _settings && _settings[role.userField]);
-    });
-    /* v1.3.1 fool-proof: после рендера селектов пересчитать дубли + bind
-       change-listener'ов один раз через delegation на grid-контейнерах. */
-    ['gridFieldEst','gridFieldFact'].forEach(function(gid) {
-      var grid = document.getElementById(gid);
-      if (grid && !grid._sspFieldDupBound) {
-        grid._sspFieldDupBound = true;
-        grid.addEventListener('change', _recomputeSaveBtnState);
-      }
-    });
-    _recomputeSaveBtnState();
-  }
-
-  /* ── v1.2.0 DTA mapping table: type-name (text) → role (select из активных) ── */
-  /* Локальный state — массив строк { type: string, role: string }. Сохраняется
-     отдельно от _settings.workItemTypeMapping чтобы UI мог отображать пустые
-     строки и дубликаты во время редактирования. Канонический объект для save
-     собирается в collectSettings из этого state'а. */
-  var _dtaRows = [];
-
-  /* v2.1.0 E2 — Ring Table for DTA mapping. Hybrid controlled-mode:
-     Ring renders visual layer; IIFE owns _dtaRows state and all handlers.
-     Cell renderers return native HTML via { __html } for input/select;
-     delete button gets DOM Level 0 .onclick attached after each render via
-     MutationObserver (same pattern as E1 — Ring's row-selection swallows
-     click events at cell level in both bubble and capture phases). */
-
-  /* Помечает дубликаты type-name красным border'ом и показывает hint.
-     v1.3.1: больше не трогает saveBtn.disabled напрямую — это координирует
-     _recomputeSaveBtnState (см. ниже). */
-
-  /* v1.3.1 fool-proof: дубликат настроек fieldFact-X / fieldX между ролями
-     означает что одно и то же YouTrack-поле выбрано для двух разных ролей —
-     агрегация и каскад начнут затирать друг друга. Подсвечиваем красным
-     border'ом проблемные select'ы и показываем hint. */
-  function _validateRoleFieldsUniqueness() {
-    if (!Array.isArray(ALL_ROLES)) return true;
-    /* Только активные роли — выбранные пользователем в rolesGrid. */
-    var activeKeys = [];
-    document.querySelectorAll('#rolesGrid .role-check.active').forEach(function (el) {
-      var k = el.getAttribute('data-role');
-      if (k) activeKeys.push(k);
-    });
-    var seenEst  = {};
-    var seenFact = {};
-    var dupEst   = {};
-    var dupFact  = {};
-    activeKeys.forEach(function(roleKey) {
-      var estEl  = document.getElementById('s_est_'  + roleKey);
-      var factEl = document.getElementById('s_fact_' + roleKey);
-      var ev = estEl  ? (estEl.value  || '') : '';
-      var fv = factEl ? (factEl.value || '') : '';
-      if (ev) { if (seenEst[ev])  dupEst[ev]  = true; else seenEst[ev]  = roleKey; }
-      if (fv) { if (seenFact[fv]) dupFact[fv] = true; else seenFact[fv] = roleKey; }
-    });
-    /* Подсветка только активных селектов; неактивные не рендерятся. */
-    var hasDupEst = false, hasDupFact = false;
-    activeKeys.forEach(function(roleKey) {
-      var estEl  = document.getElementById('s_est_'  + roleKey);
-      var factEl = document.getElementById('s_fact_' + roleKey);
-      if (estEl) {
-        var dupE = !!(estEl.value && dupEst[estEl.value]);
-        estEl.style.borderColor = dupE ? 'var(--error)' : '';
-        if (dupE) hasDupEst = true;
-      }
-      if (factEl) {
-        var dupF = !!(factEl.value && dupFact[factEl.value]);
-        factEl.style.borderColor = dupF ? 'var(--error)' : '';
-        if (dupF) hasDupFact = true;
-      }
-    });
-    var hintEst  = document.getElementById('errDuplicateEstFieldHint');
-    var hintFact = document.getElementById('errDuplicateFactFieldHint');
-    if (hintEst)  hintEst.style.display  = hasDupEst  ? 'block' : 'none';
-    if (hintFact) hintFact.style.display = hasDupFact ? 'block' : 'none';
-    return !hasDupEst && !hasDupFact;
-  }
-
-  /* Координирует disabled-состояние кнопки save через все валидаторы.
-     ИСТОЧНИК ПРАВДЫ для disabled: hasDup в любом из валидаторов. */
-  function _recomputeSaveBtnState() {
-    var saveBtn = document.getElementById('saveSettingsBtn');
-    if (!saveBtn) return;
-    var dtaOk    = _validateDtaMappingFlag();
-    var fieldsOk = _validateRoleFieldsUniqueness();
-    saveBtn.disabled = !(dtaOk && fieldsOk);
-  }
-  /* helper-flavour: возвращает только bool без рекурсивного вызова recompute. */
-  function _validateDtaMappingFlag() {
-    var counts = {};
-    (_dtaRows || []).forEach(function(r) {
-      var t = (r && r.type || '').trim();
-      if (!t) return;
-      counts[t] = (counts[t] || 0) + 1;
-    });
-    for (var k in counts) { if (counts[k] > 1) return false; }
-    return true;
-  }
-
-
-  /* v1.3.0 Cascade — helpers для UI.
-     kind-field — single-select по полям enum-типа из _projectFields;
-     level-2 / level-3 — multi-select из bundle-values текущего kind-field
-     (загружается через loadFieldBundle с кэшем _fieldValuesCache).
-     Хранение в settings: array<string ≤200>, max 50 (backend whitelist). */
-  /* Сбор selected options из multi-select. Trim, dedupe, cap 50 / 200. */
-  /* Заполнить multi-select bundle-значениями выбранного kind-field.
-     selectedSet — array значений, которые должны быть pre-selected. */
-  /* Live warnings:
-     - cascade=on && forbid=off → опасная комбинация (warnCascadeWithoutForbid);
-     - level2 ∩ level3 непуст → warnCascadeLevelsOverlap. */
-
-  /* v1.7.0 D128 — State rollup UI helpers. */
-
-
-
 
   /* ═══ Stand-up view ════════════════════════════════════════
      Рендер-семейство и контроллеры Stand-up вынесены в

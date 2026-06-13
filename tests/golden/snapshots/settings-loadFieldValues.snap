@@ -1,0 +1,17 @@
+{
+  "v1": [
+    "A",
+    "B"
+  ],
+  "v2": [
+    "A",
+    "B"
+  ],
+  "empty": [],
+  "apiGetCalls": [
+    "field-values?fieldName=Sprints"
+  ],
+  "cacheKeys": [
+    "Sprints"
+  ]
+}

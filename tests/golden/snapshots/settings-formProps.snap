@@ -1,0 +1,86 @@
+{
+  "keys": [
+    "defaultLangOptions",
+    "enumFields",
+    "fieldsByType",
+    "initial",
+    "initialGroups",
+    "loadFieldValues",
+    "loadGroups",
+    "onClose",
+    "onSave",
+    "onUiLangChange",
+    "roles",
+    "stateFieldName",
+    "t",
+    "uiLang"
+  ],
+  "types": {
+    "defaultLangOptions": "object",
+    "enumFields": "object",
+    "fieldsByType": "object",
+    "initial": "object",
+    "initialGroups": "object",
+    "loadFieldValues": "function",
+    "loadGroups": "function",
+    "onClose": "function",
+    "onSave": "function",
+    "onUiLangChange": "function",
+    "roles": "object",
+    "stateFieldName": "string",
+    "t": "function",
+    "uiLang": "string"
+  },
+  "initialIsSettings": true,
+  "rolesIsAllRoles": true,
+  "uiLang": "ru",
+  "stateFieldName": "State",
+  "fieldsByType": {
+    "priority": [
+      "Priority",
+      "Sprints"
+    ],
+    "xpriority": [
+      "Priority",
+      "Sprints"
+    ],
+    "state": [
+      "Priority",
+      "Sprints"
+    ],
+    "system": [
+      "Priority",
+      "Sprints"
+    ],
+    "externalTicketId": [],
+    "sprint": [
+      "Priority",
+      "Sprints"
+    ],
+    "version": [],
+    "period": [
+      "Estimate"
+    ],
+    "user": [],
+    "enumFields": [
+      "Priority",
+      "Sprints"
+    ]
+  },
+  "defaultLangOptions": [
+    {
+      "value": "en",
+      "label": "undefined (en)"
+    },
+    {
+      "value": "ru",
+      "label": "undefined (ru)"
+    }
+  ],
+  "initialGroups": [
+    {
+      "id": "g1",
+      "name": "sprint-managers"
+    }
+  ]
+}

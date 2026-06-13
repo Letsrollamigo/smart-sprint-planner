@@ -1,0 +1,40 @@
+{
+  "priority": [
+    "Priority",
+    "Sprints"
+  ],
+  "xpriority": [
+    "Priority",
+    "Sprints"
+  ],
+  "state": [
+    "Priority",
+    "State",
+    "Sprints"
+  ],
+  "system": [
+    "Priority",
+    "Sprints",
+    "System"
+  ],
+  "externalTicketId": [
+    "Ticket"
+  ],
+  "sprint": [
+    "Priority",
+    "Sprints"
+  ],
+  "version": [
+    "Fix versions"
+  ],
+  "period": [
+    "Estimate"
+  ],
+  "user": [
+    "Assignee"
+  ],
+  "enumFields": [
+    "Priority",
+    "Sprints"
+  ]
+}

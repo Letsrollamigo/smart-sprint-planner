@@ -1,0 +1,38 @@
+{
+  "result": {
+    "success": true
+  },
+  "apiPost": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "settings"
+      ],
+      "hasSettings": true,
+      "savedAtFrozen": true,
+      "query": null
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Настройки сохранены",
+      "type": "success"
+    }
+  ],
+  "settingsUpdated": true,
+  "calls": {
+    "syncLang": 1,
+    "featureBar": 1,
+    "checkValidator": 1,
+    "checkEditor": 1,
+    "checkAssigner": 1,
+    "ppVisibility": 1,
+    "clearHistBtn": 1,
+    "renderRoles": 1,
+    "diagVis": 1,
+    "invalidate": [
+      null,
+      null
+    ]
+  }
+}
