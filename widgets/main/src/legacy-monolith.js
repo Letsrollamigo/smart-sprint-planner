@@ -1056,16 +1056,39 @@
   /* Bind при загрузке скрипта (DOM уже готов т.к. main.js — defer) */
   try { bindWorkingCopyHandlers(); } catch(e){ diag('bindWorkingCopyHandlers failed: '+e, 'err'); }
 
-  /* v5.7.0 — Этап 5 (D46): модал переназначения задачи в Ганте.
-     openReassignModal(issueId) собирает <select> из _currentRolePP.resourcesByAssignee + опция «Не назначен»;
-     «Применить» обновляет _currentRolePP.taskAssignments[issueId].assignee, инвалидирует ganttColor cache,
-     ставит dirty-флаг, зовёт saveCurrentRoleState() и ре-рендерит Гант (+ опционально таблицу Людей). */
-  /* Phase 2 #32 — reassign мигрирован на openModal() (bespoke reassignForm).
-     hideReassignModal закрывает Ring-модалку через stored handle. */
+  /* ═══ Реассайн-контроллер вынесен в reassign-controller.js (Фаза 5, зачистка
+     «прочих» — слайс 7, домен D46) за мост window.__SSP_REASSIGN_CTRL; golden-контракты
+     — reassign.golden.test.js (идут через делегатор openReassignModal). Deps-фабрика
+     per-call: стейт зоны (_reassignModalHandle + читаемые _currentRolePP/
+     _currentSprintRoleRec/_activeSubtab/_currentSprintId/_sprint/_dirtyRoleKeys)
+     остаётся в стейт-ядре за get/set-аксессорами; _applyReassign приватен модулю
+     (вход только openReassignModal.onApply). Делегаторы: openReassignModal
+     (потребитель gantt-view) и hideReassignModal (потребитель header-view —
+     закрытие при переключении вкладки). ═══ */
+  var REASSIGN_CTRL = (typeof window !== 'undefined' && window.__SSP_REASSIGN_CTRL) || {};
   var _reassignModalHandle = null;
-  function hideReassignModal() {
-    if (_reassignModalHandle) { try { _reassignModalHandle.close(); } catch(_){} }
+  function _reassignDeps() {
+    return {
+      T: T, diag: diag,
+      openModal: openModal,
+      isActiveSprintRecord: isActiveSprintRecord,
+      saveCurrentRoleState: saveCurrentRoleState,
+      updateIssueAssigneeField: updateIssueAssigneeField,
+      renderGanttChart: renderGanttChart,
+      renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
+      state: {
+        getCurrentRolePP: function () { return _currentRolePP; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getSprint: function () { return _sprint; },
+        getDirtyRoleKeys: function () { return _dirtyRoleKeys; },
+        getReassignModalHandle: function () { return _reassignModalHandle; },
+        setReassignModalHandle: function (v) { _reassignModalHandle = v; },
+      },
+    };
   }
+  function hideReassignModal() { return REASSIGN_CTRL.hideReassignModal(_reassignDeps()); }
   /* v5.8.0 — A.5 (D56): универсальное скрытие всех overlay'ев класса .overlay при tab switch.
      Закрывает leakage класс багов: открыт #reassignOverlay/#wcConflictOverlay/etc. → юзер
      переключил вкладку → overlay «всплыл» позже на чужой вкладке. Settings-overlay
@@ -1077,103 +1100,7 @@
     }
   }
   /* Хелперы скролла/показа легаси-оверлеев демонтированы вместе с модал-фасадом. */
-  function openReassignModal(issueId) {
-    if (!_currentRolePP) {
-      diag('openReassignModal: no _currentRolePP', 'warn');
-      return;
-    }
-    var ra = _currentRolePP.resourcesByAssignee || {};
-    var ta = _currentRolePP.taskAssignments || {};
-    var current = (ta[issueId] && ta[issueId].assignee) || '';
-    /* Опции <select>: «Не назначен» + ассайни роли (sorted) */
-    var options = [{ value: '', label: T('reassignOptionUnassigned') }];
-    Object.keys(ra).sort().forEach(function(login){
-      var nm = (ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login;
-      options.push({ value: login, label: nm + ' (' + login + ')' });
-    });
-    _reassignModalHandle = openModal({
-      id: 'reassign',
-      type: 'confirm',
-      title: T('modalReassignTitle'),
-      body: { kind: 'component', name: 'reassignForm', props: {
-        issueId: issueId,
-        bodyText: T('modalReassignBody'),
-        options: options,
-        current: current,
-        applyText: T('btnApply'),
-        cancelText: T('btnCancel'),
-        onApply: function(login){ if (_reassignModalHandle) _reassignModalHandle.close(); _applyReassign(issueId, login); },
-        onCancel: function(){ if (_reassignModalHandle) _reassignModalHandle.close(); },
-      }},
-      buttons: [],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-      onClose: function(){ _reassignModalHandle = null; },
-    });
-  }
-  /* Применение переназначения (логика дословно из v5.7.0/v6.3.0 D105 — мутация
-     _currentRolePP + запись assignee в YouTrack + ре-рендер Ганта/Людей). login — '' = «Не назначен». */
-  function _applyReassign(issueId, login) {
-    if (!issueId || !_currentRolePP) return;
-    login = login || '';
-    var ra = _currentRolePP.resourcesByAssignee || {};
-    if (!_currentRolePP.taskAssignments) _currentRolePP.taskAssignments = {};
-    var entry = _currentRolePP.taskAssignments[issueId] || {};
-    entry.assignee     = login || '';
-    entry.assigneeName = login ? ((ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login) : '';
-    /* Инвалидация legacy-кэша цвета бара (поле не читается с v2.1.14) */
-    delete entry.ganttColor;
-    _currentRolePP.taskAssignments[issueId] = entry;
-    /* Прокидываем _currentRolePP обратно в personalPlanning записи и в _sprint.personalPlanning
-       если запись соответствует активному спринту (паттерн из renderCurrentRoleTaskTable). */
-    if (_currentSprintRoleRec) {
-      if (!_currentSprintRoleRec.personalPlanning) _currentSprintRoleRec.personalPlanning = {};
-      var rk = _activeSubtab || _currentSprintRoleRec.roleKey || null;
-      if (!rk && _currentSprintRoleRec.sprintId && _currentSprintId) {
-        rk = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '') || null;
-      }
-      if (rk) _currentSprintRoleRec.personalPlanning[rk] = _currentRolePP;
-      if (typeof isActiveSprintRecord === 'function' && isActiveSprintRecord(_currentSprintRoleRec)) {
-        if (!_sprint.personalPlanning) _sprint.personalPlanning = {};
-        if (rk) _sprint.personalPlanning[rk] = _currentRolePP;
-      }
-    }
-    /* Dirty-tracking для confirm при смене роли */
-    if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
-      var rkDirty = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
-      if (rkDirty) _dirtyRoleKeys[rkDirty] = true;
-    }
-    if (typeof saveCurrentRoleState === 'function') {
-      try { saveCurrentRoleState(); } catch(e){ diag('saveCurrentRoleState reassign err: '+e,'err'); }
-    }
-    /* v6.3.0 D105 — после reassign в Ганте писать assignee в YouTrack
-       через update-issue-field (как делает change-handler на «Распределение»).
-       Раньше изменения assignee из Ганта оставались только в personalPlanning. */
-    try {
-      var rkForYt = (_currentSprintRoleRec && _currentSprintRoleRec.roleKey) || _activeSubtab;
-      if (rkForYt && typeof updateIssueAssigneeField === 'function') {
-        updateIssueAssigneeField(issueId, login || null, rkForYt);
-      }
-    } catch(e){ diag('updateIssueAssigneeField reassign err: '+e,'err'); }
-    /* Ре-рендер Ганта (visible) */
-    if (typeof renderGanttChart === 'function') {
-      try { renderGanttChart(); } catch(e){ diag('renderGanttChart reassign err: '+e,'err'); }
-    }
-    /* Двусторонняя синхронизация: если уровень «Люди» рендерил таблицу — обновим её */
-    var peopleEl = document.getElementById('planning-level-people');
-    if (peopleEl && !peopleEl.classList.contains('hidden')
-        && typeof renderCurrentRoleTaskTable === 'function') {
-      try { renderCurrentRoleTaskTable(); } catch(e){ diag('renderCurrentRoleTaskTable reassign err: '+e,'err'); }
-    }
-    /* Снимаем dirty в следующем event-loop — saveCurrentRoleState уже flush'ит draft */
-    setTimeout(function(){
-      if (_currentSprintRoleRec && _currentSprintRoleRec.sprintId && _currentSprintId) {
-        var rkClean = _currentSprintRoleRec.sprintId.replace(_currentSprintId + '_', '');
-        if (rkClean) delete _dirtyRoleKeys[rkClean];
-      }
-    }, 0);
-  }
+  function openReassignModal(issueId) { return REASSIGN_CTRL.openReassignModal(issueId, _reassignDeps()); }
 
   /* Тир B — тело в excel-export.js (buildConflictAOA); AOA 1:1, текстовый Δ-маркер. */
   function _buildConflictAOA(snap, otherSnap) {
