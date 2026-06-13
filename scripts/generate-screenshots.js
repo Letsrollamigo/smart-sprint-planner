@@ -141,7 +141,7 @@ function mkItem(issueId, title, opts = {}) {
   };
 }
 
-// Role keys must match ALL_ROLES in legacy-monolith.js:
+// Role keys must match ALL_ROLES in core.js:
 // analysis | devPlatform | testing | devBack | devFront | devIos | devAndroid | devFs | devDb
 
 // All est/fact/alloc in MINUTES — widget stores and renders as minutes (fmtPeriod divides by 60)

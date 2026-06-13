@@ -8,7 +8,7 @@
    - setLang(lang) → сохраняет в localStorage, грузит словарь, эмитит callback'и.
    - subscribe(cb) — подписка на смену языка / готовности словаря.
 
-   Loader не зависит от _host — работает в legacy-monolith через window-side fetch
+   Loader не зависит от _host — работает в core.js через window-side fetch
    с относительным URL. */
 
 import enInline from '../../i18n/en.json';

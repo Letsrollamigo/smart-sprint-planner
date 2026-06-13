@@ -1,6 +1,6 @@
 /* widgets/main/src/hash-pure.js
    Чистые hash / equality / diff-утилиты рабочих копий. Публикует window.__SSP_HASH_PURE
-   ДО исполнения IIFE legacy-monolith.js (паттерн как period-pure / date-pure).
+   ДО исполнения IIFE core.js (паттерн как period-pure / date-pure).
    Зависимостей от closure-состояния нет. (_sortKeys — внутренний хелпер, не экспортируется.) */
 
 /* FNV-подобный 32-бит хеш строки → 8 hex-символов (отпечаток блока рабочей копии). */

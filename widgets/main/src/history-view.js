@@ -2,7 +2,7 @@
    (renderHistory) и спойлер записи (buildSpoiler): шапка-meta со статус-бейджем,
    кнопки записи (Excel/JSON/правка-WC/завершение/удаление с confirm-модалкой),
    карточка цели/итога/ретро, тоггл «Снимок ↔ Рабочая копия» (Ring Radio) и
-   items-таблица (Ring Table). Вынесено из legacy-monolith.js (Тир D слайс 4,
+   items-таблица (Ring Table). Вынесено из core.js (Тир D слайс 4,
    ступень 1) за мост window.__SSP_HISTORY_VIEW; golden-характеризация —
    tests/golden/render-history.golden.test.js (через делегаторы монолита).
 

@@ -56,7 +56,7 @@ const FIELD_FACT_KEY_BY_ROLE = {
 };
 
 /* role-key → settings-key plan-поля (для notifyProgress / процент план/факт).
-   Имена согласованы с ALL_ROLES в widgets/main/src/legacy-monolith.js. */
+   Имена согласованы с ALL_ROLES в widgets/main/src/core.js. */
 const FIELD_EST_KEY_BY_ROLE = {
   analysis:    'fieldAnalysis',
   testing:     'fieldTesting',

@@ -70,7 +70,7 @@ This adds a `Signed-off-by:` line. It is a lightweight statement that you author
 
 ## Code style
 
-- The frontend is a single IIFE bundle (`widgets/main/main.js`). When sources are available locally, new flows go in `legacy-monolith.js` or in a sibling module imported from `index.js`; when only the bundle is available, edits are made against the built file.
+- The frontend is a single IIFE bundle (`widgets/main/main.js`). When sources are available locally, new flows go in `core.js` or in a sibling module imported from `index.js`; when only the bundle is available, edits are made against the built file.
 - Multi-language UI: any new user-facing string MUST be added to all 15 JSON files under `widgets/main/i18n/` and referenced via `T('key')` or a `data-i18n` attribute. English is the source of truth and the runtime fallback.
 - Version bumps touch FOUR points in a single commit: `manifest.json:version`, `package.json:version`, the `APP_VERSION` constant in the frontend bundle, and the `'app-version'` literal in `backend-project.js`.
 - Comments are reserved for non-obvious WHY: hidden constraints, subtle invariants, workarounds with linked references. Do not narrate WHAT the code does.

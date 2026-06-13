@@ -1,6 +1,6 @@
 /* Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс)
    и working copies (GET/POST /working-drafts + reconcile/gc). Вынесено из
-   legacy-monolith.js (Фаза 5 слайс 3, коммит Б) за мост
+   core.js (Фаза 5 слайс 3, коммит Б) за мост
    window.__SSP_DRAFT_STORE; golden-характеризация —
    tests/golden/draft-store.golden.test.js (через делегаторы монолита).
 

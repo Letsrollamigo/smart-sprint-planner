@@ -1,5 +1,5 @@
 'use strict';
-// Working-copy revalidation cluster extracted from widgets/main/src/legacy-monolith.js (Tier C).
+// Working-copy revalidation cluster extracted from widgets/main/src/core.js (Tier C).
 // Browser bridge: window.__SSP_REVALIDATION. Golden-tested in
 // tests/golden/working-copy.golden.test.js (rev-hashes / revalidation-levels /
 // apply-revalidation-matrix) and tests/golden/calc.golden.test.js (checkAllocOverlimit).

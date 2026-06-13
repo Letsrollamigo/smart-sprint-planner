@@ -831,7 +831,7 @@ var ALLOWED_SETTINGS_KEYS = [
 
 /* v1.7.0: KPE whitelist accepts both legacy Russian keys (Стажёр/Джун/Мидл/Синьор)
    and canonical English keys (Intern/Junior/Middle/Senior, frontend storage layer
-   since v1.4.1 D128 — see widgets/main/src/legacy-monolith.js GRADES_LOCAL).
+   since v1.4.1 D128 — see widgets/main/src/core.js GRADES_LOCAL).
    Pre-existing fix: previously frontend wrote English keys but backend rejected
    the save with invalid_settings_structure on any settings POST. */
 var ALLOWED_KPE_KEYS = ['Стажёр','Джун','Мидл','Синьор','Intern','Junior','Middle','Senior'];

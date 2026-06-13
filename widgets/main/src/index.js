@@ -2,9 +2,9 @@
    v5.12.0: src/ layout (OQ61/OQ64). esbuild inlines imports before the monolith IIFE,
    so APP_VERSION from common/version.js is accessible via closure inside the IIFE.
 
-   v1.1.0: i18n bridge MUST be imported BEFORE legacy-monolith.js — ES modules execute
+   v1.1.0: i18n bridge MUST be imported BEFORE core.js — ES modules execute
    side-effects in declaration order, and the bridge sets `window.__SSP_*` properties
-   that the IIFE in legacy-monolith.js reads at instantiation time.
+   that the IIFE in core.js reads at instantiation time.
 
    v1.9.6: icons bridge (icons.generated.js) follows the same pattern — sets window.__SSP_ICONS
    before the monolith IIFE reads it via `var ICONS = window.__SSP_ICONS || {}`. */
@@ -67,4 +67,4 @@ import './react/gantt-view.jsx';
 import './react/input-mount.jsx';
 import './react/select-mount.jsx';
 import './react/collapse-mount.jsx';
-import './legacy-monolith.js';
+import './core.js';

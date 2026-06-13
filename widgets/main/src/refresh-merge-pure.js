@@ -1,6 +1,6 @@
 /* widgets/main/src/refresh-merge-pure.js
    Side-effect модуль: чистое ядро слияния при «Обновить из задачи» (#35).
-   Публикует window.__SSP_REFRESH_MERGE_PURE ДО исполнения IIFE legacy-monolith.js
+   Публикует window.__SSP_REFRESH_MERGE_PURE ДО исполнения IIFE core.js
    (паттерн как period-pure / sort-pure / hash-pure; импортируется в index.js раньше монолита).
 
    resolveRefreshMerge решает для ОДНОЙ задачи в контексте ОДНОЙ роли, что делать со

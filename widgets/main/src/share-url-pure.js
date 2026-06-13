@@ -1,6 +1,6 @@
 /* widgets/main/src/share-url-pure.js
    Side-effect модуль: чистое ядро deep-link share-URL (#36).
-   Публикует window.__SSP_SHARE_URL_PURE ДО исполнения IIFE legacy-monolith.js
+   Публикует window.__SSP_SHARE_URL_PURE ДО исполнения IIFE core.js
    (паттерн как period-pure / sort-pure / refresh-merge-pure; импортируется в index.js раньше монолита).
 
    Назначение — двусторонняя трансляция между URL-search и состоянием планера:

@@ -1,5 +1,5 @@
 'use strict';
-// Task-pick cluster (Phase 4 #32 / #33) extracted from widgets/main/src/legacy-monolith.js (Tier C).
+// Task-pick cluster (Phase 4 #32 / #33) extracted from widgets/main/src/core.js (Tier C).
 // Browser bridge: window.__SSP_PICK. Golden-tested in tests/golden/pick.golden.test.js
 // (query/scope matrix, issue-meta mapping, assist contract, paged search, load-all incl.
 // cap branch, add-selected item structure, modal spec + onAdd/onClose contracts).

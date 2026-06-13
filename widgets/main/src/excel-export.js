@@ -1,5 +1,5 @@
 'use strict';
-// Excel-export AOA builders extracted from widgets/main/src/legacy-monolith.js (Tier B).
+// Excel-export AOA builders extracted from widgets/main/src/core.js (Tier B).
 // Browser bridge: window.__SSP_EXCEL_EXPORT. Golden-tested in
 // tests/golden/excel.golden.test.js (XLSX capture stub: AOA sheets, sheet names, file name).
 //

@@ -1,6 +1,6 @@
 'use strict';
 // Pure legacy → canonical data-migration helpers shared with
-// widgets/main/src/legacy-monolith.js. Browser bridge: window.__SSP_MIGRATE_PURE.
+// widgets/main/src/core.js. Browser bridge: window.__SSP_MIGRATE_PURE.
 // Unit-tested in tests/unit/migrate-pure.test.js.
 //
 // Read-side normalisation: older installs stored Cyrillic status/inclusion/grade
