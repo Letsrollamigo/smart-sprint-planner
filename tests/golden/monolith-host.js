@@ -61,6 +61,7 @@ const BRIDGE_SCRIPTS = [
   'permissions.js',
   'share-controller.js',
   'validation-controller.js',
+  'refresh-controller.js',
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',
