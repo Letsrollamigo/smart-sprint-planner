@@ -1,0 +1,25 @@
+{
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "sprint"
+      ],
+      "query": null
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Параметры спринта сохранены",
+      "type": "success"
+    },
+    {
+      "msg": "Цель спринта не задана — рекомендуем заполнить",
+      "type": "warn"
+    }
+  ],
+  "softWarnDelays": [
+    400
+  ],
+  "widgetHeader": 1
+}

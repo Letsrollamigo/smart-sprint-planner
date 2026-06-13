@@ -1,0 +1,28 @@
+{
+  "apiLog": [
+    {
+      "path": "sprint-data",
+      "bodyKeys": [
+        "sprint"
+      ],
+      "query": null
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Параметры спринта сохранены",
+      "type": "success"
+    }
+  ],
+  "sprintName": "GM Updated Sprint",
+  "sprintFieldVal": "GM Sprint",
+  "versionFieldVal": "v2026.06",
+  "roleRemaining": [
+    "analysis"
+  ],
+  "statusBadge": [
+    "analysis"
+  ],
+  "widgetHeader": 1,
+  "currentSprintIdSynced": "gm-sprint-2026-06"
+}

@@ -1,0 +1,7 @@
+{
+  "sameSprintId": true,
+  "datesReset": true,
+  "apiPaths": [
+    "sprint-data"
+  ]
+}
