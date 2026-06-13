@@ -1,0 +1,33 @@
+{
+  "specs": [
+    {
+      "id": "settings",
+      "type": "form",
+      "title": "Smart Sprint Planner: настройки",
+      "dialogClass": "ssp-ring-modal--wide ssp-ring-modal--settings",
+      "dismissOnBackdrop": false,
+      "blockEscape": false,
+      "showCloseButton": false,
+      "bodyKind": "component",
+      "componentName": "settingsForm",
+      "propKeys": [
+        "defaultLangOptions",
+        "enumFields",
+        "fieldsByType",
+        "initial",
+        "initialGroups",
+        "loadFieldValues",
+        "loadGroups",
+        "onClose",
+        "onSave",
+        "onUiLangChange",
+        "roles",
+        "stateFieldName",
+        "t",
+        "uiLang"
+      ],
+      "buttonIds": []
+    }
+  ],
+  "groupsLoaded": 1
+}
