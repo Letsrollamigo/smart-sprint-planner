@@ -1,0 +1,14 @@
+<div class="sprint-intro-extra" id="sprintExtraFields" style="margin-top:14px;display:none">
+        <div class="field" id="fieldSprintVal" style="min-width:200px;display:none">
+          <label for="sprintFieldVal" data-i18n="lblSprintField">Спринт</label>
+          <select id="sprintFieldVal" class="app-select ring-select-button">
+<option value="">— не выбрано —</option>
+</select>
+        </div>
+        <div class="field" id="fieldVersionVal" style="min-width:200px;display:none">
+          <label for="versionFieldVal" data-i18n="lblVersionField">Версия</label>
+          <select id="versionFieldVal" class="app-select ring-select-button">
+<option value="">— не выбрано —</option>
+</select>
+        </div>
+      </div>

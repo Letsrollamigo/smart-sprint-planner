@@ -1,0 +1,25 @@
+{
+  "banner": "banner",
+  "name": "GM Sprint June 2026",
+  "dateStart": "2026-05-22",
+  "dateEnd": "2026-06-16",
+  "goal": "Golden-master характеризация монолита",
+  "res": {
+    "value": "40ч",
+    "readOnly": false
+  },
+  "statusSel": {
+    "display": "none",
+    "value": "PLANNING"
+  },
+  "newBtn": {
+    "display": ""
+  },
+  "badge": "<span id=\"statusBadge_analysis\" class=\"s-badge s-badge--planning\">Черновик</span>",
+  "binds": {
+    "res": [
+      "analysis"
+    ],
+    "header": 1
+  }
+}
