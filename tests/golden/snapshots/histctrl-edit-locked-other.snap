@@ -1,0 +1,14 @@
+{
+  "toasts": [
+    {
+      "msg": "Уже редактирует gm_other",
+      "type": "warn"
+    }
+  ],
+  "wc": {
+    "create": [],
+    "resume": [],
+    "multitab": [],
+    "flush": 0
+  }
+}

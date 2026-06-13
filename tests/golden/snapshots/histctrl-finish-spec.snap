@@ -1,0 +1,26 @@
+{
+  "id": "finishHist",
+  "type": "confirm",
+  "title": "Перевести спринт в статус «Закрыт»? Это действие необратимо.",
+  "body": {
+    "kind": "text",
+    "text": "Перевести спринт в статус «Закрыт»? Это действие необратимо."
+  },
+  "buttons": [
+    {
+      "id": "cancel",
+      "text": "Нет",
+      "variant": "secondary",
+      "onClick": "<fn>"
+    },
+    {
+      "id": "confirm",
+      "text": "Да, завершить",
+      "variant": "primary",
+      "onClick": "<fn>"
+    }
+  ],
+  "dismissOnBackdrop": false,
+  "blockEscape": false,
+  "showCloseButton": false
+}

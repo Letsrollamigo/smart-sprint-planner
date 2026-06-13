@@ -1,0 +1,18 @@
+{
+  "wc": {
+    "create": [
+      {
+        "sprintId": "gm-hist-2026-05_analysis",
+        "idx": 3
+      }
+    ],
+    "resume": [
+      {
+        "key": "gm-hist-2026-05_analysis",
+        "idx": 3
+      }
+    ],
+    "multitab": [],
+    "flush": 0
+  }
+}
