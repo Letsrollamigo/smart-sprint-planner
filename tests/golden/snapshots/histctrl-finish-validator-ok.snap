@@ -1,0 +1,25 @@
+{
+  "recStatus": "<FINISHED>",
+  "finishedAtFrozen": true,
+  "goalOutcome": "Цель достигнута",
+  "goalRetroNote": "Ретро-заметка",
+  "renders": [
+    "render"
+  ],
+  "toasts": [
+    {
+      "msg": "Спринт переведён в статус «Закрыт»",
+      "type": "success"
+    }
+  ],
+  "api": [
+    {
+      "path": "history",
+      "bodyKeys": [
+        "history"
+      ],
+      "historyLen": 2,
+      "query": null
+    }
+  ]
+}
