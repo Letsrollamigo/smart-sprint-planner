@@ -1,0 +1,16 @@
+{
+  "taskAssignmentGM10": {
+    "assignee": "",
+    "assigneeName": ""
+  },
+  "assigneeYt": [
+    {
+      "id": "GM-10",
+      "login": "<null>",
+      "rk": "devBack"
+    }
+  ],
+  "closeCalled": [
+    0
+  ]
+}

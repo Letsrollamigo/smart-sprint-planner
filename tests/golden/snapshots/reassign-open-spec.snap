@@ -1,0 +1,30 @@
+{
+  "id": "reassign",
+  "type": "confirm",
+  "title": "Назначить задачу",
+  "bodyKind": "component",
+  "bodyName": "reassignForm",
+  "issueId": "GM-10",
+  "bodyText": "Выберите ответственного для задачи",
+  "current": "gm_user_1",
+  "options": [
+    {
+      "value": "",
+      "label": "— Не назначен —"
+    },
+    {
+      "value": "gm_user_1",
+      "label": "gm_user_1 (gm_user_1)"
+    },
+    {
+      "value": "gm_user_2",
+      "label": "gm_user_2 (gm_user_2)"
+    }
+  ],
+  "applyText": "Применить",
+  "cancelText": "Отмена",
+  "buttons": [],
+  "dismissOnBackdrop": false,
+  "blockEscape": false,
+  "showCloseButton": false
+}
