@@ -1,0 +1,7 @@
+{
+  "apiGet": [
+    "field-values?fieldName=Fix%20versions",
+    "field-values?fieldName=Sprints"
+  ],
+  "extrasHtml": "<div class=\"sprint-intro-extra\" id=\"sprintExtraFields\" style=\"margin-top: 14px;\">\n        <div class=\"field\" id=\"fieldSprintVal\" style=\"min-width: 200px;\">\n          <label for=\"sprintFieldVal\" data-i18n=\"lblSprintField\">Спринт</label>\n          <select id=\"sprintFieldVal\" class=\"app-select ring-select-button\"><option value=\"\">— не выбрано —</option><option value=\"Sprint A\">Sprint A</option><option value=\"Sprint B\">Sprint B</option><option value=\"Sprint C\">Sprint C</option></select>\n        </div>\n        <div class=\"field\" id=\"fieldVersionVal\" style=\"min-width: 200px;\">\n          <label for=\"versionFieldVal\" data-i18n=\"lblVersionField\">Версия</label>\n          <select id=\"versionFieldVal\" class=\"app-select ring-select-button\"><option value=\"\">— не выбрано —</option><option value=\"Sprint A\">Sprint A</option><option value=\"Sprint B\">Sprint B</option><option value=\"Sprint C\">Sprint C</option></select>\n        </div>\n      </div>"
+}
