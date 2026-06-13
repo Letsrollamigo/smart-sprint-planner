@@ -1,0 +1,6 @@
+{
+  "analysis": "<span id=\"statusBadge_analysis\" class=\"s-badge s-badge--planning\">Черновик</span>",
+  "testing": "<span id=\"statusBadge_testing\" class=\"s-badge s-badge--confirmed\">Состав согласован</span>",
+  "devBack": "<span id=\"statusBadge_devBack\" class=\"s-badge s-badge--allocated\" title=\"Состав согласован, распределён по людям\">Распределён по людям</span>",
+  "devFront": "<span id=\"statusBadge_devFront\" class=\"s-badge s-badge--finished\">Закрыт</span>"
+}

@@ -71,6 +71,7 @@ const BRIDGE_SCRIPTS = [
   'history-view.js',
   'header-view.js',
   'gantt-view.js',
+  'intro-view.js',
 ];
 
 const GM_HOOK = `
