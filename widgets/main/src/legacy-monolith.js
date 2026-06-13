@@ -3780,91 +3780,50 @@
   document.getElementById('histPrev').addEventListener('click', function() { _histPage--; renderHistory(); });
   document.getElementById('histNext').addEventListener('click', function() { _histPage++; renderHistory(); });
 
-  /* ── v5.3.0 — Открыть на правку: working copies (immutable snapshots, D3/b) ──
-     Не разрушаем _history[idx]. Создаём/возобновляем working copy в _workingDrafts.
-     Multi-tab: same-user в новой вкладке → soft-warn; cross-user — disabled-кнопка
-     отфильтровала, но защищаемся ещё раз. */
-  function editHistorySprint(rec, idx) {
-    checkValidatorNow().then(function(ok) {
-      if (!ok) { toast(T('toastNoEditRights')); return; }
-      if (!rec || !rec.sprintId) return;
-      if (rec.status === STATUS.FINISHED) {
-        try { toast(T('cannotEditFinished'), 'warn'); } catch(_){}
-        return;
-      }
-      var role = ALL_ROLES.find(function(r){ return r.key === rec.roleKey; });
-      if (!role) return;
-      var key = rec.sprintId;
-      var existing = _workingDrafts[key];
-      var login = (_currentUser && _currentUser.login) || '';
-
-      if (existing) {
-        /* Чужая working copy — должна быть отфильтрована disabled-кнопкой,
-           но защита defense-in-depth. */
-        if (existing.editorLogin && existing.editorLogin !== login) {
-          try { toast(T('wcLockedByOther').replace('{who}', existing.editorLogin), 'warn'); } catch(_){}
-          return;
-        }
-        /* Same user, другая вкладка → soft-warn модал */
-        if (existing.editorTabToken && existing.editorTabToken !== _thisTabToken) {
-          if (typeof showMultiTabConflictModal === 'function') {
-            showMultiTabConflictModal(key, function(takeOver){
-              if (takeOver) {
-                existing.editorTabToken = _thisTabToken;
-                existing.updatedAt = Date.now();
-                _workingDraftsScheduleFlush();
-                resumeWorkingDraft(key, idx);
-              }
-              /* takeOver=false → ничего не делаем, остаёмся на вкладке истории */
-            });
-            return;
-          }
-          /* Fallback если модала нет ещё (race на boot) — take-over автоматом */
-          existing.editorTabToken = _thisTabToken;
-          existing.updatedAt = Date.now();
-          _workingDraftsScheduleFlush();
-        }
-        resumeWorkingDraft(key, idx);
-        return;
-      }
-      /* Working copy не существует — создаём и возобновляем */
-      createWorkingDraftFromSnapshot(rec, idx);
-      resumeWorkingDraft(key, idx);
-    });
+  /* ═══ История/импорт-контроллер вынесен в history-controller.js (Фаза 5,
+     зачистка «прочих» — слайс 10) за мост window.__SSP_HISTORY_CTRL; golden —
+     history-controller.golden.test.js (идут через делегаторы). Deps-фабрика
+     per-call: стейт зоны (_history/_workingDrafts/_currentUser/_isValidator/
+     _thisTabToken/_importHistPending) остаётся в стейт-ядре за get/set-аксессорами.
+     Делегаторы: editHistorySprint/finishHistorySprint/exportPerSprintJson
+     (потребители history-view через _historyDeps), _submitHistImport (коллбек
+     HISTORY_IO через _histIoDeps), _doImportReplaceAll (коллбек
+     _openImportReplaceConfirm). _triggerJsonDownload (DOM-util),
+     _openImportReplaceConfirm (wiring к MODAL_SPECS) и HIST_*-маркеры остаются в
+     ядре — histFilePrefix и HIST_* намеренно различаются между форками. ═══ */
+  var HISTORY_CTRL = (typeof window !== 'undefined' && window.__SSP_HISTORY_CTRL) || {};
+  function _histCtrlDeps() {
+    return {
+      T: T, toast: toast, diag: diag, fmtDate: fmtDate,
+      STATUS: STATUS, ALL_ROLES: ALL_ROLES,
+      openModal: openModal, apiPost: apiPost,
+      checkValidatorNow: checkValidatorNow,
+      resumeWorkingDraft: resumeWorkingDraft,
+      createWorkingDraftFromSnapshot: createWorkingDraftFromSnapshot,
+      showMultiTabConflictModal: showMultiTabConflictModal,
+      workingDraftsScheduleFlush: _workingDraftsScheduleFlush,
+      openConfirmGoalDialog: openConfirmGoalDialog,
+      renderHistory: renderHistory,
+      buildHistEnvelope: _buildHistEnvelope,
+      triggerJsonDownload: _triggerJsonDownload,
+      histFilePrefix: 'ssp-sprint-',
+      state: {
+        getHistory: function () { return _history; },
+        setHistory: function (v) { _history = v; },
+        getCurrentUser: function () { return _currentUser; },
+        getIsValidator: function () { return _isValidator; },
+        getThisTabToken: function () { return _thisTabToken; },
+        getWorkingDrafts: function () { return _workingDrafts; },
+        getImportHistPending: function () { return _importHistPending; },
+        setImportHistPending: function (v) { _importHistPending = v; },
+      },
+    };
   }
+  /* ── v5.3.0 — Открыть на правку (working copies, immutable snapshots, D3/b) ── */
+  function editHistorySprint(rec, idx) { return HISTORY_CTRL.editHistorySprint(rec, idx, _histCtrlDeps()); }
 
   /* ── Завершить спринт ── */
-  function finishHistorySprint(rec, idx) {
-    openModal({
-      id: 'finishHist',
-      type: 'confirm',
-      title: T('confirmFinishSprint'),
-      body: { kind: 'text', text: T('confirmFinishSprint') },
-      buttons: [
-        { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function(h) { h.close(); } },
-        { id: 'confirm', text: T('btnYesFinish'), variant: 'primary', onClick: function(h) {
-          h.close();
-          if (!_isValidator) { toast(T('toastNoValidRights'), 'warn'); return; }
-          if (!_history[idx]) return;
-          var histRec = _history[idx];
-          openConfirmGoalDialog(histRec.sprintGoal, histRec.goalOutcome).then(function(goalFields) {
-            if (!goalFields) return;
-            histRec.status = STATUS.FINISHED;
-            histRec.finishedAt = Date.now();
-            if (goalFields.goalOutcome)   histRec.goalOutcome   = goalFields.goalOutcome;
-            if (goalFields.goalRetroNote) histRec.goalRetroNote = goalFields.goalRetroNote;
-            apiPost('history', { history: _history }).then(function() {
-              renderHistory();
-              toast(T('toastSprintFinished'), 'success');
-            });
-          });
-        }},
-      ],
-      dismissOnBackdrop: false,
-      blockEscape: false,
-      showCloseButton: false,
-    });
-  }
+  function finishHistorySprint(rec, idx) { return HISTORY_CTRL.finishHistorySprint(rec, idx, _histCtrlDeps()); }
 
   /* overlimitOverlay migrated to openModal() — button bindings removed (Phase 1 #32). */
 
@@ -4024,15 +3983,7 @@
   }
 
   /* Экспорт одного спринта (все роли) по базовому sprintId */
-  function exportPerSprintJson(rec) {
-    var baseId   = String(rec.sprintId).split('_')[0];
-    var sprintRecs = _history.filter(function(h){ return h && String(h.sprintId).split('_')[0] === baseId; });
-    var env = _buildHistEnvelope(sprintRecs, false);
-    var safeName = (rec.name || 'sprint').replace(/[\\/:*?"<>|]/g, '_');
-    var d   = rec.dateStart ? fmtDate(rec.dateStart).replace(/\./g, '-') : 'nodate';
-    _triggerJsonDownload(env, 'ssp-sprint-' + safeName + '_' + d + '.json');
-    toast(T('toastHistExported') || 'Спринт экспортирован', 'success');
-  }
+  function exportPerSprintJson(rec) { return HISTORY_CTRL.exportPerSprintJson(rec, _histCtrlDeps()); }
 
   /* ── Экспорт-кнопки в header вкладки «История» ── */
   (function() {
@@ -4075,30 +4026,7 @@
     return HISTORY_IO.openImportHistDialog(data, _histIoDeps());
   }
 
-  function _submitHistImport(selectedBaseIds, mode, fileRecords) {
-    var current = (_history || []).slice();
-    var toAdd   = fileRecords.filter(function(r){ return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });
-    if (mode === 'overwrite') {
-      var removeSet = {};
-      toAdd.forEach(function(r){ removeSet[r.sprintId] = true; });
-      current = current.filter(function(h){ return !removeSet[h.sprintId]; });
-    } else {
-      // skip: убираем из toAdd то, что уже есть (по полному sprintId)
-      var existingIds = {}; current.forEach(function(h){ if (h) existingIds[h.sprintId] = true; });
-      toAdd = toAdd.filter(function(r){ return !existingIds[r.sprintId]; });
-    }
-    var merged = current.concat(toAdd);
-    return apiPost('history', { history: merged }).then(function() {
-      _history = merged;
-      renderHistory();
-      toast((T('toastHistImported') || 'Импортировано: {n}').replace('{n}', toAdd.length), 'success');
-      diag('history import merged: ' + toAdd.length + ' records (mode=' + mode + ')', 'ok');
-    }).catch(function(e) {
-      var msg = (e && e.message) ? e.message : String(e);
-      if (msg.indexOf('history_data_too_large') >= 0) toast(T('toastHistImportTooLarge') || 'Файл превышает допустимый размер', 'err');
-      else toast((T('toastHistImportErr') || 'Ошибка импорта: ') + msg, 'err');
-    });
-  }
+  function _submitHistImport(selectedBaseIds, mode, fileRecords) { return HISTORY_CTRL.submitHistImport(selectedBaseIds, mode, fileRecords, _histCtrlDeps()); }
 
   /* ── Полное восстановление (replace-all) ──
      Phase 3 #32 — importReplaceHist мигрирован на openModal() (generic lines-confirm,
@@ -4112,23 +4040,7 @@
       onAbandon: function(){ _importHistPending = null; },
     });
   }
-  function _doImportReplaceAll() {
-    if (!_importHistPending || !_importHistPending.records) { _importHistPending = null; return; }
-    var records = _importHistPending.records; _importHistPending = null;
-    apiPost('history', { history: records }, { action: 'import-replace' })
-      .then(function(r) {
-        if (!r || !r.success) throw new Error((r && r.reason) || 'unknown');
-        _history = records.slice();
-        renderHistory();
-        toast(T('toastHistReplaced') || 'История восстановлена из файла', 'success');
-        diag('history replaced: ' + records.length + ' records', 'ok');
-      })
-      .catch(function(e) {
-        var msg = (e && e.message) ? e.message : String(e);
-        if (msg.indexOf('history_manager_rights_required') >= 0 || msg.indexOf('403') >= 0) toast(T('toastNoHistReplaceRights') || 'Нет прав', 'err');
-        else toast((T('toastHistReplaceErr') || 'Ошибка: ') + msg, 'err');
-      });
-  }
+  function _doImportReplaceAll() { return HISTORY_CTRL.doImportReplaceAll(_histCtrlDeps()); }
 
   /* ═══════════════════════════════════════════════════════════
      v4.0.0 — АЛЛОКАЦИЯ: валидация превышения лимита по задачам
