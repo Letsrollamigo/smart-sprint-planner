@@ -1,0 +1,41 @@
+{
+  "fetchLog": [
+    {
+      "path": "issues",
+      "top": 100,
+      "idsInQuery": 100,
+      "hasFields": true,
+      "busyAtCall": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "path": "issues",
+      "top": 20,
+      "idsInQuery": 20,
+      "hasFields": true,
+      "busyAtCall": [
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Расхождений с YouTrack нет.",
+      "type": "info"
+    }
+  ],
+  "apiCalls": 0,
+  "busyAfter": [
+    false,
+    false,
+    false,
+    false
+  ]
+}
