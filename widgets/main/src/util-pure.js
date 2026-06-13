@@ -1,5 +1,5 @@
 'use strict';
-// Pure DOM-free utility helpers shared with widgets/main/src/legacy-monolith.js.
+// Pure DOM-free utility helpers shared with widgets/main/src/core.js.
 // Browser bridge: window.__SSP_UTIL_PURE. Unit-tested in tests/unit/util-pure.test.js.
 //
 // Faithful extraction — bodies mirror the IIFE originals 1:1 (incl. esc's

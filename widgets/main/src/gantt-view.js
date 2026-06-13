@@ -2,7 +2,7 @@
    полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния
    и прогрессивной строкой истории переходов «← было…» (#20), плюс
    click-контракт реассайна (v5.7.0 D46, модал через deps).
-   Вынесено из legacy-monolith.js (Тир D слайс 6, ступень 1) за мост
+   Вынесено из core.js (Тир D слайс 6, ступень 1) за мост
    window.__SSP_GANTT_VIEW; ступень 2 (#39) — вся compute-логика в
    _buildGanttVm (pure), рендер — React-компонент react/gantt-view.jsx за
    мостом window.__SSP_GANTT_MOUNT (timeline-ядро кастомное: Ring не даёт

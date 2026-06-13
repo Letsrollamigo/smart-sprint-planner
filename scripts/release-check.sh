@@ -46,9 +46,9 @@ MAN_VER=$(node -p "require('./manifest.json').version" 2>/dev/null)
 [ "$MAN_VER" = "$PKG_VER" ] && ok "manifest.json:version = $MAN_VER" \
   || fail "manifest.json:version '$MAN_VER' ≠ package '$PKG_VER'"
 
-APP_VER=$(grep -oE "APP_VERSION = '${semver}'" widgets/main/src/legacy-monolith.js | grep -oE "$semver" | head -1)
-[ "$APP_VER" = "$PKG_VER" ] && ok "legacy-monolith.js:APP_VERSION = $APP_VER" \
-  || fail "legacy-monolith.js:APP_VERSION '$APP_VER' ≠ package '$PKG_VER'"
+APP_VER=$(grep -oE "APP_VERSION = '${semver}'" widgets/main/src/core.js | grep -oE "$semver" | head -1)
+[ "$APP_VER" = "$PKG_VER" ] && ok "core.js:APP_VERSION = $APP_VER" \
+  || fail "core.js:APP_VERSION '$APP_VER' ≠ package '$PKG_VER'"
 
 BE_VER=$(grep -oE "var APP_VERSION = '${semver}'" backend-core.js | grep -oE "$semver" | head -1)
 [ "$BE_VER" = "$PKG_VER" ] && ok "backend-core.js:APP_VERSION (/app-version) = $BE_VER" \

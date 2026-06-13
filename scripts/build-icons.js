@@ -20,7 +20,7 @@ const entries = files.map(f => {
 const out = [
   '// AUTOGEN by scripts/build-icons.js — DO NOT EDIT MANUALLY.',
   '// To update: edit widgets/main/src/icons/*.svg, then run `npm run build:icons`.',
-  '// Устанавливает window.__SSP_ICONS до исполнения IIFE legacy-monolith.js (аналог i18n-bridge).',
+  '// Устанавливает window.__SSP_ICONS до исполнения IIFE core.js (аналог i18n-bridge).',
   'if (typeof window !== \'undefined\') {',
   '  window.__SSP_ICONS = {',
   entries,

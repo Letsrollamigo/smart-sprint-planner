@@ -22,9 +22,9 @@
 - [ ] `npm run build:check` passes.
 - [ ] `npm test` passes (Playwright suite green).
 - [ ] `manifest.json` round-trips through `JSON.parse` (if touched).
-- [ ] If the version was bumped, all four points were updated synchronously: `manifest.json:version`, `package.json:version`, `widgets/main/src/legacy-monolith.js:APP_VERSION`, `'app-version'` literal in `backend-project.js`. The zip filename in `package.json:scripts.zip` was bumped too.
+- [ ] If the version was bumped, all four points were updated synchronously: `manifest.json:version`, `package.json:version`, `widgets/main/src/core.js:APP_VERSION`, `'app-version'` literal in `backend-project.js`. The zip filename in `package.json:scripts.zip` was bumped too.
 - [ ] `Documentation/CHANGELOG.md` (and `Documentation/CHANGELOG.ru.md`) updated under `[Unreleased]` or the next planned version.
-- [ ] If user-facing strings were added, both `ru` and `en` dictionaries in `widgets/main/src/legacy-monolith.js` were updated, and the strings are referenced via `T('key')` or a `data-i18n` attribute.
+- [ ] If user-facing strings were added, both `ru` and `en` dictionaries in `widgets/main/src/core.js` were updated, and the strings are referenced via `T('key')` or a `data-i18n` attribute.
 - [ ] If a new flow was added or an existing one was altered, Playwright tests cover it.
 - [ ] DCO sign-off is present on every commit (`git commit -s ...`).
 

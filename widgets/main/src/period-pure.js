@@ -1,6 +1,6 @@
 /* widgets/main/src/period-pure.js
    Side-effect модуль: чистые функции форматирования/парсинга периодов (минуты ↔ строка).
-   Публикует window.__SSP_PERIOD_PURE ДО исполнения IIFE legacy-monolith.js
+   Публикует window.__SSP_PERIOD_PURE ДО исполнения IIFE core.js
    (паттерн как toast-pure / modal-pure / sort-pure; импортируется в index.js раньше монолита).
 
    Единицы часов/минут берутся из активной локали через window.__SSP_T('hourShort'/'minuteShort'),

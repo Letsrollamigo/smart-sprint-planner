@@ -10,7 +10,7 @@
    Items are passed already sorted by the IIFE (multiKeySort). Ring receives
    the array as-is and renders sortKey/sortOrder only for visual affordance.
    `onSort` is wired to a 2-state cycle (off ↔ asc), matching legacy
-   `setSortKey(cur === k ? 'off' : k)` from sort-pure.js / legacy-monolith.js.
+   `setSortKey(cur === k ? 'off' : k)` from sort-pure.js / core.js.
 
    IIFE-bridge: window.__SSP_TABLE.mountAt(host, opts) / .unmountAt(host) /
                 .unmountAllIn(container) — opts described below. */

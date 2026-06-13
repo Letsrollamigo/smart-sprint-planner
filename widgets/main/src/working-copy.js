@@ -1,6 +1,6 @@
 'use strict';
 // Working-copy lifecycle state machine (v5.3.0 D3/b) extracted from
-// widgets/main/src/legacy-monolith.js (Tier C, most interconnected cluster).
+// widgets/main/src/core.js (Tier C, most interconnected cluster).
 // Browser bridge: window.__SSP_WORKING_COPY. Golden-tested in
 // tests/golden/working-copy.golden.test.js (draft structure, commit transitions,
 // restore matrix, resume incl. other-roles isolation, discard chain,

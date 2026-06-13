@@ -12,7 +12,7 @@
      Error переопределяет на role="alert" aria-live="assertive".
    - Основной путь — Ring alertService (#32 Phase 6c), legacy DOM-стак — fallback.
 
-   Вынесено из legacy-monolith.js (Фаза 5 слайс E3) за мост
+   Вынесено из core.js (Фаза 5 слайс E3) за мост
    window.__SSP_TOAST_RING; pure-хелперы — по-прежнему toast-pure.js
    (window.__SSP_TOAST_PURE, unit-тесты там). install(deps) зовётся монолитом
    один раз на init (та же точка, где жила зона), возвращает toastApi и

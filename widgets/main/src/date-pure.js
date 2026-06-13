@@ -1,6 +1,6 @@
 /* widgets/main/src/date-pure.js
    Чистые date-хелперы. Публикует window.__SSP_DATE_PURE ДО исполнения IIFE
-   legacy-monolith.js (паттерн как period-pure / enum-locale-pure).
+   core.js (паттерн как period-pure / enum-locale-pure).
    Зависимостей от closure-состояния нет; fmtDate/fmtDT используют локаль ru-RU
    (исторически дата/время всегда в RU-формате — поведение сохранено). */
 

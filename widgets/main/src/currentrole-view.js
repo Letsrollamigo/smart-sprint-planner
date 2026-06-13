@@ -1,6 +1,6 @@
 /* Current-role tables view — таблицы текущей роли уровня «Люди»
    («Распределение по исполнителям» + таблица задач) и их calc-хелперы.
-   Вынесено из legacy-monolith.js (Тир D слайс 2, ступень 1) за мост
+   Вынесено из core.js (Тир D слайс 2, ступень 1) за мост
    window.__SSP_CURRENTROLE_VIEW; golden-характеризация —
    tests/golden/render-people.golden.test.js (через делегаторы монолита).
 
