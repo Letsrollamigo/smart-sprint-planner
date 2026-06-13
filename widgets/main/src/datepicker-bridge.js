@@ -11,7 +11,7 @@
    dispatch a synthetic 'change' event so existing 'change' listeners (sprint
    header drafts, currentRole-task-date row handlers) run unchanged.
 
-   Вынесено из legacy-monolith.js (Фаза 5 слайс E3) за мост
+   Вынесено из core.js (Фаза 5 слайс E3) за мост
    window.__SSP_DP_BRIDGE (НЕ путать с __SSP_DATEPICKER — React-мостом
    Ring DatePicker'ов таблиц). Внешних вызовов у кластера нет — интерфейс
    чисто DOM-овый (document-level capture-листенеры + синтетические события),

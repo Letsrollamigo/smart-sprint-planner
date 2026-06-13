@@ -1,6 +1,6 @@
 'use strict';
 // Pure helpers for toast queue logic. Testable in isolation via tests/unit/toast-pure.test.js.
-// Bridge to browser IIFE: window.__SSP_TOAST_PURE — read in widgets/main/src/legacy-monolith.js.
+// Bridge to browser IIFE: window.__SSP_TOAST_PURE — read in widgets/main/src/core.js.
 
 // Default durations (ms) per toast type. duration=0 means persistent (no auto-dismiss).
 const TOAST_DEFAULTS = Object.freeze({

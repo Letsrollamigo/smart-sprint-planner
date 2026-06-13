@@ -1,7 +1,7 @@
 /* widgets/main/src/enum-locale-pure.js
    B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority).
    Чистые функции + мапа стандартных значений; публикует window.__SSP_ENUM_PURE
-   ДО исполнения IIFE legacy-monolith.js (паттерн как toast-pure/period-pure).
+   ДО исполнения IIFE core.js (паттерн как toast-pure/period-pure).
 
    dispEnum(s, isRu) принимает флаг локали ПАРАМЕТРОМ → функция чистая; текущий язык
    (_lang) инъектирует тонкий делегатор в монолите. Только display — logic-поля

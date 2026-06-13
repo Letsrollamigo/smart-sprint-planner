@@ -1,6 +1,6 @@
 /* Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки
    ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table).
-   Вынесено из legacy-monolith.js (Тир D слайс 3, ступень 1) за мост
+   Вынесено из core.js (Тир D слайс 3, ступень 1) за мост
    window.__SSP_ROLECOMP_VIEW; golden-характеризация —
    tests/golden/render-planning.golden.test.js (через делегаторы монолита).
 

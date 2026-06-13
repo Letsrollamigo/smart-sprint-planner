@@ -2,7 +2,7 @@
    перелимита аллокаций + блокировка кнопки валидации (updateAllocOverlimitUI,
    вкл. B13-агрегат и #38 allowOverlimitPlanning), overlimit-модалка v5.2.0
    с downgrade-веткой (приватная showOverlimitModal) и onboarding-подсказка
-   ALLOCATED-lock. Вынесено из legacy-monolith.js (Фаза 5 слайс 4, коммит Б)
+   ALLOCATED-lock. Вынесено из core.js (Фаза 5 слайс 4, коммит Б)
    за мост window.__SSP_VALIDATION_CTRL; golden-характеризация —
    tests/golden/validation.golden.test.js (через делегаторы монолита).
 

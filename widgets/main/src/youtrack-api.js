@@ -1,5 +1,5 @@
 'use strict';
-// YouTrack IO layer extracted from widgets/main/src/legacy-monolith.js (Tier C).
+// YouTrack IO layer extracted from widgets/main/src/core.js (Tier C).
 // Browser bridge: window.__SSP_YOUTRACK_API. Golden-tested in
 // tests/golden/youtrack-api.golden.test.js (backend routing matrix, apiGet/apiPost
 // contracts incl. save side-effects and auto-snapshot matrix, _currentSprintRoleRec

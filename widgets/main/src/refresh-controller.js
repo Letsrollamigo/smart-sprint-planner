@@ -1,7 +1,7 @@
 /* Refresh-контроллер #35 «Обновить из задачи»: единый refreshFromYouTrack
    (чанкованный REST-батч + field-class merge через resolveRefreshMerge +
    конфликт-модалки S4/S5) и legacy per-role путь refreshRoleEstimates.
-   Вынесено из legacy-monolith.js (Фаза 5 слайс 5) за мост
+   Вынесено из core.js (Фаза 5 слайс 5) за мост
    window.__SSP_REFRESH_CTRL; golden-характеризация —
    tests/golden/refresh.golden.test.js (через делегаторы монолита).
 

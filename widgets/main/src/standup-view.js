@@ -1,5 +1,5 @@
 'use strict';
-// Stand-up view extracted from widgets/main/src/legacy-monolith.js (Tier D slice 1).
+// Stand-up view extracted from widgets/main/src/core.js (Tier D slice 1).
 // Browser bridge: window.__SSP_STANDUP_VIEW. Stage 2 (React-ификация): рендер-ядро
 // строит view-model и отдаёт его React-мосту window.__SSP_STANDUP_MOUNT
 // (react/standup-view.jsx) — DOM бакетов/баннера/хинтов собирает React.

@@ -1,5 +1,5 @@
 /**
- * Golden-master host: исполняет НАСТОЯЩИЙ legacy-monolith.js в jsdom-песочнице
+ * Golden-master host: исполняет НАСТОЯЩИЙ core.js в jsdom-песочнице
  * под node --test (Фаза 2 программы декомпозиции, MONOLITH_REFACTOR_STRATEGY §4.2).
  *
  * Принципы:
@@ -231,10 +231,10 @@ function createHost(opts) {
   }
 
   /* ── Монолит + хук (инжекция в память, файл не трогаем) ───── */
-  const monoPath = path.join(SRC, 'legacy-monolith.js');
+  const monoPath = path.join(SRC, 'core.js');
   let mono = fs.readFileSync(monoPath, 'utf8');
   const closeIdx = mono.lastIndexOf('})();');
-  if (closeIdx < 0) throw new Error('legacy-monolith.js: closing IIFE `})();` not found');
+  if (closeIdx < 0) throw new Error('core.js: closing IIFE `})();` not found');
   mono = mono.slice(0, closeIdx) + GM_HOOK + '\n' + mono.slice(closeIdx);
   window.eval(mono);
 
