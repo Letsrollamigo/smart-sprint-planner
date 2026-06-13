@@ -41,6 +41,7 @@ import './sprint-controller.js';
 import './reassign-controller.js';
 import './i18n-controller.js';
 import './history-controller.js';
+import './settings-controller.js';
 import './standup-view.js';
 import './currentrole-view.js';
 import './rolecomposition-view.js';
