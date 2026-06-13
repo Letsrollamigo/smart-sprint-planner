@@ -112,6 +112,32 @@
       ]
     },
     {
+      "id": "alloc",
+      "title": "Аллокация",
+      "sortable": false,
+      "className": "td-num",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "0м",
+        "10ч",
+        "0м"
+      ]
+    },
+    {
+      "id": "assignee",
+      "title": "Исполнитель",
+      "sortable": false,
+      "className": "td-title",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "—",
+        "—",
+        "—"
+      ]
+    },
+    {
       "id": "delta",
       "title": "Ресурс<br>Анализ",
       "sortable": false,

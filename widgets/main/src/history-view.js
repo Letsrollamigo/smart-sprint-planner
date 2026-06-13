@@ -48,6 +48,19 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
     var s = deps.fmtHoursOnly(Math.abs(v));
     return v < 0 ? '<span class="delta-neg">−'+s+'</span>' : s;
   }
+  /* B19 — исполнитель из per-role записи personalPlanning (может быть массивом —
+     multi-assignee → join, как excel-export). Утрачен с v2.0.0 D128 вместе с native-таблицей. */
+  var _ta = (rec.personalPlanning && rec.personalPlanning.taskAssignments) || {};
+  function _assigneeName(issueId) {
+    var ta = _ta[issueId];
+    if (!ta) return '—';
+    if (Array.isArray(ta)) {
+      var n = ta.filter(function(x){ return x && (x.assigneeName || x.assignee); })
+               .map(function(x){ return x.assigneeName || x.assignee; });
+      return n.length ? n.join(', ') : '—';
+    }
+    return ta.assigneeName || ta.assignee || '—';
+  }
 
   var rows = items.map(function(item) {
     var est  = item['estimate_'+rk];
@@ -65,6 +78,8 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
         xpriority: esc(deps.dispEnum(item.xpriority) || '—'),
         state: esc(deps.dispEnum(item.state) || '—'),
         incStatus: esc(item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—'),
+        alloc: esc((function(){ var a = item['alloc_'+rk]; var v = (a !== null && a !== undefined) ? a : Math.max(0, (est||0)-(fact||0)); return deps.fmtPeriod(v); })()),
+        assignee: esc(_assigneeName(item.issueId)),
         delta: { __html: histDelta(delta) },
       },
     };
@@ -404,6 +419,8 @@ function buildSpoiler(rec, idx, deps) {
     }
     cols.push({ id: 'state', title: T('histColState'), sortable: false, className: 'td-hist-narrow', getValue: _vmCell });
     cols.push({ id: 'incStatus', title: T('histColIncStatus'), sortable: false, className: 'td-hist-inc', getValue: _vmCell });
+    cols.push({ id: 'alloc', title: T('histColAlloc'), sortable: false, className: 'td-num', headerClassName: 'td-num', getValue: _vmCell });
+    cols.push({ id: 'assignee', title: T('histColAssignee'), sortable: false, className: 'td-title', getValue: _vmCell });
     cols.push({ id: 'delta', title: vm.deltaColTitle, sortable: false, className: 'td-num', headerClassName: 'td-num', getValue: _vmCell });
 
     /* Internal host div для Ring Table. Уникальный (per spoiler instance). */

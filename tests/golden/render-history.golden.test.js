@@ -52,6 +52,36 @@ test('golden: buildSpoiler — items-таблица истории (контра
   checkJsonSnapshot('spoiler-items-table', materializeTable(tableHost));
 });
 
+test('golden: B19 — items-таблица: колонки Аллокация (явная+fallback) и Исполнитель (single+array+нет)', () => {
+  const { gm, document } = bootWithRights();
+  const rec = mkRec({
+    status: 'FINISHED',
+    items: [
+      synItem('GM-A1', { estimate_analysis: 600, fact_analysis: 200, alloc_analysis: 480 }),
+      synItem('GM-A2', { estimate_analysis: 900, fact_analysis: 300, alloc_analysis: null }),
+      synItem('GM-A3', { estimate_analysis: 300, fact_analysis: 0, alloc_analysis: null }),
+    ],
+    /* alloc: GM-A1 явная (480), GM-A2/A3 null → fallback max(0,est−fact) = 600 / 300.
+       assignee: GM-A1 single(+name), GM-A2 array(name + login-fallback), GM-A3 нет → «—». */
+    personalPlanning: {
+      taskAssignments: {
+        'GM-A1': { assignee: 'gm_user_1', assigneeName: 'Иван Аналитик' },
+        'GM-A2': [{ assignee: 'gm_user_2', assigneeName: 'Пётр Второй' }, { assignee: 'gm_user_3' }],
+      },
+    },
+  });
+  const recEl = gm.call('buildSpoiler', rec, 0);
+  document.body.appendChild(recEl);
+  click(document, recEl.querySelector('.spoiler__head'));
+  const tableHost = recEl.querySelector('[data-ssp-table-host]') ||
+    Array.from(recEl.querySelectorAll('*')).find((el) => el.__sspTableOpts);
+  assert.ok(tableHost, 'items table must mount for record with items');
+  checkJsonSnapshot('spoiler-items-alloc-assignee', materializeTable(tableHost));
+  /* cleanup: убрать спойлер из общего document.body, иначе следующие тест-файлы
+     (render-planning) подхватывают stale-элемент по querySelector. */
+  recEl.remove();
+});
+
 /* ── Добор Тира D слайс 4: ветки buildSpoiler + renderHistory ─────────────── */
 
 /** Синтетическая запись истории с детерминированными epoch-датами. */
