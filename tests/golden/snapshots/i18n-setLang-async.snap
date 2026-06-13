@@ -1,0 +1,11 @@
+{
+  "loadDictionaryArgs": [
+    "es"
+  ],
+  "i18nEsLoaded": {
+    "greeting": "Hola"
+  },
+  "lang": "es",
+  "localStorage": "es",
+  "rerenderCalls": 1
+}

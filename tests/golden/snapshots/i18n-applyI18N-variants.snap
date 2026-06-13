@@ -1,0 +1,10 @@
+{
+  "plainText": "T:plain",
+  "inputPlaceholder": "T:inputPh",
+  "textareaPlaceholder": "T:taPh",
+  "htmlInner": "T:htmlKey",
+  "title": "T:titleKey",
+  "phAttr": "T:phKey",
+  "tooltip": "T:tipKey",
+  "label": "T:labelKey"
+}
