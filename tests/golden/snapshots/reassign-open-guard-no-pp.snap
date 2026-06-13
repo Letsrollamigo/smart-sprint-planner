@@ -1,0 +1,9 @@
+{
+  "modalsOpened": 0,
+  "diag": [
+    {
+      "msg": "openReassignModal: no _currentRolePP",
+      "level": "warn"
+    }
+  ]
+}
