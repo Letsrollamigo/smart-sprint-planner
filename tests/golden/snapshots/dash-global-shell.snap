@@ -1,0 +1,19 @@
+{
+  "dashExists": true,
+  "railChildren": [
+    "ssp-rail__head",
+    "ssp-rail__utils",
+    "ssp-rail__context",
+    "ssp-rail__nav"
+  ],
+  "paneExists": true,
+  "toggleExists": true,
+  "navHasTree": true,
+  "navHasTabs": true,
+  "pickerInContext": true,
+  "widgetHeaderInContext": true,
+  "linksInUtils": true,
+  "statusBarInUtils": true,
+  "railSprintNameNode": true,
+  "dashCountAfterSecond": 1
+}
