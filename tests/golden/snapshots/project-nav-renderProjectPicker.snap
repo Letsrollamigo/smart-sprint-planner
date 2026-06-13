@@ -1,0 +1,22 @@
+{
+  "wrapHidden": false,
+  "selClass": "ssp-global-project-select",
+  "options": [
+    {
+      "value": "",
+      "text": "— выберите проект —",
+      "i18n": "globalProjectPlaceholder"
+    },
+    {
+      "value": "DEMO",
+      "text": "Демопроект (DEMO)",
+      "i18n": null
+    },
+    {
+      "value": "DEMOClone",
+      "text": "Clone of Демопроект (DEMOClone)",
+      "i18n": null
+    }
+  ],
+  "selectedValue": "DEMOClone"
+}
