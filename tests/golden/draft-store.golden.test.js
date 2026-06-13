@@ -23,6 +23,7 @@
 'use strict';
 
 const test = require('node:test');
+const assert = require('node:assert');
 const { createHost } = require('./monolith-host');
 const { checkJsonSnapshot } = require('./snap');
 const fx = require('./fixtures/state');
@@ -204,6 +205,27 @@ test('golden: draft — clearOnBackend (action=clear) и clearDraftStorage (сб
       flushArmed: sched.delays(),
     },
   });
+});
+
+test('golden: B23 — клик «Сбросить черновик» при чистом контенте (meta есть, не dirty) → backend action=clear', async () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  stubScheduler(window);
+  const api = stubApi(gm, {});
+  recordToasts(gm);
+  /* loadAllData стабим — изолируем контракт на сам backend-clear (без тяжёлой перезагрузки). */
+  gm.set({ loadAllData: function () { return Promise.resolve({}); } });
+  /* эмулируем global-рельс: на бэке есть meta, но контент не dirty (dirty только ui). */
+  gm.call('_draftSet', 'meta', { savedAt: 7 });
+  gm.call('bindClearDraftHandlers');
+  const btn = document.getElementById('clearDraftBtn');
+  assert.ok(btn, '#clearDraftBtn должен существовать в DOM');
+  btn.dispatchEvent(new (document.defaultView.MouseEvent)('click', { bubbles: true }));
+  await Promise.resolve();
+  const clearCalls = api.filter(function (e) {
+    return e.fn === 'post' && e.path === 'draft' && e.query && e.query.action === 'clear';
+  });
+  assert.strictEqual(clearCalls.length, 1, 'клик при чистом драфте → backend action=clear (а не in-memory clearDraftStorage)');
 });
 
 test('golden: draft — saveDebounced: per-suffix таймеры, переарм, meta при выстреле, гард restore', () => {
