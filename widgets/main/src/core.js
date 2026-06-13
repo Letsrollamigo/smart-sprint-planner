@@ -444,6 +444,51 @@
     return ALL_ROLES.filter(function(r){ return s.activeRoles.indexOf(r.key) >= 0; });
   }
 
+  /* ═══ Статус роли — per-role канон (statusByRole-рефактор) ═══
+     Единственный источник правды о статусе роли — запись _history[<sprintId>_<rk>].status.
+     Глобальный _sprint.status — легаси-агрегат, вытесняемый этими хелперами:
+       • statusForRole(rk)  — чтение per-role статуса (дефолт PLANNING);
+       • aggregateStatus()  — производный «статус спринта» = min по STATUS_RANK среди
+                              не-FINISHED активных ролей (как header-view getSprintMeta);
+       • setRoleStatus(rk,s)— запись per-role в _history + persist (apiPost history) +
+                              ре-рендер бейджа роли и шапки. */
+  var _STATUS_RANK = { PLANNING: 0, CONFIRMED: 1, ALLOCATED: 2, FINISHED: 3 };
+  function statusForRole(rk) {
+    if (_sprint && _sprint.sprintId && _history) {
+      var id = _sprint.sprintId + '_' + rk;
+      var rec = _history.find(function(r){ return r && r.sprintId === id; });
+      if (rec && rec.status) return rec.status;
+    }
+    return STATUS.PLANNING;
+  }
+  function aggregateStatus() {
+    var min = Infinity, found = null;
+    getActiveRoles().forEach(function(r){
+      var s = statusForRole(r.key);
+      if (s === STATUS.FINISHED) return;          // FINISHED не понижает агрегат (как header-view)
+      var rank = _STATUS_RANK[s];
+      if (rank != null && rank < min) { min = rank; found = s; }
+    });
+    return found || STATUS.PLANNING;
+  }
+  function setRoleStatus(rk, status) {
+    if (!_sprint || !_sprint.sprintId) return;
+    var id = _sprint.sprintId + '_' + rk;
+    var idx = _history ? _history.findIndex(function(r){ return r && r.sprintId === id; }) : -1;
+    if (idx < 0) {
+      /* записи ещё нет — создать снапшот роли, затем выставить статус */
+      try { saveRoleHistorySnapshot(rk); } catch(_){}
+      idx = _history ? _history.findIndex(function(r){ return r && r.sprintId === id; }) : -1;
+    }
+    if (idx < 0) return;
+    _history[idx].status = status;
+    apiPost('history', { history: _history }).catch(function(e){
+      diag('setRoleStatus persist ERR: '+(e&&e.message?e.message:e), 'err');
+    });
+    try { if (typeof renderRoleStatusBadge === 'function') renderRoleStatusBadge(rk); } catch(_){}
+    try { if (typeof renderWidgetHeader === 'function') renderWidgetHeader(); } catch(_){}
+  }
+
   /* ═══ Состояние ════════════════════════════════════════════ */
   var _host, _ctx, _settings = null, _projectFields = [], _projectGroups = [];
   /* #25 Ф1 — режим виджета. 'project' (PROJECT_SETTINGS) или 'global' (MAIN_MENU_ITEM,
@@ -2415,6 +2460,7 @@
       openPickModal: openPickModal, refreshFromYouTrack: refreshFromYouTrack,
       doValidateRole: doValidateRole, doNewSprint: doNewSprint,
       doSaveRoleHeader: doSaveRoleHeader,
+      statusForRole: statusForRole, setRoleStatus: setRoleStatus,
       PAGE_SIZE: PAGE_SIZE, INC: INC, STATUS: STATUS, ALL_ROLES: ALL_ROLES,
       state: {
         getSettings: function () { return _settings; },
@@ -2424,6 +2470,7 @@
         getServerSnapshotRoleItems: function () { return _serverSnapshotRoleItems; },
         getRoleItems: function () { return _roleItems; },
         getUiExpandedRoles: function () { return _uiExpandedRoles; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         setActiveSubtab: function (rk) { _activeSubtab = rk; },
         getIsEditor: function () { return _isEditor; },
         getIsValidator: function () { return _isValidator; },
@@ -2953,6 +3000,8 @@
       markDirty: _markDirty,
       draftSaveDebounced: _draftSaveDebounced,
       safeLs: safeLs,
+      statusForRole: statusForRole, aggregateStatus: aggregateStatus, setRoleStatus: setRoleStatus,
+      getActiveRoles: getActiveRoles,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC, STATUS: STATUS,
       state: {
         getSettings: function () { return _settings; },

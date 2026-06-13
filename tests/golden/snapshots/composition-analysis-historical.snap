@@ -84,10 +84,10 @@
       "header": null,
       "cells": [
         {
-          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H1\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\" readonly=\"readonly\" tabindex=\"-1\"/>"
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H1\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
         },
         {
-          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H2\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\" readonly=\"readonly\" tabindex=\"-1\"/>"
+          "html": "<input type=\"text\" class=\"alloc-input\" data-iid=\"GM-H2\" data-rk=\"analysis\" value=\"10ч\" placeholder=\"напр. 16ч\" style=\"min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px\"/>"
         }
       ]
     },

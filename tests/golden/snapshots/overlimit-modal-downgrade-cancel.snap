@@ -1,17 +1,15 @@
 {
   "afterDowngrade": {
-    "status": "PLANNING",
-    "markDirty": [
-      "sprint"
+    "roleStatus": "PLANNING",
+    "historyStatus": "PLANNING",
+    "globalStatusUntouched": "ALLOCATED",
+    "badges": [
+      "testing"
     ],
-    "draftSave": [
-      {
-        "suffix": "sprint",
-        "getterSprintId": "gm-sprint-2026-06"
-      }
-    ],
-    "badges": [],
     "renderHeader": 1,
+    "apiPost": [
+      "history"
+    ],
     "closes": 1,
     "toasts": [
       {
@@ -21,7 +19,7 @@
     ]
   },
   "afterCancel": {
-    "status": "ALLOCATED",
+    "roleStatus": "ALLOCATED",
     "closes": 2,
     "toastCount": 1
   },

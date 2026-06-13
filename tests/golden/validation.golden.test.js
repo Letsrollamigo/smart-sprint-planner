@@ -109,6 +109,18 @@ function ensureValidationDom(document, rk) {
   return document.getElementById('validateBtn_' + rk);
 }
 
+/** statusByRole — пометить роль валидированной активной per-role записью _history.
+ *  R6-гейт overlimit-модалки (и setRoleStatus) читают статус per-role, не глобальный. */
+function markRoleValidated(gm, rk, status) {
+  const id = fx.SPRINT_ID + '_' + rk;
+  const h = gm.get('_history').filter(function (r) { return r.sprintId !== id; });
+  h.push({
+    sprintId: id, roleKey: rk, status: status || 'ALLOCATED',
+    name: 'GM Sprint June 2026', items: [], personalPlanning: {}, revisions: [], pluginVersion: '2.5.6',
+  });
+  gm.set({ _history: h });
+}
+
 /** compHost с alloc-инпутами (data-iid) для бордер-контракта. */
 function ensureCompHostInputs(document, rk, iids) {
   const inputs = iids
@@ -279,6 +291,7 @@ test('golden: updateAllocOverlimitUI — per-task бордеры + блокир�
   const { gm, document, modalLog } = createHost();
   fx.applyBaseState(gm);
   const btn = ensureValidationDom(document, 'testing');
+  markRoleValidated(gm, 'testing');   /* per-role ALLOCATED → R6 откроет модалку */
   /* GM-5: alloc 960 > delta 600; GM-6: alloc 600 > delta 480; GM-404 — нет в items */
   ensureCompHostInputs(document, 'testing', ['GM-5', 'GM-6', 'GM-404']);
 
@@ -319,6 +332,7 @@ test('golden: updateAllocOverlimitUI — fallback без host: per-task агре
   /* host отсутствует → детекция только агрегатами */
   const hostA = createHost();
   fx.applyBaseState(hostA.gm);
+  markRoleValidated(hostA.gm, 'testing');   /* per-role ALLOCATED → R6 откроет модалку */
   const btnA = ensureValidationDom(hostA.document, 'testing');
   hostA.gm.call('updateAllocOverlimitUI', 'testing');
 
@@ -362,6 +376,7 @@ test('golden: updateAllocOverlimitUI — #38 allowOverlimitPlanning: детек�
 test('golden: overlimit-модалка — guard одноразовости + сброс else-веткой + повторный показ', () => {
   const { gm, document, modalLog } = createHost();
   fx.applyBaseState(gm);
+  markRoleValidated(gm, 'testing');   /* per-role ALLOCATED → R6 откроет модалку */
   ensureValidationDom(document, 'testing');
 
   gm.call('updateAllocOverlimitUI', 'testing');
@@ -389,47 +404,52 @@ test('golden: overlimit-модалка — guard одноразовости + с
   });
 });
 
-test('golden: overlimit-модалка — ветка downgrade (PLANNING + dirty + рендеры) и cancel', () => {
+test('golden: B24 — overlimit-модалка: downgrade понижает PER-ROLE статус (бейдж/шапка/persist) и cancel', () => {
   const { gm, document, modalLog } = createHost();
   fx.applyBaseState(gm);
   ensureValidationDom(document, 'testing');
-  /* Бейджи в DOM есть, но per-role ветка downgrade ДОКАЗУЕМО МЕРТВА:
-     activeRoles — массив (getActiveRoles: .length/.indexOf, settings-form
-     пишет .slice()), а ветка индексирует его строковым ключом → undefined.
-     Контракт фиксирует no-op (badges: []); снос — коммитом А слайса 4. */
   document.body.insertAdjacentHTML(
     'beforeend',
     '<span id="statusBadge_analysis"></span><span id="statusBadge_testing"></span>'
   );
-  const toasts = recordToasts(gm);
-  const calls = { markDirty: [], draftSave: [], badges: [], renderHeader: 0, closes: 0 };
+  /* B24/statusByRole — статус роли канонически в _history[<sprintId>_<rk>].status.
+     Добавляем активную per-role запись testing=ALLOCATED → R6-гейт (per-role) откроет
+     downgrade-модалку; downgrade переведёт ЕЁ (а не глобальный статус) в PLANNING. */
+  const activeId = fx.SPRINT_ID + '_testing';
   gm.set({
-    _markDirty: function (section) { calls.markDirty.push(section); },
-    _draftSaveDebounced: function (suffix, getter) {
-      calls.draftSave.push({ suffix: suffix, getterSprintId: getter().sprintId });
-    },
+    _history: gm.get('_history').concat([{
+      sprintId: activeId, roleKey: 'testing', roleLabel: 'Тестирование',
+      name: 'GM Sprint June 2026', status: 'ALLOCATED',
+      items: [], personalPlanning: {}, revisions: [], pluginVersion: '2.5.6',
+    }]),
+  });
+  const toasts = recordToasts(gm);
+  const calls = { badges: [], renderHeader: 0, closes: 0, apiPost: [] };
+  gm.set({
     renderRoleStatusBadge: function (rk) { calls.badges.push(rk); },
     renderWidgetHeader: function () { calls.renderHeader += 1; },
+    apiPost: function (path) { calls.apiPost.push(path); return Promise.resolve({}); },
   });
 
   gm.call('updateAllocOverlimitUI', 'testing');
-  assert.strictEqual(modalLog.length, 1, 'overlimit-модалка обязана открыться');
+  assert.strictEqual(modalLog.length, 1, 'overlimit-модалка обязана открыться (per-role ALLOCATED)');
   const spec = modalLog[0];
   const h = { close: function () { calls.closes += 1; } };
 
   spec.buttons.find(function (b) { return b.id === 'downgrade'; }).onClick(h);
   const afterDowngrade = {
-    status: gm.get('_sprint').status,
-    markDirty: calls.markDirty.slice(),
-    draftSave: calls.draftSave.slice(),
+    roleStatus: gm.call('statusForRole', 'testing'),
+    historyStatus: gm.get('_history').find(function (r) { return r.sprintId === activeId; }).status,
+    globalStatusUntouched: gm.get('_sprint').status,
     badges: calls.badges.slice(),
     renderHeader: calls.renderHeader,
+    apiPost: calls.apiPost.slice(),
     closes: calls.closes,
     toasts: toasts.slice(),
   };
 
-  /* cancel: вернуть ALLOCATED + сбросить guard → новая модалка → отмена ничего не меняет */
-  gm.get('_sprint').status = 'ALLOCATED';
+  /* cancel: вернуть роль в ALLOCATED + сбросить guard → новая модалка → отмена ничего не меняет */
+  gm.get('_history').find(function (r) { return r.sprintId === activeId; }).status = 'ALLOCATED';
   gm.set({ _overlimitModalShownFor: {} });
   gm.call('updateAllocOverlimitUI', 'testing');
   modalLog[1].buttons.find(function (b) { return b.id === 'cancel'; }).onClick(h);
@@ -437,7 +457,7 @@ test('golden: overlimit-модалка — ветка downgrade (PLANNING + dirt
   checkJsonSnapshot('overlimit-modal-downgrade-cancel', {
     afterDowngrade: afterDowngrade,
     afterCancel: {
-      status: gm.get('_sprint').status,
+      roleStatus: gm.call('statusForRole', 'testing'),
       closes: calls.closes,
       toastCount: toasts.length,
     },
@@ -456,18 +476,17 @@ test('golden: overlimit-модалка — ветка downgrade (PLANNING + dirt
 
 /* ═══════════════════ maybeShowAllocatedLockHint ═══════════════════ */
 
-test('golden: maybeShowAllocatedLockHint — onboarding-гард (статус + localStorage)', () => {
+test('golden: maybeShowAllocatedLockHint — onboarding-гард (per-role статус + localStorage)', () => {
   const { gm, window } = createHost();
   fx.applyBaseState(gm);
   const toasts = recordToasts(gm);
 
-  /* не ALLOCATED → ничего */
-  gm.get('_sprint').status = 'PLANNING';
+  /* ни одна роль не ALLOCATED (per-role) → ничего */
   gm.call('maybeShowAllocatedLockHint');
   const afterPlanning = toasts.length;
 
-  /* ALLOCATED → тост + маркер в localStorage */
-  gm.get('_sprint').status = 'ALLOCATED';
+  /* роль ALLOCATED (per-role _history) → тост + маркер в localStorage */
+  markRoleValidated(gm, 'analysis', 'ALLOCATED');
   gm.call('maybeShowAllocatedLockHint');
   const lsValue = window.localStorage.getItem('ssp_allocLockHintShown');
 
@@ -486,6 +505,7 @@ test('golden: maybeShowAllocatedLockHint — onboarding-гард (статус +
 test('golden: event-контракты листенеров — blur alloc-input / change inc-sel (таймер 50мс)', () => {
   const { gm, document, window, modalLog } = createHost();
   fx.applyBaseState(gm);
+  markRoleValidated(gm, 'testing');   /* per-role ALLOCATED → R6 откроет модалку на blur/change */
   const btn = ensureValidationDom(document, 'testing');
   const sched = stubScheduler(window);
 

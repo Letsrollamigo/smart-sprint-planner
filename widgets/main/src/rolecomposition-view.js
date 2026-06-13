@@ -596,9 +596,14 @@ function _buildRoleCompositionVm(rk, deps) {
   var snapByIssue = {};
   snapItems.forEach(function(it){ if (it && it.issueId) snapByIssue[it.issueId] = it; });
   /* v5.2.0 — после ALLOCATED таблица read-only. Для перехода в edit-режим
-     пользователь жмёт «Открыть на правку» в истории (текущая логика сбрасывает
-     статус в PLANNING → lock автоматически снимается). Полная working-copy логика — v5.3.0. */
-  var isLocked = !!(_sprint && _sprint.status === deps.STATUS.ALLOCATED);
+     пользователь жмёт «Открыть на правку» (working copy → _activeWorkingDraftKey).
+     statusByRole — lock PER-ROLE: раньше глобальный _sprint.status лочил таблицы ВСЕХ
+     ролей, если ЛЮБАЯ роль ALLOCATED (латентный «лок скопом»); теперь lock по статусу
+     именно этой роли. Активная рабочая копия роли снимает lock (правка идёт в WC). */
+  var _wcKey = _sprint ? (_sprint.sprintId + '_' + rk) : null;
+  var _wcActive = !!(_wcKey && deps.state.getActiveWorkingDraftKey &&
+                     deps.state.getActiveWorkingDraftKey() === _wcKey);
+  var isLocked = !!(_sprint && deps.statusForRole(rk) === deps.STATUS.ALLOCATED && !_wcActive);
   var roAttr = isLocked ? ' readonly="readonly" tabindex="-1"' : '';
   var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
 

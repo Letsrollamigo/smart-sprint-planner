@@ -83,6 +83,37 @@ test('golden: renderRoleComposition — исторический вид (items �
   checkJsonSnapshot('composition-analysis-historical', table);
 });
 
+test('golden: B-lock — composition lock PER-ROLE + WC-байпас (statusByRole)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const activeId = fx.SPRINT_ID;
+  function markRole(rk, status) {
+    const id = activeId + '_' + rk;
+    const h = gm.get('_history').filter(function (r) { return r.sprintId !== id; });
+    h.push({ sprintId: id, roleKey: rk, status: status, name: 'GM Sprint June 2026',
+      items: [], personalPlanning: {}, revisions: [], pluginVersion: '2.5.6' });
+    gm.set({ _history: h });
+  }
+  function isLocked(rk) {
+    if (!document.getElementById('compHost_' + rk)) ensureCompHost(document, rk);
+    gm.call('renderRoleComposition', rk);
+    return JSON.stringify(materializeTable(document.getElementById('compHost_' + rk))).indexOf('readonly') >= 0;
+  }
+
+  /* (1) analysis PLANNING (нет per-role записи) → редактируемо */
+  assert.strictEqual(isLocked('analysis'), false, 'PLANNING-роль редактируема');
+  /* (2) devBack ALLOCATED, analysis всё ещё PLANNING → analysis редактируемо
+        (фикс «лок скопом»: чужая ALLOCATED больше не лочит эту роль) */
+  markRole('devBack', 'ALLOCATED');
+  assert.strictEqual(isLocked('analysis'), false, 'чужая ALLOCATED не лочит роль (фикс лок-скопом)');
+  /* (3) analysis ALLOCATED → locked (readonly) */
+  markRole('analysis', 'ALLOCATED');
+  assert.strictEqual(isLocked('analysis'), true, 'ALLOCATED-роль залочена (readonly)');
+  /* (4) активная рабочая копия analysis → lock снят несмотря на ALLOCATED */
+  gm.set({ _activeWorkingDraftKey: activeId + '_analysis' });
+  assert.strictEqual(isLocked('analysis'), false, 'активная рабочая копия снимает lock');
+});
+
 /* ═══ Добор слайса 3 Тира D (планинг-ядро) — характеризация ДО выноса ═══
    renderPlanningRoles / аккордеон / buildRolePanel / wireRolePanel /
    ветки и event-контракты renderRoleComposition. */
@@ -324,6 +355,14 @@ test('golden: renderRoleComposition — пагинация (30 задач, ст�
 test('golden: renderRoleComposition — перелимит testing блокирует «Валидировать» (wrapper + overlimit-модалка)', () => {
   const { gm, document, modalLog } = createHost();
   fx.applyBaseState(gm);
+  /* statusByRole — overlimit-downgrade-модалка показывается только для УЖЕ валидированной
+     роли (R6 гейтит по per-role статусу). Делаем testing=ALLOCATED активной записью _history. */
+  gm.set({
+    _history: gm.get('_history').concat([{
+      sprintId: fx.SPRINT_ID + '_testing', roleKey: 'testing', status: 'ALLOCATED',
+      name: 'GM Sprint June 2026', items: [], personalPlanning: {}, revisions: [], pluginVersion: '2.5.6',
+    }]),
+  });
   const host = ensureCompHost(document, 'testing');
   document.body.insertAdjacentHTML('beforeend', '<button id="validateBtn_testing"></button>');
   const validateBtn = document.getElementById('validateBtn_testing');
