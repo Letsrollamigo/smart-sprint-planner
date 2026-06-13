@@ -1,0 +1,13 @@
+{
+  "fetched": [
+    {
+      "path": "users/me",
+      "fields": "id,login,fullName"
+    }
+  ],
+  "currentUser": {
+    "id": "u-1",
+    "login": "gm_user_1",
+    "fullName": "GM User One"
+  }
+}
