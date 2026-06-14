@@ -17,7 +17,8 @@
     "dateEnd": 1781568000000,
     "_orphanGanttIssues": [
       "GM-9"
-    ]
+    ],
+    "personalPlanning": {}
   },
   "roleItems": {
     "analysis": [

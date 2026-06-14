@@ -145,7 +145,12 @@ function resumeWorkingDraft(key, idx, deps) {
       roleItems[r.key] = [];
     }
   });
-  if (draft.personalPlanning) sprint.personalPlanning = deps.deepClone(draft.personalPlanning);
+  /* #49 — in-progress PP рабочей копии (single per-role) сеем в КАНОН-запись редактируемой
+     роли (snap = history-запись для key); getPP читает только канон. _sprint.personalPlanning
+     затем выставляем derived keyed-map из канона (serialization-зеркало для sprint-data POST
+     ниже), а НЕ single draft.personalPlanning (был регрессор keyed→single в WC-пути). */
+  if (draft.personalPlanning && snap) snap.personalPlanning = deps.deepClone(draft.personalPlanning);
+  sprint.personalPlanning = deps.buildPPMapFromCanon(sprint.sprintId, history, deps.deepClone);
   if (draft.gantt)            sprint.gantt            = deps.deepClone(draft.gantt);
 
   /* Sync на бэкенд _sprint+_roleItems */
@@ -402,9 +407,16 @@ function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps
   // в v5.9.0 (D60); запись `snap.gantt` ломала validateHistory → invalid_history_structure
   // → каскад #4/#6/#7/#10 в v6.0.0 testbench. Источник истины для назначений и дат —
   // personalPlanning[*].taskAssignments[issueId].{assignee,startDate,endDate}.
+  /* #49 — snap.personalPlanning = SINGLE PP роли rk (канон per-role). Fallback больше НЕ берёт
+     sprint.personalPlanning: с #49 это keyed-map {[rk]: PP} (serialization-зеркало), запись её
+     в per-role снимок испортила бы канон. Вне active-current роли — берём существующую канон-запись
+     роли (preserve), иначе null. */
+  var _existingSnapForRk = deps.state.getHistory().find(function (s) {
+    return s && s.sprintId === (sprint.sprintId + '_' + rk);
+  });
   var ppToSnap    = (deps.isActiveSprintRecord(deps.state.getCurrentSprintRoleRec()) && deps.state.getCurrentRolePP())
     ? deps.state.getCurrentRolePP()
-    : (sprint.personalPlanning || null);
+    : ((_existingSnapForRk && _existingSnapForRk.personalPlanning) || null);
   snap.personalPlanning = deps.deepClone(ppToSnap);
   /* v1.9.0 D132 — Freeze sprint goal + inject outcome/retro from confirm dialog. */
   if (sprint.sprintGoal) snap.sprintGoal = sprint.sprintGoal;

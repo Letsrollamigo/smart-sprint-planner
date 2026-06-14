@@ -195,6 +195,17 @@
               rec._orphanGanttIssues = ogMap[rec.sprintId];
             }
           });
+          /* #49 — канонизация personalPlanning: (1) backfill канона из legacy keyed-кэша
+             _sprint.personalPlanning (роли с пустым/отсутствующим каноном), затем
+             (2) нормализовать кэш в derived keyed-map из канона. После этого
+             `_sprint.personalPlanning` — лишь serialization-зеркало (getPP читает только канон). */
+          try {
+            var spPP = st.getSprint();
+            if (spPP && spPP.sprintId && typeof deps.buildPPMapFromCanon === 'function') {
+              deps.backfillCanonFromSprintPP(spPP, hist, deps.deepClone);
+              spPP.personalPlanning = deps.buildPPMapFromCanon(spPP.sprintId, hist, deps.deepClone);
+            }
+          } catch (e) { deps.diag('loadAllData: pp-canon normalize failed: ' + e, 'err'); }
         }
       });
     }).then(function () {

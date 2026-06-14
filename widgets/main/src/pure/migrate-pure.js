@@ -59,6 +59,61 @@ function migrateKpeObject(kpe) {
   return out;
 }
 
+/* #49 — personalPlanning: единый канон = per-role записи истории (histRec.personalPlanning,
+   single PP). In-memory `_sprint.personalPlanning` больше не источник правды — лишь
+   serialization-зеркало, derived из канона keyed-мапой. Две pure-функции ниже:
+   собрать keyed-map из канона + backfill канона из legacy keyed-кэша на чтении. */
+
+/* Собирает keyed-map {[roleKey]: PP} из per-role канон-записей истории для sprintId.
+   PP = клон histRec.personalPlanning (resourcesByAssignee-shape). Пустые роли пропускаются.
+   Pure; deepClone опционален (для глубокой изоляции от стейта). */
+function buildPPMapFromCanon(sprintId, history, deepClone) {
+  const map = {};
+  if (!sprintId || !Array.isArray(history)) return map;
+  const prefix = sprintId + '_';
+  for (let i = 0; i < history.length; i++) {
+    const rec = history[i];
+    if (!rec || !rec.sprintId || rec.sprintId.indexOf(prefix) !== 0) continue;
+    const rk = rec.roleKey || rec.sprintId.slice(prefix.length);
+    if (!rk) continue;
+    const pp = rec.personalPlanning;
+    if (pp && typeof pp === 'object' && Object.keys(pp).length) {
+      map[rk] = deepClone ? deepClone(pp) : pp;
+    }
+  }
+  return map;
+}
+
+/* Backfill-on-read (#49): legacy keyed-кэш `sprint.personalPlanning` {[rk]: PP} мог нести
+   данные ролей, чьи канон-записи пусты (очень старые/мигрированные снимки). Чтобы снос
+   getPP-fallback не терял их — досеять КАНОН (history per-role записи) из кэша ДО того,
+   как кэш будет перезаписан derived-мапой. Мутирует history in-place; дополняет только
+   СУЩЕСТВУЮЩИЕ записи с пустым personalPlanning (создание полноценной записи = домен
+   saveRoleHistorySnapshot). single-форму кэша (resourcesByAssignee/people на верхнем уровне)
+   игнорирует — это не keyed-map. Возвращает history. */
+function backfillCanonFromSprintPP(sprint, history, deepClone) {
+  if (!sprint || !sprint.sprintId || !Array.isArray(history)) return history;
+  const ppMap = sprint.personalPlanning;
+  if (!ppMap || typeof ppMap !== 'object') return history;
+  /* keyed-map ⟺ на верхнем уровне нет признаков single-PP */
+  if (ppMap.resourcesByAssignee || ppMap.taskAssignments || ppMap.people) return history;
+  const prefix = sprint.sprintId + '_';
+  for (const rk in ppMap) {
+    if (!Object.prototype.hasOwnProperty.call(ppMap, rk)) continue;
+    const pp = ppMap[rk];
+    if (!pp || typeof pp !== 'object' || !Object.keys(pp).length) continue;
+    const key = prefix + rk;
+    let rec = null;
+    for (let i = 0; i < history.length; i++) {
+      if (history[i] && history[i].sprintId === key) { rec = history[i]; break; }
+    }
+    if (rec && (!rec.personalPlanning || !Object.keys(rec.personalPlanning).length)) {
+      rec.personalPlanning = deepClone ? deepClone(pp) : pp;
+    }
+  }
+  return history;
+}
+
 const api = {
   STATUS_MIGRATION,
   INC_MIGRATION,
@@ -66,7 +121,9 @@ const api = {
   migrateStatus,
   migrateInc,
   migrateGrade,
-  migrateKpeObject
+  migrateKpeObject,
+  buildPPMapFromCanon,
+  backfillCanonFromSprintPP
 };
 
 if (typeof window !== 'undefined') {

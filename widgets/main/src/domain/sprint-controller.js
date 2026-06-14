@@ -110,9 +110,12 @@
 
     if (deps.isActiveSprintRecord(rec)) {
       var sprint = st.getSprint();
-      sprint.personalPlanning = deps.deepClone(pp);
+      /* #49 — `_sprint.personalPlanning` = serialization-зеркало, derived keyed-map из канона
+         (histRec уже обновлён current-role pp выше). Не single-объект (был регрессор: затирал
+         мапу формой одной роли). buildPPMapFromCanon собирает {[rk]: PP} из per-role записей. */
+      sprint.personalPlanning = deps.buildPPMapFromCanon(sprint.sprintId, history, deps.deepClone);
       if (assignerOnly) {
-        apiPost('sprint-data', { sprint: { personalPlanning: deps.deepClone(pp) } }, { action: 'assignerSync' })
+        apiPost('sprint-data', { sprint: { personalPlanning: deps.buildPPMapFromCanon(sprint.sprintId, history, deps.deepClone) } }, { action: 'assignerSync' })
           .catch(function (e) { diag('saveCurrentRoleState(sprint,assignerSync) failed: ' + e, 'err'); });
       } else {
         apiPost('sprint-data', { sprint: sprint })

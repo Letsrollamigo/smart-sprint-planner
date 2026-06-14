@@ -1,5 +1,4 @@
 {
-  "recPPSynced": true,
-  "sprintPPDevBackUntouched": false,
+  "recPPNotMutated": true,
   "sprintPPDevBackIsFixtureBlock": true
 }

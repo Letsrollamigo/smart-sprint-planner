@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.6.2] — 2026-06-14
+
+> **Personal-planning model unified onto per-role history snapshots as the single source of truth (#49).**
+
+### Changed
+
+- **`personalPlanning` — single canon.** The in-memory `_sprint.personalPlanning` cache is no longer a source of truth and is never written as a single-role object (a latent keyed-map → single regressor is removed). PP is read only from per-role history records (`histRec.personalPlanning`); snapshot / draft / `sprint-data` serialization rebuilds the keyed-map from canon (`buildPPMapFromCanon`), with a read-time backfill from the legacy keyed cache. No user-visible behavior, calculation, or layout change; the persisted form (keyed-map) stays compatible and the backend/validators are untouched.
+
+### Fixed
+
+- The Gantt "orphan task" detector can no longer mis-fire due to an inconsistent `personalPlanning` form (single in a keyed slot).
+
+---
+
 ## [2.6.1] — 2026-06-14
 
 > **Accessibility patch: visible button labels aligned with their accessible names (WCAG 2.5.3 "Label in Name").**
