@@ -20,12 +20,12 @@
 
 - [ ] `npm run build` runs cleanly (no new warnings; the two pre-existing duplicate-key warnings on `btnCancel` are tracked separately).
 - [ ] `npm run build:check` passes.
-- [ ] `npm test` passes (Playwright suite green).
+- [ ] `npm test` passes (unit + golden).
 - [ ] `manifest.json` round-trips through `JSON.parse` (if touched).
-- [ ] If the version was bumped, all four points were updated synchronously: `manifest.json:version`, `package.json:version`, `widgets/main/src/core.js:APP_VERSION`, `'app-version'` literal in `backend-project.js`. The zip filename in `package.json:scripts.zip` was bumped too.
+- [ ] If the version was bumped, all four points were updated synchronously: `manifest.json:version`, `package.json:version`, `widgets/main/src/core.js:APP_VERSION`, `APP_VERSION` literal in `backend-core.js`. The zip filename in `package.json:scripts.zip` was bumped too (`npm run release-check` verifies sync).
 - [ ] `Documentation/CHANGELOG.md` (and `Documentation/CHANGELOG.ru.md`) updated under `[Unreleased]` or the next planned version.
-- [ ] If user-facing strings were added, both `ru` and `en` dictionaries in `widgets/main/src/core.js` were updated, and the strings are referenced via `T('key')` or a `data-i18n` attribute.
-- [ ] If a new flow was added or an existing one was altered, Playwright tests cover it.
+- [ ] If user-facing strings were added, all 15 locale files under `widgets/main/i18n/` were updated, and the strings are referenced via `T('key')` or a `data-i18n` attribute.
+- [ ] If a new flow was added or an existing one was altered, golden/unit tests cover it.
 - [ ] DCO sign-off is present on every commit (`git commit -s ...`).
 
 ### If snapshot schema changed (v1.6.0+ soft-deprecation policy)
