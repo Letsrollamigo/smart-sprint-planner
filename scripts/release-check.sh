@@ -85,6 +85,14 @@ case "$NAME" in
     else
       warn "GitHub-бейдж $GH_BADGE отстал от v$PKG_VER (бампнуть после GitHub-релиза)"
     fi
+    if [ -f Documentation/README.ru.md ]; then
+      RU_BADGE=$(grep -oE "GitHub-v${semver}" Documentation/README.ru.md | grep -oE "v$semver" | head -1)
+      if [ "$RU_BADGE" = "v$PKG_VER" ]; then
+        ok "RU README GitHub-бейдж = $RU_BADGE"
+      else
+        warn "RU README (Documentation/README.ru.md) GitHub-бейдж $RU_BADGE отстал от v$PKG_VER — частый пропуск, синхронизировать RU-зеркало"
+      fi
+    fi
     MP_BADGE=$(grep -oE "Marketplace-v${semver}" README.md | grep -oE "v$semver" | head -1)
     ok "Marketplace-бейдж = $MP_BADGE (намеренно отслеживает последний апрув, не текущую версию)"
     ;;
