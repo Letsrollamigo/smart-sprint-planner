@@ -10,8 +10,7 @@
     "build": "npm run build:whitelists && npm run build:icons && npm run build:ring-css && npm run build:vendor && esbuild widgets/main/src/index.js --bundle --format=iife --target=es2017 --loader:.jsx=jsx --jsx=automatic --jsx-import-source=react --alias:react=./widgets/main/src/react/shims/react.js --alias:react/jsx-runtime=./widgets/main/src/react/shims/jsx-runtime.js --alias:react-dom/client=./widgets/main/src/react/shims/react-dom-client.js --define:process.env.NODE_ENV='\"production\"' --minify --outfile=widgets/main/main.js",
     "build:check": "npm run build:whitelists && node --check widgets/main/main.js && node --check backend-project.js && node --check workflow-dta-aggregation.js && node --check workflow-cascade-aggregation.js && node --check workflow-forbid-container.js && node --check workflow-state-rollup.js",
     "fixtures:generate": "node tests/fixtures/generate-baseline.js",
-    "test": "playwright test && node --test tests/unit/*.test.js",
-    "test:ui": "playwright test --ui",
+    "test": "node --test tests/unit/*.test.js tests/golden/*.test.js",
     "test:unit": "node --test tests/unit/*.test.js",
     "test:golden": "node --test tests/golden/*.test.js",
     "test:golden:update": "GOLDEN_UPDATE=1 node --test tests/golden/*.test.js",
@@ -20,17 +19,12 @@
     "gate": "node --test tests/arch/*.test.js tests/mirror/*.test.js tests/unit/*.test.js tests/golden/*.test.js",
     "release-check": "bash scripts/release-check.sh",
     "zip": "npm run build && npm run build:check && cd .. && rm -f 'Realises SSP/Smart-Sprint-Planner-v2.5.6.zip' && zip -r 'Realises SSP/Smart-Sprint-Planner-v2.5.6.zip' 'Smart Sprint Planner' -x '*.DS_Store' '*/.DS_Store' '*/.claude/*' '*/.roadmap-source/*' '*/CLAUDE.md' '*/Spec/*' '*/Spec' '*/RoadMap/*' '*/RoadMap' '*/NEXT_SESSION_PROMPT.md' '*/PROJECT_ROADMAP.md' '*/PROJECT_ROADMAP.ru.md' '*/Documentation/*' '*/Documentation' '*/published/*' '*/published' '*/MP publication/*' '*/MP publication' '*/node_modules/*' '*/package*.json' '*/playwright.config.js' '*/playwright.smoke.config.js' '*/playwright/*' '*/playwright' '*/tests/*' '*/widgets/main/src/*' '*.pdf' '*/USER-GUIDE.pdf' '*/playwright-report/*' '*/playwright-report' '*/test-results/*' '*/test-results' '*/.playwright-mcp/*' '*/.playwright-mcp' '*/.git/*' '*/.git' '*/.github/*' '*/.github' '*/schema/*' '*/schema' '*/scripts/*' '*/scripts' '*/marketplace-screenshots/*' '*/marketplace-screenshots'",
-    "zip:marketplace": "npm run build && npm run build:check && rm -f '../Realises SSP/MPJB/Smart-Sprint-Planner-v2.5.6-marketplace.zip' && zip -r '../Realises SSP/MPJB/Smart-Sprint-Planner-v2.5.6-marketplace.zip' . -x '*.DS_Store' '.DS_Store' '.claude/*' '.roadmap-source/*' 'CLAUDE.md' 'Spec/*' 'Spec' 'RoadMap/*' 'RoadMap' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' 'Documentation/*' 'Documentation' 'published/*' 'published' 'MP publication/*' 'MP publication' 'node_modules/*' 'package*.json' 'playwright.config.js' 'playwright.smoke.config.js' 'tests/*' 'widgets/main/src/*' '*.pdf' 'USER-GUIDE.pdf' 'playwright-report/*' 'playwright-report' 'test-results/*' 'test-results' '.git/*' '.git' '.github/*' '.github' 'schema/*' 'schema' 'scripts/*' 'scripts' 'marketplace-screenshots/*' 'marketplace-screenshots'",
-    "auth:save": "node scripts/save-olear-auth.js",
-    "smoke": "playwright test --config=playwright.smoke.config.js",
-    "smoke:headed": "HEADED=1 playwright test --config=playwright.smoke.config.js",
-    "screenshots": "node scripts/generate-screenshots.js"
+    "zip:marketplace": "npm run build && npm run build:check && rm -f '../Realises SSP/MPJB/Smart-Sprint-Planner-v2.5.6-marketplace.zip' && zip -r '../Realises SSP/MPJB/Smart-Sprint-Planner-v2.5.6-marketplace.zip' . -x '*.DS_Store' '.DS_Store' '.claude/*' '.roadmap-source/*' 'CLAUDE.md' 'Spec/*' 'Spec' 'RoadMap/*' 'RoadMap' 'NEXT_SESSION_PROMPT.md' 'PROJECT_ROADMAP.md' 'PROJECT_ROADMAP.ru.md' 'Documentation/*' 'Documentation' 'published/*' 'published' 'MP publication/*' 'MP publication' 'node_modules/*' 'package*.json' 'playwright.config.js' 'playwright.smoke.config.js' 'tests/*' 'widgets/main/src/*' '*.pdf' 'USER-GUIDE.pdf' 'playwright-report/*' 'playwright-report' 'test-results/*' 'test-results' '.git/*' '.git' '.github/*' '.github' 'schema/*' 'schema' 'scripts/*' 'scripts' 'marketplace-screenshots/*' 'marketplace-screenshots'"
   },
   "devDependencies": {
     "@jetbrains/icons": "^5.22.0",
     "@jetbrains/ring-ui-built": "~7.0.108",
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",
-    "@playwright/test": "^1.59.1",
     "esbuild": "^0.28.0",
     "jsdom": "^29.1.1"
   }
