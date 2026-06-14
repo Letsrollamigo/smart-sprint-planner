@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.6.0] — 2026-06-14
+
+> **Per-role sprint status + post-decomposition bug fixes and source reorganization into layers.**
+
+### Changed
+
+- **Sprint status is now tracked per role.** Source of truth is per-role `_history.status` (helpers `statusForRole` / `aggregateStatus` / `setRoleStatus`). The overlimit-modal downgrade lowers only its own role's status; the composition lock is per-role too.
+
+### Fixed
+
+- **B19** — the «Allocation» and «Assignee» columns are restored in sprint-history records (silently lost since v2.0.0 with the Ring Table migration).
+- **B22** — sprint intro fields (name / dates / goal) populate on a cold load with no draft.
+- **B23** — the «Reset draft to server version» button now always clears the backend draft.
+- **B24** — per-role status badges update immediately after a downgrade.
+- **B18** — removed doubled punctuation in the pick-assignees toast.
+- **B20** — the working-copy banner hides when switching sprints with the working copy closed.
+- **B21** — the «Working copy» indicator in the side rail is hidden when no working copy is active.
+
+### Accessibility
+
+- **B16** — sprint-history record headers are keyboard-operable (Enter / Space) and announced as accordion buttons by screen readers.
+
+### Internal
+
+- Architecture fitness functions: mechanical gates against monolith regrowth (module size, star topology, state localization, module registry, cross-fork parity).
+- Widget source reorganized from a flat `src/` into architecture layers (`domain` / `infra` / `pure` / `data` / `i18n`); the build bundle is byte-identical (a pure refactor).
+- Test suite moved to `node --test` (unit + golden); the Playwright suite was removed. GitHub Actions CI runs the suite on every push/PR, and `CONTRIBUTING.md` documents the test model.
+
 ## [2.5.6] — 2026-06-11
 
 > **Final UX polish pass (#43, wave 4 — closing the audit tails).**
