@@ -2405,7 +2405,7 @@
         <div class="ssp-empty__icon" data-icon="group" aria-hidden="true"></div>
         <div class="ssp-empty__title" id="planningPeopleEmptyTitle">—</div>
         <div class="ssp-empty__desc" data-i18n="planningPeopleEmptyDesc">Нажмите кнопку ниже, чтобы загрузить актуальный список исполнителей из бандла поля Assignee.</div>
-        <button id="planningPeopleEmptyCta" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
+        <button id="planningPeopleEmptyCta" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta" data-i18n="btnPickAssignees" data-icon="add">Подобрать исполнителей</button>
       </div>
       <!-- DOM-id этой секции: currentRoleNkcSel, currentRoleTotalResource/Remain, currentRoleCalcBtn,
            currentRoleSaveParamsBtn, currentRoleValidateBtn, currentRoleAssigneeTable/Body,
@@ -2434,7 +2434,7 @@
               </div>
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-              <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update" data-aria-label-key="aria.btnRefresh">Рассчитать ресурс</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update">Рассчитать ресурс</button>
               <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
               <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
             </div>
@@ -2444,10 +2444,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
             <div class="card-title" style="margin-bottom:0" data-i18n="cardAssignees">Ресурсы по исполнителям</div>
             <div style="display:flex;gap:6px">
-              <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add" data-aria-label-key="aria.btnAddAssignee">Подобрать исполнителей</button>
-              <button class="ring-button-button ring-button-block ring-button-heightS btn--warn editor-btn" id="currentRoleClearAssigneesBtn" data-i18n="btnClearAssignees" data-icon="close" data-aria-label-key="aria.btnDeleteRow">Очистить</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add">Подобрать исполнителей</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS btn--warn editor-btn" id="currentRoleClearAssigneesBtn" data-i18n="btnClearAssignees" data-icon="close">Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnRefreshFromTask" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задачи</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
             </div>
           </div>
           <!-- v2.1.0 E1 — Ring Table host. Native <table> + <thead> + <tbody> removed;
@@ -2509,7 +2509,7 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v2.1.14 — merged: sync assignee+state из YT + дозагрузка истории состояний. -->
-      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="btnRefreshFromTask" data-icon="update" data-aria-label-key="aria.btnRefresh">Обновить из задачи</button>
+      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
     </div>
     <div id="ganttContainer"></div>
   </div>
