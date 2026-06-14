@@ -473,6 +473,11 @@
     if (typeof deps.renderWidgetHeader === 'function') {
       try { deps.renderWidgetHeader(); } catch(e){ diag('renderWidgetHeader err: '+e,'err'); }
     }
+    /* B20 (UX): WC-баннер живёт отдельно от шапки виджета — обновить после смены спринта,
+       иначе при D28-закрытии рабочей копии баннер остаётся висеть. Идемпотентно (сам прячется при пустом ключе). */
+    if (typeof deps.renderWorkingCopyBanner === 'function') {
+      try { deps.renderWorkingCopyBanner(); } catch(e){ diag('renderWorkingCopyBanner err: '+e,'err'); }
+    }
     /* Императивный re-render активной вкладки.
        v5.6.0 — Этап 4: legacy ветки 'planner' и 'distrib' удалены; добавлена 'gantt'. */
     var activeBtn = document.querySelector('.tab-btn.active');

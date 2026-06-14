@@ -3987,6 +3987,7 @@
       refreshDirtyIndicator: refreshDirtyIndicator,
       withLoader: withLoader, apiPost: apiPost,
       renderRoleComposition: renderRoleComposition, renderWidgetHeader: renderWidgetHeader,
+      renderWorkingCopyBanner: renderWorkingCopyBanner,
       renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge,
       updateRoleRemaining: updateRoleRemaining, renderSprintIntroExtras: renderSprintIntroExtras,
       renderPlanningLevel: _renderPlanningLevel, refreshGanttForCurrentSprint: refreshGanttForCurrentSprint,
