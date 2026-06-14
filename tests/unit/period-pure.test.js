@@ -1,12 +1,12 @@
 'use strict';
-// Unit tests for widgets/main/src/period-pure.js — #34.
+// Unit tests for widgets/main/src/pure/period-pure.js — #34.
 // parsePeriod: голое число = часы, locale-aware часы/минуты, дни/недели убраны.
 // fmtPeriod/fmtHours/fmtHoursOnly — вывод не менялся (часы+минуты через __SSP_T).
 
 const { describe, it, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { parsePeriod, fmtPeriod } = require('../../widgets/main/src/period-pure.js');
+const { parsePeriod, fmtPeriod } = require('../../widgets/main/src/pure/period-pure.js');
 
 // Помощник: временно подменить активную локаль (минуты/часы short) через window.__SSP_T.
 function withLocale(map, fn) {

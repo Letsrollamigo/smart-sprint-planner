@@ -1,5 +1,5 @@
 'use strict';
-// Unit tests for widgets/main/src/toast-pure.js
+// Unit tests for widgets/main/src/pure/toast-pure.js
 // Pure helpers — no DOM, no browser globals.
 
 const { describe, it } = require('node:test');
@@ -11,7 +11,7 @@ const {
   normaliseToastText,
   TOAST_DEFAULTS,
   TOAST_LIMIT
-} = require('../../widgets/main/src/toast-pure.js');
+} = require('../../widgets/main/src/pure/toast-pure.js');
 
 // ── computeToastDuration ───────────────────────────────────────────────────
 

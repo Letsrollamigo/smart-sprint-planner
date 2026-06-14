@@ -14,7 +14,7 @@ const {
   ringSelectButtonClass,
   ringCheckboxClass,
   ringIconClass,
-} = require('../../widgets/main/src/ring-class-helpers.js');
+} = require('../../widgets/main/src/domain/ring-class-helpers.js');
 
 // ── escapeHtml ─────────────────────────────────────────────────────────────
 

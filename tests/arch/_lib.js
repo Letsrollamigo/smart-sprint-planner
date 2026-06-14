@@ -24,16 +24,20 @@ const SRC = path.resolve(__dirname, '..', '..', 'widgets', 'main', 'src');
 /* Файлы, НЕ являющиеся доменными модулями (исключаются из арх-проверок). */
 const EXCLUDE = new Set(['core.js', 'index.js', 'icons.generated.js']);
 
-/** Список анализируемых модулей (корень src/ + i18n/), относительными именами. */
+/* Каталоги-слои («доминионы звезды»), в которые разнесены модули. '' = корень src/
+   (после фолдинга там только EXCLUDE-файлы). react/common/icons НЕ сканируются намеренно. */
+const MODULE_DIRS = ['', 'domain', 'infra', 'pure', 'data', 'i18n'];
+
+/** Список анализируемых модулей (layer-папки src/), относительными именами. */
 function listModules() {
   const out = [];
-  for (const f of fs.readdirSync(SRC)) {
-    if (f.endsWith('.js') && !EXCLUDE.has(f)) out.push(f);
-  }
-  const i18nDir = path.join(SRC, 'i18n');
-  if (fs.existsSync(i18nDir)) {
-    for (const f of fs.readdirSync(i18nDir)) {
-      if (f.endsWith('.js')) out.push('i18n/' + f);
+  for (const d of MODULE_DIRS) {
+    const dir = d ? path.join(SRC, d) : SRC;
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.js')) continue;
+      if (d === '' && EXCLUDE.has(f)) continue;
+      out.push(d ? d + '/' + f : f);
     }
   }
   return out.sort();

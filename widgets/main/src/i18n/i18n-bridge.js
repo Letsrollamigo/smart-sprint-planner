@@ -5,11 +5,11 @@
    ES module side-effects выполняются в порядке объявления import'ов в index.js.
    Поэтому этот файл должен импортироваться РАНЬШЕ './core.js'. */
 
-import * as i18nLoader from './i18n/loader.js';
-import { LANGS } from './i18n/languages.js';
-import * as plural from './i18n/plural.js';
-import enInline from '../i18n/en.json';
-import ruInline from '../i18n/ru.json';
+import * as i18nLoader from './loader.js';
+import { LANGS } from './languages.js';
+import * as plural from './plural.js';
+import enInline from '../../i18n/en.json';
+import ruInline from '../../i18n/ru.json';
 
 if (typeof window !== 'undefined') {
   window.__SSP_I18N__ = i18nLoader;

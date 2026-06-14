@@ -60,21 +60,29 @@
     }
   },
   "modules": {
-    "click-anchor.js": {
-      "layer": "infra",
-      "domain": "click-anchor",
-      "loc": 84,
-      "locBudget": 104,
+    "data/data-loaders.js": {
+      "layer": "data",
+      "domain": "data-loaders",
+      "loc": 215,
+      "locBudget": 241,
       "state": [
-        "lastT",
-        "lastX",
-        "lastY"
+        "api"
       ],
       "publishes": [
-        "MODAL_ANCHOR"
+        "DATA_LOADERS"
       ]
     },
-    "currentrole-view.js": {
+    "data/youtrack-api.js": {
+      "layer": "data",
+      "domain": "youtrack-api",
+      "loc": 233,
+      "locBudget": 261,
+      "state": [],
+      "publishes": [
+        "YOUTRACK_API"
+      ]
+    },
+    "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "currentrole-view",
       "loc": 754,
@@ -87,7 +95,7 @@
         "CURRENTROLE_VIEW"
       ]
     },
-    "dash-shell.js": {
+    "domain/dash-shell.js": {
       "layer": "domain",
       "domain": "dash-shell",
       "loc": 205,
@@ -97,39 +105,7 @@
         "DASH_SHELL"
       ]
     },
-    "data-loaders.js": {
-      "layer": "data",
-      "domain": "data-loaders",
-      "loc": 215,
-      "locBudget": 241,
-      "state": [
-        "api"
-      ],
-      "publishes": [
-        "DATA_LOADERS"
-      ]
-    },
-    "date-pure.js": {
-      "layer": "pure",
-      "domain": "date-pure",
-      "loc": 38,
-      "locBudget": 58,
-      "state": [],
-      "publishes": [
-        "DATE_PURE"
-      ]
-    },
-    "datepicker-bridge.js": {
-      "layer": "infra",
-      "domain": "datepicker-bridge",
-      "loc": 179,
-      "locBudget": 201,
-      "state": [],
-      "publishes": [
-        "DP_BRIDGE"
-      ]
-    },
-    "draft-store.js": {
+    "domain/draft-store.js": {
       "layer": "domain",
       "domain": "draft-store",
       "loc": 325,
@@ -143,20 +119,7 @@
         "DRAFT_STORE"
       ]
     },
-    "enum-locale-pure.js": {
-      "layer": "pure",
-      "domain": "enum-locale-pure",
-      "loc": 23,
-      "locBudget": 43,
-      "state": [
-        "_enumLocaleMap",
-        "_enumLocaleMapInverse"
-      ],
-      "publishes": [
-        "ENUM_PURE"
-      ]
-    },
-    "excel-export.js": {
+    "domain/excel-export.js": {
       "layer": "domain",
       "domain": "excel-export",
       "loc": 217,
@@ -166,7 +129,7 @@
         "EXCEL_EXPORT"
       ]
     },
-    "gantt-view.js": {
+    "domain/gantt-view.js": {
       "layer": "domain",
       "domain": "gantt-view",
       "loc": 223,
@@ -176,17 +139,7 @@
         "GANTT_VIEW"
       ]
     },
-    "hash-pure.js": {
-      "layer": "pure",
-      "domain": "hash-pure",
-      "loc": 83,
-      "locBudget": 103,
-      "state": [],
-      "publishes": [
-        "HASH_PURE"
-      ]
-    },
-    "header-view.js": {
+    "domain/header-view.js": {
       "layer": "domain",
       "domain": "header-view",
       "loc": 364,
@@ -198,7 +151,7 @@
         "HEADER_VIEW"
       ]
     },
-    "history-controller.js": {
+    "domain/history-controller.js": {
       "layer": "domain",
       "domain": "history-controller",
       "loc": 189,
@@ -206,7 +159,7 @@
       "state": [],
       "publishes": []
     },
-    "history-io.js": {
+    "domain/history-io.js": {
       "layer": "domain",
       "domain": "history-io",
       "loc": 173,
@@ -214,7 +167,7 @@
       "state": [],
       "publishes": []
     },
-    "history-view.js": {
+    "domain/history-view.js": {
       "layer": "domain",
       "domain": "history-view",
       "loc": 463,
@@ -224,7 +177,168 @@
         "HISTORY_VIEW"
       ]
     },
-    "i18n-bridge.js": {
+    "domain/intro-view.js": {
+      "layer": "domain",
+      "domain": "intro-view",
+      "loc": 232,
+      "locBudget": 260,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "INTRO_VIEW"
+      ]
+    },
+    "domain/permissions.js": {
+      "layer": "domain",
+      "domain": "permissions",
+      "loc": 204,
+      "locBudget": 229,
+      "state": [],
+      "publishes": [
+        "PERMISSIONS"
+      ]
+    },
+    "domain/pick.js": {
+      "layer": "domain",
+      "domain": "pick",
+      "loc": 305,
+      "locBudget": 342,
+      "state": [
+        "ASSIST_FIELDS"
+      ],
+      "publishes": [
+        "PICK"
+      ]
+    },
+    "domain/project-nav.js": {
+      "layer": "domain",
+      "domain": "project-nav",
+      "loc": 282,
+      "locBudget": 316,
+      "state": [],
+      "publishes": [
+        "PROJECT_NAV"
+      ]
+    },
+    "domain/reassign-controller.js": {
+      "layer": "domain",
+      "domain": "reassign-controller",
+      "loc": 153,
+      "locBudget": 173,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "REASSIGN_CTRL"
+      ]
+    },
+    "domain/refresh-controller.js": {
+      "layer": "domain",
+      "domain": "refresh-controller",
+      "loc": 439,
+      "locBudget": 492,
+      "state": [],
+      "publishes": [
+        "REFRESH_CTRL"
+      ]
+    },
+    "domain/revalidation.js": {
+      "layer": "domain",
+      "domain": "revalidation",
+      "loc": 118,
+      "locBudget": 138,
+      "state": [],
+      "publishes": [
+        "REVALIDATION"
+      ]
+    },
+    "domain/ring-class-helpers.js": {
+      "layer": "domain",
+      "domain": "ring-class-helpers",
+      "loc": 136,
+      "locBudget": 156,
+      "state": [],
+      "publishes": []
+    },
+    "domain/rolecomposition-view.js": {
+      "layer": "domain",
+      "domain": "rolecomposition-view",
+      "loc": 894,
+      "locBudget": 1002,
+      "state": [],
+      "publishes": [
+        "ROLECOMP_VIEW"
+      ]
+    },
+    "domain/settings-controller.js": {
+      "layer": "domain",
+      "domain": "settings-controller",
+      "loc": 186,
+      "locBudget": 209,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "SETTINGS_CTRL"
+      ]
+    },
+    "domain/share-controller.js": {
+      "layer": "domain",
+      "domain": "share-controller",
+      "loc": 150,
+      "locBudget": 170,
+      "state": [
+        "SHARE_URL_PURE",
+        "_SHARE_APP_PATH"
+      ],
+      "publishes": [
+        "SHARE_CTRL"
+      ]
+    },
+    "domain/sprint-controller.js": {
+      "layer": "domain",
+      "domain": "sprint-controller",
+      "loc": 518,
+      "locBudget": 581,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "SPRINT_CTRL"
+      ]
+    },
+    "domain/standup-view.js": {
+      "layer": "domain",
+      "domain": "standup-view",
+      "loc": 264,
+      "locBudget": 296,
+      "state": [],
+      "publishes": [
+        "STANDUP_VIEW"
+      ]
+    },
+    "domain/validation-controller.js": {
+      "layer": "domain",
+      "domain": "validation-controller",
+      "loc": 255,
+      "locBudget": 286,
+      "state": [],
+      "publishes": [
+        "VALIDATION_CTRL"
+      ]
+    },
+    "domain/working-copy.js": {
+      "layer": "domain",
+      "domain": "working-copy",
+      "loc": 448,
+      "locBudget": 502,
+      "state": [],
+      "publishes": [
+        "WORKING_COPY"
+      ]
+    },
+    "i18n/i18n-bridge.js": {
       "layer": "i18n",
       "domain": "i18n-bridge",
       "loc": 16,
@@ -237,7 +351,7 @@
         "I18N_PLURAL__"
       ]
     },
-    "i18n-controller.js": {
+    "i18n/i18n-controller.js": {
       "layer": "i18n",
       "domain": "i18n-controller",
       "loc": 144,
@@ -280,29 +394,31 @@
       ],
       "publishes": []
     },
-    "intro-view.js": {
-      "layer": "domain",
-      "domain": "intro-view",
-      "loc": 232,
-      "locBudget": 260,
+    "infra/click-anchor.js": {
+      "layer": "infra",
+      "domain": "click-anchor",
+      "loc": 84,
+      "locBudget": 104,
       "state": [
-        "api"
+        "lastT",
+        "lastX",
+        "lastY"
       ],
       "publishes": [
-        "INTRO_VIEW"
+        "MODAL_ANCHOR"
       ]
     },
-    "migrate-pure.js": {
-      "layer": "pure",
-      "domain": "migrate-pure",
-      "loc": 66,
-      "locBudget": 86,
+    "infra/datepicker-bridge.js": {
+      "layer": "infra",
+      "domain": "datepicker-bridge",
+      "loc": 179,
+      "locBudget": 201,
       "state": [],
       "publishes": [
-        "MIGRATE_PURE"
+        "DP_BRIDGE"
       ]
     },
-    "modal-specs.js": {
+    "infra/modal-specs.js": {
       "layer": "infra",
       "domain": "modal-specs",
       "loc": 193,
@@ -312,7 +428,61 @@
         "MODAL_SPECS"
       ]
     },
-    "period-pure.js": {
+    "infra/toast-ring.js": {
+      "layer": "infra",
+      "domain": "toast-ring",
+      "loc": 361,
+      "locBudget": 405,
+      "state": [],
+      "publishes": [
+        "TOAST",
+        "TOAST_RING"
+      ]
+    },
+    "pure/date-pure.js": {
+      "layer": "pure",
+      "domain": "date-pure",
+      "loc": 38,
+      "locBudget": 58,
+      "state": [],
+      "publishes": [
+        "DATE_PURE"
+      ]
+    },
+    "pure/enum-locale-pure.js": {
+      "layer": "pure",
+      "domain": "enum-locale-pure",
+      "loc": 23,
+      "locBudget": 43,
+      "state": [
+        "_enumLocaleMap",
+        "_enumLocaleMapInverse"
+      ],
+      "publishes": [
+        "ENUM_PURE"
+      ]
+    },
+    "pure/hash-pure.js": {
+      "layer": "pure",
+      "domain": "hash-pure",
+      "loc": 83,
+      "locBudget": 103,
+      "state": [],
+      "publishes": [
+        "HASH_PURE"
+      ]
+    },
+    "pure/migrate-pure.js": {
+      "layer": "pure",
+      "domain": "migrate-pure",
+      "loc": 66,
+      "locBudget": 86,
+      "state": [],
+      "publishes": [
+        "MIGRATE_PURE"
+      ]
+    },
+    "pure/period-pure.js": {
       "layer": "pure",
       "domain": "period-pure",
       "loc": 74,
@@ -324,61 +494,7 @@
         "PERIOD_PURE"
       ]
     },
-    "permissions.js": {
-      "layer": "domain",
-      "domain": "permissions",
-      "loc": 204,
-      "locBudget": 229,
-      "state": [],
-      "publishes": [
-        "PERMISSIONS"
-      ]
-    },
-    "pick.js": {
-      "layer": "domain",
-      "domain": "pick",
-      "loc": 305,
-      "locBudget": 342,
-      "state": [
-        "ASSIST_FIELDS"
-      ],
-      "publishes": [
-        "PICK"
-      ]
-    },
-    "project-nav.js": {
-      "layer": "domain",
-      "domain": "project-nav",
-      "loc": 282,
-      "locBudget": 316,
-      "state": [],
-      "publishes": [
-        "PROJECT_NAV"
-      ]
-    },
-    "reassign-controller.js": {
-      "layer": "domain",
-      "domain": "reassign-controller",
-      "loc": 153,
-      "locBudget": 173,
-      "state": [
-        "api"
-      ],
-      "publishes": [
-        "REASSIGN_CTRL"
-      ]
-    },
-    "refresh-controller.js": {
-      "layer": "domain",
-      "domain": "refresh-controller",
-      "loc": 439,
-      "locBudget": 492,
-      "state": [],
-      "publishes": [
-        "REFRESH_CTRL"
-      ]
-    },
-    "refresh-merge-pure.js": {
+    "pure/refresh-merge-pure.js": {
       "layer": "pure",
       "domain": "refresh-merge-pure",
       "loc": 81,
@@ -390,60 +506,7 @@
         "REFRESH_MERGE_PURE"
       ]
     },
-    "revalidation.js": {
-      "layer": "domain",
-      "domain": "revalidation",
-      "loc": 118,
-      "locBudget": 138,
-      "state": [],
-      "publishes": [
-        "REVALIDATION"
-      ]
-    },
-    "ring-class-helpers.js": {
-      "layer": "domain",
-      "domain": "ring-class-helpers",
-      "loc": 136,
-      "locBudget": 156,
-      "state": [],
-      "publishes": []
-    },
-    "rolecomposition-view.js": {
-      "layer": "domain",
-      "domain": "rolecomposition-view",
-      "loc": 894,
-      "locBudget": 1002,
-      "state": [],
-      "publishes": [
-        "ROLECOMP_VIEW"
-      ]
-    },
-    "settings-controller.js": {
-      "layer": "domain",
-      "domain": "settings-controller",
-      "loc": 186,
-      "locBudget": 209,
-      "state": [
-        "api"
-      ],
-      "publishes": [
-        "SETTINGS_CTRL"
-      ]
-    },
-    "share-controller.js": {
-      "layer": "domain",
-      "domain": "share-controller",
-      "loc": 150,
-      "locBudget": 170,
-      "state": [
-        "SHARE_URL_PURE",
-        "_SHARE_APP_PATH"
-      ],
-      "publishes": [
-        "SHARE_CTRL"
-      ]
-    },
-    "share-url-pure.js": {
+    "pure/share-url-pure.js": {
       "layer": "pure",
       "domain": "share-url-pure",
       "loc": 91,
@@ -458,7 +521,7 @@
         "SHARE_URL_PURE"
       ]
     },
-    "sort-pure.js": {
+    "pure/sort-pure.js": {
       "layer": "pure",
       "domain": "sort-pure",
       "loc": 129,
@@ -468,29 +531,7 @@
         "SORT_PURE"
       ]
     },
-    "sprint-controller.js": {
-      "layer": "domain",
-      "domain": "sprint-controller",
-      "loc": 518,
-      "locBudget": 581,
-      "state": [
-        "api"
-      ],
-      "publishes": [
-        "SPRINT_CTRL"
-      ]
-    },
-    "standup-view.js": {
-      "layer": "domain",
-      "domain": "standup-view",
-      "loc": 264,
-      "locBudget": 296,
-      "state": [],
-      "publishes": [
-        "STANDUP_VIEW"
-      ]
-    },
-    "toast-pure.js": {
+    "pure/toast-pure.js": {
       "layer": "pure",
       "domain": "toast-pure",
       "loc": 45,
@@ -500,54 +541,13 @@
         "TOAST_PURE"
       ]
     },
-    "toast-ring.js": {
-      "layer": "infra",
-      "domain": "toast-ring",
-      "loc": 361,
-      "locBudget": 405,
-      "state": [],
-      "publishes": [
-        "TOAST",
-        "TOAST_RING"
-      ]
-    },
-    "util-pure.js": {
+    "pure/util-pure.js": {
       "layer": "pure",
       "domain": "util-pure",
       "loc": 50,
       "locBudget": 70,
       "state": [],
       "publishes": []
-    },
-    "validation-controller.js": {
-      "layer": "domain",
-      "domain": "validation-controller",
-      "loc": 255,
-      "locBudget": 286,
-      "state": [],
-      "publishes": [
-        "VALIDATION_CTRL"
-      ]
-    },
-    "working-copy.js": {
-      "layer": "domain",
-      "domain": "working-copy",
-      "loc": 448,
-      "locBudget": 502,
-      "state": [],
-      "publishes": [
-        "WORKING_COPY"
-      ]
-    },
-    "youtrack-api.js": {
-      "layer": "data",
-      "domain": "youtrack-api",
-      "loc": 233,
-      "locBudget": 261,
-      "state": [],
-      "publishes": [
-        "YOUTRACK_API"
-      ]
     }
   }
 }

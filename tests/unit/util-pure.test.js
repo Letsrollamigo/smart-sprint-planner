@@ -1,11 +1,11 @@
 'use strict';
-// Unit tests for widgets/main/src/util-pure.js — pure helpers, no DOM.
+// Unit tests for widgets/main/src/pure/util-pure.js — pure helpers, no DOM.
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { esc, safeUrl, uid, deepClone, formatHoursLight } =
-  require('../../widgets/main/src/util-pure.js');
+  require('../../widgets/main/src/pure/util-pure.js');
 
 describe('esc', () => {
   it('escapes the five HTML-significant characters', () => {

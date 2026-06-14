@@ -1,5 +1,5 @@
 'use strict';
-// Unit tests for widgets/main/src/sort-pure.js
+// Unit tests for widgets/main/src/pure/sort-pure.js
 // Pure helpers — no DOM, no browser globals.
 
 const { describe, it } = require('node:test');
@@ -15,7 +15,7 @@ const {
   multiKeySort,
   nextSortKey,
   isValidSortKey
-} = require('../../widgets/main/src/sort-pure.js');
+} = require('../../widgets/main/src/pure/sort-pure.js');
 
 // ── compareAssignee ────────────────────────────────────────────────────────
 
