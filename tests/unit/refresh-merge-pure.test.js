@@ -1,11 +1,11 @@
 'use strict';
-// Unit tests for widgets/main/src/refresh-merge-pure.js — #35.
+// Unit tests for widgets/main/src/pure/refresh-merge-pure.js — #35.
 // resolveRefreshMerge: field-class policy (зеркало / локальное / пограничные) + per-task dirty-guard.
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { resolveRefreshMerge } = require('../../widgets/main/src/refresh-merge-pure.js');
+const { resolveRefreshMerge } = require('../../widgets/main/src/pure/refresh-merge-pure.js');
 
 function base(over) {
   return Object.assign({

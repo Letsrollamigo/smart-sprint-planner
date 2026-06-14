@@ -79,6 +79,17 @@ const BRIDGE_SCRIPTS = [
   'intro-view.js',
 ];
 
+/* Модули разнесены по layer-папкам (domain/infra/pure/data/i18n); icons.generated.js — в корне.
+   Резолвим bare-имя BRIDGE_SCRIPTS к фактическому пути, сохраняя порядок загрузки (= порядок index.js). */
+const MODULE_LAYER_DIRS = ['', 'domain', 'infra', 'pure', 'data', 'i18n'];
+function resolveModulePath(name) {
+  for (const d of MODULE_LAYER_DIRS) {
+    const rel = d ? d + '/' + name : name;
+    if (fs.existsSync(path.join(SRC, rel))) return rel;
+  }
+  throw new Error('module not found in any layer dir: ' + name);
+}
+
 const GM_HOOK = `
   /* === GOLDEN-MASTER HOOK — инжектируется только в тестах (monolith-host.js), в бандл не попадает === */
   var __gmTmp;
@@ -221,7 +232,7 @@ function createHost(opts) {
 
   /* ── Настоящие bridge-модули ──────────────────────────────── */
   for (const name of BRIDGE_SCRIPTS) {
-    const src = fs.readFileSync(path.join(SRC, name), 'utf8');
+    const src = fs.readFileSync(path.join(SRC, resolveModulePath(name)), 'utf8');
     try {
       /* module/exports — шим для dual-mode бриджей (window + module.exports). */
       window.eval('(function (module, exports) {\n' + src + '\n})({ exports: {} }, {});');

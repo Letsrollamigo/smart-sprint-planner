@@ -1,11 +1,11 @@
 'use strict';
-// Unit tests for widgets/main/src/migrate-pure.js — pure legacy→canonical maps.
+// Unit tests for widgets/main/src/pure/migrate-pure.js — pure legacy→canonical maps.
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { migrateStatus, migrateInc, migrateGrade, migrateKpeObject } =
-  require('../../widgets/main/src/migrate-pure.js');
+  require('../../widgets/main/src/pure/migrate-pure.js');
 
 describe('migrateStatus', () => {
   it('maps legacy Cyrillic labels to canonical keys', () => {

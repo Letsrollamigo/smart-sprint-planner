@@ -1,5 +1,5 @@
 'use strict';
-// Unit tests for widgets/main/src/share-url-pure.js — #36 (deep-link share-URL).
+// Unit tests for widgets/main/src/pure/share-url-pure.js — #36 (deep-link share-URL).
 // parseShareSearch / buildShareSearch / parseFocus: URL search ↔ planner state,
 // node mapping (URL dotted ↔ internal tree id), focus validation, round-trips.
 
@@ -7,7 +7,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { parseShareSearch, buildShareSearch, parseFocus } =
-  require('../../widgets/main/src/share-url-pure.js');
+  require('../../widgets/main/src/pure/share-url-pure.js');
 
 describe('parseShareSearch', () => {
   it('полный набор параметров → объект (node маппится во внутренний id)', () => {
