@@ -715,4 +715,4 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 
 ---
 
-_Updated 2026-05-27, plugin v2.1.8._
+_Updated 2026-06-14, plugin v2.6.1._

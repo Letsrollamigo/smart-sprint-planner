@@ -79,13 +79,12 @@ For detailed configuration, see [USER-GUIDE.md](Documentation/USER-GUIDE.md). Fo
 ```bash
 git clone https://github.com/Letsrollamigo/smart-sprint-planner.git
 cd smart-sprint-planner
-npm install
+npm ci
 npm run build:check    # syntax-validates bundle + workflow files
-npm test               # Playwright suite (36 specs)
-node --test tests/unit/*.test.js   # unit suite (415 specs)
+npm test               # unit + golden (Node test runner, jsdom — no browser, no YouTrack)
 ```
 
-Requirements: Node.js 18+. A YouTrack 2024.3+ instance is needed for end-to-end manual verification; the Playwright suite uses a mock backend.
+Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manual** end-to-end verification — see [docs/LOCAL_YT.md](docs/LOCAL_YT.md); the automated suite needs no YouTrack. Contributor guide: [Documentation/CONTRIBUTING.md](Documentation/CONTRIBUTING.md).
 
 ## Documentation
 
