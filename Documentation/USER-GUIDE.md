@@ -492,11 +492,22 @@ Click the card — it expands and shows the full task table with assignees and h
 | Button | What it does |
 |---|---|
 | **Excel** | Exports the sprint to Excel (tasks, estimates, actuals, allocations, assignees). Convenient for reports and discussion outside the plugin. |
+| **JSON** | Exports **this single sprint** to a JSON file — for backup or transfer to another project/instance (see below). |
 | **✏ Open for editing** | Creates an edit draft based on this sprint — see below. |
 | **✓ Finish** | Available if the sprint isn't finished yet. Opens the outcome dialog (see [section 9](#9-sprint-stages-review-commit-complete)). |
 | **🗑 Delete** | Full sprint deletion. Two-step confirmation. |
 
-Separately, above the whole list, there's a **🗑 Clear all history** button — available only to members of a special group (see [section 11](#11-who-can-do-what-group-permissions)).
+Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 11](#11-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
+
+### Export and import history (JSON)
+
+Beyond Excel (a report for a single sprint), the plugin can save and restore the entire history as JSON — a format for **backup** and **transfer** between projects or YouTrack instances.
+
+- **All history (JSON)** (above the list) — exports all history sprints as a single file.
+- **JSON** (on a sprint card) — exports only that sprint.
+- **Import from file** (above the list) — loads a previously exported JSON. Before importing, the plugin shows a review dialog: how many sprints are in the file, which project/instance they came from, and lets you choose which ones to restore. The import **fully replaces** the current history with the selected sprints, so it's worth exporting "just in case" beforehand.
+
+> 💡 JSON files are interchangeable between the community and corporate versions of the plugin — both formats are accepted on import.
 
 ### Edit draft: what it is and why
 
@@ -705,13 +716,15 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 
 - **"Done" states** — which YouTrack states count as completed for the **✅ Done** column in Stand-up mode. Multiple states can be selected. If left empty — the plugin takes the last two states from the state roll-up order. If both are empty — the Done column stays empty and a hint appears.
 
+### "Planning modes" section
+
+- **Allow planning over the limits** — when enabled, a role's resource overlimit **does not block** the "Validate" button and doesn't trigger a warning dialog. A negative remainder is still highlighted in red as an indicator, and a mode chip is shown in the plugin header. Off by default (overlimit blocks validation).
+
 ### "Other" section
 
 - **Interface language** — language switcher (duplicates the one in the plugin header).
 - **Verbose log.** Enables debug-level logging on the server side. Off by default. Doesn't log user-entered values — only short operation markers.
 - **Hide diagnostics panel.** Hides the **Diagnostics** block at the bottom of the plugin. Events still get recorded and are available via the **📥 Export** button after unsetting the flag.
-
----
 
 ---
 
