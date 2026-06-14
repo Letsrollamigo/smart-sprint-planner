@@ -58,10 +58,8 @@ jobs:
       - name: Syntax check
         run: npm run build:check
 
-      - name: Run Playwright tests
-        run: |
-          npx playwright install --with-deps chromium
-          npm test
+      - name: Run tests (unit + golden)
+        run: npm test
 
       - name: Create release zip
         id: zip

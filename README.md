@@ -6,7 +6,7 @@
 [![GitHub Release](https://img.shields.io/badge/GitHub-v2.5.6-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.5.6-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
-[![Tests](https://img.shields.io/badge/Playwright-passing-success.svg)](tests/)
+[![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
 
 > 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **2.5.6** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
