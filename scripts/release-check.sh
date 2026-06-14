@@ -96,6 +96,37 @@ case "$NAME" in
     ;;
 esac
 
+# ── architecture gate + зеркало форков ────────────────────────────────────────
+echo "— architecture gate —"
+if npm run --silent gate >/dev/null 2>&1; then
+  ok "gate (arch+mirror+unit+golden) зелёный"
+else
+  fail "gate красный — 'npm run gate' (arch+mirror+unit+golden) не прошёл"
+fi
+
+# mirror-parity на релизе = FAIL при отсутствии sibling (нельзя резать релиз-пару вслепую)
+SIBLING="../Smart Sprint Planner"
+[ "$NAME" = "smart-sprint-planner" ] && SIBLING="../Sprint Planer for  MultiTeams"
+if [ -d "$SIBLING/widgets/main/src" ]; then
+  ok "sibling-форк на месте ($SIBLING)"
+else
+  fail "sibling-форк не найден ($SIBLING) — mirror-parity вслепую"
+fi
+
+# community: origin/main не отстал от локального тега (lockstep — сейчас local впереди origin)
+case "$NAME" in
+  smart-sprint-planner)
+    if git remote get-url origin >/dev/null 2>&1; then
+      git fetch --tags --quiet origin 2>/dev/null || true
+      if git merge-base --is-ancestor "v$PKG_VER" origin/main 2>/dev/null; then
+        ok "origin/main содержит v$PKG_VER"
+      else
+        warn "origin/main НЕ содержит v$PKG_VER — community отстал, нужен push"
+      fi
+    fi
+    ;;
+esac
+
 # ── итог ──────────────────────────────────────────────────────────────────────
 echo
 if [ $FAIL -ne 0 ]; then red "release-check: ПРОВАЛ (рассинхрон версии)"; exit 1; fi

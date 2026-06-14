@@ -1,0 +1,52 @@
+{
+  "note": "Модули, namespace-sed-идентичные между форками (baseline mirror-parity-гейта). Перегенерация — node scripts/gen-fork-identical.js. Дивергентные файлы (per-fork комменты/литералы) — НЕ здесь.",
+  "generatedBy": "scripts/gen-fork-identical.js",
+  "sed": [
+    [
+      "__SCBT_",
+      "__SSP_"
+    ],
+    [
+      "scbt_",
+      "ssp_"
+    ],
+    [
+      "scbt-",
+      "ssp-"
+    ]
+  ],
+  "identical": [
+    "data-loaders.js",
+    "date-pure.js",
+    "draft-store.js",
+    "enum-locale-pure.js",
+    "excel-export.js",
+    "gantt-view.js",
+    "hash-pure.js",
+    "history-controller.js",
+    "history-io.js",
+    "i18n-bridge.js",
+    "i18n/languages.js",
+    "i18n/loader.js",
+    "i18n/plural.js",
+    "intro-view.js",
+    "migrate-pure.js",
+    "modal-specs.js",
+    "period-pure.js",
+    "permissions.js",
+    "pick.js",
+    "reassign-controller.js",
+    "refresh-controller.js",
+    "refresh-merge-pure.js",
+    "revalidation.js",
+    "ring-class-helpers.js",
+    "sort-pure.js",
+    "sprint-controller.js",
+    "standup-view.js",
+    "toast-pure.js",
+    "util-pure.js",
+    "validation-controller.js",
+    "working-copy.js",
+    "youtrack-api.js"
+  ]
+}

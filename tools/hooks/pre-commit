@@ -1,0 +1,11 @@
+#!/bin/sh
+# Быстрый architecture-gate перед КАЖДЫМ коммитом (~2с, без golden).
+# corp без remote → pre-push не срабатывает, поэтому механический гейт corp = ЗДЕСЬ.
+# Версионируется в дереве (tools/hooks/), ставится tools/install-hooks.sh.
+# Обход осознанный: git commit --no-verify (но release-check.sh всё равно поймает).
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+echo "[pre-commit] architecture gate: arch + mirror + unit…"
+node --test tests/arch/*.test.js tests/mirror/*.test.js tests/unit/*.test.js
+echo "[pre-commit] ✅ зелёно (golden гоняется на push/release)"
