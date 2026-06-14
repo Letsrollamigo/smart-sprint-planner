@@ -299,11 +299,12 @@ test('golden: refreshPlanningPeople — полный рендер (PP есть �
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   const renders = stubRenders(gm);
-  /* активный спринт хранит PP devBack в каноне resourcesByAssignee → hasPP=true → full-ветка */
-  const sp = gm.get('_sprint');
-  sp.personalPlanning = sp.personalPlanning || {};
-  sp.personalPlanning.devBack = fx.buildCurrentRolePP();
-  gm.set({ _sprint: sp, _currentSprintRoleRec: null, _currentRolePP: null, _currentRoleGantt: null, _activeSubtab: null });
+  /* #49 — активный спринт хранит PP devBack в КАНОНЕ (per-role hist-запись) resourcesByAssignee
+     → hasPP=true → full-ветка. Ранее тест клал PP в кэш _sprint.personalPlanning и опирался на
+     getPP-fallback; fallback снят (источник только канон), фикстура переведена на канон-запись. */
+  const canonRec = Object.assign(fx.buildCurrentRoleRec(), { personalPlanning: fx.buildCurrentRolePP() });
+  gm.set({ _history: fx.buildHistory().concat([canonRec]),
+           _currentSprintRoleRec: null, _currentRolePP: null, _currentRoleGantt: null, _activeSubtab: null });
 
   gm.call('refreshPlanningPeopleForCurrentSprint', 'devBack');
 

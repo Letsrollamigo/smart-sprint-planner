@@ -5,8 +5,8 @@
       "assigneeName": "gm_user_2"
     },
     "ganttColorPresent": false,
-    "recPPSyncedToCurrentPP": true,
-    "sprintPPSyncedToCurrentPP": true,
+    "recPPNotDirectlyMutated": true,
+    "sprintPPNotMutatedByReassign": true,
     "dirtyDevBack": true,
     "closeCalled": [
       0

@@ -703,7 +703,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.6.1';
+  var APP_VERSION = '2.6.2';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -871,6 +871,7 @@
       t: T, toast: toast, diag: diag,
       allRoles: ALL_ROLES, status: STATUS, activeInc: ACTIVE_INC, draftVersion: DRAFT_VERSION,
       deepClone: deepClone, apiGet: apiGet, apiPost: apiPost,
+      buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
       getRoleItemsArr: getRoleItemsArr, calcRemForRole: calcRemForRole,
       isActiveSprintRecord: isActiveSprintRecord,
       computeBaseSnapshotHash: computeBaseSnapshotHash,
@@ -2022,8 +2023,11 @@
       uid: uid,
       ALL_ROLES: ALL_ROLES,
       STATUS: STATUS,
+      deepClone: deepClone,
       migrateStatus: migrateStatus,
       migrateInc: migrateInc,
+      buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
+      backfillCanonFromSprintPP: MIGRATE_PURE.backfillCanonFromSprintPP,
       updateProjectNameLabel: _updateProjectNameLabel,
       ytBaseFromProject: _ytBaseFromProject,
       syncProjectDefaultLang: _syncProjectDefaultLang,
@@ -2529,9 +2533,10 @@
     if (!_currentSprintId || !rk) return null;
     var rec = _findHistRecForCurrent(rk);
     if (rec && rec.personalPlanning) return rec.personalPlanning;
-    if (_sprint && _sprint.sprintId === _currentSprintId && _sprint.personalPlanning && _sprint.personalPlanning[rk]) {
-      return _sprint.personalPlanning[rk];
-    }
+    /* #49 — единственный источник PP = канон (per-role histRec.personalPlanning). Снят
+       fallback на legacy keyed-кэш _sprint.personalPlanning[rk] (был мёртв/неверного shape;
+       роли с данными в кэше, но пустым каноном досеваются backfill'ом на чтении —
+       migrate-pure.backfillCanonFromSprintPP в loadAllData). */
     return null;
   }
 
@@ -4007,6 +4012,7 @@
       updateRoleAccordionStats: _updateRoleAccordionStats,
       isActiveSprintRecord: isActiveSprintRecord,
       applyPersonalResourceToInputs: applyPersonalResourceToInputs,
+      buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
       STATUS: STATUS, ALL_ROLES: ALL_ROLES, DRAFT_VERSION: DRAFT_VERSION,
       state: {
         getCurrentSprintId: function () { return _currentSprintId; },

@@ -294,7 +294,19 @@ function syncWorkingDraftFromMemory(rk, deps) {
     deps.allRoles.forEach(function(r){
       if (_sprint[r.resKey] != null) draft.sprint[r.resKey] = _sprint[r.resKey];
     });
-    if (_sprint.personalPlanning) draft.personalPlanning = deps.deepClone(_sprint.personalPlanning);
+    /* #49 — WC-draft.personalPlanning = SINGLE PP активной роли rk из канона (per-role
+       histRec), а не сырой keyed-кэш _sprint.personalPlanning (был источником keyed-vs-single
+       рассинхрона). Канон уже актуализирован live-правками через saveCurrentRoleState; если
+       записи нет — прежнее значение драфта не трогаем (createWorkingDraftFromSnapshot уже
+       положил single PP из базового снимка). */
+    if (rk && _sprint.sprintId) {
+      var _wcCanonRec = deps.state.getHistory().find(function (r) {
+        return r && r.sprintId === _sprint.sprintId + '_' + rk;
+      });
+      if (_wcCanonRec && _wcCanonRec.personalPlanning) {
+        draft.personalPlanning = deps.deepClone(_wcCanonRec.personalPlanning);
+      }
+    }
     if (_sprint.gantt)            draft.gantt            = deps.deepClone(_sprint.gantt);
   }
   var _roleItems = deps.state.getRoleItems();

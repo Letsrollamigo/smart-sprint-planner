@@ -8,9 +8,10 @@
  *     _currentRolePP.resourcesByAssignee (sorted) + «Не назначен», current из
  *     taskAssignments; «Применить» → _applyReassign, «Отмена» → закрытие handle;
  *   • _applyReassign(issueId, login) — мутация taskAssignments (assignee/
- *     assigneeName, инвалидация legacy ganttColor-кэша), синк в
- *     _currentSprintRoleRec.personalPlanning и (для активного спринта) в
- *     _sprint.personalPlanning, dirty-tracking, зов saveCurrentRoleState +
+ *     assigneeName, инвалидация legacy ganttColor-кэша), dirty-tracking; канон
+ *     (histRec.personalPlanning, single per-role) и serialization-зеркало
+ *     _sprint.personalPlanning пишет saveCurrentRoleState (#49 — прямые keyed-записи
+ *     rec/_sprint personalPlanning[rk] сняты), зов saveCurrentRoleState +
  *     updateIssueAssigneeField (assignee в YouTrack) + ре-рендер Ганта, синк
  *     таблицы «Люди» по видимости #planning-level-people, снятие dirty в
  *     следующем event-loop;
@@ -94,23 +95,13 @@
     /* Инвалидация legacy-кэша цвета бара (поле не читается с v2.1.14) */
     delete entry.ganttColor;
     pp.taskAssignments[issueId] = entry;
-    /* Прокидываем _currentRolePP обратно в personalPlanning записи и в _sprint.personalPlanning
-       если запись соответствует активному спринту (паттерн из renderCurrentRoleTaskTable). */
+    /* #49 — канон (histRec.personalPlanning, single per-role) пишется ниже через
+       saveCurrentRoleState (deepClone(_currentRolePP)). Прежние прямые keyed-записи
+       rec.personalPlanning[rk] и _sprint.personalPlanning[rk] сняты: были мёртвыми
+       (saveCurrentRoleState их затирал) и неверной формы (keyed-map внутрь per-role записи).
+       _currentRolePP.taskAssignments уже мутирован выше. */
     var rec = st.getCurrentSprintRoleRec();
     var currentSprintId = st.getCurrentSprintId();
-    if (rec) {
-      if (!rec.personalPlanning) rec.personalPlanning = {};
-      var rk = st.getActiveSubtab() || rec.roleKey || null;
-      if (!rk && rec.sprintId && currentSprintId) {
-        rk = rec.sprintId.replace(currentSprintId + '_', '') || null;
-      }
-      if (rk) rec.personalPlanning[rk] = pp;
-      if (typeof deps.isActiveSprintRecord === 'function' && deps.isActiveSprintRecord(rec)) {
-        var sp = st.getSprint();
-        if (!sp.personalPlanning) sp.personalPlanning = {};
-        if (rk) sp.personalPlanning[rk] = pp;
-      }
-    }
     /* Dirty-tracking для confirm при смене роли */
     if (rec && rec.sprintId && currentSprintId) {
       var rkDirty = rec.sprintId.replace(currentSprintId + '_', '');

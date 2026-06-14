@@ -154,8 +154,11 @@ test('golden: onApply — переназначение на другого ас�
   const before = {
     taskAssignmentGM10: pp.taskAssignments['GM-10'],
     ganttColorPresent: Object.prototype.hasOwnProperty.call(pp.taskAssignments['GM-10'], 'ganttColor'),
-    recPPSyncedToCurrentPP: rec.personalPlanning.devBack === pp,
-    sprintPPSyncedToCurrentPP: sprint.personalPlanning.devBack === pp,
+    /* #49 — reassign больше НЕ пишет напрямую rec/_sprint personalPlanning[rk]
+       (keyed-записи сняты как мёртвые/неверной формы). Канон персистится через
+       saveCurrentRoleState (см. before.deps.save). Прямых мутаций нет: */
+    recPPNotDirectlyMutated: !(rec.personalPlanning && rec.personalPlanning.devBack),
+    sprintPPNotMutatedByReassign: !(sprint.personalPlanning && sprint.personalPlanning.devBack === pp),
     dirtyDevBack: dirty.devBack === true,
     closeCalled: modals.closeLog,
     deps: deps,
@@ -210,7 +213,7 @@ test('golden: onApply — снятие назначения (login="" → assign
   });
 });
 
-test('golden: onApply — запись НЕ активного спринта: _sprint.personalPlanning не синкается', () => {
+test('golden: onApply — reassign не мутирует _sprint/rec personalPlanning (канон через save)', () => {
   const { gm, window } = createHost();
   fx.applyBaseState(gm);
   fx.applyPeopleState(gm);
@@ -229,9 +232,10 @@ test('golden: onApply — запись НЕ активного спринта: _
   const sprint = gm.get('_sprint');
   const recAfter = gm.get('_currentSprintRoleRec');
   checkJsonSnapshot('reassign-apply-inactive-record', {
-    recPPSynced: recAfter.personalPlanning.devBack === pp,
-    sprintPPDevBackUntouched: sprint.personalPlanning.devBack === pp,
-    sprintPPDevBackIsFixtureBlock: !!sprint.personalPlanning.devBack && sprint.personalPlanning.devBack !== pp,
+    /* #49 — reassign не мутирует ни rec, ни _sprint personalPlanning (ни для active,
+       ни для inactive записи); канон идёт через saveCurrentRoleState. */
+    recPPNotMutated: !(recAfter.personalPlanning && recAfter.personalPlanning.devBack),
+    sprintPPDevBackIsFixtureBlock: !!(sprint.personalPlanning && sprint.personalPlanning.devBack) && sprint.personalPlanning.devBack !== pp,
   });
 });
 

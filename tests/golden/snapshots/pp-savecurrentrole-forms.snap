@@ -1,0 +1,80 @@
+{
+  "beforeSprintPP": {
+    "form": "keyed-map",
+    "topKeys": [
+      "devBack"
+    ],
+    "taskAssignmentKeys": null
+  },
+  "afterSprintPP": {
+    "form": "keyed-map",
+    "topKeys": [
+      "devBack"
+    ],
+    "taskAssignmentKeys": null
+  },
+  "canonRecPP": {
+    "form": "single",
+    "topKeys": [
+      "nkcKey",
+      "resourcesByAssignee",
+      "roleKey",
+      "taskAssignments"
+    ],
+    "taskAssignmentKeys": [
+      "GM-10",
+      "GM-11"
+    ]
+  },
+  "apiLog": [
+    {
+      "path": "history",
+      "query": null,
+      "historyPP": [
+        {
+          "sprintId": "gm-hist-2026-05_analysis",
+          "pp": {
+            "form": "keyed-map",
+            "topKeys": [],
+            "taskAssignmentKeys": null
+          }
+        },
+        {
+          "sprintId": "gm-hist-2026-05_testing",
+          "pp": {
+            "form": "keyed-map",
+            "topKeys": [],
+            "taskAssignmentKeys": null
+          }
+        },
+        {
+          "sprintId": "gm-sprint-2026-06_devBack",
+          "pp": {
+            "form": "single",
+            "topKeys": [
+              "nkcKey",
+              "resourcesByAssignee",
+              "roleKey",
+              "taskAssignments"
+            ],
+            "taskAssignmentKeys": [
+              "GM-10",
+              "GM-11"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "path": "sprint-data",
+      "query": null,
+      "sprintPP": {
+        "form": "keyed-map",
+        "topKeys": [
+          "devBack"
+        ],
+        "taskAssignmentKeys": null
+      }
+    }
+  ]
+}

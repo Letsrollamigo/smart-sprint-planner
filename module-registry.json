@@ -475,8 +475,8 @@
     "pure/migrate-pure.js": {
       "layer": "pure",
       "domain": "migrate-pure",
-      "loc": 66,
-      "locBudget": 86,
+      "loc": 120,
+      "locBudget": 135,
       "state": [],
       "publishes": [
         "MIGRATE_PURE"

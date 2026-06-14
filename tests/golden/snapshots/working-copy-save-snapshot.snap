@@ -42,35 +42,7 @@
         "alloc_devFront": 240
       }
     ],
-    "personalPlanning": {
-      "devBack": {
-        "nkcKey": "june",
-        "people": [
-          {
-            "name": "gm_user_1",
-            "grade": "Senior",
-            "kpe": 1,
-            "participation": 1,
-            "nkc": 168
-          },
-          {
-            "name": "gm_user_2",
-            "grade": "Middle",
-            "kpe": 0.8,
-            "participation": 0.5,
-            "nkc": 168
-          }
-        ],
-        "taskAssignments": {
-          "GM-10": {
-            "assignee": "gm_user_1"
-          },
-          "GM-11": {
-            "assignee": "gm_user_2"
-          }
-        }
-      }
-    },
+    "personalPlanning": null,
     "sprintGoal": "Golden-master характеризация монолита"
   },
   "preserved": {
