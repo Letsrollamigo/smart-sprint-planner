@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.6.1] — 2026-06-14
+
+> **Accessibility patch: visible button labels aligned with their accessible names (WCAG 2.5.3 "Label in Name").**
+
+### Fixed
+
+- **B17** — the «Pick assignees», «Calculate resource», «Refresh from task» and «Clear» buttons no longer carry an `aria-label` that diverges from their visible text: the accessible name now matches the label, so voice input and screen readers locate each button by its visible name. The `data-aria-label-key` attribute was dropped (every button has visible text plus a decorative icon). Calculations, layout, and the runtime bundle are untouched.
+
+---
+
 ## [2.6.0] — 2026-06-14
 
 > **Per-role sprint status + post-decomposition bug fixes and source reorganization into layers.**
