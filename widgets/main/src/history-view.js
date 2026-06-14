@@ -297,10 +297,21 @@ function buildSpoiler(rec, idx, deps) {
       showCloseButton: false,
     });
   }; })(idx));
-  var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶';
+  var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶'; arr.setAttribute('aria-hidden', 'true');
   ctrl.appendChild(xlsBtn); ctrl.appendChild(jsonBtn); ctrl.appendChild(del); ctrl.appendChild(arr);
   head.appendChild(meta); head.appendChild(ctrl);
-  head.addEventListener('click', function(){ wrap.classList.toggle('open'); });
+  /* B16 (a11y): шапка спойлера — disclosure-кнопка: клавиатура (Enter/Space) + role/aria-expanded. */
+  head.setAttribute('role', 'button');
+  head.setAttribute('tabindex', '0');
+  head.setAttribute('aria-expanded', 'false');
+  function toggleSpoiler() {
+    var isOpen = wrap.classList.toggle('open');
+    head.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  head.addEventListener('click', toggleSpoiler);
+  head.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleSpoiler(); }
+  });
 
   var body = document.createElement('div'); body.className = 'spoiler__body';
   if (rec.name) {

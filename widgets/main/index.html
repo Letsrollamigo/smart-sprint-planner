@@ -249,6 +249,7 @@
     body.ssp-global-mode .ssp-rail__context .widget-header__select { width: 100%; min-width: 0 !important; max-width: 100% !important; }
     /* рабочая копия — во всю ширину карточки, контент по центру (над статусами ролей) */
     body.ssp-global-mode .ssp-rail__context .widget-header__wc { display: flex !important; width: 100% !important; box-sizing: border-box; justify-content: center; align-self: stretch; }
+    body.ssp-global-mode .ssp-rail__context .widget-header__wc.hidden { display: none !important; }   /* B21: индикатор «✏ Рабочая копия» скрыт без активной WC (.hidden бьёт правило выше по специфичности) */
     /* статусы ролей — цветные блоки во всю ширину карточки, текст по центру */
     body.ssp-global-mode .ssp-rail__context .widget-header__badge { width: 100%; overflow: visible; gap: 6px; }
     body.ssp-global-mode .ssp-rail__context .widget-header__badge .s-badge {
