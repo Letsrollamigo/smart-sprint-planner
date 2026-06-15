@@ -1,5 +1,6 @@
 {
   "keys": [
+    "canEditWorkflow",
     "defaultLangOptions",
     "enumFields",
     "fieldsByType",
@@ -16,6 +17,7 @@
     "uiLang"
   ],
   "types": {
+    "canEditWorkflow": "boolean",
     "defaultLangOptions": "object",
     "enumFields": "object",
     "fieldsByType": "object",

@@ -57,7 +57,10 @@
     ]).then(function () {
       return deps.apiGet('check-settings-manager').catch(function () { return null; });
     }).then(function (r) {
-      var canManage  = !!(r && r.canManage);
+      var canManage         = !!(r && r.canManage);
+      // #22 — планировочный менеджер: editable планировочный тир; admin-тир скрыт. Fallback на canManage.
+      var canManagePlanning = !!(r && (r.canManagePlanning || r.canManage));
+      var canEditWorkflow   = (r && r.canEditWorkflow !== undefined) ? !!r.canEditWorkflow : canManage;
       var configured = !!(r && r.configured);
 
       document.body.classList.add('ssp-project-settings-mode');
@@ -77,23 +80,25 @@
       try { deps.applyRingTheme(); } catch (_) {}
       try { deps.loadAppVersion(); } catch (_) {}
 
-      _mountProjectSettings(deps, canManage, configured);
-      deps.diag('project settings page rendered (canManage=' + canManage + ', configured=' + configured + ')', 'info');
+      _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow);
+      deps.diag('project settings page rendered (canManagePlanning=' + canManagePlanning + ', canEditWorkflow=' + canEditWorkflow + ', configured=' + configured + ')', 'info');
     });
   }
 
-  /* Inline-маунт формы настроек в страницу. Read-only (CSS) для не-менеджера / не-настроенного. */
-  function _mountProjectSettings(deps, canManage, configured) {
+  /* Inline-маунт формы настроек в страницу. Read-only (CSS) для не-менеджера / не-настроенного.
+     #22 — canManagePlanning гейтит редактируемость (планировочный менеджер editable),
+     canEditWorkflow прокидывается в форму (admin-тир рендерится только при true). */
+  function _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow) {
     var host = document.getElementById('projectSettingsHost');
     if (!host) return;
-    var ro = !canManage || !configured;
+    var ro = !canManagePlanning || !configured;
     host.classList.toggle('ssp-settings-readonly', ro);
     if (!window.__SSP_RING_MODAL || typeof window.__SSP_RING_MODAL.mountInline !== 'function') {
       host.textContent = deps.T('settingsNotConfiguredHint');
       return;
     }
     /* inline «отмена/закрыть» = перезагрузить страницу (сброс несохранённых правок). */
-    var props = deps.buildSettingsFormProps(function () { _renderProjectSettingsPage(deps); });
+    var props = deps.buildSettingsFormProps(function () { _renderProjectSettingsPage(deps); }, { canEditWorkflow: !!canEditWorkflow });
     window.__SSP_RING_MODAL.mountInline(host, 'settingsForm', props);
   }
 

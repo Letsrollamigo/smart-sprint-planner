@@ -703,7 +703,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.6.2';
+  var APP_VERSION = '2.7.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1934,8 +1934,10 @@
     var banner = document.getElementById('bannerNotConfigured');
     apiGet('check-settings-manager').then(function(r) {
       var canManage  = !!(r && r.canManage);
+      // #22 — планировочный менеджер тоже видит кнопку (canManagePlanning); fallback на canManage для старого backend.
+      var canManagePlanning = !!(r && (r.canManagePlanning || r.canManage));
       var configured = !!(r && r.configured);
-      diag('check-settings-manager: configured='+configured+' canManage='+canManage,'info');
+      diag('check-settings-manager: configured='+configured+' canManage='+canManage+' canManagePlanning='+canManagePlanning,'info');
 
       // Глобальный баннер «не настроен» (видим всем пользователям, не только settings-менеджерам)
       if (banner) {
@@ -1943,9 +1945,9 @@
         else            banner.classList.remove('hidden');
       }
 
-      // Кнопка открытия overlay настроек — только для settings-менеджеров
+      // Кнопка открытия overlay настроек — settings-менеджеру ИЛИ планировочному менеджеру (#22)
       if (!btn) return;
-      btn.style.display = canManage ? '' : 'none';
+      btn.style.display = canManagePlanning ? '' : 'none';
     }).catch(function(e) {
       diag('refreshOpenSettingsBtn ERR: '+String(e),'err');
       if (btn) btn.style.display = 'none';
@@ -2009,7 +2011,7 @@
      свои функции напрямую через deps). */
   function _buildFieldsByType() { return SETTINGS_CTRL._buildFieldsByType(_settingsDeps()); }
   function _saveSettingsData(data) { return SETTINGS_CTRL._saveSettingsData(data, _settingsDeps()); }
-  function _buildSettingsFormProps(onCloseFn) { return SETTINGS_CTRL.buildSettingsFormProps(onCloseFn, _settingsDeps()); }
+  function _buildSettingsFormProps(onCloseFn, opts) { return SETTINGS_CTRL.buildSettingsFormProps(onCloseFn, _settingsDeps(), opts); }
   function openSettingsModal() { return SETTINGS_CTRL.openSettingsModal(_settingsDeps()); }
 
 

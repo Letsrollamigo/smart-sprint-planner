@@ -223,7 +223,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.1.7';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.6.2';
+var APP_VERSION = '2.7.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -767,6 +767,10 @@ var ALLOWED_SETTINGS_KEYS = [
   'historyClearGroups','historyClearGroupNames',
   /* v6.1.0 D82 (F5) — assigner-роль (variant b: assignee + start/end-dates). */
   'assignerGroups','assignerGroupNames',
+  /* #22 — планировочный тир (Вариант C): группы менеджеров планировочных настроек.
+     Задаются settings-менеджером; редактируют только планировочные секции
+     (admin-тир ключи preserve-merge'атся при записи — см. ADMIN_TIER_SETTINGS_KEYS). */
+  'planningManagerGroups','planningManagerGroupNames',
   // Параметры планирования
   'dynEditEnabled','personalPlanningEnabled','usePersonalForResource',
   /* v1.4.0 — ручной ввод ресурса по исполнителям (дочерний к personalPlanning).
@@ -828,6 +832,42 @@ var ALLOWED_SETTINGS_KEYS = [
   /* v1.9.0 D132 — Stand-up assist: admin-configurable list of state names that count as Done. */
   'standupDoneStates'
 ];
+
+/* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
+   settings-менеджером; для планировочного менеджера preserve-merge'атся из stored
+   (mergeAdminTierFromStored). Две группы: доступ/права (включая planningManagerGroups —
+   запрет self-эскалации) + workflow-правила (DTA / каскад+forbid / state-rollup). */
+var ADMIN_TIER_SETTINGS_KEYS = [
+  // Доступ и права
+  'validationGroups','validationGroupNames','editGroups','editGroupNames',
+  'historyClearGroups','historyClearGroupNames','assignerGroups','assignerGroupNames',
+  'planningManagerGroups','planningManagerGroupNames',
+  // DTA
+  'dtaEnabled','dtaWarningsEnabled','workItemTypeMapping',
+  // Каскад + forbid container
+  'cascadeAggregationEnabled','forbidContainerWorkItems','cascadeKindField',
+  'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
+  // State Rollup
+  'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
+  'stateRollupStrategy','stateRollupRescanRequested','stateRollupRescanRequestedAt'
+];
+
+/* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
+   (присланные значения планировочного менеджера игнорируются), планировочные — из
+   incoming. Если ключа нет в stored — он удаляется из результата (планировочный
+   менеджер не может СОЗДАТЬ admin-ключ). Чистая функция (test-exported). */
+function mergeAdminTierFromStored(incoming, stored) {
+  var out = {};
+  var inObj = incoming || {};
+  Object.keys(inObj).forEach(function (k) { out[k] = inObj[k]; });
+  var st = stored || {};
+  for (var i = 0; i < ADMIN_TIER_SETTINGS_KEYS.length; i++) {
+    var k = ADMIN_TIER_SETTINGS_KEYS[i];
+    if (Object.prototype.hasOwnProperty.call(st, k)) out[k] = st[k];
+    else delete out[k];
+  }
+  return out;
+}
 
 /* v1.7.0: KPE whitelist accepts both legacy Russian keys (Стажёр/Джун/Мидл/Синьор)
    and canonical English keys (Intern/Junior/Middle/Senior, frontend storage layer
@@ -902,6 +942,11 @@ function validateSettings(settings) {
       && !isStrArr(settings.assignerGroups,     200, 100)) return false;
   if (settings.assignerGroupNames !== undefined && settings.assignerGroupNames !== null
       && !isStrArr(settings.assignerGroupNames, 200, 100)) return false;
+  /* #22 — планировочный тир (Вариант C). */
+  if (settings.planningManagerGroups     !== undefined && settings.planningManagerGroups     !== null
+      && !isStrArr(settings.planningManagerGroups,     200, 100)) return false;
+  if (settings.planningManagerGroupNames !== undefined && settings.planningManagerGroupNames !== null
+      && !isStrArr(settings.planningManagerGroupNames, 500, 100)) return false;
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
@@ -1386,6 +1431,21 @@ function isEditor(ctx) {
 }
 
 /**
+ * #22 — Права планировочного менеджера (Вариант C) по ssp_settings.planningManagerGroups.
+ * Может править ТОЛЬКО планировочные секции формы настроек; admin-тир (workflow + доступ/
+ * права) preserve-merge'ится при записи (см. mergeAdminTierFromStored). Deny-by-default,
+ * аналогично isEditor.
+ */
+function isPlanningManager(ctx) {
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var savedSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (savedSettings && savedSettings.planningManagerGroups)     || [];
+  var names = (savedSettings && savedSettings.planningManagerGroupNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+/**
  * Проверяет права валидатора по настройкам ssp_settings.validationGroups.
  * Deny-by-default — аналогично isEditor.
  */
@@ -1511,6 +1571,13 @@ function authzGuard(ctx, role) {
   if (role === 'assigner') {
     if (isEditor(ctx) || isAssigner(ctx) || isSettingsManager(ctx)) return true;
     forbidden(ctx, 'assigner_rights_required');
+    return false;
+  }
+  /* #22 — запись настроек: settings-менеджер (полный доступ) ИЛИ планировочный
+     менеджер (планировочный тир; admin-ключи preserve-merge'атся в хэндлере). */
+  if (role === 'settingsOrPlanning') {
+    if (isSettingsManager(ctx) || isPlanningManager(ctx)) return true;
+    forbidden(ctx, 'settings_manager_rights_required');
     return false;
   }
   // Неизвестная роль — fail-closed
@@ -1730,13 +1797,20 @@ var ENDPOINTS = [
         }
 
         if (body.settings !== undefined) {
-          // settings — только settings-manager
-          if (!authzGuard(ctx, 'settingsManager')) return;
+          // #22 — settings: settings-менеджер (полностью) ИЛИ планировочный менеджер
+          // (планировочный тир; admin-тир ключи preserve-merge'атся из stored).
+          if (!authzGuard(ctx, 'settingsOrPlanning')) return;
           if (!validateSettings(body.settings)) {
             badRequest(ctx, 'invalid_settings_structure');
             return;
           }
-          var stStr = JSON.stringify(body.settings);
+          var settingsToSave = body.settings;
+          if (!isSettingsManager(ctx)) {
+            // Планировочный менеджер: admin-тир неприкосновенен — берём его из stored.
+            var storedSettings = parseJson(getProp(ctx, 'ssp_settings'), {});
+            settingsToSave = mergeAdminTierFromStored(body.settings, storedSettings);
+          }
+          var stStr = JSON.stringify(settingsToSave);
           if (stStr.length > MAX_PROP_SIZE) {
             badRequest(ctx, 'settings_data_too_large');
             return;
@@ -1744,11 +1818,11 @@ var ENDPOINTS = [
           setProp(ctx, 'ssp_settings', stStr);
 
           // Подчистка orphan roleItems: удаляем задачи отключённых ролей
-          if (Array.isArray(body.settings.activeRoles)) {
+          if (Array.isArray(settingsToSave.activeRoles)) {
             var saved = parseJson(getProp(ctx, 'ssp_roleitems'), null);
             if (saved && typeof saved === 'object') {
               var activeSet = {};
-              body.settings.activeRoles.forEach(function (k) { activeSet[k] = true; });
+              settingsToSave.activeRoles.forEach(function (k) { activeSet[k] = true; });
               var pruned = {};
               var hadOrphans = false;
               Object.keys(saved).forEach(function (rk) {
@@ -1970,11 +2044,15 @@ var ENDPOINTS = [
           var ids = (g && g.id) ? [String(g.id)] : [];
           canManage = userInGroups(ctx, ids, groupName ? [groupName] : []);
         }
+        /* #22 — планировочный тир: settings-менеджер ⊃ планировочный менеджер. */
+        var canPlanning = canManage || isPlanningManager(ctx);
         ctx.response.json({
-          canManage:  canManage,
+          canManage:         canManage,
+          canManagePlanning: canPlanning,   // #22 — может открыть форму + править планировочный тир
+          canEditWorkflow:   canManage,     // #22 — admin-группа (workflow + доступ/права) рендерится только при true
           configured: true,
           groupName:  groupName,
-          reason:     canManage ? 'ok' : 'not_in_group'
+          reason:     canManage ? 'ok' : (canPlanning ? 'planning_only' : 'not_in_group')
         });
       }
     },
@@ -2702,7 +2780,10 @@ if (typeof module !== 'undefined' && module.exports) {
     ALLOWED_KPE_KEYS:             ALLOWED_KPE_KEYS,
     validateItem:                 validateItem,
     validateSettings:             validateSettings,
+    ADMIN_TIER_SETTINGS_KEYS:     ADMIN_TIER_SETTINGS_KEYS,   // #22
+    mergeAdminTierFromStored:     mergeAdminTierFromStored,   // #22
     // Auth helpers (test-only)
     userInGroups:                 userInGroups,
+    isPlanningManager:            isPlanningManager,          // #22
   });
 }

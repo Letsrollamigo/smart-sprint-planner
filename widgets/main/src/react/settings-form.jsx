@@ -123,6 +123,18 @@ function GrpIcon() {
   );
 }
 
+/* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
+   только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
+const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true };
+const LOCK_ICON_PATH = 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z';
+function LockIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ verticalAlign: '-2px', marginRight: '4px', opacity: 0.7 }}>
+      <path d={LOCK_ICON_PATH} />
+    </svg>
+  );
+}
+
 /* Группа-мультиселект (зеркалит renderGrpMultiselect): tags + input-фильтр + dropdown.
    value = {ids:[], names:[]}; onChange(nextValue). Список групп грузится лениво при
    открытии dropdown через loadGroups()→Promise<[{id,name}]>. Макс 100 групп. */
@@ -588,6 +600,8 @@ function SettingsForm(props) {
   const onSave = props.onSave || (() => Promise.resolve({ success: true }));
   const onClose = props.onClose || noop;
   const onUiLangChange = props.onUiLangChange || noop;
+  /* #22 — admin-тир (workflow-правила + доступ/права) рендерится только при true. */
+  const canEditWorkflow = !!props.canEditWorkflow;
 
   /* ── Состояние формы (React source-of-truth; collect = сериализация этого) ── */
   const [activeRoles, setActiveRoles] = React.useState(() => (initial.activeRoles || []).slice());
@@ -652,6 +666,8 @@ function SettingsForm(props) {
     edit: { ids: (initial.editGroups || []).slice(), names: (initial.editGroupNames || []).slice() },
     histClear: { ids: (initial.historyClearGroups || []).slice(), names: (initial.historyClearGroupNames || []).slice() },
     assigner: { ids: (initial.assignerGroups || []).slice(), names: (initial.assignerGroupNames || []).slice() },
+    /* #22 — планировочный тир (Вариант C). */
+    planning: { ids: (initial.planningManagerGroups || []).slice(), names: (initial.planningManagerGroupNames || []).slice() },
   }));
   const setGroup = (k, v) => setGroups((p) => Object.assign({}, p, { [k]: v }));
 
@@ -790,6 +806,9 @@ function SettingsForm(props) {
     data.historyClearGroupNames = groups.histClear.names.slice();
     data.assignerGroups = groups.assigner.ids.slice();
     data.assignerGroupNames = groups.assigner.names.slice();
+    /* #22 — планировочный тир (Вариант C). */
+    data.planningManagerGroups = groups.planning.ids.slice();
+    data.planningManagerGroupNames = groups.planning.names.slice();
 
     /* DTA (5c): mapping из строк (пустой type/role скипается; дубль блокирует save выше). */
     data.dtaEnabled = dta.enabled;
@@ -893,6 +912,7 @@ function SettingsForm(props) {
       node: (
         <React.Fragment>
           {[
+            { key: 'planning', label: t('lblPlanningManagerGroup'), hint: t('hintPlanningManagerGroup') },
             { key: 'val', label: t('lblValGroup') },
             { key: 'edit', label: t('lblEditGroup') },
             { key: 'histClear', label: t('lblHistClearGroup'), hint: t('hintHistClearGroup') },
@@ -1099,7 +1119,11 @@ function SettingsForm(props) {
     },
   ];
 
-  const active = SECTIONS.filter((s) => s.id === activeSection)[0] || SECTIONS[0];
+  /* #22 — фильтр nav по тиру: не-админ (canEditWorkflow=false) не видит admin-секции. */
+  const visibleSections = canEditWorkflow
+    ? SECTIONS
+    : SECTIONS.filter((s) => !ADMIN_SECTION_IDS[s.id]);
+  const active = visibleSections.filter((s) => s.id === activeSection)[0] || visibleSections[0];
 
   return (
     <I18nCtx.Provider value={t}>
@@ -1113,18 +1137,34 @@ function SettingsForm(props) {
       >×</button>
       <div className="ssp-settings-main">
         {/* ── Левый nav: список секций (кнопки → @ref в OOPIF, тестируемы agent-browser) ── */}
+        {/* #22 — nav сгруппирован по тиру: «Планирование» (всегда) + «Администрирование»
+            (workflow + доступ/права, с замком; только при canEditWorkflow). */}
         <nav className="ssp-settings-nav" aria-label={t('appTitleSettings')}>
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id} type="button"
-              className={'ssp-settings-nav__item' + (s.id === active.id ? ' active' : '') + (s.error ? ' has-error' : '')}
-              aria-current={s.id === active.id ? 'true' : undefined}
-              onClick={() => setActiveSection(s.id)}
-            >
-              <span className="ssp-settings-nav__label">{s.nav || s.title}</span>
-              {s.error ? <span className="ssp-settings-nav__dot" aria-hidden="true">●</span> : null}
-            </button>
-          ))}
+          {[
+            { tier: 'planning', label: t('navGroupPlanning'), lock: false },
+            { tier: 'admin', label: t('navGroupAdmin'), lock: true },
+          ].map((grp) => {
+            const items = visibleSections.filter((s) => (ADMIN_SECTION_IDS[s.id] ? 'admin' : 'planning') === grp.tier);
+            if (!items.length) return null;
+            return (
+              <React.Fragment key={grp.tier}>
+                <div className="ssp-settings-nav__grouptitle" style={{ fontSize: '11px', letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)', padding: '10px 10px 4px', fontWeight: 500 }}>
+                  {grp.lock ? <LockIcon /> : null}{grp.label}
+                </div>
+                {items.map((s) => (
+                  <button
+                    key={s.id} type="button"
+                    className={'ssp-settings-nav__item' + (s.id === active.id ? ' active' : '') + (s.error ? ' has-error' : '')}
+                    aria-current={s.id === active.id ? 'true' : undefined}
+                    onClick={() => setActiveSection(s.id)}
+                  >
+                    <span className="ssp-settings-nav__label">{s.nav || s.title}</span>
+                    {s.error ? <span className="ssp-settings-nav__dot" aria-hidden="true">●</span> : null}
+                  </button>
+                ))}
+              </React.Fragment>
+            );
+          })}
         </nav>
 
         {/* ── Правый pane: только активная секция (свой скролл) ── */}
