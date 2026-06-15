@@ -4,12 +4,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 [![GitHub Release](https://img.shields.io/badge/GitHub-v2.7.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
-[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.5.6-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
+[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.7.0-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
 [![Поддержать на TON](https://img.shields.io/badge/Поддержать-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
 
-> 🎉 **Smart Sprint Planner в [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Версия **2.5.6** — последний одобренный релиз. Marketplace-листинг — канонический способ установки для команд, которым нужны проверенные стабильные релизы.
+> 🎉 **Smart Sprint Planner в [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Версия **2.7.0** — последний одобренный релиз. Marketplace-листинг — канонический способ установки для команд, которым нужны проверенные стабильные релизы.
 
 > 💎 **Поддержать проект?** Если плагин был полезен команде и вы хотите
 > поддержать его развитие, любая сумма приветствуется на TON-кошелёк:
@@ -32,7 +32,7 @@
 
 | Канал | Текущая версия | Каденс | Кому подходит |
 |---|---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.5.6** | Стабильные релизы, проверены JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая новая выгрузка проходит модерацию JetBrains marketplace (1–3 рабочих дня) перед публикацией. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.7.0** | Стабильные релизы, проверены JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая новая выгрузка проходит модерацию JetBrains marketplace (1–3 рабочих дня) перед публикацией. |
 | **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.7.0** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз здесь полностью протестирован в CI (`node --test`: unit + golden), но выходит раньше прохождения marketplace-модерации. |
 
 GitHub Releases — авторитетный источник: каждая marketplace-выгрузка собирается из тегированного GitHub-релиза. Если вы видите фичу в этом README, которой ещё нет в marketplace-версии — значит, очередной цикл модерации ещё не завершён.
