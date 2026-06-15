@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.7.0] — 2026-06-15
+
+> **Project settings split into «Planning» and «Administration» groups + planning-manager role (#22).**
+
+### Added
+
+- **Two-group settings navigation.** The settings form's left navigation is split into «Planning» (roles, fields, estimate/fact, capacity norms, modes, Stand-up, misc) and «Administration» (access-rights management + workflow rules: differentiated time accounting, cascade aggregation, container-work ban, State Rollup). The «Administration» group is visible and editable only by the settings manager.
+- **«Planning settings manager» group** (`planningManagerGroups`) — a new access group whose members edit planning settings only, without access to workflow rules or access-rights groups. Configured by the settings manager.
+
+### Changed
+
+- **Server-side settings-save gate.** Writing `sprint-data:settings` is allowed for the settings manager (full) or a planning manager (planning tier only); admin-tier keys submitted by a planning manager are ignored and preserved from current storage (preserve-merge), including a self-escalation guard on `planningManagerGroups`.
+
+### Compatibility
+
+- Additive optional settings keys; no migration, snapshot schema untouched, existing project settings are read as-is.
+
+---
+
 ## [2.6.2] — 2026-06-14
 
 > **Personal-planning model unified onto per-role history snapshots as the single source of truth (#49).**

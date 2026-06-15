@@ -11,6 +11,7 @@
       "bodyKind": "component",
       "componentName": "settingsForm",
       "propKeys": [
+        "canEditWorkflow",
         "defaultLangOptions",
         "enumFields",
         "fieldsByType",

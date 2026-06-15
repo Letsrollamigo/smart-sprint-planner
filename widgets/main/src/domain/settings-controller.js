@@ -100,7 +100,7 @@
 
   /* #25 Ф1-A — сборка props формы настроек. Переиспользуется модалкой (global)
      и inline-страницей проектного виджета (_renderProjectSettingsPage). */
-  function buildSettingsFormProps(onCloseFn, deps) {
+  function buildSettingsFormProps(onCloseFn, deps, opts) {
     var st = deps.state;
     var langs = (typeof window !== 'undefined' && window.__SSP_I18N_LANGS__) || [];
     var defaultLangOptions = langs.map(function (l) {
@@ -129,6 +129,8 @@
       },
       onUiLangChange:     function (lang) { deps.setLang(lang); },
       onSave:             function (data) { return _saveSettingsData(data, deps); },
+      /* #22 — admin-тир (workflow + доступ/права) рендерится только при true. */
+      canEditWorkflow:    !!(opts && opts.canEditWorkflow),
       onClose:            onCloseFn,
     };
   }
@@ -147,7 +149,11 @@
         });
         return;
       }
-      if (!r.canManage) {
+      /* #22 — открываем форму settings-менеджеру ИЛИ планировочному менеджеру
+         (canManagePlanning). Fallback на canManage для старого backend. */
+      var canManagePlanning = !!(r.canManagePlanning || r.canManage);
+      var canEditWorkflow   = (r.canEditWorkflow !== undefined) ? !!r.canEditWorkflow : !!r.canManage;
+      if (!canManagePlanning) {
         var txt = T('settingsNoAccessHint');
         if (r.groupName) txt += ' (' + T('settingsNoAccessGroup').replace('{group}', r.groupName) + ')';
         deps.openModal({
@@ -169,7 +175,7 @@
         id: 'settings', type: 'form', title: T('appTitleSettings'),
         dialogClass: 'ssp-ring-modal--wide ssp-ring-modal--settings',
         body: { kind: 'component', name: 'settingsForm',
-          props: buildSettingsFormProps(function () { if (handle) handle.close(); }, deps) },
+          props: buildSettingsFormProps(function () { if (handle) handle.close(); }, deps, { canEditWorkflow: canEditWorkflow }) },
         buttons: [],
         dismissOnBackdrop: false,
         blockEscape: false,
