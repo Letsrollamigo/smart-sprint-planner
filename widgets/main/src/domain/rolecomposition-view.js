@@ -688,7 +688,13 @@ function _buildRoleCompositionVm(rk, deps) {
 function renderRoleComposition(rk, deps) {
   var T = deps.T, esc = deps.esc, diag = deps.diag;
   var host = document.getElementById('compHost_'+rk);
-  if (!host) { diag('renderRoleComposition('+rk+'): host NOT FOUND','err'); return; }
+  if (!host) {
+    /* Планировочный вид не смонтирован (открыты настройки / другая вкладка) — рендер-сайд-
+       эффект сейва дёрнул рендер невидимой роли; ожидаемый no-op, не ошибка. Если контейнер
+       планирования есть, а хоста роли нет — это настоящая аномалия (логируем err). */
+    if (document.getElementById('roleAccordions')) diag('renderRoleComposition('+rk+'): host NOT FOUND','err');
+    return;
+  }
   var vm = _buildRoleCompositionVm(rk, deps);
   var has = !vm.empty;
   diag('renderRoleComposition('+rk+'): items.length='+vm.itemCount+' host=yes has='+has, 'info');
