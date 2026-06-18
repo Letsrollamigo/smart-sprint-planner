@@ -494,6 +494,19 @@
         "PERIOD_PURE"
       ]
     },
+    "pure/planning-model-pure.js": {
+      "layer": "pure",
+      "domain": "planning-model-pure",
+      "loc": 66,
+      "locBudget": 86,
+      "state": [
+        "PLANNING_MODELS",
+        "_api"
+      ],
+      "publishes": [
+        "PLANNING_MODEL_PURE"
+      ]
+    },
     "pure/refresh-merge-pure.js": {
       "layer": "pure",
       "domain": "refresh-merge-pure",

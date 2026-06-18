@@ -25,6 +25,7 @@ import './pure/util-pure.js';
 import './pure/migrate-pure.js';
 import './pure/refresh-merge-pure.js';
 import './pure/share-url-pure.js';
+import './pure/planning-model-pure.js';
 import './infra/modal-specs.js';
 import './domain/excel-export.js';
 import './domain/revalidation.js';

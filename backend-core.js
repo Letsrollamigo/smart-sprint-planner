@@ -221,9 +221,9 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '2.8.0';
+var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.13.0';
+var APP_VERSION = '2.14.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -425,6 +425,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '2.1.0', to: '2.8.0',
     migrate: function (snap) { return snap; }, /* no-op: capacity — separate stores + additive optional settings, snapshot shape unchanged */
     note: 'v2.8.0: Capacity Management R1 — ssp_calendar/ssp_absences/ssp_capacity stores + capacityMode/hoursPerDay/usefulHoursPerDay settings (additive); sprint/history/working-draft shape unchanged'
+  },
+  /* v2.14.0 — «Модель планирования» (simple|light|full). Новый settings-ключ planningModel
+     — optional/additive, undefined допустим на старых снимках (фронт деривит из старых
+     флагов в init формы — PLANNING_MODEL_SHIM). Старые флаги сохраняются (derived-зеркало).
+     sprint/history/working-draft shape НЕ меняется → no-op. */
+  { from: '2.8.0', to: '2.14.0',
+    migrate: function (snap) { return snap; }, /* no-op: planningModel — additive optional setting, snapshot shape unchanged */
+    note: 'v2.14.0: Planning model dropdown (simple|light|full) — additive planningModel setting; old personalPlanning flags kept as derived mirror; snapshot shape unchanged'
   }
 ];
 
@@ -845,7 +853,12 @@ var ALLOWED_SETTINGS_KEYS = [
      vs ~6ч полезных под #40). Все три — admin-тир (см. ADMIN_TIER_SETTINGS_KEYS). */
   'capacityMode',
   'hoursPerDay',
-  'usefulHoursPerDay'
+  'usefulHoursPerDay',
+  /* v2.14.0 — «Модель планирования» (simple|light|full) — источник правды UI,
+     заменяет тройку тогглов в форме настроек; на бэке additive optional поле.
+     Старые флаги (personalPlanningEnabled/usePersonalForResource/manualPersonalResource)
+     остаются как derived-зеркало для расчётов/super-light (см. PLANNING_MODEL_SHIM). */
+  'planningModel'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -873,7 +886,9 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'nkcJanuary','nkcMay','nkcOther','rate','participation','kpe',
   'personalPlanningEnabled','usePersonalForResource','manualPersonalResource',
   // #45 Capacity Management — политика модели ёмкости (admin-тир)
-  'capacityMode','hoursPerDay','usefulHoursPerDay'
+  'capacityMode','hoursPerDay','usefulHoursPerDay',
+  // v2.14.0 — модель планирования (admin-тир, как и тройка флагов, которую она заменяет)
+  'planningModel'
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1003,6 +1018,11 @@ function validateSettings(settings) {
   /* v2.8.0 #45 R1 — Capacity Management политика (admin-тир). */
   if (settings.capacityMode !== undefined && settings.capacityMode !== null) {
     if (settings.capacityMode !== 'light' && settings.capacityMode !== 'full') return false;
+  }
+  /* v2.14.0 — модель планирования: enum. 'full' принимается (forward-compat,
+     UI пока disable не даёт выбрать), 'simple'|'light' — рабочие. */
+  if (settings.planningModel !== undefined && settings.planningModel !== null) {
+    if (['simple', 'light', 'full'].indexOf(settings.planningModel) < 0) return false;
   }
   if (settings.hoursPerDay !== undefined && settings.hoursPerDay !== null
       && !isNumInRange(settings.hoursPerDay, 1, 24)) return false;
