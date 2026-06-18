@@ -297,11 +297,11 @@ function RingSelLite({ options, value, onChange, placeholder, clearable, disable
     return (
       <select className="app-select" value={value || ''} disabled={disabled} onChange={(e) => onChange(e.target.value)}>
         {(clearable || !value) ? <option value="">{placeholder || ''}</option> : null}
-        {opts.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        {opts.map((o) => <option key={o.key} value={o.key} disabled={!!o.disabled}>{o.label}</option>)}
       </select>
     );
   }
-  const data = opts.map((o) => ({ key: o.key, label: o.label }));
+  const data = opts.map((o) => ({ key: o.key, label: o.label, disabled: !!o.disabled }));
   const selected = data.find((d) => d.key === value) || null;
   return (
     <Select
@@ -633,15 +633,25 @@ function SettingsForm(props) {
   const setRoleField = (rk, slot, v) =>
     setRoleFields((p) => Object.assign({}, p, { [rk]: Object.assign({}, p[rk], { [slot]: v }) }));
 
-  /* Режимы (parent-child) */
-  const [modes, setModes] = React.useState(() => ({
-    personalPlanningEnabled: !!initial.personalPlanningEnabled,
-    usePersonalForResource: !!initial.usePersonalForResource,
-    manualPersonalResource: !!initial.manualPersonalResource,
-    dynEditEnabled: !!initial.dynEditEnabled,
-    allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
-  }));
+  /* Режимы (parent-child).
+     v2.14.0 — «Модель планирования»: planningModel (simple|light|full) + lightSub
+     (auto|manual) — источник правды UI. Тройка legacy-флагов больше не редактируется
+     напрямую; пишется derived-зеркалом в collect (см. PLANNING_MODEL_SHIM). */
+  const [modes, setModes] = React.useState(() => {
+    const PM = globalThis.__SSP_PLANNING_MODEL_PURE;
+    const pm = PM.planningModelFromSettings(initial);
+    return {
+      planningModel: pm.model,
+      lightSub: pm.lightSub,
+      /* PLANNING_MODEL_SHIM — фиксируем legacy-гибрид (PP on + useRes off) из исходных
+         настроек один раз: пересохранение не должно насильно включать авто-перенос суммы. */
+      legacyHybrid: PM.isLegacyHybrid(initial),
+      dynEditEnabled: !!initial.dynEditEnabled,
+      allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
+    };
+  });
   const toggleMode = (k) => setModes((p) => Object.assign({}, p, { [k]: !p[k] }));
+  const setMode = (k, v) => setModes((p) => Object.assign({}, p, { [k]: v }));
 
   /* Нормы */
   const [nums, setNums] = React.useState(() => {
@@ -726,7 +736,6 @@ function SettingsForm(props) {
   const [saving, setSaving] = React.useState(false);
   const [hint, setHint] = React.useState(null); // {cls,text}
 
-  const parentOn = modes.personalPlanningEnabled;
   const activeRoleList = roles.filter((r) => activeRoles.indexOf(r.key) >= 0);
 
   /* Валидация дублей est/fact (как _recomputeSaveBtnState): одно period-поле
@@ -768,9 +777,15 @@ function SettingsForm(props) {
 
     data.activeRoles = activeRoles.slice();
     data.dynEditEnabled = modes.dynEditEnabled;
-    data.personalPlanningEnabled = modes.personalPlanningEnabled;
-    data.usePersonalForResource = modes.usePersonalForResource;
-    data.manualPersonalResource = modes.manualPersonalResource;
+    /* v2.14.0 — planningModel = источник правды; legacy-флаги пишутся derived-зеркалом
+       (расчёты/super-light читают их). PLANNING_MODEL_SHIM — derived-блок снять, когда
+       расчёты переведут на planningModel (см. PLANNING_MODEL_DROPDOWN_SPEC §10). */
+    data.planningModel = modes.planningModel;
+    const _ppFlags = globalThis.__SSP_PLANNING_MODEL_PURE.planningModelToFlags(
+      modes.planningModel, modes.lightSub, { legacyHybrid: modes.legacyHybrid });
+    data.personalPlanningEnabled = _ppFlags.personalPlanningEnabled;
+    data.usePersonalForResource = _ppFlags.usePersonalForResource;
+    data.manualPersonalResource = _ppFlags.manualPersonalResource;
     data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
     data.hideDiagLogUi = hideDiagLogUi;
 
@@ -1101,18 +1116,42 @@ function SettingsForm(props) {
             <NumField id="s_kpe_senior" label={t('lblKpeSenior')} value={nums.kpeSenior} onChange={(v) => setNum('kpeSenior', v)} min={0} max={2} step={0.01} />
           </div>
 
-          {/* #45 (b) — источник ресурса исполнителей (бывший personalPlanning-кластер).
-              parentOn (= personalPlanningEnabled) гейтит детей внутри блока. */}
+          {/* v2.14.0 — «Модель планирования»: один dropdown (simple|light|full) заменяет
+              тройку тогглов (PLANNING_MODEL_DROPDOWN_SPEC). Full — disabled (заглушка).
+              При light — radio способа расчёта ресурса (авто по формуле / ручной ввод). */}
           <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
             {t('capGroupResource')}
           </div>
-          <RoleCheck on={modes.personalPlanningEnabled} label={t('lblPersonalMode')} hint={t('descPersonalMode')} onToggle={() => toggleMode('personalPlanningEnabled')} />
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.usePersonalForResource} disabled={!parentOn} label={t('lblPersonalRes')} hint={t('descPersonalRes')} onToggle={() => toggleMode('usePersonalForResource')} />
+          <div className="field">
+            <label htmlFor="s_planning_model">{t('lblPlanningModel')}</label>
+            <RingSelLite
+              options={[
+                { key: 'simple', label: t('optModelSimple') },
+                { key: 'light', label: t('optModelLight') },
+                { key: 'full', label: t('optModelFull'), disabled: true },
+              ]}
+              value={modes.planningModel}
+              onChange={(v) => setMode('planningModel', v)}
+            />
+            <div className="field-hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>
+              {t(modes.planningModel === 'light' ? 'descModelLight' : 'descModelSimple')}
+            </div>
           </div>
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.manualPersonalResource} disabled={!parentOn} label={t('lblManualPersonalRes')} hint={t('descManualPersonalRes')} onToggle={() => toggleMode('manualPersonalResource')} />
-          </div>
+          {modes.planningModel === 'light' ? (
+            <div className="field" style={{ marginTop: '12px' }} role="radiogroup" aria-label={t('lblLightCalcMethod')}>
+              <label style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '6px', display: 'block' }}>
+                {t('lblLightCalcMethod')}
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', cursor: 'pointer' }}>
+                <input type="radio" name="ssp-light-sub" checked={modes.lightSub === 'auto'} onChange={() => setMode('lightSub', 'auto')} />
+                <span>{t('lblLightAuto')}</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="radio" name="ssp-light-sub" checked={modes.lightSub === 'manual'} onChange={() => setMode('lightSub', 'manual')} />
+                <span>{t('lblLightManual')}</span>
+              </label>
+            </div>
+          ) : null}
         </React.Fragment>
       ),
     },

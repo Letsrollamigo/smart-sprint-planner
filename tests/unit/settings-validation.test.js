@@ -5,7 +5,7 @@ const assert = require('node:assert');
 const path   = require('node:path');
 
 const backend = require(path.join(__dirname, '..', '..', 'backend-project.js'));
-const { validateSettings, ALLOWED_KPE_KEYS } = backend;
+const { validateSettings, ALLOWED_KPE_KEYS, ALLOWED_SETTINGS_KEYS } = backend;
 
 /* v1.7.1 — KPE whitelist accepts both legacy Russian and canonical English keys.
    Pre-existing bug: frontend wrote English keys (Intern/Junior/Middle/Senior)
@@ -70,4 +70,27 @@ test('Repro of pre-existing v1.7.0 bug: full settings POST with English KPE keys
   };
   assert.strictEqual(validateSettings(s), true,
     'pre-existing kpe bug should be fixed: full settings with English KPE keys must validate');
+});
+
+/* v2.14.0 — «Модель планирования»: planningModel enum + whitelist. */
+test('planningModel: enum simple/light/full принимается', function() {
+  assert.strictEqual(validateSettings({ planningModel: 'simple' }), true);
+  assert.strictEqual(validateSettings({ planningModel: 'light' }), true);
+  assert.strictEqual(validateSettings({ planningModel: 'full' }), true);
+});
+
+test('planningModel: невалидное значение реджектится', function() {
+  assert.strictEqual(validateSettings({ planningModel: 'garbage' }), false);
+  assert.strictEqual(validateSettings({ planningModel: 42 }), false);
+});
+
+test('planningModel: в ALLOWED_SETTINGS_KEYS (иначе весь save реджектится)', function() {
+  assert.ok(ALLOWED_SETTINGS_KEYS.indexOf('planningModel') >= 0);
+});
+
+test('planningModel: derived-зеркало совместно с legacy-флагами проходит валидацию', function() {
+  // как пишет collect: planningModel + тройка derived флагов
+  var s = { planningModel: 'light', personalPlanningEnabled: true,
+            usePersonalForResource: true, manualPersonalResource: false };
+  assert.strictEqual(validateSettings(s), true);
 });
