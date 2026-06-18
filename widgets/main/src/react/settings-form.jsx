@@ -125,7 +125,7 @@ function GrpIcon() {
 
 /* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
    только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
-const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true };
+const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true };
 const LOCK_ICON_PATH = 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z';
 function LockIcon() {
   return (
@@ -787,6 +787,14 @@ function SettingsForm(props) {
       Senior: num(nums.kpeSenior, 0.75),
     };
 
+    /* #45 L2 — Full-модель ёмкости на main НЕ вводится (заглушка): capacityMode/
+       hoursPerDay/usefulHoursPerDay СОХРАНЯЕМ из stored (initial), чтобы не затереть
+       значение, выставленное под epic-сборкой; UI ввода Full на main отсутствует.
+       Все три — admin-тир (см. backend ADMIN_TIER_SETTINGS_KEYS). */
+    if (initial.capacityMode != null) data.capacityMode = initial.capacityMode;
+    if (initial.hoursPerDay != null) data.hoursPerDay = initial.hoursPerDay;
+    if (initial.usefulHoursPerDay != null) data.usefulHoursPerDay = initial.usefulHoursPerDay;
+
     data.fieldPriority = fields.fieldPriority || null;
     data.fieldXPriority = fields.fieldXPriority || null;
     data.fieldState = fields.fieldState || null;
@@ -1023,42 +1031,14 @@ function SettingsForm(props) {
       ),
     },
     {
-      id: 'norms', title: t('cardWorkloadSettings'), nav: t('navWorkloadSettings'),
-      node: (
-        <React.Fragment>
-          <div className="form-grid form-grid--3">
-            <NumField id="s_nkc_january" label={t('lblNkcJanuary')} value={nums.nkcJanuary} onChange={(v) => setNum('nkcJanuary', v)} min={0} step={0.5} />
-            <NumField id="s_nkc_may" label={t('lblNkcMay')} value={nums.nkcMay} onChange={(v) => setNum('nkcMay', v)} min={0} step={0.5} />
-            <NumField id="s_nkc_other" label={t('lblNkcOther')} value={nums.nkcOther} onChange={(v) => setNum('nkcOther', v)} min={0} step={0.5} />
-            <NumField id="s_rate" label={t('lblRate')} value={nums.rate} onChange={(v) => setNum('rate', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_participation" label={t('lblParticipation')} value={nums.participation} onChange={(v) => setNum('participation', v)} min={0} max={1} step={0.01} />
-          </div>
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
-            {t('cardKpe')}
-          </div>
-          <div className="form-grid form-grid--3">
-            <NumField id="s_kpe_intern" label={t('lblKpeIntern')} value={nums.kpeIntern} onChange={(v) => setNum('kpeIntern', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_jun" label={t('lblKpeJun')} value={nums.kpeJun} onChange={(v) => setNum('kpeJun', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_mid" label={t('lblKpeMid')} value={nums.kpeMid} onChange={(v) => setNum('kpeMid', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_senior" label={t('lblKpeSenior')} value={nums.kpeSenior} onChange={(v) => setNum('kpeSenior', v)} min={0} max={2} step={0.01} />
-          </div>
-        </React.Fragment>
-      ),
-    },
-    {
+      /* #45 (b) — секция оставлена только с чисто-планировочными режимами.
+         Нормы/КПЕ (бывшая «Учёт ёмкости») и personalPlanning-кластер (мастер + источник
+         ресурса) переехали в admin-секцию «Управление ёмкостью». dynEdit + allowOverlimit
+         намеренно ОСТАЮТСЯ здесь (планировочный тир). */
       id: 'modes', title: t('cardModes'),
       node: (
         <React.Fragment>
-          <RoleCheck on={modes.personalPlanningEnabled} label={t('lblPersonalMode')} hint={t('descPersonalMode')} onToggle={() => toggleMode('personalPlanningEnabled')} />
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.usePersonalForResource} disabled={!parentOn} label={t('lblPersonalRes')} hint={t('descPersonalRes')} onToggle={() => toggleMode('usePersonalForResource')} />
-          </div>
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.manualPersonalResource} disabled={!parentOn} label={t('lblManualPersonalRes')} hint={t('descManualPersonalRes')} onToggle={() => toggleMode('manualPersonalResource')} />
-          </div>
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.dynEditEnabled} label={t('lblDynEdit')} hint={t('descDynEdit')} tooltip={t('tooltipDynEdit')} onToggle={() => toggleMode('dynEditEnabled')} />
-          </div>
+          <RoleCheck on={modes.dynEditEnabled} label={t('lblDynEdit')} hint={t('descDynEdit')} tooltip={t('tooltipDynEdit')} onToggle={() => toggleMode('dynEditEnabled')} />
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.allowOverlimitPlanning} label={t('lblAllowOverlimit')} hint={t('descAllowOverlimit')} onToggle={() => toggleMode('allowOverlimitPlanning')} />
           </div>
@@ -1087,6 +1067,53 @@ function SettingsForm(props) {
       id: 'standup', title: t('cardStandupSettings'),
       node: (
         <StandupSection t={t} value={standupDone} onChange={setStandupDone} bundleStates={bundleStates} />
+      ),
+    },
+    {
+      /* #45 (b) — admin-секция «Управление ёмкостью»: нормы/КПЕ (бывшая «Учёт ёмкости»)
+         + источник ресурса исполнителей (бывший personalPlanning-кластер из «Режимов»).
+         Все ключи — admin-тир (см. backend ADMIN_TIER_SETTINGS_KEYS).
+         L2: ввод Full-модели (capacityMode/hoursPerDay/usefulHoursPerDay) на main НЕ
+         показываем — заглушка; значения сохраняются из stored в collect(). */
+      id: 'capacity', title: t('cardCapacity'), nav: t('navCapacity'),
+      node: (
+        <React.Fragment>
+          {/* Нормы расчёта ёмкости (бывшая секция «Учёт ёмкости»). */}
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '8px' }}>
+            {t('cardWorkloadSettings')}
+          </div>
+          <div className="form-grid form-grid--3">
+            <NumField id="s_nkc_january" label={t('lblNkcJanuary')} value={nums.nkcJanuary} onChange={(v) => setNum('nkcJanuary', v)} min={0} step={0.5} />
+            <NumField id="s_nkc_may" label={t('lblNkcMay')} value={nums.nkcMay} onChange={(v) => setNum('nkcMay', v)} min={0} step={0.5} />
+            <NumField id="s_nkc_other" label={t('lblNkcOther')} value={nums.nkcOther} onChange={(v) => setNum('nkcOther', v)} min={0} step={0.5} />
+            <NumField id="s_rate" label={t('lblRate')} value={nums.rate} onChange={(v) => setNum('rate', v)} min={0} max={2} step={0.01} />
+            <NumField id="s_participation" label={t('lblParticipation')} value={nums.participation} onChange={(v) => setNum('participation', v)} min={0} max={1} step={0.01} />
+          </div>
+
+          {/* КПЕ по грейдам. */}
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
+            {t('cardKpe')}
+          </div>
+          <div className="form-grid form-grid--3">
+            <NumField id="s_kpe_intern" label={t('lblKpeIntern')} value={nums.kpeIntern} onChange={(v) => setNum('kpeIntern', v)} min={0} max={2} step={0.01} />
+            <NumField id="s_kpe_jun" label={t('lblKpeJun')} value={nums.kpeJun} onChange={(v) => setNum('kpeJun', v)} min={0} max={2} step={0.01} />
+            <NumField id="s_kpe_mid" label={t('lblKpeMid')} value={nums.kpeMid} onChange={(v) => setNum('kpeMid', v)} min={0} max={2} step={0.01} />
+            <NumField id="s_kpe_senior" label={t('lblKpeSenior')} value={nums.kpeSenior} onChange={(v) => setNum('kpeSenior', v)} min={0} max={2} step={0.01} />
+          </div>
+
+          {/* #45 (b) — источник ресурса исполнителей (бывший personalPlanning-кластер).
+              parentOn (= personalPlanningEnabled) гейтит детей внутри блока. */}
+          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
+            {t('capGroupResource')}
+          </div>
+          <RoleCheck on={modes.personalPlanningEnabled} label={t('lblPersonalMode')} hint={t('descPersonalMode')} onToggle={() => toggleMode('personalPlanningEnabled')} />
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.usePersonalForResource} disabled={!parentOn} label={t('lblPersonalRes')} hint={t('descPersonalRes')} onToggle={() => toggleMode('usePersonalForResource')} />
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.manualPersonalResource} disabled={!parentOn} label={t('lblManualPersonalRes')} hint={t('descManualPersonalRes')} onToggle={() => toggleMode('manualPersonalResource')} />
+          </div>
+        </React.Fragment>
       ),
     },
     {

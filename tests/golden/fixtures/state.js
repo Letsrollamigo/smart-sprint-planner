@@ -19,6 +19,9 @@ const SPRINT_ID = 'gm-sprint-2026-06';
 function buildSettings() {
   return {
     activeRoles: ['analysis', 'testing', 'devBack', 'devFront'],
+    /* #45 — базовая фикстура = полный планировочный режим (перс.планирование вкл.),
+       чтобы golden-снимки роль-аккордеона включали CTA «Распределить по исполнителям». */
+    personalPlanningEnabled: true,
     defaultLang: 'ru',
     sprintField: 'Sprints',
     versionField: 'Fix versions',

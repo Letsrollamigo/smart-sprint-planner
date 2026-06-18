@@ -68,6 +68,10 @@ function renderRoleAccordion(rk, deps) {
   var T = deps.T, esc = deps.esc;
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
   if (!role) return '';
+  /* #45 super-light — CTA «Распределить по исполнителям» показываем только при
+     включённом перс.планировании (иначе вкладка «Люди» скрыта, кнопка ведёт в никуда). */
+  var _ppSettings = deps.state.getSettings();
+  var ppOn = !!(_ppSettings && _ppSettings.personalPlanningEnabled);
   var stats = computeRoleQuickStats(rk, deps);
   var _uiExpandedRoles = deps.state.getUiExpandedRoles() || {};
   var expanded = !!_uiExpandedRoles[rk];
@@ -87,9 +91,11 @@ function renderRoleAccordion(rk, deps) {
     +   '<div class="planning-role-body" data-role-body="' + rk + '">'
     /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
        В C4 (4d) сюда монтируется полный editable buildRolePanel(role). */
-    +     '<div class="planning-role-body__actions">'
-    +       '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
-    +     '</div>'
+    +     (ppOn
+           ? '<div class="planning-role-body__actions">'
+             + '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
+             + '</div>'
+           : '')
     +   '</div>'
     + '</div>';
   return html;

@@ -31,24 +31,10 @@
 (function () {
   'use strict';
 
-  /* ── openReassignModal — сборка spec реассайн-модалки ── */
-  function openReassignModal(issueId, deps) {
+  /* ── _openReassignModalWith — открыть модалку по готовому списку options ── */
+  function _openReassignModalWith(issueId, options, current, deps) {
     var st = deps.state;
     var T = deps.T;
-    var pp = st.getCurrentRolePP();
-    if (!pp) {
-      deps.diag('openReassignModal: no _currentRolePP', 'warn');
-      return;
-    }
-    var ra = pp.resourcesByAssignee || {};
-    var ta = pp.taskAssignments || {};
-    var current = (ta[issueId] && ta[issueId].assignee) || '';
-    /* Опции <select>: «Не назначен» + ассайни роли (sorted) */
-    var options = [{ value: '', label: T('reassignOptionUnassigned') }];
-    Object.keys(ra).sort().forEach(function (login) {
-      var nm = (ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login;
-      options.push({ value: login, label: nm + ' (' + login + ')' });
-    });
     var handle = deps.openModal({
       id: 'reassign',
       type: 'confirm',
@@ -70,6 +56,60 @@
       onClose: function () { st.setReassignModalHandle(null); },
     });
     st.setReassignModalHandle(handle);
+  }
+
+  /* ── openReassignModal — сборка spec реассайн-модалки ── */
+  function openReassignModal(issueId, deps) {
+    var st = deps.state;
+    var T = deps.T;
+    var pp = st.getCurrentRolePP();
+    if (!pp) {
+      deps.diag('openReassignModal: no _currentRolePP', 'warn');
+      return;
+    }
+    var ta = pp.taskAssignments || {};
+    var current = (ta[issueId] && ta[issueId].assignee) || '';
+    var ra = pp.resourcesByAssignee || {};
+
+    /* Light / перс.планирование: кандидаты из resourcesByAssignee (sorted). */
+    if (Object.keys(ra).length) {
+      var optionsRa = [{ value: '', label: T('reassignOptionUnassigned') }];
+      Object.keys(ra).sort().forEach(function (login) {
+        var nm = (ra[login] && ra[login].assigneeName) ? ra[login].assigneeName : login;
+        optionsRa.push({ value: login, label: nm + ' (' + login + ')' });
+      });
+      _openReassignModalWith(issueId, optionsRa, current, deps);
+      return;
+    }
+
+    /* #45 super-light (PP off → resourcesByAssignee пуст): кандидаты из пользовательского
+       поля текущей роли — тот же get-user-field-values, что бутстрапит light-режим
+       (doCurrentRoleCalc). Роль резолвится как на Ганте: rec.roleKey || первая активная. */
+    var settings = (st.getSettings && st.getSettings()) || null;
+    var rec = (st.getCurrentSprintRoleRec && st.getCurrentSprintRoleRec()) || {};
+    var roles = deps.ALL_ROLES || [];
+    var activeFirst = (typeof deps.getActiveRoles === 'function' && deps.getActiveRoles()[0]) || roles[0] || null;
+    var rk = rec.roleKey || (activeFirst && activeFirst.key) || null;
+    var role = roles.filter(function (r) { return r.key === rk; })[0] || null;
+    var fn = (settings && role) ? (settings[role.userField] || null) : null;
+    var unassignedOnly = [{ value: '', label: T('reassignOptionUnassigned') }];
+    if (!fn || typeof deps.apiGet !== 'function') {
+      _openReassignModalWith(issueId, unassignedOnly, current, deps);
+      return;
+    }
+    deps.apiGet('get-user-field-values?fieldName=' + encodeURIComponent(fn))
+      .then(function (r) { return (r && r.users) ? r.users : []; })
+      .catch(function (e) { deps.diag('openReassignModal: get-user-field-values ERR: ' + String(e), 'err'); return []; })
+      .then(function (users) {
+        var opts = [{ value: '', label: T('reassignOptionUnassigned') }];
+        users.slice()
+          .sort(function (a, b) { return String((a && a.login) || '').localeCompare(String((b && b.login) || '')); })
+          .forEach(function (u) {
+            if (!u || !u.login) return;
+            opts.push({ value: u.login, label: (u.fullName || u.login) + ' (' + u.login + ')' });
+          });
+        _openReassignModalWith(issueId, opts, current, deps);
+      });
   }
 
   /* ── hideReassignModal — закрытие через stored handle (потребитель header-view) ── */

@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v2.7.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v2.13.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.7.0-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
@@ -21,7 +21,7 @@ Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composit
 
 Two widgets over a shared logic core (`backend-core.js`) and shared storage (`Project.extensionProperties`):
 
-- **`ssp-main-global` (MAIN_MENU_ITEM)** — the full planner in the YouTrack main menu: a «rail + pane» dashboard (on a wide screen — a ~210px navigation panel on the left plus the work area; on a narrow screen — a stack), project picker in the rail header, navigation tree (Sprint parameters / Planning / Gantt / History). All planning happens here.
+- **`ssp-main-global` (MAIN_MENU_ITEM)** — the full planner in the YouTrack main menu: a «rail + pane» dashboard (on a wide screen — a ~210px navigation panel on the left plus the work area; on a narrow screen — a stack), project picker in the rail header, navigation tree (Sprint parameters / Planning / Gantt / History). All planning happens here. Planning has two levels — **Shared resource allocation** (accordion role cards with editable composition and capacity entry, manual or calculated) and **Per-assignee distribution** (per-role selector, assignees and dates). The second level is shown **only when personal-planning mode is on**; without it (the "super-light" mode) assignees are set on the Gantt chart instead.
 - **`ssp-main` (PROJECT_SETTINGS)** — the project settings page: roles, fields, modes, and the **settings manager group** (setting the group = "connecting" the project, after which it becomes visible in the main-menu planner). No planning happens here.
 
 To **connect a project** to the planner, a member of the project settings team sets the **settings manager group** (`settingsManagerGroup`, mirrored into `ssp_acl`) on the project widget. Once the group is set, the project appears in the main-menu planner for everyone with access to the project in YouTrack. Until then the project does not show up in the menu, and its settings stay read-only.
@@ -33,7 +33,7 @@ The plugin ships through two parallel channels — pick the one that matches you
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.7.0** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.7.0** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.13.0** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
@@ -41,7 +41,8 @@ GitHub Releases is the authoritative source — every marketplace upload is buil
 
 - **9 functional roles** — analysis, testing, platform development, backend, frontend, iOS, Android, fullstack, database. Roles can be selectively enabled per project; a generic `devPlatform` role lets teams map any platform stack (1C, SAP, Salesforce, low-code, etc.) to a custom field.
 - **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and direct editing of YouTrack fields from the sprint table.
-- **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity.
+- **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity. When personal-planning mode is off (the "super-light" mode), the **Per-assignee distribution** nav item is hidden, role capacity is entered manually on the allocation tab, and assignees are set directly on the Gantt chart — no per-person capacity accounting.
+- **Capacity management settings** — calculation norms (hour quotas / rate / participation / grade coefficients) and the resource-source flags (personal-planning mode, auto resource from personal planning, manual per-assignee resource) are consolidated into an admin-tier section editable only by the settings manager.
 - **Manual per-assignee resource** — opt-in `manualPersonalResource` mode for teams whose capacity is set top-down by the team lead (fixed weekly hours per person) instead of derived from KPE coefficients.
 - **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
 - **Gantt timeline per role** with sprint-aware filtering.

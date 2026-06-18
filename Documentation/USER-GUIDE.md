@@ -245,7 +245,7 @@ Each role is reviewed separately on purpose — so a team where one role is read
 
 Once role compositions are picked, you usually need to decide **who specifically does what** and on which days. That's what the second mode of the **Planning** tab — **By assignees** — is for.
 
-> This mode is available if **Per-assignee distribution** is enabled in settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)). If disabled, the mode switcher below the **Sprint inputs** card simply doesn't appear.
+> **Depends on personal-planning mode.** This section is available only when **Personal-planning mode** is enabled in settings (the [Capacity management](#appendix-a-full-reference-of-project-settings) section). When it is **off** (the "super-light" mode), the **Per-assignee distribution** nav item is **hidden**: no per-person capacity accounting is done, role capacity is entered **manually** on the "Shared resource allocation" tab, and task owners are assigned directly on the [Gantt chart](#7-calendar-timeline) — clicking a task opens the assignee picker.
 
 ### How to enter
 
@@ -670,9 +670,11 @@ Options:
 
 - **Inline field editing.** If enabled, the plugin can write assignee / state / priority changes back to the YouTrack task directly from sprint tables. Without this mode, all changes stay local to the plugin.
 
-### "Calculation quotas" section
+### "Capacity management" section (administration)
 
-Used by the **Calculate resource** button to auto-calculate role and per-person capacities.
+An admin section: only the project settings manager (a member of the settings manager group) can edit it; for a planning manager the fields are shown, but changes are not saved (the previously saved value is kept). It gathers everything that affects role and per-person capacity calculation.
+
+**Calculation quotas** — used by the **Calculate resource** button:
 
 - **Hour quotas** — separately for **January**, **May** and **other months** (in Russia, January and May are short due to public holidays).
 - **Rate** — general multiplier for all calculations.
@@ -680,6 +682,12 @@ Used by the **Calculate resource** button to auto-calculate role and per-person 
 - **Grade coefficients** — separate multipliers for **Intern**, **Junior**, **Mid** and **Senior**.
 
 Formula: `month_quota × rate × participation_percent × grade_coefficient`.
+
+**Assignee resource source** — determines how capacity is handled:
+
+- **Personal-planning mode** — the master toggle. **Off** (default) — the "super-light" mode: the **Per-assignee distribution** tab is hidden, role capacity is entered manually, assignees are set on the Gantt chart; no per-person accounting is done. **On** — the **Per-assignee distribution** tab appears with per-person capacity calculation.
+- **Use personal planning to auto-calculate the shared resource** — the sum of people's capacities is automatically filled into the role's resource (the field becomes read-only). Available only when personal planning is enabled.
+- **Manual per-assignee resource** — each person's capacity is entered manually in hours instead of being auto-calculated from grade. Available only when personal planning is enabled.
 
 ### "Effort tracking" section
 
@@ -728,4 +736,4 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 
 ---
 
-_Updated 2026-06-14, plugin v2.6.1._
+_Updated 2026-06-18, plugin v2.13.0._

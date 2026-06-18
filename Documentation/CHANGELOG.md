@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.13.0] — 2026-06-18
+
+> **«Super-light» planning mode (no per-assignee capacity tracking) + capacity-settings recomposition.**
+>
+> ⚠️ Versions 2.8.0–2.12.0 are reserved by a parallel capacity-model track (capacity epic) and are not on the main branch — after 2.7.x the main line continues at 2.13.0. Version 2.7.1 was a small fix for a false `renderRoleComposition` diagnostic log on an unmounted view.
+
+### Added
+
+- **«Super-light» mode.** When «Personal planning mode» is off, the «By assignees» nav item is hidden, role capacity is entered manually on the «Overall allocation» tab, and task assignees are set on the Gantt chart. No per-assignee capacity accounting in this mode.
+- **Gantt reassign candidates without personal planning.** The reassign dialog sources its people list from the role's assignee field (the same source used when personal planning is on) when per-assignee tracking is off.
+
+### Changed
+
+- **Capacity-settings recomposition.** Calculation parameters (work-hour norms, KPE coefficients, rate, participation) and the assignee resource source (personal-planning flags) are consolidated into an admin-tier «Capacity management» settings section — editable only by the settings manager; for the planning manager the values are preserve-merged from storage. The «Planning modes» section keeps the purely-planning toggles.
+- **The «Distribute by assignees» CTA** on a role card is shown only when personal planning is enabled.
+- **Flag consistency.** `usePersonalForResource` takes effect only when «Personal planning mode» is on: otherwise role capacity stays manual (preventing auto-calc «to zero» and a stuck read-only field when personal planning is off).
+
+### Compatibility
+
+- Additive optional settings keys (`capacityMode`/`hoursPerDay`/`usefulHoursPerDay`); migration `2.1.0 → 2.8.0` is a no-op, snapshot schema untouched. New projects have personal planning off by default; existing settings are read and saved as-is.
+
+---
+
 ## [2.7.0] — 2026-06-15
 
 > **Project settings split into «Planning» and «Administration» groups + planning-manager role (#22).**

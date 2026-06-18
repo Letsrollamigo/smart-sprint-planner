@@ -34,6 +34,26 @@ test('validateSettings: pre-#22 settings-блоб (без planningManagerGroups)
   }), true);
 });
 
+/* #45 L2 — валидатор политики ёмкости (capacityMode light|full + диапазоны часов).
+   На main Full в UI не вводится, но значение принимается бэком (epic↔main roundtrip). */
+test('validateSettings: capacityMode принимает light|full, отвергает прочее', () => {
+  assert.strictEqual(validateSettings({ capacityMode: 'light' }), true);
+  assert.strictEqual(validateSettings({ capacityMode: 'full' }), true);
+  assert.strictEqual(validateSettings({ capacityMode: undefined }), true);
+  assert.strictEqual(validateSettings({ capacityMode: null }), true);
+  assert.strictEqual(validateSettings({ capacityMode: 'super-light' }), false);
+  assert.strictEqual(validateSettings({ capacityMode: 'Light' }), false);
+});
+test('validateSettings: hoursPerDay [1,24] / usefulHoursPerDay [0,24]', () => {
+  assert.strictEqual(validateSettings({ hoursPerDay: 8, usefulHoursPerDay: 6 }), true);
+  assert.strictEqual(validateSettings({ hoursPerDay: 1 }), true);
+  assert.strictEqual(validateSettings({ hoursPerDay: 24 }), true);
+  assert.strictEqual(validateSettings({ usefulHoursPerDay: 0 }), true);
+  assert.strictEqual(validateSettings({ hoursPerDay: 0 }), false);
+  assert.strictEqual(validateSettings({ hoursPerDay: 25 }), false);
+  assert.strictEqual(validateSettings({ usefulHoursPerDay: 25 }), false);
+});
+
 /* ── ADMIN_TIER_SETTINGS_KEYS: состав тиров ── */
 test('ADMIN_TIER_SETTINGS_KEYS: содержит workflow + доступ/права + planningManagerGroups (анти-эскалация)', () => {
   ['dtaEnabled', 'workItemTypeMapping', 'cascadeAggregationEnabled', 'forbidContainerWorkItems', 'stateRollupEnabled',
@@ -42,20 +62,39 @@ test('ADMIN_TIER_SETTINGS_KEYS: содержит workflow + доступ/пра�
     assert.ok(ADMIN_TIER_SETTINGS_KEYS.indexOf(k) >= 0, 'отсутствует admin-тир ключ: ' + k);
   });
 });
+/* #45 (b) — рекомпозиция блока ёмкости: параметры расчёта ёмкости (нормы + КПЕ) и
+   источник ресурса исполнителей (personalPlanning-кластер) перенесены в admin-тир. */
+test('ADMIN_TIER_SETTINGS_KEYS: содержит параметры расчёта ёмкости + источник ресурса (#45 b)', () => {
+  ['capacityMode', 'hoursPerDay', 'usefulHoursPerDay',
+   'nkcJanuary', 'nkcMay', 'nkcOther', 'rate', 'participation', 'kpe',
+   'personalPlanningEnabled', 'usePersonalForResource', 'manualPersonalResource'].forEach((k) => {
+    assert.ok(ADMIN_TIER_SETTINGS_KEYS.indexOf(k) >= 0, 'отсутствует admin-тир ключ ёмкости: ' + k);
+  });
+});
 test('ADMIN_TIER_SETTINGS_KEYS: НЕ содержит планировочных ключей', () => {
-  ['activeRoles', 'fieldPriority', 'nkcJanuary', 'kpe', 'personalPlanningEnabled', 'standupDoneStates', 'defaultLang'].forEach((k) => {
+  /* dynEditEnabled / allowOverlimitPlanning намеренно ОСТАЮТСЯ планировочными (#45 b). */
+  ['activeRoles', 'fieldPriority', 'standupDoneStates', 'defaultLang',
+   'dynEditEnabled', 'allowOverlimitPlanning'].forEach((k) => {
     assert.ok(ADMIN_TIER_SETTINGS_KEYS.indexOf(k) < 0, 'планировочный ключ ошибочно в admin-тире: ' + k);
   });
 });
 
 /* ── mergeAdminTierFromStored: preserve-merge (ядро безопасности) ── */
 test('preserve-merge: планировочные ключи берутся из incoming', () => {
+  /* #45 (b) — nkcJanuary теперь admin-тир; в качестве планировочного примера —
+     allowOverlimitPlanning (намеренно остался планировочным). */
   const out = mergeAdminTierFromStored(
-    { activeRoles: ['analysis'], nkcJanuary: 100, dtaEnabled: true },
-    { activeRoles: ['testing'], nkcJanuary: 999, dtaEnabled: false }
+    { activeRoles: ['analysis'], allowOverlimitPlanning: true, dtaEnabled: true },
+    { activeRoles: ['testing'], allowOverlimitPlanning: false, dtaEnabled: false }
   );
   assert.deepStrictEqual(out.activeRoles, ['analysis']);
-  assert.strictEqual(out.nkcJanuary, 100);
+  assert.strictEqual(out.allowOverlimitPlanning, true);
+});
+/* #45 (b) — нормы расчёта ёмкости теперь admin-тир: планировочный менеджер не может их
+   перезаписать (берутся из stored). */
+test('preserve-merge: nkcJanuary (admin #45 b) берётся из stored, не из incoming', () => {
+  const out = mergeAdminTierFromStored({ nkcJanuary: 100 }, { nkcJanuary: 999 });
+  assert.strictEqual(out.nkcJanuary, 999);
 });
 test('preserve-merge: admin-ключи берутся из stored (присланные игнорируются)', () => {
   const out = mergeAdminTierFromStored(

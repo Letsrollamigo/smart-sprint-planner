@@ -154,7 +154,9 @@ test('golden: renderRolePlannerHeader — personalForResource (res readOnly + з
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   gm.set({
-    _settings: Object.assign(fx.buildSettings(), { usePersonalForResource: true }),
+    /* #45 super-light — usePersonalForResource действует только при включённом
+       personalPlanningEnabled (иначе ресурс роли вводится вручную). */
+    _settings: Object.assign(fx.buildSettings(), { personalPlanningEnabled: true, usePersonalForResource: true }),
     bindResInputDraftListener: function () {},
     bindSprintHeaderDraftListeners: function () {},
     getPersonalPlanningResourceForRole: function (rk) { return rk === 'devBack' ? 50 : 0; },

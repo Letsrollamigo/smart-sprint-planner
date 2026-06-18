@@ -221,9 +221,9 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '2.1.7';
+var CURRENT_PLUGIN_VERSION = '2.8.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.7.1';
+var APP_VERSION = '2.13.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -416,6 +416,15 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.10.0', to: '2.1.0',
     migrate: function (snap) { return snap; }, /* no-op: Ring UI ярус 3 + Ring Input mount-points are frontend-only, no schema change */
     note: 'v2.1.0: Ring UI ярус 3 — full Ring Table migration + Ring Input mount-points для main-view text/number/textarea fields + visual unification'
+  },
+  /* v2.8.0 #45 R1 — Capacity Management фундамент.
+     Новые сторы (ssp_calendar/ssp_absences/ssp_capacity) — отдельные системные
+     объекты, НЕ часть sprint/history/working-draft snapshot'ов → shape снимков НЕ
+     меняется (no-op). Новые settings-ключи (capacityMode/hoursPerDay/usefulHoursPerDay)
+     — optional/additive, undefined допустим на старых снимках. */
+  { from: '2.1.0', to: '2.8.0',
+    migrate: function (snap) { return snap; }, /* no-op: capacity — separate stores + additive optional settings, snapshot shape unchanged */
+    note: 'v2.8.0: Capacity Management R1 — ssp_calendar/ssp_absences/ssp_capacity stores + capacityMode/hoursPerDay/usefulHoursPerDay settings (additive); sprint/history/working-draft shape unchanged'
   }
 ];
 
@@ -830,7 +839,13 @@ var ALLOWED_SETTINGS_KEYS = [
   'stateRollupRescanRequested',
   'stateRollupRescanRequestedAt',
   /* v1.9.0 D132 — Stand-up assist: admin-configurable list of state names that count as Done. */
-  'standupDoneStates'
+  'standupDoneStates',
+  /* v2.8.0 #45 R1 — Capacity Management. capacityMode (light|full) — взаимоисключающий
+     режим модели ёмкости; hoursPerDay/usefulHoursPerDay — константы политики (8ч бюджет
+     vs ~6ч полезных под #40). Все три — admin-тир (см. ADMIN_TIER_SETTINGS_KEYS). */
+  'capacityMode',
+  'hoursPerDay',
+  'usefulHoursPerDay'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -849,7 +864,16 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
   // State Rollup
   'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
-  'stateRollupStrategy','stateRollupRescanRequested','stateRollupRescanRequestedAt'
+  'stateRollupStrategy','stateRollupRescanRequested','stateRollupRescanRequestedAt',
+  /* #45 (b) — рекомпозиция блока ёмкости (3 секции настроек → 2): параметры расчёта
+     ёмкости (нормы + КПЕ) и источник ресурса исполнителей (personalPlanning-кластер)
+     перенесены в admin-тир. Редактируются только settings-менеджером; для планировочного
+     менеджера preserve-merge'атся из stored. dynEditEnabled / allowOverlimitPlanning
+     намеренно ОСТАЮТСЯ планировочными (см. ниже SETTINGS_WHITELIST). */
+  'nkcJanuary','nkcMay','nkcOther','rate','participation','kpe',
+  'personalPlanningEnabled','usePersonalForResource','manualPersonalResource',
+  // #45 Capacity Management — политика модели ёмкости (admin-тир)
+  'capacityMode','hoursPerDay','usefulHoursPerDay'
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -976,6 +1000,14 @@ function validateSettings(settings) {
       if (kv !== null && kv !== undefined && !isNumInRange(kv, 0, 10)) return false;
     }
   }
+  /* v2.8.0 #45 R1 — Capacity Management политика (admin-тир). */
+  if (settings.capacityMode !== undefined && settings.capacityMode !== null) {
+    if (settings.capacityMode !== 'light' && settings.capacityMode !== 'full') return false;
+  }
+  if (settings.hoursPerDay !== undefined && settings.hoursPerDay !== null
+      && !isNumInRange(settings.hoursPerDay, 1, 24)) return false;
+  if (settings.usefulHoursPerDay !== undefined && settings.usefulHoursPerDay !== null
+      && !isNumInRange(settings.usefulHoursPerDay, 0, 24)) return false;
   // savedAt
   if (settings.savedAt !== undefined && settings.savedAt !== null
       && (typeof settings.savedAt !== 'number' || !isFinite(settings.savedAt) || settings.savedAt < 0)) return false;
