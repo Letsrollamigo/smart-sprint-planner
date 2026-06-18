@@ -377,6 +377,10 @@
     }
     body.ssp-global-mode .ssp-tree__item--disabled { color: var(--muted); cursor: not-allowed; }
     body.ssp-global-mode .ssp-tree__item--disabled:hover { background: transparent; }
+    /* #45 super-light — узел «Распределение по исполнителям» скрыт при выключенном
+       перс.планировании (body.ssp-pp-off ставится в applyPersonalPlanningVisibility).
+       Декларативно: переживает ре-рендеры дерева, !important бьёт display узла выше. */
+    body.ssp-pp-off .ssp-tree [data-node="planning-people"] { display: none !important; }
     body.ssp-global-mode .ssp-tree__icon { display: inline-flex; align-items: center; flex-shrink: 0; color: var(--muted); }
     body.ssp-global-mode .ssp-tree__icon svg { width: 15px; height: 15px; }
     body.ssp-global-mode .ssp-tree__item.active .ssp-tree__icon,

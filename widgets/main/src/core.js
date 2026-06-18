@@ -703,7 +703,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.7.1';
+  var APP_VERSION = '2.13.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1050,7 +1050,13 @@
       updateIssueAssigneeField: updateIssueAssigneeField,
       renderGanttChart: renderGanttChart,
       renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
+      /* #45 super-light — реассайн на Ганте без перс.планирования тянет кандидатов из
+         пользовательского поля роли (тот же get-user-field-values). */
+      apiGet: apiGet,
+      ALL_ROLES: ALL_ROLES,
+      getActiveRoles: getActiveRoles,
       state: {
+        getSettings: function () { return _settings; },
         getCurrentRolePP: function () { return _currentRolePP; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
         getActiveSubtab: function () { return _activeSubtab; },
@@ -1702,6 +1708,9 @@
         _node = _uiR.dashNode;
         if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
       }
+      /* #45 super-light — planning-people недоступен при выключенном перс.планировании
+         (deep-link/сохранённый dashNode → fallback на planning-roles). */
+      if (_node === 'planning-people' && !(_settings && _settings.personalPlanningEnabled)) _node = 'planning-roles';
       try { _setDashNode(_node); } catch(e){ diag('init dashNode err: '+e, 'err'); }
     }
     /* #36 — focus (scroll+flash), затем завершить restore: consume params + включить авто-синк URL. */
@@ -1968,6 +1977,21 @@
        _applyPersonalPlanningToSegmentedControl делает fallback на 'roles'. */
     if (typeof _applyPersonalPlanningToSegmentedControl === 'function') {
       try { _applyPersonalPlanningToSegmentedControl(); } catch(_){}
+    }
+    /* #45 super-light — узел дерева «Распределение по исполнителям» (planning-people)
+       скрывается при выключенном перс.планировании. Через body-класс + CSS-правило
+       (index.html: body.ssp-pp-off .ssp-tree [data-node="planning-people"]{display:none!important}),
+       а НЕ inline style.display: декларативно и переживает ре-рендеры дерева (body не
+       пересоздаётся), !important бьёт display:flex узла. Узел остаётся в DOM → golden-снимок
+       и SSP_DASH_NODES-fallback не меняются. */
+    var _ppOn = !!(_settings && _settings.personalPlanningEnabled);
+    try { document.body.classList.toggle('ssp-pp-off', !_ppOn); } catch(_){}
+    /* Если активный узел — planning-people, а PP выключен → увести на planning-roles. */
+    if (!_ppOn && _mode === 'global' && typeof _setDashNode === 'function') {
+      try {
+        var _uiPP = _draftGet('ui') || {};
+        if (_uiPP.dashNode === 'planning-people') _setDashNode('planning-roles');
+      } catch(_){}
     }
   }
 
@@ -2545,7 +2569,7 @@
   function _renderResourceModeIndicator(rk, pp) {
     var el = document.getElementById('planningResModeIndicator');
     if (!el) return;
-    var manualMode = !(_settings && _settings.usePersonalForResource);
+    var manualMode = !(_settings && _settings.personalPlanningEnabled && _settings.usePersonalForResource);
     if (!manualMode) { el.classList.add('hidden'); el.innerHTML = ''; return; }
     var role = ALL_ROLES.find(function(r){ return r.key === rk; });
     /* v6.2.1 D95 — _sprint[role.resKey] хранится в минутах (parsePeriod), а
@@ -3633,7 +3657,7 @@
        - saveCurrentRoleState после успешного apiPost (если активная запись);
        - смены grade/состава исполнителей (через doRecalcResource → saveCurrentRoleState). */
   function applyPersonalResourceToInputs() {
-    if (!_sprint || !_settings || !_settings.usePersonalForResource) return;
+    if (!_sprint || !_settings || !_settings.personalPlanningEnabled || !_settings.usePersonalForResource) return;
     var activeRoles = getActiveRoles();
     activeRoles.forEach(function(role) {
       var totalH = getPersonalPlanningResourceForRole(role.key);

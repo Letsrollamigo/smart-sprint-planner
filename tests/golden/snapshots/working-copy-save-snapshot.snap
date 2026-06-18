@@ -17,6 +17,7 @@
         "devBack",
         "devFront"
       ],
+      "personalPlanningEnabled": true,
       "defaultLang": "ru",
       "sprintField": "Sprints",
       "versionField": "Fix versions",

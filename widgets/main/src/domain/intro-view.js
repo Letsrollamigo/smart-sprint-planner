@@ -174,7 +174,7 @@
     var resEl = document.getElementById('res_'+rk);
     var role  = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
     if (resEl && role) {
-      if (_settings && _settings.usePersonalForResource) {
+      if (_settings && _settings.personalPlanningEnabled && _settings.usePersonalForResource) {
         // В режиме personalForResource — заполнить из personalPlanning и заблокировать
         var totalH5 = (typeof deps.getPersonalPlanningResourceForRole === 'function') ? deps.getPersonalPlanningResourceForRole(rk) : 0;
         if (_sprint) _sprint[role.resKey] = Math.round(totalH5 * 60);

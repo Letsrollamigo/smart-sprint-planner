@@ -121,7 +121,7 @@
         apiPost('sprint-data', { sprint: sprint })
           .then(function () {
             var settings = st.getSettings();
-            if (settings && settings.usePersonalForResource && typeof deps.applyPersonalResourceToInputs === 'function') {
+            if (settings && settings.personalPlanningEnabled && settings.usePersonalForResource && typeof deps.applyPersonalResourceToInputs === 'function') {
               deps.applyPersonalResourceToInputs();
             }
           })

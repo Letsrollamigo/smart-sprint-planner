@@ -97,10 +97,10 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix + v1.9.11 modal/toast UX overhaul + v1.10.0 sort by assignee + v2.1.0 Ring UI tier 3)', function () {
+test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix + v1.9.11 modal/toast UX overhaul + v1.10.0 sort by assignee + v2.1.0 Ring UI tier 3 + v2.8.0 Capacity Management R1)', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 12,
-    'Registry should have 12 entries; update this test when next entry is added');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 13,
+    'Registry should have 13 entries; update this test when next entry is added');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
   /* v1.8.0 D130 — second entry: external ticket ID (no-op additive migration). */
@@ -137,6 +137,11 @@ test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 Exter
      mount-points + visual unification (frontend-only, no shape change). */
   assert.strictEqual(SCHEMA_MIGRATIONS[11].to, '2.1.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[11].migrate, 'function');
+  /* v2.8.0 #45 R1 — thirteenth entry: Capacity Management foundation — new stores
+     (ssp_calendar/ssp_absences/ssp_capacity) + capacityMode/hoursPerDay/usefulHoursPerDay
+     settings (additive); sprint/history/working-draft snapshot shape unchanged (no-op). */
+  assert.strictEqual(SCHEMA_MIGRATIONS[12].to, '2.8.0');
+  assert.strictEqual(typeof SCHEMA_MIGRATIONS[12].migrate, 'function');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {
