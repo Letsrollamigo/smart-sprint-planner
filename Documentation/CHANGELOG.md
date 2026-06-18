@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.14.0] — 2026-06-18
+
+> **«Planning model» selector (simple / light / full) replacing the three personal-planning toggles.**
+
+### Changed
+
+- **«Planning model» dropdown.** The three personal-planning checkboxes in the admin «Capacity management» section are replaced by a single selector:
+  - **Simple** — no personal calculation (super-light mode).
+  - **Light** — per-assignee resource, with a calculation-method radio: auto-calc by formula or manual input.
+  - **Full** — placeholder, in development (option disabled).
+
+### Compatibility
+
+- New canonical settings key `planningModel` (`simple|light|full`); the legacy flags (`personalPlanningEnabled`/`usePersonalForResource`/`manualPersonalResource`) are kept as a derived mirror, so calculations and stored data are unchanged. Additive migration `2.8.0 → 2.14.0` is a no-op. Existing projects keep their behaviour; the model is derived from the legacy flags on first open.
+
+---
+
 ## [2.13.0] — 2026-06-18
 
 > **«Super-light» planning mode (no per-assignee capacity tracking) + capacity-settings recomposition.**
