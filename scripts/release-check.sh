@@ -9,7 +9,6 @@
 #
 # Форк определяется автоматически по "name" в package.json:
 #   smart-sprint-planner → community (плюс проверка бейджей README)
-#   smart-sprint-planner  → corp (без публичных бейджей)
 #
 # НЕ путать с backend CURRENT_PLUGIN_VERSION (schema-маркер) — он бампается
 # только при schema-change и здесь намеренно не проверяется.
@@ -96,29 +95,17 @@ case "$NAME" in
     MP_BADGE=$(grep -oE "Marketplace-v${semver}" README.md | grep -oE "v$semver" | head -1)
     ok "Marketplace-бейдж = $MP_BADGE (намеренно отслеживает последний апрув, не текущую версию)"
     ;;
-  smart-sprint-planner)
-    echo "— corp: бейджи README пропущены (нет публичных бейджей) —"
-    ;;
   *)
     warn "неизвестное имя форка '$NAME' — проверка бейджей пропущена"
     ;;
 esac
 
-# ── architecture gate + зеркало форков ────────────────────────────────────────
+# ── architecture gate ─────────────────────────────────────────────────────────
 echo "— architecture gate —"
 if npm run --silent gate >/dev/null 2>&1; then
-  ok "gate (arch+mirror+unit+golden) зелёный"
+  ok "gate (arch+unit+golden) зелёный"
 else
-  fail "gate красный — 'npm run gate' (arch+mirror+unit+golden) не прошёл"
-fi
-
-# mirror-parity на релизе = FAIL при отсутствии sibling (нельзя резать релиз-пару вслепую)
-SIBLING="../Smart Sprint Planner"
-[ "$NAME" = "smart-sprint-planner" ] && SIBLING="../Internal Fork"
-if [ -d "$SIBLING/widgets/main/src" ]; then
-  ok "sibling-форк на месте ($SIBLING)"
-else
-  fail "sibling-форк не найден ($SIBLING) — mirror-parity вслепую"
+  fail "gate красный — 'npm run gate' (arch+unit+golden) не прошёл"
 fi
 
 # community: origin/main не отстал от локального тега (lockstep — сейчас local впереди origin)

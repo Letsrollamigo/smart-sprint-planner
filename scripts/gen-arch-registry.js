@@ -15,7 +15,7 @@ const lib = require(path.join(__dirname, '..', 'tests', 'arch', '_lib.js'));
 
 const ROOT = path.join(__dirname, '..');
 const FAT = 600;
-const suffix = (tok) => tok.replace(/^__(?:SCBT|SSP)_/, '');
+const suffix = (tok) => tok.replace(/^__SSP_/, '');
 const domainOf = (f) => f.replace(/\.js$/, '').replace(/^i18n\//, 'i18n-');
 
 function moduleLayer(f, published) {

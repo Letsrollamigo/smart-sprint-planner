@@ -4,6 +4,6 @@
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
-echo "[pre-push] full gate: arch + mirror + unit + golden…"
-TZ=UTC node --test tests/arch/*.test.js tests/mirror/*.test.js tests/unit/*.test.js tests/golden/*.test.js
+echo "[pre-push] full gate: arch + unit + golden…"
+TZ=UTC node --test tests/arch/*.test.js tests/unit/*.test.js tests/golden/*.test.js
 echo "[pre-push] ✅ зелёно"

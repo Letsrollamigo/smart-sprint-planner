@@ -109,11 +109,11 @@ function moduleLevelVarLet(src) {
   return [...names].sort();
 }
 
-/** Все токены мостов (__XFORK_ / __SSP_), встречающиеся в КОДЕ (комменты уже вырезаны). */
+/** Все токены мостов (__SSP_ / __SSP_), встречающиеся в КОДЕ (комменты уже вырезаны). */
 function bridgeTokens(src) {
   const s = stripCommentsAndStrings(src);
   const set = new Set();
-  const re = /__(?:SCBT|SSP)_[A-Z0-9_]+/g;
+  const re = /__SSP_[A-Z0-9_]+/g;
   let m;
   while ((m = re.exec(s))) set.add(m[0]);
   return set;
@@ -123,13 +123,13 @@ function bridgeTokens(src) {
 function publishedBridges(src) {
   const s = stripCommentsAndStrings(src);
   const set = new Set();
-  const re = /(?:window\.)?(__(?:SCBT|SSP)_[A-Z0-9_]+)\s*=(?!=)/g;
+  const re = /(?:window\.)?(__SSP_[A-Z0-9_]+)\s*=(?!=)/g;
   let m;
   while ((m = re.exec(s))) set.add(m[1]);
   return set;
 }
 
-/* Классификация моста по СЛОЮ (fork-agnostic — по суффиксу без __XFORK_/__SSP_).
+/* Классификация моста по СЛОЮ (fork-agnostic — по суффиксу без __SSP_/__SSP_).
    leaf-слои (infra/pure/i18n) может тянуть кто угодно; domain — нет (только через core deps). */
 const INFRA_SUFFIX = new Set([
   'ICONS', 'TABLE', 'DATEPICKER', 'DP_BRIDGE', 'RADIO', 'CHECKBOX', 'INPUT', 'SELECT',
@@ -138,7 +138,7 @@ const INFRA_SUFFIX = new Set([
 ]);
 const I18N_SUFFIX = new Set(['T', 'I']);
 function bridgeLayer(token) {
-  const s = token.replace(/^__(?:SCBT|SSP)_/, '');
+  const s = token.replace(/^__SSP_/, '');
   if (/_PURE$/.test(s)) return 'pure';
   if (I18N_SUFFIX.has(s)) return 'i18n';
   if (INFRA_SUFFIX.has(s)) return 'infra';

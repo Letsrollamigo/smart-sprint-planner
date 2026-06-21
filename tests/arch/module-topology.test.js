@@ -3,7 +3,7 @@
  * Болезнь монолита = плотный граф связности. Защита: топология обязана оставаться
  * СЛОИСТОЙ ЗВЕЗДОЙ — core (центр) композирует домены через deps; домены могут тянуть
  * только leaf-слои (infra/pure/i18n), но НЕ другие домены напрямую. Прямой
- * межмодульный вызов domain→domain через `window.__XFORK_X` = ребро будущего цикла =
+ * межмодульный вызов domain→domain через `window.__SSP_X` = ребро будущего цикла =
  * красный гейт. Анализ — по КОДУ (комментарии вырезаны), поэтому doc-упоминание
  * чужого моста (как history-controller→HISTORY_IO в шапке) не ложно-срабатывает.
  *
@@ -21,7 +21,7 @@ const LEAF = new Set(reg._meta.leafLayers); // infra/pure/i18n
 /* Слой моста: сначала реестр (по слою публикующего модуля), затем suffix-правило
    для ВНЕШНИХ токенов (react-mounts/core: TABLE/RADIO/RING_MODAL/GANTT_MOUNT/T/…). */
 function tokenLayer(tok) {
-  const suffix = tok.replace(/^__(?:SCBT|SSP)_/, '');
+  const suffix = tok.replace(/^__SSP_/, '');
   return reg._meta.bridgeLayers[suffix] || lib.bridgeLayer(tok);
 }
 

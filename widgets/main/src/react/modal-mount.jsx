@@ -185,7 +185,7 @@ function SspModal({ spec, onClose }) {
   );
 }
 
-/* Имя `__SSP_RING_MODAL` (corp: `__XFORK_RING_MODAL`) — историческое:
+/* Имя `__SSP_RING_MODAL` — историческое:
    `__SSP_MODAL` был занят легаси-фасадом монолита (снесён при декомпозиции);
    глобал оставлен как есть ради стабильности контракта. */
 window.__SSP_RING_MODAL = {
