@@ -125,20 +125,39 @@ function TaskTable({ tasks, roleContext, ytBase, fmt, i18n, pageSize }) {
   );
 }
 
-/* Спойлер — vanilla chevron-аккордеон (паттерн rolecomposition-view, §10 спеки).
-   Ring Collapse намеренно НЕ используется: в текущей версии Ring его CollapseControl/
-   CollapseContent рендерят undefined-child (React #130) — voir live-smoke слайса 3.
-   Disclosure с chevron — не «фейк Ring-компонента» (rolecomposition тот же), shipped-паттерн. */
+/* Спойлер на НАТИВНОМ Ring Collapse (vendored). КОНТРАКТ Ring (исходник collapse-control):
+   CollapseControl делает cloneElement(child, {onClick: setCollapsed, aria-*}) — поэтому child
+   ОБЯЗАН быть React-ЭЛЕМЕНТОМ (button), не строкой (cloneElement('текст') → тип undefined → React #130).
+   Function-child `(collapsed)=>…` даёт состояние для chevron. Collapse сам держит состояние
+   (uncontrolled, defaultCollapsed) + вешает onClick/aria на наш button. Fallback на нативный
+   <details>, если Ring не загружен (golden/деградация). */
 function Spoiler({ title, count, defaultOpen, children }) {
-  const [open, setOpen] = React.useState(!!defaultOpen);
+  const V = globalThis.SSP_VENDORED || {};
+  const Collapse = V.Collapse, Ctrl = V.CollapseControl, Content = V.CollapseContent;
   const head = title + (count != null ? ' (' + count + ')' : '');
+  if (!Collapse || !Ctrl || !Content) {
+    return (
+      <details open={!!defaultOpen} style={ST.spoiler}>
+        <summary style={ST.spoilerHead}>{head}</summary>
+        <div style={ST.spoilerBody}>{children}</div>
+      </details>
+    );
+  }
   return (
     <div style={ST.spoiler}>
-      <button type="button" style={ST.spoilerHead} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <span style={ST.chev}>{open ? '▼' : '▶'}</span>
-        <span>{head}</span>
-      </button>
-      {open ? <div style={ST.spoilerBody}>{children}</div> : null}
+      <Collapse defaultCollapsed={!defaultOpen}>
+        <Ctrl>
+          {(collapsed) => (
+            <button type="button" style={ST.spoilerHead}>
+              <span style={ST.chev}>{collapsed ? '▶' : '▼'}</span>
+              <span>{head}</span>
+            </button>
+          )}
+        </Ctrl>
+        <Content>
+          <div style={ST.spoilerBody}>{children}</div>
+        </Content>
+      </Collapse>
     </div>
   );
 }

@@ -57,7 +57,11 @@ function SspCollapseCmp({ host }) {
   return React.createElement(
     Collapse,
     { collapsed: !open, onChange: handleToggle },
-    React.createElement(CollapseControl, null, title),
+    /* CollapseControl делает cloneElement(child, {onClick,aria}) → child обязан быть
+       ЭЛЕМЕНТОМ, не строкой (cloneElement('текст') → тип undefined → React #130).
+       Оборачиваем title в button (паттерн backlog-view.jsx Spoiler). */
+    React.createElement(CollapseControl, null,
+      React.createElement('button', { type: 'button' }, title)),
     React.createElement(CollapseContent, null,
       React.createElement('div', { dangerouslySetInnerHTML: { __html: bodyHtml } })
     )
