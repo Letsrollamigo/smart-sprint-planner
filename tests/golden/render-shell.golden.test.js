@@ -731,3 +731,83 @@ test('golden: renderGanttChart — контракт reassign-клика: 4 ве�
 
   checkJsonSnapshot('gantt-reassign-contract', { cellIssue: vm.rows[0].issueId, log: log });
 });
+
+/* ════ #21 слайс 3 — Работа с бэклогом, вид «по зонам» ════
+   Оракул = vm-контракт «backlog-view.js → __SSP_BACKLOG_MOUNT» (recording-стаб
+   стэшит vm на #backlogContainer.__sspBacklogVm). renderBacklog читает transient
+   _backlogPool (loader — слайс 2b) + настройки; buildBacklogVm (слайс 2a) — pure.
+   React-сторона (react/backlog-view.jsx, пагинация/спойлеры) — живьём. */
+
+function backlogVm(document) {
+  return document.getElementById('backlogContainer').__sspBacklogVm;
+}
+
+/* Структурный срез vm (без fmt-функции/i18n/ytBase — детерминированный контракт). */
+function backlogShape(vm) {
+  const t = (x) => ({ id: x.idReadable, est: x.est, rem: x.rem, needsPoker: x.needsPoker, isPaused: x.isPaused });
+  return {
+    capacityStrip: vm.capacityStrip,
+    pageSize: vm.pageSize,
+    counts: vm.counts,
+    customerPool: vm.customerPool.map((x) => x.idReadable),
+    zones: vm.zones.map((z) => ({
+      stateName: z.stateName,
+      multiRole: z.multiRole,
+      roles: z.roles.map((r) => ({ roleKey: r.roleKey, label: r.label, tasks: r.tasks.map(t) })),
+      unassigned: z.unassigned.map((x) => x.idReadable),
+    })),
+    otherBucket: vm.otherBucket.map((x) => x.idReadable),
+  };
+}
+
+function backlogTask(over) {
+  return Object.assign({
+    issueId: '', idReadable: '', summary: '', stateName: '', isResolved: false,
+    system: null, priority: null, tags: [], estByRole: {}, factByRole: {},
+  }, over || {});
+}
+
+function backlogSettings() {
+  const s = fx.buildSettings();
+  s.activeRoles = ['devBack', 'testing'];
+  s.backlogStartStates = ['Open'];
+  s.backlogZones = [
+    { state: 'In Progress', roles: ['devBack', 'testing'] }, /* multi-role */
+    { state: 'Testing', roles: ['testing'] },                /* single-role */
+  ];
+  s.backlogPauseTags = ['paused'];
+  s.backlogPauseStates = [];
+  return s;
+}
+
+test('golden: renderBacklog — по зонам: пул/multi-role/single/нужна-оценка/пауза/resolved/Прочие', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const pool = [
+    backlogTask({ issueId: 'BL-1', idReadable: 'BL-1', summary: 'Старт', stateName: 'Open', system: '1С Бух', priority: 'Normal' }),
+    backlogTask({ issueId: 'BL-2', idReadable: 'BL-2', summary: 'Dev+test', stateName: 'In Progress', system: '1С УТ', priority: 'Critical',
+      estByRole: { devBack: 600, testing: null }, factByRole: { devBack: 120 } }), /* devBack rem 480; testing → needsPoker */
+    backlogTask({ issueId: 'BL-3', idReadable: 'BL-3', summary: 'Пауза', stateName: 'In Progress', tags: ['paused'],
+      estByRole: { devBack: 300 } }), /* isPaused; devBack rem 300; testing needsPoker */
+    backlogTask({ issueId: 'BL-4', idReadable: 'BL-4', summary: 'Только тест', stateName: 'Testing', system: '1С ЗУП',
+      estByRole: { testing: 120 } }), /* single-role testing rem 120 */
+    backlogTask({ issueId: 'BL-5', idReadable: 'BL-5', summary: 'Resolved', stateName: 'Fixed', isResolved: true }), /* §8 hidden */
+    backlogTask({ issueId: 'BL-6', idReadable: 'BL-6', summary: 'Незамапленное', stateName: 'Под уточнение' }), /* §8 Прочие */
+  ];
+  gm.set({ _settings: backlogSettings(), _backlogPool: pool });
+  gm.call('renderBacklog');
+  checkJsonSnapshot('backlog-zones', backlogShape(backlogVm(document)));
+});
+
+test('golden: renderBacklog — нет маппинга зон → empty-баннер, vm не монтируется', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const s = fx.buildSettings();
+  s.backlogZones = [];
+  gm.set({ _settings: s, _backlogPool: [] });
+  gm.call('renderBacklog');
+  checkJsonSnapshot('backlog-no-zones', {
+    emptyShown: !document.getElementById('backlogEmpty').classList.contains('hidden'),
+    vmMounted: backlogVm(document) !== undefined && backlogVm(document) !== null,
+  });
+});

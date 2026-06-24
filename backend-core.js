@@ -777,6 +777,9 @@ var ALLOWED_SETTINGS_KEYS = [
   // Прочие поля
   'fieldPriority','fieldXPriority','fieldState','fieldSystem',
   'fieldSprint','fieldVersion',
+  /* #21 — тип-назначение задачи (Фича/Баг/Спайк/…) для фильтра модуля «Работа с бэклогом».
+     Планировочный тир, как прочие field* (НЕ admin). */
+  'fieldType',
   /* v1.8.0 D130 — Etap В.2 — external ticket ID field name (string field in YT). */
   'fieldExternalTicketId',
   // Группы (без settingsManagerGroup)
@@ -858,7 +861,13 @@ var ALLOWED_SETTINGS_KEYS = [
      заменяет тройку тогглов в форме настроек; на бэке additive optional поле.
      Старые флаги (personalPlanningEnabled/usePersonalForResource/manualPersonalResource)
      остаются как derived-зеркало для расчётов/super-light (см. PLANNING_MODEL_SHIM). */
-  'planningModel'
+  'planningModel',
+  /* #21 — модуль «Работа с бэклогом» (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
+     backlogZones        — упорядоченный пайплайн зон [{ state, roles[] }] (состояние→роль(и), MANY);
+     backlogStartStates  — состояния «пула заказчика» (стартовая зона, §4/§6.1 спеки);
+     backlogTypeFilter   — значения fieldType для базового фильтра (Сопровождение исключаем и т.п.);
+     backlogPauseTags / backlogPauseStates — источник признака паузы (тег и/или состояние, §8). */
+  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -888,7 +897,11 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   // #45 Capacity Management — политика модели ёмкости (admin-тир)
   'capacityMode','hoursPerDay','usefulHoursPerDay',
   // v2.14.0 — модель планирования (admin-тир, как и тройка флагов, которую она заменяет)
-  'planningModel'
+  'planningModel',
+  /* #21 — настройки модуля «Работа с бэклогом» — admin-тир (спека §9: настройки=admin,
+     триаж/раскладка=планировочный). fieldType намеренно НЕ здесь — остаётся
+     планировочным, как прочие field*. */
+  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates'
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -961,7 +974,9 @@ function validateSettings(settings) {
     'fieldDevFullstack','fieldFactDevFullstack','userFieldDevFs',
     'fieldDevDb','fieldFactDevDb','userFieldDevDb',
     'fieldPriority','fieldXPriority','fieldState','fieldSystem',
-    'fieldSprint','fieldVersion'];
+    'fieldSprint','fieldVersion',
+    /* #21 — тип-назначение задачи (фильтр модуля «Работа с бэклогом»). */
+    'fieldType'];
   for (var f = 0; f < fieldKeys.length; f++) {
     if (!assertStr(settings[fieldKeys[f]], 200)) return false;
   }
@@ -1100,6 +1115,32 @@ function validateSettings(settings) {
       if (sdsSeen[settings.standupDoneStates[sds]]) return false;
       sdsSeen[settings.standupDoneStates[sds]] = true;
     }
+  }
+  /* #21 — модуль «Работа с бэклогом» (additive optional).
+     backlogZones — упорядоченный пайплайн зон [{ state:string≤200 (required, unique),
+     roles:array<roleKey ∈ ROLE_KEYS> (MANY) }], max 50. Стартовая (Заказчик) и resolved
+     (Закрыто) зоны — производные, здесь не хранятся (§4/§6.1 спеки). */
+  if (settings.backlogZones !== undefined && settings.backlogZones !== null) {
+    if (!Array.isArray(settings.backlogZones) || settings.backlogZones.length > 50) return false;
+    var bzSeen = {};
+    for (var bz = 0; bz < settings.backlogZones.length; bz++) {
+      var zone = settings.backlogZones[bz];
+      if (!zone || typeof zone !== 'object') return false;
+      if (!assertStr(zone.state, 200) || !zone.state) return false;   // state required, non-empty ≤200
+      if (bzSeen[zone.state]) return false;                           // unique state
+      bzSeen[zone.state] = true;
+      if (!Array.isArray(zone.roles) || zone.roles.length > ROLE_KEYS.length) return false;
+      for (var zr = 0; zr < zone.roles.length; zr++) {
+        if (ROLE_KEYS.indexOf(zone.roles[zr]) < 0) return false;      // each role ∈ ROLE_KEYS
+      }
+    }
+  }
+  /* #21 — backlogStartStates / backlogTypeFilter / backlogPauseTags / backlogPauseStates:
+     array<string ≤200>, max 50. */
+  var backlogStrArrKeys = ['backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates'];
+  for (var ba = 0; ba < backlogStrArrKeys.length; ba++) {
+    var bav = settings[backlogStrArrKeys[ba]];
+    if (bav !== undefined && bav !== null && !isStrArr(bav, 200, 50)) return false;
   }
   return true;
 }

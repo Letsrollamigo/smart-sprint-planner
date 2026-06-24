@@ -1,0 +1,97 @@
+{
+  "capacityStrip": [
+    {
+      "roleKey": "testing",
+      "label": "Тестирование",
+      "demand": 120
+    },
+    {
+      "roleKey": "devBack",
+      "label": "Разработка Back",
+      "demand": 780
+    }
+  ],
+  "pageSize": 25,
+  "counts": {
+    "pool": 1,
+    "zoneTasks": 3,
+    "other": 1,
+    "hidden": 1,
+    "paused": 1
+  },
+  "customerPool": [
+    "BL-1"
+  ],
+  "zones": [
+    {
+      "stateName": "In Progress",
+      "multiRole": true,
+      "roles": [
+        {
+          "roleKey": "devBack",
+          "label": "Разработка Back",
+          "tasks": [
+            {
+              "id": "BL-2",
+              "est": 600,
+              "rem": 480,
+              "needsPoker": false,
+              "isPaused": false
+            },
+            {
+              "id": "BL-3",
+              "est": 300,
+              "rem": 300,
+              "needsPoker": false,
+              "isPaused": true
+            }
+          ]
+        },
+        {
+          "roleKey": "testing",
+          "label": "Тестирование",
+          "tasks": [
+            {
+              "id": "BL-2",
+              "est": null,
+              "rem": null,
+              "needsPoker": true,
+              "isPaused": false
+            },
+            {
+              "id": "BL-3",
+              "est": null,
+              "rem": null,
+              "needsPoker": true,
+              "isPaused": true
+            }
+          ]
+        }
+      ],
+      "unassigned": []
+    },
+    {
+      "stateName": "Testing",
+      "multiRole": false,
+      "roles": [
+        {
+          "roleKey": "testing",
+          "label": "Тестирование",
+          "tasks": [
+            {
+              "id": "BL-4",
+              "est": 120,
+              "rem": 120,
+              "needsPoker": false,
+              "isPaused": false
+            }
+          ]
+        }
+      ],
+      "unassigned": []
+    }
+  ],
+  "otherBucket": [
+    "BL-6"
+  ]
+}

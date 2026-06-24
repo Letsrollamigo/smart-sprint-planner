@@ -50,6 +50,7 @@ const BRIDGE_SCRIPTS = [
   'migrate-pure.js',
   'refresh-merge-pure.js',
   'share-url-pure.js',
+  'backlog-vm-pure.js',
   'modal-specs.js',
   'excel-export.js',
   'revalidation.js',
@@ -76,6 +77,7 @@ const BRIDGE_SCRIPTS = [
   'history-view.js',
   'header-view.js',
   'gantt-view.js',
+  'backlog-view.js',
   'intro-view.js',
 ];
 
@@ -204,6 +206,13 @@ function createHost(opts) {
   window.__SSP_GANTT_MOUNT = {
     mountAt: rec('GANTT', 'mountAt', function (host, vm) { if (host) host.__sspGanttVm = vm || null; }),
     unmountAt: rec('GANTT', 'unmountAt', function (host) { if (host) { try { delete host.__sspGanttVm; } catch (_) {} } }),
+  };
+  /* Бэклог (#21 слайс 3): backlog-view.js строит vm и отдаёт мосту — стаб стэшит
+     vm на host (host.__sspBacklogVm), голдены характеризуют контракт «модуль →
+     __SSP_BACKLOG_MOUNT» (React-сторона — react/backlog-view.jsx — живьём). */
+  window.__SSP_BACKLOG_MOUNT = {
+    mountAt: rec('BACKLOG', 'mountAt', function (host, vm) { if (host) host.__sspBacklogVm = vm || null; }),
+    unmountAt: rec('BACKLOG', 'unmountAt', function (host) { if (host) { try { delete host.__sspBacklogVm; } catch (_) {} } }),
   };
   const modalLog = [];
   window.__SSP_RING_MODAL = {

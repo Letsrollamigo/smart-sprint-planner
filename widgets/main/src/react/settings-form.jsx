@@ -18,6 +18,12 @@ import * as React from 'react';
 
 const noop = () => {};
 
+/* #21 — стабильный per-зона id для React key: reorder/delete не должны переносить
+   транзиентное UI-состояние per-row Ring Select (открытый dropdown/текст фильтра) на
+   соседнюю строку (review: minor). collect() строит зоны заново → _uid не персистится. */
+let _zoneUidSeq = 0;
+const genZoneUid = () => 'z' + (++_zoneUidSeq);
+
 /* #43 W4 — i18n-контекст формы: даёт листовым контролам (FieldSelect/MultiSelect/
    RingSelLite) доступ к t без прокидывания через ~40 колсайтов. Используется для
    локализации placeholder'а поиска в попапах Ring Select (была en-заглушка
@@ -125,7 +131,7 @@ function GrpIcon() {
 
 /* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
    только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
-const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true };
+const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true, backlog: true };
 const LOCK_ICON_PATH = 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z';
 function LockIcon() {
   return (
@@ -592,6 +598,134 @@ function StandupSection(props) {
   );
 }
 
+/* ── Секция: #21 «Работа с бэклогом» ──
+   Зоны пайплайна (состояние→роль(и), MANY, упорядочены) + стартовый пул + фильтр по
+   типу + источник паузы. Контракт — backend-core.js validateSettings (state unique,
+   roles⊆ROLE_KEYS, max 50). Шаблоны: таблица строк = DtaSection; reorder = StateRollupSection;
+   роли per-row = inline-чекбоксы (активных ролей ≤9; MultiSelect не несёт label≠key). */
+function BacklogSection(props) {
+  const t = props.t;
+  const v = props.value; // { zones:[{state,roles[]}], startStates, typeFilter, pauseTags, pauseStates }
+  const set = props.onChange;
+  const bundleStates = props.bundleStates || [];
+  const roleOpts = props.activeRoles || [];
+  const uiLang = props.uiLang;
+  const [typeBundle, setTypeBundle] = React.useState([]);
+  /* ponytail: pauseTags — свободный ввод через запятую (у тегов нет бандла, в отличие
+     от состояний). Апгрейд до picker'а тегов — когда появится loadTags-источник. */
+  const [pauseTagsRaw, setPauseTagsRaw] = React.useState(() => (v.pauseTags || []).join(', '));
+
+  React.useEffect(() => {
+    let alive = true;
+    if (props.fieldTypeName && props.loadFieldValues) {
+      Promise.resolve(props.loadFieldValues(props.fieldTypeName))
+        .then((vals) => { if (alive && Array.isArray(vals)) setTypeBundle(vals); }).catch(noop);
+    } else { setTypeBundle([]); }
+    return () => { alive = false; };
+  }, [props.fieldTypeName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const patch = (p) => set(Object.assign({}, v, p));
+  const setZone = (i, p) => patch({ zones: v.zones.map((z, idx) => (idx === i ? Object.assign({}, z, p) : z)) });
+  const addZone = () => patch({ zones: v.zones.concat([{ _uid: genZoneUid(), state: '', roles: [] }]) });
+  const delZone = (i) => { const z = v.zones.slice(); z.splice(i, 1); patch({ zones: z }); };
+  function moveZone(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= v.zones.length) return;
+    const z = v.zones.slice(); const tmp = z[i]; z[i] = z[j]; z[j] = tmp;
+    patch({ zones: z });
+  }
+  function toggleZoneRole(i, rk) {
+    const cur = (v.zones[i] && v.zones[i].roles) || [];
+    const next = cur.indexOf(rk) >= 0 ? cur.filter((k) => k !== rk) : cur.concat([rk]);
+    setZone(i, { roles: next });
+  }
+
+  const stCounts = {};
+  v.zones.forEach((z) => { const s = (z.state || '').trim(); if (s) stCounts[s] = (stCounts[s] || 0) + 1; });
+  const stateOpts = bundleStates.map((s) => ({ key: s, label: s }));
+  const roleData = roleOpts.map((r) => ({ key: r.key, label: uiLang === 'en' ? (r.labelEn || r.label) : r.label }));
+  const moveBtnCls = 'ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly';
+
+  return (
+    <React.Fragment>
+      {/* Зоны: состояние → роль(и) (MANY, упорядочены) */}
+      <div className="field">
+        <label>{t('lblBacklogZones')}</label>
+        <table className="ssp-dta-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th scope="col" style={{ width: '38%' }}>{t('lblBacklogZoneState')}</th>
+              <th scope="col">{t('lblBacklogZoneRoles')}</th>
+              <th scope="col" style={{ width: '92px' }} aria-label={t('btnBacklogRemoveZone')}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {!v.zones.length ? (
+              <tr><td colSpan={3} className="empty" style={{ padding: '8px', textAlign: 'center', color: 'var(--muted)' }}>{t('backlogZonesEmpty')}</td></tr>
+            ) : v.zones.map((z, i) => {
+              const st = (z.state || '').trim();
+              const dup = st && stCounts[st] > 1;
+              return (
+                <tr key={z._uid}>
+                  <td style={dup ? { outline: '1px solid var(--error)' } : undefined}>
+                    <RingSelLite options={stateOpts} value={z.state || ''} clearable placeholder={t('phNotSelected')} onChange={(val) => setZone(i, { state: val })} />
+                  </td>
+                  <td>
+                    {roleData.length ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>
+                        {roleData.map((r) => {
+                          const on = (z.roles || []).indexOf(r.key) >= 0;
+                          return (
+                            <label key={r.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={on} onChange={() => toggleZoneRole(i, r.key)} />
+                              <span>{r.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : <span className="hint" style={{ fontSize: '12px', color: 'var(--muted)' }}>{t('backlogNoActiveRoles')}</span>}
+                  </td>
+                  <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <button type="button" className={moveBtnCls} title={t('btnStateRollupUp')} disabled={i === 0} onClick={() => moveZone(i, -1)}>↑</button>
+                    <button type="button" className={moveBtnCls} title={t('btnStateRollupDown')} disabled={i === v.zones.length - 1} onClick={() => moveZone(i, 1)}>↓</button>
+                    <button type="button" className={moveBtnCls} title={t('btnBacklogRemoveZone')} onClick={() => delZone(i)}>×</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <button type="button" className={_btnCls('secondary')} style={{ marginTop: '10px' }} onClick={addZone}>{t('btnBacklogAddZone')}</button>
+        {props.hasDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('backlogErrDupState')}</div> : null}
+      </div>
+
+      {/* Стартовый пул заказчика */}
+      <div className="field" style={{ marginTop: '14px' }}>
+        <label>{t('lblBacklogStartStates')}</label>
+        <MultiSelect options={bundleStates} selected={v.startStates} placeholder={t('phNotSelected')} onChange={(vals) => patch({ startStates: vals })} />
+      </div>
+
+      {/* Фильтр по типу (значения fieldType) */}
+      <div className="field" style={{ marginTop: '12px' }}>
+        <label>{t('lblBacklogTypeFilter')}</label>
+        <MultiSelect options={typeBundle} selected={v.typeFilter} placeholder={t('phNotSelected')} onChange={(vals) => patch({ typeFilter: vals })} />
+      </div>
+
+      {/* Источник паузы: состояния и/или теги */}
+      <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
+        <div className="field">
+          <label>{t('lblBacklogPauseStates')}</label>
+          <MultiSelect options={bundleStates} selected={v.pauseStates} placeholder={t('phNotSelected')} onChange={(vals) => patch({ pauseStates: vals })} />
+        </div>
+        <div className="field">
+          <label>{t('lblBacklogPauseTags')}</label>
+          <TextField value={pauseTagsRaw} maxLength={500} placeholder={t('phBacklogPauseTags')} onChange={(s) => { setPauseTagsRaw(s); patch({ pauseTags: s.split(',').map((x) => x.trim()).filter(Boolean) }); }} />
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
 function SettingsForm(props) {
   const t = props.t || ((k) => k);
   const initial = props.initial || {};
@@ -615,6 +749,8 @@ function SettingsForm(props) {
     fieldExternalTicketId: initial.fieldExternalTicketId || '',
     fieldSprint: initial.fieldSprint || '',
     fieldVersion: initial.fieldVersion || '',
+    /* #21 — тип-назначение (Фича/Баг/…) для фильтра модуля «Работа с бэклогом». */
+    fieldType: initial.fieldType || '',
   }));
   const setField = (k, v) => setFields((p) => Object.assign({}, p, { [k]: v }));
 
@@ -712,6 +848,17 @@ function SettingsForm(props) {
   }));
   const [standupDone, setStandupDone] = React.useState(() =>
     Array.isArray(initial.standupDoneStates) ? initial.standupDoneStates.slice() : []);
+  /* #21 — «Работа с бэклогом»: зоны (состояние→роль(и), MANY) + старт-пул + фильтр по типу
+     + источник паузы. Дефолты — пустые ([] = «не размечено» → fail-loud во вкладке, §8 спеки). */
+  const [backlog, setBacklog] = React.useState(() => ({
+    zones: Array.isArray(initial.backlogZones)
+      ? initial.backlogZones.map((z) => ({ _uid: genZoneUid(), state: (z && z.state) || '', roles: (z && Array.isArray(z.roles)) ? z.roles.slice() : [] }))
+      : [],
+    startStates: Array.isArray(initial.backlogStartStates) ? initial.backlogStartStates.slice() : [],
+    typeFilter: Array.isArray(initial.backlogTypeFilter) ? initial.backlogTypeFilter.slice() : [],
+    pauseTags: Array.isArray(initial.backlogPauseTags) ? initial.backlogPauseTags.slice() : [],
+    pauseStates: Array.isArray(initial.backlogPauseStates) ? initial.backlogPauseStates.slice() : [],
+  }));
 
   /* Bundle-состояния state-поля проекта — общий источник для rollup + standup.
      Грузятся один раз при mount через props.loadFieldValues(stateFieldName)
@@ -761,7 +908,12 @@ function SettingsForm(props) {
   /* rollup noHierarchy-подсказка: каскад задаёт иерархию (level2/level3). */
   const cascadeHasHierarchy = cascade.level2.length > 0 || cascade.level3.length > 0;
 
-  const blocked = hasEstDup || hasFactDup || hasDtaDup;
+  /* #21 — дубль состояния в зонах бэклога блокирует save (бэкенд требует unique state). */
+  const backlogStateCounts = {};
+  backlog.zones.forEach((z) => { const s = (z.state || '').trim(); if (s) backlogStateCounts[s] = (backlogStateCounts[s] || 0) + 1; });
+  const hasBacklogDup = Object.keys(backlogStateCounts).some((k) => backlogStateCounts[k] > 1);
+
+  const blocked = hasEstDup || hasFactDup || hasDtaDup || hasBacklogDup;
 
   function toggleRole(rk) {
     setActiveRoles((prev) => {
@@ -817,6 +969,7 @@ function SettingsForm(props) {
     data.fieldExternalTicketId = fields.fieldExternalTicketId || null;
     data.fieldSprint = fields.fieldSprint || null;
     data.fieldVersion = fields.fieldVersion || null;
+    data.fieldType = fields.fieldType || null;
 
     data.defaultLang = defaultLang || undefined;
 
@@ -864,6 +1017,30 @@ function SettingsForm(props) {
 
     /* Стендап (5c): done-состояния. */
     data.standupDoneStates = standupDone.slice();
+
+    /* #21 — «Работа с бэклогом». Зоны: пустой state скипается, dedup по state,
+       roles ∩ role keys (бэкенд: unique state, roles⊆ROLE_KEYS). Остальные — capValues.
+       valid берётся из ВСЕХ ролей (не activeRoleList) НАМЕРЕННО: роль, размеченную при
+       активной роли и позже деактивированную в «Составе», не теряем (паритет с DtaSection
+       workItemTypeMapping; admin-конфиг переживает временную деактивацию). */
+    data.backlogZones = (function () {
+      const valid = {}; roles.forEach((r) => { valid[r.key] = true; });
+      const out = []; const seen = {};
+      backlog.zones.forEach((z) => {
+        let st = String((z && z.state) || '').trim();
+        if (!st || seen[st]) return;
+        if (st.length > 200) st = st.slice(0, 200);
+        seen[st] = true;
+        const rls = []; const seenR = {};
+        ((z && z.roles) || []).forEach((rk) => { if (valid[rk] && !seenR[rk]) { seenR[rk] = true; rls.push(rk); } });
+        out.push({ state: st, roles: rls });
+      });
+      return out;
+    })();
+    data.backlogStartStates = capValues(backlog.startStates);
+    data.backlogTypeFilter = capValues(backlog.typeFilter);
+    data.backlogPauseTags = capValues(backlog.pauseTags);
+    data.backlogPauseStates = capValues(backlog.pauseStates);
 
     /* Per-role: для ВСЕХ ролей (как legacy) — null для неактивных/неназначенных. */
     roles.forEach((r) => {
@@ -998,6 +1175,11 @@ function SettingsForm(props) {
               <label>{t('fldVersion')}</label>
               <FieldSelect value={fields.fieldVersion} onChange={(v) => setField('fieldVersion', v)} names={fieldsByType.version} placeholder={t('phNotSelected')} />
             </div>
+            {/* #21 — поле типа-назначения (Фича/Баг/…) для фильтра модуля «Работа с бэклогом». */}
+            <div className="field">
+              <label>{t('fldType')}</label>
+              <FieldSelect value={fields.fieldType} onChange={(v) => { if (v !== fields.fieldType) setBacklog((b) => Object.assign({}, b, { typeFilter: [] })); setField('fieldType', v); }} names={fieldsByType.enumFields} placeholder={t('phNotSelected')} />
+            </div>
           </div>
           <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
             {t('cardUserFields')}
@@ -1082,6 +1264,18 @@ function SettingsForm(props) {
       id: 'standup', title: t('cardStandupSettings'),
       node: (
         <StandupSection t={t} value={standupDone} onChange={setStandupDone} bundleStates={bundleStates} />
+      ),
+    },
+    {
+      /* #21 — модуль «Работа с бэклогом» (admin-тир, §9 спеки: настройки = admin). */
+      id: 'backlog', title: t('cardBacklog'), nav: t('navBacklog'), error: hasBacklogDup,
+      node: (
+        <BacklogSection
+          t={t} value={backlog} onChange={setBacklog}
+          bundleStates={bundleStates} activeRoles={activeRoleList} uiLang={uiLang}
+          fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues}
+          hasDup={hasBacklogDup}
+        />
       ),
     },
     {

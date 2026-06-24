@@ -4,8 +4,8 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 3816,
-      "locBudget": 4007
+      "loc": 3909,
+      "locBudget": 4105
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -15,56 +15,60 @@
       "i18n"
     ],
     "bridgeLayers": {
-      "MODAL_ANCHOR": "infra",
+      "DATA_LOADERS": "domain",
+      "YOUTRACK_API": "domain",
+      "BACKLOG_LOADER": "domain",
+      "BACKLOG_VIEW": "domain",
       "CURRENTROLE_VIEW": "domain",
       "DASH_SHELL": "domain",
-      "DATA_LOADERS": "data",
-      "DATE_PURE": "pure",
-      "DP_BRIDGE": "infra",
       "DRAFT_STORE": "domain",
-      "ENUM_PURE": "pure",
       "EXCEL_EXPORT": "domain",
       "GANTT_VIEW": "domain",
-      "HASH_PURE": "pure",
       "HEADER_VIEW": "domain",
       "HISTORY_VIEW": "domain",
-      "I18N__": "i18n",
-      "I18N_DICTS__": "i18n",
-      "I18N_LANGS__": "i18n",
-      "I18N_PLURAL__": "i18n",
-      "I18N_CTRL": "i18n",
       "INTRO_VIEW": "domain",
-      "MIGRATE_PURE": "pure",
-      "MODAL_SPECS": "infra",
-      "PERIOD_PURE": "pure",
       "PERMISSIONS": "domain",
       "PICK": "domain",
       "PROJECT_NAV": "domain",
       "REASSIGN_CTRL": "domain",
       "REFRESH_CTRL": "domain",
-      "REFRESH_MERGE_PURE": "pure",
       "REVALIDATION": "domain",
       "ROLECOMP_VIEW": "domain",
       "SETTINGS_CTRL": "domain",
       "SHARE_CTRL": "domain",
-      "SHARE_URL_PURE": "pure",
-      "SORT_PURE": "pure",
       "SPRINT_CTRL": "domain",
       "STANDUP_VIEW": "domain",
-      "TOAST_PURE": "pure",
-      "TOAST": "infra",
-      "TOAST_RING": "infra",
       "VALIDATION_CTRL": "domain",
       "WORKING_COPY": "domain",
-      "YOUTRACK_API": "data"
+      "I18N__": "i18n",
+      "I18N_DICTS__": "i18n",
+      "I18N_LANGS__": "i18n",
+      "I18N_PLURAL__": "i18n",
+      "I18N_CTRL": "i18n",
+      "MODAL_ANCHOR": "infra",
+      "DP_BRIDGE": "infra",
+      "MODAL_SPECS": "infra",
+      "TOAST": "infra",
+      "TOAST_RING": "infra",
+      "BACKLOG_VM_PURE": "pure",
+      "DATE_PURE": "pure",
+      "ENUM_PURE": "pure",
+      "HASH_PURE": "pure",
+      "MIGRATE_PURE": "pure",
+      "PERIOD_PURE": "pure",
+      "PLANNING_MODEL_PURE": "pure",
+      "REFRESH_MERGE_PURE": "pure",
+      "SHARE_URL_PURE": "pure",
+      "SORT_PURE": "pure",
+      "TOAST_PURE": "pure"
     }
   },
   "modules": {
     "data/data-loaders.js": {
-      "layer": "data",
-      "domain": "data-loaders",
-      "loc": 215,
-      "locBudget": 241,
+      "layer": "domain",
+      "domain": "data/data-loaders",
+      "loc": 226,
+      "locBudget": 254,
       "state": [
         "api"
       ],
@@ -73,8 +77,8 @@
       ]
     },
     "data/youtrack-api.js": {
-      "layer": "data",
-      "domain": "youtrack-api",
+      "layer": "domain",
+      "domain": "data/youtrack-api",
       "loc": 233,
       "locBudget": 261,
       "state": [],
@@ -82,9 +86,34 @@
         "YOUTRACK_API"
       ]
     },
+    "domain/backlog-loader.js": {
+      "layer": "domain",
+      "domain": "domain/backlog-loader",
+      "loc": 138,
+      "locBudget": 158,
+      "state": [
+        "BACKLOG_ISSUE_FIELDS",
+        "_api"
+      ],
+      "publishes": [
+        "BACKLOG_LOADER"
+      ]
+    },
+    "domain/backlog-view.js": {
+      "layer": "domain",
+      "domain": "domain/backlog-view",
+      "loc": 96,
+      "locBudget": 116,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "BACKLOG_VIEW"
+      ]
+    },
     "domain/currentrole-view.js": {
       "layer": "domain",
-      "domain": "currentrole-view",
+      "domain": "domain/currentrole-view",
       "loc": 754,
       "locBudget": 845,
       "state": [
@@ -97,9 +126,9 @@
     },
     "domain/dash-shell.js": {
       "layer": "domain",
-      "domain": "dash-shell",
-      "loc": 205,
-      "locBudget": 230,
+      "domain": "domain/dash-shell",
+      "loc": 210,
+      "locBudget": 236,
       "state": [],
       "publishes": [
         "DASH_SHELL"
@@ -107,9 +136,9 @@
     },
     "domain/draft-store.js": {
       "layer": "domain",
-      "domain": "draft-store",
-      "loc": 325,
-      "locBudget": 365,
+      "domain": "domain/draft-store",
+      "loc": 337,
+      "locBudget": 378,
       "state": [
         "_draftFlushTimer",
         "_draftSaveTimers",
@@ -121,7 +150,7 @@
     },
     "domain/excel-export.js": {
       "layer": "domain",
-      "domain": "excel-export",
+      "domain": "domain/excel-export",
       "loc": 217,
       "locBudget": 244,
       "state": [],
@@ -131,7 +160,7 @@
     },
     "domain/gantt-view.js": {
       "layer": "domain",
-      "domain": "gantt-view",
+      "domain": "domain/gantt-view",
       "loc": 223,
       "locBudget": 250,
       "state": [],
@@ -141,7 +170,7 @@
     },
     "domain/header-view.js": {
       "layer": "domain",
-      "domain": "header-view",
+      "domain": "domain/header-view",
       "loc": 364,
       "locBudget": 408,
       "state": [
@@ -153,7 +182,7 @@
     },
     "domain/history-controller.js": {
       "layer": "domain",
-      "domain": "history-controller",
+      "domain": "domain/history-controller",
       "loc": 189,
       "locBudget": 212,
       "state": [],
@@ -161,7 +190,7 @@
     },
     "domain/history-io.js": {
       "layer": "domain",
-      "domain": "history-io",
+      "domain": "domain/history-io",
       "loc": 173,
       "locBudget": 194,
       "state": [],
@@ -169,9 +198,9 @@
     },
     "domain/history-view.js": {
       "layer": "domain",
-      "domain": "history-view",
-      "loc": 463,
-      "locBudget": 519,
+      "domain": "domain/history-view",
+      "loc": 474,
+      "locBudget": 531,
       "state": [],
       "publishes": [
         "HISTORY_VIEW"
@@ -179,7 +208,7 @@
     },
     "domain/intro-view.js": {
       "layer": "domain",
-      "domain": "intro-view",
+      "domain": "domain/intro-view",
       "loc": 232,
       "locBudget": 260,
       "state": [
@@ -191,7 +220,7 @@
     },
     "domain/permissions.js": {
       "layer": "domain",
-      "domain": "permissions",
+      "domain": "domain/permissions",
       "loc": 204,
       "locBudget": 229,
       "state": [],
@@ -201,7 +230,7 @@
     },
     "domain/pick.js": {
       "layer": "domain",
-      "domain": "pick",
+      "domain": "domain/pick",
       "loc": 305,
       "locBudget": 342,
       "state": [
@@ -213,9 +242,9 @@
     },
     "domain/project-nav.js": {
       "layer": "domain",
-      "domain": "project-nav",
-      "loc": 282,
-      "locBudget": 316,
+      "domain": "domain/project-nav",
+      "loc": 287,
+      "locBudget": 322,
       "state": [],
       "publishes": [
         "PROJECT_NAV"
@@ -223,9 +252,9 @@
     },
     "domain/reassign-controller.js": {
       "layer": "domain",
-      "domain": "reassign-controller",
+      "domain": "domain/reassign-controller",
       "loc": 181,
-      "locBudget": 190,
+      "locBudget": 203,
       "state": [
         "api"
       ],
@@ -235,7 +264,7 @@
     },
     "domain/refresh-controller.js": {
       "layer": "domain",
-      "domain": "refresh-controller",
+      "domain": "domain/refresh-controller",
       "loc": 439,
       "locBudget": 492,
       "state": [],
@@ -245,7 +274,7 @@
     },
     "domain/revalidation.js": {
       "layer": "domain",
-      "domain": "revalidation",
+      "domain": "domain/revalidation",
       "loc": 118,
       "locBudget": 138,
       "state": [],
@@ -255,7 +284,7 @@
     },
     "domain/ring-class-helpers.js": {
       "layer": "domain",
-      "domain": "ring-class-helpers",
+      "domain": "domain/ring-class-helpers",
       "loc": 136,
       "locBudget": 156,
       "state": [],
@@ -263,9 +292,9 @@
     },
     "domain/rolecomposition-view.js": {
       "layer": "domain",
-      "domain": "rolecomposition-view",
-      "loc": 894,
-      "locBudget": 1002,
+      "domain": "domain/rolecomposition-view",
+      "loc": 906,
+      "locBudget": 1015,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"
@@ -273,9 +302,9 @@
     },
     "domain/settings-controller.js": {
       "layer": "domain",
-      "domain": "settings-controller",
-      "loc": 186,
-      "locBudget": 209,
+      "domain": "domain/settings-controller",
+      "loc": 192,
+      "locBudget": 216,
       "state": [
         "api"
       ],
@@ -285,7 +314,7 @@
     },
     "domain/share-controller.js": {
       "layer": "domain",
-      "domain": "share-controller",
+      "domain": "domain/share-controller",
       "loc": 150,
       "locBudget": 170,
       "state": [
@@ -298,9 +327,9 @@
     },
     "domain/sprint-controller.js": {
       "layer": "domain",
-      "domain": "sprint-controller",
-      "loc": 518,
-      "locBudget": 581,
+      "domain": "domain/sprint-controller",
+      "loc": 526,
+      "locBudget": 590,
       "state": [
         "api"
       ],
@@ -310,7 +339,7 @@
     },
     "domain/standup-view.js": {
       "layer": "domain",
-      "domain": "standup-view",
+      "domain": "domain/standup-view",
       "loc": 264,
       "locBudget": 296,
       "state": [],
@@ -320,7 +349,7 @@
     },
     "domain/validation-controller.js": {
       "layer": "domain",
-      "domain": "validation-controller",
+      "domain": "domain/validation-controller",
       "loc": 255,
       "locBudget": 286,
       "state": [],
@@ -330,9 +359,9 @@
     },
     "domain/working-copy.js": {
       "layer": "domain",
-      "domain": "working-copy",
-      "loc": 448,
-      "locBudget": 502,
+      "domain": "domain/working-copy",
+      "loc": 460,
+      "locBudget": 516,
       "state": [],
       "publishes": [
         "WORKING_COPY"
@@ -340,7 +369,7 @@
     },
     "i18n/i18n-bridge.js": {
       "layer": "i18n",
-      "domain": "i18n-bridge",
+      "domain": "i18n-i18n-bridge",
       "loc": 16,
       "locBudget": 36,
       "state": [],
@@ -353,7 +382,7 @@
     },
     "i18n/i18n-controller.js": {
       "layer": "i18n",
-      "domain": "i18n-controller",
+      "domain": "i18n-i18n-controller",
       "loc": 144,
       "locBudget": 164,
       "state": [
@@ -396,7 +425,7 @@
     },
     "infra/click-anchor.js": {
       "layer": "infra",
-      "domain": "click-anchor",
+      "domain": "infra/click-anchor",
       "loc": 84,
       "locBudget": 104,
       "state": [
@@ -410,7 +439,7 @@
     },
     "infra/datepicker-bridge.js": {
       "layer": "infra",
-      "domain": "datepicker-bridge",
+      "domain": "infra/datepicker-bridge",
       "loc": 179,
       "locBudget": 201,
       "state": [],
@@ -420,7 +449,7 @@
     },
     "infra/modal-specs.js": {
       "layer": "infra",
-      "domain": "modal-specs",
+      "domain": "infra/modal-specs",
       "loc": 193,
       "locBudget": 217,
       "state": [],
@@ -430,7 +459,7 @@
     },
     "infra/toast-ring.js": {
       "layer": "infra",
-      "domain": "toast-ring",
+      "domain": "infra/toast-ring",
       "loc": 361,
       "locBudget": 405,
       "state": [],
@@ -439,9 +468,21 @@
         "TOAST_RING"
       ]
     },
+    "pure/backlog-vm-pure.js": {
+      "layer": "pure",
+      "domain": "pure/backlog-vm-pure",
+      "loc": 97,
+      "locBudget": 117,
+      "state": [
+        "_api"
+      ],
+      "publishes": [
+        "BACKLOG_VM_PURE"
+      ]
+    },
     "pure/date-pure.js": {
       "layer": "pure",
-      "domain": "date-pure",
+      "domain": "pure/date-pure",
       "loc": 38,
       "locBudget": 58,
       "state": [],
@@ -451,7 +492,7 @@
     },
     "pure/enum-locale-pure.js": {
       "layer": "pure",
-      "domain": "enum-locale-pure",
+      "domain": "pure/enum-locale-pure",
       "loc": 23,
       "locBudget": 43,
       "state": [
@@ -464,7 +505,7 @@
     },
     "pure/hash-pure.js": {
       "layer": "pure",
-      "domain": "hash-pure",
+      "domain": "pure/hash-pure",
       "loc": 83,
       "locBudget": 103,
       "state": [],
@@ -474,9 +515,9 @@
     },
     "pure/migrate-pure.js": {
       "layer": "pure",
-      "domain": "migrate-pure",
+      "domain": "pure/migrate-pure",
       "loc": 120,
-      "locBudget": 135,
+      "locBudget": 140,
       "state": [],
       "publishes": [
         "MIGRATE_PURE"
@@ -484,7 +525,7 @@
     },
     "pure/period-pure.js": {
       "layer": "pure",
-      "domain": "period-pure",
+      "domain": "pure/period-pure",
       "loc": 74,
       "locBudget": 94,
       "state": [
@@ -496,7 +537,7 @@
     },
     "pure/planning-model-pure.js": {
       "layer": "pure",
-      "domain": "planning-model-pure",
+      "domain": "pure/planning-model-pure",
       "loc": 66,
       "locBudget": 86,
       "state": [
@@ -509,7 +550,7 @@
     },
     "pure/refresh-merge-pure.js": {
       "layer": "pure",
-      "domain": "refresh-merge-pure",
+      "domain": "pure/refresh-merge-pure",
       "loc": 81,
       "locBudget": 101,
       "state": [
@@ -521,7 +562,7 @@
     },
     "pure/share-url-pure.js": {
       "layer": "pure",
-      "domain": "share-url-pure",
+      "domain": "pure/share-url-pure",
       "loc": 91,
       "locBudget": 111,
       "state": [
@@ -536,7 +577,7 @@
     },
     "pure/sort-pure.js": {
       "layer": "pure",
-      "domain": "sort-pure",
+      "domain": "pure/sort-pure",
       "loc": 129,
       "locBudget": 149,
       "state": [],
@@ -546,7 +587,7 @@
     },
     "pure/toast-pure.js": {
       "layer": "pure",
-      "domain": "toast-pure",
+      "domain": "pure/toast-pure",
       "loc": 45,
       "locBudget": 65,
       "state": [],
@@ -556,7 +597,7 @@
     },
     "pure/util-pure.js": {
       "layer": "pure",
-      "domain": "util-pure",
+      "domain": "pure/util-pure",
       "loc": 50,
       "locBudget": 70,
       "state": [],

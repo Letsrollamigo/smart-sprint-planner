@@ -134,7 +134,7 @@ function publishedBridges(src) {
 const INFRA_SUFFIX = new Set([
   'ICONS', 'TABLE', 'DATEPICKER', 'DP_BRIDGE', 'RADIO', 'CHECKBOX', 'INPUT', 'SELECT',
   'TABS', 'COLLAPSE', 'LOADER', 'RING_MODAL', 'MODAL_ANCHOR', 'MODAL_SPECS',
-  'GANTT_MOUNT', 'STANDUP_MOUNT', 'TOAST', 'TOAST_RING',
+  'GANTT_MOUNT', 'STANDUP_MOUNT', 'BACKLOG_MOUNT', 'TOAST', 'TOAST_RING',
 ]);
 const I18N_SUFFIX = new Set(['T', 'I']);
 function bridgeLayer(token) {

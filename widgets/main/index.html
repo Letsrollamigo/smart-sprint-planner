@@ -2266,6 +2266,7 @@
        вызывает programmatic .click() на нужном tracker — это запускает существующий handler. -->
   <div class="tabs">
     <span id="sspTabsHost" data-ssp-tabs-host data-selected="planning" data-tabs-json="[]" style="display:block;width:100%"></span>
+    <button class="tab-btn tab-state-tracker" id="tabBtnBacklog" data-tab="backlog" data-i18n="tabBacklog" aria-hidden="true" tabindex="-1" style="display:none">Работа с бэклогом</button>
     <button class="tab-btn tab-state-tracker active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning" aria-hidden="true" tabindex="-1" style="display:none">Планирование</button>
     <button class="tab-btn tab-state-tracker" id="tabBtnGantt" data-tab="gantt" data-i18n="tabGantt" aria-hidden="true" tabindex="-1" style="display:none">Диаграмма Ганта</button>
     <button class="tab-btn tab-state-tracker" data-tab="history" data-i18n="tabHistory" aria-hidden="true" tabindex="-1" style="display:none">История спринтов</button>
@@ -2502,6 +2503,15 @@
       </div>
     </div>
     <!-- v5.6.0 — Этап 4: preview-карточка #planning-level-gantt удалена; Гант переехал на верхний уровень в #tab-gantt -->
+  </div>
+
+  <!-- ════ ВКЛАДКА: РАБОТА С БЭКЛОГОМ (#21 слайс 3 — вид «по зонам») ════
+       Шапка (селектор спринта / переключатель «По зонам/Дерево» / query-assist) и
+       вид «Дерево» — слайсы 5-6; здесь — только вид «по зонам» в #backlogContainer. -->
+  <div class="tab-panel" id="tab-backlog">
+    <div id="backlogLoading" class="banner banner--info hidden" data-i18n="backlogLoading">Загрузка…</div>
+    <div id="backlogEmpty" class="banner banner--info hidden" data-i18n="backlogZonesEmpty">Зоны не заданы — добавьте маппинг состояние → роль</div>
+    <div id="backlogContainer"></div>
   </div>
 
   <!-- ════ ВКЛАДКА: ДИАГРАММА ГАНТА (v5.6.0, Этап 4 — D6/D41/D42) ════ -->

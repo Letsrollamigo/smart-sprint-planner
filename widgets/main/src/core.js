@@ -1360,7 +1360,7 @@
      Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
-  var SSP_DASH_NODES = ['sprint-params','planning-roles','planning-people','planning-standup','gantt','history'];
+  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history'];
 
   /* #25 Ф2 dash-shell вынесен в dash-shell.js (Фаза 5 слайс 13, домен E6) за __SSP_DASH_SHELL.
      SSP_DASH_NODES остаётся в ядре (читается init-зоной _loadAndRenderProject) — приходит депом.
@@ -2180,6 +2180,7 @@
     var host = document.getElementById('sspTabsHost');
     if (!host) return;
     host.dataset.tabsJson = JSON.stringify([
+      { id: 'backlog',  title: T('tabBacklog')  || 'Работа с бэклогом' },
       { id: 'planning', title: T('tabPlanning') || 'Планирование' },
       { id: 'gantt',    title: T('tabGantt')    || 'Диаграмма Ганта' },
       { id: 'history',  title: T('tabHistory')  || 'История спринтов' }
@@ -2218,7 +2219,8 @@
          распространяется на planning/gantt/history/settings (всё что не settings overlay). */
       document.body.classList.toggle('planner-wide',
         btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
-        btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings');
+        btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
+        btn.dataset.tab === 'backlog');
       /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
       var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
       var tabsHost = document.getElementById('sspTabsHost');
@@ -2258,6 +2260,24 @@
                  || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
           if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
         } catch(e){ diag('gantt render on tab switch err: '+e,'err'); }
+      }
+      /* #21 слайс 3 — Работа с бэклогом: грузим transient-пул (§4: не храним,
+         спрашиваем трекер при открытии вкладки) и рендерим вид «по зонам». */
+      if (btn.dataset.tab === 'backlog') {
+        var _blZones = _settings && Array.isArray(_settings.backlogZones) && _settings.backlogZones.length;
+        if (!_blZones) {
+          renderBacklog(); /* зоны не настроены → empty-баннер, без бесполезного fetch всего проекта */
+        } else {
+          var blLoad = document.getElementById('backlogLoading');
+          if (blLoad) blLoad.classList.remove('hidden');
+          loadBacklogPool()
+            .then(function(){ renderBacklog(); })
+            .catch(function(e){
+              if (blLoad) blLoad.classList.add('hidden');
+              diag('backlog load err: '+e,'err');
+              try { toast(T('backlogLoadErr'), 'err'); } catch(_){}
+            });
+        }
       }
       if (btn.dataset.tab === 'settings') {
         checkSettingsManager().then(function(canManage) {
@@ -3894,6 +3914,48 @@
     };
   }
   function renderGanttChart() { return GANTT_VIEW.renderGanttChart(_ganttDeps()); }
+
+  /* ═══ #21 БЭКЛОГ (слайс 2b) — async-loader пула ════════════════
+     Транзиентный пул (§4 спеки: НЕ храним — спрашиваем трекер при открытии вкладки);
+     deps собираются per-call, логика — в domain/backlog-loader.js. Рендер — слайс 3. */
+  var BACKLOG_LOADER = (typeof window !== 'undefined' && window.__SSP_BACKLOG_LOADER) || {};
+  var BACKLOG_PAGE = 50, MAX_BACKLOG_TOTAL = 1000;
+  var _backlogPool = null;
+  function _backlogDeps() {
+    return {
+      t: T, toast: toast, diag: diag,
+      ctx: _ctx, settings: _settings, host: _host,
+      roles: ALL_ROLES, getActiveRoles: getActiveRoles,
+      backlogPage: BACKLOG_PAGE, maxBacklogTotal: MAX_BACKLOG_TOTAL,
+      state: {
+        getSettings: function () { return _settings; },
+        setBacklogPool: function (p) { _backlogPool = p; },
+        getBacklogPool: function () { return _backlogPool; },
+      },
+    };
+  }
+  function loadBacklogPool() { return BACKLOG_LOADER.loadBacklogPool(_backlogDeps()); }
+
+  /* ═══ #21 БЭКЛОГ (слайс 3) — render-делегатор вида «по зонам» ════
+     Тонкий делегатор + deps-фабрика; логика — в domain/backlog-view.js (VM из
+     buildBacklogVm + обогащение лейблами/спросом → мост __SSP_BACKLOG_MOUNT). */
+  var BACKLOG_VM   = (typeof window !== 'undefined' && window.__SSP_BACKLOG_VM_PURE) || {};
+  var BACKLOG_VIEW = (typeof window !== 'undefined' && window.__SSP_BACKLOG_VIEW) || {};
+  var BACKLOG_PAGE_SIZE = 25;
+  function _backlogViewDeps() {
+    return {
+      t: T, diag: diag,
+      buildBacklogVm: BACKLOG_VM.buildBacklogVm,
+      getActiveRoles: getActiveRoles, roleLabel: roleLabel,
+      fmtHoursOnly: fmtHoursOnly, pageSize: BACKLOG_PAGE_SIZE,
+      state: {
+        getSettings: function () { return _settings; },
+        getBacklogPool: function () { return _backlogPool; },
+        getYtBase: function () { return _ytBase; },
+      },
+    };
+  }
+  function renderBacklog() { return BACKLOG_VIEW.renderBacklog(_backlogViewDeps()); }
 
   /* v5.4.0 — Удалены: вторичный tab-btn handler инициализации distrib (его задача
      теперь в основном handler 2791-2818 через ветку refreshDistribForCurrentSprint())

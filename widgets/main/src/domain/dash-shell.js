@@ -64,6 +64,10 @@
     /* 1. Параметры спринта (D6) */
     tree.appendChild(mkItem('sprint-params', 'treeSprintParams', 'settings'));
 
+    /* 1b. Работа с бэклогом (#21 — funnel «что делать» перед планированием).
+       Иконка 'folder' (пул/коллекция), не 'task' — чтобы не дублировать группу «Планирование». */
+    tree.appendChild(mkItem('backlog', 'tabBacklog', 'folder'));
+
     /* 2. Планирование (раскрывающаяся группа с детьми Роли/Люди/Stand-up) */
     var grp = document.createElement('details'); grp.className = 'ssp-tree__group'; grp.open = true;
     var sum = document.createElement('summary'); sum.className = 'ssp-tree__group-summary';
@@ -96,6 +100,7 @@
     /* Маппинг устаревшего состояния (activeTab/planningLevel) в новое dashNode. */
     var ui = deps.draftGet('ui') || {};
     var t = ui.activeTab || 'planning';
+    if (t === 'backlog') return 'backlog';
     if (t === 'gantt')   return 'gantt';
     if (t === 'history') return 'history';
     var lvl = ui.planningLevel || deps.state.getPlanningLevel() || 'roles';
@@ -117,6 +122,7 @@
     function _clickTab(t) { var el = document.querySelector('.tab-btn[data-tab="'+t+'"]'); if (el && !el.classList.contains('active')) el.click(); }
     function _clickLevel(l){ var el = document.querySelector('.planning-level-btn[data-level="'+l+'"]'); if (el && !el.classList.contains('active')) el.click(); }
     if (nodeId === 'sprint-params')    { _clickTab('planning'); }
+    else if (nodeId === 'backlog')          { _clickTab('backlog'); }
     else if (nodeId === 'planning-roles')   { _clickTab('planning'); _clickLevel('roles'); }
     else if (nodeId === 'planning-people')  { _clickTab('planning'); _clickLevel('people'); }
     else if (nodeId === 'planning-standup') { _clickTab('planning'); _clickLevel('standup'); }
