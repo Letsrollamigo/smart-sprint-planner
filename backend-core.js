@@ -223,7 +223,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.15.1';
+var APP_VERSION = '2.15.2';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -291,6 +291,59 @@ function migrateRoleItemsObj(ri) {
     });
   });
   return ri;
+}
+
+/* v2.15.2 — read-time нормализатор settings: ремап legacy-orphan ключей роли
+   dev1c→devPlatform (внутренняя линия v7.x «Разработка 1С»). Full-rebuild (v2.1.x) мигрировал
+   sprint/roleItems/history, но field-ключи НАСТРОЕК — нет → сироты бессрочно
+   бриковали любой save (invalid_settings_structure): форма collect() делает
+   Object.assign({}, initial) и passthrough'ит весь сохранённый блоб, включая
+   незамапленные ключи, которые строгий validateSettings отклоняет. Чистим блоб
+   ПЕРЕД отдачей клиенту (и опционально на write — см. POST /sprint-data).
+   Параллель migrateSprintObj/migrateRoleItemsObj. namespace-agnostic (работает с
+   распарсенным объектом, не с scbt_/ssp_ ключами) → байт-идентично community. */
+var SETTINGS_FIELD_KEY_REMAP = [
+  ['fieldDev',       'fieldDevPlatform'],
+  ['fieldFactDev',   'fieldFactDevPlatform'],
+  ['userFieldDev1c', 'userFieldDevPlatform']
+];
+var SETTINGS_ROLE_KEY_REMAP = { dev1c: 'devPlatform' };
+
+function migrateSettingsObj(settings) {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return settings;
+  var i;
+  // (1) legacy field-orphans → canonical, БЕЗ перезатирания непустого canonical.
+  //     orphan удаляем всегда (иначе whitelist всё равно отклонит блоб).
+  for (i = 0; i < SETTINGS_FIELD_KEY_REMAP.length; i++) {
+    var legacy = SETTINGS_FIELD_KEY_REMAP[i][0];
+    var canon  = SETTINGS_FIELD_KEY_REMAP[i][1];
+    if (Object.prototype.hasOwnProperty.call(settings, legacy)) {
+      var canonEmpty = !Object.prototype.hasOwnProperty.call(settings, canon) ||
+                       settings[canon] === null || settings[canon] === undefined;
+      if (canonEmpty) settings[canon] = settings[legacy];
+      delete settings[legacy];
+    }
+  }
+  // (2) activeRoles: ремап legacy → canonical, фильтр по ROLE_KEYS, dedup (first-seen).
+  if (Array.isArray(settings.activeRoles)) {
+    var src = settings.activeRoles, out = [], seen = {};
+    for (i = 0; i < src.length; i++) {
+      var r = src[i];
+      if (Object.prototype.hasOwnProperty.call(SETTINGS_ROLE_KEY_REMAP, r)) r = SETTINGS_ROLE_KEY_REMAP[r];
+      if (ROLE_KEYS.indexOf(r) < 0) continue;
+      if (Object.prototype.hasOwnProperty.call(seen, r)) continue;
+      seen[r] = true;
+      out.push(r);
+    }
+    settings.activeRoles = out;
+  }
+  // (3) defensive: снести любой ключ вне whitelist (будущие неизвестные сироты не
+  //     должны бриковать save). ПОСЛЕ (1), чтобы значения уже спаслись в canonical.
+  var allKeys = Object.keys(settings);
+  for (i = 0; i < allKeys.length; i++) {
+    if (ALLOWED_SETTINGS_KEYS.indexOf(allKeys[i]) < 0) delete settings[allKeys[i]];
+  }
+  return settings;
 }
 
 function migrateHistoryArr(h) {
@@ -1738,6 +1791,10 @@ var ENDPOINTS = [
         // Storage может содержать данные от v4.5.x — клиент должен получать только латинские.
         sprint    = migrateSprintObj(sprint);
         roleItems = migrateRoleItemsObj(roleItems);
+        // v2.15.2 — ремап legacy-orphan ключей настроек (dev1c→devPlatform). Клиент
+        // получает чистый блоб → collect() passthrough больше не re-POST'ит сирот,
+        // которые бриковали save через invalid_settings_structure.
+        settings  = migrateSettingsObj(settings);
 
         // v5.9.0 — D59: централизованная orphan-detection. Frontend более не делает этого
         // самостоятельно при первом чтении (см. main.js:migrateOnRead defensive fallback).
@@ -2862,6 +2919,8 @@ if (typeof module !== 'undefined' && module.exports) {
     validateMigrationLog:         validateMigrationLog,
     // Migration
     migrateSprintObj:             migrateSprintObj,
+    migrateRoleItemsObj:          migrateRoleItemsObj,
+    migrateSettingsObj:           migrateSettingsObj,        // v2.15.2 — legacy dev1c→devPlatform settings ремап
     migrateHistoryArr:            migrateHistoryArr,
     migrateSnap:                  migrateSnap,
     versionLt:                    versionLt,

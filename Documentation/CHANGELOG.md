@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.15.2] — 2026-06-25
+
+> **Fix: projects configured in early plugin versions could no longer save their settings.**
+
+### Fixed
+
+- **Legacy «dev1c» role remapped on read.** Projects first configured in an early plugin version stored a deprecated functional-role key (`dev1c`) and its orphaned settings field-keys. The settings form echoed these stale keys back on every save, so the strict validator rejected the whole blob and **every settings save failed with `invalid_settings_structure`** (including the silent auto-save on open). Settings are now normalized on read: the legacy `dev1c` role and its field-keys are remapped to `devPlatform` (values preserved), invalid roles are dropped, and any unknown key is stripped — so saving works again.
+
+---
+
 ## [2.15.1] — 2026-06-25
 
 > **Fix: the settings state-pickers didn't load the list when the «State» field was selected.**
