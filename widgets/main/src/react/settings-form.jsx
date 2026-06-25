@@ -860,19 +860,20 @@ function SettingsForm(props) {
     pauseStates: Array.isArray(initial.backlogPauseStates) ? initial.backlogPauseStates.slice() : [],
   }));
 
-  /* Bundle-состояния state-поля проекта — общий источник для rollup + standup.
-     Грузятся один раз при mount через props.loadFieldValues(stateFieldName)
-     (как _stateRollupBundleStates в legacy). */
+  /* Bundle-состояния state-поля проекта — общий источник для rollup + standup + backlog.
+     Реактивно перезагружаются при смене ЖИВОГО выбора State-поля (fields.fieldState),
+     а не один раз на mount по сохранённому props.stateFieldName — иначе выбор/смена
+     поля состояния не подтягивала бандл (пустой пикер). Паттерн — как cascade.kindField. */
   const [bundleStates, setBundleStates] = React.useState([]);
   React.useEffect(() => {
     let alive = true;
     if (props.loadFieldValues) {
-      Promise.resolve(props.loadFieldValues(props.stateFieldName || 'State'))
+      Promise.resolve(props.loadFieldValues(fields.fieldState || props.stateFieldName || 'State'))
         .then((vals) => { if (alive && Array.isArray(vals)) setBundleStates(vals); })
         .catch(noop);
     }
     return () => { alive = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fields.fieldState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Two-pane: активная секция (левый nav → правый pane). Дефолт — первая секция.
      Заменяет прежний аккордеон (openCard/toggleCard) — плотные секции не тянулись

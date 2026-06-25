@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.15.1] — 2026-06-25
+
+> **Fix: the settings state-pickers didn't load the list when the «State» field was selected.**
+
+### Fixed
+
+- **State bundle reacts to the live «State» field selection.** The «Stand-up assist» (done states), «State rollup» and «Backlog» (start pool, paused states, zones) settings blocks fetched the available-states list once when the form opened, keyed by the saved field. Picking or changing the «State» field in the same form didn't reload the list and the picker stayed empty. The list is now re-read reactively from the current field selection.
+
+---
+
 ## [2.15.0] — 2026-06-25
 
 > **New «Backlog» module — a pre-planning phase before sprint planning (#21).**
