@@ -14,14 +14,15 @@ A short guide to working with the plugin: creating a sprint, adding tasks, distr
 2. [How to open the plugin in your project](#2-how-to-open-the-plugin-in-your-project)
 3. [First-time setup: what the project admin configures](#3-first-time-setup-what-the-project-admin-configures)
 4. [Creating a new sprint](#4-creating-a-new-sprint)
-5. [Picking tasks and setting role capacity](#5-picking-tasks-and-setting-role-capacity)
-6. [Distributing tasks among assignees](#6-distributing-tasks-among-assignees)
-7. [Calendar timeline](#7-calendar-timeline)
-8. [Daily stand-up view](#8-daily-stand-up-view)
-9. [Sprint stages: review, commit, complete](#9-sprint-stages-review-commit-complete)
-10. [Sprint history and re-editing](#10-sprint-history-and-re-editing)
-11. [Who can do what: group permissions](#11-who-can-do-what-group-permissions)
-12. [FAQ](#12-faq)
+5. [Working with the backlog](#5-working-with-the-backlog)
+6. [Picking tasks and setting role capacity](#6-picking-tasks-and-setting-role-capacity)
+7. [Distributing tasks among assignees](#7-distributing-tasks-among-assignees)
+8. [Calendar timeline](#8-calendar-timeline)
+9. [Daily stand-up view](#9-daily-stand-up-view)
+10. [Sprint stages: review, commit, complete](#10-sprint-stages-review-commit-complete)
+11. [Sprint history and re-editing](#11-sprint-history-and-re-editing)
+12. [Who can do what: group permissions](#12-who-can-do-what-group-permissions)
+13. [FAQ](#13-faq)
 
 **Appendix A.** [Full reference of project settings](#appendix-a-full-reference-of-project-settings)
 
@@ -64,9 +65,9 @@ The planner has two parts:
 
 - **Project picker.** Work starts here — until a project is picked, the right side shows a "pick a project" hint.
 - **Sprint dropdown.** The current sprint is on top, followed by completed ones. Switching sprints instantly re-renders what's shown on the right.
-- **Sprint status badge** and **"Edit draft exists" badge** — short hints about the sprint stage and an unfinished edit (see [section 9](#9-sprint-stages-review-commit-complete) and [section 10](#10-sprint-history-and-re-editing)).
+- **Sprint status badge** and **"Edit draft exists" badge** — short hints about the sprint stage and an unfinished edit (see [section 10](#10-sprint-stages-review-commit-complete) and [section 11](#11-sprint-history-and-re-editing)).
 - **"+ New sprint" button** (see [section 4](#4-creating-a-new-sprint)).
-- **Navigation tree** — switch between sections: "Sprint parameters", "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Gantt chart", "Sprint history".
+- **Navigation tree** — switch between sections: "Sprint parameters", "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Working with the backlog" (if configured — see [section 5](#5-working-with-the-backlog)), "Gantt chart", "Sprint history".
 - **«Share» button** (at the bottom of the navigation tree) — copies a link to the current view (see below).
 - **Service links at the bottom:** the user guide, feedback, language switcher.
 
@@ -84,7 +85,7 @@ The button is active when a sprint is open. Share the link **after saving the sp
 
 If the recipient opens a link to a project they don't have access to (or the planner isn't connected to that project), they'll see a message and can pick an accessible project instead.
 
-Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save parameters** and **Confirm** buttons are for fixing sprint stages (see [section 9](#9-sprint-stages-review-commit-complete)), not for saving data itself.
+Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save parameters** and **Confirm** buttons are for fixing sprint stages (see [section 10](#10-sprint-stages-review-commit-complete)), not for saving data itself.
 
 ---
 
@@ -114,7 +115,7 @@ After saving these four settings, the plugin becomes functional: you can create 
 
 **What else can be configured** (not required for launch): groups that can confirm sprints; groups that can only change assignees; monthly hour quotas; cascading effort aggregation; automatic state roll-up from child tasks to parent containers; "external ID" field for integration with another system; daily stand-up settings. The full list is in [Appendix A](#appendix-a-full-reference-of-project-settings).
 
-> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 11](#11-who-can-do-what-group-permissions).
+> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 12](#12-who-can-do-what-group-permissions).
 
 ---
 
@@ -139,9 +140,9 @@ After saving, the sprint appears in the sprint dropdown in the plugin header and
 
 ### What's next
 
-The new sprint is in the **planning** stage — which means you can freely pick tasks, change role capacities, and distribute assignees. Until the sprint is reviewed (see [section 9](#9-sprint-stages-review-commit-complete)), everything in it is a working draft.
+The new sprint is in the **planning** stage — which means you can freely pick tasks, change role capacities, and distribute assignees. Until the sprint is reviewed (see [section 10](#10-sprint-stages-review-commit-complete)), everything in it is a working draft.
 
-Next steps — in [section 5 (picking tasks and capacity)](#5-picking-tasks-and-setting-role-capacity).
+Next steps — in [section 6 (picking tasks and capacity)](#6-picking-tasks-and-setting-role-capacity).
 
 ### Good to know
 
@@ -151,7 +152,56 @@ Next steps — in [section 5 (picking tasks and capacity)](#5-picking-tasks-and-
 
 ---
 
-## 5. Picking tasks and setting role capacity
+## 5. Working with the backlog
+
+Before filling a sprint with tasks by hand (section 6), it's convenient to first sort through the **shared task pool** — what came from the customer and hasn't yet been split across roles and sprints. There's a dedicated navigation-tree section for this — **Working with the backlog**.
+
+This is a **pre-planning phase**: you look at the pool, understand which tasks are at which stage and who will work on them, and lay the right ones straight into the sprint composition by role.
+
+> The section appears in the navigation tree only if the admin has configured the backlog (the pool's start states and the "state → role" zones) — see [Appendix A](#appendix-a-full-reference-of-project-settings). If it isn't configured, the section won't be there.
+
+### What's on the page
+
+In the section header:
+
+- **Target sprint** — which sprint tasks will be laid into (taken from the shared sprint selector). Until a sprint is picked, you'll see the hint "Select an active sprint".
+- **Filter** — a YouTrack search box (query-assist, the same syntax as in task picking): narrow the pool by any condition.
+- **View switch:** **By zones** and **Tree**.
+
+#### "By zones" view
+
+The pool is grouped by **pipeline zones** — the stages a task passes through. Each zone is a state (or several) mapped to the role(s) that work at that stage (for example, "Analysis → Analysis role", "In development → Backend/Frontend"). The zones and their order are set by the admin (see Appendix A).
+
+- **Customer pool** — tasks in the start states, not yet taken into work.
+- Then come the zones in pipeline order.
+- **Other** — tasks in states that didn't fall into any zone. They are **not lost**: the "Other" bucket collects them, and a warning appears at the top listing the unmapped states — a signal to the admin to finish configuring the zones.
+
+#### "Tree" view
+
+The same tasks, grouped by the **Epic ▸ Story ▸ Task** hierarchy (by task links). Handy when you need to see which larger theme a task belongs to. Tasks without a parent go into the "No parent" group.
+
+### Labels on task cards
+
+- **Needs estimate** — the task has no estimate for the required role (it can't be laid out meaningfully until it's estimated).
+- **Carryover** / **Continuation** — based on the transition history: the task was already in work in a previous sprint (carried over / continuing).
+- **Paused** — the task is in a paused state or has a pause tag (both are configurable).
+
+### Laying a task into a sprint
+
+To send a task from the pool into the sprint composition:
+
+1. Make sure a **target sprint** is selected at the top.
+2. On the task card, click **To sprint**.
+3. The **Lay into sprint** dialog opens: the plugin suggests the **roles for the sprint** — it automatically checks the roles by the task's zone, and you can adjust them manually. Next to each role its remaining resource is shown.
+4. Click **Lay** — the task lands in the composition of the selected roles as "included in plan". If the task is already in the selected role's composition, it won't be duplicated.
+
+After laying out, the task appears in the "Composition by roles" mode (section 6) under the corresponding roles — from there you work with it as usual (capacity, per-person distribution).
+
+> 💡 "Working with the backlog" is the entry into a sprint "from the top", from the customer pool. If you already know the tasks you need, you can still add them directly with the "+ Pick tasks" button in a role's composition (section 6). Both paths lead to the same sprint composition.
+
+---
+
+## 6. Picking tasks and setting role capacity
 
 When the sprint is created, you need to decide two things:
 
@@ -235,17 +285,17 @@ Click the **ID**, **Priority** or **Cross-priority** column header to sort. The 
 
 ### When composition is ready
 
-When tasks are picked, capacity is set, and the sum of hours fits within capacity — the role composition can be **reviewed**: the **Confirm composition** button in the expanded card. What this means — see [section 9](#9-sprint-stages-review-commit-complete).
+When tasks are picked, capacity is set, and the sum of hours fits within capacity — the role composition can be **reviewed**: the **Confirm composition** button in the expanded card. What this means — see [section 10](#10-sprint-stages-review-commit-complete).
 
 Each role is reviewed separately on purpose — so a team where one role is ready earlier than the others doesn't have to wait for everyone.
 
 ---
 
-## 6. Distributing tasks among assignees
+## 7. Distributing tasks among assignees
 
 Once role compositions are picked, you usually need to decide **who specifically does what** and on which days. That's what the second mode of the **Planning** tab — **By assignees** — is for.
 
-> **Depends on personal-planning mode.** This section is available only when **Personal-planning mode** is enabled in settings (the [Capacity management](#appendix-a-full-reference-of-project-settings) section). When it is **off** (the "super-light" mode), the **Per-assignee distribution** nav item is **hidden**: no per-person capacity accounting is done, role capacity is entered **manually** on the "Shared resource allocation" tab, and task owners are assigned directly on the [Gantt chart](#7-calendar-timeline) — clicking a task opens the assignee picker.
+> **Depends on the planning model.** This section is available only with the **Light** model (the [Capacity management](#appendix-a-full-reference-of-project-settings) section). With the **Simple** model the **Per-assignee distribution** nav item is **hidden**: no per-person capacity accounting is done, role capacity is entered **manually** on the "Shared resource allocation" tab, and task owners are assigned directly on the [Gantt chart](#8-calendar-timeline) — clicking a task opens the assignee picker.
 
 ### How to enter
 
@@ -307,20 +357,20 @@ Changes in this table are saved automatically — a separate save button isn't n
 
 - **Calculate resource** — recalculates resources for all assignees by the hour quota and grade (useful if quota settings or roster changed).
 - **Save parameters** — commits the shared role parameters (same action as in the first mode).
-- **Confirm distribution** — moves the sprint from the *reviewed* stage to *committed*. When to click — see [section 9](#9-sprint-stages-review-commit-complete).
+- **Confirm distribution** — moves the sprint from the *reviewed* stage to *committed*. When to click — see [section 10](#10-sprint-stages-review-commit-complete).
 
 ### Good to know
 
-- **Change an assignee in one table → it updates everywhere.** Change an assignee via the dropdown here — the corresponding bar on the Gantt chart (see [section 7](#7-calendar-timeline)) immediately recolors. No two-way drift between views.
+- **Change an assignee in one table → it updates everywhere.** Change an assignee via the dropdown here — the corresponding bar on the Gantt chart (see [section 8](#8-calendar-timeline)) immediately recolors. No two-way drift between views.
 - **If someone changed an assignee directly in YouTrack** — click **Refresh task data**: the plugin pulls fresh values for all sprint tasks (up to 200 at a time).
 - **Switching roles with unsaved changes** — the plugin asks for confirmation so you don't accidentally lose your distribution.
-- **If an old completed sprint is selected** — all fields are greyed out (read-only). To change the distribution, open the sprint for editing from history (see [section 10](#10-sprint-history-and-re-editing)).
+- **If an old completed sprint is selected** — all fields are greyed out (read-only). To change the distribution, open the sprint for editing from history (see [section 11](#11-sprint-history-and-re-editing)).
 
 ---
 
-## 7. Calendar timeline
+## 8. Calendar timeline
 
-The **Gantt chart** tab shows the tasks of the active sprint on a timeline — who's doing what on which days. Each task is one horizontal bar; bar color matches the assignee, bar length matches the **Start / Finish** date range set in **By assignees** mode (see [section 6](#6-distributing-tasks-among-assignees)).
+The **Gantt chart** tab shows the tasks of the active sprint on a timeline — who's doing what on which days. Each task is one horizontal bar; bar color matches the assignee, bar length matches the **Start / Finish** date range set in **By assignees** mode (see [section 7](#7-distributing-tasks-among-assignees)).
 
 ### What's on the page
 
@@ -354,7 +404,7 @@ Possible reasons:
 
 ---
 
-## 8. Daily stand-up view
+## 9. Daily stand-up view
 
 There's a third mode on the **Planning** tab — **Stand-up**. It's made for short daily team meetings: open the mode, walk through three columns, close the meeting in 5 minutes.
 
@@ -388,7 +438,7 @@ Each card inside a column shows: task ID, title, assignee, actual/planned hours.
 
 ---
 
-## 9. Sprint stages: review, commit, complete
+## 10. Sprint stages: review, commit, complete
 
 A sprint in the plugin goes through **four sequential stages**:
 
@@ -396,7 +446,7 @@ A sprint in the plugin goes through **four sequential stages**:
 planning → reviewed → committed → finished
 ```
 
-Each stage is a **fixed checkpoint** you can return to (see [section 10](#10-sprint-history-and-re-editing)). Stages aren't "hard gates" — you can always go back if you need to fix something.
+Each stage is a **fixed checkpoint** you can return to (see [section 11](#11-sprint-history-and-re-editing)). Stages aren't "hard gates" — you can always go back if you need to fix something.
 
 Stages are **separate per role**. If three roles are active in the project, each has its own status. The plugin header shows a **rolled-up** status by the least-advanced stage: e.g. if two roles are in *committed* and one is in *reviewed*, the header shows *reviewed*.
 
@@ -439,7 +489,7 @@ Stages are **separate per role**. If three roles are active in the project, each
 
 **What's not allowed:** changing composition, role capacity, allocation hours. Tables become greyed out and not editable.
 
-If during the sprint you need to make a change that's blocked — you have to **open the sprint for editing** in Sprint history. This creates a working copy (edit draft) without destroying the fixed plan. Details — in [section 10](#10-sprint-history-and-re-editing).
+If during the sprint you need to make a change that's blocked — you have to **open the sprint for editing** in Sprint history. This creates a working copy (edit draft) without destroying the fixed plan. Details — in [section 11](#11-sprint-history-and-re-editing).
 
 **When to move forward:** when the sprint has actually ended.
 
@@ -465,13 +515,13 @@ After **Confirm**, the sprint moves to *finished* and its history card gets a gr
 
 ### What if you "miss the stage"
 
-- **Accidentally clicked Confirm composition** and now can't change tasks — open the sprint for editing from history (see [section 10](#10-sprint-history-and-re-editing)), make the edits, and reconfirm.
+- **Accidentally clicked Confirm composition** and now can't change tasks — open the sprint for editing from history (see [section 11](#11-sprint-history-and-re-editing)), make the edits, and reconfirm.
 - **Accidentally finished a sprint** — same thing: **Open for editing**, edit, re-finish with an outcome.
 - **Changed your mind about closing the sprint** already in the outcome dialog — click **Cancel**. The sprint stays as it was.
 
 ---
 
-## 10. Sprint history and re-editing
+## 11. Sprint history and re-editing
 
 The **Sprint history** tab shows all reviewed sprints of the project — 10 per page, newest first. It's both an archive and the entry point for two important actions: **open a sprint for editing** and **finish a sprint**.
 
@@ -494,10 +544,10 @@ Click the card — it expands and shows the full task table with assignees and h
 | **Excel** | Exports the sprint to Excel (tasks, estimates, actuals, allocations, assignees). Convenient for reports and discussion outside the plugin. |
 | **JSON** | Exports **this single sprint** to a JSON file — for backup or transfer to another project/instance (see below). |
 | **✏ Open for editing** | Creates an edit draft based on this sprint — see below. |
-| **✓ Finish** | Available if the sprint isn't finished yet. Opens the outcome dialog (see [section 9](#9-sprint-stages-review-commit-complete)). |
+| **✓ Finish** | Available if the sprint isn't finished yet. Opens the outcome dialog (see [section 10](#10-sprint-stages-review-commit-complete)). |
 | **🗑 Delete** | Full sprint deletion. Two-step confirmation. |
 
-Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 11](#11-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
+Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 12](#12-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
 
 ### Export and import history (JSON)
 
@@ -556,7 +606,7 @@ If an edit draft sits **more than 30 days without changes**, the plugin gently r
 
 ---
 
-## 11. Who can do what: group permissions
+## 12. Who can do what: group permissions
 
 Access to different actions in the plugin is regulated through **YouTrack groups**. In plugin settings, the project admin specifies which group is responsible for which permissions.
 
@@ -592,7 +642,7 @@ If you see a button hidden or a field greyed out — it's probably permissions. 
 
 ---
 
-## 12. FAQ
+## 13. FAQ
 
 **I changed something but I'm afraid to close the tab — will it really be saved?**
 Yes. The plugin saves your changes to the server automatically in the background. If you close the tab, get a coffee, and come back an hour later — you'll see everything exactly as you left it. The **Save parameters** and **Confirm** buttons are not for saving data, but for fixing sprint stages.
@@ -683,11 +733,15 @@ An admin section: only the project settings manager (a member of the settings ma
 
 Formula: `month_quota × rate × participation_percent × grade_coefficient`.
 
-**Assignee resource source** — determines how capacity is handled:
+**Assignee resource source** — chosen with a single **Planning model** dropdown:
 
-- **Personal-planning mode** — the master toggle. **Off** (default) — the "super-light" mode: the **Per-assignee distribution** tab is hidden, role capacity is entered manually, assignees are set on the Gantt chart; no per-person accounting is done. **On** — the **Per-assignee distribution** tab appears with per-person capacity calculation.
-- **Use personal planning to auto-calculate the shared resource** — the sum of people's capacities is automatically filled into the role's resource (the field becomes read-only). Available only when personal planning is enabled.
-- **Manual per-assignee resource** — each person's capacity is entered manually in hours instead of being auto-calculated from grade. Available only when personal planning is enabled.
+- **Simple** — no per-person calculation: just shared resource allocation by role. The "Per-assignee distribution" tab is hidden, role capacity is entered manually, and assignees are set directly on the Gantt chart. This is the lightest mode for small teams.
+- **Light** — per-person resource calculation; the "Per-assignee distribution" tab appears. Additionally, a **resource calculation method** is chosen:
+  - **Auto-calculate by formula** — people's capacity is calculated from the quota (the formula above), and their sum is automatically filled into the role's resource (the field becomes read-only).
+  - **Manual per-assignee entry** — each person's capacity is entered manually in hours instead of being auto-calculated from grade.
+- **Full (in development)** — not yet available (a stub); the extended capacity model will arrive in future versions.
+
+> Before version 2.14.0 these were three separate toggles ("Personal-planning mode" + two sub-modes). Now it's a single dropdown; the modes' behavior is unchanged.
 
 ### "Effort tracking" section
 
@@ -728,6 +782,15 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 
 - **Allow planning over the limits** — when enabled, a role's resource overlimit **does not block** the "Validate" button and doesn't trigger a warning dialog. A negative remainder is still highlighted in red as an indicator, and a mode chip is shown in the plugin header. Off by default (overlimit blocks validation).
 
+### "Backlog" section
+
+Configures the **Working with the backlog** module (see [section 5](#5-working-with-the-backlog)). If the section is left empty, the "Working with the backlog" item won't appear in the navigation tree.
+
+- **Start states (customer pool)** — the states in which a task counts as "new", not yet taken into work. They form the top "Customer pool" bucket.
+- **Pipeline zones (state → role)** — a table of stages: each zone is mapped to a state and one or more roles working at that stage. The zone order = pipeline order (changeable with arrows). A single state cannot be mapped twice. These zones drive the "By zones" view and the role auto-suggestion when laying a task into a sprint.
+- **Type filter** — which task types to show in the pool (values of the type field). The task-type field is taken from the "Cascade aggregation" → "Type field" setting.
+- **Pause states** / **Pause tags** — states (or comma-separated YouTrack tags) by which a task in the pool is marked with the "Paused" label.
+
 ### "Other" section
 
 - **Interface language** — language switcher (duplicates the one in the plugin header).
@@ -736,4 +799,4 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 
 ---
 
-_Updated 2026-06-18, plugin v2.13.0._
+_Updated 2026-06-25, plugin v2.15.1._

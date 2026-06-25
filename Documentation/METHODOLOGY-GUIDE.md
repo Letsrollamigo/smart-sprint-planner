@@ -81,6 +81,18 @@ a vanilla YouTrack agile board may serve you better.
 The plugin doesn't replace your ceremonies — it gives each one a
 purpose-built screen. Here's where to point your team during each event.
 
+> **Where the planner lives.** Planning itself lives in the **YouTrack
+> main menu** (the sprint-planner item): on the left, the project,
+> sprint and section tree; on the right, the working area. The
+> housekeeping **project settings** (roles, fields, planning model,
+> permissions, backlog) stay in the plugin block inside *project
+> settings* — you visit them rarely. The main-menu page address
+> reflects project + sprint + section, so the **handoff between leads**
+> is done by link: the analysis lead prepares the composition and sends
+> a link to the development lead, who opens the exact same view and (if
+> they have the rights) assigns people. The link only takes you to a
+> view; what the recipient can do is governed by their permissions.
+
 ### Sprint Planning — composition, capacity, working drafts
 
 This is the plugin's home turf. Open the **Planning** tab and walk down
@@ -137,6 +149,31 @@ Planning then becomes a fitting exercise across role budgets, not an
 estimation marathon. Refinement is also where you assign work-item types
 that DTA needs — without them, time logged later won't aggregate.
 
+**The "Working with the backlog" module as a refinement tool.** Since
+version 2.15.0 the plugin has a dedicated navigation-tree section —
+**"Working with the backlog"**. It's a preliminary phase *before*
+planning: the customer's issue pool, grouped either **by zones** of the
+pipeline (state → role(s) — e.g. `Analysis → analyst`,
+`In development → backend/frontend`) or as an **Epic ▸ Story ▸ Task**
+tree. Methodologically it turns refinement from "estimate ahead in the
+fields" into **visual queue triage**: you see how many issues sit at
+each stage, which need an estimate (a "Needs estimate" badge), what is
+carried over from the previous sprint ("Carryover" / "Continuation"
+badges derived from the transition history), and what is paused. Straight
+from the pool an issue is **laid out into the sprint** with the "To
+sprint" button — the plugin suggests the roles for the zone, shows each
+role's remaining resource, and drops the issue into the composition.
+
+**How this changes the refinement ceremony:** instead of "we went down
+the list in the tracker", the team opens the "By zones" view, checks the
+conveyor left to right (customer pool → analysis → development → …), and
+right there lays out the work-ready issues into the nearest sprint by
+role, without waiting for planning. Zones are an explicit model of your
+delivery conveyor; keep them in the same order as your real stages.
+Issues in unmapped states aren't lost — they land in an "Other" bucket
+with a warning that this is a signal to fine-tune the zones, not to lose
+the work.
+
 ---
 
 ## 3. Capacity planning: KPI, Grade and Availability
@@ -145,6 +182,17 @@ Per-person capacity in the plugin is the product of three independent
 inputs. Tuning them honestly is what makes the overlimit signal
 trustworthy — and what makes a "we have room" answer in planning mean
 something.
+
+> **Pick the depth of the model first.** In settings ("Capacity
+> management" → **"Planning model"**) there are three levels: **Simple**
+> — no per-person calculation, the role's capacity is entered manually
+> as a single number (a fit for small teams where per-person accounting
+> is excess bookkeeping); **Light** — the full per-person calculation
+> below (KPI × Grade × Availability), with the calculation method set to
+> "auto by formula" or "manual per person"; **Full** — an extended
+> capacity model, still in development. This whole section applies to the
+> **Light** model; in Simple you just enter the role's hours and skip
+> the per-person mechanics.
 
 ### The three knobs and what each one models
 
