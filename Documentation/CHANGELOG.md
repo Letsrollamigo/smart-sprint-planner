@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.15.0] — 2026-06-25
+
+> **New «Backlog» module — a pre-planning phase before sprint planning (#21).**
+
+### Added
+
+- **«Backlog» tab.** A pool of tracker tasks (start states + pipeline zones) shown two ways: **«By zones»** (stage → roles) and **«Tree»** (Epic ▸ Story ▸ Task via cascade links). A view toggle and a task filter (query-assist, YouTrack syntax) live in the tab header.
+- **«Lay into sprint».** A pooled task is laid into the sprint's role composition: a modal auto-suggests roles by the zone mapping with manual override; the target sprint comes from the shared selector.
+- **Per-role load bar.** Demand (Σ remaining) vs role resource (via an adapter socket, independent of the #45 capacity model), over-limit in red.
+- **Task labels.** «Needs estimate», «Carryover»/«Continuation» (from transition history), «Paused».
+- **Fail-loud (§8).** Tasks in unmapped states aren't lost: an «Other» bucket plus a warning that lists the unmapped states to configure.
+
+### Compatibility
+
+- Additive optional module settings (`backlogZones`/`backlogStartStates`/`fieldType`, etc.) and an additive `resolved` field in the `field-values` response; snapshot schema and `CURRENT_PLUGIN_VERSION` untouched. Backlog membership is computed, not stored.
+
+---
+
 ## [2.14.0] — 2026-06-18
 
 > **«Planning model» selector (simple / light / full) replacing the three personal-planning toggles.**
