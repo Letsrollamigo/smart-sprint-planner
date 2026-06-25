@@ -79,6 +79,25 @@
     }).catch(function (e) { deps.state.setProjectGroups([]); deps.diag('Groups ERR: ' + String(e), 'err'); });
   }
 
+  /* ── loadProjectTags — справочник тегов инстанса для picker'а «Теги паузы» (#21).
+     v2.15.3: YT REST /tags по умолчанию отдаёт ~42 (страничный кап) → форсим $top,
+     чтобы подбор покрывал ВСЕ теги. Frontend-direct, как loadProjectGroups. Возвращает
+     уникальные имена (settings.backlogPauseTags хранит имена). ── */
+  function loadProjectTags(deps) {
+    return deps.state.getHost().fetchYouTrack('tags', {
+      query: { fields: 'id,name', $top: 10000 }
+    }).then(function (tg) {
+      var raw = Array.isArray(tg) ? tg : [];
+      var seen = {}, out = [];
+      raw.forEach(function (t) {
+        var name = (t && t.name && t.name.trim()) ? t.name.trim() : null;
+        if (name && !seen[name]) { seen[name] = true; out.push(name); }
+      });
+      deps.diag('Tags loaded: ' + out.length, 'ok');
+      return out;
+    }).catch(function (e) { deps.diag('Tags ERR: ' + String(e), 'err'); return []; });
+  }
+
   /* ── _refreshFeatureStatusBar — статус-бар активных функциональных модулей
      (зелёная/красная точка + локализованный on/off для 6 chip'ов). Вызывается
      после каждого обновления _settings (initial load, save) и после applyI18N. ── */
@@ -224,6 +243,7 @@
     loadMe: loadMe,
     loadProjectFields: loadProjectFields,
     loadProjectGroups: loadProjectGroups,
+    loadProjectTags: loadProjectTags,
     _refreshFeatureStatusBar: _refreshFeatureStatusBar,
     loadAllData: loadAllData,
   };

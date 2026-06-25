@@ -1202,6 +1202,9 @@
     .ssp-settings-form select,
     .ssp-settings-form .app-select,
     .ssp-settings-form input,
+    /* v2.15.3 — вендорный Ring Checkbox рендерит лейбл на --ring-font-size (13px),
+       крупнее формы; приравниваем к 12px, чтобы масштаб опций был единым. */
+    .ssp-settings-form .ring-checkbox-label,
     .ssp-settings-form .role-check__label { font-size: 12px; }
     .ssp-settings-form .card-subtitle { font-size: 12px; }
     .ssp-settings-form .hint { font-size: 12px; }
@@ -1242,6 +1245,14 @@
     .ssp-settings-form .ssp-dta-table td:last-child { padding-right: 0; width: 34px; }
     .ssp-settings-form .ssp-dta-table input,
     .ssp-settings-form .ssp-dta-table select { width: 100%; box-sizing: border-box; }
+    /* #21 v2.15.3 — зоны бэклога: фиксированная раскладка колонок
+       состояние(38%) | роли(заполнение) | управление(92px под ↑ ↓ ×).
+       Дефолтные dta-правила (td:first 50%, td:last 34px) не давали роли-ячейке
+       ширины под ↑↓× → лейблы ролей наезжали друг на друга и на кнопки. */
+    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones { table-layout: fixed; }
+    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:first-child { width: 38%; }
+    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:nth-child(2) { width: auto; }
+    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:last-child { width: 92px; }
 
     /* v2.0.0 D4 R2/R3 — make Ring DatePicker fill the entire date cell.
        Original <input data-ssp-datepicker> behaviour: width:100% (via .tbl td

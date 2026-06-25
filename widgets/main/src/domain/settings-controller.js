@@ -116,6 +116,11 @@
       t:                  deps.T,
       initialGroups:      st.getProjectGroups() || [],
       loadGroups:         function () { return deps.loadProjectGroups().then(function () { return st.getProjectGroups(); }); },
+      /* v2.15.3 — теги для picker'а «Теги паузы» (#21): кэш на сессию формы. */
+      loadTags:           function () {
+        if (deps._tagsCache) return Promise.resolve(deps._tagsCache);
+        return deps.loadProjectTags().then(function (tags) { deps._tagsCache = tags; return tags; });
+      },
       enumFields:         (_buildFieldsByType(deps).enumFields) || [],
       stateFieldName:     (settings && typeof settings.fieldState === 'string' && settings.fieldState) ? settings.fieldState : 'State',
       loadFieldValues:    function (fieldName) {

@@ -611,9 +611,9 @@ function BacklogSection(props) {
   const roleOpts = props.activeRoles || [];
   const uiLang = props.uiLang;
   const [typeBundle, setTypeBundle] = React.useState([]);
-  /* ponytail: pauseTags — свободный ввод через запятую (у тегов нет бандла, в отличие
-     от состояний). Апгрейд до picker'а тегов — когда появится loadTags-источник. */
-  const [pauseTagsRaw, setPauseTagsRaw] = React.useState(() => (v.pauseTags || []).join(', '));
+  /* v2.15.3 — pauseTags: searchable picker по ВСЕМ тегам инстанса (loadTags форсит
+     $top, обходя дефолтный кап ~42). Раньше — свободный ввод через запятую. */
+  const [tagBundle, setTagBundle] = React.useState([]);
 
   React.useEffect(() => {
     let alive = true;
@@ -623,6 +623,15 @@ function BacklogSection(props) {
     } else { setTypeBundle([]); }
     return () => { alive = false; };
   }, [props.fieldTypeName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    let alive = true;
+    if (props.loadTags) {
+      Promise.resolve(props.loadTags())
+        .then((tags) => { if (alive && Array.isArray(tags)) setTagBundle(tags); }).catch(noop);
+    }
+    return () => { alive = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const patch = (p) => set(Object.assign({}, v, p));
   const setZone = (i, p) => patch({ zones: v.zones.map((z, idx) => (idx === i ? Object.assign({}, z, p) : z)) });
@@ -651,7 +660,7 @@ function BacklogSection(props) {
       {/* Зоны: состояние → роль(и) (MANY, упорядочены) */}
       <div className="field">
         <label>{t('lblBacklogZones')}</label>
-        <table className="ssp-dta-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="ssp-dta-table ssp-backlog-zones" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
               <th scope="col" style={{ width: '38%' }}>{t('lblBacklogZoneState')}</th>
@@ -672,7 +681,7 @@ function BacklogSection(props) {
                   </td>
                   <td>
                     {roleData.length ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', maxWidth: '100%' }}>
                         {roleData.map((r) => {
                           const on = (z.roles || []).indexOf(r.key) >= 0;
                           return (
@@ -719,7 +728,7 @@ function BacklogSection(props) {
         </div>
         <div className="field">
           <label>{t('lblBacklogPauseTags')}</label>
-          <TextField value={pauseTagsRaw} maxLength={500} placeholder={t('phBacklogPauseTags')} onChange={(s) => { setPauseTagsRaw(s); patch({ pauseTags: s.split(',').map((x) => x.trim()).filter(Boolean) }); }} />
+          <MultiSelect options={tagBundle} selected={v.pauseTags} placeholder={t('phNotSelected')} onChange={(vals) => patch({ pauseTags: vals })} />
         </div>
       </div>
     </React.Fragment>
@@ -1274,7 +1283,7 @@ function SettingsForm(props) {
         <BacklogSection
           t={t} value={backlog} onChange={setBacklog}
           bundleStates={bundleStates} activeRoles={activeRoleList} uiLang={uiLang}
-          fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues}
+          fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues} loadTags={props.loadTags}
           hasDup={hasBacklogDup}
         />
       ),

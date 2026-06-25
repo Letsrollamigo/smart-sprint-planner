@@ -703,7 +703,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.15.2';
+  var APP_VERSION = '2.15.3';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2009,6 +2009,7 @@
       ALL_ROLES: ALL_ROLES,
       fieldValuesCache: _fieldValuesCache,
       loadProjectGroups: loadProjectGroups,
+      loadProjectTags: loadProjectTags,
       setLang: setLang,
       invalidateFieldValuesCache: invalidateFieldValuesCache,
       syncProjectDefaultLang: _syncProjectDefaultLang,
@@ -2090,6 +2091,7 @@
   function loadMe()                   { return DATA_LOADERS.loadMe(_loadersDeps()); }
   function loadProjectFields()        { return DATA_LOADERS.loadProjectFields(_loadersDeps()); }
   function loadProjectGroups()        { return DATA_LOADERS.loadProjectGroups(_loadersDeps()); }
+  function loadProjectTags()          { return DATA_LOADERS.loadProjectTags(_loadersDeps()); }
   function _refreshFeatureStatusBar() { return DATA_LOADERS._refreshFeatureStatusBar(_loadersDeps()); }
   function loadAllData()              { return DATA_LOADERS.loadAllData(_loadersDeps()); }
 

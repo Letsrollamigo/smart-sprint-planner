@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.15.3] — 2026-06-25
+
+> **Backlog settings: layout fix, tag picker, uniform font.**
+
+### Fixed
+
+- **Pipeline-zones layout.** In the «Backlog» settings, the per-zone role labels could overlap each other and the row controls (↑ ↓ ×). The zones table now uses a fixed three-column layout (state / roles / controls) so role labels wrap cleanly inside their cell.
+- **Pause-tags picker.** «Pause tags» were entered as free text; you can now pick them from a searchable list of all tags in the instance. The tag list is fetched with a high page size, so it is no longer capped at the API default (~42 tags).
+- **Uniform option font.** Functional-role checkbox labels rendered one step larger than the rest of the form (Ring `--ring-font-size` 13px vs the form’s 12px); they are now pinned to 12px so the settings options share one scale.
+
+---
+
 ## [2.15.2] — 2026-06-25
 
 > **Fix: projects configured in early plugin versions could no longer save their settings.**
