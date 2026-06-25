@@ -58,14 +58,88 @@ const ST = {
   more: { marginTop: '4px' },
   empty: { color: 'var(--muted)', padding: '16px 4px' },
   toSprint: { fontSize: '11px', whiteSpace: 'nowrap' },
+  /* слайс 5 — шапка вкладки */
+  header: { marginBottom: '12px' },
+  headRow: { display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' },
+  title: { fontWeight: 600, fontSize: '15px', color: 'var(--text)' },
+  target: { fontSize: '12px', color: 'var(--muted)' },
+  targetNone: { fontSize: '12px', color: AMBER },
+  filterRow: { marginBottom: '10px' },
+  /* §6.3 ёмкостный чип с мини-баром */
+  capBarWrap: { display: 'inline-block', width: '48px', height: '5px', borderRadius: '3px', background: 'var(--border)', overflow: 'hidden', verticalAlign: 'middle', marginLeft: '2px' },
+  capBar: { height: '100%', borderRadius: '3px' },
+  chipOver: { color: '#CC3645', fontWeight: 600 },
+  /* слайс 6 — переключатель видов + дерево */
+  toggle: { display: 'inline-flex', gap: '0', marginLeft: 'auto' },
+  toggleBtn: { fontSize: '12px' },
+  legend: { display: 'flex', flexWrap: 'wrap', gap: '12px', margin: '0 0 10px', fontSize: '12px', color: 'var(--muted)' },
+  legendItem: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
+  dot: { display: 'inline-block', width: '9px', height: '9px', borderRadius: '50%', flexShrink: 0 },
+  warn: { margin: '0 0 12px', padding: '8px 12px', borderRadius: 'var(--radius, 6px)', fontSize: '12px', background: 'rgba(229,109,23,.10)', color: AMBER, border: '1px solid ' + AMBER },
+  /* §12 carry-over бейджи */
+  carryOver: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(229,109,23,.12)', color: AMBER, border: '1px solid ' + AMBER, whiteSpace: 'nowrap' },
+  carryCont: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' },
 };
+
+/* §12 — бейдж «Перенос» (carryover) / «Продолжение» (continuation). */
+function CarryBadge({ carry, i18n }) {
+  if (!carry) return null;
+  const isCarry = carry === 'carryover';
+  const label = isCarry ? i18n.carryover : i18n.continuation;
+  return <span style={isCarry ? ST.carryOver : ST.carryCont} title={label}>{label}</span>;
+}
 
 function Flag({ priority }) {
   if (!priority) return null;
   return <span title={priority} style={{ color: 'var(--muted)' }}>⚑</span>;
 }
 
-function TaskRow({ t, roleContext, ytBase, fmt, i18n }) {
+/* §2/§10 слайс 5 — query-assist фильтр пула. Ring QueryAssist (vendored) + fallback-input.
+   onApply (Enter / выбор подсказки / clear) → перезагрузка пула (vm.onFilterApply). */
+function FilterField({ initial, placeholder, onAssist, onApply }) {
+  const QA = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.QueryAssist;
+  const [q, setQ] = React.useState(initial || '');
+  if (!onApply) return null;
+  if (QA && onAssist) {
+    return (
+      <QA huge glass clear placeholder={placeholder} query={q}
+          dataSource={onAssist}
+          onChange={(ch) => setQ((ch && ch.query) || '')}
+          onApply={(ch) => onApply((ch && ch.query) || '')}
+          onClear={() => { setQ(''); onApply(''); }} />
+    );
+  }
+  return (
+    <div style={{ display: 'flex', gap: '8px' }}>
+      <input type="text" className="ring-input" style={{ flex: 1, minWidth: 0 }}
+             value={q} placeholder={placeholder} aria-label={placeholder}
+             onChange={(e) => setQ(e.target.value)}
+             onKeyDown={(e) => { if (e.key === 'Enter') onApply(q); }} />
+      <button type="button" className="ring-button-button ring-button-heightS"
+              aria-label={placeholder} title={placeholder} onClick={() => onApply(q)}>🔎</button>
+    </div>
+  );
+}
+
+/* §6.3 — чип нагрузки роли: спрос (/ ёмкость + мини-бар). Перелимит красным. */
+function CapacityChip({ c, fmt }) {
+  const hasCap = c.capacity != null;
+  const pct = hasCap && c.capacity > 0 ? Math.min(100, Math.round((c.demand / c.capacity) * 100)) : 0;
+  const barColor = c.over ? '#CC3645' : (pct >= 80 ? AMBER : '#1F8039');
+  return (
+    <span style={ST.chip}>
+      {c.label}: <span style={c.over ? ST.chipOver : ST.chipNum}>{fmt(c.demand)}</span>
+      {hasCap ? (
+        <React.Fragment>
+          <span style={{ color: 'var(--muted)' }}> / {fmt(c.capacity)}</span>
+          <span style={ST.capBarWrap}><span style={{ ...ST.capBar, width: pct + '%', background: barColor }} /></span>
+        </React.Fragment>
+      ) : null}
+    </span>
+  );
+}
+
+function TaskRow({ t, roleContext, ytBase, fmt, i18n, onToSprint }) {
   const rowStyle = t.needsPoker ? { background: 'rgba(229,109,23,.06)' } : undefined;
   return (
     <tr style={rowStyle}>
@@ -74,7 +148,7 @@ function TaskRow({ t, roleContext, ytBase, fmt, i18n }) {
         <a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a>
       </td>
       <td style={ST.td}>{t.system || '—'}</td>
-      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}</td>
+      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
       {roleContext ? (
         <td style={ST.td}>
           {t.needsPoker
@@ -83,8 +157,10 @@ function TaskRow({ t, roleContext, ytBase, fmt, i18n }) {
         </td>
       ) : null}
       <td style={ST.td}>
-        {/* ponytail: плейсхолдер действия — модалка «→ в спринт» = слайс 6, пока disabled */}
-        <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat" style={ST.toSprint} disabled title={i18n.toSprint}>→ {i18n.toSprint}</button>
+        {/* слайс 4 — раскладка «→ в спринт» (модалка выбора ролей). roleContext-роль = hint. */}
+        <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat" style={ST.toSprint}
+                disabled={!onToSprint} title={i18n.toSprint}
+                onClick={onToSprint ? () => onToSprint(t.issueId, t.roleKey) : undefined}>→ {i18n.toSprint}</button>
       </td>
     </tr>
   );
@@ -92,8 +168,11 @@ function TaskRow({ t, roleContext, ytBase, fmt, i18n }) {
 
 /* Таблица задач с пагинацией 25 (§10). visible — локальное состояние компонента;
    переживает ре-рендеры vm (React сохраняет state инстанса на той же позиции). */
-function TaskTable({ tasks, roleContext, ytBase, fmt, i18n, pageSize }) {
+function TaskTable({ tasks, roleContext, ytBase, fmt, i18n, pageSize, onToSprint }) {
   const [visible, setVisible] = React.useState(pageSize);
+  /* слайс 5 — сброс пагинации при смене набора (фильтр перегрузил пул). Депенденси —
+     длина (не идентичность): обычный ре-рендер vm-key bump сохраняет «показать ещё». */
+  React.useEffect(() => { setVisible(pageSize); }, [tasks.length, pageSize]);
   if (!tasks.length) return <div style={ST.empty}>{i18n.empty}</div>;
   const shown = tasks.slice(0, visible);
   const rest = tasks.length - visible;
@@ -112,7 +191,7 @@ function TaskTable({ tasks, roleContext, ytBase, fmt, i18n, pageSize }) {
         </thead>
         <tbody>
           {shown.map((t, i) => (
-            <TaskRow key={t.issueId + ':' + i} t={t} roleContext={roleContext} ytBase={ytBase} fmt={fmt} i18n={i18n} />
+            <TaskRow key={t.issueId + ':' + i} t={t} roleContext={roleContext} ytBase={ytBase} fmt={fmt} i18n={i18n} onToSprint={onToSprint} />
           ))}
         </tbody>
       </table>
@@ -168,6 +247,98 @@ function zoneCount(z) {
   return n;
 }
 
+/* слайс 6 — вид «Дерево» (§5). Переключатель + контейнеры (нативный Ring Collapse) с
+   бейджем Вида, агрегатом и зонами-точками + легенда; листья с зоной-точкой; сироты. */
+const ZONE_PALETTE = ['#3369D6', '#1F8039', '#E56D17', '#9B59B6', '#16A2B8', '#CC3645', '#6C757D'];
+function zoneLabel(name, i18n) { return name === '__pool' ? i18n.customerPool : (name === '__other' ? i18n.other : name); }
+
+function ViewToggle({ mode, onMode, i18n }) {
+  if (!onMode) return null;
+  const btn = (m, label) => (
+    <button type="button" onClick={() => onMode(m)} aria-pressed={mode === m}
+            className={'ring-button-button ring-button-heightS' + (mode === m ? ' ring-button-primary' : '')}
+            style={ST.toggleBtn}>{label}</button>
+  );
+  return <div style={ST.toggle} role="group">{btn('zones', i18n.viewZones)}{btn('tree', i18n.viewTree)}</div>;
+}
+
+function TreeLeafTable({ tasks, colorOf, i18n, ytBase, onToSprint, pageSize }) {
+  const [visible, setVisible] = React.useState(pageSize);
+  React.useEffect(() => { setVisible(pageSize); }, [tasks.length, pageSize]);
+  if (!tasks.length) return <div style={ST.empty}>{i18n.empty}</div>;
+  const shown = tasks.slice(0, visible);
+  const rest = tasks.length - visible;
+  return (
+    <div>
+      <table style={ST.table}>
+        <tbody>
+          {shown.map((t, i) => (
+            <tr key={t.issueId + ':' + i} style={t.isPaused ? undefined : undefined}>
+              <td style={ST.td}><span style={{ ...ST.dot, background: colorOf[t.zone] || 'var(--muted)' }} title={zoneLabel(t.zone, i18n)} /></td>
+              <td style={ST.td}><a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a></td>
+              <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
+              <td style={ST.td}>
+                <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat" style={ST.toSprint}
+                        disabled={!onToSprint} title={i18n.toSprint}
+                        onClick={onToSprint ? () => onToSprint(t.issueId) : undefined}>→ {i18n.toSprint}</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rest > 0 ? (
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.more} onClick={() => setVisible((v) => v + pageSize)}>
+          {i18n.showMore} (+{Math.min(pageSize, rest)})
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function collectZones(node, add) {
+  node.tasks.forEach((t) => add(t.zone));
+  node.children.forEach((c) => collectZones(c, add));
+}
+
+/* §5 — рекурсивный узел дерева: контейнер (нативный Ring Collapse) → свои листья + вложенные
+   дочерние контейнеры. Бейдж Вида + агрегат (count) в заголовке. key=issueId (уникален). */
+function TreeNode({ node, lt }) {
+  return (
+    <Spoiler title={(node.kind ? node.kind + ' · ' : '') + node.summary} count={node.agg.count} defaultOpen>
+      {node.tasks.length ? <TreeLeafTable tasks={node.tasks} {...lt} /> : null}
+      {node.children.map((c) => <TreeNode key={c.issueId} node={c} lt={lt} />)}
+    </Spoiler>
+  );
+}
+
+function TreeBody({ tree, i18n, ytBase, onToSprint, pageSize }) {
+  if (!tree) return null;
+  const zoneOrder = [], seen = {};
+  const add = (z) => { if (!seen[z]) { seen[z] = true; zoneOrder.push(z); } };
+  tree.roots.forEach((r) => collectZones(r, add));
+  tree.orphans.forEach((t) => add(t.zone));
+  const colorOf = {}; zoneOrder.forEach((z, i) => { colorOf[z] = ZONE_PALETTE[i % ZONE_PALETTE.length]; });
+  if (!tree.roots.length && !tree.orphans.length) return <div style={ST.empty}>{i18n.empty}</div>;
+  const lt = { colorOf, i18n, ytBase, onToSprint, pageSize };
+  return (
+    <div>
+      {zoneOrder.length ? (
+        <div style={ST.legend}>
+          {zoneOrder.map((z) => (
+            <span key={z} style={ST.legendItem}><span style={{ ...ST.dot, background: colorOf[z] }} />{zoneLabel(z, i18n)}</span>
+          ))}
+        </div>
+      ) : null}
+      {tree.roots.map((r) => <TreeNode key={r.issueId} node={r} lt={lt} />)}
+      {tree.orphans.length ? (
+        <Spoiler key="__orphan" title={i18n.noParent} count={tree.orphans.length}>
+          <TreeLeafTable tasks={tree.orphans} {...lt} />
+        </Spoiler>
+      ) : null}
+    </div>
+  );
+}
+
 function BacklogView({ host }) {
   const [, force] = React.useReducer((x) => x + 1, 0);
   React.useEffect(() => {
@@ -179,51 +350,81 @@ function BacklogView({ host }) {
   const vm = host.__sspBacklogVm;
   if (!vm) return null;
   const i18n = vm.i18n, fmt = vm.fmt, ytBase = vm.ytBase, ps = vm.pageSize;
-  const tp = { ytBase, fmt, i18n, pageSize: ps };
+  const tp = { ytBase, fmt, i18n, pageSize: ps, onToSprint: vm.onToSprint };
   const hasAny = vm.customerPool.length || vm.otherBucket.length || vm.zones.some((z) => zoneCount(z) > 0);
 
   return (
     <div>
+      {/* слайс 5 — шапка: заголовок · целевой спринт · query-assist фильтр (§7/§10) */}
+      <div style={ST.header}>
+        <div style={ST.headRow}>
+          <span style={ST.title}>{vm.title}</span>
+          {vm.targetSprintName
+            ? <span style={ST.target}>{i18n.targetSprintLabel}: <b>{vm.targetSprintName}</b></span>
+            : <span style={ST.targetNone}>{i18n.noTarget}</span>}
+          <ViewToggle mode={vm.viewMode} onMode={vm.onViewMode} i18n={i18n} />
+        </div>
+        {vm.onFilterApply ? (
+          <div style={ST.filterRow}>
+            <FilterField initial={vm.userFilter} placeholder={i18n.filterPlaceholder} onAssist={vm.onAssist} onApply={vm.onFilterApply} />
+          </div>
+        ) : null}
+      </div>
+
       {vm.capacityStrip.length ? (
         <div style={ST.strip}>
           {vm.capacityStrip.map((c) => (
-            <span key={c.roleKey} style={ST.chip}>{c.label}: <span style={ST.chipNum}>{fmt(c.demand)}</span></span>
+            <CapacityChip key={c.roleKey} c={c} fmt={fmt} />
           ))}
         </div>
       ) : null}
 
-      {!hasAny ? <div style={ST.empty}>{i18n.empty}</div> : null}
+      {/* §8 fail-loud: schema-level (незамапленные состояния бандла, в т.ч. с нулём задач —
+          приоритет, перечисляем имена) → fallback на data-level (счётчик задач в «Прочих»). */}
+      {vm.unmappedStates && vm.unmappedStates.length ? (
+        <div style={ST.warn}>⚠ {i18n.unmappedSchema}: {vm.unmappedStates.join(', ')}</div>
+      ) : (vm.counts && vm.counts.other > 0 ? (
+        <div style={ST.warn}>⚠ {vm.counts.other} · {i18n.unmappedWarn}</div>
+      ) : null)}
 
-      {vm.customerPool.length ? (
-        <Spoiler key="__pool" title={i18n.customerPool} count={vm.customerPool.length} defaultOpen>
-          <TaskTable tasks={vm.customerPool} roleContext={false} {...tp} />
-        </Spoiler>
-      ) : null}
+      {vm.viewMode === 'tree' ? (
+        <TreeBody tree={vm.tree} i18n={i18n} ytBase={ytBase} onToSprint={vm.onToSprint} pageSize={ps} />
+      ) : (
+        <React.Fragment>
+          {!hasAny ? <div style={ST.empty}>{i18n.empty}</div> : null}
 
-      {vm.zones.map((z, zi) => (zoneCount(z) > 0 ? (
-        <Spoiler key={z.stateName + ':' + zi} title={z.stateName} count={zoneCount(z)} defaultOpen>
-          {z.multiRole
-            ? z.roles.map((r) => (r.tasks.length ? (
-                <div key={r.roleKey}>
-                  <div style={ST.roleHdr}>{r.label}</div>
-                  <TaskTable tasks={r.tasks} roleContext {...tp} />
-                </div>
-              ) : null))
-            : (z.roles[0] ? <TaskTable tasks={z.roles[0].tasks} roleContext {...tp} /> : null)}
-          {z.unassigned.length ? (
-            <div>
-              <div style={ST.roleHdr}>—</div>
-              <TaskTable tasks={z.unassigned} roleContext={false} {...tp} />
-            </div>
+          {vm.customerPool.length ? (
+            <Spoiler key="__pool" title={i18n.customerPool} count={vm.customerPool.length} defaultOpen>
+              <TaskTable tasks={vm.customerPool} roleContext={false} {...tp} />
+            </Spoiler>
           ) : null}
-        </Spoiler>
-      ) : null))}
 
-      {vm.otherBucket.length ? (
-        <Spoiler key="__other" title={i18n.other} count={vm.otherBucket.length}>
-          <TaskTable tasks={vm.otherBucket} roleContext={false} {...tp} />
-        </Spoiler>
-      ) : null}
+          {vm.zones.map((z, zi) => (zoneCount(z) > 0 ? (
+            <Spoiler key={z.stateName + ':' + zi} title={z.stateName} count={zoneCount(z)} defaultOpen>
+              {z.multiRole
+                ? z.roles.map((r) => (r.tasks.length ? (
+                    <div key={r.roleKey}>
+                      <div style={ST.roleHdr}>{r.label}</div>
+                      <TaskTable tasks={r.tasks} roleContext {...tp} />
+                    </div>
+                  ) : null))
+                : (z.roles[0] ? <TaskTable tasks={z.roles[0].tasks} roleContext {...tp} /> : null)}
+              {z.unassigned.length ? (
+                <div>
+                  <div style={ST.roleHdr}>—</div>
+                  <TaskTable tasks={z.unassigned} roleContext={false} {...tp} />
+                </div>
+              ) : null}
+            </Spoiler>
+          ) : null))}
+
+          {vm.otherBucket.length ? (
+            <Spoiler key="__other" title={i18n.other} count={vm.otherBucket.length}>
+              <TaskTable tasks={vm.otherBucket} roleContext={false} {...tp} />
+            </Spoiler>
+          ) : null}
+        </React.Fragment>
+      )}
     </div>
   );
 }

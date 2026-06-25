@@ -2462,6 +2462,7 @@ var ENDPOINTS = [
           return;
         }
         var values = [];
+        var resolved = [];   // #21 §8 — имена resolved-состояний (для schema-warning «незамапленное»)
         var debugInfo = { searched: fieldName, found: false };
         try {
           var pf = null;
@@ -2484,7 +2485,10 @@ var ENDPOINTS = [
             if (pf.values && typeof pf.values.forEach === 'function') {
               pf.values.forEach(function (v) {
                 try {
-                  if (!(v.isArchived || v.archived || false) && v.name) values.push(v.name);
+                  if (!(v.isArchived || v.archived || false) && v.name) {
+                    values.push(v.name);
+                    if (v.isResolved) resolved.push(v.name);   // #21 §8 — аддитивно, values не трогаем
+                  }
                 } catch (ve) { /* ignore */ }
               });
             }
@@ -2494,7 +2498,7 @@ var ENDPOINTS = [
           ctx.response.json({ success: false, error: 'internal_error', values: [], debug: debugInfo });
           return;
         }
-        ctx.response.json({ success: !!values.length || debugInfo.found, fieldName: fieldName, values: values, debug: debugInfo });
+        ctx.response.json({ success: !!values.length || debugInfo.found, fieldName: fieldName, values: values, resolved: resolved, debug: debugInfo });
       }
     },
 

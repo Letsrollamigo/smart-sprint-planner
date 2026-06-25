@@ -2270,7 +2270,7 @@
         } else {
           var blLoad = document.getElementById('backlogLoading');
           if (blLoad) blLoad.classList.remove('hidden');
-          loadBacklogPool()
+          Promise.all([loadBacklogPool(), loadBacklogSchemaWarn()])  /* §8 schema-warn параллельно */
             .then(function(){ renderBacklog(); })
             .catch(function(e){
               if (blLoad) blLoad.classList.add('hidden');
@@ -3921,12 +3921,16 @@
   var BACKLOG_LOADER = (typeof window !== 'undefined' && window.__SSP_BACKLOG_LOADER) || {};
   var BACKLOG_PAGE = 50, MAX_BACKLOG_TOTAL = 1000;
   var _backlogPool = null;
+  var _userBacklogFilter = ''; /* §2/§10 слайс 5 — query-assist фильтр пула (session-scoped) */
+  var _backlogViewMode = 'zones'; /* §10 слайс 6 — вид: 'zones' | 'tree' (session-scoped) */
+  var _backlogUnmapped = null; /* §8 — незамапленные состояния бандла fieldState (schema-warn) */
   function _backlogDeps() {
     return {
       t: T, toast: toast, diag: diag,
       ctx: _ctx, settings: _settings, host: _host,
       roles: ALL_ROLES, getActiveRoles: getActiveRoles,
       backlogPage: BACKLOG_PAGE, maxBacklogTotal: MAX_BACKLOG_TOTAL,
+      userFilter: _userBacklogFilter,
       state: {
         getSettings: function () { return _settings; },
         setBacklogPool: function (p) { _backlogPool = p; },
@@ -3935,6 +3939,55 @@
     };
   }
   function loadBacklogPool() { return BACKLOG_LOADER.loadBacklogPool(_backlogDeps()); }
+  function _backlogAssist(req) { return BACKLOG_LOADER._backlogAssist(req, _backlogDeps()); }
+  /* §8 schema-level fail-loud — сверить бандл состояний fieldState с маппингом (зоны/старт/
+     пауза/resolved); незамапленные → _backlogUnmapped (баннер). Бандл — через общий
+     _fieldValuesCache (resolved-имена backend отдаёт аддитивно; старый backend без resolved →
+     пропуск, чтобы не флагать resolved-состояния). Best-effort: ошибка → null (без баннера). */
+  function loadBacklogSchemaWarn() {
+    var fs = _settings && _settings.fieldState;
+    if (!fs) { _backlogUnmapped = null; return Promise.resolve(); }
+    var cached = _fieldValuesCache[fs];
+    var p = cached ? Promise.resolve(cached)
+      : apiGet('field-values?fieldName=' + encodeURIComponent(fs)).then(function (r) { if (r) _fieldValuesCache[fs] = r; return r; });
+    return p.then(function (r) {
+      _backlogUnmapped = (r && r.resolved !== undefined)
+        ? BACKLOG_LOADER.computeUnmappedStates(r.values, r.resolved, _settings) : null;
+    }).catch(function () { _backlogUnmapped = null; });
+  }
+  /* §10 слайс 5 — применить query-assist фильтр: сбросить пул и перегрузить (фильтр AND
+     в _buildPoolQuery). Loading-баннер показываем сами (renderBacklog его гасит на старте). */
+  function reloadBacklogFiltered(q) {
+    _userBacklogFilter = (q || '');
+    _backlogPool = null;
+    var loadEl = document.getElementById('backlogLoading');
+    if (loadEl) loadEl.classList.remove('hidden');
+    return loadBacklogPool().then(function () { renderBacklog(); }).catch(function (e) {
+      diag('backlog filter reload err: ' + e, 'err');
+      if (loadEl) loadEl.classList.add('hidden');
+      try { toast(T('backlogLoadErr'), 'err'); } catch (_) {}
+    });
+  }
+
+  /* §6.3 слайс 5 — адаптер-розетка ёмкости роли. Экспонирует СУЩЕСТВУЮЩИЙ ресурс роли
+     спринта (_sprint[resKey], тот же, что у calcRemForRole — «остатки»), НЕ изобретает
+     формулу (не зависим от frozen #45; точная бизнес-ёмкость придёт с #45, #21 не переписываем).
+     Часы → минуты (demand в минутах). Нет ресурса (0/unset) → null = деградация «только спрос». */
+  function getApprovedCapacityFor(roleKey, sprint) {
+    if (!sprint) return null;
+    var role = ALL_ROLES.find(function (r) { return r.key === roleKey; });
+    if (!role) return null;
+    var res = sprint[role.resKey];
+    if (typeof res !== 'number' || !isFinite(res) || res <= 0) return null;
+    return res * 60;
+  }
+  /* §7 слайс 5 (вариант A — общий селектор): раскладка целится в ВЫБРАННЫЙ спринт. Раскладка
+     возможна только в АКТИВНЫЙ спринт (выбранный = активный); исторический (read-only) → null
+     → openAssignModal блокирует тостом. */
+  function _backlogTargetSprint() {
+    if (_sprint && _sprint.sprintId && (!_currentSprintId || _currentSprintId === _sprint.sprintId)) return _sprint;
+    return null;
+  }
 
   /* ═══ #21 БЭКЛОГ (слайс 3) — render-делегатор вида «по зонам» ════
      Тонкий делегатор + deps-фабрика; логика — в domain/backlog-view.js (VM из
@@ -3942,12 +3995,30 @@
   var BACKLOG_VM   = (typeof window !== 'undefined' && window.__SSP_BACKLOG_VM_PURE) || {};
   var BACKLOG_VIEW = (typeof window !== 'undefined' && window.__SSP_BACKLOG_VIEW) || {};
   var BACKLOG_PAGE_SIZE = 25;
+  /* §10 слайс 6 — переключатель вида «По зонам / Дерево». Меняет только РЕНДЕР на уже
+     загруженном пуле (без перезагрузки): связи грузятся вместе с пулом (loader). */
+  function setBacklogViewMode(m) {
+    _backlogViewMode = (m === 'tree') ? 'tree' : 'zones';
+    renderBacklog();
+  }
   function _backlogViewDeps() {
+    var target = _backlogTargetSprint();
     return {
       t: T, diag: diag,
       buildBacklogVm: BACKLOG_VM.buildBacklogVm,
+      buildTreeVm: BACKLOG_VM.buildTreeVm,         /* §5 слайс 6 — вид «Дерево» */
       getActiveRoles: getActiveRoles, roleLabel: roleLabel,
       fmtHoursOnly: fmtHoursOnly, pageSize: BACKLOG_PAGE_SIZE,
+      onToSprint: openBacklogAssign,
+      onFilterApply: reloadBacklogFiltered,        /* §10 — apply query-assist фильтра */
+      onAssist: _backlogAssist,                    /* §10 — data-source подсказок QueryAssist */
+      userFilter: _userBacklogFilter,
+      viewMode: _backlogViewMode,                  /* §10 слайс 6 — zones|tree */
+      onViewMode: setBacklogViewMode,
+      unmappedStates: _backlogUnmapped,            /* §8 schema-warn — незамапленные состояния */
+      getApprovedCapacity: getApprovedCapacityFor, /* §6.3 — адаптер ёмкости (lazy ref) */
+      targetSprint: target,                        /* §6.3/§7 — целевой спринт (ёмкость/раскладка) */
+      targetSprintName: target ? (target.name || target.sprintId) : null,
       state: {
         getSettings: function () { return _settings; },
         getBacklogPool: function () { return _backlogPool; },
@@ -3956,6 +4027,29 @@
     };
   }
   function renderBacklog() { return BACKLOG_VIEW.renderBacklog(_backlogViewDeps()); }
+
+  /* ═══ #21 БЭКЛОГ (слайс 4) — раскладка «→ в спринт» ═════════════
+     Модалка выбора ролей + upsert item'ов INC_PLANNED в состав ролей — domain/backlog-assign.js.
+     Целевой спринт (слайс 5, вариант A) = _backlogTargetSprint() — выбранный в общем селекторе
+     спринт, если он активный; исторический → null → openAssignModal блокирует. Тонкий делегатор +
+     deps-фабрика (логика построения props — в домене, как openPickModal). roleHint (роль
+     под-секции клика) не нужен: преселект — по маппингу зоны (§6.1 вар.A). */
+  var BACKLOG_ASSIGN = (typeof window !== 'undefined' && window.__SSP_BACKLOG_ASSIGN) || {};
+  function _backlogAssignDeps() {
+    return {
+      t: T, toast: toast, diag: diag,
+      inc: INC, ytBase: _ytBase, currentUser: _currentUser,
+      draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
+      sprint: _backlogTargetSprint(), roleItems: _roleItems, settings: _settings, backlogPool: _backlogPool,
+      getActiveRoles: getActiveRoles, roleLabel: roleLabel, fmt: fmtHoursOnly,
+      getRoleItemsArr: getRoleItemsArr, openModal: openModal, apiPost: apiPost,
+      markDirty: _markDirty, draftSet: _draftSet,
+      renderRoleComposition: renderRoleComposition,
+      updateRoleRemaining: updateRoleRemaining,
+      refreshRoleEstimates: refreshRoleEstimates,
+    };
+  }
+  function openBacklogAssign(issueId) { return BACKLOG_ASSIGN.openAssignModal(issueId, _backlogAssignDeps()); }
 
   /* v5.4.0 — Удалены: вторичный tab-btn handler инициализации distrib (его задача
      теперь в основном handler 2791-2818 через ветку refreshDistribForCurrentSprint())

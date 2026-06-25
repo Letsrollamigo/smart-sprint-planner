@@ -128,3 +128,123 @@ test('вход не мутируется (чистота): task без _paused-�
   buildBacklogVm([t], SETTINGS);
   assert.ok(!('_paused' in t), 'input task must not be mutated');
 });
+
+/* ── слайс 6 — вид «Дерево» (buildTreeVm) ── */
+const { buildTreeVm } = require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'pure', 'backlog-vm-pure.js'));
+
+const TREE_SETTINGS = Object.assign({}, SETTINGS, {
+  cascadeLevel2Values: ['Story', 'Стори'],
+  cascadeLevel3Values: ['Epic', 'Эпик'],
+});
+function treeTask(over) { return task(Object.assign({ parent: null }, over)); }
+
+test('buildTreeVm: группировка по родителю-контейнеру + уровень из cascadeLevel (epic=3/story=2)', function () {
+  const tree = buildTreeVm([
+    treeTask({ issueId: 'T-1', stateName: 'Analysis', parent: { issueId: 'E-1', summary: 'Эпик A', kind: 'Epic' } }),
+    treeTask({ issueId: 'T-2', stateName: 'Testing', parent: { issueId: 'E-1', summary: 'Эпик A', kind: 'Epic' } }),
+    treeTask({ issueId: 'T-3', stateName: 'In Dev', parent: { issueId: 'S-1', summary: 'Стори B', kind: 'Story' } }),
+  ], TREE_SETTINGS);
+  assert.strictEqual(tree.roots.length, 2);
+  const e1 = tree.roots.find((c) => c.issueId === 'E-1');
+  assert.strictEqual(e1.kind, 'Epic');
+  assert.strictEqual(e1.level, 3);                       // epic-like
+  assert.strictEqual(e1.tasks.length, 2);
+  assert.strictEqual(e1.agg.count, 2);
+  const s1 = tree.roots.find((c) => c.issueId === 'S-1');
+  assert.strictEqual(s1.level, 2);                       // story-like
+  assert.strictEqual(tree.counts.tasks, 3);
+});
+
+test('buildTreeVm: задача без родителя → orphans', function () {
+  const tree = buildTreeVm([treeTask({ issueId: 'T-9', parent: null })], TREE_SETTINGS);
+  assert.strictEqual(tree.roots.length, 0);
+  assert.strictEqual(tree.orphans.length, 1);
+  assert.strictEqual(tree.orphans[0].issueId, 'T-9');
+});
+
+test('buildTreeVm: resolved скрыт (§8), не в дереве и не в счётчике задач', function () {
+  const tree = buildTreeVm([
+    treeTask({ issueId: 'T-1', isResolved: true, parent: { issueId: 'E-1', summary: 'E', kind: 'Epic' } }),
+    treeTask({ issueId: 'T-2', stateName: 'Analysis', parent: { issueId: 'E-1', summary: 'E', kind: 'Epic' } }),
+  ], TREE_SETTINGS);
+  assert.strictEqual(tree.counts.hidden, 1);
+  assert.strictEqual(tree.counts.tasks, 1);
+  assert.strictEqual(tree.roots[0].agg.count, 1);
+});
+
+test('buildTreeVm: зона листа — пул/маппинг/прочие (§5 точка зоны) + агрегат zones', function () {
+  const tree = buildTreeVm([
+    treeTask({ issueId: 'T-1', stateName: 'Open',     parent: { issueId: 'E-1', summary: 'E', kind: 'Epic' } }),   // __pool
+    treeTask({ issueId: 'T-2', stateName: 'Analysis', parent: { issueId: 'E-1', summary: 'E', kind: 'Epic' } }),   // зона
+    treeTask({ issueId: 'T-3', stateName: 'Limbo',    parent: { issueId: 'E-1', summary: 'E', kind: 'Epic' } }),   // __other
+  ], TREE_SETTINGS);
+  const c = tree.roots[0];
+  const zones = {}; c.agg.zones.forEach((z) => { zones[z.zone] = z.count; });
+  assert.strictEqual(zones.__pool, 1);
+  assert.strictEqual(zones.Analysis, 1);
+  assert.strictEqual(zones.__other, 1);
+  assert.strictEqual(c.tasks.find((t) => t.issueId === 'T-2').zone, 'Analysis');
+});
+
+test('buildTreeVm: неизвестный kind → level null (не контейнер-уровень, но всё равно группирует)', function () {
+  const tree = buildTreeVm([treeTask({ parent: { issueId: 'X-1', summary: 'X', kind: 'Whatever' } })], TREE_SETTINGS);
+  assert.strictEqual(tree.roots[0].level, null);
+  assert.strictEqual(tree.roots[0].kind, 'Whatever');
+});
+
+test('buildTreeVm: вложенность Эпик▸Стори▸Таск из parentChain + агрегат снизу вверх', function () {
+  const chain = [{ issueId: 'ST-1', summary: 'Стори', kind: 'Story' }, { issueId: 'EP-1', summary: 'Эпик', kind: 'Epic' }];
+  const tree = buildTreeVm([
+    treeTask({ issueId: 'T-1', stateName: 'Analysis', parentChain: chain }),
+    treeTask({ issueId: 'T-2', stateName: 'Testing', parentChain: chain }),
+  ], TREE_SETTINGS);
+  assert.strictEqual(tree.roots.length, 1);              // корень = Эпик (дальний предок)
+  const epic = tree.roots[0];
+  assert.strictEqual(epic.issueId, 'EP-1');
+  assert.strictEqual(epic.level, 3);
+  assert.strictEqual(epic.tasks.length, 0);             // у эпика нет прямых листьев
+  assert.strictEqual(epic.children.length, 1);          // Стори
+  const story = epic.children[0];
+  assert.strictEqual(story.issueId, 'ST-1');
+  assert.strictEqual(story.level, 2);
+  assert.strictEqual(story.tasks.length, 2);            // оба листа — у прямого родителя (Стори)
+  assert.strictEqual(epic.agg.count, 2);                // агрегат прокатился снизу вверх
+  assert.strictEqual(story.agg.count, 2);
+});
+
+test('buildTreeVm: parentChain имеет приоритет; контейнер-ребёнок не дублируется в корнях', function () {
+  const tree = buildTreeVm([
+    treeTask({ issueId: 'T-1', stateName: 'Analysis', parentChain: [{ issueId: 'ST-1', summary: 'S', kind: 'Story' }, { issueId: 'EP-1', summary: 'E', kind: 'Epic' }] }),
+    treeTask({ issueId: 'T-2', stateName: 'Analysis', parentChain: [{ issueId: 'EP-1', summary: 'E', kind: 'Epic' }] }), // прямо под эпиком
+  ], TREE_SETTINGS);
+  assert.strictEqual(tree.roots.length, 1);             // только Эпик-корень (Стори вложена)
+  assert.strictEqual(tree.roots[0].issueId, 'EP-1');
+  assert.strictEqual(tree.roots[0].tasks.length, 1);    // T-2 прямой лист эпика
+  assert.strictEqual(tree.roots[0].children.length, 1); // Стори
+  assert.strictEqual(tree.roots[0].agg.count, 2);       // T-1 (через стори) + T-2
+});
+
+/* ── слайс 7 — carry-over метка (carryoverLabel) ── */
+const { carryoverLabel } = require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'pure', 'backlog-vm-pure.js'));
+
+test('carryoverLabel: вошёл в состояние ДО старта спринта → carryover (Перенос)', function () {
+  assert.strictEqual(carryoverLabel(1000, 'Dev', 5000), 'carryover');
+});
+test('carryoverLabel: вошёл В спринте из другого состояния → continuation (Продолжение)', function () {
+  assert.strictEqual(carryoverLabel(6000, 'Dev', 5000), 'continuation');
+});
+test('carryoverLabel: вошёл В спринте без prev (создан) → null', function () {
+  assert.strictEqual(carryoverLabel(6000, '', 5000), null);
+});
+test('carryoverLabel: нет sinceTs или нет даты старта → null', function () {
+  assert.strictEqual(carryoverLabel(null, 'Dev', 5000), null);
+  assert.strictEqual(carryoverLabel(6000, 'Dev', null), null);
+});
+test('buildTreeVm/buildBacklogVm: carry прокидывается в лист (через __sprintStart)', function () {
+  const s = Object.assign({}, TREE_SETTINGS, { __sprintStart: 5000 });
+  const t = treeTask({ issueId: 'C-1', stateName: 'Analysis', _sinceTs: 1000, _prevState: 'Open', parentChain: [{ issueId: 'EP', summary: 'E', kind: 'Epic' }] });
+  const tree = buildTreeVm([t], s);
+  assert.strictEqual(tree.roots[0].tasks[0].carry, 'carryover');
+  const z = buildBacklogVm([task({ stateName: 'Analysis', _sinceTs: 6000, _prevState: 'Open' })], s);
+  assert.strictEqual(z.zones.find((x) => x.stateName === 'Analysis').roles[0].tasks[0].carry, 'continuation');
+});

@@ -3,12 +3,16 @@
     {
       "roleKey": "testing",
       "label": "Тестирование",
-      "demand": 120
+      "demand": 120,
+      "capacity": 72000,
+      "over": false
     },
     {
       "roleKey": "devBack",
       "label": "Разработка Back",
-      "demand": 780
+      "demand": 780,
+      "capacity": 288000,
+      "over": false
     }
   ],
   "pageSize": 25,

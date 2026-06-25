@@ -8,14 +8,25 @@
    carry-over (activities) — НЕ здесь (слайс 3/5). Публикует window.__SSP_BACKLOG_LOADER.
 
    deps: { t, toast, diag, ctx, settings, host, roles(ALL_ROLES), getActiveRoles,
-           backlogPage, maxBacklogTotal,
+           backlogPage, maxBacklogTotal, userFilter (слайс 5 — query-assist фильтр),
            state:{ getSettings, setBacklogPool, getBacklogPool } } */
 
 /* YT issue-поля: customFields покрывают State/Type/System/Priority + ролевые est/fact
    (value.minutes); value.isResolved — §8 resolved auto-hide; tags(name) — §8 пауза по тегу. */
 var BACKLOG_ISSUE_FIELDS = 'id,idReadable,summary,'
-  + 'customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,minutes,isResolved)),'
-  + 'tags(name)';
+  /* field(name,id): id поля State нужен слайсу 7 (carry-over) — надёжный fieldId для
+     activities-детекта смены состояния (без localized-mismatch; project-fields id не отдаёт). */
+  + 'customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes,isResolved)),'
+  + 'tags(name),'
+  /* §5 дерево: связи для цепочки родителей. REST IssueLink: {direction:OUTWARD|INWARD|BOTH,
+     linkType(name,sourceToTarget=outward,targetToSource=inward), issues:[…на другом конце]}.
+     Родитель = link где фраза-с-моей-стороны === cascadeParentLinkInward («subtask of»).
+     ВЛОЖЕННОСТЬ 2 уровня (Задача→Стори→Эпик) одним fetch — поле-селектор YT допускает
+     рекурсивное раскрытие links внутри issues. Kind — inline в customFields. Сверено по докам YT. */
+  + 'links(direction,linkType(name,sourceToTarget,targetToSource),'
+  + 'issues(idReadable,summary,customFields(name,projectCustomField(field(name)),value(name)),'
+  + 'links(direction,linkType(name,sourceToTarget,targetToSource),'
+  + 'issues(idReadable,summary,customFields(name,projectCustomField(field(name)),value(name))))))';
 
 /* Уникальные непустые состояния стартового пула + всех зон — для query 'State: ...'. */
 function _poolStates(settings) {
@@ -29,6 +40,21 @@ function _poolStates(settings) {
     if (st && !seen[st]) { seen[st] = true; out.push(st); }
   });
   return out;
+}
+
+/* §8 schema-level fail-loud: состояния бандла fieldState, которые НЕ замаплены (не зона,
+   не старт, не пауза) и НЕ resolved → «донастройте». Чистая set-разность. values/resolved —
+   из backend field-values (resolved отдаётся аддитивно; старый backend без него → resolved=[],
+   тогда resolved-состояния попали бы в unmapped — вызывающий зовёт только при наличии resolved). */
+function computeUnmappedStates(values, resolved, s) {
+  if (!Array.isArray(values)) return [];
+  s = s || {};
+  var mapped = {};
+  (Array.isArray(s.backlogStartStates) ? s.backlogStartStates : []).forEach(function (x) { mapped[x] = true; });
+  (Array.isArray(s.backlogZones) ? s.backlogZones : []).forEach(function (z) { if (z && z.state) mapped[z.state] = true; });
+  (Array.isArray(s.backlogPauseStates) ? s.backlogPauseStates : []).forEach(function (x) { mapped[x] = true; });
+  (Array.isArray(resolved) ? resolved : []).forEach(function (x) { mapped[x] = true; });
+  return values.filter(function (v) { return v && !mapped[v]; });
 }
 
 /* YT-query пула: 'project: <short> <stateAttr>: {A},{B} <typeAttr>: {X},{Y}'.
@@ -48,7 +74,34 @@ function _buildPoolQuery(deps) {
   if (states.length) parts.push(_battr(s.fieldState || 'State') + ': ' + states.map(_bv).join(','));
   var types = Array.isArray(s.backlogTypeFilter) ? s.backlogTypeFilter.filter(Boolean) : [];
   if (types.length) parts.push(_battr(s.fieldType || 'Type') + ': ' + types.map(_bv).join(','));
+  /* §2 ось «Фильтр» (слайс 5): пользовательский query-assist фильтр AND-ится к базовому
+     (YT AND по пробелу). Сырой ввод пользователя — не брейсим (он сам пишет синтаксис YT). */
+  var userQ = (deps.userFilter || '').trim();
+  if (userQ) parts.push(userQ);
   return parts.join(' ');
+}
+
+/* §2/§10 слайс 5 — data-source подсказок Ring QueryAssist для фильтра пула в шапке вкладки.
+   1:1 с pick.js _pickAssist (POST /api/search/assist, scope = текущий проект). Ошибка →
+   пустые подсказки (поле продолжает работать). */
+/* const (не var) — C1 arch-fitness: module-level var/let = «новое состояние»; const иммутабелен и исключён. */
+const ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completionEnd,'
+  + 'matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)';
+function _backlogAssist(req, deps) {
+  var query = (req && req.query) || '';
+  var caret = (req && typeof req.caret === 'number') ? req.caret : query.length;
+  var p = (deps.ctx && deps.ctx.project) || null;
+  var body = { query: query, caret: caret, ignoreUnresolvedSetting: true };
+  if (p && p.id) body.folders = [{ $type: 'Project', id: p.id }];
+  return deps.host.fetchYouTrack('search/assist', {
+    method: 'POST', query: { fields: ASSIST_FIELDS }, body: body,
+    headers: { 'Content-Type': 'application/json' },
+  }).then(function (res) {
+    return { query: query, caret: caret, suggestions: (res && res.suggestions) || [] };
+  }).catch(function (err) {
+    if (deps.diag) deps.diag('_backlogAssist: search/assist failed — ' + (err && err.message ? err.message : err), 'warn');
+    return { query: query, caret: caret, suggestions: [] };
+  });
 }
 
 /* customField issue по ИМЕНИ поля (projectCustomField.field.name | cf.name).
@@ -78,6 +131,41 @@ function _cfMinutes(iss, fieldName) {
   return (v && typeof v.minutes === 'number') ? v.minutes : null;
 }
 
+/* §5 — родитель-issue (raw, с вложенными links для рекурсии). Ищем link, у которого фраза со
+   стороны ЭТОГО issue (OUTWARD→sourceToTarget, INWARD→targetToSource) == cascadeParentLinkInward
+   (дефолт «subtask of»). Возвращает issue-объект родителя (или null). */
+function _parentRaw(iss, s) {
+  var inward = (s.cascadeParentLinkInward && String(s.cascadeParentLinkInward)) || 'subtask of';
+  var links = (iss && iss.links) || [];
+  for (var i = 0; i < links.length; i++) {
+    var l = links[i];
+    if (!l || !l.linkType) continue;
+    var phrase = (l.direction === 'OUTWARD') ? l.linkType.sourceToTarget
+      : (l.direction === 'INWARD') ? l.linkType.targetToSource : null;
+    if (phrase === inward && Array.isArray(l.issues) && l.issues.length) return l.issues[0];
+  }
+  return null;
+}
+function _toContainer(p, s) {
+  return {
+    issueId: p.idReadable || p.id,
+    summary: (p.summary && p.summary.trim()) || '',
+    kind: s.cascadeKindField ? _cfPres(p, s.cascadeKindField) : null,
+  };
+}
+/* §5 — цепочка родителей (ближний→дальний), depth хопов (вложенность links). Для
+   Эпик▸Стори▸Таск depth=2 (Стори, Эпик). Один issue-fetch с вложенными links. */
+function _parentChain(iss, s, depth) {
+  var chain = [], cur = iss, d = depth || 2;
+  for (var i = 0; i < d; i++) {
+    var p = _parentRaw(cur, s);
+    if (!p) break;
+    chain.push(_toContainer(p, s));
+    cur = p;
+  }
+  return chain;
+}
+
 /* Сырой issue → task-контракт для pure buildBacklogVm. stateName = value.name (НЕ
    локализованное) — матчится с backlogZones[].state. */
 function _mapPoolIssue(iss, deps) {
@@ -101,7 +189,52 @@ function _mapPoolIssue(iss, deps) {
     tags: (iss.tags || []).map(function (t) { return t && t.name; }).filter(Boolean),
     estByRole: estByRole,
     factByRole: factByRole,
+    parentChain: _parentChain(iss, s, 2),   /* §5 — цепочка родителей (Стори→Эпик) для дерева */
   };
+}
+
+/* §7 — id поля State из пула (project-fields id не отдаёт; берём из projectCustomField.field.id). */
+function _stateFieldId(iss, s) {
+  var cf = _cfByName(iss, (s && s.fieldState) || 'State');
+  return (cf && cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.id) || '';
+}
+
+/* §7 carry-over (E2) — обогатить пул историей входа в текущее состояние. Activities API
+   (как Гант #20), chunks по 25 ПАРАЛЛЕЛЬНО. reverse:true → первая запись на issue =
+   свежайшая смена состояния: _sinceTs (когда вошёл), _prevState (откуда). Эвристика
+   «Перенос/Продолжение» (vs дата старта спринта) — pure (vm). Cap по размеру пула (перф);
+   нет id поля State → пропуск (детект ненадёжен без fieldId). Best-effort: ошибка чанка не
+   роняет загрузку (бейджа просто не будет). */
+/* const — C1 arch-fitness: var/let = module-state; эти иммутабельны (как ASSIST_FIELDS). */
+const MAX_CARRYOVER_POOL = 300, CARRYOVER_CHUNK = 25;
+function _loadCarryover(acc, deps, stateFieldId) {
+  if (!acc.length || !stateFieldId || acc.length > MAX_CARRYOVER_POOL) {
+    if (acc.length > MAX_CARRYOVER_POOL && deps.diag) deps.diag('carryover: пул ' + acc.length + ' > ' + MAX_CARRYOVER_POOL + ' — пропуск (перф)', 'info');
+    return Promise.resolve();
+  }
+  var byId = {}; acc.forEach(function (t) { byId[t.idReadable] = t; });
+  var ids = acc.map(function (t) { return t.idReadable; }), chunks = [];
+  for (var i = 0; i < ids.length; i += CARRYOVER_CHUNK) chunks.push(ids.slice(i, i + CARRYOVER_CHUNK));
+  return Promise.all(chunks.map(function (chunk) {
+    return deps.host.fetchYouTrack('activities', { query: {
+      categories: 'CustomFieldCategory',
+      issueQuery: 'issue id: ' + chunk.join(', '),
+      fields: 'timestamp,target(idReadable),field(id),added(name),removed(name,localizedName)',
+      reverse: 'true', $top: 300,
+    } }).then(function (acts) {
+      if (!Array.isArray(acts)) return;
+      acts.forEach(function (act) {
+        if (!act || !act.target) return;
+        var t = byId[act.target.idReadable];
+        if (!t || t._sinceTs != null) return;                 // первая (свежайшая) — оставляем
+        if (((act.field && act.field.id) || '') !== stateFieldId) return;
+        var removedArr = Array.isArray(act.removed) ? act.removed : (act.removed ? [act.removed] : []);
+        var rv = removedArr[0] || null;
+        t._sinceTs = act.timestamp || null;
+        t._prevState = rv ? (rv.name || rv.localizedName || '') : '';
+      });
+    }).catch(function (e) { if (deps.diag) deps.diag('carryover chunk err: ' + (e && e.message ? e.message : e), 'warn'); });
+  }));
 }
 
 /* Постранично выгрести пул (cap maxBacklogTotal), смапить, положить в transient _backlogPool.
@@ -110,7 +243,7 @@ function loadBacklogPool(deps) {
   var query = _buildPoolQuery(deps);
   var page = deps.backlogPage || 50;
   var cap = deps.maxBacklogTotal || 1000;
-  var acc = [], skip = 0, capped = false;
+  var acc = [], skip = 0, capped = false, stateFieldId = '';
   function loop() {
     if (acc.length >= cap) { capped = true; return Promise.resolve(); }
     return deps.host.fetchYouTrack('issues', {
@@ -119,22 +252,29 @@ function loadBacklogPool(deps) {
       if (!Array.isArray(issues) || !issues.length) return undefined;
       var hasMore = issues.length > page;
       if (hasMore) issues = issues.slice(0, page);
-      issues.forEach(function (iss) { acc.push(_mapPoolIssue(iss, deps)); });
+      issues.forEach(function (iss) {
+        if (!stateFieldId) stateFieldId = _stateFieldId(iss, deps.settings);
+        acc.push(_mapPoolIssue(iss, deps));
+      });
       skip += page;
       if (hasMore) return loop();
       return undefined;
     });
   }
-  return loop().then(function () {
-    deps.state.setBacklogPool(acc);
-    if (capped && deps.diag) deps.diag('loadBacklogPool: capped at ' + cap + ' (' + acc.length + ' loaded)', 'warn');
-    return { count: acc.length, capped: capped };
-  });
+  return loop()
+    .then(function () { return _loadCarryover(acc, deps, stateFieldId); })   /* §7 — обогащение историей */
+    .then(function () {
+      deps.state.setBacklogPool(acc);
+      if (capped && deps.diag) deps.diag('loadBacklogPool: capped at ' + cap + ' (' + acc.length + ' loaded)', 'warn');
+      return { count: acc.length, capped: capped };
+    });
 }
 
 var _api = {
   _poolStates: _poolStates,
   _buildPoolQuery: _buildPoolQuery,
+  _backlogAssist: _backlogAssist,
+  computeUnmappedStates: computeUnmappedStates,
   _mapPoolIssue: _mapPoolIssue,
   loadBacklogPool: loadBacklogPool,
 };

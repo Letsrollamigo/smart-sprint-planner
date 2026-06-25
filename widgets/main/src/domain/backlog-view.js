@@ -8,6 +8,8 @@
 
    Deps приходят АРГУМЕНТОМ на каждый вызов (фабрика _backlogViewDeps() в монолите):
      { t, diag, buildBacklogVm, getActiveRoles, roleLabel, fmtHoursOnly, pageSize,
+       onToSprint, onFilterApply, onAssist, userFilter, getApprovedCapacity,
+       targetSprint, targetSprintName,
        state:{ getSettings, getBacklogPool, getYtBase } }.
    Мост window.__SSP_BACKLOG_VIEW. Golden — render-shell.golden.test.js
    (контракт «модуль → __SSP_BACKLOG_MOUNT»; React-сторона — живьём). */
@@ -40,13 +42,19 @@ function renderBacklog(deps) {
   var roleLabels = {};
   activeRoles.forEach(function (r) { roleLabels[r.key] = deps.roleLabel(r); });
 
-  /* vm-pure читает settings.activeRoles (КЛЮЧИ ролей) — прокидываем, не мутируя _settings. */
-  var vmSettings = Object.assign({}, settings, { activeRoles: activeKeys });
+  /* vm-pure читает settings.activeRoles (КЛЮЧИ ролей) — прокидываем, не мутируя _settings.
+     __sprintStart — дата старта целевого спринта для carry-over (§7, эвристика в vm-pure). */
+  var vmSettings = Object.assign({}, settings, {
+    activeRoles: activeKeys,
+    __sprintStart: (deps.targetSprint && deps.targetSprint.dateStart) || null,
+  });
   var pool = deps.state.getBacklogPool() || [];
   var dom = deps.buildBacklogVm(pool, vmSettings);
+  /* §5 слайс 6 — дерево строим только в tree-режиме (на том же пуле; связи уже в пуле). */
+  var viewMode = (deps.viewMode === 'tree') ? 'tree' : 'zones';
+  var tree = (viewMode === 'tree' && typeof deps.buildTreeVm === 'function') ? deps.buildTreeVm(pool, vmSettings) : null;
 
-  /* Спрос по ролям (§6.3, СТАБ слайса 3: Σ остатков, без потолка — ёмкость = слайс 5).
-     rem в МИНУТАХ (vm-pure: est − fact); потребитель форматирует fmtHoursOnly. */
+  /* Спрос по ролям (§6.3): Σ остатков. rem в МИНУТАХ (vm-pure: est − fact). */
   var demand = {};
   dom.zones.forEach(function (z) {
     z.roles.forEach(function (rr) {
@@ -55,9 +63,20 @@ function renderBacklog(deps) {
       });
     });
   });
+  /* §6.3 ёмкость (слайс 5): спрос vs предложение (ресурс роли целевого спринта через
+     адаптер-розетку; null → деградация «только спрос»). Перелимит = спрос > ёмкость. */
+  var target = deps.targetSprint || null;
+  var capFn = (typeof deps.getApprovedCapacity === 'function') ? deps.getApprovedCapacity : function () { return null; };
   var capacityStrip = activeKeys
     .filter(function (k) { return demand[k] != null; })
-    .map(function (k) { return { roleKey: k, label: roleLabels[k] || k, demand: demand[k] || 0 }; });
+    .map(function (k) {
+      var cap = capFn(k, target);
+      return {
+        roleKey: k, label: roleLabels[k] || k, demand: demand[k] || 0,
+        capacity: (typeof cap === 'number') ? cap : null,
+        over: (typeof cap === 'number') && (demand[k] || 0) > cap,
+      };
+    });
 
   var vm = {
     capacityStrip: capacityStrip,
@@ -77,6 +96,18 @@ function renderBacklog(deps) {
     ytBase: (typeof deps.state.getYtBase === 'function' ? deps.state.getYtBase() : '') || '',
     pageSize: deps.pageSize || 25,
     fmt: deps.fmtHoursOnly,
+    onToSprint: (typeof deps.onToSprint === 'function') ? deps.onToSprint : null, /* слайс 4 — раскладка «→ в спринт» */
+    /* слайс 5 — шапка вкладки: заголовок, целевой спринт, query-assist фильтр (§7/§10). */
+    title: deps.t('tabBacklog'),
+    targetSprintName: deps.targetSprintName || null,
+    userFilter: deps.userFilter || '',
+    onFilterApply: (typeof deps.onFilterApply === 'function') ? deps.onFilterApply : null,
+    onAssist: (typeof deps.onAssist === 'function') ? deps.onAssist : null,
+    /* §10 слайс 6 — переключатель вида + дерево */
+    viewMode: viewMode,
+    onViewMode: (typeof deps.onViewMode === 'function') ? deps.onViewMode : null,
+    tree: tree,
+    unmappedStates: Array.isArray(deps.unmappedStates) ? deps.unmappedStates : null, /* §8 schema-warn */
     onError: function (e) { try { deps.diag('backlog render error: ' + (e && e.message ? e.message : e), 'err'); } catch (_) {} },
     i18n: {
       empty: deps.t('backlogNoTasks'),
@@ -86,6 +117,16 @@ function renderBacklog(deps) {
       needsPoker: deps.t('backlogNeedsPoker'),
       paused: deps.t('backlogPaused'),
       toSprint: deps.t('backlogToSprint'),
+      targetSprintLabel: deps.t('backlogTargetSprintLabel'),
+      noTarget: deps.t('backlogNoTarget'),
+      filterPlaceholder: deps.t('phPickQuery'),
+      viewZones: deps.t('backlogViewZones'),
+      viewTree: deps.t('backlogViewTree'),
+      noParent: deps.t('backlogNoParent'),
+      unmappedWarn: deps.t('backlogUnmappedWarn'),
+      unmappedSchema: deps.t('backlogUnmappedSchema'),
+      carryover: deps.t('backlogCarryover'),
+      continuation: deps.t('backlogContinuation'),
       colKey: deps.t('thId'),
       colSystem: deps.t('thSystem'),
       colSummary: deps.t('thTitle'),

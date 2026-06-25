@@ -132,6 +132,47 @@ test('loadBacklogPool: cap (maxBacklogTotal) обрывает выгрузку',
   assert.ok(stored.length >= 4 && stored.length <= 6, 'capped near maxBacklogTotal, got ' + stored.length);
 });
 
+/* ── слайс 5 — query-assist фильтр пула ── */
+
+test('_buildPoolQuery: пользовательский фильтр AND-ится к базовому (не брейсится — сырой YT-синтаксис)', function () {
+  const d = depsBase({ userFilter: 'Priority: Critical #unresolved' });
+  assert.strictEqual(
+    LOADER._buildPoolQuery(d),
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} Priority: Critical #unresolved'
+  );
+});
+
+test('_buildPoolQuery: пустой/whitespace фильтр не добавляет суффикс', function () {
+  assert.strictEqual(LOADER._buildPoolQuery(depsBase({ userFilter: '   ' })),
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature}');
+  assert.strictEqual(LOADER._buildPoolQuery(depsBase({ userFilter: undefined })),
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature}');
+});
+
+test('_backlogAssist: POST search/assist со scope проекта → {query,caret,suggestions}', async function () {
+  let captured = null;
+  const host = { fetchYouTrack: function (p, opts) {
+    captured = { path: p, opts: opts };
+    return Promise.resolve({ suggestions: [{ option: 'Priority' }] });
+  } };
+  const deps = depsBase({ host: host });
+  const res = await LOADER._backlogAssist({ query: 'Pri', caret: 3 }, deps);
+  assert.strictEqual(captured.path, 'search/assist');
+  assert.strictEqual(captured.opts.method, 'POST');
+  assert.strictEqual(captured.opts.body.query, 'Pri');
+  assert.strictEqual(captured.opts.body.caret, 3);
+  assert.deepStrictEqual(captured.opts.body.folders, [{ $type: 'Project', id: '0-1' }]); // scope из ctx.project
+  assert.strictEqual(res.query, 'Pri');
+  assert.strictEqual(res.suggestions.length, 1);
+});
+
+test('_backlogAssist: ошибка assist → пустые подсказки (поле продолжает работать)', async function () {
+  const host = { fetchYouTrack: function () { return Promise.reject(new Error('500')); } };
+  const res = await LOADER._backlogAssist({ query: 'x' }, depsBase({ host: host }));
+  assert.deepStrictEqual(res.suggestions, []);
+  assert.strictEqual(res.query, 'x');
+});
+
 test('интеграция 2a+2b: загруженный пул → buildBacklogVm раскладывает по зонам/пулу', async function () {
   const issues = [
     rawIssue(1, 'Open'),                                  // пул заказчика
@@ -150,4 +191,101 @@ test('интеграция 2a+2b: загруженный пул → buildBacklog
   const zone = vm.zones.find(function (z) { return z.stateName === 'In Progress'; });
   assert.strictEqual(zone.roles.length, 2);               // analysis + devBack (оба активны)
   assert.strictEqual(zone.roles[0].tasks[0].rem, 50);     // 60−10
+});
+
+/* ── слайс 6/7 — цепочка родителей из вложенных links (_parentChain через _mapPoolIssue) ── */
+
+test('_mapPoolIssue: родитель из INWARD-связи (targetToSource === cascadeParentLinkInward) + kind', function () {
+  const iss = rawIssue(1, 'In Progress');
+  iss.links = [
+    { direction: 'OUTWARD', linkType: { name: 'Relates', sourceToTarget: 'relates to', targetToSource: '' }, issues: [{ idReadable: 'X-9' }] },
+    { direction: 'INWARD', linkType: { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' },
+      issues: [{ idReadable: 'EP-1', summary: ' Epic A ', customFields: [{ projectCustomField: { field: { name: 'Вид' } }, value: { name: 'Epic' } }] }] },
+  ];
+  const deps = depsBase({ settings: Object.assign({}, SETTINGS, { cascadeParentLinkInward: 'subtask of', cascadeKindField: 'Вид' }) });
+  const t = LOADER._mapPoolIssue(iss, deps);
+  assert.deepStrictEqual(t.parentChain, [{ issueId: 'EP-1', summary: 'Epic A', kind: 'Epic' }]);
+});
+
+test('_mapPoolIssue: цепочка Стори→Эпик из вложенных links (2 хопа)', function () {
+  const iss = rawIssue(7, 'In Progress');
+  const subtask = { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' };
+  iss.links = [{ direction: 'INWARD', linkType: subtask, issues: [
+    { idReadable: 'ST-1', summary: 'Стори', customFields: [{ projectCustomField: { field: { name: 'Вид' } }, value: { name: 'Story' } }],
+      links: [{ direction: 'INWARD', linkType: subtask, issues: [
+        { idReadable: 'EP-1', summary: 'Эпик', customFields: [{ projectCustomField: { field: { name: 'Вид' } }, value: { name: 'Epic' } }] }] }] },
+  ] }];
+  const deps = depsBase({ settings: Object.assign({}, SETTINGS, { cascadeParentLinkInward: 'subtask of', cascadeKindField: 'Вид' }) });
+  const t = LOADER._mapPoolIssue(iss, deps);
+  assert.deepStrictEqual(t.parentChain, [
+    { issueId: 'ST-1', summary: 'Стори', kind: 'Story' },   // ближний
+    { issueId: 'EP-1', summary: 'Эпик', kind: 'Epic' },     // дальний
+  ]);
+});
+
+test('_mapPoolIssue: нет подходящей родительской связи → parentChain []', function () {
+  const iss = rawIssue(2, 'In Progress');
+  iss.links = [{ direction: 'OUTWARD', linkType: { sourceToTarget: 'relates to', targetToSource: '' }, issues: [] }];
+  assert.deepStrictEqual(LOADER._mapPoolIssue(iss, depsBase()).parentChain, []);
+});
+
+test('_mapPoolIssue: дефолт cascadeParentLinkInward = «subtask of» когда не задан', function () {
+  const iss = rawIssue(3, 'In Progress');
+  iss.links = [{ direction: 'INWARD', linkType: { sourceToTarget: 'parent for', targetToSource: 'subtask of' }, issues: [{ idReadable: 'P-1', summary: 'P' }] }];
+  const t = LOADER._mapPoolIssue(iss, depsBase());   // SETTINGS без cascadeParentLinkInward
+  assert.strictEqual(t.parentChain[0].issueId, 'P-1');
+  assert.strictEqual(t.parentChain[0].kind, null);    // cascadeKindField не задан
+});
+
+/* ── слайс 7 — carry-over обогащение пула из activities ── */
+
+test('loadBacklogPool: activities → _sinceTs/_prevState (свежайшая State-смена; чужое поле игнор)', async function () {
+  const iss = {
+    id: 'i-1', idReadable: 'DEMO-1', summary: 't',
+    customFields: [{ projectCustomField: { field: { name: 'State', id: 'F-state' } }, value: { name: 'In Progress' } }],
+    tags: [],
+  };
+  const host = { fetchYouTrack: function (p, opts) {
+    if (p === 'issues') return Promise.resolve((opts.query.$skip ? [] : [iss]));
+    if (p === 'activities') return Promise.resolve([
+      { timestamp: 7777, target: { idReadable: 'DEMO-1' }, field: { id: 'F-state' }, added: [{ name: 'In Progress' }], removed: [{ name: 'In Dev' }] },
+      { timestamp: 1111, target: { idReadable: 'DEMO-1' }, field: { id: 'F-other' }, added: [{ name: 'x' }] }, // не State → игнор
+    ]);
+    return Promise.resolve([]);
+  } };
+  let stored = null;
+  const deps = depsBase({ host: host, backlogPage: 50, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () { return stored; } } });
+  await LOADER.loadBacklogPool(deps);
+  assert.strictEqual(stored.length, 1);
+  assert.strictEqual(stored[0]._sinceTs, 7777);
+  assert.strictEqual(stored[0]._prevState, 'In Dev');
+});
+
+test('loadBacklogPool: нет id поля State → carry-over пропускается (activities не зовётся)', async function () {
+  const iss = { id: 'i-2', idReadable: 'DEMO-2', summary: 't',
+    customFields: [{ projectCustomField: { field: { name: 'State' } }, value: { name: 'In Progress' } }], tags: [] }; // нет field.id
+  let activitiesCalled = false;
+  const host = { fetchYouTrack: function (p, opts) {
+    if (p === 'activities') { activitiesCalled = true; return Promise.resolve([]); }
+    return Promise.resolve(opts.query.$skip ? [] : [iss]);
+  } };
+  let stored = null;
+  const deps = depsBase({ host: host, backlogPage: 50, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () {} } });
+  await LOADER.loadBacklogPool(deps);
+  assert.strictEqual(activitiesCalled, false);   // нет fieldId → детект ненадёжен → пропуск
+  assert.strictEqual(stored[0]._sinceTs, undefined);
+});
+
+/* ── слайс 8 — §8 schema-warn (computeUnmappedStates) ── */
+
+test('computeUnmappedStates: бандл − зоны/старт/пауза/resolved → незамапленные', function () {
+  const s = { backlogStartStates: ['Open'], backlogZones: [{ state: 'In Progress', roles: [] }, { state: 'Testing', roles: [] }], backlogPauseStates: ['Paused'] };
+  const values = ['Open', 'In Progress', 'Testing', 'Paused', 'Done', 'Под уточнение', 'Fixed'];
+  assert.deepStrictEqual(LOADER.computeUnmappedStates(values, ['Done', 'Fixed'], s), ['Под уточнение']);
+});
+test('computeUnmappedStates: всё замаплено/resolved → []', function () {
+  assert.deepStrictEqual(LOADER.computeUnmappedStates(['Open', 'Done'], ['Done'], { backlogStartStates: ['Open'] }), []);
+});
+test('computeUnmappedStates: не-массив values → []', function () {
+  assert.deepStrictEqual(LOADER.computeUnmappedStates(null, [], {}), []);
 });

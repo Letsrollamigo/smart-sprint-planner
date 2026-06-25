@@ -811,3 +811,44 @@ test('golden: renderBacklog — нет маппинга зон → empty-бан�
     vmMounted: backlogVm(document) !== undefined && backlogVm(document) !== null,
   });
 });
+
+/* ════ #21 слайс 6 — вид «Дерево» ════
+   Оракул = vm.tree (buildTreeVm на пуле с parent-связями). Контейнеры по прямому родителю,
+   уровень из cascadeLevel2/3Values, зона листа точкой, сироты, resolved скрыт. */
+function treeNodeShape(n) {
+  return {
+    issueId: n.issueId, summary: n.summary, kind: n.kind, level: n.level,
+    count: n.agg.count, zones: n.agg.zones,
+    tasks: n.tasks.map((t) => ({ id: t.idReadable, zone: t.zone, paused: t.isPaused })),
+    children: n.children.map(treeNodeShape),
+  };
+}
+function treeShape(vm) {
+  return {
+    viewMode: vm.viewMode,
+    tree: vm.tree && {
+      roots: vm.tree.roots.map(treeNodeShape),
+      orphans: vm.tree.orphans.map((t) => t.idReadable),
+      counts: vm.tree.counts,
+    },
+  };
+}
+
+test('golden: renderBacklog — дерево: вложенность Эпик▸Стори▸Таск / зоны / сироты / resolved скрыт', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const s = backlogSettings();
+  s.cascadeLevel2Values = ['Story'];
+  s.cascadeLevel3Values = ['Epic'];
+  const EP = { issueId: 'EP-1', summary: 'Эпик A', kind: 'Epic' };
+  const ST = { issueId: 'ST-1', summary: 'Стори B', kind: 'Story' };
+  const pool = [
+    backlogTask({ issueId: 'BL-1', idReadable: 'BL-1', summary: 'таск под стори', stateName: 'In Progress', parentChain: [ST, EP] }), /* Эпик▸Стори▸Таск */
+    backlogTask({ issueId: 'BL-2', idReadable: 'BL-2', summary: 'таск прямо под эпиком', stateName: 'Testing', parentChain: [EP] }),
+    backlogTask({ issueId: 'BL-3', idReadable: 'BL-3', summary: 'сирота', stateName: 'Open', parentChain: [] }),               /* orphan, зона __pool */
+    backlogTask({ issueId: 'BL-4', idReadable: 'BL-4', summary: 'resolved', stateName: 'Fixed', isResolved: true, parentChain: [EP] }), /* §8 hidden */
+  ];
+  gm.set({ _settings: s, _backlogPool: pool, _backlogViewMode: 'tree' });
+  gm.call('renderBacklog');
+  checkJsonSnapshot('backlog-tree', treeShape(backlogVm(document)));
+});

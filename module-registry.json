@@ -4,7 +4,7 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 3909,
+      "loc": 4001,
       "locBudget": 4105
     },
     "fatThreshold": 600,
@@ -17,6 +17,7 @@
     "bridgeLayers": {
       "DATA_LOADERS": "domain",
       "YOUTRACK_API": "domain",
+      "BACKLOG_ASSIGN": "domain",
       "BACKLOG_LOADER": "domain",
       "BACKLOG_VIEW": "domain",
       "CURRENTROLE_VIEW": "domain",
@@ -86,11 +87,23 @@
         "YOUTRACK_API"
       ]
     },
+    "domain/backlog-assign.js": {
+      "layer": "domain",
+      "domain": "domain/backlog-assign",
+      "loc": 138,
+      "locBudget": 158,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "BACKLOG_ASSIGN"
+      ]
+    },
     "domain/backlog-loader.js": {
       "layer": "domain",
       "domain": "domain/backlog-loader",
-      "loc": 138,
-      "locBudget": 158,
+      "loc": 273,
+      "locBudget": 306,
       "state": [
         "BACKLOG_ISSUE_FIELDS",
         "_api"
@@ -102,8 +115,8 @@
     "domain/backlog-view.js": {
       "layer": "domain",
       "domain": "domain/backlog-view",
-      "loc": 96,
-      "locBudget": 116,
+      "loc": 137,
+      "locBudget": 157,
       "state": [
         "api"
       ],
@@ -471,8 +484,8 @@
     "pure/backlog-vm-pure.js": {
       "layer": "pure",
       "domain": "pure/backlog-vm-pure",
-      "loc": 97,
-      "locBudget": 117,
+      "loc": 212,
+      "locBudget": 238,
       "state": [
         "_api"
       ],

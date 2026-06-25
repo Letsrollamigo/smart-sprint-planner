@@ -1,0 +1,63 @@
+{
+  "viewMode": "tree",
+  "tree": {
+    "roots": [
+      {
+        "issueId": "EP-1",
+        "summary": "Эпик A",
+        "kind": "Epic",
+        "level": 3,
+        "count": 2,
+        "zones": [
+          {
+            "zone": "Testing",
+            "count": 1
+          },
+          {
+            "zone": "In Progress",
+            "count": 1
+          }
+        ],
+        "tasks": [
+          {
+            "id": "BL-2",
+            "zone": "Testing",
+            "paused": false
+          }
+        ],
+        "children": [
+          {
+            "issueId": "ST-1",
+            "summary": "Стори B",
+            "kind": "Story",
+            "level": 2,
+            "count": 1,
+            "zones": [
+              {
+                "zone": "In Progress",
+                "count": 1
+              }
+            ],
+            "tasks": [
+              {
+                "id": "BL-1",
+                "zone": "In Progress",
+                "paused": false
+              }
+            ],
+            "children": []
+          }
+        ]
+      }
+    ],
+    "orphans": [
+      "BL-3"
+    ],
+    "counts": {
+      "containers": 2,
+      "tasks": 3,
+      "hidden": 1,
+      "paused": 0
+    }
+  }
+}
