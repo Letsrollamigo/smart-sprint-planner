@@ -720,7 +720,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.16.0';
+  var APP_VERSION = '2.16.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1404,6 +1404,9 @@
       updateShareBtnState: _updateShareBtnState,
       state: {
         getPlanningLevel: function () { return _planningLevel; },
+        /* #45 — _buildDashTree гейтит узел «Ёмкость» по capacityMode; без getSettings
+           здесь _capS=null → узел «Ёмкость» НИКОГДА не строился в global-дереве (баг 2.16.0). */
+        getSettings: function () { return _settings; },
       },
     };
   }
