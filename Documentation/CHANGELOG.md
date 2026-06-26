@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.1] — 2026-06-26
+
+> **«Full» capacity model unlocked (per-role and per-assignee approved capacity) + sprint-state cluster fixes.**
+
+### Added
+
+- **Full capacity model.** The planning model now offers a «Full» mode with its own «Capacity» tab (calendar, absences and per-grade personal-capacity calculation). Once a sprint’s capacity is approved, the planner consumes it: the role remainder, the «Available resources» field and the role accordion header all read the approved business capacity consistently. «Light»/«Simple» stay byte-identical — the adapter falls back to the manual per-role resource when no approved capacity exists.
+
+### Fixed
+
+- **No false «Select a sprint».** Adding a fresh second role to the active sprint no longer triggers a false «Select a sprint» prompt at the per-assignee level — a missing per-role record is now synthesised for the active sprint.
+- **Deleted sprint no longer lingers.** Deleting the last role record of the active sprint now removes the sprint completely (active state, server snapshot and per-user draft), so it no longer stays in the picker or reappears after a hard reload.
+
+### Changed
+
+- Removed duplicate i18n keys across all 15 locales (clean build).
+
+---
+
 ## [2.15.3] — 2026-06-25
 
 > **Backlog settings: layout fix, tag picker, uniform font.**

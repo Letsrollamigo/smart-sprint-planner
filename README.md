@@ -3,7 +3,7 @@
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v2.15.3-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v2.16.1-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.14.0-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
@@ -33,7 +33,7 @@ The plugin ships through two parallel channels — pick the one that matches you
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.14.0** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.15.3** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.16.1** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
@@ -43,7 +43,7 @@ GitHub Releases is the authoritative source — every marketplace upload is buil
 - **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and direct editing of YouTrack fields from the sprint table.
 - **Backlog workspace** — a pre-planning phase before sprint planning: a pool of customer tasks shown **By zones** (state → role) or as an **Epic ▸ Story ▸ Task** tree, query-assist filter, Carryover / Continuation / Needs-estimate / Paused labels, and one-click **«lay into sprint»** that distributes a pooled task into role compositions (auto-suggested roles by zone). Tasks in unmapped states land in an «Other» bucket with a fail-loud warning.
 - **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity. Under the **«Simple»** planning model the **Per-assignee distribution** nav item is hidden, role capacity is entered manually on the allocation tab, and assignees are set directly on the Gantt chart — no per-person capacity accounting; the **«Light»** model enables per-assignee capacity.
-- **Capacity management settings** — calculation norms (hour quotas / rate / participation / grade coefficients) and the **«Planning model»** selector (Simple / Light / Full — in development; Light offers auto-by-formula or manual per-assignee resource) are consolidated into an admin-tier section editable only by the settings manager.
+- **Capacity management settings** — calculation norms (hour quotas / rate / participation / grade coefficients) and the **«Planning model»** selector (Simple / Light / Full; Light offers auto-by-formula or manual per-assignee resource, Full adds a «Capacity» tab and consumes the approved per-sprint business capacity per role and assignee) are consolidated into an admin-tier section editable only by the settings manager.
 - **Manual per-assignee resource** — opt-in `manualPersonalResource` mode for teams whose capacity is set top-down by the team lead (fixed weekly hours per person) instead of derived from KPE coefficients.
 - **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
 - **Gantt timeline per role** with sprint-aware filtering.
