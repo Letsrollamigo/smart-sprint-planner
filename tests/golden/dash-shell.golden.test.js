@@ -65,6 +65,28 @@ test('golden: _buildDashTree — структура узлов + делегац�
   });
 });
 
+/* #45 — регресс 2.16.1: узел «Ёмкость» в global-дереве гейтится по
+   _settings.capacityMode==='full' (dash-shell _buildDashTree). Баг 2.16.0:
+   _dashDeps().state не отдавал getSettings → _capS=null → узел НИКОГДА не строился
+   (Full недостижим в проде). Гард: при Full узел есть и стоит сразу после
+   «Параметры спринта»; при Light/прочем — узла нет (Light byte-identical). */
+test('golden: _buildDashTree — узел «Ёмкость» только при capacityMode==="full" (регресс 2.16.1)', () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+
+  gm.set({ _settings: { capacityMode: 'light' } });
+  const hasLight = !!gm.call('_buildDashTree').querySelector('[data-node="capacity"]');
+
+  gm.set({ _settings: { capacityMode: 'full' } });
+  const treeFull = gm.call('_buildDashTree');
+  const nodesFull = Array.prototype.map.call(treeFull.querySelectorAll('[data-node]'), function (b) { return b.dataset.node; });
+
+  assert.strictEqual(hasLight, false, 'Light: узла «Ёмкость» быть не должно');
+  assert.ok(nodesFull.indexOf('capacity') >= 0, 'Full: узел «Ёмкость» должен присутствовать');
+  assert.strictEqual(nodesFull[0], 'sprint-params');
+  assert.strictEqual(nodesFull[1], 'capacity', 'Ёмкость — сразу после «Параметры спринта»');
+});
+
 test('golden: _deriveDashNodeFromTabLevel — маппинг activeTab/planningLevel → dashNode', () => {
   const { gm } = createHost();
   fx.applyBaseState(gm);
