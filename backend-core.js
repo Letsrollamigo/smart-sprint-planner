@@ -208,6 +208,37 @@ var ALLOWED_WORKING_DRAFT_KEYS = [
   'gantt',
   'pluginVersion'
 ];
+var ALLOWED_CALENDAR_KEYS = [
+  'years',
+  'uploadedBy',
+  'uploadedAt',
+  'pluginVersion'
+];
+var ALLOWED_ABSENCE_ENTRY_KEYS = [
+  'from',
+  'to',
+  'type'
+];
+var ALLOWED_CAPACITY_RECORD_KEYS = [
+  'mode',
+  'status',
+  'dirty',
+  'constants',
+  'calendarRef',
+  'persons',
+  'approvedBy',
+  'approvedAt',
+  'reapprovals',
+  'pluginVersion'
+];
+var ALLOWED_CAPACITY_PERSON_KEYS = [
+  'grade',
+  'rate',
+  'participation',
+  'alloc',
+  'base',
+  'absencesApplied'
+];
 // AUTOGEN:WHITELISTS END
 /* v1.8.1 — 'NONE' добавлен для backward-compat. Pre-v1.8.1 frontend записывал level='NONE'
    в revision при commit working copy без реальных изменений (см. computeRequiredRevalidationLevel
@@ -2896,6 +2927,26 @@ exports.APP_VERSION = APP_VERSION;
 exports.parseJson   = parseJson;
 exports.getBody     = getBody;
 exports.MAX_PROP_SIZE = MAX_PROP_SIZE;
+
+/* #45 R2 — символы ядра, нужные backend-capacity.js в YT-рантайме (первый per-feature
+   backend-модуль require'ит ядро и пишет свои endpoints в core.ENDPOINTS). Вне test-guard
+   — должны быть доступны в проде. Поведение-нейтрально (только расширяют поверхность). */
+exports.authzGuard                  = authzGuard;
+exports.getProp                     = getProp;
+exports.setProp                     = setProp;
+exports.filterKeys                  = filterKeys;
+exports.badRequest                  = badRequest;
+exports.forbidden                   = forbidden;
+exports.isNumInRange                = isNumInRange;
+exports.validatePluginVersion       = validatePluginVersion;
+exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
+exports.isSettingsManager           = isSettingsManager;
+exports.isPlanningManager           = isPlanningManager;
+exports.ALLOWED_CALENDAR_KEYS       = ALLOWED_CALENDAR_KEYS;
+exports.ALLOWED_ABSENCE_ENTRY_KEYS  = ALLOWED_ABSENCE_ENTRY_KEYS;
+exports.ALLOWED_CAPACITY_RECORD_KEYS = ALLOWED_CAPACITY_RECORD_KEYS;
+exports.ALLOWED_CAPACITY_PERSON_KEYS = ALLOWED_CAPACITY_PERSON_KEYS;
+exports.ROLE_KEYS                   = ROLE_KEYS; // #45 R2 — capacity alloc-key whitelist
 
 /* v1.6.0 D125 — Test-only CommonJS exports.
    ВАЖНО: Object.assign(exports, ...) вместо module.exports = {...}.

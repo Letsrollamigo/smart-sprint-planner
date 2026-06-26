@@ -400,6 +400,8 @@
     try { if (typeof renderCurrentRoleAssigneeTable === 'function') renderCurrentRoleAssigneeTable(); } catch(_){}
     try { if (typeof renderGanttChart === 'function') renderGanttChart(); } catch(_){}
     try { if (typeof renderHistory === 'function') renderHistory(); } catch(_){}
+    /* #45 R3 — перерисовать вкладку ёмкости из готового стейта (смена языка). */
+    try { if (typeof renderCapacityView === 'function') renderCapacityView(); } catch(_){}
     /* Subtab-метки «Аллокация общего ресурса» / «Распределение по исполнителям» —
        обновятся через applyI18N (data-i18n атрибуты). */
     if (typeof refreshDirtyIndicator === 'function') refreshDirtyIndicator();
@@ -505,6 +507,16 @@
   // _items теперь хранится по ролям: { roleKey: [items] }
   var _roleItems = {};
   var _history = [];
+  /* #45 R3 — стейт вкладки ёмкости (домен capacity инкапсулирован: pure+view+отдельные
+     сторы). Все — closure-стейт ядра, в capacity-view идут через _capacityDeps().state
+     get/set (C1). _capacity = запись выбранного спринта (или null); _calendar/_absences —
+     сторы (full map); _capacityRoster = {roleKey:[{login,name}]}; _capacityUiState —
+     эфемерное UI (выбор спринта/человека, рабочая модель правок, carry-forward). */
+  var _capacity = null;
+  var _calendar = null;
+  var _absences = {};
+  var _capacityRoster = {};
+  var _capacityUiState = { selectedSprintId: null, selectedPerson: null, persons: null, absences: null, carry: null };
   /* ═══ v5.4.0 — Общий контекст спринта (Этап 2) ═══
      _currentSprintId — id «логического спринта» виджета (соответствует _sprint.sprintId
      для активного и любому уникальному <sprintId> из _history для исторических).
@@ -1360,7 +1372,7 @@
      Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
-  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history'];
+  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history','capacity'];
 
   /* #25 Ф2 dash-shell вынесен в dash-shell.js (Фаза 5 слайс 13, домен E6) за __SSP_DASH_SHELL.
      SSP_DASH_NODES остаётся в ядре (читается init-зоной _loadAndRenderProject) — приходит депом.
@@ -1419,6 +1431,8 @@
         }
       } catch(e) { diag('restoreUiState: currentSprintId migration err: '+e, 'err'); }
 
+      /* #45 R3 — стейл-вкладка capacity при Light → fallback на planning (таб скрыт в Light). */
+      if (ui.activeTab === 'capacity' && (!_settings || _settings.capacityMode !== 'full')) ui.activeTab = 'planning';
       if (ui.activeTab) {
         var tabBtn = document.querySelector('.tab-btn[data-tab="'+ui.activeTab+'"]');
         if (tabBtn && tabBtn.style.display !== 'none') tabBtn.click();
@@ -1708,6 +1722,9 @@
         _node = _uiR.dashNode;
         if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
       }
+      /* #45 R3 — стейл/share-узел 'capacity' при Light → fallback (узла нет в Light;
+         иначе _setDashNode('capacity') откроет осиротевший таб без подсветки в дереве). */
+      if (_node === 'capacity' && (!_settings || _settings.capacityMode !== 'full')) _node = _deriveDashNodeFromTabLevel();
       /* #45 super-light — planning-people недоступен при выключенном перс.планировании
          (deep-link/сохранённый dashNode → fallback на planning-roles). */
       if (_node === 'planning-people' && !(_settings && _settings.personalPlanningEnabled)) _node = 'planning-roles';
@@ -1995,6 +2012,51 @@
     }
   }
 
+  /* #45 R3 — Global-режим: Ring-tabs host скрыт CSS, видимая навигация = дерево .ssp-tree
+     (строится один раз _buildGlobalDashShell, идемпотентно — НЕ пересобирается ни на смене
+     проекта, ни на save). Пересобираем его, чтобы узел «Ёмкость» появлялся/исчезал по
+     capacityMode. Зовётся из _mountTabsAndSync → покрывает ВСЕ триггеры: смену проекта,
+     save настроек (_applyCapacityModeVisibility), смену языка (_doFullRerender). Подсветку
+     активного узла сохраняем напрямую (без _setDashNode → без навигации/таймингов). */
+  function _syncGlobalDashTree() {
+    if (_mode !== 'global') return;
+    try {
+      var navTree = document.querySelector('.ssp-rail__nav .ssp-tree');
+      if (!navTree || !navTree.parentNode || typeof _buildDashTree !== 'function') return;
+      /* Пересобираем ТОЛЬКО когда присутствие узла «Ёмкость» расходится с capacityMode
+         (редкий mode-переход). Иначе no-op — иначе rebuild на каждом _mountTabsAndSync
+         (смена языка/рендеры) детачил бы узлы дерева и ломал клики (ref churn). Локализацию
+         лейблов покрывает applyI18N по data-i18n, перерисовка дерева для этого не нужна. */
+      var hasNode = !!navTree.querySelector('[data-node="capacity"]');
+      var wantNode = !!(_settings && _settings.capacityMode === 'full');
+      if (hasNode === wantNode) return;
+      var act = navTree.querySelector('[data-node].active');
+      var activeNode = act ? act.dataset.node : null;
+      var fresh = _buildDashTree();
+      navTree.parentNode.replaceChild(fresh, navTree);
+      if (activeNode) {
+        var el = fresh.querySelector('[data-node="' + activeNode + '"]');
+        if (el) el.classList.add('active');
+      }
+    } catch(_){}
+  }
+
+  /* #45 R3 — видимость вкладки «Ёмкость» по _settings.capacityMode ('full' → видна).
+     Зовётся из settings-controller post-save (паттерн applyPersonalPlanningVisibility).
+     Если режим выключили, сидя на вкладке capacity — fallback на planning. */
+  function _applyCapacityModeVisibility() {
+    try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch(_){}
+    try {
+      if ((!_settings || _settings.capacityMode !== 'full')) {
+        var capBtn = document.querySelector('.tab-btn.tab-state-tracker[data-tab="capacity"]');
+        if (capBtn && capBtn.classList.contains('active')) {
+          var plan = document.querySelector('.tab-btn.tab-state-tracker[data-tab="planning"]');
+          if (plan) plan.click();
+        }
+      }
+    } catch(_){}
+  }
+
 
   /* ═══ Форма настроек проекта — вынесена в settings-controller.js
      (window.__SSP_SETTINGS_CTRL) — Фаза 5 слайс 11. Делегаторы; контекст
@@ -2018,6 +2080,7 @@
       checkEditorRights: checkEditorRights,
       checkAssignerRights: checkAssignerRights,
       applyPersonalPlanningVisibility: applyPersonalPlanningVisibility,
+      applyCapacityModeVisibility: _applyCapacityModeVisibility,
       refreshClearHistoryBtn: refreshClearHistoryBtn,
       renderPlannerRoles: renderPlannerRoles,
       applyDiagLogVisibility: _applyDiagLogVisibility,
@@ -2181,12 +2244,17 @@
   function _mountTabsAndSync() {
     var host = document.getElementById('sspTabsHost');
     if (!host) return;
-    host.dataset.tabsJson = JSON.stringify([
+    var _tabs = [
       { id: 'backlog',  title: T('tabBacklog')  || 'Работа с бэклогом' },
-      { id: 'planning', title: T('tabPlanning') || 'Планирование' },
-      { id: 'gantt',    title: T('tabGantt')    || 'Диаграмма Ганта' },
-      { id: 'history',  title: T('tabHistory')  || 'История спринтов' }
-    ]);
+      { id: 'planning', title: T('tabPlanning') || 'Планирование' }
+    ];
+    /* #45 R3 — «Ёмкость» сразу после «Планирования» (условно, при capacityMode==='full'). */
+    if (_settings && _settings.capacityMode === 'full') {
+      _tabs.push({ id: 'capacity', title: T('tabCapacity') || 'Ёмкость' });
+    }
+    _tabs.push({ id: 'gantt',   title: T('tabGantt')   || 'Диаграмма Ганта' });
+    _tabs.push({ id: 'history', title: T('tabHistory') || 'История спринтов' });
+    host.dataset.tabsJson = JSON.stringify(_tabs);
     /* Sync selected from active tracker (если кто-то уже выбрал tab до mount). */
     var activeTracker = document.querySelector('.tab-btn.tab-state-tracker.active');
     if (activeTracker && activeTracker.dataset.tab) {
@@ -2201,6 +2269,8 @@
         if (tracker) tracker.click();
       });
     }
+    /* #45 R3 — Global-дерево: появление/исчезновение узла «Ёмкость» по capacityMode. */
+    if (typeof _syncGlobalDashTree === 'function') _syncGlobalDashTree();
     if (window.__SSP_TABS && typeof window.__SSP_TABS.mountAt === 'function') {
       window.__SSP_TABS.mountAt(host);
     }
@@ -2222,7 +2292,7 @@
       document.body.classList.toggle('planner-wide',
         btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
         btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
-        btn.dataset.tab === 'backlog');
+        btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity');
       /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
       var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
       var tabsHost = document.getElementById('sspTabsHost');
@@ -2280,6 +2350,12 @@
               try { toast(T('backlogLoadErr'), 'err'); } catch(_){}
             });
         }
+      }
+      /* #45 R3 — вкладка ёмкости: async-загрузка (calendar/absences/capacity/ростер +
+         carry-forward) → render. Иначе панель пуста на первом клике. */
+      if (btn.dataset.tab === 'capacity') {
+        try { CAPACITY_VIEW.loadAndRender(_capacityDeps()); }
+        catch(e){ diag('capacity render err: '+e,'err'); }
       }
       if (btn.dataset.tab === 'settings') {
         checkSettingsManager().then(function(canManage) {
@@ -3159,6 +3235,44 @@
   /* Делегатор-точка входа golden'ов render-history (gm.call) — прод-caller
      один: внутри модуля. */
   function buildSpoiler(rec, idx) { return HISTORY_VIEW.buildSpoiler(rec, idx, _historyDeps()); }
+
+  /* ═══ #45 R3 — ЁМКОСТЬ ════════════════════════════════════════
+     Вкладка вынесена в capacity-view.js (window.__SSP_CAPACITY_VIEW). Делегаторы;
+     контекст _capacityDeps() собирается на вызове, стейт модуль читает get/set-аксессорами
+     В МОМЕНТ обращения (lazy — gotcha #14/#15 R2). B1: модуль зовёт только leaf
+     (deps.* + CAPACITY_PURE). */
+  var CAPACITY_VIEW = (typeof window !== 'undefined' && window.__SSP_CAPACITY_VIEW) || {};
+  var CAPACITY_PURE = (typeof window !== 'undefined' && window.__SSP_CAPACITY_PURE) || {};
+  function _capacityDeps() {
+    return {
+      T: T, esc: esc, icon: icon, diag: diag,
+      fmtDate: fmtDate, fmtHoursOnly: fmtHoursOnly,
+      toast: toast, apiGet: apiGet, apiPost: apiPost,
+      getActiveRoles: getActiveRoles, roleLabel: roleLabel,
+      checkSettingsManager: checkSettingsManager,
+      CAPACITY_PURE: CAPACITY_PURE,
+      state: {
+        getSettings: function () { return _settings; },
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+        getCurrentUser: function () { return _currentUser; },
+        getCapacity: function () { return _capacity; },
+        setCapacity: function (v) { _capacity = v; },
+        getCalendar: function () { return _calendar; },
+        setCalendar: function (v) { _calendar = v; },
+        getAbsences: function () { return _absences; },
+        setAbsences: function (v) { _absences = v || {}; },
+        getRoster: function () { return _capacityRoster; },
+        setRoster: function (v) { _capacityRoster = v || {}; },
+        getCapacityUiState: function () { return _capacityUiState; },
+        setCapacityUiState: function (v) { _capacityUiState = v || {}; },
+      },
+    };
+  }
+  /* Sync-делегатор (re-render из готового стейта) — для _doFullRerender (смена языка). */
+  function renderCapacityView() {
+    if (CAPACITY_VIEW && typeof CAPACITY_VIEW.render === 'function') CAPACITY_VIEW.render(_capacityDeps());
+  }
 
   document.getElementById('histPrev').addEventListener('click', function() { _histPage--; renderHistory(); });
   document.getElementById('histNext').addEventListener('click', function() { _histPage++; renderHistory(); });

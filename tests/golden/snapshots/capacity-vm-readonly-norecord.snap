@@ -1,0 +1,189 @@
+{
+  "selectedSprintId": "HSP",
+  "versionTag": 1,
+  "dateStartLabel": "08.01.2024",
+  "dateEndLabel": "12.01.2024",
+  "selectedRole": "analysis",
+  "viewMode": "person",
+  "sprints": [
+    {
+      "id": "S1",
+      "name": "Sprint Июнь",
+      "isActive": true
+    },
+    {
+      "id": "HSP",
+      "name": "Старый спринт",
+      "isActive": false
+    }
+  ],
+  "status": "none",
+  "readOnly": true,
+  "isReapprove": false,
+  "grades": [
+    "Intern",
+    "Junior",
+    "Middle",
+    "Senior"
+  ],
+  "roles": [
+    {
+      "key": "analysis",
+      "label": "Анализ",
+      "people": [
+        {
+          "login": "alice",
+          "name": "Алиса"
+        },
+        {
+          "login": "bob",
+          "name": "Борис"
+        }
+      ]
+    }
+  ],
+  "persons": {
+    "alice": {
+      "grade": "Middle",
+      "rate": 1,
+      "participation": 1,
+      "alloc": {
+        "analysis": 1
+      }
+    },
+    "bob": {
+      "grade": "Middle",
+      "rate": 1,
+      "participation": 1,
+      "alloc": {
+        "analysis": 1
+      }
+    }
+  },
+  "computed": {
+    "bases": {},
+    "roleCapacities": {},
+    "sigma": {}
+  },
+  "calendarDays": [
+    {
+      "iso": "2024-01-08",
+      "dom": "08",
+      "type": "workday",
+      "weekday": 1
+    },
+    {
+      "iso": "2024-01-09",
+      "dom": "09",
+      "type": "workday",
+      "weekday": 2
+    },
+    {
+      "iso": "2024-01-10",
+      "dom": "10",
+      "type": "workday",
+      "weekday": 3
+    },
+    {
+      "iso": "2024-01-11",
+      "dom": "11",
+      "type": "workday",
+      "weekday": 4
+    },
+    {
+      "iso": "2024-01-12",
+      "dom": "12",
+      "type": "workday",
+      "weekday": 5
+    }
+  ],
+  "dows": [
+    "Пн",
+    "Вт",
+    "Ср",
+    "Чт",
+    "Пт",
+    "Сб",
+    "Вс"
+  ],
+  "selectedPerson": "alice",
+  "absencesByLogin": {},
+  "absenceTypes": [
+    {
+      "key": "vacation",
+      "label": "Отпуск"
+    },
+    {
+      "key": "sick",
+      "label": "Больничный"
+    },
+    {
+      "key": "out_of_membership",
+      "label": "Вне команды"
+    },
+    {
+      "key": "regional_holiday",
+      "label": "Региональный праздник"
+    },
+    {
+      "key": "training",
+      "label": "Обучение"
+    },
+    {
+      "key": "teamleading",
+      "label": "Тимлидинг"
+    },
+    {
+      "key": "other",
+      "label": "Прочее"
+    }
+  ],
+  "uncoveredYears": [
+    "2024"
+  ],
+  "canUploadCsv": false,
+  "EPS": 0.000001,
+  "labels": {
+    "sprintLabel": "Спринт:",
+    "activeSuffix": "активный",
+    "readOnlyHint": "Только чтение (исторический спринт)",
+    "notApproved": "Не утверждена",
+    "statusDraft": "Черновик",
+    "statusApproved": "Утверждена",
+    "statusDirty": "Изменена после утверждения",
+    "approve": "Утвердить",
+    "reapprove": "Переутвердить",
+    "save": "Сохранить",
+    "roleHeader": "Расчёт по ролям",
+    "calHeader": "Календарь и отсутствия",
+    "thName": "Сотрудник",
+    "thGrade": "Грейд",
+    "thRate": "Ставка",
+    "thPart": "% участия (0–1)",
+    "thAlloc": "Аллокация",
+    "thBase": "База, ч",
+    "thContrib": "Вклад, ч",
+    "thSumAlloc": "Σ аллокации",
+    "noRoles": "Нет активных ролей",
+    "noPeople": "Нет людей в роли",
+    "pickPerson": "Выберите сотрудника слева, чтобы отметить отсутствия",
+    "calFor": "Календарь для:",
+    "absType": "Тип отсутствия:",
+    "dlTemplate": "Скачать шаблон",
+    "upCsv": "Загрузить CSV",
+    "saveAbs": "Сохранить отсутствия",
+    "sumOver": "Σ аллокации превышает 100%",
+    "yearFallback": "Нет производственного календаря на: {years} — используется выходной по умолчанию.",
+    "dayType": {
+      "holiday": "Праздник",
+      "short": "Сокращённый день",
+      "workday": "Рабочий день",
+      "weekend": "Выходной"
+    },
+    "periodLabel": "Период",
+    "rolePickLabel": "Роль:",
+    "personPickLabel": "Сотрудник",
+    "viewModeRole": "По роли",
+    "absentLabel": "Отсутствуют"
+  }
+}

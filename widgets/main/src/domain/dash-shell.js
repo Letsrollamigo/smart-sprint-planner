@@ -64,6 +64,13 @@
     /* 1. Параметры спринта (D6) */
     tree.appendChild(mkItem('sprint-params', 'treeSprintParams', 'settings'));
 
+    /* #45 R3 — Ёмкость: под «Параметрами спринта», ПЕРЕД «Планированием» (решение владельца);
+       только при capacityMode==='full' (иначе узла нет, как скрытый таб). */
+    var _capS = deps.state && deps.state.getSettings ? deps.state.getSettings() : null;
+    if (_capS && _capS.capacityMode === 'full') {
+      tree.appendChild(mkItem('capacity', 'tabCapacity', 'calendar'));
+    }
+
     /* 1b. Работа с бэклогом (#21 — funnel «что делать» перед планированием).
        Иконка 'folder' (пул/коллекция), не 'task' — чтобы не дублировать группу «Планирование». */
     tree.appendChild(mkItem('backlog', 'tabBacklog', 'folder'));
@@ -123,6 +130,7 @@
     function _clickLevel(l){ var el = document.querySelector('.planning-level-btn[data-level="'+l+'"]'); if (el && !el.classList.contains('active')) el.click(); }
     if (nodeId === 'sprint-params')    { _clickTab('planning'); }
     else if (nodeId === 'backlog')          { _clickTab('backlog'); }
+    else if (nodeId === 'capacity')         { _clickTab('capacity'); }
     else if (nodeId === 'planning-roles')   { _clickTab('planning'); _clickLevel('roles'); }
     else if (nodeId === 'planning-people')  { _clickTab('planning'); _clickLevel('people'); }
     else if (nodeId === 'planning-standup') { _clickTab('planning'); _clickLevel('standup'); }

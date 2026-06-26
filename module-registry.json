@@ -4,8 +4,8 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4001,
-      "locBudget": 4105
+      "loc": 4114,
+      "locBudget": 4320
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -20,6 +20,7 @@
       "BACKLOG_ASSIGN": "domain",
       "BACKLOG_LOADER": "domain",
       "BACKLOG_VIEW": "domain",
+      "CAPACITY_VIEW": "domain",
       "CURRENTROLE_VIEW": "domain",
       "DASH_SHELL": "domain",
       "DRAFT_STORE": "domain",
@@ -52,6 +53,7 @@
       "TOAST": "infra",
       "TOAST_RING": "infra",
       "BACKLOG_VM_PURE": "pure",
+      "CAPACITY_PURE": "pure",
       "DATE_PURE": "pure",
       "ENUM_PURE": "pure",
       "HASH_PURE": "pure",
@@ -68,8 +70,8 @@
     "data/data-loaders.js": {
       "layer": "domain",
       "domain": "data/data-loaders",
-      "loc": 226,
-      "locBudget": 254,
+      "loc": 245,
+      "locBudget": 275,
       "state": [
         "api"
       ],
@@ -124,6 +126,16 @@
         "BACKLOG_VIEW"
       ]
     },
+    "domain/capacity-view.js": {
+      "layer": "domain",
+      "domain": "domain/capacity-view",
+      "loc": 344,
+      "locBudget": 386,
+      "state": [],
+      "publishes": [
+        "CAPACITY_VIEW"
+      ]
+    },
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
@@ -140,8 +152,8 @@
     "domain/dash-shell.js": {
       "layer": "domain",
       "domain": "domain/dash-shell",
-      "loc": 210,
-      "locBudget": 236,
+      "loc": 217,
+      "locBudget": 244,
       "state": [],
       "publishes": [
         "DASH_SHELL"
@@ -316,8 +328,8 @@
     "domain/settings-controller.js": {
       "layer": "domain",
       "domain": "domain/settings-controller",
-      "loc": 192,
-      "locBudget": 216,
+      "loc": 199,
+      "locBudget": 223,
       "state": [
         "api"
       ],
@@ -493,6 +505,16 @@
         "BACKLOG_VM_PURE"
       ]
     },
+    "pure/capacity-pure.js": {
+      "layer": "pure",
+      "domain": "pure/capacity-pure",
+      "loc": 273,
+      "locBudget": 306,
+      "state": [],
+      "publishes": [
+        "CAPACITY_PURE"
+      ]
+    },
     "pure/date-pure.js": {
       "layer": "pure",
       "domain": "pure/date-pure",
@@ -576,8 +598,8 @@
     "pure/share-url-pure.js": {
       "layer": "pure",
       "domain": "pure/share-url-pure",
-      "loc": 91,
-      "locBudget": 111,
+      "loc": 92,
+      "locBudget": 112,
       "state": [
         "FOCUS_RE",
         "NODE_INTERNAL_TO_URL",

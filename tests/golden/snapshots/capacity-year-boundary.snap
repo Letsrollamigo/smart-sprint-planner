@@ -1,0 +1,19 @@
+{
+  "working": 16,
+  "persons": {
+    "x": {
+      "grade": "Senior",
+      "rate": 1,
+      "participation": 1,
+      "alloc": {
+        "analysis": 1
+      },
+      "nominal": 16,
+      "absenceHours": 0,
+      "base": 12
+    }
+  },
+  "roleCapacities": {
+    "analysis": 12
+  }
+}

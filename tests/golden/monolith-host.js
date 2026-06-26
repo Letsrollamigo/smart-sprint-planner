@@ -51,6 +51,7 @@ const BRIDGE_SCRIPTS = [
   'refresh-merge-pure.js',
   'share-url-pure.js',
   'backlog-vm-pure.js',
+  'capacity-pure.js',
   'modal-specs.js',
   'excel-export.js',
   'revalidation.js',
@@ -79,6 +80,7 @@ const BRIDGE_SCRIPTS = [
   'gantt-view.js',
   'backlog-view.js',
   'intro-view.js',
+  'capacity-view.js',
 ];
 
 /* Модули разнесены по layer-папкам (domain/infra/pure/data/i18n); icons.generated.js — в корне.
@@ -213,6 +215,12 @@ function createHost(opts) {
   window.__SSP_BACKLOG_MOUNT = {
     mountAt: rec('BACKLOG', 'mountAt', function (host, vm) { if (host) host.__sspBacklogVm = vm || null; }),
     unmountAt: rec('BACKLOG', 'unmountAt', function (host) { if (host) { try { delete host.__sspBacklogVm; } catch (_) {} } }),
+  };
+  /* #45 R3: capacity-view.js строит vm и отдаёт мосту — стаб стэшит vm на host
+     (host.__sspCapacityVm); голдены характеризуют контракт «модуль → __SSP_CAPACITY_MOUNT». */
+  window.__SSP_CAPACITY_MOUNT = {
+    mountAt: rec('CAPACITY', 'mountAt', function (host, vm) { if (host) host.__sspCapacityVm = vm || null; }),
+    unmountAt: rec('CAPACITY', 'unmountAt', function (host) { if (host) { try { delete host.__sspCapacityVm; } catch (_) {} } }),
   };
   const modalLog = [];
   window.__SSP_RING_MODAL = {

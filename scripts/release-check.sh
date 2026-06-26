@@ -100,6 +100,14 @@ case "$NAME" in
     ;;
 esac
 
+# ── полнота i18n вкладки ёмкости (#45 R3 — все capacity-ключи × 15 локалей) ───
+echo "— i18n полнота (capacity) —"
+if TZ=UTC node --test tests/unit/capacity-i18n-completeness.test.js >/dev/null 2>&1; then
+  ok "capacity i18n: все ключи × 15 локалей, без EN-копий"
+else
+  fail "capacity i18n неполна — 'TZ=UTC node --test tests/unit/capacity-i18n-completeness.test.js'"
+fi
+
 # ── architecture gate ─────────────────────────────────────────────────────────
 echo "— architecture gate —"
 if npm run --silent gate >/dev/null 2>&1; then
