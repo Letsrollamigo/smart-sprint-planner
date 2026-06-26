@@ -26,9 +26,9 @@ test('toFlags: light + manual → PP on, useRes on, manual on', function () {
   });
 });
 
-test('toFlags: full (заглушка) → как simple (PP off)', function () {
+test('toFlags: full → PP+useRes (ресурс из ёмкости, #45 R4)', function () {
   assert.deepStrictEqual(planningModelToFlags('full'), {
-    personalPlanningEnabled: false, usePersonalForResource: false, manualPersonalResource: false,
+    personalPlanningEnabled: true, usePersonalForResource: true, manualPersonalResource: false,
   });
 });
 
@@ -75,8 +75,8 @@ test('fromSettings: невалидный planningModel → дериват из �
   assert.strictEqual(planningModelFromSettings({ planningModel: 'garbage', personalPlanningEnabled: true }).model, 'light');
 });
 
-test('fromSettings: full → simple на чтении (функционал не реализован)', function () {
-  assert.strictEqual(planningModelFromSettings({ planningModel: 'full' }).model, 'simple');
+test('fromSettings: full сохраняется на чтении (#45 R4 — функционал реализован)', function () {
+  assert.strictEqual(planningModelFromSettings({ planningModel: 'full' }).model, 'full');
 });
 
 test('round-trip: fromSettings → toFlags восстанавливает флаги (не-legacy)', function () {

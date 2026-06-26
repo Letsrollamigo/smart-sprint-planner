@@ -122,7 +122,7 @@
   "lblPlanningModel": "Planlama modeli",
   "optModelSimple": "Basit",
   "optModelLight": "Hafif",
-  "optModelFull": "Tam (geliştiriliyor)",
+  "optModelFull": "Tam",
   "descModelSimple": "Kişisel hesaplama yok: yalnızca rol bazında kaynak tahsisi.",
   "descModelLight": "Atanan kişi başına kişisel kaynak; toplam otomatik hesaplanır.",
   "lblLightCalcMethod": "Kaynak hesaplama yöntemi",

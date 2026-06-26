@@ -517,6 +517,11 @@
   var _absences = {};
   var _capacityRoster = {};
   var _capacityUiState = { selectedSprintId: null, selectedPerson: null, persons: null, absences: null, carry: null };
+  /* #45 R4 — кэш утверждённой ёмкости ПЛАНИРУЕМОГО спринта (отвязан от _capacity вкладки:
+     вкладка может смотреть другой спринт). Lazy-load по _sprint.sprintId в Full-режиме;
+     адаптеры §9 отдают запись лишь если _planCap.sprintId === текущий планируемый спринт. */
+  var _planCap = { sprintId: null, record: null };
+  var _planCapLoading = false;
   /* ═══ v5.4.0 — Общий контекст спринта (Этап 2) ═══
      _currentSprintId — id «логического спринта» виджета (соответствует _sprint.sprintId
      для активного и любому уникальному <sprintId> из _history для исторических).
@@ -715,7 +720,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.15.3';
+  var APP_VERSION = '2.16.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1504,7 +1509,9 @@
     var role = ALL_ROLES.find(function(r){ return r.key === roleKey; });
     if (!role) return 0;
     var items = (_roleItems[roleKey] || []).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-    var resource = _sprint ? (_sprint[role.resKey] || 0) : 0;
+    /* #45 R4 — источник остатка через адаптер §9: Full+approved → утверждённая ёмкость
+       (минуты), иначе verbatim ручной _sprint[role.resKey] (Light byte-identical). */
+    var resource = getApprovedCapacityForRole(roleKey);
     // Используем аллокацию; если не задана — дельта max(0, est-fact)
     var used = items.reduce(function(s, i) {
       var alloc = i['alloc_' + roleKey];
@@ -2574,6 +2581,7 @@
       multiKeySort: multiKeySort, getSortKey: getSortKey, setSortKey: setSortKey,
       rerenderAllSortableTables: _rerenderAllSortableTables,
       getRoleItemsArr: getRoleItemsArr,
+      getApprovedCapacityForRole: getApprovedCapacityForRole, /* #45 R4 §9 — ресурс роли через адаптер */
       markDirty: _markDirty, draftSaveDebounced: _draftSaveDebounced,
       apiPost: apiPost,
       loadEnumBundle: loadEnumBundle, updateIssueField: updateIssueField,
@@ -2955,6 +2963,7 @@
       getActiveRoles: getActiveRoles, statusLabel: statusLabel,
       toDateIn: toDateIn, fmtPeriod: fmtPeriod,
       getPersonalPlanningResourceForRole: getPersonalPlanningResourceForRole,
+      getApprovedCapacityForRole: getApprovedCapacityForRole, /* #45 R4 §9.3 — Full res_<rk> read-only */
       bindResInputDraftListener: bindResInputDraftListener,
       bindSprintHeaderDraftListeners: bindSprintHeaderDraftListeners,
       fieldValuesCache: _fieldValuesCache, fieldValuesInflight: _fieldValuesInflight,
@@ -3215,6 +3224,7 @@
       editHistorySprint: editHistorySprint, finishHistorySprint: finishHistorySprint,
       discardWorkingDraft: discardWorkingDraft,
       getLogicalSprintIds: getLogicalSprintIds, setCurrentSprintId: setCurrentSprintId,
+      clearDraftOnBackend: _draftClearOnBackend,
       renderWidgetHeader: renderWidgetHeader,
       renderHistory: renderHistory,
       ALL_ROLES: ALL_ROLES, STATUS: STATUS, ACTIVE_INC: ACTIVE_INC, HIST_PAGE: HIST_PAGE,
@@ -3228,6 +3238,8 @@
         getIsValidator: function () { return _isValidator; },
         getCurrentSprintId: function () { return _currentSprintId; },
         getSprint: function () { return _sprint; },
+        setSprint: function (s) { _sprint = s; },
+        setRoleItems: function (r) { _roleItems = r; },
       },
     };
   }
@@ -3793,6 +3805,19 @@
        - saveCurrentRoleState после успешного apiPost (если активная запись);
        - смены grade/состава исполнителей (через doRecalcResource → saveCurrentRoleState). */
   function applyPersonalResourceToInputs() {
+    /* #45 R4 §9.3 — Full: ресурс роли = утверждённая ёмкость (минуты, адаптер), поле read-only;
+       НЕ перезаписываем _sprint[resKey] из PP (ручной остаётся fallback'ом адаптера). */
+    if (_sprint && _settings && _settings.capacityMode === 'full') {
+      getActiveRoles().forEach(function (role) {
+        var rEl = document.getElementById('res_' + role.key);
+        if (rEl) {
+          rEl.value = fmtPeriod(getApprovedCapacityForRole(role.key));
+          rEl.readOnly = true; rEl.style.opacity = '0.6'; rEl.title = T('resManagedByCurrentRole');
+        }
+        if (typeof updateRoleRemaining === 'function') { try { updateRoleRemaining(role.key); } catch (_) {} }
+      });
+      return;
+    }
     if (!_sprint || !_settings || !_settings.personalPlanningEnabled || !_settings.usePersonalForResource) return;
     var activeRoles = getActiveRoles();
     activeRoles.forEach(function(role) {
@@ -3920,6 +3945,8 @@
       updateIssueAssigneeField: updateIssueAssigneeField,
       apiGet: apiGet, safeLs: safeLs,
       refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
+      /* #45 R4 §9.2 — ёмкость человека в роли (Full+approved → base×alloc; иначе PP.resource). */
+      getApprovedCapacityForPerson: getApprovedCapacityForPerson,
       state: {
         getSettings: function () { return _settings; },
         getSprint: function () { return _sprint; },
@@ -4096,6 +4123,55 @@
     var res = sprint[role.resKey];
     if (typeof res !== 'number' || !isFinite(res) || res <= 0) return null;
     return res * 60;
+  }
+
+  /* ═══ #45 R4 — адаптеры ёмкость→планирование (spec §9) ═══════════════════════
+     Единственный мост утверждённой ёмкости в остаток планирования. Ветвление по
+     mode/status ИЗ ЗАПИСИ спринта (B5), не по глобальной настройке — иначе смена режима
+     ретроактивно перепишет остаток исторических спринтов. Light/нет утв. → verbatim
+     текущее поведение (_sprint[resKey] / resourcesByAssignee). Единицы: §9 — _sprint=минуты,
+     PP=часы; адаптер — единственная точка конверсии. */
+  function _ensurePlanCapacity() {
+    if (!_settings || _settings.capacityMode !== 'full') return;
+    var sid = _sprint && _sprint.sprintId;
+    if (!sid || _planCap.sprintId === sid || _planCapLoading) return;
+    _planCapLoading = true;
+    apiGet('capacity?sprintId=' + encodeURIComponent(sid)).then(function (r) {
+      _planCap = { sprintId: sid, record: (r && r.capacity) ? r.capacity : null };
+      _planCapLoading = false;
+      try { if (typeof renderPlannerRoles === 'function') renderPlannerRoles(); } catch (_) {}
+    }).catch(function () { _planCap = { sprintId: sid, record: null }; _planCapLoading = false; });
+  }
+  /* Утверждённая запись ёмкости для ПЛАНИРУЕМОГО спринта, либо null (Light/draft/нет/чужой
+     спринт). Side-effect: триггерит lazy-load при промахе кэша (re-render по готовности). */
+  function _approvedRecordForPlanning() {
+    _ensurePlanCapacity();
+    var sid = _sprint && _sprint.sprintId;
+    var rec = _planCap.record;
+    if (!sid || _planCap.sprintId !== sid || !rec) return null;
+    if (rec.mode !== 'full' || rec.status !== 'approved') return null;
+    return rec;
+  }
+  /* §9 — ёмкость роли в МИНУТАХ (для calcRemForRole / _sprint[resKey]). Fallback = ручной ресурс.
+     Формула (Σ base×alloc, часы) — в CAPACITY_PURE.roleCapacity (тело фичи вне ядра, fitness A2). */
+  function getApprovedCapacityForRole(rk) {
+    var rec = _approvedRecordForPlanning();
+    if (!rec) {
+      var role = ALL_ROLES.find(function (r) { return r.key === rk; });
+      return (role && _sprint && typeof _sprint[role.resKey] === 'number') ? _sprint[role.resKey] : 0;
+    }
+    return Math.round(CAPACITY_PURE.roleCapacity(rk, rec) * 60);
+  }
+  /* §9 — ёмкость человека в роли в ЧАСАХ (role-scoped base×alloc, D1↔D12 — НЕ полный base).
+     Fallback = PP-ресурс человека. */
+  function getApprovedCapacityForPerson(login, rk) {
+    var rec = _approvedRecordForPlanning();
+    if (!rec) {
+      var rba = _currentRolePP && _currentRolePP.resourcesByAssignee;
+      return (rba && rba[login] && typeof rba[login].resource === 'number') ? rba[login].resource : 0;
+    }
+    var p = rec.persons && rec.persons[login];
+    return p ? CAPACITY_PURE.roleContribution(p.base, p.alloc, rk) : 0;
   }
   /* §7 слайс 5 (вариант A — общий селектор): раскладка целится в ВЫБРАННЫЙ спринт. Раскладка
      возможна только в АКТИВНЫЙ спринт (выбранный = активный); исторический (read-only) → null

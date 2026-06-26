@@ -122,7 +122,7 @@
   "lblPlanningModel": "Model plánování",
   "optModelSimple": "Jednoduchý",
   "optModelLight": "Lehký",
-  "optModelFull": "Plný (ve vývoji)",
+  "optModelFull": "Plný",
   "descModelSimple": "Bez personálního výpočtu: pouze alokace zdrojů podle rolí.",
   "descModelLight": "Personální zdroj podle řešitelů; součet se počítá automaticky.",
   "lblLightCalcMethod": "Způsob výpočtu zdroje",

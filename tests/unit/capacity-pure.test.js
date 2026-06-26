@@ -202,3 +202,15 @@ test('pro-rata out_of_membership: приход в середине спринт�
   assert.strictEqual(out.persons.newbie.nominal, 24);
   assert.strictEqual(out.persons.newbie.base, 24 * 0.65);
 });
+test('roleCapacity: Σ base×alloc(rk) по людям из frozen-записи (#45 R4 §9)', () => {
+  const rec = { persons: {
+    a: { base: 100, alloc: { analysis: 0.5, testing: 0.5 } },
+    b: { base: 80,  alloc: { analysis: 1 } },
+    c: { base: 60,  alloc: { testing: 1 } },
+  } };
+  assert.strictEqual(C.roleCapacity('analysis', rec), 130); // 100*0.5 + 80*1
+  assert.strictEqual(C.roleCapacity('testing', rec), 110);  // 100*0.5 + 60*1
+  assert.strictEqual(C.roleCapacity('devBack', rec), 0);    // никто не аллоцирован на роль
+  assert.strictEqual(C.roleCapacity('analysis', null), 0);  // нет записи
+  assert.strictEqual(C.roleCapacity('analysis', {}), 0);    // нет persons
+});

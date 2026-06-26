@@ -89,8 +89,8 @@ function calcAssigneeAllocByProject(login, deps) {
     var key = item.system ? String(item.system) : '__none__';
     byKey[key] = (byKey[key] || 0) + allocVal;
   });
-  var entry = _currentRolePP.resourcesByAssignee[login];
-  var totalRes = (entry && typeof entry.resource === 'number') ? entry.resource : 0;
+  /* #45 R4 §9.2 — ресурс человека через адаптер (Full+approved → base×alloc; Light → entry.resource). */
+  var totalRes = deps.getApprovedCapacityForPerson(login, rk);
   var rows = Object.keys(byKey).map(function (k) {
     var hours = Math.round(byKey[k] * 100) / 100;
     var percent = totalRes > 0 ? Math.round((hours / totalRes) * 100) : null;
@@ -108,9 +108,11 @@ function updateCurrentRoleTotals(deps) {
     document.getElementById('currentRoleTotalRemain').textContent = '—';
     return;
   }
+  var _ppRk = _currentRolePP.roleKey;
   var totalRes = 0;
   Object.keys(_currentRolePP.resourcesByAssignee || {}).forEach(function (login) {
-    totalRes += _currentRolePP.resourcesByAssignee[login].resource || 0;
+    /* #45 R4 §9.2 — Full→утверждённая ёмкость, Light→entry.resource (адаптер fallback). */
+    totalRes += deps.getApprovedCapacityForPerson(login, _ppRk) || 0;
   });
   var totalUsed = 0;
   Object.keys(_currentRolePP.resourcesByAssignee || {}).forEach(function (login) {
@@ -151,18 +153,23 @@ function _buildAssigneeTableVm(deps) {
   var T = deps.T, esc = deps.esc;
   var _settings = deps.state.getSettings();
   var _currentRolePP = deps.state.getCurrentRolePP();
-  var manualMode = !!(_settings && _settings.manualPersonalResource);
+  /* #45 R4 §9.3 — в Full ресурс деривируется из утверждённой ёмкости → manual-ввод выкл (read-only). */
+  var fullMode = !!(_settings && _settings.capacityMode === 'full');
+  var manualMode = !fullMode && !!(_settings && _settings.manualPersonalResource);
   var showByProj = !!(_settings && _settings.fieldSystem && _settings.personalPlanningEnabled);
 
   if (!_currentRolePP || !Object.keys(_currentRolePP.resourcesByAssignee || {}).length) {
     return { empty: true };
   }
 
+  var _ppRk = _currentRolePP.roleKey;
   /* Строки vm — pre-computed derived values + готовые cell-значения. */
   var rows = Object.keys(_currentRolePP.resourcesByAssignee).map(function (login) {
     var entry  = _currentRolePP.resourcesByAssignee[login];
     var used   = calcAssigneeUsed(login, deps);
-    var remain = Math.round((entry.resource - used) * 100) / 100;
+    /* #45 R4 §9.2 — ресурс через адаптер (Full+approved → base×alloc; Light → entry.resource). */
+    var _res   = deps.getApprovedCapacityForPerson(login, _ppRk);
+    var remain = Math.round((_res - used) * 100) / 100;
     var cells = {};
     cells.assigneeName = esc(entry.assigneeName || login);
     var currentGrade = deps.migrateGrade(entry.grade);
@@ -183,7 +190,7 @@ function _buildAssigneeTableVm(deps) {
           'style="width:80px;font-size:12px;padding:2px 4px;text-align:right;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)"/>'
       };
     } else {
-      cells.resource = round2(entry.resource);
+      cells.resource = round2(_res);
     }
     if (showByProj) {
       var rowsBySys = calcAssigneeAllocByProject(login, deps);

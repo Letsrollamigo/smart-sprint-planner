@@ -269,6 +269,19 @@ function roleContribution(base, alloc, roleKey) {
   return numOr(base, 0) * numOr(alloc[roleKey], 0);
 }
 
+/* #45 R4 — ёмкость роли из frozen-записи (часы): Σ по людям base × alloc(rk). Источник для
+   адаптера планирования §9 (frozen base из утверждённой записи, НЕ live-пересчёт). */
+function roleCapacity(roleKey, record) {
+  if (!record || !record.persons) return 0;
+  var sum = 0;
+  var logins = Object.keys(record.persons);
+  for (var i = 0; i < logins.length; i++) {
+    var p = record.persons[logins[i]] || {};
+    sum += roleContribution(p.base, p.alloc, roleKey);
+  }
+  return sum;
+}
+
 const _api = {
   // helpers
   numOr: numOr,
@@ -291,6 +304,7 @@ const _api = {
   validateAllocSums: validateAllocSums,
   computeCapacity: computeCapacity,
   roleContribution: roleContribution,
+  roleCapacity: roleCapacity,
   // constants (snapshot-дефолты)
   DEFAULT_KPE: DEFAULT_KPE,
   ABSENCE_TYPES: ABSENCE_TYPES,

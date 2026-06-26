@@ -122,7 +122,7 @@
   "lblPlanningModel": "Planungsmodell",
   "optModelSimple": "Einfach",
   "optModelLight": "Leicht",
-  "optModelFull": "Voll (in Entwicklung)",
+  "optModelFull": "Voll",
   "descModelSimple": "Ohne persönliche Berechnung: nur Ressourcenzuteilung nach Rollen.",
   "descModelLight": "Persönliche Ressource je Bearbeiter; Summe wird automatisch berechnet.",
   "lblLightCalcMethod": "Berechnungsmethode der Ressource",

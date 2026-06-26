@@ -254,7 +254,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.15.3';
+var APP_VERSION = '2.16.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -1887,7 +1887,14 @@ var ENDPOINTS = [
         var warnings = [];
 
         if (body.sprint !== undefined) {
-          if (action === 'assignerSync') {
+          if (body.sprint === null) {
+            /* S3 (кластер-баг спринтов): явный сброс активного спринта — фронт шлёт
+               sprint:null при удалении последней ролевой записи активного спринта.
+               Затираем ssp_sprint, иначе спринт остаётся призраком в пикере и
+               переживает хард-релоад. ssp_roleitems сбрасывается ниже (фронт шлёт {}). */
+            if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+            setProp(ctx, 'ssp_sprint', '');
+          } else if (action === 'assignerSync') {
             /* В action=assignerSync разрешаем перезапись только personalPlanning;
                прочие поля sprint игнорируем — берём из storage. */
             var prevSprint = parseJson(getProp(ctx, 'ssp_sprint'), null);
@@ -1917,7 +1924,7 @@ var ENDPOINTS = [
             setProp(ctx, 'ssp_sprint', pSprintStr);
             ctx.response.json({ success: true, action: 'assignerSync' });
             return;
-          }
+          } else {
           if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedSprintKeys).
           body.sprint = stripDeprecatedSprintKeys(body.sprint);
@@ -1960,6 +1967,7 @@ var ENDPOINTS = [
                 dlog(ctx, 'overlimit_validate role=' + rk + ' rem=' + (resource - sumAlloc));
               }
             });
+          }
           }
         }
 

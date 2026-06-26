@@ -122,7 +122,7 @@
   "lblPlanningModel": "計画モデル",
   "optModelSimple": "シンプル",
   "optModelLight": "ライト",
-  "optModelFull": "フル（開発中）",
+  "optModelFull": "フル",
   "descModelSimple": "個人別計算なし：ロール単位のリソース配分のみ。",
   "descModelLight": "担当者別の個人リソース。合計は自動集計されます。",
   "lblLightCalcMethod": "リソースの計算方法",

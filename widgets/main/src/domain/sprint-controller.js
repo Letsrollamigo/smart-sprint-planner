@@ -171,6 +171,19 @@
       /* НЕ сбрасываем _currentSprintRoleRec — пользователь может ткнуть CTA, который вызовет doCurrentRoleCalc.
          doCurrentRoleCalc проверяет _currentSprintRoleRec на null и берёт его из _findHistRecForCurrent(rk). */
       var emptyRec = deps.findHistRecForCurrent(rk);
+      /* S1-фикс (кластер-баг спринтов): свежая роль активного спринта ещё не имеет
+         histRec → emptyRec=null → _currentSprintRoleRec=null → doCurrentRoleCalc и
+         «Подобрать исполнителей» упирались в guard «Выберите спринт», хотя спринт выбран.
+         Синтезируем минимальный rec с тем же ключом, что построит будущий histRec
+         (saveRoleHistorySnapshot: _sprint.sprintId+'_'+rk). Только для активного _sprint:
+         планирование «Люди» исторического спринта по-прежнему идёт через рабочую копию. */
+      if (!emptyRec) {
+        var _curSid = st.getCurrentSprintId();
+        var _activeSprint = st.getSprint();
+        if (_curSid && _activeSprint && _activeSprint.sprintId === _curSid) {
+          emptyRec = { sprintId: _curSid + '_' + rk, roleKey: rk };
+        }
+      }
       st.setCurrentSprintRoleRec(emptyRec);
       st.setCurrentRolePP((emptyRec && emptyRec.personalPlanning) ? deepClone(emptyRec.personalPlanning) : (typeof deps.emptyPP === 'function' ? deps.emptyPP() : { resourcesByAssignee:{}, taskAssignments:{} }));
       st.setCurrentRoleGantt((emptyRec && emptyRec.gantt) ? deepClone(emptyRec.gantt) : { tasks:{}, updatedAt:null });

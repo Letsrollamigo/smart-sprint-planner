@@ -122,7 +122,7 @@
   "lblPlanningModel": "Planning model",
   "optModelSimple": "Simple",
   "optModelLight": "Light",
-  "optModelFull": "Full (in development)",
+  "optModelFull": "Full",
   "descModelSimple": "No personal calculation: role-level resource allocation only.",
   "descModelLight": "Personal per-assignee resource; total is summed automatically.",
   "lblLightCalcMethod": "Resource calculation method",

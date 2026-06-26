@@ -122,7 +122,7 @@
   "lblPlanningModel": "계획 모델",
   "optModelSimple": "간단",
   "optModelLight": "라이트",
-  "optModelFull": "전체 (개발 중)",
+  "optModelFull": "전체",
   "descModelSimple": "개인별 계산 없음: 역할별 리소스 할당만.",
   "descModelLight": "담당자별 개인 리소스; 합계는 자동 집계됩니다.",
   "lblLightCalcMethod": "리소스 계산 방식",

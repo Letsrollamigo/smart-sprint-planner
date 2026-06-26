@@ -122,7 +122,7 @@
   "lblPlanningModel": "规划模式",
   "optModelSimple": "简单",
   "optModelLight": "轻量",
-  "optModelFull": "完整（开发中）",
+  "optModelFull": "完整",
   "descModelSimple": "无个人计算：仅按角色分配资源。",
   "descModelLight": "按执行人计算个人资源；总和自动汇总。",
   "lblLightCalcMethod": "资源计算方式",

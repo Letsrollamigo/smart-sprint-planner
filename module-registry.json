@@ -4,8 +4,8 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4114,
-      "locBudget": 4320
+      "loc": 4189,
+      "locBudget": 4399
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -139,8 +139,8 @@
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
-      "loc": 754,
-      "locBudget": 845,
+      "loc": 761,
+      "locBudget": 853,
       "state": [
         "GRADES_LOCAL",
         "KPE_DEFAULTS_LOCAL"
@@ -224,8 +224,8 @@
     "domain/history-view.js": {
       "layer": "domain",
       "domain": "domain/history-view",
-      "loc": 474,
-      "locBudget": 531,
+      "loc": 498,
+      "locBudget": 558,
       "state": [],
       "publishes": [
         "HISTORY_VIEW"
@@ -234,8 +234,8 @@
     "domain/intro-view.js": {
       "layer": "domain",
       "domain": "domain/intro-view",
-      "loc": 232,
-      "locBudget": 260,
+      "loc": 238,
+      "locBudget": 267,
       "state": [
         "api"
       ],
@@ -318,8 +318,8 @@
     "domain/rolecomposition-view.js": {
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
-      "loc": 906,
-      "locBudget": 1015,
+      "loc": 913,
+      "locBudget": 1023,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"
@@ -353,8 +353,8 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 526,
-      "locBudget": 590,
+      "loc": 539,
+      "locBudget": 604,
       "state": [
         "api"
       ],
@@ -508,8 +508,8 @@
     "pure/capacity-pure.js": {
       "layer": "pure",
       "domain": "pure/capacity-pure",
-      "loc": 273,
-      "locBudget": 306,
+      "loc": 286,
+      "locBudget": 321,
       "state": [],
       "publishes": [
         "CAPACITY_PURE"
@@ -573,8 +573,8 @@
     "pure/planning-model-pure.js": {
       "layer": "pure",
       "domain": "pure/planning-model-pure",
-      "loc": 66,
-      "locBudget": 86,
+      "loc": 73,
+      "locBudget": 93,
       "state": [
         "PLANNING_MODELS",
         "_api"
