@@ -208,6 +208,37 @@ var ALLOWED_WORKING_DRAFT_KEYS = [
   'gantt',
   'pluginVersion'
 ];
+var ALLOWED_CALENDAR_KEYS = [
+  'years',
+  'uploadedBy',
+  'uploadedAt',
+  'pluginVersion'
+];
+var ALLOWED_ABSENCE_ENTRY_KEYS = [
+  'from',
+  'to',
+  'type'
+];
+var ALLOWED_CAPACITY_RECORD_KEYS = [
+  'mode',
+  'status',
+  'dirty',
+  'constants',
+  'calendarRef',
+  'persons',
+  'approvedBy',
+  'approvedAt',
+  'reapprovals',
+  'pluginVersion'
+];
+var ALLOWED_CAPACITY_PERSON_KEYS = [
+  'grade',
+  'rate',
+  'participation',
+  'alloc',
+  'base',
+  'absencesApplied'
+];
 // AUTOGEN:WHITELISTS END
 /* v1.8.1 — 'NONE' добавлен для backward-compat. Pre-v1.8.1 frontend записывал level='NONE'
    в revision при commit working copy без реальных изменений (см. computeRequiredRevalidationLevel
@@ -223,7 +254,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.15.3';
+var APP_VERSION = '2.16.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -1856,7 +1887,14 @@ var ENDPOINTS = [
         var warnings = [];
 
         if (body.sprint !== undefined) {
-          if (action === 'assignerSync') {
+          if (body.sprint === null) {
+            /* S3 (кластер-баг спринтов): явный сброс активного спринта — фронт шлёт
+               sprint:null при удалении последней ролевой записи активного спринта.
+               Затираем ssp_sprint, иначе спринт остаётся призраком в пикере и
+               переживает хард-релоад. ssp_roleitems сбрасывается ниже (фронт шлёт {}). */
+            if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+            setProp(ctx, 'ssp_sprint', '');
+          } else if (action === 'assignerSync') {
             /* В action=assignerSync разрешаем перезапись только personalPlanning;
                прочие поля sprint игнорируем — берём из storage. */
             var prevSprint = parseJson(getProp(ctx, 'ssp_sprint'), null);
@@ -1886,7 +1924,7 @@ var ENDPOINTS = [
             setProp(ctx, 'ssp_sprint', pSprintStr);
             ctx.response.json({ success: true, action: 'assignerSync' });
             return;
-          }
+          } else {
           if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedSprintKeys).
           body.sprint = stripDeprecatedSprintKeys(body.sprint);
@@ -1929,6 +1967,7 @@ var ENDPOINTS = [
                 dlog(ctx, 'overlimit_validate role=' + rk + ' rem=' + (resource - sumAlloc));
               }
             });
+          }
           }
         }
 
@@ -2896,6 +2935,26 @@ exports.APP_VERSION = APP_VERSION;
 exports.parseJson   = parseJson;
 exports.getBody     = getBody;
 exports.MAX_PROP_SIZE = MAX_PROP_SIZE;
+
+/* #45 R2 — символы ядра, нужные backend-capacity.js в YT-рантайме (первый per-feature
+   backend-модуль require'ит ядро и пишет свои endpoints в core.ENDPOINTS). Вне test-guard
+   — должны быть доступны в проде. Поведение-нейтрально (только расширяют поверхность). */
+exports.authzGuard                  = authzGuard;
+exports.getProp                     = getProp;
+exports.setProp                     = setProp;
+exports.filterKeys                  = filterKeys;
+exports.badRequest                  = badRequest;
+exports.forbidden                   = forbidden;
+exports.isNumInRange                = isNumInRange;
+exports.validatePluginVersion       = validatePluginVersion;
+exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
+exports.isSettingsManager           = isSettingsManager;
+exports.isPlanningManager           = isPlanningManager;
+exports.ALLOWED_CALENDAR_KEYS       = ALLOWED_CALENDAR_KEYS;
+exports.ALLOWED_ABSENCE_ENTRY_KEYS  = ALLOWED_ABSENCE_ENTRY_KEYS;
+exports.ALLOWED_CAPACITY_RECORD_KEYS = ALLOWED_CAPACITY_RECORD_KEYS;
+exports.ALLOWED_CAPACITY_PERSON_KEYS = ALLOWED_CAPACITY_PERSON_KEYS;
+exports.ROLE_KEYS                   = ROLE_KEYS; // #45 R2 — capacity alloc-key whitelist
 
 /* v1.6.0 D125 — Test-only CommonJS exports.
    ВАЖНО: Object.assign(exports, ...) вместо module.exports = {...}.

@@ -24,5 +24,19 @@
     "createdAt", "updatedAt", "editorLogin", "editorTabToken",
     "sprint", "items", "personalPlanning", "revisions", "gantt",
     "pluginVersion"
+  ],
+  "$comment_capacity": "#45 (эпик Capacity Management) — сторы ssp_calendar/ssp_absences/ssp_capacity. Массивы задекларированы в R1 (фундамент); валидаторы их потребляют в R2 (backend-capacity.js). Синхронизируются в backend-core.js тем же sync-скриптом. R2: `participation` (% участия, per-person множитель base) добавлен в ALLOWED_CAPACITY_PERSON_KEYS — схема ёмкости новая/неотгруженная, аддитивно (без bump'а маркера/миграции).",
+  "ALLOWED_CALENDAR_KEYS": [
+    "years", "uploadedBy", "uploadedAt", "pluginVersion"
+  ],
+  "ALLOWED_ABSENCE_ENTRY_KEYS": [
+    "from", "to", "type"
+  ],
+  "ALLOWED_CAPACITY_RECORD_KEYS": [
+    "mode", "status", "dirty", "constants", "calendarRef", "persons",
+    "approvedBy", "approvedAt", "reapprovals", "pluginVersion"
+  ],
+  "ALLOWED_CAPACITY_PERSON_KEYS": [
+    "grade", "rate", "participation", "alloc", "base", "absencesApplied"
   ]
 }

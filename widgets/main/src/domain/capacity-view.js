@@ -1,0 +1,377 @@
+/* widgets/main/src/domain/capacity-view.js — #45 R3 вкладка «Управление ёмкостью».
+   Domain-модуль: строит view-model (данные + коллбэки) и отдаёт React-мосту
+   window.__SSP_CAPACITY_MOUNT.mountAt(host, vm) — канон gantt-view/standup-view.
+   Логика (load/persist/carry-forward/csv/ростер/авторитетный расчёт через CAPACITY_PURE,
+   range-математика отсутствий) — здесь; презентация — react/capacity-view.jsx. Публикует
+   window.__SSP_CAPACITY_VIEW (+ module.exports для golden-host).
+
+   STATELESS (C1): только const + function; стейт — в closure core.js через deps.state
+   get/set. Star-topology (B1): только leaf-мосты — window.__SSP_CAPACITY_MOUNT (infra) +
+   deps.CAPACITY_PURE (pure); кросс-domain — через deps от core.
+
+   Точки: loadAndRender(deps) async (грузит ростер/calendar/absences/capacity + G1
+   carry-forward в стейт, ++dataVersion, → render) — из click-handler вкладки и смены
+   спринта; render(deps) sync (строит VM из готового стейта + mountAt) — из _doFullRerender
+   (смена языка; dataVersion НЕ меняется → React сохраняет локальные правки). */
+'use strict';
+
+/* enum-строки (capacity-pure ABSENCE_TYPES/DAY_TYPES) → i18n-ключи (gotcha #7).
+   const (не var/let) — иначе state-localization C1 пометит module-level стейт. */
+const ABS_KEY = {
+  vacation: 'absVacation', sick: 'absSick', out_of_membership: 'absOutOfMembership',
+  regional_holiday: 'absRegionalHoliday', training: 'absTraining', teamleading: 'absTeamLeading', other: 'absOther'
+};
+const DAY_KEY = { holiday: 'dayHoliday', short: 'dayShort', workday: 'dayWorkday', weekend: 'dayWeekend' };
+
+function _num(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : d; }
+
+function _mountBridge() { return (typeof window !== 'undefined' && window.__SSP_CAPACITY_MOUNT) || null; }
+
+/* Список логических спринтов: активный (_sprint) + исторические (дедуп по логическому id). */
+function _sprintList(deps) {
+  var out = [], seen = {};
+  var sprint = deps.state.getSprint();
+  if (sprint && sprint.sprintId) {
+    out.push({ id: sprint.sprintId, name: sprint.name || sprint.sprintId, dateStart: sprint.dateStart, dateEnd: sprint.dateEnd, isActive: true });
+    seen[sprint.sprintId] = true;
+  }
+  (deps.state.getHistory() || []).forEach(function (rec) {
+    if (!rec || typeof rec.sprintId !== 'string') return;
+    var us = rec.sprintId.indexOf('_');
+    var logical = us > 0 ? rec.sprintId.substring(0, us) : rec.sprintId;
+    if (seen[logical]) return;
+    seen[logical] = true;
+    out.push({ id: logical, name: rec.name || logical, dateStart: rec.dateStart, dateEnd: rec.dateEnd, isActive: false });
+  });
+  return out;
+}
+
+function _findSprint(list, id) {
+  for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+  return null;
+}
+
+function _findRole(list, key) {
+  for (var i = 0; i < list.length; i++) if (list[i].key === key) return list[i];
+  return null;
+}
+
+function _constants(deps) {
+  var s = deps.state.getSettings() || {};
+  return {
+    kpe: (s.kpe && typeof s.kpe === 'object' && !Array.isArray(s.kpe)) ? s.kpe : deps.CAPACITY_PURE.DEFAULT_KPE,
+    hoursPerDay: _num(s.hoursPerDay, 8)
+  };
+}
+
+function _copyAlloc(a) { var o = {}; if (a) Object.keys(a).forEach(function (k) { o[k] = a[k]; }); return o; }
+
+/* Редактируемая модель login→{grade,rate,participation,alloc} из ростера + записи/carry. */
+function _buildModel(deps, roster, rec, carry) {
+  var model = {};
+  (deps.getActiveRoles ? deps.getActiveRoles() : []).forEach(function (role) {
+    (roster[role.key] || []).forEach(function (p) {
+      var login = p.login;
+      if (!model[login]) {
+        var src = (rec && rec.persons && rec.persons[login]) || (carry && carry[login]) || null;
+        model[login] = src
+          ? { grade: src.grade || 'Middle', rate: _num(src.rate, 1), participation: _num(src.participation, 1), alloc: _copyAlloc(src.alloc) }
+          : { grade: 'Middle', rate: 1, participation: 1, alloc: {} };
+        if (rec && rec.persons && rec.persons[login] && typeof rec.persons[login].base === 'number') model[login].base = rec.persons[login].base;
+      }
+      if (model[login].alloc[role.key] === undefined) {
+        model[login].alloc[role.key] = Object.keys(model[login].alloc).length > 0 ? 0 : 1; // новый: первая роль 1.0, прочие 0 (Σ=1, D1)
+      }
+    });
+  });
+  return model;
+}
+
+/* Авторитетный расчёт отображаемых чисел (зеркало бэка через CAPACITY_PURE). */
+function _computeView(deps, sel, model, absByLogin) {
+  var CP = deps.CAPACITY_PURE, c = _constants(deps);
+  var out = CP.computeCapacity({ constants: c, persons: model }, deps.state.getCalendar(), absByLogin || {}, sel.dateStart, sel.dateEnd);
+  var bases = {}, sigma = {};
+  Object.keys(out.persons).forEach(function (l) { bases[l] = out.persons[l].base; });
+  Object.keys(model).forEach(function (l) {
+    var al = (model[l] && model[l].alloc) || {}, s = 0;
+    Object.keys(al).forEach(function (k) { s += _num(al[k], 0); });
+    sigma[l] = s;
+  });
+  return { bases: bases, roleCapacities: out.roleCapacities, sigma: sigma };
+}
+
+/* Frozen-числа для read-only исторического (из записи; БЕЗ пересчёта по тек. календарю). */
+function _frozenView(rec) {
+  var bases = {}, roleCap = {}, sigma = {};
+  var persons = (rec && rec.persons) || {};
+  Object.keys(persons).forEach(function (l) {
+    var p = persons[l]; bases[l] = _num(p.base, 0);
+    var al = p.alloc || {}; sigma[l] = 0;
+    Object.keys(al).forEach(function (rk) { sigma[l] += _num(al[rk], 0); roleCap[rk] = _num(roleCap[rk], 0) + bases[l] * _num(al[rk], 0); });
+  });
+  return { bases: bases, roleCapacities: roleCap, sigma: sigma };
+}
+
+/* Дни спринта для грида: [{iso,dom,type,weekday}] (UTC). */
+function _calendarDays(deps, sel) {
+  var CP = deps.CAPACITY_PURE, cal = deps.state.getCalendar();
+  var days = CP.dayKeysUTC(sel.dateStart, sel.dateEnd);
+  return days.map(function (iso) {
+    var entry = CP.calendarLookup(cal, iso);
+    var type = entry ? entry.type : (CP.isWeekendUTC(iso) ? 'weekend' : 'workday');
+    return { iso: iso, dom: iso.substring(8), type: type, weekday: new Date(CP.isoToUTCms(iso)).getUTCDay() };
+  });
+}
+
+function _uncoveredYears(deps, sel) {
+  var cal = deps.state.getCalendar(), years = (cal && cal.years) || {}, seen = {}, out = [];
+  deps.CAPACITY_PURE.dayKeysUTC(sel.dateStart, sel.dateEnd).forEach(function (iso) {
+    var y = iso.substring(0, 4); if (!years[y] && !seen[y]) { seen[y] = 1; out.push(y); }
+  });
+  return out;
+}
+
+/* ranges [{from,to,type}] → {iso:type} и обратно (range-математика — в домене). */
+function _expandAbs(deps, ranges) {
+  var out = {}, CP = deps.CAPACITY_PURE;
+  (ranges || []).forEach(function (r) { if (r) CP.isoRangeDays(r.from, r.to).forEach(function (d) { out[d] = r.type || 'other'; }); });
+  return out;
+}
+function _isoNext(iso) {
+  var p = iso.split('-'); var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]) + 86400000);
+  function z(n) { return n < 10 ? '0' + n : '' + n; }
+  return d.getUTCFullYear() + '-' + z(d.getUTCMonth() + 1) + '-' + z(d.getUTCDate());
+}
+function _collapseAbs(dayType) {
+  var days = Object.keys(dayType).sort(), out = [], cur = null;
+  days.forEach(function (d) {
+    var t = dayType[d];
+    if (cur && cur.type === t && _isoNext(cur.to) === d) cur.to = d;
+    else { cur = { from: d, to: d, type: t }; out.push(cur); }
+  });
+  return out;
+}
+
+function _status(rec) {
+  if (!rec) return 'none';
+  if (rec.status === 'approved' && rec.dirty) return 'dirty';
+  if (rec.status === 'approved') return 'approved';
+  return 'draft';
+}
+
+function _labels(deps) {
+  var T = deps.T;
+  var dayType = {}; Object.keys(DAY_KEY).forEach(function (k) { dayType[k] = T(DAY_KEY[k]); });
+  return {
+    sprintLabel: T('capacitySprintLabel'), activeSuffix: T('capacityActiveSprint'), readOnlyHint: T('capacityReadOnly'),
+    notApproved: T('capacityNotApproved'), statusDraft: T('statusDraft'), statusApproved: T('statusApproved'), statusDirty: T('statusDirty'),
+    approve: T('btnApprove'), reapprove: T('btnReapprove'), save: T('btnSaveCapacity'),
+    roleHeader: T('capacityRoleHeader'), calHeader: T('capacityCalendarHeader'),
+    thName: T('lblPersonName'), thGrade: T('lblGrade'), thRate: T('lblRate'), thPart: T('lblParticipation'),
+    thAlloc: T('lblAlloc'), thBase: T('lblBase'), thContrib: T('lblContribution'), thSumAlloc: T('sumAllocShort'),
+    noRoles: T('capacityNoRoles'), noPeople: T('capacityNoPeople'), pickPerson: T('calendarPickPerson'),
+    calFor: T('capacityCalendarFor'), absType: T('capacityAbsenceType'),
+    dlTemplate: T('btnDownloadTemplate'), upCsv: T('btnUploadCsv'), saveAbs: T('btnSaveAbsences'),
+    sumOver: T('sumAllocOverlimit'), yearFallback: T('calendarYearFallback'), dayType: dayType,
+    periodLabel: T('excelPeriod'), rolePickLabel: T('lblPlanningRole'), personPickLabel: T('lblPersonName'),
+    viewModeRole: T('capacityViewModeRole'), absentLabel: T('capacityAbsentLabel')
+  };
+}
+
+/* ───────────────────── persist / actions ───────────────────── */
+function _persist(deps, sel, action, model) {
+  var persons = {};
+  Object.keys(model || {}).forEach(function (login) {
+    var p = model[login] || {}, alloc = {};
+    if (p.alloc) Object.keys(p.alloc).forEach(function (rk) { if (_num(p.alloc[rk], 0) > 0) alloc[rk] = _num(p.alloc[rk], 0); });
+    persons[login] = { grade: p.grade || 'Middle', rate: _num(p.rate, 1), participation: _num(p.participation, 1), alloc: alloc };
+  });
+  var check = deps.CAPACITY_PURE.validateAllocSums(persons);
+  if ((action === 'approve' || action === 'reapprove') && !check.ok) { deps.toast(deps.T('sumAllocOverlimit'), 'err'); return; }
+  deps.apiPost('capacity', { persons: persons }, { action: action, sprintId: sel.id }).then(function (r) {
+    if (r && r.success) {
+      deps.toast(deps.T(action === 'save' ? 'msgCapacitySaved' : 'msgCapacityApproved'), 'success');
+      loadAndRender(deps); // перезагрузка → ++dataVersion → React пере-сидит локальный стейт
+    } else {
+      var reason = (r && r.reason) || 'unknown';
+      deps.toast(deps.T(reason === 'alloc_sum_exceeds_100' ? 'sumAllocOverlimit' : 'errCapacitySave'), 'err');
+    }
+  }).catch(function (e) { deps.diag('persistCapacity err: ' + e, 'err'); deps.toast(deps.T('errCapacitySave'), 'err'); });
+}
+
+function _saveAbsences(deps, fullMap) {
+  var map = fullMap || deps.state.getAbsences() || {};
+  deps.apiPost('absences', map).then(function (r) {
+    if (r && r.success) { deps.state.setAbsences(JSON.parse(JSON.stringify(map))); deps.toast(deps.T('msgAbsencesSaved'), 'success'); loadAndRender(deps); }
+    else deps.toast(deps.T('errAbsencesSave'), 'err');
+  }).catch(function (e) { deps.diag('saveAbsences err: ' + e, 'err'); deps.toast(deps.T('errAbsencesSave'), 'err'); });
+}
+
+function _downloadTemplate() {
+  var csv = 'date,type,hoursDelta\n2026-06-12,short,-1\n2026-06-13,holiday,0\n2026-06-14,workday,0\n';
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'capacity-calendar-template.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  try { URL.revokeObjectURL(a.href); } catch (_) {}
+}
+
+function _parseCsv(text) {
+  var years = {}, errors = [], lines = String(text).replace(/\r/g, '').split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var ln = lines[i].trim(); if (!ln) continue;
+    if (i === 0 && /date/i.test(ln) && /type/i.test(ln)) continue;
+    var cols = ln.split(/[,;]/), date = (cols[0] || '').trim(), type = (cols[1] || '').trim(), delta = parseFloat(cols[2]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push('line ' + (i + 1) + ': bad date'); continue; }
+    if (['workday', 'short', 'holiday'].indexOf(type) < 0) { errors.push('line ' + (i + 1) + ': bad type'); continue; }
+    var yr = date.substring(0, 4); if (!years[yr]) years[yr] = [];
+    years[yr].push({ date: date, type: type, hoursDelta: isFinite(delta) ? delta : 0 });
+  }
+  return { years: years, errors: errors };
+}
+
+function _uploadCsv(deps, file) {
+  var reader = new FileReader();
+  reader.onload = function () {
+    var parsed = _parseCsv(reader.result);
+    if (parsed.errors.length) { deps.toast(deps.T('errCalendarParse').replace('{n}', parsed.errors.length), 'err'); deps.diag('calendar csv errors: ' + parsed.errors.join('; '), 'err'); return; }
+    deps.apiPost('calendar', { years: parsed.years }).then(function (r) {
+      if (r && r.success) { deps.state.setCalendar(r.calendar); deps.toast(deps.T('msgCalendarSaved'), 'success'); loadAndRender(deps); }
+      else deps.toast(deps.T('errCalendarSave'), 'err');
+    }).catch(function (e) { deps.diag('uploadCalendar err: ' + e, 'err'); deps.toast(deps.T('errCalendarSave'), 'err'); });
+  };
+  reader.readAsText(file);
+}
+
+/* G1: последняя approved-запись по dateEnd desc → primitives. */
+function _carryForward(deps, cb) {
+  var seen = {}, candidates = [];
+  (deps.state.getHistory() || []).forEach(function (rec) {
+    if (!rec || typeof rec.sprintId !== 'string') return;
+    var us = rec.sprintId.indexOf('_'); var logical = us > 0 ? rec.sprintId.substring(0, us) : rec.sprintId;
+    if (seen[logical]) return; seen[logical] = 1; candidates.push({ id: logical, dateEnd: _num(rec.dateEnd, 0) });
+  });
+  candidates.sort(function (a, b) { return b.dateEnd - a.dateEnd; });
+  var i = 0;
+  (function tryNext() {
+    if (i >= candidates.length) { cb({}); return; }
+    var c = candidates[i++];
+    deps.apiGet('capacity?sprintId=' + encodeURIComponent(c.id)).then(function (r) {
+      var rec = r && r.capacity;
+      if (rec && rec.status === 'approved' && rec.persons) {
+        var carry = {};
+        Object.keys(rec.persons).forEach(function (l) { var p = rec.persons[l]; carry[l] = { grade: p.grade, rate: p.rate, participation: p.participation, alloc: p.alloc || {} }; });
+        cb(carry);
+      } else tryNext();
+    }).catch(function () { tryNext(); });
+  })();
+}
+
+/* ───────────────────── VM + render ───────────────────── */
+function _buildVm(deps, sprints, sel, ui) {
+  var rec = deps.state.getCapacity();
+  var roster = deps.state.getRoster() || {};
+  var absMap = deps.state.getAbsences() || {};
+  var readOnly = !sel.isActive;
+  var model = _buildModel(deps, roster, rec, ui.carry || null);
+  var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, model, absMap);
+  var roles = (deps.getActiveRoles ? deps.getActiveRoles() : []).map(function (role) {
+    return { key: role.key, label: deps.roleLabel(role), people: (roster[role.key] || []).map(function (p) { return { login: p.login, name: p.name || p.login }; }) };
+  });
+  var absTypes = deps.CAPACITY_PURE.ABSENCE_TYPES.map(function (t) { return { key: t, label: deps.T(ABS_KEY[t] || t) }; });
+  var selRole = (ui.selectedRole && _findRole(roles, ui.selectedRole)) ? ui.selectedRole : (roles[0] ? roles[0].key : null);
+  var viewMode = (ui.viewMode === 'role') ? 'role' : 'person';
+
+  return {
+    selectedSprintId: sel.id, versionTag: ui.dataVersion || 0,
+    dateStartLabel: (typeof sel.dateStart === 'number') ? deps.fmtDate(sel.dateStart) : '—',
+    dateEndLabel: (typeof sel.dateEnd === 'number') ? deps.fmtDate(sel.dateEnd) : '—',
+    selectedRole: selRole, viewMode: viewMode,
+    sprints: sprints.map(function (s) { return { id: s.id, name: s.name, isActive: s.isActive }; }),
+    status: _status(rec), readOnly: readOnly, isReapprove: !!(rec && rec.status === 'approved'),
+    grades: Object.keys(deps.CAPACITY_PURE.DEFAULT_KPE),
+    roles: roles, persons: model, computed: computed,
+    calendarDays: _calendarDays(deps, sel), dows: deps.T('calendarDows').split(','),
+    selectedPerson: ui.selectedPerson || null, absencesByLogin: absMap,
+    absenceTypes: absTypes, uncoveredYears: _uncoveredYears(deps, sel), canUploadCsv: !!ui.canCsv,
+    EPS: deps.CAPACITY_PURE.EPS, labels: _labels(deps),
+    fmtH: function (h) { return deps.fmtHoursOnly(_num(h, 0) * 60); },
+    compute: function (m, abs) { return _computeView(deps, sel, m, abs); },
+    expandAbs: function (ranges) { return _expandAbs(deps, ranges); },
+    collapseAbs: function (dayType) { return _collapseAbs(dayType); },
+    onSprintChange: function (id) { var u = deps.state.getCapacityUiState() || {}; u.selectedSprintId = id; u.selectedPerson = null; u.carry = null; deps.state.setCapacityUiState(u); loadAndRender(deps); },
+    onPersonSelect: function (login, roleKey) { var u = deps.state.getCapacityUiState() || {}; u.selectedPerson = login; if (roleKey) u.selectedRole = roleKey; u.viewMode = 'person'; deps.state.setCapacityUiState(u); render(deps); },
+    onRoleSelect: function (rk) { var u = deps.state.getCapacityUiState() || {}; u.selectedRole = rk; u.selectedPerson = null; deps.state.setCapacityUiState(u); render(deps); },
+    onViewModeChange: function (mode) { var u = deps.state.getCapacityUiState() || {}; u.viewMode = (mode === 'role') ? 'role' : 'person'; deps.state.setCapacityUiState(u); render(deps); },
+    onSave: function (m) { _persist(deps, sel, 'save', m); },
+    onApprove: function (m) { _persist(deps, sel, 'approve', m); },
+    onReapprove: function (m) { _persist(deps, sel, 'reapprove', m); },
+    onSaveAbsences: function (fullMap) { _saveAbsences(deps, fullMap); },
+    onUploadCsv: function (file) { _uploadCsv(deps, file); },
+    onDownloadTemplate: function () { _downloadTemplate(); }
+  };
+}
+
+function render(deps) {
+  var host = document.getElementById('tab-capacity');
+  var mount = _mountBridge();
+  if (!host || !mount) return;
+  var settings = deps.state.getSettings() || {};
+  if (settings.capacityMode !== 'full') { mount.mountAt(host, { lightHint: deps.T('capacityLightHint') }); return; }
+  var ui = deps.state.getCapacityUiState() || {};
+  var sprints = _sprintList(deps);
+  if (!sprints.length) { mount.mountAt(host, { lightHint: deps.T('capacityNoSprint') }); return; }
+  if (!ui.selectedSprintId || !_findSprint(sprints, ui.selectedSprintId)) { ui.selectedSprintId = sprints[0].id; deps.state.setCapacityUiState(ui); }
+  var sel = _findSprint(sprints, ui.selectedSprintId);
+  if (!sel || typeof sel.dateStart !== 'number' || typeof sel.dateEnd !== 'number') { mount.mountAt(host, { lightHint: deps.T('capacitySprintDatesMissing') }); return; }
+  mount.mountAt(host, _buildVm(deps, sprints, sel, ui));
+}
+
+function loadAndRender(deps) {
+  var settings = deps.state.getSettings() || {};
+  if (settings.capacityMode !== 'full') { render(deps); return; }
+  var ui = deps.state.getCapacityUiState() || {};
+  var sprints = _sprintList(deps);
+  if (!ui.selectedSprintId || !_findSprint(sprints, ui.selectedSprintId)) ui.selectedSprintId = sprints.length ? sprints[0].id : null;
+  ui.dataVersion = (ui.dataVersion || 0) + 1;
+  deps.state.setCapacityUiState(ui);
+  var sel = _findSprint(sprints, ui.selectedSprintId);
+
+  var roles = deps.getActiveRoles ? deps.getActiveRoles() : [];
+  var fieldByRole = {}, uniqFields = [];
+  roles.forEach(function (role) { var fn = settings[role.userField] || null; fieldByRole[role.key] = fn; if (fn && uniqFields.indexOf(fn) < 0) uniqFields.push(fn); });
+  var fieldUsers = {};
+  var jobs = uniqFields.map(function (fn) {
+    return deps.apiGet('get-user-field-values?fieldName=' + encodeURIComponent(fn))
+      .then(function (r) { fieldUsers[fn] = (r && r.users) ? r.users : []; }).catch(function () { fieldUsers[fn] = []; });
+  });
+  jobs.push(deps.apiGet('calendar').then(function (r) { deps.state.setCalendar(r && r.calendar ? r.calendar : null); }).catch(function () {}));
+  jobs.push(deps.apiGet('absences').then(function (r) { deps.state.setAbsences(r && r.absences ? r.absences : {}); }).catch(function () { deps.state.setAbsences({}); }));
+  /* admin-гейт CSV — резолвим в общем load-батче (не в render → render остаётся sync,
+     без host-prop чтения; capacity-view.js остаётся namespace-sed-идентичным форкам). */
+  var canCsvP = (typeof deps.checkSettingsManager === 'function') ? deps.checkSettingsManager() : Promise.resolve(false);
+  jobs.push(canCsvP.then(function (can) { var u = deps.state.getCapacityUiState() || {}; u.canCsv = !!can; deps.state.setCapacityUiState(u); }).catch(function () { var u = deps.state.getCapacityUiState() || {}; u.canCsv = false; deps.state.setCapacityUiState(u); }));
+  var capPromise = sel ? deps.apiGet('capacity?sprintId=' + encodeURIComponent(sel.id)).then(function (r) { return (r && r.capacity) ? r.capacity : null; }).catch(function () { return null; }) : Promise.resolve(null);
+
+  Promise.all(jobs).then(function () { return capPromise; }).then(function (rec) {
+    var roster = {};
+    roles.forEach(function (role) { var fn = fieldByRole[role.key]; roster[role.key] = fn ? (fieldUsers[fn] || []).map(function (u) { return { login: u.login, name: u.fullName || u.login }; }) : []; });
+    deps.state.setRoster(roster);
+    deps.state.setCapacity(rec);
+    var u = deps.state.getCapacityUiState() || {};
+    if (sel && sel.isActive && !rec) {
+      _carryForward(deps, function (carry) { u.carry = carry; deps.state.setCapacityUiState(u); render(deps); });
+    } else { u.carry = null; deps.state.setCapacityUiState(u); render(deps); }
+  }).catch(function (e) { deps.diag('capacity loadAndRender err: ' + e, 'err'); deps.toast(deps.T('errCapacityLoad'), 'err'); render(deps); });
+}
+
+const api = {
+  render: render,
+  loadAndRender: loadAndRender,
+};
+
+if (typeof window !== 'undefined') {
+  try { window.__SSP_CAPACITY_VIEW = api; } catch (_) { /* sandboxed write may throw */ }
+}
+
+module.exports = api;

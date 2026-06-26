@@ -10,7 +10,8 @@
      simple        → { PP:false, useRes:false, manual:false }
      light + auto  → { PP:true,  useRes:true,  manual:false }
      light + manual→ { PP:true,  useRes:true,  manual:true  }
-     full          → заглушка: трактуем как simple (PP off), функционал не реализован. */
+     full          → { PP:true,  useRes:true,  manual:false } (#45 R4 — ресурс из утверждённой
+                      ёмкости спринта, read-only; capacityMode='full' деривируется в collect). */
 
 var PLANNING_MODELS = ['simple', 'light', 'full'];
 
@@ -34,7 +35,15 @@ function planningModelToFlags(model, lightSub, opts) {
       manualPersonalResource: lightSub === 'manual',
     };
   }
-  /* simple и full (заглушка) → персональный расчёт выключен. */
+  if (model === 'full') {
+    /* #45 R4 — Full форсит персональный расчёт + ресурс из утверждённой ёмкости (read-only). */
+    return {
+      personalPlanningEnabled: true,
+      usePersonalForResource: true,
+      manualPersonalResource: false,
+    };
+  }
+  /* simple → персональный расчёт выключен. */
   return {
     personalPlanningEnabled: false,
     usePersonalForResource: false,
@@ -51,8 +60,6 @@ function planningModelFromSettings(settings) {
   if (PLANNING_MODELS.indexOf(model) < 0) {
     model = s.personalPlanningEnabled ? 'light' : 'simple';
   }
-  /* full на чтении трактуем как simple до реализации функционала. */
-  if (model === 'full') model = 'simple';
   return {
     model: model,
     lightSub: s.manualPersonalResource ? 'manual' : 'auto',

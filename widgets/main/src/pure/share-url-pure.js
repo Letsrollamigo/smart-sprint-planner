@@ -27,7 +27,8 @@ var NODE_URL_TO_INTERNAL = {
   'planning.people':   'planning-people',
   'planning.standup':  'planning-standup',
   'gantt':             'gantt',
-  'history':           'history'
+  'history':           'history',
+  'capacity':          'capacity'
 };
 var NODE_INTERNAL_TO_URL = (function () {
   var m = {};

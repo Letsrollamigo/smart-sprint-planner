@@ -22,6 +22,10 @@
  */
 var entities = require('@jetbrains/youtrack-scripting-api/entities');
 var core     = require('./backend-core.js');
+/* #45 R2 — Capacity Management. require ДО чтения core.ENDPOINTS ниже (forEach): его тело
+   дописывает capacity-endpoints в общий core.ENDPOINTS массив, иначе global-режим их 404'ит
+   (gotcha #7). Идемпотентно (guard на core-объекте). */
+require('./backend-capacity.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.

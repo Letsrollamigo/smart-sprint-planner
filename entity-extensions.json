@@ -10,7 +10,10 @@
         "ssp_history":    { "type": "string" },
         "ssp_drafts":     { "type": "string" },
         "ssp_workdrafts": { "type": "string" },
-        "ssp_acl":        { "type": "string" }
+        "ssp_acl":        { "type": "string" },
+        "ssp_calendar":   { "type": "string" },
+        "ssp_absences":   { "type": "string" },
+        "ssp_capacity":   { "type": "string" }
       }
     }
   ]

@@ -964,13 +964,15 @@ function SettingsForm(props) {
       Senior: num(nums.kpeSenior, 0.75),
     };
 
-    /* #45 L2 — Full-модель ёмкости на main НЕ вводится (заглушка): capacityMode/
-       hoursPerDay/usefulHoursPerDay СОХРАНЯЕМ из stored (initial), чтобы не затереть
-       значение, выставленное под epic-сборкой; UI ввода Full на main отсутствует.
-       Все три — admin-тир (см. backend ADMIN_TIER_SETTINGS_KEYS). */
-    if (initial.capacityMode != null) data.capacityMode = initial.capacityMode;
+    /* #45 R4 — capacityMode деривируется из planningModel: 'full' → модуль ёмкости вкл
+       (вкладка Capacity + остаток планирования из утверждённой ёмкости), иначе 'light'.
+       hoursPerDay/usefulHoursPerDay — константы Full-расчёта: passthrough из stored, дефолты
+       (8/7) при первом включении Full. Все — admin-тир (preserve-merge для не-админа). */
+    data.capacityMode = (modes.planningModel === 'full') ? 'full' : 'light';
     if (initial.hoursPerDay != null) data.hoursPerDay = initial.hoursPerDay;
+    else if (data.capacityMode === 'full') data.hoursPerDay = 8;
     if (initial.usefulHoursPerDay != null) data.usefulHoursPerDay = initial.usefulHoursPerDay;
+    else if (data.capacityMode === 'full') data.usefulHoursPerDay = 7;
 
     data.fieldPriority = fields.fieldPriority || null;
     data.fieldXPriority = fields.fieldXPriority || null;
@@ -1321,7 +1323,8 @@ function SettingsForm(props) {
           </div>
 
           {/* v2.14.0 — «Модель планирования»: один dropdown (simple|light|full) заменяет
-              тройку тогглов (PLANNING_MODEL_DROPDOWN_SPEC). Full — disabled (заглушка).
+              тройку тогглов (PLANNING_MODEL_DROPDOWN_SPEC). Full (#45 R4) — модуль ёмкости:
+              ресурс ролей из утверждённой ёмкости спринта, capacityMode='full' деривируется в collect.
               При light — radio способа расчёта ресурса (авто по формуле / ручной ввод). */}
           <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
             {t('capGroupResource')}
@@ -1332,13 +1335,13 @@ function SettingsForm(props) {
               options={[
                 { key: 'simple', label: t('optModelSimple') },
                 { key: 'light', label: t('optModelLight') },
-                { key: 'full', label: t('optModelFull'), disabled: true },
+                { key: 'full', label: t('optModelFull') },
               ]}
               value={modes.planningModel}
               onChange={(v) => setMode('planningModel', v)}
             />
             <div className="field-hint" style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>
-              {t(modes.planningModel === 'light' ? 'descModelLight' : 'descModelSimple')}
+              {t(modes.planningModel === 'full' ? 'descCapacityMode' : modes.planningModel === 'light' ? 'descModelLight' : 'descModelSimple')}
             </div>
           </div>
           {modes.planningModel === 'light' ? (

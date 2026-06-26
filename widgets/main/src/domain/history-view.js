@@ -280,7 +280,31 @@ function buildSpoiler(rec, idx, deps) {
                 });
                 var _sprint = deps.state.getSprint();
                 var isActive = _sprint && _sprint.sprintId === _currentSprintId;
-                if (!stillHas && !isActive) {
+                if (!stillHas && isActive) {
+                  /* S3-фикс (кластер-баг спринтов): удалена последняя ролевая запись
+                     активного спринта. Сам спринт живёт в _sprint + двух backend-слоях:
+                     ssp_sprint (серверный) И ssp_drafts (per-user черновик, draft.sprint).
+                     Без чистки обоих спринт остаётся призраком в пикере (getLogicalSprintIds
+                     всегда включает _sprint.sprintId) и воскресает на хард-релоаде из того
+                     слоя, что не затёрли. Чистим _sprint + ssp_sprint + черновик, затем
+                     переключаемся на следующий спринт (после очистки черновика, иначе новый
+                     ui.currentSprintId затёрся бы reset'ом черновика). */
+                  deps.state.setSprint(null);
+                  if (typeof deps.state.setRoleItems === 'function') deps.state.setRoleItems({});
+                  deps.apiPost('sprint-data', { sprint: null, roleItems: {} })
+                    .catch(function (e) { deps.diag('delHist clear active sprint failed: ' + e, 'err'); });
+                  var switchToNextSprint = function () {
+                    var idsA = (typeof deps.getLogicalSprintIds === 'function') ? deps.getLogicalSprintIds() : [];
+                    deps.setCurrentSprintId(idsA.length > 0 ? idsA[0] : null, { confirmed: true });
+                  };
+                  if (typeof deps.clearDraftOnBackend === 'function') {
+                    deps.clearDraftOnBackend().then(switchToNextSprint).catch(function (e) {
+                      deps.diag('delHist clear draft failed: ' + e, 'err'); switchToNextSprint();
+                    });
+                  } else {
+                    switchToNextSprint();
+                  }
+                } else if (!stillHas && !isActive) {
                   var ids = (typeof deps.getLogicalSprintIds === 'function') ? deps.getLogicalSprintIds() : [];
                   deps.setCurrentSprintId(ids.length > 0 ? ids[0] : null, { confirmed: true });
                 } else if (typeof deps.renderWidgetHeader === 'function') {

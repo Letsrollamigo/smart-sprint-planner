@@ -46,8 +46,15 @@ function computeRoleQuickStats(rk, deps) {
     /* нет снапшота для этой роли в выбранном спринте — пустой stat */
     return { resource: 0, totalAlloc: 0, taskCount: 0, overlimit: false };
   }
+  /* #45 R4 — ресурс активной роли через адаптер §9: Full+approved → утверждённая ёмкость
+     (минуты), иначе verbatim _sprint[role.resKey]. Fallback адаптера = тот же _sprint[resKey],
+     поэтому Light остаётся byte-identical; в Full заголовок согласован с остатком/полем
+     (calcRemForRole / «Доступные ресурсы» — тоже getApprovedCapacityForRole). */
   var resource = 0;
-  if (role && _sprint && _sprint[role.resKey] != null) {
+  if (role && typeof deps.getApprovedCapacityForRole === 'function') {
+    resource = Number(deps.getApprovedCapacityForRole(rk)) / 60;
+    if (!isFinite(resource)) resource = 0;
+  } else if (role && _sprint && _sprint[role.resKey] != null) {
     resource = Number(_sprint[role.resKey]) / 60;
     if (!isFinite(resource)) resource = 0;
   }

@@ -1,0 +1,44 @@
+{
+  "working": 31,
+  "persons": {
+    "alice": {
+      "grade": "Middle",
+      "rate": 1,
+      "participation": 0.8,
+      "alloc": {
+        "analysis": 0.5,
+        "testing": 0.5
+      },
+      "nominal": 23,
+      "absenceHours": 8,
+      "base": 11.96
+    },
+    "bob": {
+      "grade": "Senior",
+      "rate": 0.5,
+      "participation": 1,
+      "alloc": {
+        "analysis": 1
+      },
+      "nominal": 15,
+      "absenceHours": 16,
+      "base": 5.625
+    },
+    "carol": {
+      "grade": "Junior",
+      "rate": 1,
+      "participation": 1,
+      "alloc": {
+        "devBack": 0.7
+      },
+      "nominal": 31,
+      "absenceHours": 0,
+      "base": 15.5
+    }
+  },
+  "roleCapacities": {
+    "analysis": 11.605,
+    "testing": 5.98,
+    "devBack": 10.85
+  }
+}

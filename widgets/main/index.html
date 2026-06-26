@@ -2153,6 +2153,113 @@
     .alloc-by-sys-row { white-space: nowrap; font-size: 11px; line-height: 1.4; }
     .alloc-by-sys-row--over { color: var(--error); font-weight: 500; }
     .alloc-by-sys-row--nosys { color: var(--muted); font-style: italic; }
+
+    /* ════ #45 R3 — вкладка «Ёмкость» (Capacity Management) ════ */
+    .ssp-capacity-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 4px 0 14px; }
+    .ssp-capacity-sprintsel { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+    .ssp-capacity-readonly { font-size: 12px; color: var(--muted); font-style: italic; }
+    .ssp-capacity-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 11px; font-size: 12px; font-weight: 500; line-height: 1.6; }
+    .ssp-capacity-badge--draft { background: var(--surface2, #eef1f4); color: var(--muted, #6b7785); }
+    .ssp-capacity-badge--ok { background: rgba(89, 168, 105, .16); color: var(--success, #3a9d4f); }
+    .ssp-capacity-badge--warn { background: rgba(255, 184, 0, .18); color: #8a6500; }
+    .ssp-capacity-badge--sigma { background: var(--surface2, #eef1f4); color: var(--muted, #6b7785); font-size: 11px; padding: 1px 7px; }
+    .ssp-capacity-badge--overlimit { background: rgba(224, 90, 106, .18); color: var(--error, #e05a6a); font-weight: 600; }
+    .ssp-capacity-body { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+    .ssp-capacity-col { flex: 1 1 420px; min-width: 380px; }
+    /* #45 R3.2 п.3 — расчёт по ролям ~70% (растёт), календарь ~30% (узкий: ячейки разгружены). */
+    .ssp-capacity-left { flex: 1 1 0%; min-width: 520px; }
+    .ssp-capacity-right { flex: 0 0 320px; min-width: 280px; }
+    .ssp-capacity-period { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .ssp-capacity-colhead { font-size: 13px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin: 0 0 10px; }
+    .ssp-capacity-spoiler { border: 1px solid var(--border, #dbe2e7); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+    .ssp-capacity-spoiler__head { cursor: pointer; padding: 8px 12px; background: var(--surface, #f7f9fa); display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; }
+    .ssp-capacity-spoiler__titlewrap { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+    .ssp-capacity-spoiler__chev { font-size: 11px; color: var(--muted); width: 12px; flex-shrink: 0; }
+    .ssp-capacity-spoiler__title { color: var(--text); }
+    .ssp-capacity-rolecap { color: var(--primary, #2f72e0); font-weight: 600; font-size: 13px; }
+    .ssp-capacity-row { display: grid; grid-template-columns: 1.6fr .85fr .7fr 1fr 1fr .8fr .8fr auto; gap: 6px; align-items: center; padding: 5px 12px; border-top: 1px solid var(--border, #eceff2); font-size: 12px; }
+    .ssp-capacity-row--head { background: var(--surface, #f7f9fa); font-weight: 600; color: var(--muted); border-top: none; align-items: end; }
+    /* #45 R3.2 п.7 — заголовки: полные слова, без обрезки/кривых переносов, по левому краю поля ввода. */
+    .ssp-capacity-row--head .ssp-capacity-cell--th { font-size: 11px; text-transform: uppercase; letter-spacing: .3px; overflow: visible; text-overflow: clip; white-space: normal; text-align: left; line-height: 1.2; }
+    .ssp-capacity-cell { overflow: hidden; text-overflow: ellipsis; }
+    .ssp-capacity-cell--name { font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .ssp-capacity-cell--name:hover { color: var(--primary, #2f72e0); text-decoration: underline; }
+    .ssp-capacity-cell--base, .ssp-capacity-cell--contrib { text-align: right; font-variant-numeric: tabular-nums; }
+    .ssp-capacity-cell--contrib { color: var(--primary, #2f72e0); }
+    .ssp-capacity-row input.ssp-capacity-cell, .ssp-capacity-row select.ssp-capacity-cell { width: 100%; min-width: 0; font-size: 12px; padding: 2px 4px; }
+    .ssp-capacity-rowsempty, .ssp-capacity-row .empty { padding: 8px 12px; color: var(--muted); font-style: italic; }
+    .ssp-capacity-calbar { display: flex; gap: 8px; margin-bottom: 10px; }
+    .ssp-capacity-calctx { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .ssp-capacity-abstype { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .ssp-capacity-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .ssp-capacity-grid__dow { text-align: center; font-size: 10px; color: var(--muted); text-transform: uppercase; padding-bottom: 2px; }
+    .ssp-capacity-grid__pad { visibility: hidden; }
+    .ssp-capacity-day { border: 1px solid var(--border, #dbe2e7); border-radius: 4px; aspect-ratio: 1 / 1; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--surface, #fff); color: var(--text); padding: 0; }
+    .ssp-capacity-day:disabled { cursor: default; opacity: .85; }
+    .ssp-capacity-day__col { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.05; width: 100%; }
+    .ssp-capacity-day__dom { font-size: 11px; }
+    .ssp-capacity-day__abbr { font-size: 8px; font-weight: 600; letter-spacing: .2px; text-transform: uppercase; opacity: .9; }
+    .ssp-capacity-day__agg { display: flex; align-items: center; gap: 2px; }
+    .ssp-capacity-day__count { font-size: 9px; font-weight: 700; }
+    .ssp-capacity-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .ssp-capacity-day--workday { background: var(--surface, #fff); }
+    .ssp-capacity-day--short { background: rgba(255, 184, 0, .14); }
+    .ssp-capacity-day--holiday { background: rgba(224, 90, 106, .12); color: var(--error, #e05a6a); }
+    .ssp-capacity-day--weekend { background: var(--surface2, #eef1f4); color: var(--muted, #6b7785); }
+    .ssp-capacity-day--absent { box-shadow: inset 0 0 0 2px var(--primary, #2f72e0); font-weight: 700; }
+    /* #45 R3.2 п.4 — граница ячейки по виду отсутствия (графический объект: контраст 3:1 на свет/тёмной). */
+    .ssp-capacity-day--abs-vacation          { box-shadow: inset 0 0 0 2px var(--ssp-abs-vacation); }
+    .ssp-capacity-day--abs-sick              { box-shadow: inset 0 0 0 2px var(--ssp-abs-sick); }
+    .ssp-capacity-day--abs-out_of_membership { box-shadow: inset 0 0 0 2px var(--ssp-abs-out_of_membership); }
+    .ssp-capacity-day--abs-regional_holiday  { box-shadow: inset 0 0 0 2px var(--ssp-abs-regional_holiday); }
+    .ssp-capacity-day--abs-training          { box-shadow: inset 0 0 0 2px var(--ssp-abs-training); }
+    .ssp-capacity-day--abs-teamleading       { box-shadow: inset 0 0 0 2px var(--ssp-abs-teamleading); }
+    .ssp-capacity-day--abs-other             { box-shadow: inset 0 0 0 2px var(--ssp-abs-other); }
+    .ssp-capacity-day--hasabs { cursor: pointer; }
+    .ssp-capacity-day--detailopen { box-shadow: inset 0 0 0 2px var(--primary, #2f72e0); font-weight: 700; }
+    .ssp-capacity-dot--vacation          { background: var(--ssp-abs-vacation); }
+    .ssp-capacity-dot--sick              { background: var(--ssp-abs-sick); }
+    .ssp-capacity-dot--out_of_membership { background: var(--ssp-abs-out_of_membership); }
+    .ssp-capacity-dot--regional_holiday  { background: var(--ssp-abs-regional_holiday); }
+    .ssp-capacity-dot--training          { background: var(--ssp-abs-training); }
+    .ssp-capacity-dot--teamleading       { background: var(--ssp-abs-teamleading); }
+    .ssp-capacity-dot--other             { background: var(--ssp-abs-other); }
+    .ssp-capacity-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 11px; }
+    .ssp-capacity-legend__item { padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border, #dbe2e7); }
+    /* #45 R3.2 п.6 — легенда границ по видам отсутствия. */
+    .ssp-capacity-legend--abs { margin-top: 6px; }
+    .ssp-capacity-legend__abs { border-width: 2px; border-style: solid; }
+    .ssp-capacity-legend__abs--vacation          { border-color: var(--ssp-abs-vacation); }
+    .ssp-capacity-legend__abs--sick              { border-color: var(--ssp-abs-sick); }
+    .ssp-capacity-legend__abs--out_of_membership { border-color: var(--ssp-abs-out_of_membership); }
+    .ssp-capacity-legend__abs--regional_holiday  { border-color: var(--ssp-abs-regional_holiday); }
+    .ssp-capacity-legend__abs--training          { border-color: var(--ssp-abs-training); }
+    .ssp-capacity-legend__abs--teamleading       { border-color: var(--ssp-abs-teamleading); }
+    .ssp-capacity-legend__abs--other             { border-color: var(--ssp-abs-other); }
+    .ssp-capacity-calwarn { margin-top: 10px; font-size: 12px; }
+    .ssp-capacity-saveabs { margin-top: 12px; }
+    /* #45 R3 (React Ring) — обёртки под vendored Ring + нативные числовые поля */
+    /* #45 R3.2 — категориальная палитра 7 видов отсутствия (свет+тёмная: используется только
+       как граница/точка — графический объект, контраст 3:1, не текстовый 4.5:1). */
+    .ssp-capacity-root {
+      width: 100%;
+      --ssp-abs-vacation: #3b82f6; --ssp-abs-sick: #ef4444; --ssp-abs-out_of_membership: #64748b;
+      --ssp-abs-regional_holiday: #8b5cf6; --ssp-abs-training: #14b8a6; --ssp-abs-teamleading: #f59e0b;
+      --ssp-abs-other: #ec4899;
+    }
+    .ssp-capacity-calpick { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .ssp-capacity-viewtoggle { display: inline-flex; }
+    .ssp-capacity-viewtoggle button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .ssp-capacity-viewtoggle button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
+    .ssp-capacity-details { margin-top: 10px; border: 1px solid var(--border, #dbe2e7); border-radius: 6px; padding: 8px 10px; background: var(--surface, #f7f9fa); font-size: 12px; }
+    .ssp-capacity-details__head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 6px; }
+    .ssp-capacity-details__close { border: none; background: none; cursor: pointer; font-size: 16px; line-height: 1; color: var(--muted); padding: 0 2px; }
+    .ssp-capacity-details__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+    .ssp-capacity-details__list li { display: flex; align-items: center; gap: 6px; }
+    .ssp-capacity-headsel { display: inline-block; min-width: 220px; vertical-align: middle; }
+    .ssp-capacity-num { width: 100%; min-width: 0; font-size: 12px; padding: 2px 4px; box-sizing: border-box; }
+    .ssp-capacity-uplabel { cursor: pointer; display: inline-flex; align-items: center; }
+    .ssp-capacity-spoiler { margin-bottom: 10px; }
   </style>
   <!-- v5.0.3 (итерация 5) — SheetJS теперь lazy-load по требованию (см. exportSprintToExcel
        в main.js). Раньше блокирующий <script> в <head> задерживал init виджета на проксированных
@@ -2281,6 +2388,9 @@
     <button class="tab-btn tab-state-tracker active" id="tabBtnPlanning" data-tab="planning" data-i18n="tabPlanning" aria-hidden="true" tabindex="-1" style="display:none">Планирование</button>
     <button class="tab-btn tab-state-tracker" id="tabBtnGantt" data-tab="gantt" data-i18n="tabGantt" aria-hidden="true" tabindex="-1" style="display:none">Диаграмма Ганта</button>
     <button class="tab-btn tab-state-tracker" data-tab="history" data-i18n="tabHistory" aria-hidden="true" tabindex="-1" style="display:none">История спринтов</button>
+    <!-- #45 R3 — tracker вкладки «Ёмкость». Всегда в DOM (callsite _setDashNode/restoreUiState
+         кликают по нему); видимость рулит tabsJson (push только при capacityMode==='full'). -->
+    <button class="tab-btn tab-state-tracker" data-tab="capacity" data-i18n="tabCapacity" aria-hidden="true" tabindex="-1" style="display:none">Ёмкость</button>
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
@@ -2554,6 +2664,9 @@
       <button class="ring-button-button ring-button-block ring-button-heightS" id="histNext">›</button>
     </div>
   </div>
+
+<!-- ════ ВКЛАДКА: ЁМКОСТЬ (#45 R3) — содержимое строит capacity-view.render() ════ -->
+<div class="tab-panel" id="tab-capacity"></div>
 
   <!-- v5.0.3 — Диагностическая панель. Видна всегда, свёрнута по умолчанию.
        Пользователь сам разворачивает <details> при необходимости диагностики. -->

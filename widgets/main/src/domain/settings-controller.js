@@ -91,6 +91,8 @@
       deps.checkEditorRights();
       deps.checkAssignerRights();
       deps.applyPersonalPlanningVisibility();
+      /* #45 R3 — таб «Ёмкость» появляется/исчезает по capacityMode без перезагрузки виджета. */
+      if (typeof deps.applyCapacityModeVisibility === 'function') deps.applyCapacityModeVisibility();
       deps.refreshClearHistoryBtn();
       deps.renderPlannerRoles();
       try { deps.applyDiagLogVisibility(); } catch (_) {}
