@@ -663,7 +663,7 @@ function BacklogSection(props) {
         <table className="ssp-dta-table ssp-backlog-zones" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th scope="col" style={{ width: '38%' }}>{t('lblBacklogZoneState')}</th>
+              <th scope="col" style={{ width: '30%' }}>{t('lblBacklogZoneState')}</th>
               <th scope="col">{t('lblBacklogZoneRoles')}</th>
               <th scope="col" style={{ width: '92px' }} aria-label={t('btnBacklogRemoveZone')}></th>
             </tr>
@@ -681,12 +681,12 @@ function BacklogSection(props) {
                   </td>
                   <td>
                     {roleData.length ? (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', maxWidth: '100%' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(128px, 1fr))', gap: '4px 8px', maxWidth: '100%' }}>
                         {roleData.map((r) => {
                           const on = (z.roles || []).indexOf(r.key) >= 0;
                           return (
-                            <label key={r.key} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', cursor: 'pointer' }}>
-                              <input type="checkbox" checked={on} onChange={() => toggleZoneRole(i, r.key)} />
+                            <label key={r.key} style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '4px', fontSize: '11px', lineHeight: '1.25', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={on} onChange={() => toggleZoneRole(i, r.key)} style={{ marginTop: '1px', flex: '0 0 auto' }} />
                               <span>{r.label}</span>
                             </label>
                           );

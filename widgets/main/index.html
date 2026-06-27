@@ -1243,14 +1243,17 @@
     .ssp-settings-form .ssp-dta-table td:first-child { width: 50%; }
     .ssp-settings-form .ssp-dta-table td { padding: 3px 6px 3px 0; vertical-align: top; }
     .ssp-settings-form .ssp-dta-table td:last-child { padding-right: 0; width: 34px; }
-    .ssp-settings-form .ssp-dta-table input,
+    /* width:100% — для текстовых полей и select'ов (заполняют ячейку).
+       Чекбоксы/радио ИСКЛЮЧЕНЫ: иначе галочка растягивается на всю ячейку и
+       отталкивает свой лейбл (корень бага «вакханалии» грида ролей зон, v2.16.2). */
+    .ssp-settings-form .ssp-dta-table input:not([type="checkbox"]):not([type="radio"]),
     .ssp-settings-form .ssp-dta-table select { width: 100%; box-sizing: border-box; }
     /* #21 v2.15.3 — зоны бэклога: фиксированная раскладка колонок
-       состояние(38%) | роли(заполнение) | управление(92px под ↑ ↓ ×).
+       состояние(30%) | роли(заполнение, грид) | управление(92px под ↑ ↓ ×).
        Дефолтные dta-правила (td:first 50%, td:last 34px) не давали роли-ячейке
        ширины под ↑↓× → лейблы ролей наезжали друг на друга и на кнопки. */
     .ssp-settings-form .ssp-dta-table.ssp-backlog-zones { table-layout: fixed; }
-    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:first-child { width: 38%; }
+    .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:first-child { width: 30%; }
     .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:nth-child(2) { width: auto; }
     .ssp-settings-form .ssp-dta-table.ssp-backlog-zones td:last-child { width: 92px; }
 

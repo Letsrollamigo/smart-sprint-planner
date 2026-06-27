@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.2] — 2026-06-27
+
+> **Backlog «Pipeline zones» role-grid layout fix + main-menu brand icon.**
+
+### Fixed
+
+- **Pipeline-zones role grid.** With many active roles the role checkboxes in backlog settings now lay out as a tidy, dense grid. Root cause: the shared `.ssp-dta-table input { width: 100% }` rule (meant for text inputs and selects) was stretching the role checkboxes to fill their cell and pushing each label far to the right until it wrapped one character per line. The rule now excludes checkboxes and radios; the role list is a CSS grid (`repeat(auto-fill, minmax(128px, 1fr))`) with top-aligned checkboxes.
+- **Main-menu brand icon.** The YouTrack main-menu item now shows the planner's brand icon instead of the default placeholder glyph — `iconPath` is declared on both widgets (YouTrack auto-picks the dark variant on dark themes).
+
+---
+
 ## [2.16.1] — 2026-06-26
 
 > **«Full» capacity model unlocked (per-role and per-assignee approved capacity) + sprint-state cluster fixes.**
