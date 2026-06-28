@@ -9,7 +9,7 @@
 [![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
 [![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
 
-> 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **2.14.0** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
+> 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **2.16.1** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
 
 > 💎 **Like this project?** If it helped your team and you'd like to support
 > its development, donations in any amount are welcome on TON:
@@ -32,7 +32,7 @@ The plugin ships through two parallel channels — pick the one that matches you
 
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.14.0** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.16.1** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
 | **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.16.2** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
