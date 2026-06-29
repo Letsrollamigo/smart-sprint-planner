@@ -66,6 +66,16 @@
       "TOAST_PURE": "pure"
     }
   },
+  "backend": {
+    "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
+    "core": { "loc": 2519, "locBudget": 2645 },
+    "modules": {
+      "backend-capacity.js": { "loc": 628, "locBudget": 691 },
+      "backend-global.js": { "loc": 169, "locBudget": 189 },
+      "backend-project.js": { "loc": 20, "locBudget": 40 },
+      "backend-issuefields.js": { "loc": 378, "locBudget": 416 }
+    }
+  },
   "modules": {
     "data/data-loaders.js": {
       "layer": "domain",

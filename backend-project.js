@@ -10,6 +10,9 @@ var core = require('./backend-core.js');
 /* #45 R2 — Capacity Management. require'ится ДО чтения core.ENDPOINTS: его тело дописывает
    capacity-endpoints в общий core.ENDPOINTS массив (тот же читает backend-global.js — gotcha #7). */
 var capacity = require('./backend-capacity.js');
+/* issue-fields backend-модуль: тело дописывает свои endpoints в core.ENDPOINTS (тот же
+   читает backend-global.js — gotcha #7). require ДО публикации httpHandler ниже. */
+require('./backend-issuefields.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

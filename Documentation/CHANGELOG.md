@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.4] — 2026-06-30
+
+> **Internal backend refactor: issue-field logic split into its own module, plus a guard against backend regrowth. No behavior change.**
+
+### Changed
+
+- The YouTrack issue-field endpoints (`field-values`, `get-user-field-values`, `update-issue-field`, `refresh-assignees`) moved out of `backend-core.js` into a dedicated `backend-issuefields.js` module — the core shrank by ~340 lines. Handler bodies moved verbatim; behavior is identical.
+- Added a backend LOC ratchet (`tests/arch/backend-size-ratchet.test.js`): the core can no longer regrow and every new `backend-<feature>.js` must be registered. The anti-monolith discipline now covers the server side too.
+
+---
+
 ## [2.16.3] — 2026-06-29
 
 > **Planner fixes: editor rights across all role cards, edit the unfinished sprint you select, composition pagination for historical sprints.**
