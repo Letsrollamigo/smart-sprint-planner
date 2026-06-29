@@ -105,30 +105,19 @@ function _startPermissionsCheck(deps) {
   return all;
 }
 
-/* Применить права редактора к кнопкам активной подвкладки.
-   v5.6.0 — Этап 4 (4d): legacy #subtab-panel-<rk> удалён, panel теперь — раскрытая
-   accordion-карточка `.planning-role-card.expanded[data-role-key=<rk>] .planning-role-body`
-   (для уровня «Роли») или `#planningPeopleContent` (для уровня «Люди»). Если ничего
-   из этого не активно — применяем ко всему #tab-planning + #tab-gantt (например, после
-   reload прав). */
+/* Применить права редактора к кнопкам планирования/ганта.
+   Editor-гейтинг ГЛОБАЛЕН (зависит только от isEditor/isValidator/isAssigner, не от
+   конкретной панели), поэтому проходим по ВСЕМ смонтированным карточкам ролей и уровню
+   «Люди», а не по одной активной подвкладке. Прежнее сужение до getActiveSubtab()-панели
+   оставляло НЕ-активные раскрытые карточки со stale-классом btn--disabled-rights, если их
+   кнопки были отрисованы в окне ещё-не-подтверждённых прав (isEditor=false): кнопка
+   выглядела disabled, но кликалась (баг: «Подобрать задачи» неактивна, но действие
+   выполняется). #planningPeopleContent лежит внутри #tab-planning, уровень «Люди» покрыт. */
 function applyEditorRightsToUI(deps) {
-  var roleKey = deps.state.getActiveSubtab();
-  var panel = null;
-  if (roleKey) {
-    panel = document.querySelector('.planning-role-card.expanded[data-role-key="'+roleKey+'"] .planning-role-body');
-  }
-  if (!panel) {
-    panel = document.getElementById('planningPeopleContent');
-  }
-  if (!panel) {
-    /* Fallback — применяем ко всем editor-btn в #tab-planning и #tab-gantt */
-    var roots = [];
-    var p1 = document.getElementById('tab-planning'); if (p1) roots.push(p1);
-    var p2 = document.getElementById('tab-gantt');    if (p2) roots.push(p2);
-    roots.forEach(function (r) { _applyEditorRightsTo(r, deps); });
-  } else {
-    _applyEditorRightsTo(panel, deps);
-  }
+  var roots = [];
+  var p1 = document.getElementById('tab-planning'); if (p1) roots.push(p1);
+  var p2 = document.getElementById('tab-gantt');    if (p2) roots.push(p2);
+  roots.forEach(function (r) { _applyEditorRightsTo(r, deps); });
   /* v5.9.0 — расширение на overlay'и: editor-кнопки в #reassignOverlay/#clearAssigneesOverlay/etc.
      должны дизейблиться так же, как в основных вкладках. Settings-overlay (отдельный класс
      .settings-overlay без `.overlay`) НЕ затрагивается — управляется собственным flow check'ов. */
