@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.3] — 2026-06-29
+
+> **Planner fixes: editor rights across all role cards, edit the unfinished sprint you select, composition pagination for historical sprints.**
+
+### Fixed
+
+- **Editor buttons stuck in a disabled look.** In the role cards, editor buttons («Pick tasks», «Refresh from task», «Clear», etc.) could look disabled (greyed) even though clicking still worked. It happened when several role cards were expanded right after the planner opened: `applyEditorRightsToUI` applied rights only to the active sub-tab, so non-active expanded cards kept the stale `btn--disabled-rights` class (stamped before rights resolved, `isEditor=false`). Editor gating now runs across all mounted cards (`#tab-planning` + `#tab-gantt`).
+- **Edit the sprint you select.** With two planning (PLANNING) sprints at once, the sprint selected in the «Current sprint» picker (`currentSprintId`) and the working `_sprint` actually being edited could diverge: the composition was read from the selected sprint's history snapshot (read-only) while add/remove-task edits went to the previous working sprint. Symptoms: added tasks didn't appear in the composition, and the row-delete button «did nothing» (it looked the task up in a different sprint's `_roleItems`). Selecting an unfinished sprint now loads it as the working `_sprint` (rebuilt from per-role history snapshots) — you edit exactly what you see. Finished/allocated (ALLOCATED/FINISHED) sprints keep the read-only / working-copy path.
+- **Composition pagination for historical sprints.** The «‹ ›» arrows page through the composition again when viewing a finished/allocated (historical) sprint. Root cause: in the historical view the composition is read from `snapshot.items.slice()` (a fresh array each render), and the page number was stored on that array and lost, while the «‹ ›» handler wrote the page onto `_roleItems[rk]`. The page number is now held on the stable `_roleItems[rk]` (via `getRoleItemsArr`) — the VM and the handler agree in both views.
+
+---
+
 ## [2.16.2] — 2026-06-27
 
 > **Backlog «Pipeline zones» role-grid layout fix + main-menu brand icon.**
