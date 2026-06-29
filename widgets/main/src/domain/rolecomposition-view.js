@@ -568,7 +568,7 @@ function _buildRoleCompositionVm(rk, deps) {
      спринта. Иначе шапка показывала счёт снапшота (computeRoleQuickStats), а таблица —
      пустой _roleItems → «Состав спринта пуст». Архитектура не меняется: редактирование
      не-активного спринта по-прежнему только через рабочую копию (read-only снимается там).
-     .slice() — чтобы не мутировать _history (items._page ставится ниже). */
+     .slice() — чтобы сортировка (multiKeySort) не мутировала persisted _history. */
   var isHistoricalView = _currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId;
   var items;
   if (isHistoricalView) {
@@ -582,10 +582,16 @@ function _buildRoleCompositionVm(rk, deps) {
   }
   if (!items.length) return { empty: true, itemCount: 0 };
 
-  var pageNum = items._page || 1;
+  /* Номер страницы держим на стабильном _roleItems[rk] (getRoleItemsArr), а НЕ на items:
+     в историческом виде items = histSnap.items.slice() пересоздаётся КАЖДЫЙ рендер, поэтому
+     items._page терялся, а хендлер prev/next пишет _page именно в _roleItems[rk] → стрелки
+     не листали состав ALLOCATED/исторических спринтов (баг «в аллокации не переключается
+     страница»). Теперь VM и хендлер согласованы по одному стабильному держателю. */
+  var _pageHolder = deps.getRoleItemsArr(rk);
+  var pageNum = _pageHolder._page || 1;
   var total = Math.ceil(items.length / deps.PAGE_SIZE);
   pageNum = Math.min(pageNum, total);
-  items._page = pageNum;
+  _pageHolder._page = pageNum;
   /* v6.1.0 D81 (F4) — multi-key sort применяется поверх items до пагинации.
      Если sort выключен — порядок storage. Сортировка не мутирует _roleItems[rk]. */
   var sortedItems = (typeof deps.multiKeySort === 'function') ? deps.multiKeySort(items) : items;
