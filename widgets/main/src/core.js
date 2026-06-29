@@ -1439,6 +1439,17 @@
         }
       } catch(e) { diag('restoreUiState: currentSprintId migration err: '+e, 'err'); }
 
+      /* «Выбрал → редактирую» (#sprint-state): восстановленный currentSprintId может указывать
+         на незавершённый (PLANNING) спринт, отличный от рабочего _sprint (два planning-спринта
+         одновременно). Грузим его как рабочий _sprint, иначе состав читается из снапшота
+         (historical-view), а pick/delete утекают в прежний _sprint. История уже в памяти
+         (loadAllData завершён до restoreUiState). */
+      try {
+        if (_currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId) {
+          _loadUnfinishedSprintAsWorking(_currentSprintId);
+        }
+      } catch(e) { diag('restoreUiState: load unfinished working sprint err: '+e, 'err'); }
+
       /* #45 R3 — стейл-вкладка capacity при Light → fallback на planning (таб скрыт в Light). */
       if (ui.activeTab === 'capacity' && (!_settings || _settings.capacityMode !== 'full')) ui.activeTab = 'planning';
       if (ui.activeTab) {
@@ -3650,6 +3661,7 @@
      ⚠️ Это контроллер (зовёт рендер + WC-protection), НЕ raw-сеттер _currentSprintId
      header-вью/draft-store (те пишут id через deps.state.setCurrentSprintId). */
   function setCurrentSprintId(newId, opts) { return SPRINT_CTRL.setCurrentSprintId(newId, opts, _sprintDeps()); }
+  function _loadUnfinishedSprintAsWorking(newId) { return SPRINT_CTRL.loadUnfinishedSprintAsWorking(newId, _sprintDeps()); }
 
   /* v5.6.0 — Этап 4 (4c): refreshPlannerForCurrentSprint удалена.
      Баннер #plannerHistoricalNotice физически удалён в C2 (4b). Hybrid режим v5.5.0 (D34)
@@ -4399,6 +4411,7 @@
         getRoleItems: function () { return _roleItems; },
         setRoleItems: function (v) { _roleItems = v; },
         getHistory: function () { return _history; },
+        getIsEditor: function () { return _isEditor; },
         getSettings: function () { return _settings; },
         getCurrentUser: function () { return _currentUser; },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },

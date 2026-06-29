@@ -516,8 +516,13 @@ test('golden: контракт change спринт-селектора — switch
     _renderPlanningLevel: function (lvl) { log.push({ renderPlanningLevel: lvl }); },
     renderSprintIntroExtras: function () { log.push({ introExtras: true }); },
   });
-  /* Второй видимый логический спринт из истории. */
-  gm.set({ _history: fx.buildHistory().concat([headerRec()]) });
+  /* Активный спринт SPRINT_ID ТОЖЕ в истории — как в реальном проде (каждый save апсертит
+     per-role снапшот даже при PLANNING). Без этого «выбрал → редактирую» не может
+     реконструировать активный спринт при switch-back (в проде он всегда в истории). */
+  gm.set({ _history: fx.buildHistory().concat([
+    headerRec({ sprintId: fx.SPRINT_ID + '_analysis', name: 'GM Base Sprint' }),
+    headerRec(),
+  ]) });
   gm.call('renderWidgetHeader');
   const sel = document.getElementById('widgetSprintSel');
 

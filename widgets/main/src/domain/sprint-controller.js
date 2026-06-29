@@ -470,6 +470,63 @@
     });
   }
 
+  /* ── loadUnfinishedSprintAsWorking — «выбрал → редактирую» ──
+     Незавершённый (все role-снапшоты PLANNING) спринт, выбранный в пикере и НЕ совпадающий
+     с рабочим _sprint, грузим как рабочий: реконструируем _sprint (мета + ресурсы всех ролей)
+     и _roleItems из per-role history-снапшотов <newId>_<rk>. PLANNING не залочен → working-copy
+     не нужна, правки идут прямо в загруженный спринт. Так чинится рассинхрон, при котором состав
+     рисовался из снапшота (historical), а pick/delete утекали в прежний _sprint (другой спринт).
+     Возвращает true если загрузил; false (→ прежний read-only/WC-путь) для ALLOCATED/CONFIRMED/
+     FINISHED, смешанного статуса ролей, отсутствия снапшотов или если спринт уже рабочий. */
+  function loadUnfinishedSprintAsWorking(newId, deps) {
+    var st = deps.state;
+    if (!newId) return false;
+    var _sprint = st.getSprint();
+    if (_sprint && _sprint.sprintId === newId) return false; // уже рабочий
+    var history = st.getHistory();
+    if (!Array.isArray(history)) return false;
+    var snaps = history.filter(function(h){
+      return h && typeof h.sprintId === 'string' && h.sprintId.indexOf(newId + '_') === 0;
+    });
+    if (!snaps.length) return false;
+    /* Консервативно: только полностью планируемый спринт (все role-снапшоты PLANNING).
+       Смешанный/ALLOCATED оставляем прежнему пути (read-only / working copy под validator). */
+    var allPlanning = snaps.every(function(s){ return s.status === deps.STATUS.PLANNING; });
+    if (!allPlanning) return false;
+    var meta = snaps[0];
+    var sprint = {
+      sprintId:        newId,
+      name:            meta.name || null,
+      dateStart:       meta.dateStart || null,
+      dateEnd:         meta.dateEnd || null,
+      status:          deps.STATUS.PLANNING,
+      sprintGoal:      meta.sprintGoal,
+      sprintFieldVal:  meta.sprintFieldVal || null,
+      versionFieldVal: meta.versionFieldVal || null
+    };
+    var roleItems = {};
+    deps.ALL_ROLES.forEach(function(r){
+      var rs = null;
+      for (var i = 0; i < snaps.length; i++) { if (snaps[i].roleKey === r.key) { rs = snaps[i]; break; } }
+      if (r.resKey) sprint[r.resKey] = (rs && rs[r.resKey] != null) ? rs[r.resKey] : 0;
+      roleItems[r.key] = (rs && Array.isArray(rs.items)) ? rs.items.map(function(it){
+        var c = {}; Object.keys(it).forEach(function(k){ c[k] = it[k]; }); return c;
+      }) : [];
+    });
+    try { sprint.personalPlanning = deps.buildPPMapFromCanon(newId, history, deps.deepClone); } catch(_){}
+    st.setSprint(sprint);
+    st.setRoleItems(roleItems);
+    /* Синк active-slot на backend, чтобы он совпал с рабочим спринтом (как resumeWorkingDraft).
+       Только для редактора — иначе viewer постил бы sprint-data на каждый выбор (backend отвергнет). */
+    if (!st.getIsEditor || st.getIsEditor()) {
+      deps.apiPost('sprint-data', { sprint: sprint, roleItems: roleItems }).catch(function(e){
+        deps.diag('loadUnfinishedSprintAsWorking: sprint-data sync failed: ' + (e && e.message ? e.message : e), 'err');
+      });
+    }
+    deps.diag('loadUnfinishedSprintAsWorking: ' + newId + ' loaded as working _sprint (' + snaps.length + ' role snaps)', 'info');
+    return true;
+  }
+
   /* ── setCurrentSprintId — D28-флоу смены спринта (WC-protection + каскад) ── */
   function setCurrentSprintId(newId, opts, deps) {
     var st = deps.state;
@@ -484,6 +541,10 @@
       });
       return false;
     }
+    /* «Выбрал → редактирую»: незавершённый (PLANNING) спринт грузим как рабочий _sprint, иначе
+       состав рисуется из снапшота (historical), а pick/delete утекают в прежний _sprint. Для
+       ALLOCATED/FINISHED — no-op (остаётся read-only / working-copy путь). */
+    try { loadUnfinishedSprintAsWorking(newId, deps); } catch(e){ diag('loadUnfinishedSprintAsWorking err: '+e,'err'); }
     st.setCurrentSprintId(newId || null);
     var ui = deps.draftGet('ui') || {}; ui.currentSprintId = st.getCurrentSprintId(); deps.draftSet('ui', ui);
     if (typeof deps.renderWidgetHeader === 'function') {
@@ -550,6 +611,7 @@
     doSaveSprintIntro: doSaveSprintIntro,
     doNewSprint: doNewSprint,
     setCurrentSprintId: setCurrentSprintId,
+    loadUnfinishedSprintAsWorking: loadUnfinishedSprintAsWorking,
   };
   if (typeof window !== 'undefined') window.__SSP_SPRINT_CTRL = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
