@@ -249,7 +249,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.16.4';
+var APP_VERSION = '2.16.5';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -660,8 +660,7 @@ function validatePluginVersion(v) {
   return /^\d+\.\d+\.\d+$/.test(v);
 }
 
-/* v1.6.0 D125 — Sprint validator split: ForWrite (strict whitelist) + ForRead (tolerant).
-   Deprecated alias validateSprint → validateSprintForWrite, removed in v1.7.0. */
+/* v1.6.0 D125 — Sprint validator split: ForWrite (strict whitelist) + ForRead (tolerant). */
 function validateSprintForWrite(sprint) {
   if (!sprint || typeof sprint !== 'object') return false;
   var keys = Object.keys(sprint);
@@ -744,9 +743,6 @@ function validateSprintForRead(sprint) {
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
 }
-
-// @deprecated since v1.6.0; use validateSprintForWrite() or validateSprintForRead().
-function validateSprint(sprint) { return validateSprintForWrite(sprint); }
 
 // Whitelist ключей задачи (без динамических estimate_*/fact_*/alloc_*/allocation*/estH_*/factH_*)
 var ALLOWED_ITEM_KEYS = [
@@ -1224,8 +1220,7 @@ function validateSettings(settings) {
   return true;
 }
 
-/* v1.6.0 D125 — History validator split: ForWrite (strict) + ForRead (tolerant).
-   Deprecated alias validateHistory → validateHistoryForWrite, removed in v1.7.0. */
+/* v1.6.0 D125 — History validator split: ForWrite (strict) + ForRead (tolerant). */
 function _validateHistoryRecord(h, i, strict) {
   if (!h || typeof h !== 'object') return false;
   var hKeys = Object.keys(h);
@@ -1438,11 +1433,7 @@ function validateHistoryForRead(history) {
   return true;
 }
 
-// @deprecated since v1.6.0; use validateHistoryForWrite() or validateHistoryForRead().
-function validateHistory(history) { return validateHistoryForWrite(history); }
-
-/* v1.6.0 D125 — WorkingDraft validator split: ForWrite (strict) + ForRead (tolerant).
-   Deprecated alias validateWorkingDraft → validateWorkingDraftForWrite, removed v1.7.0. */
+/* v1.6.0 D125 — WorkingDraft validator split: ForWrite (strict) + ForRead (tolerant). */
 function _validateWorkingDraftBody(d, strict) {
   if (!d || typeof d !== 'object') return false;
   var keys = Object.keys(d);
@@ -1493,9 +1484,6 @@ function _validateWorkingDraftBody(d, strict) {
 
 function validateWorkingDraftForWrite(d) { return _validateWorkingDraftBody(d, true); }
 function validateWorkingDraftForRead(d)  { return _validateWorkingDraftBody(d, false); }
-
-// @deprecated since v1.6.0; use validateWorkingDraftForWrite() or validateWorkingDraftForRead().
-function validateWorkingDraft(d) { return validateWorkingDraftForWrite(d); }
 
 // ─── Аутентификация и авторизация ────────────────────────────────────────────
 
@@ -2612,13 +2600,10 @@ if (typeof module !== 'undefined' && module.exports) {
     // Validators
     validateSprintForWrite:       validateSprintForWrite,
     validateSprintForRead:        validateSprintForRead,
-    validateSprint:               validateSprint,
     validateHistoryForWrite:      validateHistoryForWrite,
     validateHistoryForRead:       validateHistoryForRead,
-    validateHistory:              validateHistory,
     validateWorkingDraftForWrite: validateWorkingDraftForWrite,
     validateWorkingDraftForRead:  validateWorkingDraftForRead,
-    validateWorkingDraft:         validateWorkingDraft,
     validatePluginVersion:        validatePluginVersion,
     validateMigrationLog:         validateMigrationLog,
     // Migration

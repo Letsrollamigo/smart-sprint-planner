@@ -76,5 +76,4 @@ import './react/backlog-assign.jsx';
 import './react/capacity-view.jsx';
 import './react/input-mount.jsx';
 import './react/select-mount.jsx';
-import './react/collapse-mount.jsx';
 import './core.js';

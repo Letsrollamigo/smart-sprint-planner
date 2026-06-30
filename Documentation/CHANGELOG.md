@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.5] — 2026-06-30
+
+> **Internal dead-code cleanup. No behavior change.**
+
+### Removed
+
+- Removed the dead Ring-Collapse bridge (`react/collapse-mount.jsx` + the `__SSP_COLLAPSE` bridge) — orphaned since the settings two-pane migration (#22): it had no live DOM hosts and its `mountAllIn` was a no-op. The vendored Ring `Collapse` is preserved (used by the Backlog module).
+- Removed three deprecated backend validator aliases (`validateSprint` / `validateHistory` / `validateWorkingDraft`), deprecated since v1.6.0 — the canonical `…ForWrite` / `…ForRead` are now the only API.
+
+---
+
 ## [2.16.4] — 2026-06-30
 
 > **Internal backend refactor: issue-field logic split into its own module, plus a guard against backend regrowth. No behavior change.**

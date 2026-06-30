@@ -193,7 +193,6 @@ function createHost(opts) {
   window.__SSP_LOADER = { attach: rec('LOADER', 'attach'), detach: rec('LOADER', 'detach') };
   window.__SSP_INPUT = { mountAllIn: rec('INPUT', 'mountAllIn') };
   window.__SSP_SELECT = { mountAllIn: rec('SELECT', 'mountAllIn') };
-  window.__SSP_COLLAPSE = { mountAllIn: rec('COLLAPSE', 'mountAllIn') };
   window.__SSP_DATEPICKER = { mountAllIn: rec('DATEPICKER', 'mountAllIn'), unmountAll: rec('DATEPICKER', 'unmountAll') };
   /* Stand-up (Тир D слайс 1, ступень 2): standup-view.js строит vm и отдаёт мосту —
      стаб стэшит vm на host (host.__sspStandupVm), голдены характеризуют контракт
