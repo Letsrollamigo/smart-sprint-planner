@@ -20,11 +20,13 @@
   "result": [
     {
       "key": "DEMO",
-      "name": "Демопроект"
+      "name": "Демопроект",
+      "id": "p-1"
     },
     {
       "key": "DEMOClone",
-      "name": "Clone"
+      "name": "Clone",
+      "id": "p-3"
     }
   ]
 }

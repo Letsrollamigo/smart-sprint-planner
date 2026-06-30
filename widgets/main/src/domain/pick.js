@@ -22,7 +22,10 @@
    (DOM-инпут pickQuery удалён вместе с #pickOverlay). */
 function _buildPickQuery(rawQ, deps) {
   var q = (rawQ || '').trim();
-  var projectId = deps.ctx && deps.ctx.project ? (deps.ctx.project.shortName || deps.ctx.project.id) : null;
+  /* Скоуп — активный проект (надёжный ключ; ctx.project пусто в global/2026.1 → раньше
+     подбор искал по всем проектам). Виджет однопроектный — кросс-проектного подбора нет. */
+  var projectId = deps.activeProjectKey
+    || (deps.ctx && deps.ctx.project ? (deps.ctx.project.shortName || deps.ctx.project.id) : null);
   var fullQuery = q;
   if (projectId && q.toLowerCase().indexOf('project:') < 0) {
     fullQuery = 'project: ' + projectId + (q ? ' ' + q : '');
@@ -33,15 +36,17 @@ function _buildPickQuery(rawQ, deps) {
 /* #33 — скоуп поиска. Два независимых канала (не пересекаются, не трогают каретку):
      folders   → контекст подсказок search/assist (значения статусов/полей под проект)
      projectId → префикс выборки issues (через _buildPickQuery)
-   Сейчас оба производны от текущего проекта. Фундамент под кросс-проект: позже сюда
-   подставляется набор проектов (folders:[p1..pn]) — data-слой не переписывается. */
+   Оба — активный проект (надёжный id/ключ; ctx.project пусто в global/2026.1). Виджет
+   однопроектный: кросс-проектного подбора нет (data-слой принимает folders:[…] на будущее). */
 function _buildPickScope(deps) {
-  var p = (deps.ctx && deps.ctx.project) || null;
+  var pid = deps.activeProjectId || (deps.ctx && deps.ctx.project && deps.ctx.project.id) || null;
+  var pkey = deps.activeProjectKey
+    || (deps.ctx && deps.ctx.project ? (deps.ctx.project.shortName || deps.ctx.project.id) : null);
   return {
     /* $type:'Project' обязателен — search/assist без дискриминатора IssueFolder
        отвечает 500 InstantiationException (проверено live-probe на стенде, #33). */
-    folders:   p && p.id ? [{ $type: 'Project', id: p.id }] : [],
-    projectId: p ? (p.shortName || p.id) : null
+    folders:   pid ? [{ $type: 'Project', id: pid }] : [],
+    projectId: pkey
   };
 }
 

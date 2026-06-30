@@ -331,10 +331,12 @@ function restoreDraftIfAny(deps) {
   }
 }
 
-function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps) {
+/* Билдер per-role history-снимка рабочего состава роли — вынесен из saveRoleHistorySnapshot
+   для переиспользования в snapshotPlanningRolesToHistory (снимок всех ролей при switch). */
+function buildRoleSnap(rk, goalFields, wasValidated, deps) {
   var role = deps.allRoles.find(function(r){ return r.key === rk; });
   var sprint = deps.state.getSprint();
-  if (!role || !sprint) return Promise.resolve();
+  if (!role || !sprint) return null;
   var items = deps.getRoleItemsArr(rk);
   var activeItems = items.filter(function(i){ return deps.activeInc.indexOf(i.inclusionStatus) >= 0; });
   var rem = deps.calcRemForRole(rk);
@@ -424,6 +426,13 @@ function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps
     if (goalFields.goalOutcome)  snap.goalOutcome  = goalFields.goalOutcome;
     if (goalFields.goalRetroNote) snap.goalRetroNote = goalFields.goalRetroNote;
   }
+  return snap;
+}
+
+function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps) {
+  var snap = buildRoleSnap(rk, goalFields, wasValidated, deps);
+  if (!snap) return Promise.resolve();
+  var history = deps.state.getHistory();
 
   /* v5.3.0 — Если активна working copy на этот ключ — commit-flow с ре-валидацией.
      Иначе — обычный insert/overwrite. Legacy ветка editingFromHistory удалена. */
@@ -467,6 +476,33 @@ function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps
   });
 }
 
+/* Сброс всего состава рабочего спринта в историю (per-role, один POST). Чинит потерю состава
+   при переключении между двумя PLANNING-спринтами одного проекта: общий рабочий слот
+   ssp_roleitems перезаписывается при switch, а loadUnfinishedSprintAsWorking реконструирует
+   из истории — куда роль попадала только на confirm. Снимок безопасен: buildRoleSnap сохраняет
+   per-role статус существующих записей (ALLOCATED/CONFIRMED не сбрасывается в PLANNING). */
+function snapshotPlanningRolesToHistory(deps, newId) {
+  var st = deps.state;
+  var sprint = st.getSprint();
+  var history = st.getHistory();
+  if (!sprint || !sprint.sprintId || !Array.isArray(history)) return Promise.resolve();
+  if (sprint.sprintId === newId) return Promise.resolve();              // не уходим — тот же спринт
+  if (sprint.status !== deps.status.PLANNING) return Promise.resolve(); // только PLANNING (ALLOCATED/CONFIRMED — WC-путь)
+  var roles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : deps.allRoles;
+  var touched = false;
+  roles.forEach(function(r){
+    var snap = buildRoleSnap(r.key, undefined, false, deps);
+    if (!snap) return;
+    var idx = history.findIndex(function(h){ return h && h.sprintId === snap.sprintId; });
+    if (idx >= 0) history[idx] = snap; else history.unshift(snap);
+    touched = true;
+  });
+  if (!touched) return Promise.resolve();
+  return deps.apiPost('history', { history: history }).then(function(){
+    if (typeof deps.renderHistory === 'function') { try { deps.renderHistory(); } catch(_){} }
+  });
+}
+
 const api = {
   createWorkingDraftFromSnapshot,
   resumeWorkingDraft,
@@ -475,6 +511,7 @@ const api = {
   _commitWorkingCopy,
   restoreDraftIfAny,
   saveRoleHistorySnapshot,
+  snapshotPlanningRolesToHistory,
 };
 
 if (typeof window !== 'undefined') {

@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.16.6] — 2026-06-30
+
+> **Fix: plan two same-date sprints in parallel without data loss; backlog scoped to the selected project.**
+
+### Fixed
+
+- **Two planning sprints with the same dates** in one project now keep their composition independently. Switching between them in the «Current sprint» picker used to wipe the tasks picked into the role being edited — the composition lived in a single shared working slot, while a switch rebuilds from per-role history (which only received a role on confirm). On leaving a planning sprint, its full composition is now snapshotted to history per role, so switching back restores it intact.
+
+### Changed
+
+- **Backlog scoped to the project.** The pool query and the task-pick search + query-assist suggestions are now scoped to the active project — in the global-menu planner an empty `host.context.project` let them pull tasks from every accessible project. Cross-project planning, a dormant never-wired foundation, was dropped.
+- **Backlog «By zones» → by role.** The view groups by role (a spoiler per role) with the state shown as a column; the per-role table sorts by ID / priority / state via clickable headers (sort state local to each table), defaulting to state.
+- **Sprint Parameters on project switch.** Picking a project in the header opens «Sprint Parameters» instead of the last-viewed node.
+- **Ring buttons.** The view toggle and the «→ to sprint» buttons render as proper Ring buttons.
+
+---
+
 ## [2.16.5] — 2026-06-30
 
 > **Internal dead-code cleanup. No behavior change.**

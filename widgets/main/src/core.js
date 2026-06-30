@@ -498,6 +498,14 @@
      проект выбирается в picker'е шапки). Backend-роутинг ветвится по _mode. */
   var _mode = 'project';
   var _activeProjectKey = null;
+  var _forceSprintParamsOnLoad = false;   /* пикер-switch → «Параметры спринта» (не последний ui.dashNode); one-shot */
+  /* id активного проекта (folders-скоуп assist) — той же сущности, что activeProjectKey
+     (консистентность query↔folders). global — из _globalProjects (id подмешан в project-nav). */
+  function _activeProjId() {
+    if (_ctx && _ctx.project && _ctx.project.id) return _ctx.project.id;
+    var e = (_globalProjects || []).filter(function (x) { return x && x.key === _activeProjectKey; })[0];
+    return (e && e.id) || null;
+  }
   var _globalProjects = [];
   var _NO_PROJECT_SENTINEL = { __noProject__: true };
   var _sprint = null;
@@ -719,7 +727,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.16.5';
+  var APP_VERSION = '2.16.6';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -889,6 +897,7 @@
       deepClone: deepClone, apiGet: apiGet, apiPost: apiPost,
       buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
       getRoleItemsArr: getRoleItemsArr, calcRemForRole: calcRemForRole,
+      getActiveRoles: getActiveRoles,
       isActiveSprintRecord: isActiveSprintRecord,
       computeBaseSnapshotHash: computeBaseSnapshotHash,
       computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
@@ -935,6 +944,7 @@
   function createWorkingDraftFromSnapshot(snap, idx) { return WC.createWorkingDraftFromSnapshot(snap, idx, _wcDeps()); }
   function resumeWorkingDraft(key, idx) { return WC.resumeWorkingDraft(key, idx, _wcDeps()); }
   function discardWorkingDraft(key) { return WC.discardWorkingDraft(key, _wcDeps()); }
+  function _snapshotPlanningRolesToHistory(newId) { return WC.snapshotPlanningRolesToHistory(_wcDeps(), newId); }
   function _doDiscardWorkingDraft(key) { return WC._doDiscardWorkingDraft(key, _wcDeps()); }
 
   /* syncWorkingDraftFromMemory — приватен draft-store.js (единственный
@@ -1737,11 +1747,13 @@
     if (_mode === 'global' && typeof _setDashNode === 'function') {
       var _node = (_pendingShareParams && _pendingShareParams.node && SSP_DASH_NODES.indexOf(_pendingShareParams.node) >= 0)
         ? _pendingShareParams.node : null;
+      if (!_node && _forceSprintParamsOnLoad) _node = 'sprint-params';  /* пикер-switch → «Параметры спринта» */
       if (!_node) {
         var _uiR = _draftGet('ui') || {};
         _node = _uiR.dashNode;
         if (SSP_DASH_NODES.indexOf(_node) < 0) _node = _deriveDashNodeFromTabLevel();
       }
+      _forceSprintParamsOnLoad = false;   /* one-shot */
       /* #45 R3 — стейл/share-узел 'capacity' при Light → fallback (узла нет в Light;
          иначе _setDashNode('capacity') откроет осиротевший таб без подсветки в дереве). */
       if (_node === 'capacity' && (!_settings || _settings.capacityMode !== 'full')) _node = _deriveDashNodeFromTabLevel();
@@ -1872,6 +1884,7 @@
         setSettings: function (v) { _settings = v; },
         getActiveProjectKey: function () { return _activeProjectKey; },
         setActiveProjectKey: function (v) { _activeProjectKey = v; },
+        setForceSprintParamsOnLoad: function (v) { _forceSprintParamsOnLoad = !!v; },
         getProjectDisplayName: function () { return _projectDisplayName; },
         setProjectDisplayName: function (v) { _projectDisplayName = v; },
         getGlobalProjects: function () { return _globalProjects; },
@@ -3187,6 +3200,7 @@
     return {
       t: T, toast: toast, diag: diag,
       ctx: _ctx, settings: _settings, currentUser: _currentUser,
+      activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),  /* скоуп подбора → активный проект */
       host: _host, pickPage: PICK_PAGE, maxPickTotal: MAX_PICK_TOTAL,
       inc: INC, ytBase: _ytBase, draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
       sprint: _sprint, roleItems: _roleItems,
@@ -4084,6 +4098,8 @@
     return {
       t: T, toast: toast, diag: diag,
       ctx: _ctx, settings: _settings, host: _host,
+      activeProjectKey: _activeProjectKey,   /* #21-fix — надёжный ключ проекта (см. _activeProj в loader) */
+      activeProjectId: _activeProjId(),      /* folders-скоуп assist-подсказок */
       roles: ALL_ROLES, getActiveRoles: getActiveRoles,
       backlogPage: BACKLOG_PAGE, maxBacklogTotal: MAX_BACKLOG_TOTAL,
       userFilter: _userBacklogFilter,
@@ -4399,6 +4415,7 @@
       updateRoleAccordionStats: _updateRoleAccordionStats,
       isActiveSprintRecord: isActiveSprintRecord,
       applyPersonalResourceToInputs: applyPersonalResourceToInputs,
+      snapshotPlanningRolesToHistory: _snapshotPlanningRolesToHistory,
       buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
       STATUS: STATUS, ALL_ROLES: ALL_ROLES, DRAFT_VERSION: DRAFT_VERSION,
       state: {

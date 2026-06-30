@@ -54,13 +54,12 @@ function renderBacklog(deps) {
   var viewMode = (deps.viewMode === 'tree') ? 'tree' : 'zones';
   var tree = (viewMode === 'tree' && typeof deps.buildTreeVm === 'function') ? deps.buildTreeVm(pool, vmSettings) : null;
 
-  /* Спрос по ролям (§6.3): Σ остатков. rem в МИНУТАХ (vm-pure: est − fact). */
+  /* Спрос по ролям (§6.3): Σ остатков. rem в МИНУТАХ (vm-pure: est − fact). Источник —
+     roleGroups (#3 — уже перегруппировано по роли; задача мульти-роли учтена в каждой). */
   var demand = {};
-  dom.zones.forEach(function (z) {
-    z.roles.forEach(function (rr) {
-      rr.tasks.forEach(function (t) {
-        if (t.rem != null) demand[rr.roleKey] = (demand[rr.roleKey] || 0) + t.rem;
-      });
+  (dom.roleGroups || []).forEach(function (g) {
+    g.tasks.forEach(function (t) {
+      if (t.rem != null) demand[g.roleKey] = (demand[g.roleKey] || 0) + t.rem;
     });
   });
   /* §6.3 ёмкость (слайс 5): спрос vs предложение (ресурс роли целевого спринта через
@@ -91,6 +90,11 @@ function renderBacklog(deps) {
         unassigned: z.unassigned,
       };
     }),
+    /* #3 — вид «по ролям»: спойлер = роль, состояние — колонка строки. */
+    roleGroups: (dom.roleGroups || []).map(function (g) {
+      return { roleKey: g.roleKey, label: roleLabels[g.roleKey] || g.roleKey, tasks: g.tasks };
+    }),
+    unassignedTasks: dom.unassignedTasks || [],
     otherBucket: dom.otherBucket,
     counts: dom.counts,
     ytBase: (typeof deps.state.getYtBase === 'function' ? deps.state.getYtBase() : '') || '',
@@ -131,6 +135,8 @@ function renderBacklog(deps) {
       colSystem: deps.t('thSystem'),
       colSummary: deps.t('thTitle'),
       colEstimate: deps.t('thEstimate'),
+      colState: deps.t('thState'),       /* #3 — колонка «Состояние» в виде «по ролям» */
+      colPriority: deps.t('thPriority'),  /* #3 — кликабельная сортировка по приоритету */
     },
   };
   if (mount && typeof mount.mountAt === 'function') mount.mountAt(container, vm);

@@ -52,7 +52,6 @@ const ST = {
   th: { textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid var(--border)', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' },
   td: { padding: '4px 8px', borderBottom: '1px solid var(--border)', verticalAlign: 'top' },
   link: { fontWeight: 600 },
-  roleHdr: { margin: '8px 0 2px', fontWeight: 600, fontSize: '12px', color: 'var(--text)' },
   pause: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)' },
   poker: { display: 'inline-block', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(229,109,23,.12)', color: AMBER, border: '1px solid ' + AMBER, whiteSpace: 'nowrap' },
   more: { marginTop: '4px' },
@@ -70,7 +69,7 @@ const ST = {
   capBar: { height: '100%', borderRadius: '3px' },
   chipOver: { color: '#CC3645', fontWeight: 600 },
   /* слайс 6 — переключатель видов + дерево */
-  toggle: { display: 'inline-flex', gap: '0', marginLeft: 'auto' },
+  toggle: { display: 'inline-flex', gap: '6px', marginLeft: 'auto' },
   toggleBtn: { fontSize: '12px' },
   legend: { display: 'flex', flexWrap: 'wrap', gap: '12px', margin: '0 0 10px', fontSize: '12px', color: 'var(--muted)' },
   legendItem: { display: 'inline-flex', alignItems: 'center', gap: '5px' },
@@ -80,6 +79,38 @@ const ST = {
   carryOver: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(229,109,23,.12)', color: AMBER, border: '1px solid ' + AMBER, whiteSpace: 'nowrap' },
   carryCont: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' },
 };
+
+/* #3 — локальная сортировка таблицы вида «по ролям» (ID / Приоритет / Состояние), по аналогии
+   с сортируемыми колонками таблиц планирования. Состояние сорта локально таблице (не глобальный
+   ssp_sortKey планировщика — иначе клик в бэклоге менял бы сорт таблиц планирования). */
+const PRIORITY_RANK = { 'Show-stopper': 0, 'Critical': 1, 'Major': 2, 'Normal': 3, 'Minor': 4 };
+function prRank(p) {
+  const k = String(p == null ? '' : p);
+  return Object.prototype.hasOwnProperty.call(PRIORITY_RANK, k) ? PRIORITY_RANK[k] : 1e6;
+}
+function idCmp(a, b) { return String(a == null ? '' : a).localeCompare(String(b == null ? '' : b), undefined, { numeric: true }); }
+function sortTasks(tasks, key, dir) {
+  const sign = dir === 'desc' ? -1 : 1;
+  return tasks.slice().sort((a, b) => {
+    let c;
+    if (key === 'id') c = idCmp(a.idReadable, b.idReadable) * sign;
+    else if (key === 'priority') c = (prRank(a.priorityName) - prRank(b.priorityName)) * sign;
+    else c = String(a.stateName || '').localeCompare(String(b.stateName || '')) * sign;
+    return c || idCmp(a.idReadable, b.idReadable);   /* стабильный тай-брейк: ID asc */
+  });
+}
+/* Кликабельный заголовок-сортировка: клик по активной колонке — реверс направления. */
+function SortTh({ label, col, sort, setSort }) {
+  const active = sort.key === col;
+  const arrow = active ? (sort.dir === 'desc' ? ' ↓' : ' ↑') : '';
+  return (
+    <th style={{ ...ST.th, cursor: 'pointer', userSelect: 'none' }}
+        aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        onClick={() => setSort(active ? { key: col, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key: col, dir: 'asc' })}>
+      {label}{arrow}
+    </th>
+  );
+}
 
 /* §12 — бейдж «Перенос» (carryover) / «Продолжение» (continuation). */
 function CarryBadge({ carry, i18n }) {
@@ -139,7 +170,7 @@ function CapacityChip({ c, fmt }) {
   );
 }
 
-function TaskRow({ t, roleContext, ytBase, fmt, i18n, onToSprint }) {
+function TaskRow({ t, roleContext, showState, ytBase, fmt, i18n, onToSprint }) {
   const rowStyle = t.needsPoker ? { background: 'rgba(229,109,23,.06)' } : undefined;
   return (
     <tr style={rowStyle}>
@@ -149,6 +180,7 @@ function TaskRow({ t, roleContext, ytBase, fmt, i18n, onToSprint }) {
       </td>
       <td style={ST.td}>{t.system || '—'}</td>
       <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
+      {showState ? <td style={ST.td}>{t.stateName || '—'}</td> : null}
       {roleContext ? (
         <td style={ST.td}>
           {t.needsPoker
@@ -158,7 +190,7 @@ function TaskRow({ t, roleContext, ytBase, fmt, i18n, onToSprint }) {
       ) : null}
       <td style={ST.td}>
         {/* слайс 4 — раскладка «→ в спринт» (модалка выбора ролей). roleContext-роль = hint. */}
-        <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat" style={ST.toSprint}
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.toSprint}
                 disabled={!onToSprint} title={i18n.toSprint}
                 onClick={onToSprint ? () => onToSprint(t.issueId, t.roleKey) : undefined}>→ {i18n.toSprint}</button>
       </td>
@@ -192,6 +224,46 @@ function TaskTable({ tasks, roleContext, ytBase, fmt, i18n, pageSize, onToSprint
         <tbody>
           {shown.map((t, i) => (
             <TaskRow key={t.issueId + ':' + i} t={t} roleContext={roleContext} ytBase={ytBase} fmt={fmt} i18n={i18n} onToSprint={onToSprint} />
+          ))}
+        </tbody>
+      </table>
+      {rest > 0 ? (
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.more} onClick={() => setVisible((v) => v + pageSize)}>
+          {i18n.showMore} (+{Math.min(pageSize, rest)})
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/* #3 — таблица задач РОЛЕВОГО спойлера: плоский список, колонка «Состояние», дефолт-сорт по
+   состоянию + кликабельные заголовки ID/Приоритет/Состояние (sort локален таблице). roleContext
+   всегда true (показываем роле-контекстную оценку/остаток). */
+function RoleTaskTable({ tasks, ytBase, fmt, i18n, pageSize, onToSprint }) {
+  const [sort, setSort] = React.useState({ key: 'state', dir: 'asc' });
+  const [visible, setVisible] = React.useState(pageSize);
+  React.useEffect(() => { setVisible(pageSize); }, [tasks.length, pageSize]);
+  if (!tasks.length) return <div style={ST.empty}>{i18n.empty}</div>;
+  const sorted = sortTasks(tasks, sort.key, sort.dir);
+  const shown = sorted.slice(0, visible);
+  const rest = sorted.length - visible;
+  return (
+    <div>
+      <table style={ST.table}>
+        <thead>
+          <tr>
+            <SortTh label="⚑" col="priority" sort={sort} setSort={setSort} />
+            <SortTh label={i18n.colKey} col="id" sort={sort} setSort={setSort} />
+            <th style={ST.th}>{i18n.colSystem}</th>
+            <th style={ST.th}>{i18n.colSummary}</th>
+            <SortTh label={i18n.colState} col="state" sort={sort} setSort={setSort} />
+            <th style={ST.th}>{i18n.colEstimate}</th>
+            <th style={ST.th} />
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((t, i) => (
+            <TaskRow key={t.issueId + ':' + i} t={t} roleContext showState ytBase={ytBase} fmt={fmt} i18n={i18n} onToSprint={onToSprint} />
           ))}
         </tbody>
       </table>
@@ -241,11 +313,6 @@ function Spoiler({ title, count, defaultOpen, children }) {
   );
 }
 
-function zoneCount(z) {
-  let n = z.unassigned.length;
-  z.roles.forEach((r) => { n += r.tasks.length; });
-  return n;
-}
 
 /* слайс 6 — вид «Дерево» (§5). Переключатель + контейнеры (нативный Ring Collapse) с
    бейджем Вида, агрегатом и зонами-точками + легенда; листья с зоной-точкой; сироты. */
@@ -256,7 +323,7 @@ function ViewToggle({ mode, onMode, i18n }) {
   if (!onMode) return null;
   const btn = (m, label) => (
     <button type="button" onClick={() => onMode(m)} aria-pressed={mode === m}
-            className={'ring-button-button ring-button-heightS' + (mode === m ? ' ring-button-primary' : '')}
+            className={'ring-button-button ring-button-block ring-button-heightS' + (mode === m ? ' ring-button-active' : '')}
             style={ST.toggleBtn}>{label}</button>
   );
   return <div style={ST.toggle} role="group">{btn('zones', i18n.viewZones)}{btn('tree', i18n.viewTree)}</div>;
@@ -278,7 +345,7 @@ function TreeLeafTable({ tasks, colorOf, i18n, ytBase, onToSprint, pageSize }) {
               <td style={ST.td}><a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a></td>
               <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
               <td style={ST.td}>
-                <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat" style={ST.toSprint}
+                <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.toSprint}
                         disabled={!onToSprint} title={i18n.toSprint}
                         onClick={onToSprint ? () => onToSprint(t.issueId) : undefined}>→ {i18n.toSprint}</button>
               </td>
@@ -351,7 +418,10 @@ function BacklogView({ host }) {
   if (!vm) return null;
   const i18n = vm.i18n, fmt = vm.fmt, ytBase = vm.ytBase, ps = vm.pageSize;
   const tp = { ytBase, fmt, i18n, pageSize: ps, onToSprint: vm.onToSprint };
-  const hasAny = vm.customerPool.length || vm.otherBucket.length || vm.zones.some((z) => zoneCount(z) > 0);
+  const roleGroups = vm.roleGroups || [];
+  const unassignedTasks = vm.unassignedTasks || [];
+  const hasAny = vm.customerPool.length || vm.otherBucket.length || unassignedTasks.length
+    || roleGroups.some((g) => g.tasks.length > 0);
 
   return (
     <div>
@@ -399,24 +469,18 @@ function BacklogView({ host }) {
             </Spoiler>
           ) : null}
 
-          {vm.zones.map((z, zi) => (zoneCount(z) > 0 ? (
-            <Spoiler key={z.stateName + ':' + zi} title={z.stateName} count={zoneCount(z)} defaultOpen>
-              {z.multiRole
-                ? z.roles.map((r) => (r.tasks.length ? (
-                    <div key={r.roleKey}>
-                      <div style={ST.roleHdr}>{r.label}</div>
-                      <TaskTable tasks={r.tasks} roleContext {...tp} />
-                    </div>
-                  ) : null))
-                : (z.roles[0] ? <TaskTable tasks={z.roles[0].tasks} roleContext {...tp} /> : null)}
-              {z.unassigned.length ? (
-                <div>
-                  <div style={ST.roleHdr}>—</div>
-                  <TaskTable tasks={z.unassigned} roleContext={false} {...tp} />
-                </div>
-              ) : null}
+          {/* #3 — спойлер = РОЛЬ; состояние — колонка строки (сортируемая таблица). */}
+          {roleGroups.map((g) => (g.tasks.length ? (
+            <Spoiler key={g.roleKey} title={g.label} count={g.tasks.length} defaultOpen>
+              <RoleTaskTable tasks={g.tasks} {...tp} />
             </Spoiler>
           ) : null))}
+
+          {unassignedTasks.length ? (
+            <Spoiler key="__roleless" title="—" count={unassignedTasks.length}>
+              <TaskTable tasks={unassignedTasks} roleContext={false} {...tp} />
+            </Spoiler>
+          ) : null}
 
           {vm.otherBucket.length ? (
             <Spoiler key="__other" title={i18n.other} count={vm.otherBucket.length}>

@@ -70,6 +70,38 @@ test('зона нескольких ролей (MANY): задача под КА�
   assert.strictEqual(roleTasks(vm, 'In Dev', 'devFront').length, 0);
 });
 
+test('#3 roleGroups: спойлер=роль, порядок=activeRoles, состояние в строке (stateName)', function () {
+  const vm = buildBacklogVm([
+    task({ issueId: 'A', idReadable: 'A', stateName: 'Analysis', estByRole: { analysis: 60 } }),
+    task({ issueId: 'D', idReadable: 'D', stateName: 'Testing', estByRole: { testing: 30 } }),
+  ], SETTINGS);
+  assert.deepStrictEqual(vm.roleGroups.map(function (g) { return g.roleKey; }), ['analysis', 'devBack', 'testing']);
+  const analysis = vm.roleGroups.find(function (g) { return g.roleKey === 'analysis'; });
+  assert.strictEqual(analysis.tasks.length, 1);
+  assert.strictEqual(analysis.tasks[0].stateName, 'Analysis');   // состояние доступно в строке
+  const testing = vm.roleGroups.find(function (g) { return g.roleKey === 'testing'; });
+  assert.strictEqual(testing.tasks[0].issueId, 'D');
+});
+
+test('#3 roleGroups: задача мульти-ролевой зоны дублируется в каждую активную роль', function () {
+  const S = Object.assign({}, SETTINGS, { activeRoles: ['devBack', 'devFront'],
+    backlogZones: [{ state: 'In Dev', roles: ['devBack', 'devFront'] }] });
+  const vm = buildBacklogVm([task({ issueId: 'X', idReadable: 'X', stateName: 'In Dev' })], S);
+  const back = vm.roleGroups.find(function (g) { return g.roleKey === 'devBack'; });
+  const front = vm.roleGroups.find(function (g) { return g.roleKey === 'devFront'; });
+  assert.strictEqual(back.tasks.length, 1);
+  assert.strictEqual(front.tasks.length, 1);
+  assert.strictEqual(back.tasks[0].issueId, 'X');
+});
+
+test('#3 unassignedTasks: зона замаплена только на НЕактивную роль → unassignedTasks (не теряем)', function () {
+  const S = Object.assign({}, SETTINGS, { activeRoles: ['analysis'],
+    backlogZones: [{ state: 'In Dev', roles: ['devFront'] }] }); // devFront неактивна
+  const vm = buildBacklogVm([task({ issueId: 'U', idReadable: 'U', stateName: 'In Dev' })], S);
+  assert.strictEqual(vm.unassignedTasks.length, 1);
+  assert.strictEqual(vm.unassignedTasks[0].issueId, 'U');
+});
+
 test('нужна покер-оценка (§6.2): нет est для роли → needsPoker=true, rem=null', function () {
   const vm = buildBacklogVm([task({ stateName: 'Analysis', estByRole: {} })], SETTINGS);
   const rt = roleTasks(vm, 'Analysis', 'analysis');

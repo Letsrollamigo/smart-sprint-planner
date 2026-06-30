@@ -65,9 +65,16 @@ function computeUnmappedStates(values, resolved, s) {
    Запятая внутри атрибута = OR. */
 function _bv(v) { return '{' + v + '}'; }
 function _battr(name) { return /\s/.test(name) ? '{' + name + '}' : name; }
+/* #21-fix — НАДЁЖНЫЙ ключ активного проекта: resolved activeProjectKey (entity/picker) в
+   приоритете, ctx.project — только legacy-fallback (на YT 2026.1 / в global-режиме пусто). */
+function _activeProj(deps) {
+  if (deps.activeProjectKey) return String(deps.activeProjectKey);
+  var p = deps.ctx && deps.ctx.project;
+  return p ? String(p.shortName || p.id || '') : '';
+}
 function _buildPoolQuery(deps) {
   var s = deps.settings || {};
-  var proj = (deps.ctx && deps.ctx.project) ? (deps.ctx.project.shortName || deps.ctx.project.id) : null;
+  var proj = _activeProj(deps);
   var parts = [];
   if (proj) parts.push('project: ' + proj);
   var states = _poolStates(s);
@@ -90,9 +97,10 @@ const ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completi
 function _backlogAssist(req, deps) {
   var query = (req && req.query) || '';
   var caret = (req && typeof req.caret === 'number') ? req.caret : query.length;
-  var p = (deps.ctx && deps.ctx.project) || null;
+  /* folders-скоуп подсказок → активный проект (activeProjectId; ctx.project пусто в global). */
+  var pid = deps.activeProjectId || (deps.ctx && deps.ctx.project && deps.ctx.project.id) || null;
   var body = { query: query, caret: caret, ignoreUnresolvedSetting: true };
-  if (p && p.id) body.folders = [{ $type: 'Project', id: p.id }];
+  if (pid) body.folders = [{ $type: 'Project', id: pid }];
   return deps.host.fetchYouTrack('search/assist', {
     method: 'POST', query: { fields: ASSIST_FIELDS }, body: body,
     headers: { 'Content-Type': 'application/json' },
@@ -129,6 +137,12 @@ function _cfMinutes(iss, fieldName) {
   var cf = _cfByName(iss, fieldName);
   var v = cf && cf.value;
   return (v && typeof v.minutes === 'number') ? v.minutes : null;
+}
+/* Каноническое имя enum-значения (value.name) — для стабильной сортировки (не локализованное). */
+function _cfName(iss, fieldName) {
+  var cf = _cfByName(iss, fieldName);
+  var v = cf && cf.value;
+  return (v && v.name) || null;
 }
 
 /* §5 — родитель-issue (raw, с вложенными links для рекурсии). Ищем link, у которого фраза со
@@ -186,6 +200,8 @@ function _mapPoolIssue(iss, deps) {
     isResolved: !!(stateVal && stateVal.isResolved),
     system: s.fieldSystem ? _cfPres(iss, s.fieldSystem) : null,
     priority: s.fieldPriority ? _cfPres(iss, s.fieldPriority) : null,
+    /* #3 — канон priority (value.name) для сортировки по приоритету (presentation локализован). */
+    priorityName: s.fieldPriority ? _cfName(iss, s.fieldPriority) : null,
     tags: (iss.tags || []).map(function (t) { return t && t.name; }).filter(Boolean),
     estByRole: estByRole,
     factByRole: factByRole,
@@ -240,6 +256,13 @@ function _loadCarryover(acc, deps, stateFieldId) {
 /* Постранично выгрести пул (cap maxBacklogTotal), смапить, положить в transient _backlogPool.
    Возвращает Promise<{ count, capped }>; ошибка → reject (вызывающий ловит). */
 function loadBacklogPool(deps) {
+  /* #21-fix — изоляция проекта обязательна: без resolved-ключа НЕ шлём кросс-проектный
+     запрос (раньше тянул задачи по всем доступным проектам). Пустой пул + diag. */
+  if (!_activeProj(deps)) {
+    if (deps.diag) deps.diag('loadBacklogPool: активный проект не определён — пул не загружаем (изоляция)', 'warn');
+    deps.state.setBacklogPool([]);
+    return Promise.resolve({ count: 0, capped: false, noProject: true });
+  }
   var query = _buildPoolQuery(deps);
   var page = deps.backlogPage || 50;
   var cap = deps.maxBacklogTotal || 1000;

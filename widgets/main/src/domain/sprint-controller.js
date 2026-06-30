@@ -541,9 +541,9 @@
       });
       return false;
     }
-    /* «Выбрал → редактирую»: незавершённый (PLANNING) спринт грузим как рабочий _sprint, иначе
-       состав рисуется из снапшота (historical), а pick/delete утекают в прежний _sprint. Для
-       ALLOCATED/FINISHED — no-op (остаётся read-only / working-copy путь). */
+    /* Снимок уходящего PLANNING-спринта в историю до switch (иначе свежий подбор теряется: общий слот ssp_roleitems перезаписывается, switch реконструирует из истории). newId/PLANNING-гейт — внутри. */
+    if (st.getSprint() && (!st.getIsEditor || st.getIsEditor())) { try { deps.snapshotPlanningRolesToHistory(newId); } catch(e){ diag('snapPlanningRoles err: '+e,'err'); } }
+    /* «Выбрал → редактирую»: PLANNING грузим как рабочий _sprint (иначе pick/delete утекают в прежний). */
     try { loadUnfinishedSprintAsWorking(newId, deps); } catch(e){ diag('loadUnfinishedSprintAsWorking err: '+e,'err'); }
     st.setCurrentSprintId(newId || null);
     var ui = deps.draftGet('ui') || {}; ui.currentSprintId = st.getCurrentSprintId(); deps.draftSet('ui', ui);

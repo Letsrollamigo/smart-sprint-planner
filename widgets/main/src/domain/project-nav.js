@@ -122,8 +122,14 @@
           if (p && p.shortName && !p.archived) keys.push(p.shortName);
         });
         if (!keys.length) return [];
+        /* id проекта (folders-скоуп search/assist) теряется в filter-planner-projects —
+           подмешиваем обратно из admin/projects по shortName (без правок бэкенда). */
+        var idByKey = {};
+        (list || []).forEach(function (p) { if (p && p.shortName) idByKey[p.shortName] = p.id; });
         return deps.apiPost('filter-planner-projects', { keys: keys }).then(function (r) {
-          return (r && r.projects) || [];
+          var projs = (r && r.projects) || [];
+          projs.forEach(function (p) { if (p && p.key && idByKey[p.key]) p.id = idByKey[p.key]; });
+          return projs;
         });
       }).catch(function (e) {
         deps.diag('loadGlobalProjectList ERR: ' + (e && e.message ? e.message : e), 'err');
@@ -255,6 +261,8 @@
     deps.diag('switch project → ' + newKey, 'info');
     deps.resetProjectStateCaches();
     _applyActiveProject(deps, newKey);
+    /* Явный выбор проекта в пикере → открыть «Параметры спринта», не последний открытый узел. */
+    try { deps.state.setForceSprintParamsOnLoad(true); } catch (_) {}
     _setGlobalBanner(deps, null);
     deps.loadAndRenderProject().catch(function (e) {
       deps.diag('switch load ERR: ' + (e && e.message ? e.message : e), 'err');

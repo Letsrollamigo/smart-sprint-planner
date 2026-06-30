@@ -37,6 +37,7 @@ function _baseTaskVm(t, paused, sprintStart) {
     stateName: t.stateName || '',
     system: t.system || null,
     priority: t.priority || null,
+    priorityName: t.priorityName || t.priority || null,   /* #3 — канон для сортировки (value.name) */
     isPaused: !!paused,
     carry: carryoverLabel(t._sinceTs, t._prevState, sprintStart),
   };
@@ -113,7 +114,27 @@ function buildBacklogVm(tasks, settings) {
     otherBucket.push(_baseTaskVm(t, paused, ss)); counts.other++; // §8 незамапленное (не resolved, не start) → «Прочие» (fail-loud)
   });
 
-  return { customerPool: customerPool, zones: zones, otherBucket: otherBucket, counts: counts };
+  /* #3 — проекция «по ролям»: те же роле-контекстные taskVM из зон, перегруппированные по
+     РОЛИ (спойлер = роль, состояние — поле строки). Задача из мульти-ролевой зоны попадает в
+     группу КАЖДОЙ своей роли (контракт владельца). Порядок ролей = activeRoles. unassignedTasks —
+     задачи зон, замапленных только на неактивные роли (показываем отдельной «—»-группой). */
+  var rgMap = {}, roleOrder = [];
+  activeRoles.forEach(function (rk) { rgMap[rk] = []; roleOrder.push(rk); });
+  var unassignedTasks = [];
+  zones.forEach(function (z) {
+    z.roles.forEach(function (r) {
+      if (!rgMap[r.roleKey]) { rgMap[r.roleKey] = []; roleOrder.push(r.roleKey); }
+      r.tasks.forEach(function (t) { rgMap[r.roleKey].push(t); });
+    });
+    z.unassigned.forEach(function (t) { unassignedTasks.push(t); });
+  });
+  var roleGroups = roleOrder.map(function (rk) { return { roleKey: rk, tasks: rgMap[rk] || [] }; });
+
+  return {
+    customerPool: customerPool, zones: zones,
+    roleGroups: roleGroups, unassignedTasks: unassignedTasks,   /* #3 — вид «по ролям» */
+    otherBucket: otherBucket, counts: counts,
+  };
 }
 
 /* #21 слайсы 6/7 — ЧИСТЫЙ VM-builder вида «Дерево» (§5). Вкладывает листья-задачи в ЦЕПОЧКУ
