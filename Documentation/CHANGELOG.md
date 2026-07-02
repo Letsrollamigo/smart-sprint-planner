@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.17.0] — 2026-07-03
+
+> **Release management (epic #48) + a series of production fixes (#56).**
+
+### Added
+
+- **Release management** — new «Planned releases» / «Release history» tabs (enable in project settings, «Releases» section): a release is the planner's own project-scoped entity (kind Release/Hotfix × source Internal/Vendor), task pick-up, 6 statuses with a preview and optional native State sync by mapping, a readiness traffic-light (zones derived from State), an epic ▸ story ▸ task composition tree, composition freeze, patch notes, .txt export, an irreversible snapshot on close, auto-archiving of the oldest closed releases past 300 KB, and server-authoritative release-manager / release-engineer permissions.
+- **Optimistic sprint locking** — two users editing the same sprint no longer silently overwrite each other: a save based on a stale revision is rejected with a clear message.
+- A «Show diagnostic log panel» toggle (the log is now hidden by default; new `showDiagLogUi` key, legacy `hideDiagLogUi` soft-deprecated).
+
+### Fixed
+
+- **Assignee assignments leaking between roles** (production, HAR-confirmed): a foreign role's history snapshot could capture the current role's personal-planning block — assignments swapped between roles and got lost; plus a read-guard that quarantines already-poisoned records (self-healing on next save).
+- «Refresh from task» now updates mirror fields (state / priority / cross-priority / system / external ID) on tasks excluded from the sprint too (estimates / fact / assignee stay untouched for excluded tasks).
+- The dashboard rail label shows the clean sprint name (previously the «name · dates» mask); «select → edit» takes the sprint name from the active role's snapshot (not a stale one).
+- ID columns fit 15 characters (long production project keys).
+- Empty date pickers open on the current month (Ring UI 7.0.108 opened them on November 1969).
+
+---
+
 ## [2.16.6] — 2026-06-30
 
 > **Fix: plan two same-date sprints in parallel without data loss; backlog scoped to the selected project.**
