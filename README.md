@@ -15,7 +15,7 @@
 > its development, donations in any amount are welcome on TON:
 > `UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
 
-Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles from the YouTrack main menu — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, differentiated time accounting, parent ← child cascade aggregation, and parent.State ← min(children) state rollup.
+Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles from the YouTrack main menu — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, release management with readiness traffic-lights, differentiated time accounting, parent ← child cascade aggregation, and parent.State ← min(children) state rollup.
 
 ## Architecture
 
@@ -33,7 +33,7 @@ The plugin ships through two parallel channels — pick the one that matches you
 | Channel | Current | Cadence | Who it's for |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.16.3** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.16.6** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v2.17.0** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
 
@@ -42,6 +42,7 @@ GitHub Releases is the authoritative source — every marketplace upload is buil
 - **9 functional roles** — analysis, testing, platform development, backend, frontend, iOS, Android, fullstack, database. Roles can be selectively enabled per project; a generic `devPlatform` role lets teams map any platform stack (1C, SAP, Salesforce, low-code, etc.) to a custom field.
 - **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and direct editing of YouTrack fields from the sprint table.
 - **Backlog workspace** — a pre-planning phase before sprint planning: a pool of customer tasks shown **By zones** (state → role) or as an **Epic ▸ Story ▸ Task** tree, query-assist filter, Carryover / Continuation / Needs-estimate / Paused labels, and one-click **«lay into sprint»** that distributes a pooled task into role compositions (auto-suggested roles by zone). Tasks in unmapped states land in an «Other» bucket with a fail-loud warning.
+- **Release management** — group project tasks into **releases** (kind Release / Hotfix × source Internal / Vendor) and walk them through six statuses, with a previewed, mapping-driven sync of native task States. Readiness traffic-light, an **Epic ▸ Story ▸ Task** composition tree, composition freeze, patch notes, .txt export, an irreversible snapshot on close, and auto-archiving of the oldest closed releases. Release-manager / release-engineer permissions are enforced server-side. Off by default — enable in project settings.
 - **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity. Under the **«Simple»** planning model the **Per-assignee distribution** nav item is hidden, role capacity is entered manually on the allocation tab, and assignees are set directly on the Gantt chart — no per-person capacity accounting; the **«Light»** model enables per-assignee capacity.
 - **Capacity management settings** — calculation norms (hour quotas / rate / participation / grade coefficients) and the **«Planning model»** selector (Simple / Light / Full; Light offers auto-by-formula or manual per-assignee resource, Full adds a «Capacity» tab and consumes the approved per-sprint business capacity per role and assignee) are consolidated into an admin-tier section editable only by the settings manager.
 - **Manual per-assignee resource** — opt-in `manualPersonalResource` mode for teams whose capacity is set top-down by the team lead (fixed weekly hours per person) instead of derived from KPE coefficients.
