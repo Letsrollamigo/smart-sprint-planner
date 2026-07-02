@@ -4,6 +4,19 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import Dialog from '@jetbrains/ring-ui-built/components/dialog/dialog';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import DatePicker from '@jetbrains/ring-ui-built/components/date-picker/date-picker';
+import DatePopup from '@jetbrains/ring-ui-built/components/date-picker/date-popup';
+
+/* #56+ Ring 7.0.108: при пустом date конструктор DatePopup кладёт scrollDate={date:null}
+   (truthy-объект) — рендер-фолбэк «|| {date: new Date()}» не срабатывает, и календарь
+   открывается на эпохе (ноябрь 1969). Нормализуем до рендера: date:null → scrollDate:null,
+   дальше Ring сам подставляет сегодня. Убрать при апгрейде ring-ui с фиксом. */
+const _dpRender = DatePopup.prototype.render;
+DatePopup.prototype.render = function () {
+  if (this.state && this.state.scrollDate && this.state.scrollDate.date == null) {
+    this.state = Object.assign({}, this.state, { scrollDate: null });
+  }
+  return _dpRender.call(this);
+};
 import Checkbox from '@jetbrains/ring-ui-built/components/checkbox/checkbox';
 import Radio from '@jetbrains/ring-ui-built/components/radio/radio';
 import Tabs from '@jetbrains/ring-ui-built/components/tabs/dumb-tabs';

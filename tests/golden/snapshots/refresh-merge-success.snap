@@ -2,8 +2,8 @@
   "fetchLog": [
     {
       "path": "issues",
-      "top": 5,
-      "idsInQuery": 5,
+      "top": 6,
+      "idsInQuery": 6,
       "hasFields": true,
       "busyAtCall": [
         true,

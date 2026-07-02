@@ -1,5 +1,5 @@
 {
-  "select": "<option value=\"gm-sprint-2026-06\">GM Sprint June 2026 · 22.05.2026 — 16.06.2026</option>",
+  "select": "<option value=\"gm-sprint-2026-06\" data-name=\"GM Sprint June 2026\">GM Sprint June 2026 · 22.05.2026 — 16.06.2026</option>",
   "selectedValue": "gm-sprint-2026-06",
   "selectDisabled": false,
   "badge": "<span id=\"widgetSprintBadge\" class=\"widget-header__badge\" data-i18n-title=\"hintBadgeAggregated\"><span class=\"s-badge s-badge--confirmed\" title=\"Анализ: Состав согласован\"><span style=\"opacity:.7\">Анализ:</span> Состав согласован</span><span class=\"s-badge s-badge--finished\" title=\"Тестирование: Закрыт\"><span style=\"opacity:.7\">Тестирование:</span> Закрыт</span><span class=\"s-badge s-badge--planning\" title=\"Разработка Back: Черновик\"><span style=\"opacity:.7\">Разработка Back:</span> Черновик</span><span class=\"s-badge s-badge--planning\" title=\"Разработка Front: Черновик\"><span style=\"opacity:.7\">Разработка Front:</span> Черновик</span></span>",

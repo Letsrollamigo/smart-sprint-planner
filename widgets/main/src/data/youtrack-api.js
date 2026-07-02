@@ -52,12 +52,26 @@ function _backendCall(path, baseOpts, deps) {
 function apiGet(path, deps) {
   deps.diag('GET ' + path + ' [' + deps.state.getMode() + ']');
   return _backendCall(path, {}, deps)
-    .then(function (r) { deps.diag('OK ' + path, 'ok'); return r; })
+    .then(function (r) {
+      deps.diag('OK ' + path, 'ok');
+      /* #56-4 — синк rev слота sprint-data при загрузке (optimistic lock). */
+      if (typeof deps.state.setSlotRev === 'function' && path.indexOf('sprint-data') === 0 && r && r.sprint) {
+        deps.state.setSlotRev(typeof r.sprint._rev === 'number' ? r.sprint._rev : 0);
+      }
+      return r;
+    })
     .catch(function (e) { deps.diag('ERR ' + path + ': ' + (e && e.message ? e.message : e), 'err'); throw e; });
 }
 
 function apiPost(path, body, query, deps) {
   deps.diag('POST ' + path + ' [' + deps.state.getMode() + ']');
+  /* #56-4 — optimistic lock: к каждому write sprint-data прикладываем rev слота,
+     который этот клиент видел. Сервер отвергает несовпадение (409 rev_conflict) —
+     параллельная правка вторым пользователем больше не затирается молча. */
+  if (path === 'sprint-data' && body && (body.sprint !== undefined || body.roleItems !== undefined)
+      && body.baseRev === undefined && typeof deps.state.getSlotRev === 'function') {
+    body.baseRev = deps.state.getSlotRev();
+  }
   var opts = { method: 'POST', body: body };
   if (query && typeof query === 'object') opts.query = query;
   return _backendCall(path, opts, deps)
@@ -71,9 +85,18 @@ function apiPost(path, body, query, deps) {
       if (r && r.success === false) {
         var reason = (r && (r.reason || r.error)) || 'unknown_error';
         deps.diag('ERR ' + path + ': server returned success=false reason=' + reason, 'err');
+        /* #56-4 — конкурентная правка: понятный тост вместо генерик-ошибки. */
+        if (reason === 'rev_conflict' && typeof deps.toast === 'function') {
+          deps.toast(deps.T('errRevConflict'), 'err');
+        }
         throw new Error(reason);
       }
       deps.diag('OK ' + path, 'ok');
+      /* #56-4 — успешный write sprint: сервер вернул новый rev слота. */
+      if (path === 'sprint-data' && r && typeof r.rev === 'number'
+          && typeof deps.state.setSlotRev === 'function') {
+        deps.state.setSlotRev(r.rev);
+      }
       /* v5.0.3 — после успешного сохранения снять dirty + обновить snapshot/baseRevHash */
       try {
         if (path === 'sprint-data' && body) {

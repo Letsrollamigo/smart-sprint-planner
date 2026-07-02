@@ -21,11 +21,11 @@
       "type": null
     },
     {
-      "msg": "Нет задач для синхронизации.",
+      "msg": "Расхождений с YouTrack нет.",
       "type": "info"
     }
   ],
-  "fetchCalls": 0,
+  "fetchCalls": 1,
   "busyAfter": [
     false,
     false,

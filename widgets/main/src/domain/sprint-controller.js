@@ -493,7 +493,7 @@
        Смешанный/ALLOCATED оставляем прежнему пути (read-only / working copy под validator). */
     var allPlanning = snaps.every(function(s){ return s.status === deps.STATUS.PLANNING; });
     if (!allPlanning) return false;
-    var meta = snaps[0];
+    var meta = snaps.filter(function(s){ return s && typeof deps.getActiveRoles === 'function' && deps.getActiveRoles().some(function(r){ return r.key === s.roleKey; }); })[0] || snaps[0]; /* #56-3 — снапы неактивных ролей держат протухшее имя */
     var sprint = {
       sprintId:        newId,
       name:            meta.name || null,

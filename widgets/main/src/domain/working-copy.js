@@ -412,12 +412,20 @@ function buildRoleSnap(rk, goalFields, wasValidated, deps) {
   /* #49 — snap.personalPlanning = SINGLE PP роли rk (канон per-role). Fallback больше НЕ берёт
      sprint.personalPlanning: с #49 это keyed-map {[rk]: PP} (serialization-зеркало), запись её
      в per-role снимок испортила бы канон. Вне active-current роли — берём существующую канон-запись
-     роли (preserve), иначе null. */
+     роли (preserve), иначе null.
+     #56-7 — _currentRolePP берём ТОЛЬКО если это PP именно роли rk: раньше снап ЧУЖОЙ роли
+     (перебор ролей в snapshotPlanningRolesToHistory при активной другой подвкладке) получал
+     PP текущей роли целиком → назначения исполнителей «переезжали» между ролями в каноне
+     истории, реконструкция затирала их крест-накрест (HAR прод-бага: analysis↔devPlatform). */
   var _existingSnapForRk = deps.state.getHistory().find(function (s) {
     return s && s.sprintId === (sprint.sprintId + '_' + rk);
   });
-  var ppToSnap    = (deps.isActiveSprintRecord(deps.state.getCurrentSprintRoleRec()) && deps.state.getCurrentRolePP())
-    ? deps.state.getCurrentRolePP()
+  var _curRec = deps.state.getCurrentSprintRoleRec();
+  var _curPP  = deps.state.getCurrentRolePP();
+  var _curPPisForRk = !!(_curPP && _curRec && deps.isActiveSprintRecord(_curRec)
+    && (_curRec.roleKey === rk || String(_curRec.sprintId || '') === (sprint.sprintId + '_' + rk)));
+  var ppToSnap    = _curPPisForRk
+    ? _curPP
     : ((_existingSnapForRk && _existingSnapForRk.personalPlanning) || null);
   snap.personalPlanning = deps.deepClone(ppToSnap);
   /* v1.9.0 D132 — Freeze sprint goal + inject outcome/retro from confirm dialog. */

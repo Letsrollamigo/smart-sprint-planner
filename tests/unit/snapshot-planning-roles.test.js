@@ -97,3 +97,32 @@ test('snapshot: не-PLANNING спринт → no-op (ALLOCATED/CONFIRMED иду
   assert.strictEqual(history.length, 0);
   assert.strictEqual(posts.length, 0);
 });
+
+/* #56-7 — регресс прод-бага «назначения исполнителей переезжают между ролями»:
+   buildRoleSnap для ЧУЖОЙ роли брал _currentRolePP текущей подвкладки целиком
+   (гейт isActiveSprintRecord не сверял роль) → снап devPlatform получал PP analysis,
+   реконструкция из канона затирала назначения крест-накрест (HAR: analysis↔devPlatform). */
+test('snapshot: PP текущей роли попадает ТОЛЬКО в снап своей роли, чужая роль сохраняет канон', async () => {
+  const curPP = {
+    roleKey: 'analysis', nkcKey: 'other',
+    taskAssignments: { 'A-1': { assignee: 'udumyanmv' }, 'A-2': { assignee: 'bondarenkoeb' } },
+    resourcesByAssignee: {},
+  };
+  const dpCanonPP = { roleKey: 'devPlatform', nkcKey: 'other', taskAssignments: { 'D-1': { assignee: null } }, resourcesByAssignee: {} };
+  const history = [
+    { sprintId: 'S1_devPlatform', roleKey: 'devPlatform', status: 'PLANNING', name: 'Sprint 1',
+      dateStart: 1, dateEnd: 2, items: [], personalPlanning: dpCanonPP },
+  ];
+  const { deps } = makeDeps({ history });
+  deps.isActiveSprintRecord = () => true;
+  deps.state.getCurrentSprintRoleRec = () => ({ sprintId: 'S1_analysis', roleKey: 'analysis' });
+  deps.state.getCurrentRolePP = () => curPP;
+  await WC.snapshotPlanningRolesToHistory(deps, 'S2');
+  const an = history.find((h) => h.sprintId === 'S1_analysis');
+  const dp = history.find((h) => h.sprintId === 'S1_devPlatform');
+  // Своя роль: снап несёт актуальный _currentRolePP с назначениями.
+  assert.strictEqual(an.personalPlanning.taskAssignments['A-1'].assignee, 'udumyanmv');
+  // Чужая роль: НЕ заражается текущим PP — сохраняет свою канон-запись.
+  assert.strictEqual(dp.personalPlanning.roleKey, 'devPlatform');
+  assert.strictEqual(dp.personalPlanning.taskAssignments['A-1'], undefined);
+});

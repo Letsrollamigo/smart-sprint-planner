@@ -208,11 +208,19 @@ function refreshFromYouTrack(deps) {
   roles.forEach(function (role) {
     var ytEst  = (settings && settings[role.fieldEst]) || null;
     var ytFact = (settings && settings[role.fieldFact]) || null;
-    var arr = deps.getRoleItemsArr(role.key).filter(function (i) {
+    var all = deps.getRoleItemsArr(role.key);
+    var arr = all.filter(function (i) {
       return i && i.issueId && deps.ACTIVE_INC.indexOf(i.inclusionStatus) >= 0;
     });
+    /* #56-2 — «Исключена из спринта»: YT-зеркальные поля (state/priority/xpriority/
+       system/extId) обновляем и у исключённых, иначе они застывают навсегда.
+       Оценки/факт/исполнителя у excluded не трогаем — задача вне спринта. */
+    var arrEx = all.filter(function (i) {
+      return i && i.issueId && i.inclusionStatus === 'INC_EXCLUDED';
+    });
     arr.forEach(function (i) { idSet[i.issueId] = 1; });
-    roleData.push({ rk: role.key, items: arr, ytEst: ytEst, ytFact: ytFact });
+    arrEx.forEach(function (i) { idSet[i.issueId] = 1; });
+    roleData.push({ rk: role.key, items: arr, itemsEx: arrEx, ytEst: ytEst, ytFact: ytFact });
   });
 
   var ids = Object.keys(idSet);
@@ -331,6 +339,28 @@ function refreshFromYouTrack(deps) {
           if (c.field === 'assignee') rich._assignee = remote.assignee;
           conflicts.push(rich);
         });
+      });
+      /* #56-2 — исключённые: только YT-зеркальные поля, без est/fact/assignee
+         (remote их не содержит → merge-pure не тронет; конфликтов не бывает). */
+      (rd.itemsEx || []).forEach(function (item) {
+        var issue = issuesById[item.issueId];
+        if (!issue) return;
+        var remote = {};
+        if (fState) {
+          var stv = getStateObj(issue, fState);
+          if (stv) { remote.state = stv.name; remote.stateLocalized = stv.name; remote.stateColor = stv.color; }
+        }
+        if (fPriority)  remote.priority         = getStr(issue, fPriority);
+        if (fXPriority) remote.xpriority        = getStr(issue, fXPriority);
+        if (fSystem)    remote.system           = getStr(issue, fSystem);
+        if (fExtId)     remote.externalTicketId = getStr(issue, fExtId);
+        var res = deps.resolveRefreshMerge({
+          issueId: item.issueId, roleKey: rk,
+          local: { state: item.state, priority: item.priority, xpriority: item.xpriority,
+                   system: item.system, externalTicketId: item.externalTicketId },
+          snapshot: {}, remote: remote,
+        });
+        if (res.updates && Object.keys(res.updates).length) pendingItemUpdates.push({ item: item, updates: res.updates, rk: rk });
       });
     });
 

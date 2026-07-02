@@ -771,6 +771,7 @@
     } catch(e) { diag('loadAppVersion sync err: '+e, 'err'); }
   }
   var _baseRevHash = '';
+  var _slotRev = 0;   /* #56-4 — rev слота sprint-data (optimistic lock; синк в youtrack-api) */
   var _serverSnapshotSprint    = null;
   var _serverSnapshotRoleItems = null;
   var _serverSnapshotCurrentRolePP    = null;
@@ -1561,6 +1562,7 @@
   function _ytApiDeps() {
     return {
       diag: diag, host: _host, STATUS: STATUS, settings: _settings,
+      toast: toast, T: T,   /* #56-4 — тост rev_conflict из api-шва */
       markSavedAndCleanup: markSavedAndCleanup,
       saveRoleHistorySnapshot: saveRoleHistorySnapshot,
       updateGanttHistDOM: _updateGanttHistDOM,
@@ -1569,6 +1571,8 @@
         getMode: function () { return _mode; },
         getActiveProjectKey: function () { return _activeProjectKey; },
         getSprint: function () { return _sprint; },
+        getSlotRev: function () { return _slotRev; },        /* #56-4 */
+        setSlotRev: function (v) { _slotRev = (typeof v === 'number') ? v : 0; },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
@@ -2266,14 +2270,14 @@
     }
   })();
 
-  /* v6.3.0 D110 — применить настройку hideDiagLogUi: при true прячет блок #diagWrap.
-     Записи в _diagLines продолжают идти в память, доступны через экспорт TXT после
-     снятия флага. */
+  /* #56-5 — диаг-лог скрыт ПО УМОЛЧАНИЮ; показывается только при showDiagLogUi=true
+     (тумблер «Прочее»). Legacy hideDiagLogUi (v6.3.0 D110) soft-deprecated: форма не
+     пишет, здесь не читается. _diagLines пишутся всегда, экспорт TXT доступен. */
   function _applyDiagLogVisibility() {
     var wrap = document.getElementById('diagWrap');
     if (!wrap) return;
-    var hide = !!(_settings && _settings.hideDiagLogUi);
-    wrap.style.display = hide ? 'none' : '';
+    var show = !!(_settings && _settings.showDiagLogUi === true);
+    wrap.style.display = show ? '' : 'none';
   }
 
   /* v2.0.0 D6 — Ring Tabs visual driver поверх hidden tab-btn state-trackers.
@@ -2708,7 +2712,11 @@
   function _getPersonalPlanningForCurrent(rk) {
     if (!_currentSprintId || !rk) return null;
     var rec = _findHistRecForCurrent(rk);
-    if (rec && rec.personalPlanning) return rec.personalPlanning;
+    /* #56-7 — read-гард заражённого канона (прод-записи до фикса buildRoleSnap могли
+       получить PP ЧУЖОЙ роли): PP с чужим внутренним roleKey не отдаём (null → пустой
+       PP; самолечение при следующем сохранении роли). Записи без roleKey — legacy, пропускаем. */
+    if (rec && rec.personalPlanning
+        && (!rec.personalPlanning.roleKey || rec.personalPlanning.roleKey === rk)) return rec.personalPlanning;
     /* #49 — единственный источник PP = канон (per-role histRec.personalPlanning). Снят
        fallback на legacy keyed-кэш _sprint.personalPlanning[rk] (был мёртв/неверного shape;
        роли с данными в кэше, но пустым каноном досеваются backfill'ом на чтении —

@@ -106,7 +106,11 @@ function _updateRailSprintName() {
   var sel = document.getElementById('widgetSprintSel');
   var txt = '';
   if (sel && sel.value && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]) {
-    txt = (sel.options[sel.selectedIndex].textContent || '').trim();
+    /* #56-3 — подпись = чистое имя спринта; option text (имя · даты) выглядел как
+       «переименование по маске» и терял заданное пользователем имя. Fallback на
+       textContent — для option'ов без data-name (не должно случаться). */
+    var o = sel.options[sel.selectedIndex];
+    txt = (o.dataset.name || o.textContent || '').trim();
   }
   el.textContent = txt;
 }
@@ -134,6 +138,7 @@ function _buildHeaderVm(deps) {
     var m = metaCache[id];
     vm.options.push({
       value: id,
+      name: m.name || '',   /* #56-3 — чистое имя для рельсовой подписи (без дат-маски) */
       text: (m.name || id) +
         (m.dateStart ? ' · ' + fmtDate(m.dateStart) : '') +
         (m.dateEnd   ? ' — ' + fmtDate(m.dateEnd)   : ''),
@@ -227,6 +232,7 @@ function renderWidgetHeader(deps) {
       var opt = document.createElement('option');
       opt.value = o.value;
       opt.textContent = o.text;
+      opt.dataset.name = o.name || '';   /* #56-3 — источник чистого имени для подписи рельсы */
       sel.appendChild(opt);
     });
     sel.value = vm.resolvedSprintId;

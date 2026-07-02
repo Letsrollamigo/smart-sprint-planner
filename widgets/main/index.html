@@ -295,7 +295,7 @@
     /* инпуты Оценка/Аллокация — вписать в узкую ячейку (плейсхолдер «напр. 16ч») */
     body.ssp-global-mode [data-ssp-table-host] .td-num input { font-size: 11px !important; padding-left: 4px !important; padding-right: 4px !important; min-width: 0 !important; width: 100% !important; box-sizing: border-box; }
     body.ssp-global-mode [data-ssp-table-host] .td-num input::placeholder { font-size: 11px; }
-    body.ssp-global-mode [data-ssp-table-host] .td-id  { min-width: 52px; max-width: 84px; width: 60px; }  /* ID компактнее */
+    body.ssp-global-mode [data-ssp-table-host] .td-id  { min-width: 52px; max-width: 15ch; width: 15ch; }  /* #56-1 — было 60px: длинный ID (15 симв) обрезался на дашборде */
     /* поле «Ресурс (ч)» исполнителя (ручной режим) — вписать в ячейку, чтобы правый бордер не обрезался */
     body.ssp-global-mode [data-ssp-table-host] .currentRole-manual-res { width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
     /* таблица исполнителей просторнее плотной таблицы ролей — числовым колонкам больше ширины */
@@ -916,7 +916,7 @@
        v2.1.7 — селекторы упрощены (убран промежуточный `.ring-table-cell` —
        Ring рендерит ячейки с CSS-module hashed class, `.ring-table-cell` не
        существует и rules были silent noop). */
-    [data-ssp-table-host] .td-id        { min-width: 90px;  max-width: 140px; width: 100px; white-space: nowrap; }
+    [data-ssp-table-host] .td-id        { min-width: 90px;  max-width: 16ch; width: 15ch; white-space: nowrap; }  /* #56-1 — длинные ключи прод-проектов: влезает 15 символов ID */
     [data-ssp-table-host] .td-priority  { min-width: 80px;  max-width: 110px; width: 90px;  white-space: nowrap; }
     [data-ssp-table-host] .td-xpriority { min-width: 70px;  max-width: 100px; width: 80px;  white-space: nowrap; }
     [data-ssp-table-host] .td-system    { min-width: 80px;  max-width: 140px; width: 100px; white-space: nowrap; }

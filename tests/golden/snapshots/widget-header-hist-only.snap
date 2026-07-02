@@ -1,5 +1,5 @@
 {
-  "select": "<option value=\"gm-x\">GM X Sprint · 22.05.2026 — 16.06.2026</option><option value=\"gm-y\">GM Y Sprint · 22.05.2026 — 16.06.2026</option>",
+  "select": "<option value=\"gm-x\" data-name=\"GM X Sprint\">GM X Sprint · 22.05.2026 — 16.06.2026</option><option value=\"gm-y\" data-name=\"GM Y Sprint\">GM Y Sprint · 22.05.2026 — 16.06.2026</option>",
   "selectedValue": "gm-x",
   "selectDisabled": false,
   "badge": "<span id=\"widgetSprintBadge\" class=\"widget-header__badge\" data-i18n-title=\"hintBadgeAggregated\"><span class=\"s-badge s-badge--planning\" title=\"Анализ: Черновик\"><span style=\"opacity:.7\">Анализ:</span> Черновик</span><span class=\"s-badge s-badge--planning\" title=\"Тестирование: Черновик\"><span style=\"opacity:.7\">Тестирование:</span> Черновик</span><span class=\"s-badge s-badge--planning\" title=\"Разработка Back: Черновик\"><span style=\"opacity:.7\">Разработка Back:</span> Черновик</span><span class=\"s-badge s-badge--planning\" title=\"Разработка Front: Черновик\"><span style=\"opacity:.7\">Разработка Front:</span> Черновик</span></span>",

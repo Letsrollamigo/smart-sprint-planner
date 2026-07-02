@@ -4,9 +4,9 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4311,
-      "locBudget": 4311,
-      "budgetNote": "#48 R4 — осознанный +4: getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps (архив истории US-R4-02; делегаты в release-store). Прошлое: R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
+      "loc": 4319,
+      "locBudget": 4319,
+      "budgetNote": "#56-4/#56-7 — осознанный +8: _slotRev+getSlotRev/setSlotRev+toast/T в _ytApiDeps (optimistic lock, логика в youtrack-api/backend-core) + read-гард заражённого PP-канона в _getPersonalPlanningForCurrent. Прошлое: #48 R4 +4 (архив в _releaseDeps), R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -74,7 +74,7 @@
   },
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
-    "core": { "loc": 2605, "locBudget": 2640 },
+    "core": { "loc": 2648, "locBudget": 2648, "budgetNote": "#56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys." },
     "modules": {
       "backend-capacity.js": { "loc": 628, "locBudget": 691 },
       "backend-global.js": { "loc": 169, "locBudget": 189 },

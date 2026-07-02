@@ -6,7 +6,8 @@
     "sprintFieldVal", "versionFieldVal", "personalPlanning",
     "migrationLog",
     "pluginVersion",
-    "sprintGoal"
+    "sprintGoal",
+    "_rev"
   ],
   "ALLOWED_HISTORY_SNAP_KEYS": [
     "sprintId", "name", "status", "roleKey", "roleLabel",

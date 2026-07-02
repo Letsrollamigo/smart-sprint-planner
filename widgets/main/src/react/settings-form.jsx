@@ -906,7 +906,8 @@ function SettingsForm(props) {
   const setGroup = (k, v) => setGroups((p) => Object.assign({}, p, { [k]: v }));
 
   /* Прочее */
-  const [hideDiagLogUi, setHideDiagLogUi] = React.useState(!!initial.hideDiagLogUi);
+  /* #56-5 — showDiagLogUi заменил инверсный hideDiagLogUi (лог скрыт по умолчанию). */
+  const [showDiagLogUi, setShowDiagLogUi] = React.useState(initial.showDiagLogUi === true);
   const [defaultLang, setDefaultLang] = React.useState(initial.defaultLang || '');
   const [uiLang, setUiLang] = React.useState(props.uiLang || 'ru');
 
@@ -1040,7 +1041,7 @@ function SettingsForm(props) {
     data.usePersonalForResource = _ppFlags.usePersonalForResource;
     data.manualPersonalResource = _ppFlags.manualPersonalResource;
     data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
-    data.hideDiagLogUi = hideDiagLogUi;
+    data.showDiagLogUi = showDiagLogUi;   /* #56-5 — hideDiagLogUi больше не пишем (soft-deprecated) */
 
     const num = (v, d) => { const f = parseFloat(v); return isFinite(f) ? f : d; };
     data.nkcJanuary = num(nums.nkcJanuary, 105);
@@ -1496,7 +1497,7 @@ function SettingsForm(props) {
             </div>
           </div>
           <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={hideDiagLogUi} label={t('lblHideDiagLogUi')} hint={t('hintHideDiagLogUi')} onToggle={() => setHideDiagLogUi((v) => !v)} />
+            <RoleCheck on={showDiagLogUi} label={t('lblShowDiagLogUi')} hint={t('hintShowDiagLogUi')} onToggle={() => setShowDiagLogUi((v) => !v)} />
           </div>
         </React.Fragment>
       ),

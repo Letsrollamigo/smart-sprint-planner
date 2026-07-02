@@ -131,7 +131,7 @@ function getBody(ctx) {
 }
 
 // Белые списки ключей верхнего уровня
-var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items'];
+var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items', 'baseRev']; /* #56-4 — optimistic lock */
 var ALLOWED_HISTORY_KEYS     = ['history'];
 // v5.0.3 — серверный draft (черновик в backend, поскольку YouTrack iframe
 // sandboxed без allow-same-origin, localStorage недоступен).
@@ -159,7 +159,8 @@ var ALLOWED_SPRINT_KEYS = [
   'personalPlanning',
   'migrationLog',
   'pluginVersion',
-  'sprintGoal'
+  'sprintGoal',
+  '_rev'
 ];
 var ALLOWED_HISTORY_SNAP_KEYS = [
   'sprintId',
@@ -898,8 +899,13 @@ var ALLOWED_SETTINGS_KEYS = [
   'allowOverlimitPlanning',
   'nkcJanuary','nkcMay','nkcOther','rate','participation',
   'kpe',
-  /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI. */
+  /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI.
+     #56-5 — SOFT-DEPRECATED: форма больше не пишет (заменён на showDiagLogUi,
+     инверсия дефолта — лог теперь скрыт по умолчанию). Принимаем для обратной
+     совместимости; hard-removal по лестнице ≥2 minor. */
   'hideDiagLogUi',
+  /* #56-5 — показывать панель диагностического лога (default: скрыта). */
+  'showDiagLogUi',
   /* v1.1.0 — project-default язык интерфейса (один из ALLOWED_LANG_CODES).
      Если не задан — клиент использует localStorage.ssp_lang ⊃ navigator.language ⊃ 'ru'. */
   'defaultLang',
@@ -1123,7 +1129,7 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','hideDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','hideDiagLogUi','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled','stateRollupRescanRequested'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
@@ -1964,6 +1970,29 @@ var ENDPOINTS = [
 
         var warnings = [];
 
+        /* #56-4 — optimistic lock слота ssp_sprint/ssp_roleitems: параллельная правка
+           двумя пользователями шла last-write-wins и теряла чужой состав/оценки.
+           Клиент шлёт baseRev (rev слота, который он загружал); расхождение с хранимым
+           _rev → 409 rev_conflict, фронт просит обновить страницу. Без baseRev (старый
+           клиент / REST-сид) — прежнее поведение. Потолок: запись только roleItems /
+           assignerSync rev не инкрементит — окно этих гонок остаётся (редкое). */
+        var newSlotRev = null;
+        if (body.sprint !== undefined || body.roleItems !== undefined) {
+          var revSprint = parseJson(getProp(ctx, 'ssp_sprint'), null);
+          var slotRev = (revSprint && typeof revSprint._rev === 'number') ? revSprint._rev : 0;
+          if (body.baseRev !== undefined && body.baseRev !== null && body.baseRev !== slotRev) {
+            ctx.response.status = 409;
+            ctx.response.json({ success: false, error: 'rev_conflict', rev: slotRev });
+            return;
+          }
+          /* rev инкрементится на КАЖДОЙ записи sprint (и от legacy-клиентов без baseRev —
+             иначе они сбрасывали бы счётчик и провоцировали ложные конфликты). */
+          if (body.sprint && typeof body.sprint === 'object') {
+            newSlotRev = slotRev + 1;
+            body.sprint._rev = newSlotRev;
+          }
+        }
+
         if (body.sprint !== undefined) {
           if (body.sprint === null) {
             /* S3 (кластер-баг спринтов): явный сброс активного спринта — фронт шлёт
@@ -1990,6 +2019,8 @@ var ENDPOINTS = [
             prevSprint = stripDeprecatedSprintKeys(prevSprint);
             // v1.6.0 D125 — stamp before validate+persist.
             prevSprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+            /* #56-4 — assigner partial save тоже двигает rev (baseRev-гейт отработал выше). */
+            if (newSlotRev !== null) prevSprint._rev = newSlotRev;
             if (!validateSprintForWrite(prevSprint)) {
               badRequest(ctx, 'invalid_sprint_structure');
               return;
@@ -2000,7 +2031,9 @@ var ENDPOINTS = [
               return;
             }
             setProp(ctx, 'ssp_sprint', pSprintStr);
-            ctx.response.json({ success: true, action: 'assignerSync' });
+            var aResp = { success: true, action: 'assignerSync' };
+            if (newSlotRev !== null) aResp.rev = newSlotRev;
+            ctx.response.json(aResp);
             return;
           } else {
           if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
@@ -2061,6 +2094,16 @@ var ENDPOINTS = [
             return;
           }
           setProp(ctx, 'ssp_roleitems', riStr);
+          /* #56-4 — roleItems-only write тоже двигает rev слота (иначе два таких
+             писателя проходят с одним baseRev и последний молча затирает состав
+             первого). Спринт в этом запросе не менялся — переписываем хранимый
+             с новым _rev. body.sprint===undefined исключает конфликт с null-сбросом. */
+          if (body.sprint === undefined && newSlotRev === null
+              && revSprint && typeof revSprint === 'object') {
+            newSlotRev = slotRev + 1;
+            revSprint._rev = newSlotRev;
+            setProp(ctx, 'ssp_sprint', JSON.stringify(revSprint));
+          }
         }
 
         if (body.settings !== undefined) {
@@ -2129,7 +2172,8 @@ var ENDPOINTS = [
           setProp(ctx, 'ssp_items', legacyStr);
         }
 
-        var resp = { success: true, saved: Object.keys(body) };
+        var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev'; }) };
+        if (newSlotRev !== null) resp.rev = newSlotRev;   /* #56-4 — фронт синхронизирует _slotRev */
         if (warnings.length) resp.warnings = warnings;
         ctx.response.json(resp);
       }
