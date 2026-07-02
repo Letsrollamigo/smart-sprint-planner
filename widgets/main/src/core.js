@@ -4447,7 +4447,6 @@
         setServerSnapshotCurrentRoleGantt: function (v) { _serverSnapshotCurrentRoleGantt = v; },
         getBaseRevHash: function () { return _baseRevHash; },
         setBaseRevHash: function (v) { _baseRevHash = v; },
-        getIsEditor: function () { return _isEditor; },
         getIsAssigner: function () { return _isAssigner; },
         getPlanningLevel: function () { return _planningLevel; },
       },

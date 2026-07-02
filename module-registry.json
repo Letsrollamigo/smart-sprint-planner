@@ -4,7 +4,7 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4189,
+      "loc": 4188,
       "locBudget": 4399
     },
     "fatThreshold": 600,
