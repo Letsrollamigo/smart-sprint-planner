@@ -4,8 +4,9 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4188,
-      "locBudget": 4399
+      "loc": 4311,
+      "locBudget": 4311,
+      "budgetNote": "#48 R4 — осознанный +4: getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps (архив истории US-R4-02; делегаты в release-store). Прошлое: R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -34,6 +35,10 @@
       "PROJECT_NAV": "domain",
       "REASSIGN_CTRL": "domain",
       "REFRESH_CTRL": "domain",
+      "RELEASE_CTRL": "domain",
+      "RELEASE_PICK": "domain",
+      "RELEASE_STORE": "domain",
+      "RELEASE_VIEW": "domain",
       "REVALIDATION": "domain",
       "ROLECOMP_VIEW": "domain",
       "SETTINGS_CTRL": "domain",
@@ -48,6 +53,7 @@
       "I18N_PLURAL__": "i18n",
       "I18N_CTRL": "i18n",
       "MODAL_ANCHOR": "infra",
+      "RELEASE_MOUNT": "infra",
       "DP_BRIDGE": "infra",
       "MODAL_SPECS": "infra",
       "TOAST": "infra",
@@ -68,12 +74,13 @@
   },
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
-    "core": { "loc": 2519, "locBudget": 2645 },
+    "core": { "loc": 2605, "locBudget": 2640 },
     "modules": {
       "backend-capacity.js": { "loc": 628, "locBudget": 691 },
       "backend-global.js": { "loc": 169, "locBudget": 189 },
       "backend-project.js": { "loc": 20, "locBudget": 40 },
-      "backend-issuefields.js": { "loc": 378, "locBudget": 416 }
+      "backend-issuefields.js": { "loc": 378, "locBudget": 416 },
+      "backend-release.js": { "loc": 263, "locBudget": 263, "budgetNote": "#48 R4 архив (US-R4-02): +58 — splitForArchive (pure in-memory разрез активный/архив: терминальные-старейшие по snapshot.closedAt, trigger 300КБ → target 250КБ, дедуп против split-brain недописи, стоп на лимите архива — без молчаливой потери) + readArchive + GET releases-archive + archivedCount в GET / archived в POST; первая реализация паттерна #53. R2.4 authz: +73 — releasePerms (D-C; perms в GET) + engineerDiffAllowed (серверная валидация диффа РИ) + stampAudit (серверный стамп аудита) + ужесточение POST. Роль-хелперы is* — в backend-core." }
     }
   },
   "modules": {
@@ -305,6 +312,62 @@
       "state": [],
       "publishes": [
         "REFRESH_CTRL"
+      ]
+    },
+    "domain/release-controller.js": {
+      "layer": "domain",
+      "domain": "domain/release-controller",
+      "loc": 440,
+      "locBudget": 440,
+      "budgetNote": "#48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29.",
+      "state": [],
+      "publishes": [
+        "RELEASE_CTRL"
+      ]
+    },
+    "domain/release-pick.js": {
+      "layer": "domain",
+      "domain": "domain/release-pick",
+      "loc": 246,
+      "locBudget": 255,
+      "budgetNote": "#48 R1.4b «Перенос» (D-B): +90 осознанно — модалка коллизий (lines-confirm) + _doTransfer (вынуть из владельца A + влить в B, один POST) + _partition/_ownerIndex{id,name,frozen}/_commit/_merge. Логика переноса вся здесь (star-topology), ядро не тронуто. R1.4a база = 156.",
+      "state": [],
+      "publishes": [
+        "RELEASE_PICK"
+      ]
+    },
+    "domain/release-store.js": {
+      "layer": "domain",
+      "domain": "domain/release-store",
+      "loc": 84,
+      "locBudget": 84,
+      "budgetNote": "#48 R4 архив истории (US-R4-02): +10 — _archive (null = lazy не загружен) + _archivedCount, get/set, reset; в serialize НЕ входит (refetch по раскрытию спойлера).",
+      "state": [
+        "_archive",
+        "_archivedCount",
+        "_currentId",
+        "_freezeLocks",
+        "_issueData",
+        "_perms",
+        "_pickState",
+        "_releases",
+        "_repNames",
+        "_snapshotDraft"
+      ],
+      "publishes": [
+        "RELEASE_STORE"
+      ],
+      "stateNote": "ADR-001 #48 — доменный стор-пилот 'state out of core'; стейт RM инкапсулирован здесь, не в ядре (A2). Осознанное исключение ratchet C1 (single-домен; общий контракт reset/serialize/hydrate оркеструет ядро)."
+    },
+    "domain/release-view.js": {
+      "layer": "domain",
+      "domain": "domain/release-view",
+      "loc": 430,
+      "locBudget": 430,
+      "budgetNote": "#48 R4-ревью владельца: +1 — patchNote в live-VM (патчноут виден и на планируемой карточке). R4: +92 — экспорт .txt (US-R4-01: buildExportText pure-golden + _downloadTxt Blob-канон диаг-лога + exportRelease/_findRelease по активным+архиву) + архив (US-R4-02: _loadArchive lazy-GET, archive-срез в history-VM, archivedCount из GET) + share-гейт (US-R4-03: canShareRelease × _RELEASE_EXT_SHARE=false до YT 2026.1 — host.navigation НЕ признак, он есть в 2025.x) + _histRow извлечён (общая строка история/архив; + patchNote/notes полировка). R3.2 дерево: +61 — fetchIssueData links(Subtask INWARD)+_cfType; _treeRows → RELEASE_TREE_PURE; tree в обоих VM; слепок замораживает parentId+type (additive). R3.1 светофор: +26 нетто — computeZone/_anchorState/_countZones + readiness live+слепок; −14 снос _fetchTitles. R2.4: +4 — VM гейтит контролы серверными правами. R2.3: +42 — fetchIssueData (КАНОНИЧЕСКОЕ v.name — localizedName давал ложный рассинхрон). R2.2 база = 204. R2.1: +1. R1.5b/c: +80. R1.5 база = 121.",
+      "state": [],
+      "publishes": [
+        "RELEASE_VIEW"
       ]
     },
     "domain/revalidation.js": {
@@ -604,6 +667,17 @@
       "publishes": [
         "REFRESH_MERGE_PURE"
       ]
+    },
+    "pure/release-tree-pure.js": {
+      "layer": "pure",
+      "domain": "pure/release-tree-pure",
+      "loc": 81,
+      "locBudget": 101,
+      "state": [],
+      "publishes": [
+        "RELEASE_TREE_PURE"
+      ],
+      "budgetNote": "#48 R3.2 дерево состава (US-R3-04): flatten-DFS билдер эпик→стори→таска из parent-ссылок состава + orphan-хвост + разрыв циклов + свод зон по листьям поддерева. Зоны считает вызывающий (leaf-слой доменные мосты не тянет, B2)."
     },
     "pure/share-url-pure.js": {
       "layer": "pure",

@@ -92,6 +92,22 @@
     tree.appendChild(mkItem('gantt',   'tabGantt',   'bars'));
     tree.appendChild(mkItem('history', 'tabHistory', 'history'));
 
+    /* #48 R1.2b — Релиз-менеджмент: раскрываемая группа «Релизы» с детьми
+       (планируемые / история релизов), только при releaseEnabled (иначе группы нет —
+       аналог гейта «Ёмкости»). Паттерн группы «Планирование» выше. _capS = getSettings(). */
+    if (_capS && _capS.releaseEnabled) {
+      var relGrp = document.createElement('details'); relGrp.className = 'ssp-tree__group'; relGrp.open = true;
+      var relSum = document.createElement('summary'); relSum.className = 'ssp-tree__group-summary';
+      relSum.appendChild(_treeIcon('update'));
+      var relTxt = document.createElement('span'); relTxt.setAttribute('data-i18n', 'relNavSettings'); relTxt.textContent = T('relNavSettings');
+      relSum.appendChild(relTxt); relGrp.appendChild(relSum);
+      var relKids = document.createElement('div'); relKids.className = 'ssp-tree__children';
+      relKids.appendChild(mkChild('release-planned', 'relNodePlanned', 'calendar'));
+      relKids.appendChild(mkChild('release-history', 'relNodeHistory', 'history'));
+      relGrp.appendChild(relKids);
+      tree.appendChild(relGrp);
+    }
+
     /* 4. Поделиться (#36) — копирует текущий deep-link URL; enable/disable по наличию спринта.
        mkItem-клик зовёт _setDashNode('share') (no-op, не в SSP_DASH_NODES); добавляем copy-handler. */
     var share = mkItem('share', 'treeShare', 'share', 'ssp-tree__item--share ssp-tree__item--disabled');
@@ -136,6 +152,8 @@
     else if (nodeId === 'planning-standup') { _clickTab('planning'); _clickLevel('standup'); }
     else if (nodeId === 'gantt')            { _clickTab('gantt'); }
     else if (nodeId === 'history')          { _clickTab('history'); }
+    else if (nodeId === 'release-planned')  { _clickTab('release-planned'); }   /* #48 R1.2b */
+    else if (nodeId === 'release-history')  { _clickTab('release-history'); }
     /* persist */
     try { var ui = deps.draftGet('ui') || {}; ui.dashNode = nodeId; deps.draftSet('ui', ui); } catch(_){}
     /* #36 — отразить узел в URL (no-op до _urlSyncEnabled / вне global) */

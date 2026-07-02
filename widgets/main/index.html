@@ -1046,6 +1046,11 @@
       width: 900px !important;
       max-width: 90vw !important;
     }
+    /* #48 R1.3 — create-модалка релиза: 520px (2-колоночная форма, макет create-modal.html). */
+    .ssp-ring-modal--release .ring-island-island {
+      width: 520px !important;
+      max-width: 92vw !important;
+    }
     /* Phase 5 #32 — settings-модалка (two-pane): умеренная ширина (показываем одну
        секцию за раз → сверх-ширина не нужна). Высоту island НЕ фиксируем — правый
        pane ограничен max-height (см. ниже), поэтому модалка стабильно помещается во
@@ -2120,6 +2125,139 @@
     .ssp-empty__title { font-size: 17px; font-weight: 600; }
     .ssp-empty__desc  { font-size: 13px; color: var(--muted); max-width: 420px; }
     .ssp-empty__cta   { margin-top: 4px; }
+
+    /* ═══ #48 Релиз-менеджмент — карточки + форма (под design/mirror/release/*) ═══ */
+    /* Форма создания (release-create.jsx) */
+    .ssp-release-form { width: 100%; }
+    .ssp-release-fld-row { margin-bottom: 12px; }
+    .ssp-release-row2 { display: flex; gap: 12px; margin-bottom: 12px; }
+    .ssp-release-col { flex: 1 1 0; min-width: 0; }
+    .ssp-release-lbl { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 500; color: var(--muted); }
+    .ssp-release-lbl--req::after { content: " *"; color: var(--danger, #e5493a); }
+    .ssp-release-hint { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); line-height: 1.35; }
+    .ssp-release-err { margin: 4px 0 10px; font-size: 12px; color: var(--danger, #c8322a); }
+    .ssp-release-fld { width: 100%; box-sizing: border-box; padding: 5px 8px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius, 4px); background: var(--surface, #fff); color: var(--text); }
+    /* Ring DatePicker сам по себе не тянется на всю колонку — обёртка + прямой потомок 100%. */
+    .ssp-release-datewrap { width: 100%; }
+    .ssp-release-datewrap > * { width: 100%; box-sizing: border-box; }
+    /* Сеть от оверфлоу: любой контрол в колонке не шире неё (dropdown-попапы не клипаем — max-width, не overflow). */
+    .ssp-release-col > *:not(.ssp-release-lbl):not(.ssp-release-hint) { max-width: 100%; box-sizing: border-box; }
+
+    /* Список + карточка (release-view.jsx) */
+    .ssp-release-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+    .ssp-release-list { list-style: none; margin: 0; padding: 0; }
+    .ssp-release-card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface, #fff); margin-bottom: 12px; padding: 12px 14px; overflow: hidden; }
+    .ssp-release-card__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 600; }
+    .ssp-release-card__title { color: var(--text); }
+    .ssp-release-card__edit { margin-left: auto; color: var(--muted); }
+    .ssp-release-card__edit:hover { color: var(--primary, #0f5acd); }
+    .ssp-release-card__del { color: var(--muted); }
+    .ssp-release-card__del:hover { color: var(--removed-color, #c22); }
+    .ssp-release-card__meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); font-weight: 400; }
+    .ssp-release-card__frozen { color: #a1720b; font-weight: 600; } /* R2.2 фриз-бейдж (warning-тон, канон .lock макета) */
+    .ssp-release-card__reps { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .ssp-release-card__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    /* Состав: раскрываемая таблица ID + Название */
+    .ssp-release-card__composition { margin-top: 10px; }
+    .ssp-release-comp__toggle { font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+    .ssp-release-comp__caret { display: inline-block; width: 12px; font-size: 9px; color: var(--muted); }
+    .ssp-release-card__composition--empty .ssp-release-comp__toggle { cursor: default; }
+    .ssp-release-comp__table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+    .ssp-release-comp__table td { padding: 4px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .ssp-release-comp__id { white-space: nowrap; color: #0f5acd; font-weight: 600; width: 1%; }
+    .ssp-release-comp__title { color: var(--text); }
+    .ssp-release-comp__state { white-space: nowrap; color: var(--muted); width: 1%; text-align: right; }
+    .ssp-release-comp__zone { width: 1%; }
+
+    /* R3.1 — светофор готовности (полоса + легенда; макет planned-card.html .tl-full).
+       Цвета зон — Ring-токены с фолбэками макета. */
+    .ssp-release-tl { margin-top: 10px; }
+    .ssp-release-tl__title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .ssp-release-tl__row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .ssp-release-tl__bar { display: flex; height: 12px; width: 260px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+    .ssp-release-tl__seg { display: block; height: 100%; }
+    .ssp-release-tl__legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text); }
+    .ssp-release-tl__item { display: inline-flex; align-items: center; gap: 6px; }
+    .ssp-release-tl__item b { font-weight: 700; }
+    .ssp-release-tl__dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .ssp-release-z--green  { background: var(--ring-success-color, #0a875a); }
+    .ssp-release-z--yellow { background: var(--ring-main-warning-color, #e6a817); }
+    .ssp-release-z--red    { background: var(--ring-main-error-color, #e5493a); }
+    .ssp-release-z--grey   { background: var(--ring-disabled-color, #9aa0ab); }
+
+    /* R3.2 — дерево состава (эпик→стори→таска; макет planned-card.html .tree).
+       Отступ яруса — inline paddingLeft (depth*22, глубина не ограничена макетными lvl-1..3). */
+    .ssp-release-tree { margin-top: 8px; font-size: 12px; }
+    .ssp-release-tree__row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .ssp-release-tree__row > .ssp-release-tl__dot { flex: none; }
+    .ssp-release-tree__row:last-child { border-bottom: 0; }
+    .ssp-release-tree__caret { flex: 0 0 14px; width: 14px; padding: 0; border: 0; background: none; font-size: 9px; color: var(--muted); cursor: pointer; }
+    span.ssp-release-tree__caret { cursor: default; }
+    .ssp-release-tree__kind { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; white-space: nowrap; }
+    .ssp-release-tree__id { flex: none; white-space: nowrap; color: #0f5acd; font-weight: 600; } /* НЕ comp__id: его табличное width:1% схлопывает спан во flex-строке */
+    .ssp-release-tree__sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .ssp-release-tree__state { white-space: nowrap; font-size: 11px; color: var(--muted); }
+    .ssp-release-tree__agg { white-space: nowrap; font-size: 11px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+    .ssp-release-tree__aggitem { display: inline-flex; align-items: center; gap: 3px; }
+    .ssp-release-tree__orphanh { font-size: 11px; color: var(--muted); font-style: italic; margin: 10px 0 2px; }
+
+    /* История релизов — спойлер-слепок (release-view.jsx HistorySpoiler; паттерн .spoiler) */
+    .ssp-release-hist-list { display: block; }
+    .ssp-release-hist__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+    .ssp-release-hist__dates { display: flex; gap: 14px; flex-wrap: wrap; margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 400; }
+    .ssp-release-hist__bodypad { padding: 12px 16px; }
+    .ssp-release-hist__reps { display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .ssp-release-hist__sect { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .ssp-release-hist__empty { font-size: 12px; color: var(--muted); }
+
+    /* R4 — патчноут/заметки в слепке + экспорт .txt + спойлер «Архив» (US-R4-01/02) */
+    .ssp-release-hist__pre { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 10px; }
+    .ssp-release-hist__actions { margin-top: 10px; }
+    .ssp-release-archive { margin-top: 14px; }
+    /* Вложенные спойлеры архива: descendant-правила .spoiler.open не должны раскрывать вложенные закрытые */
+    .spoiler .spoiler:not(.open) .spoiler__body { display: none; }
+    .spoiler .spoiler:not(.open) .spoiler__arrow { transform: none; }
+
+    /* R2.3 — предпросмотр смены состояний (release-state-preview.jsx; макет state-preview.html) */
+    .ssp-relpv-sub { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+    .ssp-relpv-scroll { max-height: 48vh; overflow: auto; }
+    .ssp-relpv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .ssp-relpv-table th { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); position: sticky; top: 0; background: var(--surface, #fff); }
+    .ssp-relpv-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .ssp-relpv-id { color: var(--primary, #0f5acd); font-weight: 600; white-space: nowrap; }
+    .ssp-relpv-arrow { color: var(--muted); }
+    .ssp-relpv-target { min-width: 140px; }
+    .ssp-relpv-row--skip { opacity: .55; }
+    .ssp-relpv-row--sync { background: rgba(230, 168, 23, .08); }
+    .ssp-relpv-chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 11px; font-size: 11px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+    .ssp-relpv-chip--desync { background: #fdf4d3; color: #a1720b; border-color: #e6c34a; }
+    .ssp-relpv-chip--unreachable { background: #fdecea; color: #c23b2b; border-color: #f3c0b8; }
+    .ssp-relpv-chip--ok, .ssp-relpv-chip--already { color: var(--muted); border-color: transparent; background: transparent; font-weight: 400; }
+    .ssp-relpv-errors { margin-top: 10px; }
+    .ssp-relpv-retry { color: #c23b2b; font-size: 11px; white-space: nowrap; width: 1%; }
+
+    /* Чипы типа (вид×источник) — острый радиус */
+    .ssp-release-chip { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+    .ssp-release-chip--kind { background: #e6efff; color: #0f5acd; border-color: #b3c8ee; }
+    .ssp-release-chip--hotfix { background: #fdecea; color: #c23b2b; border-color: #f3c0b8; }
+    .ssp-release-chip--src { background: #eef0f3; color: var(--muted); border-color: #d5d9e0; }
+
+    /* Статус-бейджи — пилюля */
+    .ssp-release-status { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+    .ssp-release-status--planned { background: #eef0f3; color: var(--muted); border-color: #d5d9e0; }
+    .ssp-release-status--prep { background: #fdf4d3; color: #a1720b; border-color: #e6c34a; }
+    .ssp-release-status--work { background: #e6efff; color: #0f5acd; border-color: #b3c8ee; }
+    .ssp-release-status--released { background: #e2f3ec; color: #0a875a; border-color: #a9dcc7; }
+    .ssp-release-status--cancelled { background: #f1f2f4; color: #9aa0ab; border-color: #dfe1e5; }
+    .ssp-release-status--overdue { background: #fdecea; color: #c23b2b; border-color: #f3c0b8; }
+
+    /* Представители */
+    .ssp-release-rep { display: flex; align-items: center; gap: 8px; }
+    .ssp-release-rep__ava { flex: none; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; background: #0f5acd; }
+    .ssp-release-rep__ava--e { background: #0a875a; }
+    .ssp-release-rep__body { display: flex; flex-direction: column; line-height: 1.25; }
+    .ssp-release-rep__name { font-size: 13px; color: var(--text); }
+    .ssp-release-rep__role { font-size: 11px; color: var(--muted); }
     .planning-people-summary {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 12px; margin: 8px 0 12px 0;
@@ -2394,6 +2532,10 @@
     <!-- #45 R3 — tracker вкладки «Ёмкость». Всегда в DOM (callsite _setDashNode/restoreUiState
          кликают по нему); видимость рулит tabsJson (push только при capacityMode==='full'). -->
     <button class="tab-btn tab-state-tracker" data-tab="capacity" data-i18n="tabCapacity" aria-hidden="true" tabindex="-1" style="display:none">Ёмкость</button>
+    <!-- #48 R1.2b — tracker'ы вкладок релиз-менеджмента (планируемые / история). Всегда в DOM
+         (callsite _setDashNode/restoreUiState); видимость рулит tabsJson (push при releaseEnabled). -->
+    <button class="tab-btn tab-state-tracker" data-tab="release-planned" data-i18n="relNodePlanned" aria-hidden="true" tabindex="-1" style="display:none">Планируемые релизы</button>
+    <button class="tab-btn tab-state-tracker" data-tab="release-history" data-i18n="relNodeHistory" aria-hidden="true" tabindex="-1" style="display:none">История релизов</button>
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
@@ -2670,6 +2812,10 @@
 
 <!-- ════ ВКЛАДКА: ЁМКОСТЬ (#45 R3) — содержимое строит capacity-view.render() ════ -->
 <div class="tab-panel" id="tab-capacity"></div>
+
+<!-- ════ ВКЛАДКИ: РЕЛИЗ-МЕНЕДЖМЕНТ (#48 R1.2b) — содержимое строит release-view.render() ════ -->
+<div class="tab-panel" id="tab-release-planned"></div>
+<div class="tab-panel" id="tab-release-history"></div>
 
   <!-- v5.0.3 — Диагностическая панель. Видна всегда, свёрнута по умолчанию.
        Пользователь сам разворачивает <details> при необходимости диагностики. -->

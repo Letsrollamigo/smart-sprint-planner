@@ -38,5 +38,12 @@
   ],
   "ALLOWED_CAPACITY_PERSON_KEYS": [
     "grade", "rate", "participation", "alloc", "base", "absencesApplied"
+  ],
+  "$comment_releases": "#48 R1.2 (эпик Release Management) — стор ssp_releases (project-scoped). Ключи одной записи релиза: идентичность/тип/статус/даты/фриз/тексты/представители/состав/слепок/готовность + аудит. Потребитель — backend-release.js (CRUD). Синхронизируется в backend-core.js тем же sync-скриптом.",
+  "ALLOWED_RELEASES_KEYS": [
+    "id", "name", "kind", "source", "status",
+    "plannedDate", "freezeDate", "freezeLocked",
+    "patchNote", "notes", "roleReps", "issues", "snapshot", "readiness",
+    "createdBy", "createdAt", "updatedBy", "updatedAt", "pluginVersion"
   ]
 }

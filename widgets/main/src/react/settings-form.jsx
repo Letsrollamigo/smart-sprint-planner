@@ -131,7 +131,7 @@ function GrpIcon() {
 
 /* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
    только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
-const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true, backlog: true };
+const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true, backlog: true, release: true };
 const LOCK_ICON_PATH = 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z';
 function LockIcon() {
   return (
@@ -735,6 +735,85 @@ function BacklogSection(props) {
   );
 }
 
+/* #48 R1 — раздел настроек «Релиз-менеджмент» (admin-тир, нейтральная терминология).
+   value = { enabled, candMgr/candEng/rightsMgr/rightsEng:{ids,names}, mapping:{status→state} }.
+   Светофор R3 настроек НЕ имеет (ревизия владельца 2026-07-01): зоны — автоматом по State
+   задачи + маппингу (mapping.planned = стартовый якорь красной зоны). Тип релиза —
+   фиксированная таксономия 2×2, только инфо. */
+function ReleaseSection(props) {
+  const t = props.t;
+  const v = props.value;
+  const set = props.onChange;
+  const bundleStates = props.bundleStates || [];
+  const patch = (p) => set(Object.assign({}, v, p));
+  const setGrp = (k, val) => patch({ [k]: val });
+  const setMap = (status, val) => patch({ mapping: Object.assign({}, v.mapping, { [status]: val }) });
+
+  const stateOpts = bundleStates.map((s) => ({ key: s, label: s }));
+  const STATUS_ROWS = [
+    { k: 'planned',   lbl: t('relStatusPlanned') },
+    { k: 'prep',      lbl: t('relStatusPrep') },
+    { k: 'work',      lbl: t('relStatusWork') },
+    { k: 'released',  lbl: t('relStatusReleased') },
+    { k: 'cancelled', lbl: t('relStatusCancelled') },
+  ];
+  const subCls = { fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' };
+  const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'block' };
+  const grpRow = (key, label) => (
+    <div className="field" style={{ marginBottom: '12px' }} key={key}>
+      <label>{label}</label>
+      <GrpMultiSelect t={t} value={v[key]} onChange={(val) => setGrp(key, val)}
+        initialGroups={props.initialGroups} loadGroups={props.loadGroups} onMax={props.onMax} />
+    </div>
+  );
+
+  return (
+    <React.Fragment>
+      <RoleCheck on={v.enabled} label={t('relSetEnable')} onToggle={() => patch({ enabled: !v.enabled })} />
+
+      {/* Пул кандидатов представителей (D-D2 — отдельно от групп прав) */}
+      <div className="card-subtitle" style={subCls}>{t('relSetCandGroups')}</div>
+      {grpRow('candMgr', t('relSetCandManagers'))}
+      {grpRow('candEng', t('relSetCandEngineers'))}
+
+      {/* Группы прав */}
+      <div className="card-subtitle" style={subCls}>{t('relSetRightsGroups')}</div>
+      {grpRow('rightsMgr', t('relSetRightsManagers'))}
+      {grpRow('rightsEng', t('relSetRightsEngineers'))}
+
+      {/* Маппинг «статус релиза → целевое состояние задач» (применение — R2) */}
+      <div className="card-subtitle" style={subCls}>{t('relSetMappingTitle')}</div>
+      <table className="ssp-dta-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr>
+          <th scope="col" style={{ width: '42%' }}>{t('relSetMappingColStatus')}</th>
+          <th scope="col">{t('relSetMappingColState')}</th>
+        </tr></thead>
+        <tbody>
+          {STATUS_ROWS.map((r) => (
+            <tr key={r.k}>
+              <td>{r.lbl}</td>
+              <td>
+                <RingSelLite options={stateOpts} value={v.mapping[r.k] || ''} clearable
+                  placeholder={t('relSetMappingNoChange')} onChange={(val) => setMap(r.k, val)} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* R3.1 — двойная роль маппинга: R2 пишет State, строка «Запланирован» якорит красную зону светофора */}
+      <span className="hint" style={hintCls}>{t('relSetMappingAnchorNote')}</span>
+
+      {/* Тип релиза — фиксированная таксономия 2×2 (инфо, не настраивается) */}
+      <div className="card-subtitle" style={subCls}>{t('relSetTypeTitle')}</div>
+      <div className="form-grid form-grid--2">
+        <div><b>{t('relKindLabel')}:</b> {t('relKindRelease')} · {t('relKindHotfix')}</div>
+        <div><b>{t('relSrcLabel')}:</b> {t('relSrcInternal')} · {t('relSrcVendor')}</div>
+      </div>
+      <span className="hint" style={hintCls}>{t('relSetTypeFixedNote')}</span>
+    </React.Fragment>
+  );
+}
+
 function SettingsForm(props) {
   const t = props.t || ((k) => k);
   const initial = props.initial || {};
@@ -867,6 +946,18 @@ function SettingsForm(props) {
     typeFilter: Array.isArray(initial.backlogTypeFilter) ? initial.backlogTypeFilter.slice() : [],
     pauseTags: Array.isArray(initial.backlogPauseTags) ? initial.backlogPauseTags.slice() : [],
     pauseStates: Array.isArray(initial.backlogPauseStates) ? initial.backlogPauseStates.slice() : [],
+  }));
+  /* #48 R1 — «Релиз-менеджмент»: тумблер + пул кандидатов + группы прав + маппинг
+     статус→состояние (R3: зоны светофора — авто по State, своих настроек нет).
+     Все дефолты пустые/выключены. */
+  const [release, setRelease] = React.useState(() => ({
+    enabled: !!initial.releaseEnabled,
+    candMgr:   { ids: (initial.releaseCandidateManagerGroups || []).slice(),  names: (initial.releaseCandidateManagerGroupNames || []).slice() },
+    candEng:   { ids: (initial.releaseCandidateEngineerGroups || []).slice(), names: (initial.releaseCandidateEngineerGroupNames || []).slice() },
+    rightsMgr: { ids: (initial.releaseManagerGroups || []).slice(),           names: (initial.releaseManagerGroupNames || []).slice() },
+    rightsEng: { ids: (initial.releaseEngineerGroups || []).slice(),          names: (initial.releaseEngineerGroupNames || []).slice() },
+    mapping: Object.assign({ planned: '', prep: '', work: '', released: '', cancelled: '' },
+      (initial.releaseStatusStateMapping && typeof initial.releaseStatusStateMapping === 'object') ? initial.releaseStatusStateMapping : {}),
   }));
 
   /* Bundle-состояния state-поля проекта — общий источник для rollup + standup + backlog.
@@ -1053,6 +1144,26 @@ function SettingsForm(props) {
     data.backlogTypeFilter = capValues(backlog.typeFilter);
     data.backlogPauseTags = capValues(backlog.pauseTags);
     data.backlogPauseStates = capValues(backlog.pauseStates);
+
+    /* #48 R1 — «Релиз-менеджмент». Группы — {ids,names}; маппинг — только непустые статусы;
+       поле готовности — strOrNull; зоны — capValues. Все admin-тир (preserve-merge на бэке). */
+    data.releaseEnabled = release.enabled;
+    data.releaseCandidateManagerGroups = release.candMgr.ids.slice();
+    data.releaseCandidateManagerGroupNames = release.candMgr.names.slice();
+    data.releaseCandidateEngineerGroups = release.candEng.ids.slice();
+    data.releaseCandidateEngineerGroupNames = release.candEng.names.slice();
+    data.releaseManagerGroups = release.rightsMgr.ids.slice();
+    data.releaseManagerGroupNames = release.rightsMgr.names.slice();
+    data.releaseEngineerGroups = release.rightsEng.ids.slice();
+    data.releaseEngineerGroupNames = release.rightsEng.names.slice();
+    data.releaseStatusStateMapping = (function () {
+      const out = {};
+      ['planned', 'prep', 'work', 'released', 'cancelled'].forEach((k) => {
+        const val = String((release.mapping && release.mapping[k]) || '').trim();
+        if (val) out[k] = val.length > 200 ? val.slice(0, 200) : val;
+      });
+      return out;
+    })();
 
     /* Per-role: для ВСЕХ ролей (как legacy) — null для неактивных/неназначенных. */
     roles.forEach((r) => {
@@ -1388,6 +1499,18 @@ function SettingsForm(props) {
             <RoleCheck on={hideDiagLogUi} label={t('lblHideDiagLogUi')} hint={t('hintHideDiagLogUi')} onToggle={() => setHideDiagLogUi((v) => !v)} />
           </div>
         </React.Fragment>
+      ),
+    },
+    {
+      /* #48 R1 — «Релиз-менеджмент» (admin-тир; риск §8 обследования). */
+      id: 'release', title: t('relTabTitle'), nav: t('relNavSettings'),
+      node: (
+        <ReleaseSection
+          t={t} value={release} onChange={setRelease}
+          bundleStates={bundleStates}
+          loadGroups={props.loadGroups} initialGroups={props.initialGroups}
+          onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
+        />
       ),
     },
   ];

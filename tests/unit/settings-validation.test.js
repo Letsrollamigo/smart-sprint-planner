@@ -94,3 +94,46 @@ test('planningModel: derived-зеркало совместно с legacy-фла�
             usePersonalForResource: true, manualPersonalResource: false };
   assert.strictEqual(validateSettings(s), true);
 });
+
+/* #48 R1.1 — Релиз-менеджмент: ключи в whitelist + типизация. R3.1: readinessField/zone*Values
+   удалены (зоны — авто по State); ключи не должны вернуться в whitelist. */
+test('release: все ключи раздела в ALLOWED_SETTINGS_KEYS (иначе весь save реджектится)', function() {
+  ['releaseEnabled','releaseCandidateManagerGroups','releaseCandidateManagerGroupNames',
+   'releaseCandidateEngineerGroups','releaseCandidateEngineerGroupNames',
+   'releaseManagerGroups','releaseManagerGroupNames','releaseEngineerGroups','releaseEngineerGroupNames',
+   'releaseStatusStateMapping'
+  ].forEach(function(k){ assert.ok(ALLOWED_SETTINGS_KEYS.indexOf(k) >= 0, 'missing ' + k); });
+});
+
+test('release R3.1: снесённые ключи светофора НЕ в whitelist (зоны — авто по State)', function() {
+  ['releaseReadinessField','releaseZoneGreenValues','releaseZoneYellowValues','releaseZoneRedValues']
+    .forEach(function(k){ assert.ok(ALLOWED_SETTINGS_KEYS.indexOf(k) < 0, 'stale ' + k); });
+});
+
+test('release: полный валидный payload раздела проходит', function() {
+  var s = {
+    releaseEnabled: true,
+    releaseCandidateManagerGroups: ['g1'], releaseCandidateManagerGroupNames: ['Менеджеры'],
+    releaseCandidateEngineerGroups: ['g2'], releaseCandidateEngineerGroupNames: ['Инженеры'],
+    releaseManagerGroups: ['g1'], releaseManagerGroupNames: ['Менеджеры'],
+    releaseEngineerGroups: ['g2'], releaseEngineerGroupNames: ['Инженеры'],
+    releaseStatusStateMapping: { planned: 'Open', work: 'In Progress', released: 'Done' },
+  };
+  assert.strictEqual(validateSettings(s), true);
+});
+
+test('release: releaseEnabled не-boolean реджектится', function() {
+  assert.strictEqual(validateSettings({ releaseEnabled: 'yes' }), false);
+  assert.strictEqual(validateSettings({ releaseEnabled: true }), true);
+});
+
+test('release: маппинг с неизвестным статусом-ключом реджектится', function() {
+  assert.strictEqual(validateSettings({ releaseStatusStateMapping: { bogus: 'Done' } }), false);
+  assert.strictEqual(validateSettings({ releaseStatusStateMapping: { overdue: 'Done' } }), false); // derived, не хранимый
+  assert.strictEqual(validateSettings({ releaseStatusStateMapping: { prep: 'Ready' } }), true);
+});
+
+test('release: маппинг-массив (не объект) и нестроковое целевое состояние реджектятся', function() {
+  assert.strictEqual(validateSettings({ releaseStatusStateMapping: ['x'] }), false);
+  assert.strictEqual(validateSettings({ releaseStatusStateMapping: { planned: 42 } }), false);
+});

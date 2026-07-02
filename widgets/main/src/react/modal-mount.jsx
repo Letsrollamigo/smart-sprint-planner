@@ -1,7 +1,7 @@
 /* v2.2.0 Phase 0 — SspModal: настоящий React-контент в Ring Dialog.
    Заменяет DOM-трансплантацию (dialog-mount.jsx) декларативным React-рендерингом.
    window.__SSP_MODAL: open(spec) / close(id) / update(id,partial) / registerBody(name,comp).
-   Позиционирование: click-anchor без polling — double-RAF + settle-timer + scroll/resize.
+   Позиционирование: IO-срез видимости (#56-6) + click-anchor фолбэк — double-RAF + settle-timer + scroll/resize.
    Bridge __SSP_DIALOG (dialog-mount.jsx) демонтирован в Phase 6 — все модалки на этом API. */
 
 import * as React from 'react';
@@ -79,9 +79,21 @@ function SspModal({ spec, onClose }) {
      1. double-RAF после mount (Ring успевает отрендерить container + island)
      2. setTimeout(250ms) settle-pass (Ring может re-apply container styles)
      3. scroll + resize listeners
-     Сохраняем ссылку на ringContainer внутри effect чтобы cleanup работал после unmount. */
+     Сохраняем ссылку на ringContainer внутри effect чтобы cleanup работал после unmount.
+
+     #56-6 — модалка за границей экрана: sandbox-iframe (about:srcdoc, без allow-same-origin)
+     не знает внешний viewport, auto-grow растит iframe до 2000-4000px, и якорь клика был
+     единственной эвристикой «видимой точки». Первичный источник теперь IntersectionObserver:
+     наблюдая documentElement, получаем intersectionRect = видимый срез НАШЕГО документа в
+     наших client-координатах (IO спроектирован работать кросс-оригин — ads use-case;
+     rootBounds при этом null, его НЕ требуем). Центрируем остров в срезе; threshold-лесенка
+     даёт колбэки при скролле внешней страницы → модалка держится в видимой зоне (нативное
+     поведение fixed-диалога). Click-anchor остаётся фолбэком (IO ещё не сработал/недоступен);
+     его координаты приведены к viewport-координатам fixed-контейнера (pageY - scrollY;
+     в auto-grow scrollY=0 → поведение прежнее). */
   React.useEffect(() => {
     let savedRingContainer = null;
+    let visRect = null; // видимый срез документа (client coords) из IO | null
 
     const reposition = () => {
       let rc = null;
@@ -94,11 +106,41 @@ function SspModal({ spec, onClose }) {
       savedRingContainer = rc;
       const island = rc.querySelector('.ring-island-island');
       const dialogH = island ? island.offsetHeight : 300;
-      const anchorY = (window.__SSP_MODAL_ANCHOR && window.__SSP_MODAL_ANCHOR.getCenterY())
-        || ((window.innerHeight || 600) / 2);
+      let top;
+      if (visRect && visRect.height > 80) {
+        /* центр видимого среза; остров выше среза → прижим к верху среза (+12) */
+        top = visRect.top + Math.max(12, (visRect.height - dialogH) / 2);
+      } else {
+        const anchorY = (window.__SSP_MODAL_ANCHOR && window.__SSP_MODAL_ANCHOR.getCenterY())
+          || ((window.innerHeight || 600) / 2);
+        top = anchorY - (window.scrollY || 0) - dialogH / 2;
+      }
       rc.style.alignItems = 'flex-start';
-      rc.style.paddingTop = Math.max(20, anchorY - dialogH / 2) + 'px';
+      rc.style.paddingTop = Math.max(20, top) + 'px';
     };
+
+    let io = null;
+    if (typeof IntersectionObserver === 'function') {
+      try {
+        const steps = []; for (let i = 0; i <= 20; i++) steps.push(i / 20);
+        io = new IntersectionObserver((entries) => {
+          const en = entries[entries.length - 1];
+          if (en && en.isIntersecting && en.intersectionRect && en.intersectionRect.height > 0) {
+            visRect = en.intersectionRect;
+            reposition();
+          }
+        }, { threshold: steps });
+        io.observe(document.documentElement);
+      } catch (_) { io = null; /* старый движок — остаёмся на click-anchor */ }
+    }
+    /* ⚠️ IO-thresholds — ratio-based: скролл родителя ДВИГАЕТ видимое окно по гигантскому
+       iframe, но ДОЛЯ видимости не меняется → порог не пересекается → колбэков нет и
+       visRect протухает. Re-observe форсит initial-колбэк (спека доставляет его всегда) →
+       свежий intersectionRect каждые 300мс, пока модалка открыта. Дешевле легаси-полла D2
+       (100мс) и живёт только в окне открытой модалки. */
+    const reObserve = io ? setInterval(() => {
+      try { io.unobserve(document.documentElement); io.observe(document.documentElement); } catch (_) {}
+    }, 300) : null;
 
     requestAnimationFrame(() => requestAnimationFrame(reposition));
     const settleTimer = setTimeout(reposition, 250);
@@ -107,6 +149,8 @@ function SspModal({ spec, onClose }) {
 
     return () => {
       clearTimeout(settleTimer);
+      if (reObserve) clearInterval(reObserve);
+      if (io) io.disconnect();
       window.removeEventListener('scroll', reposition, true);
       window.removeEventListener('resize', reposition);
       if (savedRingContainer) {
@@ -120,6 +164,11 @@ function SspModal({ spec, onClose }) {
      Ring trapFocus авто-скроллит iframe к focused элементу → потеря scroll-позиции.
      Осознанное отклонение (Q6 — lesson D10). */
   React.useEffect(() => {
+    /* #56-6 — фокус строго ПОСЛЕ первой репозиции (double-RAF ≈ 16-32мс): preventScroll
+       не пересекает OOPIF-границу (#33), и фокус-скролл родителя целится в ТЕКУЩУЮ позицию
+       острова. При t=0 остров ещё в Ring-дефолте (flex-center гиганта ~Y2000) → родитель
+       скроллил В ПУСТОТУ, потом остров телепортировался в старый срез — «модалка за
+       границей экрана». 80мс = после RAF²-репозиции, до settle-прохода. */
     const t = setTimeout(() => {
       if (!containerRef.current) return;
       const focusables = containerRef.current.querySelectorAll(
@@ -137,7 +186,7 @@ function SspModal({ spec, onClose }) {
       try { target.focus({ preventScroll: true }); } catch (_) {
         try { target.focus(); } catch (__) {}
       }
-    }, 0);
+    }, 80); /* #56-6: было 0 — фокус обгонял репозицию, см. коммент выше */
     return () => clearTimeout(t);
   }, []);
 

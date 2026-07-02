@@ -234,6 +234,27 @@ var ALLOWED_CAPACITY_PERSON_KEYS = [
   'base',
   'absencesApplied'
 ];
+var ALLOWED_RELEASES_KEYS = [
+  'id',
+  'name',
+  'kind',
+  'source',
+  'status',
+  'plannedDate',
+  'freezeDate',
+  'freezeLocked',
+  'patchNote',
+  'notes',
+  'roleReps',
+  'issues',
+  'snapshot',
+  'readiness',
+  'createdBy',
+  'createdAt',
+  'updatedBy',
+  'updatedAt',
+  'pluginVersion'
+];
 // AUTOGEN:WHITELISTS END
 /* v1.8.1 — 'NONE' добавлен для backward-compat. Pre-v1.8.1 frontend записывал level='NONE'
    в revision при commit working copy без реальных изменений (см. computeRequiredRevalidationLevel
@@ -942,7 +963,21 @@ var ALLOWED_SETTINGS_KEYS = [
      backlogStartStates  — состояния «пула заказчика» (стартовая зона, §4/§6.1 спеки);
      backlogTypeFilter   — значения fieldType для базового фильтра (Сопровождение исключаем и т.п.);
      backlogPauseTags / backlogPauseStates — источник признака паузы (тег и/или состояние, §8). */
-  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates'
+  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates',
+  /* #48 R1 — Релиз-менеджмент (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
+     releaseEnabled — мастер-тумблер модуля (гейтит вкладку/узлы дерева, как capacityMode).
+     releaseCandidate*Groups/*Names — пул кандидатов в представители (D-D2, отдельно от прав);
+     release{Manager,Engineer}Groups/*Names — группы прав (РМ полные / РИ сборка-статус).
+     releaseStatusStateMapping — { <status> → <target state name> } (R2 применяет к задачам;
+     R3 — mapping.planned = стартовый якорь светофора). Зоны светофора — АВТО по State
+     (ревизия владельца 2026-07-01); releaseReadinessField/releaseZone*Values удалены до
+     merge эпика — жили только на epic-ветке, ни в один релиз не выпускались. */
+  'releaseEnabled',
+  'releaseCandidateManagerGroups','releaseCandidateManagerGroupNames',
+  'releaseCandidateEngineerGroups','releaseCandidateEngineerGroupNames',
+  'releaseManagerGroups','releaseManagerGroupNames',
+  'releaseEngineerGroups','releaseEngineerGroupNames',
+  'releaseStatusStateMapping'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -976,7 +1011,16 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   /* #21 — настройки модуля «Работа с бэклогом» — admin-тир (спека §9: настройки=admin,
      триаж/раскладка=планировочный). fieldType намеренно НЕ здесь — остаётся
      планировочным, как прочие field*. */
-  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates'
+  'backlogZones','backlogStartStates','backlogTypeFilter','backlogPauseTags','backlogPauseStates',
+  /* #48 R1 — Релиз-менеджмент: весь раздел настроек — admin-тир (риск §8 обследования:
+     иначе планировочный менеджер правил бы admin-конфиг релизов). preserve-merge из stored
+     для не-settings-менеджера. */
+  'releaseEnabled',
+  'releaseCandidateManagerGroups','releaseCandidateManagerGroupNames',
+  'releaseCandidateEngineerGroups','releaseCandidateEngineerGroupNames',
+  'releaseManagerGroups','releaseManagerGroupNames',
+  'releaseEngineerGroups','releaseEngineerGroupNames',
+  'releaseStatusStateMapping'
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1216,6 +1260,33 @@ function validateSettings(settings) {
   for (var ba = 0; ba < backlogStrArrKeys.length; ba++) {
     var bav = settings[backlogStrArrKeys[ba]];
     if (bav !== undefined && bav !== null && !isStrArr(bav, 200, 50)) return false;
+  }
+  /* #48 R1 — Релиз-менеджмент. releaseEnabled — bool; group-пары *Groups/*Names — str[]
+     (ids ≤200, names ≤500); releaseStatusStateMapping — { <status ∈ RELEASE_STATUS_KEYS> →
+     <target state str≤200> }. Зоны светофора R3 — авто по State, своих ключей нет. */
+  if (settings.releaseEnabled !== undefined && settings.releaseEnabled !== null
+      && typeof settings.releaseEnabled !== 'boolean') return false;
+  var relIdArrKeys = ['releaseCandidateManagerGroups','releaseCandidateEngineerGroups',
+    'releaseManagerGroups','releaseEngineerGroups'];
+  for (var rg = 0; rg < relIdArrKeys.length; rg++) {
+    var rgv = settings[relIdArrKeys[rg]];
+    if (rgv !== undefined && rgv !== null && !isStrArr(rgv, 200, 100)) return false;
+  }
+  var relNameArrKeys = ['releaseCandidateManagerGroupNames','releaseCandidateEngineerGroupNames',
+    'releaseManagerGroupNames','releaseEngineerGroupNames'];
+  for (var rn = 0; rn < relNameArrKeys.length; rn++) {
+    var rnv = settings[relNameArrKeys[rn]];
+    if (rnv !== undefined && rnv !== null && !isStrArr(rnv, 500, 100)) return false;
+  }
+  if (settings.releaseStatusStateMapping !== undefined && settings.releaseStatusStateMapping !== null) {
+    var rmap = settings.releaseStatusStateMapping;
+    if (typeof rmap !== 'object' || Array.isArray(rmap)) return false;
+    var RELEASE_STATUS_KEYS = ['planned','prep','work','released','cancelled'];
+    var rmk = Object.keys(rmap);
+    for (var rm = 0; rm < rmk.length; rm++) {
+      if (RELEASE_STATUS_KEYS.indexOf(rmk[rm]) < 0) return false;      // key ∈ хранимые статусы
+      if (!assertStr(rmap[rmk[rm]], 200)) return false;               // target state name str≤200|null
+    }
   }
   return true;
 }
@@ -1648,6 +1719,29 @@ function isHistoryManager(ctx) {
 }
 
 /**
+ * #48 R2.4 — релиз-роли (D-C). РМ (releaseManagerGroups): состав + все статусы + отмена +
+ * фриз. РИ (releaseEngineerGroups): движение статуса по рабочей цепочке + «Выпущен».
+ * Deny-by-default, аналогично isEditor. Потребитель — backend-release.js (releasePerms).
+ */
+function isReleaseManager(ctx) {
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var s = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (s && s.releaseManagerGroups)     || [];
+  var names = (s && s.releaseManagerGroupNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+function isReleaseEngineer(ctx) {
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var s = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (s && s.releaseEngineerGroups)     || [];
+  var names = (s && s.releaseEngineerGroupNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+/**
  * Проверяет права settings-менеджера по ctx.settings.settingsManagerGroup.
  * Deny-by-default: если группа не задана — доступ запрещён всем.
  * Это устраняет chicken-and-egg: невозможно подменить настройки на свежей установке,
@@ -1727,9 +1821,10 @@ function authzGuard(ctx, role) {
     return true;
   }
   /* v6.1.0 D82 (F5) — assigner-уровень. Иерархия editor⊃assigner⊃viewer:
-     editor / settingsManager автоматически проходят. */
+     editor / settingsManager автоматически проходят. #48 R2.4 — релиз-роли тоже:
+     РМ/РИ применяют маппинг статус→State (update-issue-field) без editor-прав. */
   if (role === 'assigner') {
-    if (isEditor(ctx) || isAssigner(ctx) || isSettingsManager(ctx)) return true;
+    if (isEditor(ctx) || isAssigner(ctx) || isSettingsManager(ctx) || isReleaseManager(ctx) || isReleaseEngineer(ctx)) return true;
     forbidden(ctx, 'assigner_rights_required');
     return false;
   }
@@ -2583,11 +2678,16 @@ exports.validatePluginVersion       = validatePluginVersion;
 exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
 exports.isSettingsManager           = isSettingsManager;
 exports.isPlanningManager           = isPlanningManager;
+exports.isReleaseManager            = isReleaseManager;      // #48 R2.4 — релиз-роли (D-C)
+exports.isReleaseEngineer           = isReleaseEngineer;     // #48 R2.4
 exports.ALLOWED_CALENDAR_KEYS       = ALLOWED_CALENDAR_KEYS;
 exports.ALLOWED_ABSENCE_ENTRY_KEYS  = ALLOWED_ABSENCE_ENTRY_KEYS;
 exports.ALLOWED_CAPACITY_RECORD_KEYS = ALLOWED_CAPACITY_RECORD_KEYS;
 exports.ALLOWED_CAPACITY_PERSON_KEYS = ALLOWED_CAPACITY_PERSON_KEYS;
 exports.ROLE_KEYS                   = ROLE_KEYS; // #45 R2 — capacity alloc-key whitelist
+exports.ALLOWED_RELEASES_KEYS       = ALLOWED_RELEASES_KEYS; // #48 R1.2 — release record whitelist
+exports.internalError               = internalError;         // #48 R1.2 — backend-release error path
+exports.parseJson                   = parseJson;             // #48 R1.2 — stored blob parse
 
 /* v1.6.0 D125 — Test-only CommonJS exports.
    ВАЖНО: Object.assign(exports, ...) вместо module.exports = {...}.

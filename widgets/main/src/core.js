@@ -401,6 +401,8 @@
     try { if (typeof renderHistory === 'function') renderHistory(); } catch(_){}
     /* #45 R3 — перерисовать вкладку ёмкости из готового стейта (смена языка). */
     try { if (typeof renderCapacityView === 'function') renderCapacityView(); } catch(_){}
+    /* #48 R1.2b — перерисовать вкладки релиз-менеджмента из готового стора (смена языка). */
+    try { if (typeof renderReleaseView === 'function') renderReleaseView(); } catch(_){}
     /* Subtab-метки «Аллокация общего ресурса» / «Распределение по исполнителям» —
        обновятся через applyI18N (data-i18n атрибуты). */
     if (typeof refreshDirtyIndicator === 'function') refreshDirtyIndicator();
@@ -1386,7 +1388,7 @@
      Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
-  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history','capacity'];
+  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history','capacity','release-planned','release-history'];
 
   /* #25 Ф2 dash-shell вынесен в dash-shell.js (Фаза 5 слайс 13, домен E6) за __SSP_DASH_SHELL.
      SSP_DASH_NODES остаётся в ядре (читается init-зоной _loadAndRenderProject) — приходит депом.
@@ -1976,6 +1978,7 @@
     _isValidator = false;
     _isEditor = false;
     _isAssigner = false;
+    RELEASE_STORE.reset(_releaseDeps());   // #48 — сброс релизного среза per-project
   }
 
   /* Модалка-предупреждение «черновик будет очищен» — делегатор project-nav.js (golden-вход). */
@@ -2059,9 +2062,13 @@
          (редкий mode-переход). Иначе no-op — иначе rebuild на каждом _mountTabsAndSync
          (смена языка/рендеры) детачил бы узлы дерева и ломал клики (ref churn). Локализацию
          лейблов покрывает applyI18N по data-i18n, перерисовка дерева для этого не нужна. */
-      var hasNode = !!navTree.querySelector('[data-node="capacity"]');
-      var wantNode = !!(_settings && _settings.capacityMode === 'full');
-      if (hasNode === wantNode) return;
+      var hasCap = !!navTree.querySelector('[data-node="capacity"]');
+      var wantCap = !!(_settings && _settings.capacityMode === 'full');
+      /* #48 R1.2b — узлы релиз-менеджмента появляются/исчезают по releaseEnabled
+         (иначе при выборе проекта с releaseEnabled узлы не строятся — баг 2.16.0). */
+      var hasRel = !!navTree.querySelector('[data-node="release-planned"]');
+      var wantRel = !!(_settings && _settings.releaseEnabled);
+      if (hasCap === wantCap && hasRel === wantRel) return;
       var act = navTree.querySelector('[data-node].active');
       var activeNode = act ? act.dataset.node : null;
       var fresh = _buildDashTree();
@@ -2286,6 +2293,11 @@
     }
     _tabs.push({ id: 'gantt',   title: T('tabGantt')   || 'Диаграмма Ганта' });
     _tabs.push({ id: 'history', title: T('tabHistory') || 'История спринтов' });
+    /* #48 R1.2b — вкладки релиз-менеджмента (условно, при releaseEnabled). */
+    if (_settings && _settings.releaseEnabled) {
+      _tabs.push({ id: 'release-planned', title: T('relNodePlanned') || 'Планируемые релизы' });
+      _tabs.push({ id: 'release-history', title: T('relNodeHistory') || 'История релизов' });
+    }
     host.dataset.tabsJson = JSON.stringify(_tabs);
     /* Sync selected from active tracker (если кто-то уже выбрал tab до mount). */
     var activeTracker = document.querySelector('.tab-btn.tab-state-tracker.active');
@@ -2324,7 +2336,8 @@
       document.body.classList.toggle('planner-wide',
         btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
         btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
-        btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity');
+        btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity' ||
+        btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history');
       /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
       var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
       var tabsHost = document.getElementById('sspTabsHost');
@@ -2388,6 +2401,12 @@
       if (btn.dataset.tab === 'capacity') {
         try { CAPACITY_VIEW.loadAndRender(_capacityDeps()); }
         catch(e){ diag('capacity render err: '+e,'err'); }
+      }
+      /* #48 R1.2b — вкладки релиз-менеджмента: грузим список релизов из backend в
+         RELEASE_STORE и рендерим (empty-state, если пусто). mode по узлу. */
+      if (btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history') {
+        try { RELEASE_VIEW.loadAndRender(_releaseDeps(), btn.dataset.tab === 'release-history' ? 'history' : 'planned'); }
+        catch(e){ diag('release render err: '+e,'err'); }
       }
       if (btn.dataset.tab === 'settings') {
         checkSettingsManager().then(function(canManage) {
@@ -3310,6 +3329,81 @@
   /* Sync-делегатор (re-render из готового стейта) — для _doFullRerender (смена языка). */
   function renderCapacityView() {
     if (CAPACITY_VIEW && typeof CAPACITY_VIEW.render === 'function') CAPACITY_VIEW.render(_capacityDeps());
+  }
+
+  /* ═══ #48 R1 — РЕЛИЗ-МЕНЕДЖМЕНТ (ADR-001) ════════════════════
+     Стейт RM живёт в release-store.js (window.__SSP_RELEASE_STORE), НЕ в ядре —
+     пилот «state out of core». Ядро делегирует «релизный срез» deps.state.release.* в
+     стор и оркеструет швы (reset per-project — в _resetProjectStateCaches; draft-персист —
+     R1.2). Ни одной новой _release*-переменной в ядре (A2/C1 зелёные). Консюмеры
+     (release-view/-controller, R1.2+) ходят строго через _releaseDeps().state.release.*. */
+  var RELEASE_STORE = (typeof window !== 'undefined' && window.__SSP_RELEASE_STORE) || {};
+  var RELEASE_CTRL  = (typeof window !== 'undefined' && window.__SSP_RELEASE_CTRL)  || {};
+  var RELEASE_PICK  = (typeof window !== 'undefined' && window.__SSP_RELEASE_PICK)  || {};
+  function _releaseDeps() {
+    return {
+      T: T, esc: esc, icon: icon, diag: diag,
+      toast: toast, apiGet: apiGet, apiPost: apiPost,
+      openModal: openModal, appVersion: APP_VERSION,
+      activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),  /* скоуп подбора задач (R1.4) */
+      /* #48 R1.3 — открытие модалки создания (release-controller) + re-render вкладок. */
+      onCreate: function () { if (typeof RELEASE_CTRL.openCreateDialog === 'function') RELEASE_CTRL.openCreateDialog(_releaseDeps()); },
+      /* #48 R1.4 — подбор задач в конкретный релиз (release-pick). */
+      onAddIssues: function (releaseId) { if (typeof RELEASE_PICK.openReleasePickModal === 'function') RELEASE_PICK.openReleasePickModal(_releaseDeps(), releaseId); },
+      /* #48 R1.5a — редактирование незакрытого релиза (release-controller). */
+      onEdit: function (releaseId) { if (typeof RELEASE_CTRL.openEditDialog === 'function') RELEASE_CTRL.openEditDialog(_releaseDeps(), releaseId); },
+      /* #48 R2.1 — меню смены статуса (переход/закрытие со слепком). */
+      onStatusMenu: function (releaseId) { if (typeof RELEASE_CTRL.openStatusMenu === 'function') RELEASE_CTRL.openStatusMenu(_releaseDeps(), releaseId); },
+      /* #48 R2.2 — фриз/разморозка состава. */
+      onToggleFreeze: function (releaseId) { if (typeof RELEASE_CTRL.toggleFreeze === 'function') RELEASE_CTRL.toggleFreeze(_releaseDeps(), releaseId); },
+      /* #48 R2.3 — предпросмотр/применение маппинга статус→State (release-controller). */
+      onStatePreview: function (releaseId) { if (typeof RELEASE_CTRL.openStatePreview === 'function') RELEASE_CTRL.openStatePreview(_releaseDeps(), releaseId); },
+      /* #48 R2.3 — батч-данные задач (summary + текущее State) для предпросмотра и слепка (делегат к release-view — B1). */
+      fetchIssueData: function (issueIds) { return (RELEASE_VIEW && typeof RELEASE_VIEW.fetchIssueData === 'function') ? RELEASE_VIEW.fetchIssueData(_releaseDeps(), issueIds) : Promise.resolve({}); },
+      /* #48 R2.1 — сбор слепка на закрытии (делегат к release-view, чтобы controller не звал чужой мост — B1). */
+      buildSnapshot: function (release, closedAtMs) { return (RELEASE_VIEW && typeof RELEASE_VIEW.buildSnapshot === 'function') ? RELEASE_VIEW.buildSnapshot(_releaseDeps(), release, closedAtMs) : Promise.resolve(null); },
+      /* #48 R1.3b — удаление незакрытого релиза (release-controller). */
+      onDelete: function (releaseId) { if (typeof RELEASE_CTRL.openDeleteDialog === 'function') RELEASE_CTRL.openDeleteDialog(_releaseDeps(), releaseId); },
+      rerender: function () { renderReleaseView(); },
+      /* #48 — полная перезагрузка вкладки (releases + догрузка данных состава через
+         fetchIssueData): после подбора/переноса задач новые issueId иначе рисуются без
+         названия/зоны до рефреша (sync rerender читает getIssueData, который наполняет только
+         loadAndRender). */
+      reload: function (mode) { if (RELEASE_VIEW && typeof RELEASE_VIEW.loadAndRender === 'function') RELEASE_VIEW.loadAndRender(_releaseDeps(), mode || 'planned'); },
+      state: {
+        getSettings:    function () { return _settings; },
+        getCurrentUser: function () { return _currentUser; },
+        getHost:        function () { return _host; },
+        release: {
+          getReleases:   function ()      { return RELEASE_STORE.getReleases(); },
+          setReleases:   function (v)     { return RELEASE_STORE.setReleases(v); },
+          getCurrent:    function ()      { return RELEASE_STORE.getCurrent(); },
+          setCurrent:    function (v)     { return RELEASE_STORE.setCurrent(v); },
+          getFreezeLock: function (id)    { return RELEASE_STORE.getFreezeLock(id); },
+          setFreezeLock: function (id, v) { return RELEASE_STORE.setFreezeLock(id, v); },
+          getIssueData:   function ()     { return RELEASE_STORE.getIssueData(); },
+          setIssueData:   function (m)    { return RELEASE_STORE.setIssueData(m); },
+          getRepNames:    function ()     { return RELEASE_STORE.getRepNames(); },
+          setRepNames:    function (m)    { return RELEASE_STORE.setRepNames(m); },
+          getPerms:       function ()     { return RELEASE_STORE.getPerms(); },   // #48 R2.4 — права релиз-ролей
+          setPerms:       function (v)    { return RELEASE_STORE.setPerms(v); },
+          getArchive:     function ()     { return RELEASE_STORE.getArchive(); }, // #48 R4 — архив истории (US-R4-02)
+          setArchive:     function (v)    { return RELEASE_STORE.setArchive(v); },
+          getArchivedCount: function ()   { return RELEASE_STORE.getArchivedCount(); },
+          setArchivedCount: function (n)  { return RELEASE_STORE.setArchivedCount(n); },
+        },
+      },
+    };
+  }
+  /* Вкладки релиз-менеджмента вынесены в release-view.js (window.__SSP_RELEASE_VIEW). */
+  var RELEASE_VIEW = (typeof window !== 'undefined' && window.__SSP_RELEASE_VIEW) || {};
+  /* Sync-делегатор (re-render обеих вкладок из готового стора) — для _doFullRerender (смена языка). */
+  function renderReleaseView() {
+    if (!(_settings && _settings.releaseEnabled)) return;
+    if (RELEASE_VIEW && typeof RELEASE_VIEW.render === 'function') {
+      RELEASE_VIEW.render(_releaseDeps(), 'planned');
+      RELEASE_VIEW.render(_releaseDeps(), 'history');
+    }
   }
 
   document.getElementById('histPrev').addEventListener('click', function() { _histPage--; renderHistory(); });

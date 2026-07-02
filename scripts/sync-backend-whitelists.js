@@ -16,7 +16,9 @@ const expected = [
   'ALLOWED_SPRINT_KEYS', 'ALLOWED_HISTORY_SNAP_KEYS', 'ALLOWED_WORKING_DRAFT_KEYS',
   // #45 Capacity Management — задекларированы в R1, потребляются валидаторами R2.
   'ALLOWED_CALENDAR_KEYS', 'ALLOWED_ABSENCE_ENTRY_KEYS',
-  'ALLOWED_CAPACITY_RECORD_KEYS', 'ALLOWED_CAPACITY_PERSON_KEYS'
+  'ALLOWED_CAPACITY_RECORD_KEYS', 'ALLOWED_CAPACITY_PERSON_KEYS',
+  // #48 Release Management — стор ssp_releases (R1.2 фундамент), потребляет backend-release.js.
+  'ALLOWED_RELEASES_KEYS'
 ];
 for (const k of expected) {
   if (!Array.isArray(schema[k]))      { console.error('schema: ' + k + ' must be array');                            process.exit(1); }
@@ -43,6 +45,8 @@ const generated = [
   fmtArr('ALLOWED_ABSENCE_ENTRY_KEYS',   schema.ALLOWED_ABSENCE_ENTRY_KEYS),
   fmtArr('ALLOWED_CAPACITY_RECORD_KEYS', schema.ALLOWED_CAPACITY_RECORD_KEYS),
   fmtArr('ALLOWED_CAPACITY_PERSON_KEYS', schema.ALLOWED_CAPACITY_PERSON_KEYS),
+  // #48 Release Management whitelist (R1.2 фундамент).
+  fmtArr('ALLOWED_RELEASES_KEYS', schema.ALLOWED_RELEASES_KEYS),
   END_MARK
 ].join('\n');
 
