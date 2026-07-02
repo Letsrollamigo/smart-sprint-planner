@@ -21,8 +21,9 @@ A short guide to working with the plugin: creating a sprint, adding tasks, distr
 9. [Daily stand-up view](#9-daily-stand-up-view)
 10. [Sprint stages: review, commit, complete](#10-sprint-stages-review-commit-complete)
 11. [Sprint history and re-editing](#11-sprint-history-and-re-editing)
-12. [Who can do what: group permissions](#12-who-can-do-what-group-permissions)
-13. [FAQ](#13-faq)
+12. [Releases (release management)](#12-releases-release-management)
+13. [Who can do what: group permissions](#13-who-can-do-what-group-permissions)
+14. [FAQ](#14-faq)
 
 **Appendix A.** [Full reference of project settings](#appendix-a-full-reference-of-project-settings)
 
@@ -115,7 +116,7 @@ After saving these four settings, the plugin becomes functional: you can create 
 
 **What else can be configured** (not required for launch): groups that can confirm sprints; groups that can only change assignees; monthly hour quotas; cascading effort aggregation; automatic state roll-up from child tasks to parent containers; "external ID" field for integration with another system; daily stand-up settings. The full list is in [Appendix A](#appendix-a-full-reference-of-project-settings).
 
-> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 12](#12-who-can-do-what-group-permissions).
+> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 12](#13-who-can-do-what-group-permissions).
 
 ---
 
@@ -547,7 +548,7 @@ Click the card — it expands and shows the full task table with assignees and h
 | **✓ Finish** | Available if the sprint isn't finished yet. Opens the outcome dialog (see [section 10](#10-sprint-stages-review-commit-complete)). |
 | **🗑 Delete** | Full sprint deletion. Two-step confirmation. |
 
-Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 12](#12-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
+Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 12](#13-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
 
 ### Export and import history (JSON)
 
@@ -606,13 +607,51 @@ If an edit draft sits **more than 30 days without changes**, the plugin gently r
 
 ---
 
-## 12. Who can do what: group permissions
+## 12. Releases (release management)
+
+> Added in v2.17.0 and **disabled by default** — the project's settings manager turns it on.
+
+### What it is
+
+Group project tasks into **releases** and walk each release through statuses — with mapped YouTrack State changes (previewed before applying), a readiness traffic-light, and an irreversible composition snapshot on close. A release is the plugin's own entity: native YouTrack «Versions» are not touched.
+
+### Enabling and permissions
+
+Plugin settings → the **Releases** section: the enable toggle, two permission groups, and the **«release status → task State» mapping** (which State the release's tasks get when its status changes):
+
+- **Release managers (RM)** — create and edit releases, pick tasks, any status changes, cancellation, composition freeze. The plugin settings manager automatically has RM rights.
+- **Release engineers (RE)** — can only advance the status to the next step in the chain.
+
+Everyone else sees the tabs read-only — and can export releases to .txt.
+
+### Tabs
+
+Once enabled, **«Planned releases»** (cards of open releases) and **«Release history»** (closed snapshots) appear in the navigation.
+
+### The release card
+
+- **«Create release»** — name, kind (**Release / Hotfix**), source (**Internal / Vendor**), planned date, composition-freeze date, the release's RM/RE, patch note, notes.
+- **«+ Tasks»** — pick project tasks into the release. A task can be moved from another release — the plugin shows the collision and asks for confirmation.
+- **Readiness traffic-light** — a composition summary: done / in progress / not started / no state. Zones derive automatically from the State field and the mapping anchor; an overdue planned date adds an **«Overdue»** badge.
+- **Composition tree** — epic ▸ story ▸ task (from Subtask links), readiness rolled up from the subtree leaves; tasks without a parent are listed separately.
+- **«Change status ▾»** — Planned → Preparation → In progress → **Released** / **Cancelled**. Closing is irreversible: the composition is frozen as a snapshot and the release moves to «Release history».
+- **«Update task states»** — a mapping preview (which task gets which State, with «already there», «diverged», «unreachable» marks) and bulk or per-task application to YouTrack tasks.
+- **«❄ Freeze composition»** — blocks composition edits until explicitly unfrozen.
+- **«⤓ Export to .txt»** — downloads the card (type, dates, patch note, notes, traffic-light, composition). Available to everyone including viewers; the button is on the live card and on history/archive records.
+
+### History and archive
+
+History records are spoilers with the at-close snapshot (traffic-light, composition tree, patch note/notes) and .txt export. When the history grows past ~300 KB, the oldest closed releases automatically move to a read-only **«Archive (N)»** spoiler at the end of the history.
+
+---
+
+## 13. Who can do what: group permissions
 
 Access to different actions in the plugin is regulated through **YouTrack groups**. In plugin settings, the project admin specifies which group is responsible for which permissions.
 
 Groups are **additive**: one person can be in multiple groups and gets the sum of their permissions.
 
-### Five permission groups
+### Seven permission groups
 
 | Group | What they can do |
 |---|---|
@@ -620,6 +659,8 @@ Groups are **additive**: one person can be in multiple groups and gets the sum o
 | **Editors** | Full sprint editing: pick tasks, change hours, capacities, assignees, dates. Access to **Composition by roles** and **By assignees** both ways. |
 | **Confirmers** | Everything editors can, plus the ability to click **Confirm composition** and **Confirm distribution**, plus open sprints for editing from history and apply drafts. |
 | **Assignee-and-date-only** | Limited permissions: can change **only** assignees and Start / Finish dates in **By assignees** and on the Gantt chart. Composition, capacities, status — not allowed. Useful for team leads who shuffle assignees inside a fixed sprint but shouldn't change "what was agreed". |
+| **Release managers** | Full release management (when the «Releases» module is enabled, see [section 12](#12-releases-release-management)): create and edit, pick tasks, any status changes, cancellation, composition freeze. |
+| **Release engineers** | Advance a release's status to the next step in the chain (Planned → Preparation → In progress → Released). Composition and release fields are read-only. |
 | **History cleaners** | See and can click **🗑 Clear all history** above the History list. A strong, irreversible action — usually given to 1–2 responsible people. |
 
 **If a person isn't in any of these groups** — they see the plugin in read-only mode: they can browse compositions, charts, history, but editing buttons are hidden.
@@ -642,7 +683,10 @@ If you see a button hidden or a field greyed out — it's probably permissions. 
 
 ---
 
-## 13. FAQ
+## 14. FAQ
+
+**The plugin says «The sprint was modified by another user. Reload the page and try saving again» — what is this?**
+Concurrent-editing protection (added in v2.17.0). Someone saved this sprint after you loaded it — your save was rejected so it wouldn't silently wipe their work. Reload the page (your view picks up their changes) and re-apply your edit.
 
 **I changed something but I'm afraid to close the tab — will it really be saved?**
 Yes. The plugin saves your changes to the server automatically in the background. If you close the tab, get a coffee, and come back an hour later — you'll see everything exactly as you left it. The **Save parameters** and **Confirm** buttons are not for saving data, but for fixing sprint stages.
@@ -684,7 +728,7 @@ Check the plugin settings, in the **Task fields** section, for the **External ID
 Yes. It's a soft reminder that doesn't block saving. Fill in the Sprint goal field if you want to see it during the daily stand-up and assess the outcome at sprint close. If your team doesn't use sprint goals — just ignore the reminder or fill in any meaningful text.
 
 **Where do I see error logs if something doesn't work?**
-At the bottom of the plugin there's a collapsible **Diagnostics** block — all server calls, errors, and warnings are logged there. The **📥 Export** button downloads the last 100 lines as a text file — attach it to a support request if you run into issues. If the block is in the way — hide it in settings (**Other → Hide diagnostics panel**); events still get recorded and are available via export.
+At the bottom of the plugin there's a collapsible **Diagnostics** block — all server calls, errors, and warnings are logged there. The **📥 Export** button downloads the last 100 lines as a text file — attach it to a support request if you run into issues. Since v2.17.0 the block is **hidden by default** — enable it in settings (**Other → Show diagnostic log panel**); events are always recorded and available via export.
 
 ---
 
@@ -791,12 +835,19 @@ Configures the **Working with the backlog** module (see [section 5](#5-working-w
 - **Type filter** — which task types to show in the pool (values of the type field). The task-type field is taken from the "Cascade aggregation" → "Type field" setting.
 - **Pause states** / **Pause tags** — states (or comma-separated YouTrack tags) by which a task in the pool is marked with the "Paused" label.
 
+### The «Releases» section
+
+- **Enable release management** — the module's master toggle (see [section 12](#12-releases-release-management)). While off, there are no release tabs.
+- **Release manager groups** and **release engineer groups** — who manages releases and who advances statuses.
+- **Representative candidate groups** — which groups the RM/RE of a specific release are picked from (separate from the permission groups).
+- **«Release status → task State» mapping** — the target task State for each release status; the «Planned» status serves as the traffic-light zone anchor.
+
 ### "Other" section
 
 - **Interface language** — language switcher (duplicates the one in the plugin header).
 - **Verbose log.** Enables debug-level logging on the server side. Off by default. Doesn't log user-entered values — only short operation markers.
-- **Hide diagnostics panel.** Hides the **Diagnostics** block at the bottom of the plugin. Events still get recorded and are available via the **📥 Export** button after unsetting the flag.
+- **Show diagnostic log panel.** Shows the **Diagnostics** block at the bottom of the plugin; **hidden by default** since v2.17.0. Events are always recorded and available via the **📥 Export** button once enabled.
 
 ---
 
-_Updated 2026-06-25, plugin v2.15.1._
+_Updated 2026-07-03, plugin v2.17.0._
