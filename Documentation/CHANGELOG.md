@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.18.0] — 2026-07-04
+
+> **Capacity model tails (#51 / #52 / #54) + release auto-tags (#55).**
+
+### Added
+
+- **Global production calendar (#51)** — on the «Capacity» tab, YouTrack global admins (Project Admin or System Admin role) get an «Upload to all projects» button: one CSV calendar is pushed to every project with the planner attached at once. Such an admin also gets full access to every planner action in any project without being added to permission groups (actions are still attributed to them, and the concurrent-editing protection is not weakened).
+- **«By persons» capacity view (#52)** — a «By roles / By persons» toggle: the new view groups capacity by person (a spoiler per employee with total base hours and Σ load), with their roles inside sharing the same editable cells. Both groupings edit one model — edits show up in either view.
+- **Release status auto-tags (#55)** — release-management settings («Releases» section) gained a «Task tag» column in the mapping table: on a release status change the chosen tag is applied to the composition tasks and the previous status's tag is removed; a task added to a release, or moved in from another, immediately gets the current status's tag. Only existing project tags are used (an auto-created tag would be private to its owner).
+
+### Internal
+
+- Test coverage for the planning business-capacity adapter (golden + calculation-formula parity); 2.17.1 compatibility fixtures. No behavior change.
+
+---
+
 ## [2.17.1] — 2026-07-03
 
 > **Patch: project-switch state hygiene.**

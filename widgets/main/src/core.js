@@ -729,7 +729,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.17.1';
+  var APP_VERSION = '2.18.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
