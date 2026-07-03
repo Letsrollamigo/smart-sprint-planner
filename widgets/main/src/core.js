@@ -2580,11 +2580,11 @@
        раскрыты, currentSprintId ещё не восстановлен). Здесь per-role элементы (res_/
        sprintStatus_/statusBadge_) ещё не отрендерены → renderRolePlannerHeader заполнит
        только статические поля #sprintIntroCard. Идемпотентно (повтор просто переустановит
-       .value). При !_sprint — early-return внутри, empty-state сохранён. */
+       .value). !_sprint → чистит поля и выходит (residual-фикс 2026-07-03), поэтому вызов безусловный (rk=null безопасен: res_null не найдётся) — гейт по ролям оставлял residual при свитче на ненастроенный проект. */
     if (typeof renderRolePlannerHeader === 'function' && typeof getActiveRoles === 'function') {
       try {
         var _arIntro = getActiveRoles();
-        if (_arIntro && _arIntro.length) renderRolePlannerHeader(_arIntro[0].key);
+        renderRolePlannerHeader(_arIntro && _arIntro.length ? _arIntro[0].key : null);
       } catch(_){}
     }
     if (typeof renderPlanningRoles === 'function') {

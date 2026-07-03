@@ -161,7 +161,16 @@
     var T = deps.T;
     var ok = _settings && deps.getActiveRoles().some(function(r){ return r.key === rk && _settings[r.fieldEst]; });
     document.getElementById('bannerPlanner').classList.toggle('hidden', !!ok || !_settings);
-    if (!_sprint) return;
+    if (!_sprint) {
+      /* Свитч на проект без спринтов: не оставляем residual-значения прошлого
+         проекта в общих полях формы (⚖ владелец 2026-07-03, TechDEBT+Sanitary). */
+      document.getElementById('sprintName').value = '';
+      document.getElementById('dateStart').value  = '';
+      document.getElementById('dateEnd').value    = '';
+      var goalEl0 = document.getElementById('sprintGoal');
+      if (goalEl0) goalEl0.value = '';
+      return;
+    }
     // Название, даты, цель — общие; источник = выбранный спринт (активный или исторический снапшот)
     var _intro = _introSourceForCurrent(deps) || _sprint;
     document.getElementById('sprintName').value = _intro.name || '';

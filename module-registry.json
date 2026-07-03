@@ -253,7 +253,7 @@
     "domain/intro-view.js": {
       "layer": "domain",
       "domain": "domain/intro-view",
-      "loc": 238,
+      "loc": 247,
       "locBudget": 267,
       "state": [
         "api"
@@ -440,8 +440,8 @@
     "domain/sprint-store.js": {
       "layer": "domain",
       "domain": "domain/sprint-store",
-      "loc": 53,
-      "locBudget": 53,
+      "loc": 58,
+      "locBudget": 58,
       "state": [
         "_baseRevHash",
         "_serverSnapshotCurrentRoleGantt",
@@ -453,7 +453,7 @@
       "publishes": [
         "SPRINT_STORE"
       ],
-      "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; PP/Gantt-снимки и slotRev в резет намеренно не входят (семантика прежнего ядра 1:1)."
+      "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; с 2026-07-03 (⚖ владелец, TechDEBT+Sanitary) резет чистит ВЕСЬ срез, включая PP/Gantt-снимки и slotRev — residual slotRev чужого проекта мог случайно совпасть с rev нового слота и молча обойти rev-lock #56-4 (loc 53→58)."
     },
     "domain/standup-view.js": {
       "layer": "domain",

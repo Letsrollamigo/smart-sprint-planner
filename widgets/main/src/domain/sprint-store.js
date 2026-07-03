@@ -10,7 +10,8 @@
    Lifecycle-швы оркеструет ядро: resetProjectSlice() зовётся из _resetProjectStateCaches.
    Консюмеры (working-copy/draft-store/refresh/sprint-controller/youtrack-api) ходят
    через deps.state-аксессоры — ядро делегирует срез сюда (get/set в deps-фабриках core.js).
-   Семантика сеттеров/резета скопирована из ядра 1:1 (перенос без изменения поведения). */
+   Семантика сеттеров скопирована из ядра 1:1; резет с 2026-07-03 чистит весь срез
+   (⚖ владелец, TechDEBT+Sanitary — см. коммент у resetProjectSlice). */
 'use strict';
 
 /* ── приватный стейт модуля (владелец «конфликт-канона») ─────── */
@@ -34,14 +35,18 @@ function setBaseRevHash(v) { _baseRevHash = v; }
 function getSlotRev()  { return _slotRev; }
 function setSlotRev(v) { _slotRev = (typeof v === 'number') ? v : 0; }
 
-/* Сброс per-project — вызывает ядро из _resetProjectStateCaches. Семантика прежнего
-   резета 1:1: PP/Gantt-снимки и _slotRev НАМЕРЕННО не чистятся (снимки перезаписывает
-   sprint-controller при загрузке роли, slotRev самовосстанавливается первым GET
-   sprint-data) — менять это = отдельное решение, не перенос. */
+/* Сброс per-project — вызывает ядро из _resetProjectStateCaches. С 2026-07-03 чистит
+   ВЕСЬ срез, включая PP/Gantt-снимки и _slotRev (⚖ владелец, TechDEBT+Sanitary):
+   residual slotRev чужого проекта мог случайно совпасть с rev слота нового и молча
+   обойти optimistic lock (#56-4); 0 до первого GET sprint-data даёт защитный 409.
+   Снимки перезапишет sprint-controller при загрузке роли — null здесь = штатный старт. */
 function resetProjectSlice() {
   _serverSnapshotSprint = null;
   _serverSnapshotRoleItems = null;
+  _serverSnapshotCurrentRolePP = null;
+  _serverSnapshotCurrentRoleGantt = null;
   _baseRevHash = '';
+  _slotRev = 0;
 }
 
 const api = {

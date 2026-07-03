@@ -1,6 +1,6 @@
 /* sprint-store.js — self-check стора конфликт-канона (ADR-001 r2).
  * Проверяет контракт, который оркеструет ядро: семантику сеттеров (перенос из ядра 1:1)
- * и сброс per-project (resetProjectSlice: PP/Gantt-снимки и slotRev НЕ чистятся).
+ * и сброс per-project (resetProjectSlice: с 2026-07-03 чистит весь срез, ⚖ владелец).
  * Запуск: node --test 'tests/unit/sprint-store.test.js'. */
 'use strict';
 const { test } = require('node:test');
@@ -21,7 +21,7 @@ test('сеттеры: снапшоты — сквозное присваиван
   assert.strictEqual(store.getSlotRev(), 0);
 });
 
-test('resetProjectSlice: чистит Sprint/RoleItems/baseRevHash; PP/Gantt/slotRev остаются (семантика ядра 1:1)', () => {
+test('resetProjectSlice: чистит ВЕСЬ срез — Sprint/RoleItems/baseRevHash + PP/Gantt/slotRev (⚖ 2026-07-03: residual slotRev чужого проекта мог молча обойти rev-lock #56-4)', () => {
   store.setServerSnapshotSprint({ name: 'S' });
   store.setServerSnapshotRoleItems({ devBack: [1] });
   store.setServerSnapshotCurrentRolePP({ pp: 1 });
@@ -34,7 +34,7 @@ test('resetProjectSlice: чистит Sprint/RoleItems/baseRevHash; PP/Gantt/slo
   assert.strictEqual(store.getServerSnapshotSprint(), null);
   assert.strictEqual(store.getServerSnapshotRoleItems(), null);
   assert.strictEqual(store.getBaseRevHash(), '');
-  assert.deepStrictEqual(store.getServerSnapshotCurrentRolePP(), { pp: 1 });
-  assert.deepStrictEqual(store.getServerSnapshotCurrentRoleGantt(), { g: 1 });
-  assert.strictEqual(store.getSlotRev(), 5);
+  assert.strictEqual(store.getServerSnapshotCurrentRolePP(), null);
+  assert.strictEqual(store.getServerSnapshotCurrentRoleGantt(), null);
+  assert.strictEqual(store.getSlotRev(), 0);
 });
