@@ -729,7 +729,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.17.0';
+  var APP_VERSION = '2.17.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1964,7 +1964,7 @@
     _history = [];
     _settings = null;
     _projectFields = [];
-    SPRINT_STORE.resetProjectSlice();   /* снапшоты Sprint/RoleItems + baseRevHash (семантика прежнего резета) */
+    SPRINT_STORE.resetProjectSlice();   /* весь срез: снапшоты Sprint/RoleItems/PP/Gantt + baseRevHash + slotRev (v2.17.1) */
     _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
     _draftPending = false;
     _currentSprintId = null;

@@ -3,7 +3,7 @@
  *
  * Per-feature backend-модуль (паттерн backend-capacity.js): мост к YouTrack entities
  * (field-values / get-user-field-values / update-issue-field / refresh-assignees).
- * НЕ трогает persist плагина (scbt_*), миграции и schema-whitelist'ы — читает/пишет
+ * НЕ трогает persist плагина (ssp_*), миграции и schema-whitelist'ы — читает/пишет
  * только поля YT-issue. Require'ится в backend-project.js И backend-global.js; свои
  * endpoint-объекты ДОПИСЫВАЕТ в общий core.ENDPOINTS (оба handler-файла читают его —
  * иначе global-режим 404, gotcha #7). Тела хендлеров переехали из core дословно;

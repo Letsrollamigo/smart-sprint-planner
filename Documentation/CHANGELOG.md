@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.17.1] — 2026-07-03
+
+> **Patch: project-switch state hygiene.**
+
+### Fixed
+
+- **The sprint form is cleared when switching to a project without sprints** — the Name / Dates / Goal fields used to keep the previous project's values (the header render never fired on an unconfigured project).
+- **Full planner state reset on project switch** — personal-planning / Gantt snapshots and the sprint slot revision are reset too: a stale revision from another project could accidentally match the new project's revision and silently slip past the concurrent-editing protection introduced in 2.17.0; now the server answers with a clear conflict until the first data load.
+
+### Internal
+
+- Fork-mirror hygiene: extended namespace-sed parity rules (56/58 modules byte-identical under sed), neutralized comment examples. No behavior change.
+
+---
+
 ## [2.17.0] — 2026-07-03
 
 > **Release management (epic #48) + a series of production fixes (#56).**

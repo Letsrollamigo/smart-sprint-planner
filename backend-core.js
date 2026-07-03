@@ -271,7 +271,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.17.0';
+var APP_VERSION = '2.17.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -349,7 +349,7 @@ function migrateRoleItemsObj(ri) {
    незамапленные ключи, которые строгий validateSettings отклоняет. Чистим блоб
    ПЕРЕД отдачей клиенту (и опционально на write — см. POST /sprint-data).
    Параллель migrateSprintObj/migrateRoleItemsObj. namespace-agnostic (работает с
-   распарсенным объектом, не с scbt_/ssp_ ключами) → байт-идентично community. */
+   распарсенным объектом, не с префиксованными storage-ключами). */
 var SETTINGS_FIELD_KEY_REMAP = [
   ['fieldDev',       'fieldDevPlatform'],
   ['fieldFactDev',   'fieldFactDevPlatform'],
