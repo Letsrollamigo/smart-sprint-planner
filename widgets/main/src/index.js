@@ -60,6 +60,7 @@ import './domain/backlog-view.js';
 import './domain/backlog-assign.js';
 import './domain/intro-view.js';
 import './domain/capacity-view.js';
+import './domain/sprint-store.js';
 import './domain/release-store.js';
 import './domain/release-view.js';
 import './domain/release-controller.js';

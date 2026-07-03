@@ -4,9 +4,10 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4319,
-      "locBudget": 4319,
-      "budgetNote": "#56-4/#56-7 — осознанный +8: _slotRev+getSlotRev/setSlotRev+toast/T в _ytApiDeps (optimistic lock, логика в youtrack-api/backend-core) + read-гард заражённого PP-канона в _getPersonalPlanningForCurrent. Прошлое: #48 R4 +4 (архив в _releaseDeps), R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
+      "loc": 4317,
+      "locBudget": 4317,
+      "stateBaseline": 77,
+      "budgetNote": "ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4/#56-7 — осознанный +8: _slotRev+getSlotRev/setSlotRev+toast/T в _ytApiDeps (optimistic lock, логика в youtrack-api/backend-core) + read-гард заражённого PP-канона в _getPersonalPlanningForCurrent. Прошлое: #48 R4 +4 (архив в _releaseDeps), R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
     "fatThreshold": 600,
     "fatCountBaseline": 2,
@@ -44,6 +45,7 @@
       "SETTINGS_CTRL": "domain",
       "SHARE_CTRL": "domain",
       "SPRINT_CTRL": "domain",
+      "SPRINT_STORE": "domain",
       "STANDUP_VIEW": "domain",
       "VALIDATION_CTRL": "domain",
       "WORKING_COPY": "domain",
@@ -99,7 +101,7 @@
     "data/youtrack-api.js": {
       "layer": "domain",
       "domain": "data/youtrack-api",
-      "loc": 233,
+      "loc": 256,
       "locBudget": 261,
       "state": [],
       "publishes": [
@@ -426,7 +428,7 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 539,
+      "loc": 600,
       "locBudget": 604,
       "state": [
         "api"
@@ -434,6 +436,24 @@
       "publishes": [
         "SPRINT_CTRL"
       ]
+    },
+    "domain/sprint-store.js": {
+      "layer": "domain",
+      "domain": "domain/sprint-store",
+      "loc": 53,
+      "locBudget": 53,
+      "state": [
+        "_baseRevHash",
+        "_serverSnapshotCurrentRoleGantt",
+        "_serverSnapshotCurrentRolePP",
+        "_serverSnapshotRoleItems",
+        "_serverSnapshotSprint",
+        "_slotRev"
+      ],
+      "publishes": [
+        "SPRINT_STORE"
+      ],
+      "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; PP/Gantt-снимки и slotRev в резет намеренно не входят (семантика прежнего ядра 1:1)."
     },
     "domain/standup-view.js": {
       "layer": "domain",

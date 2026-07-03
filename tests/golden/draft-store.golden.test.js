@@ -233,7 +233,7 @@ test('golden: draft — saveDebounced: per-suffix таймеры, переарм
   const sched = stubScheduler(window);
   stubApi(gm, {});
   recordDiag(gm);
-  gm.set({ _baseRevHash: 'gm-base-hash' });
+  gm.call('SPRINT_STORE.setBaseRevHash', 'gm-base-hash');
 
   gm.call('_draftSaveDebounced', 'sprint', function () { return { name: 'S1' }; });
   gm.call('_draftSaveDebounced', 'currentRole', function () { return { pp: 2 }; }, 250);

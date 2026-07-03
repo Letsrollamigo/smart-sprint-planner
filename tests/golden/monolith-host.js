@@ -81,6 +81,7 @@ const BRIDGE_SCRIPTS = [
   'backlog-view.js',
   'intro-view.js',
   'capacity-view.js',
+  'sprint-store.js',
 ];
 
 /* Модули разнесены по layer-папкам (domain/infra/pure/data/i18n); icons.generated.js — в корне.

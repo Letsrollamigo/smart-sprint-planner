@@ -50,3 +50,18 @@ test('C2 — baseline не протух (имена из реестра ещё �
   assert.deepStrictEqual(stale, [],
     'Baseline состояния протух — почисти module-registry.json (перегенерируй):\n  ' + stale.join('\n  '));
 });
+
+test('C3 — стейт ядра не растёт: счётчик top-level `_*`-переменных core.js ≤ stateBaseline (ratchet only-down)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const core = fs.readFileSync(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'core.js'), 'utf8');
+  const n = lib.coreStateVars(core).length;
+  const baseline = reg._meta.core.stateBaseline;
+  assert.ok(typeof baseline === 'number', 'module-registry.json:_meta.core.stateBaseline отсутствует');
+  assert.ok(n <= baseline,
+    `core.js: ${n} стейт-переменных > baseline ${baseline}. Новый стейт в ядро ЗАПРЕЩЁН — ` +
+    'клади его в доменный стор по ADR-001 (прецеденты: release-store.js, sprint-store.js) ' +
+    'или в module-private стейт с записью в реестр (C1). Осознанное исключение — bump baseline с обоснованием в diff.');
+  assert.ok(n >= baseline,
+    `core.js: ${n} стейт-переменных < baseline ${baseline} — ratchet вниз: зафиксируй прогресс, обнови stateBaseline в module-registry.json.`);
+});

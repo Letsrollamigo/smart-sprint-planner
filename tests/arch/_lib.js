@@ -145,6 +145,30 @@ function bridgeLayer(token) {
   return 'domain';
 }
 
+/* Стейт-переменные ядра: top-level декларации IIFE (2-space indent) с `_`-префиксом.
+   Multi-var строки (`var _a, _b = 1`) разбираются по запятым верхнего уровня.
+   Мосты (SPRINT_STORE и пр.) не считаются — стейт-канон ядра только `_*`. */
+function coreStateVars(src) {
+  const names = [];
+  for (const line of src.split('\n')) {
+    const m = line.match(/^  (?:var|let|const)\s+(_.*)$/);
+    if (!m) continue;
+    let depth = 0, cur = '';
+    const parts = [];
+    for (const c of m[1]) {
+      if ('([{'.includes(c)) depth++;
+      if (')]}'.includes(c)) depth--;
+      if (c === ',' && depth === 0) { parts.push(cur); cur = ''; } else cur += c;
+    }
+    parts.push(cur);
+    for (const part of parts) {
+      const nm = part.trim().match(/^(_[\w$]+)/);
+      if (nm) names.push(nm[1]);
+    }
+  }
+  return names;
+}
+
 module.exports = {
   SRC,
   EXCLUDE,
@@ -155,6 +179,7 @@ module.exports = {
   stripCommentsAndStrings,
   moduleDepth,
   moduleLevelVarLet,
+  coreStateVars,
   bridgeTokens,
   publishedBridges,
 };

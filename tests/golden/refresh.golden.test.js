@@ -141,10 +141,10 @@ function buildRefreshSettings() {
 /** База merge-сценария: baseline == local (не dirty), текущая роль devBack. */
 function applyMergeState(gm) {
   fx.applyBaseState(gm);
+  gm.call('SPRINT_STORE.setServerSnapshotRoleItems', fx.buildRoleItems());
+  gm.call('SPRINT_STORE.setServerSnapshotCurrentRolePP', fx.buildCurrentRolePP());
   gm.set({
     _settings: buildRefreshSettings(),
-    _serverSnapshotRoleItems: fx.buildRoleItems(),
-    _serverSnapshotCurrentRolePP: fx.buildCurrentRolePP(),
     _currentSprintRoleRec: fx.buildCurrentRoleRec(),
     _currentRolePP: fx.buildCurrentRolePP(),
     _ganttStateHist: { _fetchedAt: 999 },
@@ -340,9 +340,9 @@ function applyConflictState(gm, document) {
   snapItems.devBack[0].estimate_devBack = 900; /* local 1200 → dirty */
   const snapPP = fx.buildCurrentRolePP();
   snapPP.taskAssignments['GM-11'] = { assignee: 'gm_user_1' }; /* local gm_user_2 → dirty */
+  gm.call('SPRINT_STORE.setServerSnapshotRoleItems', snapItems);
+  gm.call('SPRINT_STORE.setServerSnapshotCurrentRolePP', snapPP);
   gm.set({
-    _serverSnapshotRoleItems: snapItems,
-    _serverSnapshotCurrentRolePP: snapPP,
     _currentSprintRoleRec: null, /* curRk берётся из _activeSubtab */
     _activeSubtab: 'devBack',
   });

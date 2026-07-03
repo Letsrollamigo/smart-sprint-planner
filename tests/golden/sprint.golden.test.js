@@ -18,8 +18,9 @@
  * Контракты — только через выживающие entry-points (урок слайсов 3–5): все 7 функций
  * остаются делегаторами (макс. внешних callers всего E1); внутренние хелперы
  * _clearFieldErrors/_showFieldError станут приватны модулю. Стейт зоны
- * (_currentSprintId, _sprint, _roleItems, _serverSnapshot-снимки, _currentRole-стейт,
- * _activeSubtab, _activeWorkingDraftKey, _history, _baseRevHash) остаётся в стейт-ядре
+ * (_currentSprintId, _sprint, _roleItems, _currentRole-стейт, _activeSubtab,
+ * _activeWorkingDraftKey, _history) остаётся в стейт-ядре; конфликт-канон
+ * (_serverSnapshot-снимки/_baseRevHash/_slotRev) — в sprint-store.js (ADR-001, store-API)
  * за get/set-аксессорами (его трогают gm.get/gm.set голденов и другие контроллеры).
  */
 'use strict';
@@ -173,20 +174,24 @@ test('golden: markSavedAndCleanup — матрица секций (snapshot + dr
   const draft = stubDraft(gm);
   const renders = stubRenders(gm);
 
-  gm.set({ _serverSnapshotSprint: null, _serverSnapshotRoleItems: null,
-    _serverSnapshotCurrentRolePP: null, _serverSnapshotCurrentRoleGantt: null, _activeSubtab: 'devBack' });
+  /* конфликт-канон — в sprint-store (ADR-001): стейт ставится через store-API, оракулы не меняются */
+  gm.call('SPRINT_STORE.setServerSnapshotSprint', null);
+  gm.call('SPRINT_STORE.setServerSnapshotRoleItems', null);
+  gm.call('SPRINT_STORE.setServerSnapshotCurrentRolePP', null);
+  gm.call('SPRINT_STORE.setServerSnapshotCurrentRoleGantt', null);
+  gm.set({ _activeSubtab: 'devBack' });
 
   gm.call('markSavedAndCleanup', 'sprint');
   const afterSprint = {
-    snapSprintSet: gm.get('_serverSnapshotSprint') !== null,
-    snapSprintMatches: JSON.stringify(gm.get('_serverSnapshotSprint')) === JSON.stringify(gm.get('_sprint')),
+    snapSprintSet: gm.call('SPRINT_STORE.getServerSnapshotSprint') !== null,
+    snapSprintMatches: JSON.stringify(gm.call('SPRINT_STORE.getServerSnapshotSprint')) === JSON.stringify(gm.get('_sprint')),
   };
   gm.call('markSavedAndCleanup', 'roleItems');
-  const afterRoleItems = { snapRoleItemsSet: gm.get('_serverSnapshotRoleItems') !== null };
+  const afterRoleItems = { snapRoleItemsSet: gm.call('SPRINT_STORE.getServerSnapshotRoleItems') !== null };
   gm.call('markSavedAndCleanup', 'currentRole');
   const afterCurrentRole = {
-    snapPPSet: gm.get('_serverSnapshotCurrentRolePP') !== null,
-    snapGanttSet: gm.get('_serverSnapshotCurrentRoleGantt') !== null,
+    snapPPSet: gm.call('SPRINT_STORE.getServerSnapshotCurrentRolePP') !== null,
+    snapGanttSet: gm.call('SPRINT_STORE.getServerSnapshotCurrentRoleGantt') !== null,
   };
 
   checkJsonSnapshot('mark-saved-cleanup-matrix', {
@@ -195,7 +200,7 @@ test('golden: markSavedAndCleanup — матрица секций (snapshot + dr
     afterCurrentRole: afterCurrentRole,
     cleanSections: draft.clean,
     draftSetKeys: draft.set,
-    baseRevHashSet: typeof gm.get('_baseRevHash') === 'string' && gm.get('_baseRevHash').length > 0,
+    baseRevHashSet: typeof gm.call('SPRINT_STORE.getBaseRevHash') === 'string' && gm.call('SPRINT_STORE.getBaseRevHash').length > 0,
     roleCompRerender: renders.roleComp,
   });
 });

@@ -770,12 +770,11 @@
       });
     } catch(e) { diag('loadAppVersion sync err: '+e, 'err'); }
   }
-  var _baseRevHash = '';
-  var _slotRev = 0;   /* #56-4 — rev слота sprint-data (optimistic lock; синк в youtrack-api) */
-  var _serverSnapshotSprint    = null;
-  var _serverSnapshotRoleItems = null;
-  var _serverSnapshotCurrentRolePP    = null;
-  var _serverSnapshotCurrentRoleGantt = null;
+  /* Конфликт-канон (_serverSnapshot-снимки/_baseRevHash/_slotRev) вынесен в sprint-store.js
+     (ADR-001, второе применение после release-store) — ядро делегирует срез в стор
+     через deps.state-аксессоры; reset per-project — SPRINT_STORE.resetProjectSlice()
+     в _resetProjectStateCaches. */
+  var SPRINT_STORE = (typeof window !== 'undefined' && window.__SSP_SPRINT_STORE) || {};
   var _draftRestoreInProgress = false;
 
   /* v5.0.3 — серверный черновик (через GET/POST /draft).
@@ -826,7 +825,7 @@
         getHistory: function () { return _history; },
         getSprint: function () { return _sprint; },
         getRoleItems: function () { return _roleItems; },
-        getBaseRevHash: function () { return _baseRevHash; },
+        getBaseRevHash: function () { return SPRINT_STORE.getBaseRevHash(); },
         /* raw-сеттер (как state.setCurrentSprintId хедер-вью) — НЕ контроллер
            setCurrentSprintId монолита: тот сам зовёт рендер шапки. */
         setCurrentSprintId: function (id) { _currentSprintId = id; },
@@ -937,7 +936,7 @@
         setCurrentRolePP: function (v) { _currentRolePP = v; },
         setCurrentRoleGantt: function (v) { _currentRoleGantt = v; },
         setCurrentRoleNkcKey: function (v) { _currentRoleNkcKey = v; },
-        getBaseRevHash: function () { return _baseRevHash; },
+        getBaseRevHash: function () { return SPRINT_STORE.getBaseRevHash(); },
         setDraftRestoreInProgress: function (b) { _draftRestoreInProgress = b; },
         getLang: function () { return _lang; },
         getUiExpandedRoles: function () { return (typeof _uiExpandedRoles !== 'undefined') ? _uiExpandedRoles : undefined; },
@@ -1250,9 +1249,9 @@
     return _draftClearOnBackend().then(function(){
       return loadAllData();
     }).then(function(){
-      _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
-      _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
-      _baseRevHash = computeRevHash(_sprint, _roleItems);
+      SPRINT_STORE.setServerSnapshotSprint(_sprint ? deepClone(_sprint) : null);
+      SPRINT_STORE.setServerSnapshotRoleItems(_roleItems ? deepClone(_roleItems) : null);
+      SPRINT_STORE.setBaseRevHash(computeRevHash(_sprint, _roleItems));
       try {
         if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
         if (typeof renderHistory === 'function')      renderHistory();
@@ -1571,8 +1570,8 @@
         getMode: function () { return _mode; },
         getActiveProjectKey: function () { return _activeProjectKey; },
         getSprint: function () { return _sprint; },
-        getSlotRev: function () { return _slotRev; },        /* #56-4 */
-        setSlotRev: function (v) { _slotRev = (typeof v === 'number') ? v : 0; },
+        getSlotRev: function () { return SPRINT_STORE.getSlotRev(); },        /* #56-4 */
+        setSlotRev: function (v) { SPRINT_STORE.setSlotRev(v); },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
@@ -1699,9 +1698,9 @@
     });
   }).then(function() {
     /* v5.0.3 — снапшот серверной версии и хеш для сравнения с черновиком */
-    _serverSnapshotSprint    = _sprint    ? deepClone(_sprint)    : null;
-    _serverSnapshotRoleItems = _roleItems ? deepClone(_roleItems) : null;
-    _baseRevHash = computeRevHash(_sprint, _roleItems);
+    SPRINT_STORE.setServerSnapshotSprint(_sprint ? deepClone(_sprint) : null);
+    SPRINT_STORE.setServerSnapshotRoleItems(_roleItems ? deepClone(_roleItems) : null);
+    SPRINT_STORE.setBaseRevHash(computeRevHash(_sprint, _roleItems));
     /* v5.0.3 — серверный draft (localStorage недоступен в YouTrack iframe sandbox) */
     return _draftLoadFromBackend();
   }).then(function() {
@@ -1965,9 +1964,7 @@
     _history = [];
     _settings = null;
     _projectFields = [];
-    _serverSnapshotSprint = null;
-    _serverSnapshotRoleItems = null;
-    _baseRevHash = '';
+    SPRINT_STORE.resetProjectSlice();   /* снапшоты Sprint/RoleItems + baseRevHash (семантика прежнего резета) */
     _draft = { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null };
     _draftPending = false;
     _currentSprintId = null;
@@ -2653,7 +2650,7 @@
         getSprint: function () { return _sprint; },
         getHistory: function () { return _history; },
         getCurrentSprintId: function () { return _currentSprintId; },
-        getServerSnapshotRoleItems: function () { return _serverSnapshotRoleItems; },
+        getServerSnapshotRoleItems: function () { return SPRINT_STORE.getServerSnapshotRoleItems(); },
         getRoleItems: function () { return _roleItems; },
         getUiExpandedRoles: function () { return _uiExpandedRoles; },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
@@ -3229,7 +3226,7 @@
       ctx: _ctx, settings: _settings, currentUser: _currentUser,
       activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),  /* скоуп подбора → активный проект */
       host: _host, pickPage: PICK_PAGE, maxPickTotal: MAX_PICK_TOTAL,
-      inc: INC, ytBase: _ytBase, draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
+      inc: INC, ytBase: _ytBase, draftVersion: DRAFT_VERSION, baseRevHash: SPRINT_STORE.getBaseRevHash(),
       sprint: _sprint, roleItems: _roleItems,
       getRoleItemsArr: getRoleItemsArr, apiPost: apiPost, openModal: openModal, roleLabel: roleLabel,
       markDirty: _markDirty, draftSet: _draftSet,
@@ -4000,7 +3997,7 @@
       _markDirty('currentRole');
       _draftSet('currentRole', { pp: _currentRolePP, gantt: _currentRoleGantt, nkcKey: _currentRoleNkcKey,
                               sprintRecKey: _currentSprintRoleRec ? _currentSprintRoleRec.sprintId : null });
-      _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: _baseRevHash });
+      _draftSet('meta', { savedAt: Date.now(), version: DRAFT_VERSION, baseRevHash: SPRINT_STORE.getBaseRevHash() });
       _draftFlushNow();
       /* saveCurrentRoleState уже умеет: пишет в _history (apiPost('history')),
          и если активный спринт — также в _sprint (apiPost('sprint-data')).
@@ -4362,7 +4359,7 @@
     return {
       t: T, toast: toast, diag: diag,
       inc: INC, ytBase: _ytBase, currentUser: _currentUser,
-      draftVersion: DRAFT_VERSION, baseRevHash: _baseRevHash,
+      draftVersion: DRAFT_VERSION, baseRevHash: SPRINT_STORE.getBaseRevHash(),
       sprint: _backlogTargetSprint(), roleItems: _roleItems, settings: _settings, backlogPool: _backlogPool,
       getActiveRoles: getActiveRoles, roleLabel: roleLabel, fmt: fmtHoursOnly,
       getRoleItemsArr: getRoleItemsArr, openModal: openModal, apiPost: apiPost,
@@ -4468,8 +4465,8 @@
         getRoleItems: function () { return _roleItems; },
         getCurrentRolePP: function () { return _currentRolePP; },
         setCurrentRolePP: function (v) { _currentRolePP = v; },
-        getServerSnapshotRoleItems: function () { return _serverSnapshotRoleItems; },
-        getServerSnapshotCurrentRolePP: function () { return _serverSnapshotCurrentRolePP; },
+        getServerSnapshotRoleItems: function () { return SPRINT_STORE.getServerSnapshotRoleItems(); },
+        getServerSnapshotCurrentRolePP: function () { return SPRINT_STORE.getServerSnapshotCurrentRolePP(); },
         getGanttStateHist: function () { return _ganttStateHist; },
         getYtBase: function () { return _ytBase; },
       },
@@ -4482,9 +4479,10 @@
      golden-контракты — sprint.golden.test.js (идут через делегаторы выше: markSavedAndCleanup/
      saveCurrentRoleState/refreshPlanningPeopleForCurrentSprint/doSaveRoleHeader/doSaveSprintIntro/
      doNewSprint/setCurrentSprintId). Deps-фабрика per-call: стейт зоны (_currentSprintId/_sprint/
-     _roleItems/_serverSnapshot-снимки/_currentRole-стейт/_activeSubtab/_activeWorkingDraftKey/
-     _history/_baseRevHash) остаётся в стейт-ядре за get/set-аксессорами (его трогают gm-хук
-     голденов, другие контроллеры и ресет per-project); рекурсия setCurrentSprintId (WC-коллбек)
+     _roleItems/_currentRole-стейт/_activeSubtab/_activeWorkingDraftKey/_history) остаётся
+     в стейт-ядре за get/set-аксессорами (его трогают gm-хук голденов, другие контроллеры
+     и ресет per-project); конфликт-канон (_serverSnapshot-снимки/_baseRevHash/_slotRev) — в
+     sprint-store.js (ADR-001), deps-аксессоры делегируют туда; рекурсия setCurrentSprintId (WC-коллбек)
      замыкается на делегатор модуля с теми же deps. ═══ */
   var SPRINT_CTRL = (typeof window !== 'undefined' && window.__SSP_SPRINT_CTRL) || {};
   function _sprintDeps() {
@@ -4543,12 +4541,12 @@
         setCurrentRoleNkcKey: function (v) { _currentRoleNkcKey = v; },
         getActiveSubtab: function () { return _activeSubtab; },
         setActiveSubtab: function (v) { _activeSubtab = v; },
-        setServerSnapshotSprint: function (v) { _serverSnapshotSprint = v; },
-        setServerSnapshotRoleItems: function (v) { _serverSnapshotRoleItems = v; },
-        setServerSnapshotCurrentRolePP: function (v) { _serverSnapshotCurrentRolePP = v; },
-        setServerSnapshotCurrentRoleGantt: function (v) { _serverSnapshotCurrentRoleGantt = v; },
-        getBaseRevHash: function () { return _baseRevHash; },
-        setBaseRevHash: function (v) { _baseRevHash = v; },
+        setServerSnapshotSprint: function (v) { SPRINT_STORE.setServerSnapshotSprint(v); },
+        setServerSnapshotRoleItems: function (v) { SPRINT_STORE.setServerSnapshotRoleItems(v); },
+        setServerSnapshotCurrentRolePP: function (v) { SPRINT_STORE.setServerSnapshotCurrentRolePP(v); },
+        setServerSnapshotCurrentRoleGantt: function (v) { SPRINT_STORE.setServerSnapshotCurrentRoleGantt(v); },
+        getBaseRevHash: function () { return SPRINT_STORE.getBaseRevHash(); },
+        setBaseRevHash: function (v) { SPRINT_STORE.setBaseRevHash(v); },
         getIsAssigner: function () { return _isAssigner; },
         getPlanningLevel: function () { return _planningLevel; },
       },

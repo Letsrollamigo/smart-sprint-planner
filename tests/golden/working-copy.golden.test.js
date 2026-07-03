@@ -127,11 +127,11 @@ test('golden: restoreDraftIfAny — матрица no-meta/version/dirty/stale/r
 
   function run(label, draftObj, baseRevHash) {
     const calls = { toasts: [], cleaned: [] };
+    gm.call('SPRINT_STORE.setBaseRevHash', baseRevHash || '');
     gm.set({
       toast: function (msg, type) { calls.toasts.push(normToast({ msg: msg, type: type })); },
       _markClean: function (s) { calls.cleaned.push(s); },
       _draft: Object.assign({ meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null }, draftObj),
-      _baseRevHash: baseRevHash || '',
       _sprint: fx.buildSprint(),
       _roleItems: fx.buildRoleItems(),
     });
