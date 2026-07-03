@@ -1,0 +1,100 @@
+{
+  "fullApproved": {
+    "roleMinutes": {
+      "analysis": 8400,
+      "testing": 1800,
+      "devBack": 0
+    },
+    "personHours": {
+      "gm_user_1_analysis": 60,
+      "gm_user_1_testing": 30,
+      "gm_user_2_analysis": 80,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "gateDraft": {
+    "roleMinutes": {
+      "analysis": 2400,
+      "testing": 1200,
+      "devBack": 4800
+    },
+    "personHours": {
+      "gm_user_1_analysis": 33,
+      "gm_user_1_testing": 33,
+      "gm_user_2_analysis": 0,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "gateLightRecord": {
+    "roleMinutes": {
+      "analysis": 2400,
+      "testing": 1200,
+      "devBack": 4800
+    },
+    "personHours": {
+      "gm_user_1_analysis": 33,
+      "gm_user_1_testing": 33,
+      "gm_user_2_analysis": 0,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "gateForeignSprint": {
+    "roleMinutes": {
+      "analysis": 2400,
+      "testing": 1200,
+      "devBack": 4800
+    },
+    "personHours": {
+      "gm_user_1_analysis": 33,
+      "gm_user_1_testing": 33,
+      "gm_user_2_analysis": 0,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "lightSettingsWarmCache": {
+    "roleMinutes": {
+      "analysis": 8400,
+      "testing": 1800,
+      "devBack": 0
+    },
+    "personHours": {
+      "gm_user_1_analysis": 60,
+      "gm_user_1_testing": 30,
+      "gm_user_2_analysis": 80,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "lightSettingsColdCache": {
+    "roleMinutes": {
+      "analysis": 2400,
+      "testing": 1200,
+      "devBack": 4800
+    },
+    "personHours": {
+      "gm_user_1_analysis": 33,
+      "gm_user_1_testing": 33,
+      "gm_user_2_analysis": 0,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  },
+  "fallbackEmpty": {
+    "roleMinutes": {
+      "analysis": 0,
+      "testing": 0,
+      "devBack": 0
+    },
+    "personHours": {
+      "gm_user_1_analysis": 0,
+      "gm_user_1_testing": 0,
+      "gm_user_2_analysis": 0,
+      "gm_user_3_analysis": 0,
+      "unknown_login": 0
+    }
+  }
+}
