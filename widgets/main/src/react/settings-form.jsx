@@ -748,6 +748,19 @@ function ReleaseSection(props) {
   const patch = (p) => set(Object.assign({}, v, p));
   const setGrp = (k, val) => patch({ [k]: val });
   const setMap = (status, val) => patch({ mapping: Object.assign({}, v.mapping, { [status]: val }) });
+  const setTagMap = (status, val) => patch({ tagMapping: Object.assign({}, v.tagMapping, { [status]: val }) });
+
+  /* #55 — теги инстанса для колонки «Тег задач» (кэш сессии формы — props.loadTags). */
+  const [tagOpts, setTagOpts] = React.useState([]);
+  React.useEffect(() => {
+    let alive = true;
+    if (props.loadTags) {
+      Promise.resolve(props.loadTags())
+        .then((tags) => { if (alive && Array.isArray(tags)) setTagOpts(tags.map((name) => ({ key: name, label: name }))); }) /* loadProjectTags → массив ИМЁН */
+        .catch(noop);
+    }
+    return () => { alive = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stateOpts = bundleStates.map((s) => ({ key: s, label: s }));
   const STATUS_ROWS = [
@@ -785,8 +798,10 @@ function ReleaseSection(props) {
       <div className="card-subtitle" style={subCls}>{t('relSetMappingTitle')}</div>
       <table className="ssp-dta-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr>
-          <th scope="col" style={{ width: '42%' }}>{t('relSetMappingColStatus')}</th>
+          <th scope="col" style={{ width: '32%' }}>{t('relSetMappingColStatus')}</th>
           <th scope="col">{t('relSetMappingColState')}</th>
+          {/* #55 — авто-тег задач при входе в статус */}
+          <th scope="col">{t('relSetMappingColTag')}</th>
         </tr></thead>
         <tbody>
           {STATUS_ROWS.map((r) => (
@@ -796,12 +811,18 @@ function ReleaseSection(props) {
                 <RingSelLite options={stateOpts} value={v.mapping[r.k] || ''} clearable
                   placeholder={t('relSetMappingNoChange')} onChange={(val) => setMap(r.k, val)} />
               </td>
+              <td>
+                <RingSelLite options={tagOpts} value={(v.tagMapping && v.tagMapping[r.k]) || ''} clearable
+                  placeholder={t('relSetTagNone')} onChange={(val) => setTagMap(r.k, val)} />
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       {/* R3.1 — двойная роль маппинга: R2 пишет State, строка «Запланирован» якорит красную зону светофора */}
       <span className="hint" style={hintCls}>{t('relSetMappingAnchorNote')}</span>
+      {/* #55 — семантика авто-тегов: снимается тег предыдущего статуса, ставится нового; только существующие теги */}
+      <span className="hint" style={hintCls}>{t('relSetTagMappingNote')}</span>
 
       {/* Тип релиза — фиксированная таксономия 2×2 (инфо, не настраивается) */}
       <div className="card-subtitle" style={subCls}>{t('relSetTypeTitle')}</div>
@@ -959,6 +980,9 @@ function SettingsForm(props) {
     rightsEng: { ids: (initial.releaseEngineerGroups || []).slice(),          names: (initial.releaseEngineerGroupNames || []).slice() },
     mapping: Object.assign({ planned: '', prep: '', work: '', released: '', cancelled: '' },
       (initial.releaseStatusStateMapping && typeof initial.releaseStatusStateMapping === 'object') ? initial.releaseStatusStateMapping : {}),
+    /* #55 — маппинг «статус → тег задач» (имена СУЩЕСТВУЮЩИХ тегов; пусто = без тега). */
+    tagMapping: Object.assign({ planned: '', prep: '', work: '', released: '', cancelled: '' },
+      (initial.releaseTagMapping && typeof initial.releaseTagMapping === 'object') ? initial.releaseTagMapping : {}),
   }));
 
   /* Bundle-состояния state-поля проекта — общий источник для rollup + standup + backlog.
@@ -1161,6 +1185,15 @@ function SettingsForm(props) {
       const out = {};
       ['planned', 'prep', 'work', 'released', 'cancelled'].forEach((k) => {
         const val = String((release.mapping && release.mapping[k]) || '').trim();
+        if (val) out[k] = val.length > 200 ? val.slice(0, 200) : val;
+      });
+      return out;
+    })();
+    /* #55 — маппинг статус → тег (форма идентична state-маппингу). */
+    data.releaseTagMapping = (function () {
+      const out = {};
+      ['planned', 'prep', 'work', 'released', 'cancelled'].forEach((k) => {
+        const val = String((release.tagMapping && release.tagMapping[k]) || '').trim();
         if (val) out[k] = val.length > 200 ? val.slice(0, 200) : val;
       });
       return out;
@@ -1509,6 +1542,7 @@ function SettingsForm(props) {
         <ReleaseSection
           t={t} value={release} onChange={setRelease}
           bundleStates={bundleStates}
+          loadTags={props.loadTags} /* #55 — опции колонки «Тег задач» */
           loadGroups={props.loadGroups} initialGroups={props.initialGroups}
           onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
         />

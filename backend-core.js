@@ -983,7 +983,12 @@ var ALLOWED_SETTINGS_KEYS = [
   'releaseCandidateEngineerGroups','releaseCandidateEngineerGroupNames',
   'releaseManagerGroups','releaseManagerGroupNames',
   'releaseEngineerGroups','releaseEngineerGroupNames',
-  'releaseStatusStateMapping'
+  'releaseStatusStateMapping',
+  /* #55 — авто-теги: { <status> → <имя СУЩЕСТВУЮЩЕГО тега> }. Применение — фронтовый
+     fanout официальным REST тегов от имени юзера (backend теги не трогает); тег
+     предыдущего статуса снимается, нового — ставится. Теги НЕ создаются автоматически
+     (авто-созданный тег приватен владельцу и невидим команде). */
+  'releaseTagMapping'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1026,7 +1031,8 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'releaseCandidateEngineerGroups','releaseCandidateEngineerGroupNames',
   'releaseManagerGroups','releaseManagerGroupNames',
   'releaseEngineerGroups','releaseEngineerGroupNames',
-  'releaseStatusStateMapping'
+  'releaseStatusStateMapping',
+  'releaseTagMapping' /* #55 — как и весь раздел релиз-менеджмента */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1292,6 +1298,18 @@ function validateSettings(settings) {
     for (var rm = 0; rm < rmk.length; rm++) {
       if (RELEASE_STATUS_KEYS.indexOf(rmk[rm]) < 0) return false;      // key ∈ хранимые статусы
       if (!assertStr(rmap[rmk[rm]], 200)) return false;               // target state name str≤200|null
+    }
+  }
+  /* #55 — releaseTagMapping: { <status ∈ RELEASE_STATUS_KEYS> → <имя тега str≤200|null> },
+     форма идентична releaseStatusStateMapping. */
+  if (settings.releaseTagMapping !== undefined && settings.releaseTagMapping !== null) {
+    var tmap = settings.releaseTagMapping;
+    if (typeof tmap !== 'object' || Array.isArray(tmap)) return false;
+    var TAG_STATUS_KEYS = ['planned','prep','work','released','cancelled'];
+    var tmk = Object.keys(tmap);
+    for (var tm = 0; tm < tmk.length; tm++) {
+      if (TAG_STATUS_KEYS.indexOf(tmk[tm]) < 0) return false;
+      if (!assertStr(tmap[tmk[tm]], 200)) return false;
     }
   }
   return true;

@@ -3359,6 +3359,9 @@
       onCreate: function () { if (typeof RELEASE_CTRL.openCreateDialog === 'function') RELEASE_CTRL.openCreateDialog(_releaseDeps()); },
       /* #48 R1.4 — подбор задач в конкретный релиз (release-pick). */
       onAddIssues: function (releaseId) { if (typeof RELEASE_PICK.openReleasePickModal === 'function') RELEASE_PICK.openReleasePickModal(_releaseDeps(), releaseId); },
+      /* #55 — авто-теги: догонка добавленных задач + пере-тегирование при переносе (release-pick → controller). */
+      onIssuesAdded: function (releaseId, issueIds) { if (typeof RELEASE_CTRL.applyTagsForIssues === 'function') RELEASE_CTRL.applyTagsForIssues(_releaseDeps(), releaseId, issueIds); },
+      onIssuesTransferred: function (releaseId, transferable) { if (typeof RELEASE_CTRL.applyTagsForTransfer === 'function') RELEASE_CTRL.applyTagsForTransfer(_releaseDeps(), releaseId, transferable); },
       /* #48 R1.5a — редактирование незакрытого релиза (release-controller). */
       onEdit: function (releaseId) { if (typeof RELEASE_CTRL.openEditDialog === 'function') RELEASE_CTRL.openEditDialog(_releaseDeps(), releaseId); },
       /* #48 R2.1 — меню смены статуса (переход/закрытие со слепком). */

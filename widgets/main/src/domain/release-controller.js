@@ -268,12 +268,13 @@ function _patchRelease(deps, releaseId, patch) {
   });
 }
 
-function _postReleases(deps, next, okToast, modes) {
+function _postReleases(deps, next, okToast, modes, onOk) {
   deps.apiPost('releases', { releases: next }).then(function (r) {
     if (r && r.success) {
       deps.state.release.setReleases(Array.isArray(r.releases) ? r.releases : next);
       if (okToast) deps.toast(okToast, 'success');
       _noteArchived(deps, r); // R4 — закрытие со слепком: самый вероятный триггер порога
+      if (typeof onOk === 'function') onOk(); // #55 — авто-теги после успешного статус-write
       if (typeof deps.reload === 'function') (modes || ['planned']).forEach(function (m) { deps.reload(m); });
       else if (typeof deps.rerender === 'function') deps.rerender();
     } else {
@@ -285,7 +286,11 @@ function _postReleases(deps, next, okToast, modes) {
 
 /* Перевод в нетерминальный статус (planned→prep, prep→work) — только поле status. */
 function _advanceStatus(deps, releaseId, newStatus) {
-  _postReleases(deps, _patchRelease(deps, releaseId, { status: newStatus }), deps.T('relStatusChanged'), ['planned']);
+  var rec = (deps.state.release.getReleases() || []).filter(function (r) { return r.id === releaseId; })[0];
+  var prevStatus = rec ? rec.status : null;
+  var issueIds = rec ? (rec.issues || []).slice() : [];
+  _postReleases(deps, _patchRelease(deps, releaseId, { status: newStatus }), deps.T('relStatusChanged'), ['planned'],
+    function () { _applyTags(deps, issueIds, prevStatus, newStatus); }); // #55
 }
 
 /* Закрытие релиза (released|cancelled): buildSnapshot → status+snapshot → POST → уход в историю. */
@@ -296,7 +301,10 @@ function _closeRelease(deps, releaseId, terminalStatus) {
   Promise.resolve(build).then(function (snap) {
     var patch = { status: terminalStatus };
     if (snap) { snap.closedStatus = terminalStatus; patch.snapshot = snap; } // слепок собран ДО патча статуса — иначе внутри старый r.status
-    _postReleases(deps, _patchRelease(deps, releaseId, patch), deps.T('relReleaseClosed'), ['planned', 'history']);
+    var prevStatus = rec.status;
+    var issueIds = (rec.issues || []).slice();
+    _postReleases(deps, _patchRelease(deps, releaseId, patch), deps.T('relReleaseClosed'), ['planned', 'history'],
+      function () { _applyTags(deps, issueIds, prevStatus, terminalStatus); }); // #55
   }).catch(function (e) { deps.diag('release close err: ' + e, 'err'); deps.toast(deps.T('relPickerLoadError'), 'err'); });
 }
 
@@ -426,6 +434,111 @@ function _applyStates(deps, stateField, list, done) {
   });
 }
 
+/* ═══ #55 — авто-теги по статусу релиза ═══════════════════════════════════════
+   Маппинг settings.releaseTagMapping { статус → имя СУЩЕСТВУЮЩЕГО тега }. Применение —
+   прямой официальный REST ОТ ИМЕНИ ЮЗЕРА (backend не участвует): честные права/атрибуция,
+   консистентно с fanout-паттерном _applyStates. Тег предыдущего статуса снимается,
+   нового — ставится (per-issue реконсиляция полного массива tags — см. _applyTagOps).
+   Теги НЕ создаются (авто-созданный тег приватен владельцу — невидим команде);
+   ненайденное имя → в отчёт отказов. */
+
+/* pure: план операций для перехода prev→next по составу. prev=null — только простановка
+   (догонка при добавлении задач в релиз). Равные теги → no-op. */
+function buildTagOps(mapping, prevStatus, nextStatus, issueIds) {
+  var m = (mapping && typeof mapping === 'object') ? mapping : {};
+  var prevTag = (prevStatus && typeof m[prevStatus] === 'string' && m[prevStatus]) || null;
+  var nextTag = (nextStatus && typeof m[nextStatus] === 'string' && m[nextStatus]) || null;
+  var ops = [];
+  (issueIds || []).forEach(function (id) {
+    if (!id) return;
+    if (prevTag && prevTag !== nextTag) ops.push({ issueId: id, action: 'remove', tag: prevTag });
+    if (nextTag && nextTag !== prevTag) ops.push({ issueId: id, action: 'add', tag: nextTag });
+  });
+  return ops;
+}
+
+/* Исполнитель плана: резолв имя→id по видимым юзеру тегам инстанса, затем per-issue
+   реконсиляция набора: GET текущих тегов → (current − removes + adds) → ОДИН POST
+   issues/{id} {tags:[…]}. ⚠️ Метод DELETE через host.fetchYouTrack молча не выполняется
+   (эмпирика стенда 2026-07-04: «успех» без удаления) — снятие тега возможно только
+   полной заменой массива tags POST'ом. Ненайденное имя тега → ошибка соответствующей
+   задачи (теги не создаём). */
+function _applyTagOps(deps, ops) {
+  if (!ops || !ops.length) return Promise.resolve(null);
+  var host = deps.state.getHost();
+  if (!host || typeof host.fetchYouTrack !== 'function') return Promise.resolve(null);
+  return host.fetchYouTrack('tags', { query: { fields: 'id,name', '$top': 10000 } }).then(function (tags) {
+    var idByName = Object.create(null);
+    (tags || []).forEach(function (t) { if (t && t.name && !idByName[t.name]) idByName[t.name] = t.id; });
+    /* план → per-issue дельта наборов */
+    var byIssue = Object.create(null), unresolved = [];
+    ops.forEach(function (op) {
+      var tagId = idByName[op.tag];
+      if (!tagId) { unresolved.push(op.issueId + ':' + op.tag); return; }
+      var e = byIssue[op.issueId] || (byIssue[op.issueId] = { adds: {}, removes: {} });
+      e[op.action === 'add' ? 'adds' : 'removes'][tagId] = 1;
+    });
+    var jobs = Object.keys(byIssue).map(function (iid) {
+      var d = byIssue[iid];
+      return Promise.resolve(host.fetchYouTrack('issues/' + iid + '/tags', { query: { fields: 'id', '$top': 500 } }))
+        .then(function (cur) {
+          var set = Object.create(null);
+          (cur || []).forEach(function (t) { if (t && t.id) set[t.id] = 1; });
+          var before = Object.keys(set).sort().join(',');
+          Object.keys(d.removes).forEach(function (id) { delete set[id]; });
+          Object.keys(d.adds).forEach(function (id) { set[id] = 1; });
+          var after = Object.keys(set).sort();
+          if (after.join(',') === before) return { ok: true, iid: iid }; // набор не изменился
+          return Promise.resolve(host.fetchYouTrack('issues/' + iid, {
+            method: 'POST', query: { fields: 'id' },
+            body: { tags: after.map(function (id) { return { id: id }; }) }
+          })).then(function () { return { ok: true, iid: iid }; });
+        })
+        .catch(function (e) { return { ok: false, iid: iid, error: String((e && e.message) || e) }; });
+    });
+    return Promise.all(jobs).then(function (results) { return { results: results, unresolved: unresolved }; });
+  }).then(function (r) {
+    if (!r) return null;
+    var okN = 0, failed = [];
+    r.results.forEach(function (x) { if (x.ok) okN++; else failed.push(x.iid + '=' + x.error); });
+    var errN = failed.length + r.unresolved.length;
+    deps.toast(deps.T('relTagsResult').replace('{n}', String(okN)).replace('{m}', String(errN)),
+      errN ? 'warn' : 'success');
+    if (failed.length) deps.diag('release tags apply failed: ' + failed.join(', '), 'err');
+    if (r.unresolved.length) deps.diag('release tags: имя не найдено среди тегов инстанса: ' + r.unresolved.join(', '), 'err');
+    return r;
+  }).catch(function (e) { deps.diag('release tags err: ' + e, 'err'); return null; });
+}
+
+/* Смена статуса релиза: prev→next по всему составу. */
+function _applyTags(deps, issueIds, prevStatus, nextStatus) {
+  var s = deps.state.getSettings() || {};
+  _applyTagOps(deps, buildTagOps(s.releaseTagMapping, prevStatus, nextStatus, issueIds));
+}
+
+/* Догонка (release-pick): добавленные в релиз задачи получают тег ТЕКУЩЕГО статуса. */
+function applyTagsForIssues(deps, releaseId, issueIds) {
+  var rec = (deps.state.release.getReleases() || []).filter(function (r) { return r.id === releaseId; })[0];
+  if (!rec) return;
+  _applyTags(deps, issueIds, null, rec.status);
+}
+
+/* Перенос (D-B): перенесённая задача теряет тег статуса релиза-владельца и получает
+   тег статуса целевого. transferable = [{id, ownerId}] из release-pick. */
+function applyTagsForTransfer(deps, releaseId, transferable) {
+  var releases = deps.state.release.getReleases() || [];
+  var statusById = Object.create(null);
+  releases.forEach(function (r) { if (r && r.id) statusById[r.id] = r.status; });
+  var target = statusById[releaseId] || null;
+  var s = deps.state.getSettings() || {};
+  var ops = [];
+  (transferable || []).forEach(function (c) {
+    if (!c || !c.id) return;
+    ops = ops.concat(buildTagOps(s.releaseTagMapping, statusById[c.ownerId] || null, target, [c.id]));
+  });
+  _applyTagOps(deps, ops);
+}
+
 function openStatePreview(deps, releaseId) {
   var rec = (deps.state.release.getReleases() || []).filter(function (r) { return r.id === releaseId; })[0];
   if (!rec || _TERMINAL_ST[rec.status]) return;
@@ -463,7 +576,7 @@ function openStatePreview(deps, releaseId) {
   }).catch(function (e) { deps.diag('release state preview err: ' + e, 'err'); deps.toast(deps.T('relPickerLoadError'), 'err'); });
 }
 
-const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, buildPreviewRows: buildPreviewRows };
+const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, buildPreviewRows: buildPreviewRows, buildTagOps: buildTagOps, applyTagsForIssues: applyTagsForIssues, applyTagsForTransfer: applyTagsForTransfer };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_RELEASE_CTRL = api; } catch (_) { /* sandboxed write may throw */ }

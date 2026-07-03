@@ -174,6 +174,8 @@ function _onAddIssues(deps, releaseId, addedIds, closeModal) {
     });
     _commit(deps, next, function (ok) {
       if (!ok) return;                              // ошибка — оставить пикер открытым для повтора
+      /* #55 — догонка: добавленные задачи получают тег текущего статуса релиза. */
+      if (typeof deps.onIssuesAdded === 'function') deps.onIssuesAdded(releaseId, part.freeIds.slice());
       if (closeModal) closeModal();
       if (part.collisions.length) _openTransferDialog(deps, releaseId, part.collisions);
     });
@@ -229,7 +231,11 @@ function _doTransfer(deps, releaseId, transferable) {
     return r;
   });
   _commit(deps, next, function (ok) {
-    if (ok) deps.toast(deps.T('relTransferDone').replace('{n}', String(moveIds.length)), 'success');
+    if (!ok) return;
+    deps.toast(deps.T('relTransferDone').replace('{n}', String(moveIds.length)), 'success');
+    /* #55 — перенос: тег статуса релиза-владельца снимается, целевого — ставится
+       (статусы релизов переносом не меняются → порядок с setReleases безразличен). */
+    if (typeof deps.onIssuesTransferred === 'function') deps.onIssuesTransferred(releaseId, transferable);
   });
 }
 
