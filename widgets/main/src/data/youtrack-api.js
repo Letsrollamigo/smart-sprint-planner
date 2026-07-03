@@ -44,7 +44,9 @@ function _backendCall(path, baseOpts, deps) {
   if (baseOpts.query) {
     Object.keys(baseOpts.query).forEach(function (k) { q[k] = baseOpts.query[k]; });
   }
-  q.projectKey = deps.state.getActiveProjectKey();
+  /* #51 — фан-аут глобального пуша календаря: явный projectKey из query имеет
+     приоритет над активным проектом (обычные вызовы projectKey не передают). */
+  if (!q.projectKey) q.projectKey = deps.state.getActiveProjectKey();
   baseOpts.query = q;
   return deps.host.fetchApp('backend-global/' + cleanPath, baseOpts);
 }

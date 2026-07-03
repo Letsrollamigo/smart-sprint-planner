@@ -48,6 +48,14 @@ function checkSettingsManager(deps) {
   });
 }
 
+/* #51 — глобальная роль админа инстанса (гейт кнопки глобального пуша календаря).
+   UI-only: enforcement — серверный байпас в authzGuard/ролевых хелперах. */
+function checkInstanceAdmin(deps) {
+  return deps.backendCall('check-instance-admin', { method: 'GET' })
+    .then(function (r) { return !!(r && r.isInstanceAdmin); })
+    .catch(function () { return false; });
+}
+
 function checkValidator(deps) {
   checkValidatorNow(deps).then(function(ok){
     deps.state.setIsValidator(ok);
@@ -191,6 +199,7 @@ function _applyEditorRightsTo(panel, deps) {
 const api = {
   checkValidatorNow: checkValidatorNow,
   checkSettingsManager: checkSettingsManager,
+  checkInstanceAdmin: checkInstanceAdmin,
   checkValidator: checkValidator,
   checkEditorRights: checkEditorRights,
   checkAssignerRights: checkAssignerRights,

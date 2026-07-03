@@ -309,6 +309,13 @@ function CapacityInner({ vm }) {
                   <input type="file" accept=".csv" style={{ display: 'none' }}
                          onChange={(e) => { if (e.target.files && e.target.files[0]) vm.onUploadCsv(e.target.files[0]); }} />
                 </label>
+                {vm.canUploadCsvGlobal
+                  ? <label className="ring-button-button ring-button-block ring-button-heightS ssp-capacity-uplabel">
+                      {L.upCsvGlobal}
+                      <input type="file" accept=".csv" style={{ display: 'none' }}
+                             onChange={(e) => { if (e.target.files && e.target.files[0]) vm.onUploadCsvGlobal(e.target.files[0]); }} />
+                    </label>
+                  : null}
               </div>
             : null}
           {/* выбор «для кого»: режим (сотрудник / по роли) + каскад роль→сотрудник */}

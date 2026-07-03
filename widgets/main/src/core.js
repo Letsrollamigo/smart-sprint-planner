@@ -2488,6 +2488,7 @@
   }
   function checkValidatorNow() { return PERMISSIONS.checkValidatorNow(_permsDeps()); }
   function checkSettingsManager() { return PERMISSIONS.checkSettingsManager(_permsDeps()); }
+  function checkInstanceAdmin()   { return PERMISSIONS.checkInstanceAdmin(_permsDeps()); } /* #51 */
   function checkValidator() { return PERMISSIONS.checkValidator(_permsDeps()); }
   function checkEditorRights() { return PERMISSIONS.checkEditorRights(_permsDeps()); }
   function checkAssignerRights() { return PERMISSIONS.checkAssignerRights(_permsDeps()); }
@@ -3312,8 +3313,11 @@
       toast: toast, apiGet: apiGet, apiPost: apiPost,
       getActiveRoles: getActiveRoles, roleLabel: roleLabel,
       checkSettingsManager: checkSettingsManager,
+      checkInstanceAdmin: checkInstanceAdmin, /* #51 — гейт глобального пуша календаря */
       CAPACITY_PURE: CAPACITY_PURE,
       state: {
+        getMode: function () { return _mode; },                       /* #51 */
+        getGlobalProjects: function () { return _globalProjects; },   /* #51 */
         getSettings: function () { return _settings; },
         getSprint: function () { return _sprint; },
         getHistory: function () { return _history; },

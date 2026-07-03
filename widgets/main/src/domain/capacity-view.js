@@ -172,7 +172,7 @@ function _labels(deps) {
     thAlloc: T('lblAlloc'), thBase: T('lblBase'), thContrib: T('lblContribution'), thSumAlloc: T('sumAllocShort'),
     noRoles: T('capacityNoRoles'), noPeople: T('capacityNoPeople'), pickPerson: T('calendarPickPerson'),
     calFor: T('capacityCalendarFor'), absType: T('capacityAbsenceType'),
-    dlTemplate: T('btnDownloadTemplate'), upCsv: T('btnUploadCsv'), saveAbs: T('btnSaveAbsences'),
+    dlTemplate: T('btnDownloadTemplate'), upCsv: T('btnUploadCsv'), upCsvGlobal: T('btnUploadCsvGlobal'), saveAbs: T('btnSaveAbsences'),
     sumOver: T('sumAllocOverlimit'), yearFallback: T('calendarYearFallback'), dayType: dayType,
     periodLabel: T('excelPeriod'), rolePickLabel: T('lblPlanningRole'), personPickLabel: T('lblPersonName'),
     viewModeRole: T('capacityViewModeRole'), absentLabel: T('capacityAbsentLabel')
@@ -243,6 +243,36 @@ function _uploadCsv(deps, file) {
   reader.readAsText(file);
 }
 
+/* #51 — глобальный пуш календаря: тот же CSV, фан-аут POST calendar по всем
+   планер-проектам инстанса (список = filter-planner-projects, уже в стейте
+   picker'а; backend-global маршрутизирует по явному projectKey). Только
+   global-режим + инстанс-админ (гейт canGlobalCsv). Push-модель: календарь
+   каждого проекта перезаписывается целиком, как локальной кнопкой. 2 тоста:
+   сводка «X из N» + перечень отказов. Локальный стейт не трогаем по месту —
+   loadAndRender в конце перечитает календарь активного проекта. */
+function _uploadCsvGlobal(deps, file) {
+  var reader = new FileReader();
+  reader.onload = function () {
+    var parsed = _parseCsv(reader.result);
+    if (parsed.errors.length) { deps.toast(deps.T('errCalendarParse').replace('{n}', parsed.errors.length), 'err'); deps.diag('calendar csv errors: ' + parsed.errors.join('; '), 'err'); return; }
+    var projs = (deps.state.getGlobalProjects && deps.state.getGlobalProjects()) || [];
+    var keys = projs.map(function (p) { return p && p.key; }).filter(Boolean);
+    if (!keys.length) { deps.toast(deps.T('errCalendarGlobalNoProjects'), 'err'); return; }
+    var failed = [];
+    Promise.all(keys.map(function (k) {
+      return deps.apiPost('calendar', { years: parsed.years }, { projectKey: k })
+        .then(function (r) { if (!(r && r.success)) failed.push(k); })
+        .catch(function () { failed.push(k); });
+    })).then(function () {
+      var okN = keys.length - failed.length;
+      deps.toast(deps.T('msgCalendarGlobalSaved').replace('{x}', okN).replace('{n}', keys.length), failed.length ? 'err' : 'success');
+      if (failed.length) { deps.toast(deps.T('errCalendarGlobalFailed').replace('{list}', failed.join(', ')), 'err'); deps.diag('global calendar push failed: ' + failed.join(', '), 'err'); }
+      loadAndRender(deps);
+    });
+  };
+  reader.readAsText(file);
+}
+
 /* G1: последняя approved-запись по dateEnd desc → primitives. */
 function _carryForward(deps, cb) {
   var seen = {}, candidates = [];
@@ -308,6 +338,8 @@ function _buildVm(deps, sprints, sel, ui) {
     onReapprove: function (m) { _persist(deps, sel, 'reapprove', m); },
     onSaveAbsences: function (fullMap) { _saveAbsences(deps, fullMap); },
     onUploadCsv: function (file) { _uploadCsv(deps, file); },
+    canUploadCsvGlobal: !!ui.canGlobalCsv, /* #51 */
+    onUploadCsvGlobal: function (file) { _uploadCsvGlobal(deps, file); },
     onDownloadTemplate: function () { _downloadTemplate(); }
   };
 }
@@ -351,6 +383,11 @@ function loadAndRender(deps) {
      без host-prop чтения; capacity-view.js остаётся namespace-sed-идентичным форкам). */
   var canCsvP = (typeof deps.checkSettingsManager === 'function') ? deps.checkSettingsManager() : Promise.resolve(false);
   jobs.push(canCsvP.then(function (can) { var u = deps.state.getCapacityUiState() || {}; u.canCsv = !!can; deps.state.setCapacityUiState(u); }).catch(function () { var u = deps.state.getCapacityUiState() || {}; u.canCsv = false; deps.state.setCapacityUiState(u); }));
+  /* #51 — гейт глобального пуша: только global-режим (в project-scope нет
+     маршрутизации на чужие проекты) + серверное слово check-instance-admin. */
+  var canGlobalP = (deps.state.getMode && deps.state.getMode() === 'global' && typeof deps.checkInstanceAdmin === 'function')
+    ? deps.checkInstanceAdmin() : Promise.resolve(false);
+  jobs.push(canGlobalP.then(function (can) { var u = deps.state.getCapacityUiState() || {}; u.canGlobalCsv = !!can; deps.state.setCapacityUiState(u); }).catch(function () { var u = deps.state.getCapacityUiState() || {}; u.canGlobalCsv = false; deps.state.setCapacityUiState(u); }));
   var capPromise = sel ? deps.apiGet('capacity?sprintId=' + encodeURIComponent(sel.id)).then(function (r) { return (r && r.capacity) ? r.capacity : null; }).catch(function () { return null; }) : Promise.resolve(null);
 
   Promise.all(jobs).then(function () { return capPromise; }).then(function (rec) {

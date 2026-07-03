@@ -1577,6 +1577,26 @@ function isAuthenticated(ctx) {
 }
 
 /**
+ * #51 — инстанс-админ: глобальная роль «Администратор проектов» или «Системный
+ * администратор» = полный байпас ролевой модели планера по всем проектам.
+ * hasPermission БЕЗ project-аргумента = проверка ГЛОБАЛЬНОЙ роли (YT ≥2025.3) —
+ * per-project админ сюда НЕ проходит. Ключ UPDATE_PROJECT — пересечение обеих
+ * целевых ролей (Hub: jetbrains.jetpass.project-update есть и у system-admin,
+ * и у project-admin). Байпас НЕ ослабляет read-gate backend-global, rev-lock
+ * #56-4 и updatedBy-штампы (действия админа атрибутируются его логином).
+ * Fail-closed; кэш на ctx — ролевые хелперы зовутся по нескольку раз на запрос.
+ */
+function isInstanceAdmin(ctx) {
+  try {
+    if (typeof ctx.__instanceAdminCached === 'boolean') return ctx.__instanceAdminCached;
+    var u = ctx && ctx.currentUser;
+    var ok = !!(u && typeof u.hasPermission === 'function' && u.hasPermission('UPDATE_PROJECT'));
+    try { ctx.__instanceAdminCached = ok; } catch (e2) { /* ctx без записи — живём без кэша */ }
+    return ok;
+  } catch (e) { return false; }
+}
+
+/**
  * Проверяет, задана ли settingsManagerGroup в app-settings (ctx.settings).
  * Это «Source of Truth» для всей системы прав плагина:
  *   - settingsManagerGroup ХРАНИТСЯ ТОЛЬКО в app-settings (settings.json),
@@ -1659,6 +1679,7 @@ function userInGroups(ctx, savedGroupIds, savedGroupNames) {
  * никто не может редактировать данные плагина.
  */
 function isEditor(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings  = parseJson(getProp(ctx, 'ssp_settings'), null);
   var editGroupIds   = (savedSettings && savedSettings.editGroups)     || [];
@@ -1674,6 +1695,7 @@ function isEditor(ctx) {
  * аналогично isEditor.
  */
 function isPlanningManager(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (savedSettings && savedSettings.planningManagerGroups)     || [];
@@ -1687,6 +1709,7 @@ function isPlanningManager(ctx) {
  * Deny-by-default — аналогично isEditor.
  */
 function isValidator(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings  = parseJson(getProp(ctx, 'ssp_settings'), null);
   var valGroupIds    = (savedSettings && savedSettings.validationGroups)     || [];
@@ -1701,6 +1724,7 @@ function isValidator(ctx) {
  * assignerGroupNames. Deny-by-default.
  */
 function isAssigner(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (savedSettings && savedSettings.assignerGroups)     || [];
@@ -1716,6 +1740,7 @@ function isAssigner(ctx) {
  * Deny-by-default аналогично остальным ролям.
  */
 function isHistoryManager(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (savedSettings && savedSettings.historyClearGroups)     || [];
@@ -1730,6 +1755,7 @@ function isHistoryManager(ctx) {
  * Deny-by-default, аналогично isEditor. Потребитель — backend-release.js (releasePerms).
  */
 function isReleaseManager(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var s = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (s && s.releaseManagerGroups)     || [];
@@ -1739,6 +1765,7 @@ function isReleaseManager(ctx) {
 }
 
 function isReleaseEngineer(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var s = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (s && s.releaseEngineerGroups)     || [];
@@ -1754,6 +1781,7 @@ function isReleaseEngineer(ctx) {
  * пока админ проекта не задал группу через Project Settings → Apps.
  */
 function isSettingsManager(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var g = ctx.settings.settingsManagerGroup;
   /* v1.8.3 — UserGroup picker возвращает object {id, name, ...}; legacy text-input — строку. */
@@ -1805,6 +1833,9 @@ function internalError(ctx, reason) {
  */
 function authzGuard(ctx, role) {
   if (!isAuthenticated(ctx)) { forbidden(ctx, 'auth_required'); return false; }
+  /* #51 — инстанс-админ: полный доступ, включая проект без настроенной
+     settingsManagerGroup (байпас ДО plugin_not_configured). */
+  if (isInstanceAdmin(ctx)) return true;
   if (role === 'viewer') return true;
   if (!isSettingsManagerConfigured(ctx)) {
     forbidden(ctx, 'plugin_not_configured');
@@ -2355,6 +2386,8 @@ var ENDPOINTS = [
           var ids = (g && g.id) ? [String(g.id)] : [];
           canManage = userInGroups(ctx, ids, groupName ? [groupName] : []);
         }
+        /* #51 — инстанс-админ: canManage без членства в группе (байпас UI-гейта). */
+        if (!canManage && isInstanceAdmin(ctx)) canManage = true;
         /* #22 — планировочный тир: settings-менеджер ⊃ планировочный менеджер. */
         var canPlanning = canManage || isPlanningManager(ctx);
         ctx.response.json({
@@ -2365,6 +2398,20 @@ var ENDPOINTS = [
           groupName:  groupName,
           reason:     canManage ? 'ok' : (canPlanning ? 'planning_only' : 'not_in_group')
         });
+      }
+    },
+
+    // ── GET /check-instance-admin ────────────────────────────────────────────
+    // #51 — глобальная роль админа инстанса (гейт кнопки глобального пуша
+    // календаря и прочих admin-контролов). UI-only: enforcement — байпас в
+    // authzGuard и ролевых хелперах; сам факт роли не секрет.
+    {
+      scope: 'project',
+      method: 'GET',
+      path: 'check-instance-admin',
+      handle: function (ctx) {
+        if (!authzGuard(ctx, 'viewer')) return;
+        ctx.response.json({ isInstanceAdmin: isInstanceAdmin(ctx) });
       }
     },
 
@@ -2721,6 +2768,7 @@ exports.isNumInRange                = isNumInRange;
 exports.validatePluginVersion       = validatePluginVersion;
 exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
 exports.isSettingsManager           = isSettingsManager;
+exports.isInstanceAdmin             = isInstanceAdmin;       // #51 — байпас инстанс-админа
 exports.isPlanningManager           = isPlanningManager;
 exports.isReleaseManager            = isReleaseManager;      // #48 R2.4 — релиз-роли (D-C)
 exports.isReleaseEngineer           = isReleaseEngineer;     // #48 R2.4
@@ -2774,5 +2822,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // Auth helpers (test-only)
     userInGroups:                 userInGroups,
     isPlanningManager:            isPlanningManager,          // #22
+    isEditor:                     isEditor,                   // #51 — байпас-контракт
+    isValidator:                  isValidator,                // #51
+    isAssigner:                   isAssigner,                 // #51
+    isHistoryManager:             isHistoryManager,           // #51
   });
 }

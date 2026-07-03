@@ -162,6 +162,7 @@
     "absType": "Тип отсутствия:",
     "dlTemplate": "Скачать шаблон",
     "upCsv": "Загрузить CSV",
+    "upCsvGlobal": "Загрузить во все проекты",
     "saveAbs": "Сохранить отсутствия",
     "sumOver": "Σ аллокации превышает 100%",
     "yearFallback": "Нет производственного календаря на: {years} — используется выходной по умолчанию.",
@@ -176,5 +177,6 @@
     "personPickLabel": "Сотрудник",
     "viewModeRole": "По роли",
     "absentLabel": "Отсутствуют"
-  }
+  },
+  "canUploadCsvGlobal": false
 }
