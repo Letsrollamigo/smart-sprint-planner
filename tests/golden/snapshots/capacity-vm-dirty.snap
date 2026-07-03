@@ -5,6 +5,29 @@
   "dateEndLabel": "03.06.2026",
   "selectedRole": "analysis",
   "viewMode": "person",
+  "mainView": "roles",
+  "personsView": [
+    {
+      "login": "alice",
+      "name": "Алиса",
+      "roles": [
+        {
+          "key": "analysis",
+          "label": "Анализ"
+        }
+      ]
+    },
+    {
+      "login": "bob",
+      "name": "Борис",
+      "roles": [
+        {
+          "key": "analysis",
+          "label": "Анализ"
+        }
+      ]
+    }
+  ],
   "sprints": [
     {
       "id": "S1",
@@ -146,6 +169,10 @@
     "save": "Сохранить",
     "roleHeader": "Расчёт по ролям",
     "calHeader": "Календарь и отсутствия",
+    "personsHeader": "Расчёт по людям",
+    "viewByRoles": "По ролям",
+    "viewByPersons": "По людям",
+    "thRole": "Роль",
     "thName": "Сотрудник",
     "thGrade": "Грейд",
     "thRate": "Ставка",

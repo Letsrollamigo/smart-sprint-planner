@@ -168,6 +168,8 @@ function _labels(deps) {
     notApproved: T('capacityNotApproved'), statusDraft: T('statusDraft'), statusApproved: T('statusApproved'), statusDirty: T('statusDirty'),
     approve: T('btnApprove'), reapprove: T('btnReapprove'), save: T('btnSaveCapacity'),
     roleHeader: T('capacityRoleHeader'), calHeader: T('capacityCalendarHeader'),
+    personsHeader: T('capacityPersonsHeader'), viewByRoles: T('capacityViewByRoles'),
+    viewByPersons: T('capacityViewByPersons'), thRole: T('capacityThRole'), /* #52 */
     thName: T('lblPersonName'), thGrade: T('lblGrade'), thRate: T('lblRate'), thPart: T('lblParticipation'),
     thAlloc: T('lblAlloc'), thBase: T('lblBase'), thContrib: T('lblContribution'), thSumAlloc: T('sumAllocShort'),
     noRoles: T('capacityNoRoles'), noPeople: T('capacityNoPeople'), pickPerson: T('calendarPickPerson'),
@@ -311,12 +313,25 @@ function _buildVm(deps, sprints, sel, ui) {
   var absTypes = deps.CAPACITY_PURE.ABSENCE_TYPES.map(function (t) { return { key: t, label: deps.T(ABS_KEY[t] || t) }; });
   var selRole = (ui.selectedRole && _findRole(roles, ui.selectedRole)) ? ui.selectedRole : (roles[0] ? roles[0].key : null);
   var viewMode = (ui.viewMode === 'role') ? 'role' : 'person';
+  /* #52 (G3) — альтернативная группировка левой колонки: person top-level, его роли внутри.
+     Группировка здесь (domain), React — только представление. */
+  var mainView = (ui.mainView === 'persons') ? 'persons' : 'roles';
+  var personsByLogin = {}, personsView = [];
+  roles.forEach(function (role) {
+    role.people.forEach(function (p) {
+      var e = personsByLogin[p.login];
+      if (!e) { e = personsByLogin[p.login] = { login: p.login, name: p.name, roles: [] }; personsView.push(e); }
+      e.roles.push({ key: role.key, label: role.label });
+    });
+  });
+  personsView.sort(function (a, b) { return (a.name || a.login).localeCompare(b.name || b.login); });
 
   return {
     selectedSprintId: sel.id, versionTag: ui.dataVersion || 0,
     dateStartLabel: (typeof sel.dateStart === 'number') ? deps.fmtDate(sel.dateStart) : '—',
     dateEndLabel: (typeof sel.dateEnd === 'number') ? deps.fmtDate(sel.dateEnd) : '—',
     selectedRole: selRole, viewMode: viewMode,
+    mainView: mainView, personsView: personsView, /* #52 */
     sprints: sprints.map(function (s) { return { id: s.id, name: s.name, isActive: s.isActive }; }),
     status: _status(rec), readOnly: readOnly, isReapprove: !!(rec && rec.status === 'approved'),
     grades: Object.keys(deps.CAPACITY_PURE.DEFAULT_KPE),
@@ -333,6 +348,7 @@ function _buildVm(deps, sprints, sel, ui) {
     onPersonSelect: function (login, roleKey) { var u = deps.state.getCapacityUiState() || {}; u.selectedPerson = login; if (roleKey) u.selectedRole = roleKey; u.viewMode = 'person'; deps.state.setCapacityUiState(u); render(deps); },
     onRoleSelect: function (rk) { var u = deps.state.getCapacityUiState() || {}; u.selectedRole = rk; u.selectedPerson = null; deps.state.setCapacityUiState(u); render(deps); },
     onViewModeChange: function (mode) { var u = deps.state.getCapacityUiState() || {}; u.viewMode = (mode === 'role') ? 'role' : 'person'; deps.state.setCapacityUiState(u); render(deps); },
+    onMainViewChange: function (mode) { var u = deps.state.getCapacityUiState() || {}; u.mainView = (mode === 'persons') ? 'persons' : 'roles'; deps.state.setCapacityUiState(u); render(deps); }, /* #52 */
     onSave: function (m) { _persist(deps, sel, 'save', m); },
     onApprove: function (m) { _persist(deps, sel, 'approve', m); },
     onReapprove: function (m) { _persist(deps, sel, 'reapprove', m); },

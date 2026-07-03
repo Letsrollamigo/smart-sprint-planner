@@ -113,6 +113,36 @@ function PersonRow({ vm, role, person, model, computed, readOnly, onEdit, onSele
   );
 }
 
+/* #52 (G3) — строка роли внутри спойлера человека (вид «по людям»). Те же ячейки, что
+   PersonRow: первая колонка = роль; grade/rate/participation — per-person (правка в любой
+   строке правит модель человека целиком), alloc — per-role. */
+function PersonRoleRow({ vm, role, login, model, computed, readOnly, onEdit }) {
+  const pm = model[login] || {};
+  const base = computed.bases[login];
+  const alloc = (pm.alloc && _num(pm.alloc[role.key], 0)) || 0;
+  const sigma = _num(computed.sigma[login], 0);
+  const over = sigma > 1 + vm.EPS;
+  return (
+    <div className="ssp-capacity-row" data-login={login}>
+      <span className="ssp-capacity-cell ssp-capacity-cell--name">{role.label}</span>
+      <RingSelect value={pm.grade || 'Middle'} disabled={readOnly} size="S"
+                  options={vm.grades.map((g) => ({ key: g, label: g }))}
+                  onChange={(v) => onEdit(login, 'grade', v)} />
+      <NumCell value={_num(pm.rate, 1)} disabled={readOnly}
+               onChange={(v) => onEdit(login, 'rate', v)} />
+      <NumCell value={_num(pm.participation, 1)} disabled={readOnly}
+               onChange={(v) => onEdit(login, 'participation', v)} />
+      <NumCell value={alloc} disabled={readOnly}
+               onChange={(v) => onEdit(login, 'alloc', v, role.key)} />
+      <span className="ssp-capacity-cell ssp-capacity-cell--base">{base != null ? vm.fmtH(base) : '—'}</span>
+      <span className="ssp-capacity-cell ssp-capacity-cell--contrib">{base != null ? vm.fmtH(base * alloc) : '—'}</span>
+      <span className={'ssp-capacity-badge ssp-capacity-badge--sigma' + (over ? ' ssp-capacity-badge--overlimit' : '')}>
+        {'Σ ' + Math.round(sigma * 100) + '%'}
+      </span>
+    </div>
+  );
+}
+
 /* Грид календаря (bespoke): дни спринта 7×N. Режим person — клик по дню toggle'ит
    отсутствие выбранного (цвет границы + аббревиатура типа). Режим role (сводно) —
    read-only: счётчик отсутствующих + цветные точки типов, клик открывает панель деталей. */
@@ -180,6 +210,10 @@ function CapacityInner({ vm }) {
   const [absByLogin, setAbsByLogin] = React.useState(() => JSON.parse(JSON.stringify(vm.absencesByLogin || {})));
   const [openRoles, setOpenRoles] = React.useState(() => {
     const o = {}; (vm.roles || []).forEach((r) => { o[r.key] = true; }); return o;
+  });
+  /* #52 — вид «по людям»: спойлеры людей раскрыты по умолчанию, как ролевые. */
+  const [openPersons, setOpenPersons] = React.useState(() => {
+    const o = {}; (vm.personsView || []).forEach((p) => { o[p.login] = true; }); return o;
   });
   const [absType, setAbsType] = React.useState(() => (vm.absenceTypes && vm.absenceTypes[0] && vm.absenceTypes[0].key) || 'vacation');
   const [detailDay, setDetailDay] = React.useState(null);
@@ -272,30 +306,62 @@ function CapacityInner({ vm }) {
 
       <div className="ssp-capacity-body">
         <div className="ssp-capacity-col ssp-capacity-left">
-          <h3 className="ssp-capacity-colhead">{L.roleHeader}</h3>
-          {(vm.roles || []).length === 0
-            ? <div className="empty">{L.noRoles}</div>
-            : vm.roles.map((role) => (
-              <RoleSpoiler key={role.key} title={role.label}
-                           capLabel={computed.roleCapacities[role.key] != null ? vm.fmtH(computed.roleCapacities[role.key]) : '—'}
-                           open={!!openRoles[role.key]} onToggle={() => setOpenRoles((o) => Object.assign({}, o, { [role.key]: !o[role.key] }))}>
-                {role.people.length === 0
-                  ? <div className="empty ssp-capacity-rowsempty">{L.noPeople}</div>
-                  : (
+          <h3 className="ssp-capacity-colhead">{vm.mainView === 'persons' ? L.personsHeader : L.roleHeader}</h3>
+          {/* #52 — переключатель группировки левой колонки (Ring-кнопки, паттерн viewtoggle) */}
+          <div className="ssp-capacity-viewtoggle ssp-capacity-mainviewtoggle" role="group">
+            <button type="button"
+                    className={'ring-button-button ring-button-block ring-button-heightS' + (vm.mainView !== 'persons' ? ' ring-button-primaryBlock ring-button-flat ring-button-whiteText' : '')}
+                    onClick={() => vm.onMainViewChange('roles')}>{L.viewByRoles}</button>
+            <button type="button"
+                    className={'ring-button-button ring-button-block ring-button-heightS' + (vm.mainView === 'persons' ? ' ring-button-primaryBlock ring-button-flat ring-button-whiteText' : '')}
+                    onClick={() => vm.onMainViewChange('persons')}>{L.viewByPersons}</button>
+          </div>
+          {vm.mainView === 'persons'
+            ? ((vm.personsView || []).length === 0
+              ? <div className="empty">{L.noPeople}</div>
+              : vm.personsView.map((p) => {
+                const base = computed.bases[p.login];
+                const sigma = _num(computed.sigma[p.login], 0);
+                return (
+                  <RoleSpoiler key={p.login} title={p.name}
+                               capLabel={(base != null ? vm.fmtH(base) : '—') + ' · Σ ' + Math.round(sigma * 100) + '%'}
+                               open={!!openPersons[p.login]} onToggle={() => setOpenPersons((o) => Object.assign({}, o, { [p.login]: !o[p.login] }))}>
                     <div className="ssp-capacity-rows">
                       <div className="ssp-capacity-row ssp-capacity-row--head">
-                        {[L.thName, L.thGrade, L.thRate, L.thPart, L.thAlloc, L.thBase, L.thContrib, L.thSumAlloc].map((t, i) =>
+                        {[L.thRole, L.thGrade, L.thRate, L.thPart, L.thAlloc, L.thBase, L.thContrib, L.thSumAlloc].map((t, i) =>
                           <span key={i} className="ssp-capacity-cell ssp-capacity-cell--th">{t}</span>)}
                       </div>
-                      {role.people.map((person) => (
-                        <PersonRow key={person.login} vm={vm} role={role} person={person}
-                                   model={model} computed={computed} readOnly={readOnly}
-                                   onEdit={onEdit} onSelectPerson={(login) => vm.onPersonSelect(login, role.key)} />
+                      {p.roles.map((role) => (
+                        <PersonRoleRow key={role.key} vm={vm} role={role} login={p.login}
+                                       model={model} computed={computed} readOnly={readOnly} onEdit={onEdit} />
                       ))}
                     </div>
-                  )}
-              </RoleSpoiler>
-            ))}
+                  </RoleSpoiler>
+                );
+              }))
+            : ((vm.roles || []).length === 0
+              ? <div className="empty">{L.noRoles}</div>
+              : vm.roles.map((role) => (
+                <RoleSpoiler key={role.key} title={role.label}
+                             capLabel={computed.roleCapacities[role.key] != null ? vm.fmtH(computed.roleCapacities[role.key]) : '—'}
+                             open={!!openRoles[role.key]} onToggle={() => setOpenRoles((o) => Object.assign({}, o, { [role.key]: !o[role.key] }))}>
+                  {role.people.length === 0
+                    ? <div className="empty ssp-capacity-rowsempty">{L.noPeople}</div>
+                    : (
+                      <div className="ssp-capacity-rows">
+                        <div className="ssp-capacity-row ssp-capacity-row--head">
+                          {[L.thName, L.thGrade, L.thRate, L.thPart, L.thAlloc, L.thBase, L.thContrib, L.thSumAlloc].map((t, i) =>
+                            <span key={i} className="ssp-capacity-cell ssp-capacity-cell--th">{t}</span>)}
+                        </div>
+                        {role.people.map((person) => (
+                          <PersonRow key={person.login} vm={vm} role={role} person={person}
+                                     model={model} computed={computed} readOnly={readOnly}
+                                     onEdit={onEdit} onSelectPerson={(login) => vm.onPersonSelect(login, role.key)} />
+                        ))}
+                      </div>
+                    )}
+                </RoleSpoiler>
+              )))}
         </div>
 
         <div className="ssp-capacity-col ssp-capacity-right">

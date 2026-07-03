@@ -168,12 +168,13 @@
     "domain/capacity-view.js": {
       "layer": "domain",
       "domain": "domain/capacity-view",
-      "loc": 344,
-      "locBudget": 386,
+      "loc": 396,
+      "locBudget": 396,
       "state": [],
       "publishes": [
         "CAPACITY_VIEW"
-      ]
+      ],
+      "budgetNote": "#52 (G3) +14: mainView/personsView (группировка person top-level в буилдере) + onMainViewChange + 4 лейбла. #51 +30: _uploadCsvGlobal (фан-аут глобального пуша календаря) + гейт canGlobalCsv. Прошлое: "
     },
     "domain/currentrole-view.js": {
       "layer": "domain",
