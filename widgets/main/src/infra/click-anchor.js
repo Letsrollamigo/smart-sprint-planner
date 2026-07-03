@@ -21,8 +21,8 @@
     if (!target || !target.closest) return false;
     return !!target.closest(
       '.ring-dialog-container, ' +              // Ring Dialog wrapper
-      '.ssp-dialog-host, ' +                    // legacy overlay → Ring Dialog content host
-      '.ssp-dialog-inner, ' +                   // inner content container
+      '.ssp-dialog-host, ' +                   // legacy overlay → Ring Dialog content host
+      '.ssp-dialog-inner, ' +                  // inner content container
       '.overlay:not(.hidden):not(.ssp-dialog-host), ' +    // pure legacy overlay (pickOverlay/settingsOverlay)
       '.settings-overlay:not(.hidden):not(.ssp-dialog-host), ' +
       '.dyn-modal-overlay:not(.hidden):not(.ssp-dialog-host)'

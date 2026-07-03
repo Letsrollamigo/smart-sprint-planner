@@ -183,8 +183,8 @@ function workingDraftsFlushNow(deps) {
     }
     /* v5.5.0 — D37: cross-tab signal через localStorage. Вторая вкладка той же
        страницы получит storage-event и обновит свой индикатор без F5.
-       Префикс ключа — историческое наследие, согласован байт-в-байт с
-       reader'ом storage-листенера в ядре; не переименовывать в одиночку. */
+       Префикс ключа согласован байт-в-байт с reader'ом storage-листенера
+       в ядре; не переименовывать в одиночку. */
     Object.keys(deps.state.getWorkingDrafts() || {}).forEach(function(k){
       deps.safeLs.set('ssp:wc-touched:' + k, String(Date.now()));
     });

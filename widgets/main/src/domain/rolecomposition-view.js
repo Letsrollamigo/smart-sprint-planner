@@ -99,10 +99,10 @@ function renderRoleAccordion(rk, deps) {
     /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
        В C4 (4d) сюда монтируется полный editable buildRolePanel(role). */
     +     (ppOn
-           ? '<div class="planning-role-body__actions">'
-             + '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
-             + '</div>'
-           : '')
+            ? '<div class="planning-role-body__actions">'
+              + '<button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople" data-role-key="' + rk + '">' + esc(T('btnJumpToPeople')) + '</button>'
+              + '</div>'
+            : '')
     +   '</div>'
     + '</div>';
   return html;
