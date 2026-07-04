@@ -91,18 +91,17 @@ jobs:
             echo "file=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -n "${{ steps.notes.outputs.file }}" ]; then
-            gh release create "${{ steps.version.outputs.tag }}" \
-              "${{ steps.zip.outputs.name }}" \
-              --title "${{ steps.version.outputs.tag }}" \
-              --notes-file "${{ steps.notes.outputs.file }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          ZIP="${{ steps.zip.outputs.name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Release already published (e.g. manual showcase) — attach/refresh the CI zip
+            gh release upload "$TAG" "$ZIP" --clobber
+          elif [ -n "${{ steps.notes.outputs.file }}" ]; then
+            gh release create "$TAG" "$ZIP" --title "$TAG" --notes-file "${{ steps.notes.outputs.file }}"
           else
-            gh release create "${{ steps.version.outputs.tag }}" \
-              "${{ steps.zip.outputs.name }}" \
-              --title "${{ steps.version.outputs.tag }}" \
-              --generate-notes
+            gh release create "$TAG" "$ZIP" --title "$TAG" --generate-notes
           fi
