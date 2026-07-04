@@ -965,5 +965,10 @@
   "relPvResult": "{changed}건 변경, {errors}건 오류",
   "relPvErrDetails": "오류 세부 정보 ({n})",
   "relPvRetry": "재시도",
-  "relPvNoMapping": "“{status}” 상태에 대한 매핑이 설정되지 않았습니다"
+  "relPvNoMapping": "“{status}” 상태에 대한 매핑이 설정되지 않았습니다",
+  "capacityPartialHours": "부분 근무, 시간:",
+  "capacityFullDay": "종일",
+  "capacityHoursShort": "시간",
+  "capacityArchiveNode": "보관",
+  "capacityArchivePeople": "명"
 }

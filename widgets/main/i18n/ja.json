@@ -965,5 +965,10 @@
   "relPvResult": "{changed} 件変更、{errors} 件エラー",
   "relPvErrDetails": "エラーの詳細 ({n})",
   "relPvRetry": "再試行",
-  "relPvNoMapping": "ステータス「{status}」の状態マッピングが設定されていません"
+  "relPvNoMapping": "ステータス「{status}」の状態マッピングが設定されていません",
+  "capacityPartialHours": "半日休, 時間:",
+  "capacityFullDay": "終日",
+  "capacityHoursShort": "時間",
+  "capacityArchiveNode": "アーカイブ",
+  "capacityArchivePeople": "人"
 }

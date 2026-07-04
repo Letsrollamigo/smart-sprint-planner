@@ -965,5 +965,10 @@
   "relPvResult": "{changed} módosítva, {errors} hiba",
   "relPvErrDetails": "Hibarészletek ({n})",
   "relPvRetry": "újra",
-  "relPvNoMapping": "A(z) „{status}” állapothoz nincs leképezés beállítva"
+  "relPvNoMapping": "A(z) „{status}” állapothoz nincs leképezés beállítva",
+  "capacityPartialHours": "Részleges nap, ó:",
+  "capacityFullDay": "egész nap",
+  "capacityHoursShort": "ó",
+  "capacityArchiveNode": "Archívum",
+  "capacityArchivePeople": "fő"
 }

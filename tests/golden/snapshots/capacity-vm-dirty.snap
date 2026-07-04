@@ -186,6 +186,11 @@
     "pickPerson": "Выберите сотрудника слева, чтобы отметить отсутствия",
     "calFor": "Календарь для:",
     "absType": "Тип отсутствия:",
+    "absPartialHours": "Частичный день, ч:",
+    "absFullDay": "весь день",
+    "hoursShort": "ч",
+    "archiveNode": "Архив",
+    "archivePeople": "чел.",
     "dlTemplate": "Скачать шаблон",
     "upCsv": "Загрузить CSV",
     "upCsvGlobal": "Загрузить во все проекты",
@@ -204,5 +209,10 @@
     "viewModeRole": "По роли",
     "absentLabel": "Отсутствуют"
   },
-  "canUploadCsvGlobal": false
+  "canUploadCsvGlobal": false,
+  "archive": {
+    "count": 0,
+    "loaded": false,
+    "rows": []
+  }
 }

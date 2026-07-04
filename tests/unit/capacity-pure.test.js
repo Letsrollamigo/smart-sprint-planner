@@ -190,6 +190,29 @@ test('absence на праздник = 0ч (математика типа-агн�
 test('absence вне окна спринта → 0', () => {
   assert.strictEqual(C.absenceHours([{ from: '2026-06-20', to: '2026-06-22', type: 'vacation' }], JUN(1), JUN(5), null, 8), 0);
 });
+
+/* ── #53 частичный день (hoursDelta) ───────────────────────────────────────── */
+test('#53 частичный день: hoursDelta=2 → 2ч отсутствия в этот день (а не полные 8)', () => {
+  assert.strictEqual(C.absenceHours([{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 2 }], JUN(23), JUN(23), null, 8), 2);
+});
+test('#53 частичный день capped рабочими часами: hoursDelta=10 > 8 → 8', () => {
+  assert.strictEqual(C.absenceHours([{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 10 }], JUN(23), JUN(23), null, 8), 8);
+});
+test('#53 частичное отсутствие на праздник = 0ч (capped рабочими часами дня)', () => {
+  const cal = { years: { '2026': [{ date: '2026-06-23', type: 'holiday', hoursDelta: 0 }] } };
+  assert.strictEqual(C.absenceHours([{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 3 }], JUN(23), JUN(23), cal, 8), 0);
+});
+test('#53 перекрытие полный+частичный день → берётся МАКСИМУМ (полный), не двоится', () => {
+  const ranges = [
+    { from: '2026-06-23', to: '2026-06-23', type: 'vacation' },
+    { from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 2 }
+  ];
+  assert.strictEqual(C.absenceHours(ranges, JUN(23), JUN(23), null, 8), 8);
+});
+test('#53 backward-compat: диапазон БЕЗ hoursDelta = полный день (как до #53)', () => {
+  assert.strictEqual(C.absenceHours([{ from: '2026-06-23', to: '2026-06-25', type: 'vacation' }], JUN(22), JUN(26), null, 8), 24);
+});
+
 test('pro-rata out_of_membership: приход в середине спринта', () => {
   // окно 06-01..06-05 (40ч). out_of_membership 06-01..06-02 (вышел 06-03) → −16ч → nominal 24
   const rec = {

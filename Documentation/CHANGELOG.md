@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.18.1] — 2026-07-04
+
+> **Capacity tails (#53): archive of old sprints + partial-day absence.**
+
+### Added
+
+- **Partial-day absence (#53)** — When marking a person's absence you can now specify «Partial day, h»: the number of hours they were away that day (e.g. 2h) instead of a full day. Capacity is computed more precisely — exactly that time is subtracted from the day's norm (never more than the day's working hours; an absence on a holiday still counts as 0h). Empty field = full day. Old absences without hours are treated as full-day (backward compatible).
+- **Capacity archive (#53)** — Capacity data accumulated across all sprints and could hit the storage limit. Now, as the active store grows, the capacity of long-finished sprints (all but the current one, oldest by end date) auto-moves into a separate read-only «Archive»: a collapsed «Archive (N)» spoiler on the «Capacity» tab with lazy loading (sprint end date · number of people · total base). Active data no longer overflows.
+
+### Internal
+
+- The absence formula (`absenceHours`) is updated in lockstep across the front-end and backend mirrors (byte-parity preserved); auto-archive follows the release-management pattern (`splitForArchive`, trigger 300 KB → target 250 KB). Additive schema keys (`hoursDelta`, `dateEnd`, `ssp_capacity_archive`) — no schema-marker bump, no migration.
+
+---
+
 ## [2.18.0] — 2026-07-04
 
 > **Capacity model tails (#51 / #52 / #54) + release auto-tags (#55).**

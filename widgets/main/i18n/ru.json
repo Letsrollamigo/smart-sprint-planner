@@ -964,5 +964,10 @@
   "relPvResult": "{changed} изменено, {errors} ошибок",
   "relPvErrDetails": "Детали ошибок ({n})",
   "relPvRetry": "повтор",
-  "relPvNoMapping": "Для статуса «{status}» маппинг состояния не настроен"
+  "relPvNoMapping": "Для статуса «{status}» маппинг состояния не настроен",
+  "capacityPartialHours": "Частичный день, ч:",
+  "capacityFullDay": "весь день",
+  "capacityHoursShort": "ч",
+  "capacityArchiveNode": "Архив",
+  "capacityArchivePeople": "чел."
 }

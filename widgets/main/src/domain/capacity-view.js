@@ -101,6 +101,19 @@ function _computeView(deps, sel, model, absByLogin) {
   return { bases: bases, roleCapacities: out.roleCapacities, sigma: sigma };
 }
 
+/* #53 — строка архива ёмкости: дата конца спринта + число людей + Σ base (frozen, read-only). */
+function _archiveRow(deps, rec) {
+  var persons = (rec && rec.persons) || {};
+  var logins = Object.keys(persons), sumBase = 0;
+  logins.forEach(function (l) { sumBase += _num(persons[l].base, 0); });
+  return {
+    sprintId: rec.sprintId || '',
+    dateEndLabel: (typeof rec.dateEnd === 'number') ? deps.fmtDate(rec.dateEnd) : '—',
+    people: logins.length,
+    baseLabel: deps.fmtHoursOnly(sumBase * 60)
+  };
+}
+
 /* Frozen-числа для read-only исторического (из записи; БЕЗ пересчёта по тек. календарю). */
 function _frozenView(rec) {
   var bases = {}, roleCap = {}, sigma = {};
@@ -132,10 +145,15 @@ function _uncoveredYears(deps, sel) {
   return out;
 }
 
-/* ranges [{from,to,type}] → {iso:type} и обратно (range-математика — в домене). */
+/* ranges [{from,to,type,hoursDelta?}] → {iso:{type,hoursDelta}} и обратно (range-математика —
+   в домене). #53: hoursDelta>0 = частичный день (часы отсутствия); null = полный день. */
 function _expandAbs(deps, ranges) {
   var out = {}, CP = deps.CAPACITY_PURE;
-  (ranges || []).forEach(function (r) { if (r) CP.isoRangeDays(r.from, r.to).forEach(function (d) { out[d] = r.type || 'other'; }); });
+  (ranges || []).forEach(function (r) {
+    if (!r) return;
+    var hd = (typeof r.hoursDelta === 'number' && isFinite(r.hoursDelta) && r.hoursDelta > 0) ? r.hoursDelta : null;
+    CP.isoRangeDays(r.from, r.to).forEach(function (d) { out[d] = { type: r.type || 'other', hoursDelta: hd }; });
+  });
   return out;
 }
 function _isoNext(iso) {
@@ -146,11 +164,17 @@ function _isoNext(iso) {
 function _collapseAbs(dayType) {
   var days = Object.keys(dayType).sort(), out = [], cur = null;
   days.forEach(function (d) {
-    var t = dayType[d];
-    if (cur && cur.type === t && _isoNext(cur.to) === d) cur.to = d;
-    else { cur = { from: d, to: d, type: t }; out.push(cur); }
+    var v = dayType[d];
+    var t = (v && typeof v === 'object') ? v.type : v;                                    // толерантность к legacy-строке
+    var hd = (v && typeof v === 'object' && typeof v.hoursDelta === 'number' && v.hoursDelta > 0) ? v.hoursDelta : null;
+    if (cur && cur.type === t && cur._hd === hd && _isoNext(cur.to) === d) cur.to = d;      // #53: рвём диапазон и по hoursDelta
+    else { cur = { from: d, to: d, type: t, _hd: hd }; out.push(cur); }
   });
-  return out;
+  return out.map(function (r) {
+    var o = { from: r.from, to: r.to, type: r.type };
+    if (typeof r._hd === 'number' && r._hd > 0) o.hoursDelta = r._hd;                       // частичный день — только при наличии
+    return o;
+  });
 }
 
 function _status(rec) {
@@ -174,6 +198,8 @@ function _labels(deps) {
     thAlloc: T('lblAlloc'), thBase: T('lblBase'), thContrib: T('lblContribution'), thSumAlloc: T('sumAllocShort'),
     noRoles: T('capacityNoRoles'), noPeople: T('capacityNoPeople'), pickPerson: T('calendarPickPerson'),
     calFor: T('capacityCalendarFor'), absType: T('capacityAbsenceType'),
+    absPartialHours: T('capacityPartialHours'), absFullDay: T('capacityFullDay'), hoursShort: T('capacityHoursShort'), /* #53 */
+    archiveNode: T('capacityArchiveNode'), archivePeople: T('capacityArchivePeople'), /* #53 архив */
     dlTemplate: T('btnDownloadTemplate'), upCsv: T('btnUploadCsv'), upCsvGlobal: T('btnUploadCsvGlobal'), saveAbs: T('btnSaveAbsences'),
     sumOver: T('sumAllocOverlimit'), yearFallback: T('calendarYearFallback'), dayType: dayType,
     periodLabel: T('excelPeriod'), rolePickLabel: T('lblPlanningRole'), personPickLabel: T('lblPersonName'),
@@ -356,7 +382,15 @@ function _buildVm(deps, sprints, sel, ui) {
     onUploadCsv: function (file) { _uploadCsv(deps, file); },
     canUploadCsvGlobal: !!ui.canGlobalCsv, /* #51 */
     onUploadCsvGlobal: function (file) { _uploadCsvGlobal(deps, file); },
-    onDownloadTemplate: function () { _downloadTemplate(); }
+    onDownloadTemplate: function () { _downloadTemplate(); },
+    /* #53 — read-only архив ёмкости: count из GET /capacity, строки lazy-fetch по раскрытию спойлера. */
+    archive: { count: _num(ui.archivedCount, 0), loaded: Array.isArray(ui.archiveRows), rows: Array.isArray(ui.archiveRows) ? ui.archiveRows : [] },
+    onLoadArchive: function () {
+      deps.apiGet('capacity-archive').then(function (r) {
+        var rows = (r && Array.isArray(r.capacity)) ? r.capacity.map(function (rec) { return _archiveRow(deps, rec); }) : [];
+        var u = deps.state.getCapacityUiState() || {}; u.archiveRows = rows; deps.state.setCapacityUiState(u); render(deps);
+      }).catch(function (e) { deps.diag('capacity archive load err: ' + e, 'err'); });
+    }
   };
 }
 
@@ -404,14 +438,16 @@ function loadAndRender(deps) {
   var canGlobalP = (deps.state.getMode && deps.state.getMode() === 'global' && typeof deps.checkInstanceAdmin === 'function')
     ? deps.checkInstanceAdmin() : Promise.resolve(false);
   jobs.push(canGlobalP.then(function (can) { var u = deps.state.getCapacityUiState() || {}; u.canGlobalCsv = !!can; deps.state.setCapacityUiState(u); }).catch(function () { var u = deps.state.getCapacityUiState() || {}; u.canGlobalCsv = false; deps.state.setCapacityUiState(u); }));
-  var capPromise = sel ? deps.apiGet('capacity?sprintId=' + encodeURIComponent(sel.id)).then(function (r) { return (r && r.capacity) ? r.capacity : null; }).catch(function () { return null; }) : Promise.resolve(null);
+  var capPromise = sel ? deps.apiGet('capacity?sprintId=' + encodeURIComponent(sel.id)).then(function (r) { return { rec: (r && r.capacity) ? r.capacity : null, archivedCount: (r && r.archivedCount) || 0 }; }).catch(function () { return { rec: null, archivedCount: 0 }; }) : Promise.resolve({ rec: null, archivedCount: 0 });
 
-  Promise.all(jobs).then(function () { return capPromise; }).then(function (rec) {
+  Promise.all(jobs).then(function () { return capPromise; }).then(function (capRes) {
+    var rec = capRes.rec;
     var roster = {};
     roles.forEach(function (role) { var fn = fieldByRole[role.key]; roster[role.key] = fn ? (fieldUsers[fn] || []).map(function (u) { return { login: u.login, name: u.fullName || u.login }; }) : []; });
     deps.state.setRoster(roster);
     deps.state.setCapacity(rec);
     var u = deps.state.getCapacityUiState() || {};
+    u.archivedCount = capRes.archivedCount; u.archiveRows = null; /* #53 — сброс: спойлер перезагрузит по раскрытию */
     if (sel && sel.isActive && !rec) {
       _carryForward(deps, function (carry) { u.carry = carry; deps.state.setCapacityUiState(u); render(deps); });
     } else { u.carry = null; deps.state.setCapacityUiState(u); render(deps); }

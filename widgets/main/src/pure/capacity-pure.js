@@ -144,20 +144,27 @@ function absenceHours(ranges, startMs, endMs, calendar, hoursPerDay) {
     if (!rng) continue;
     var rs = isoToUTCms(rng.from), re = isoToUTCms(rng.to);
     if (isNaN(rs) || isNaN(re) || re < rs) continue;
-    bounds.push([rs, re]);
+    // #53 частичный день: hoursDelta>0 → отсутствие ЧАСТИ дня (capped рабочими часами); иначе (-1) полный день.
+    var hd = (typeof rng.hoursDelta === 'number' && isFinite(rng.hoursDelta) && rng.hoursDelta > 0) ? rng.hoursDelta : -1;
+    bounds.push([rs, re, hd]);
   }
   if (!bounds.length) return 0;
   // Идём по дням ОКНА (set-union by construction — каждый день учтён ≤1 раза, перекрытия
-  // не двоятся), проверяя принадлежность дня любому диапазону числовым сравнением.
-  // Число итераций = длине спринта, независимо от длины диапазонов.
+  // не двоятся). Число итераций = длине спринта, независимо от длины диапазонов.
   var h = 0;
   for (var w = 0; w < windowDays.length; w++) {
     var dayMs = isoToUTCms(windowDays[w]);
-    var absent = false;
+    var full = workingHoursOfDay(windowDays[w], calendar, hoursPerDay);
+    // #53 — часы отсутствия дня = МАКСИМУМ по перекрывающим диапазонам (полный день ⊃ частичный),
+    // capped рабочими часами дня (частичное отсутствие на праздник = 0ч, как и полное).
+    var dayAbs = 0;
     for (var b = 0; b < bounds.length; b++) {
-      if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) { absent = true; break; }
+      if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) {
+        var thisAbs = (bounds[b][2] < 0) ? full : Math.min(bounds[b][2], full);
+        if (thisAbs > dayAbs) dayAbs = thisAbs;
+      }
     }
-    if (absent) h += workingHoursOfDay(windowDays[w], calendar, hoursPerDay);
+    h += dayAbs;
   }
   return h;
 }

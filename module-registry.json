@@ -77,14 +77,15 @@
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
     "core": {
-      "loc": 2716,
-      "locBudget": 2716,
-      "budgetNote": "#55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
+      "loc": 2718,
+      "locBudget": 2718,
+      "budgetNote": "#53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
     },
     "modules": {
       "backend-capacity.js": {
-        "loc": 628,
-        "locBudget": 691
+        "loc": 715,
+        "locBudget": 720,
+        "budgetNote": "#53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
       "backend-global.js": {
         "loc": 169,
@@ -168,13 +169,13 @@
     "domain/capacity-view.js": {
       "layer": "domain",
       "domain": "domain/capacity-view",
-      "loc": 396,
-      "locBudget": 396,
+      "loc": 431,
+      "locBudget": 436,
       "state": [],
       "publishes": [
         "CAPACITY_VIEW"
       ],
-      "budgetNote": "#52 (G3) +14: mainView/personsView (группировка person top-level в буилдере) + onMainViewChange + 4 лейбла. #51 +30: _uploadCsvGlobal (фан-аут глобального пуша календаря) + гейт canGlobalCsv. Прошлое: "
+      "budgetNote": "#53 +35: авто-архив ёмкости + частичный день отсутствия (лейблы/спойлер архива, часы частичного дня). #52 (G3) +14: mainView/personsView (группировка person top-level в буилдере) + onMainViewChange + 4 лейбла. #51 +30: _uploadCsvGlobal (фан-аут глобального пуша календаря) + гейт canGlobalCsv. Прошлое: "
     },
     "domain/currentrole-view.js": {
       "layer": "domain",
@@ -622,12 +623,13 @@
     "pure/capacity-pure.js": {
       "layer": "pure",
       "domain": "pure/capacity-pure",
-      "loc": 286,
+      "loc": 293,
       "locBudget": 321,
       "state": [],
       "publishes": [
         "CAPACITY_PURE"
-      ]
+      ],
+      "budgetNote": "#53 +7: частичный день отсутствия (hoursDelta в чистой формуле часов)."
     },
     "pure/date-pure.js": {
       "layer": "pure",

@@ -37,11 +37,19 @@ var ABSENCE_TYPES = ['vacation', 'sick', 'out_of_membership', 'regional_holiday'
 var DAY_TYPES = ['holiday', 'short', 'workday'];
 
 /* ssp_capacity копит frozen-снимок per-sprint вечно → к 500КБ (gotcha #13). Размер-чек
-   до setProp; внятный reason при превышении. TODO(#45 R3+): архивация старых approved-
-   спринтов (lazy-purge как working-drafts >30 дней, backend-core.js working-drafts). */
+   до setProp; внятный reason при превышении. */
 var MAX_CAPACITY_SIZE  = 400 * 1024; // буфер до MAX_PROP_SIZE (500КБ)
 var MAX_CALENDAR_SIZE  = 300 * 1024;
 var MAX_ABSENCES_SIZE  = 300 * 1024;
+
+/* #53 — авто-архив ёмкости (паттерн backend-release.js splitForArchive): активный стор
+   перерос CAP_ARCHIVE_TRIGGER → старейшие по dateEnd записи (КРОМЕ текущего спринта)
+   переезжают в ssp_capacity_archive, пока активный не уляжется в CAP_ARCHIVE_TARGET.
+   Read-only история: архив отдаёт GET capacity-archive, POST'а на архив нет. */
+var CAP_ARCHIVE_PROP    = 'ssp_capacity_archive';
+var CAP_ARCHIVE_TRIGGER = 300 * 1024;
+var CAP_ARCHIVE_TARGET  = 250 * 1024;
+var CAP_ARCHIVE_MAX     = 480 * 1024; // потолок архив-пропа (буфер до MAX_PROP_SIZE 500КБ)
 
 /* ─── Формула (ЗЕРКАЛО capacity-pure.js — править синхронно) ──────────────────── */
 
@@ -143,20 +151,27 @@ function absenceHours(ranges, startMs, endMs, calendar, hoursPerDay) {
     if (!rng) continue;
     var rs = isoToUTCms(rng.from), re = isoToUTCms(rng.to);
     if (isNaN(rs) || isNaN(re) || re < rs) continue;
-    bounds.push([rs, re]);
+    // #53 частичный день: hoursDelta>0 → отсутствие ЧАСТИ дня (capped рабочими часами); иначе (-1) полный день.
+    var hd = (typeof rng.hoursDelta === 'number' && isFinite(rng.hoursDelta) && rng.hoursDelta > 0) ? rng.hoursDelta : -1;
+    bounds.push([rs, re, hd]);
   }
   if (!bounds.length) return 0;
   // Идём по дням ОКНА (set-union by construction — каждый день учтён ≤1 раза, перекрытия
-  // не двоятся), проверяя принадлежность дня любому диапазону числовым сравнением.
-  // Число итераций = длине спринта, независимо от длины диапазонов.
+  // не двоятся). Число итераций = длине спринта, независимо от длины диапазонов.
   var h = 0;
   for (var w = 0; w < windowDays.length; w++) {
     var dayMs = isoToUTCms(windowDays[w]);
-    var absent = false;
+    var full = workingHoursOfDay(windowDays[w], calendar, hoursPerDay);
+    // #53 — часы отсутствия дня = МАКСИМУМ по перекрывающим диапазонам (полный день ⊃ частичный),
+    // capped рабочими часами дня (частичное отсутствие на праздник = 0ч, как и полное).
+    var dayAbs = 0;
     for (var b = 0; b < bounds.length; b++) {
-      if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) { absent = true; break; }
+      if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) {
+        var thisAbs = (bounds[b][2] < 0) ? full : Math.min(bounds[b][2], full);
+        if (thisAbs > dayAbs) dayAbs = thisAbs;
+      }
     }
-    if (absent) h += workingHoursOfDay(windowDays[w], calendar, hoursPerDay);
+    h += dayAbs;
   }
   return h;
 }
@@ -277,9 +292,50 @@ function absencesInWindow(ranges, startMs, endMs) {
     var rs = isoToUTCms(r.from), re = isoToUTCms(r.to);
     if (isNaN(rs) || isNaN(re)) continue;
     if (re < wStart || rs > wEnd) continue;
-    out.push({ from: r.from, to: r.to, type: r.type });
+    var snap = { from: r.from, to: r.to, type: r.type };
+    if (typeof r.hoursDelta === 'number' && isFinite(r.hoursDelta)) snap.hoursDelta = r.hoursDelta; // #53 частичный день
+    out.push(snap);
   }
   return out;
+}
+
+/* ─── #53 архив ёмкости (паттерн backend-release.js) ─────────────────────────── */
+
+/* Ключ сортировки «старейшие — первыми»: dateEnd записи (epoch-ms); фолбэк 0 для pre-#53
+   записей без поля (они и есть старейшие → архивируются первыми). */
+function _capDateEndOf(rec) {
+  return (rec && typeof rec.dateEnd === 'number' && isFinite(rec.dateEnd)) ? rec.dateEnd : 0;
+}
+
+function readCapacityArchive(ctx) {
+  var blob = core.parseJson(core.getProp(ctx, CAP_ARCHIVE_PROP, null), null);
+  return (blob && typeof blob === 'object' && !Array.isArray(blob)) ? blob : {};
+}
+
+/* Pure-разрез стора ёмкости на «активный + архив» (in-memory, БЕЗ записи пропов — порядок
+   записи решает handler). Мутирует store (старейшие-по-dateEnd, КРОМЕ currentSprintId,
+   удаляются), возвращает { moved, archive }. Ниже CAP_ARCHIVE_TRIGGER — no-op; переносим,
+   пока активный не уляжется в CAP_ARCHIVE_TARGET; текущий спринт НИКОГДА не архивируется;
+   ключ карты уникален → дедуп by construction (split-brain невозможен). Архив упёрся в свой
+   лимит → перенос останавливается (активный POST может отклониться capacity_data_too_large,
+   но молчаливой потери нет). */
+function splitCapacityForArchive(store, archiveStore, currentSprintId) {
+  var moved = 0;
+  var archive = {};
+  var ak = Object.keys(archiveStore || {});
+  for (var a = 0; a < ak.length; a++) archive[ak[a]] = archiveStore[ak[a]];
+  if (JSON.stringify(store).length <= CAP_ARCHIVE_TRIGGER) return { moved: 0, archive: archive };
+  var ids = Object.keys(store).filter(function (id) { return id !== currentSprintId; })
+    .sort(function (x, y) { return _capDateEndOf(store[x]) - _capDateEndOf(store[y]); });
+  for (var i = 0; i < ids.length; i++) {
+    if (JSON.stringify(store).length <= CAP_ARCHIVE_TARGET) break;
+    var id = ids[i];
+    archive[id] = store[id];
+    if (JSON.stringify(archive).length > CAP_ARCHIVE_MAX) { delete archive[id]; break; }
+    delete store[id];
+    moved++;
+  }
+  return { moved: moved, archive: archive };
 }
 
 /* ─── Валидаторы ─────────────────────────────────────────────────────────────── */
@@ -352,7 +408,12 @@ function validateAbsencesForWrite(absences) {
       if (!isValidIsoDate(e.to)) { errors.push({ login: login, index: i, field: 'to', code: 'invalid_date' }); continue; }
       if (isoToUTCms(e.from) > isoToUTCms(e.to)) { errors.push({ login: login, index: i, field: 'from', code: 'from_after_to' }); continue; }
       if (ABSENCE_TYPES.indexOf(e.type) < 0) { errors.push({ login: login, index: i, field: 'type', code: 'invalid_type' }); continue; }
-      normEntries.push({ from: e.from, to: e.to, type: e.type });
+      var normA = { from: e.from, to: e.to, type: e.type };
+      if (e.hoursDelta !== undefined && e.hoursDelta !== null) { // #53 частичный день (optional)
+        if (!core.isNumInRange(e.hoursDelta, 0.5, 24)) { errors.push({ login: login, index: i, field: 'hoursDelta', code: 'invalid_delta' }); continue; }
+        normA.hoursDelta = e.hoursDelta;
+      }
+      normEntries.push(normA);
     }
     normalized[login] = normEntries;
   }
@@ -412,6 +473,7 @@ function validateCapacityForWrite(rec) {
   if (rec.approvedBy !== undefined && rec.approvedBy !== null && (typeof rec.approvedBy !== 'string' || rec.approvedBy.length > 200)) return false;
   if (rec.approvedAt !== undefined && rec.approvedAt !== null && (typeof rec.approvedAt !== 'number' || !isFinite(rec.approvedAt))) return false;
   if (rec.reapprovals !== undefined && rec.reapprovals !== null && !Array.isArray(rec.reapprovals)) return false;
+  if (rec.dateEnd !== undefined && rec.dateEnd !== null && (typeof rec.dateEnd !== 'number' || !isFinite(rec.dateEnd))) return false; // #53
   if (rec.pluginVersion !== undefined && rec.pluginVersion !== null && !core.validatePluginVersion(rec.pluginVersion)) return false;
   return true;
 }
@@ -438,7 +500,25 @@ function handleGetCapacity(ctx) {
   // hasOwnProperty-guard: иначе sprintId='__proto__' вернул бы Object.prototype ({}) как
   // фантомную запись для несуществующего спринта (read-side probing).
   var record = (sprintId && Object.prototype.hasOwnProperty.call(store, sprintId)) ? store[sprintId] : null;
-  ctx.response.json({ success: true, sprintId: sprintId, capacity: record });
+  ctx.response.json({ success: true, sprintId: sprintId, capacity: record, archivedCount: Object.keys(readCapacityArchive(ctx)).length }); // #53
+}
+
+/* #53 — read-only архив ёмкости (lazy-fetch фронта по раскрытию спойлера «Архив (N)»).
+   Отдаём массивом записей (sprintId вложен в запись) — удобно для рендера; сортировка по
+   dateEnd убыв. (свежие архивные — сверху). */
+function handleGetCapacityArchive(ctx) {
+  if (!core.authzGuard(ctx, 'viewer')) return;
+  var arch = readCapacityArchive(ctx);
+  var ids = Object.keys(arch).sort(function (x, y) { return _capDateEndOf(arch[y]) - _capDateEndOf(arch[x]); });
+  var rows = [];
+  for (var i = 0; i < ids.length; i++) {
+    var r = arch[ids[i]] || {};
+    var row = {};
+    for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) row[k] = r[k];
+    row.sprintId = ids[i]; // ключ карты вкладываем поверх записи для рендера
+    rows.push(row);
+  }
+  ctx.response.json({ success: true, capacity: rows });
 }
 
 function handlePostCapacity(ctx) {
@@ -524,6 +604,7 @@ function handlePostCapacity(ctx) {
     constants: constants,
     calendarRef: frozenCalRef || { years: yearsInWindow(sStart, sEnd), uploadedAt: (calendar && calendar.uploadedAt) || null },
     persons: {},
+    dateEnd: sEnd, // #53 — окно спринта (серверно из ssp_sprint) для сортировки/дисплея архива
     pluginVersion: core.CURRENT_PLUGIN_VERSION
   };
   var outLogins = Object.keys(computed.persons);
@@ -573,10 +654,15 @@ function handlePostCapacity(ctx) {
   }
 
   store[sprintId] = rec;
+  /* #53 — авто-архив ДО размер-чека (in-memory): активный стор худеет на старейшие спринты
+     (кроме текущего). Запись архив-пропа — только после прохождения чека активным (иначе
+     split-brain: записи в архиве при неизменённом активном; повторный POST лечится дедупом). */
+  var archiveSplit = splitCapacityForArchive(store, readCapacityArchive(ctx), sprintId);
   var serialized = JSON.stringify(store);
   if (serialized.length > MAX_CAPACITY_SIZE) { core.badRequest(ctx, 'capacity_data_too_large'); return; }
+  if (archiveSplit.moved > 0) core.setProp(ctx, CAP_ARCHIVE_PROP, JSON.stringify(archiveSplit.archive));
   core.setProp(ctx, 'ssp_capacity', serialized);
-  ctx.response.json({ success: true, sprintId: sprintId, action: action, capacity: rec, allocOk: allocCheck.ok });
+  ctx.response.json({ success: true, sprintId: sprintId, action: action, capacity: rec, allocOk: allocCheck.ok, archived: archiveSplit.moved });
 }
 
 function handleGetCalendar(ctx) {
@@ -630,6 +716,7 @@ function handlePostAbsences(ctx) {
 
 var CAPACITY_ENDPOINTS = [
   { scope: 'project', method: 'GET',  path: 'capacity', handle: handleGetCapacity },
+  { scope: 'project', method: 'GET',  path: 'capacity-archive', handle: handleGetCapacityArchive }, // #53
   { scope: 'project', method: 'POST', path: 'capacity', handle: handlePostCapacity },
   { scope: 'project', method: 'GET',  path: 'calendar', handle: handleGetCalendar },
   { scope: 'project', method: 'POST', path: 'calendar', handle: handlePostCalendar },
@@ -679,8 +766,12 @@ if (typeof module !== 'undefined' && module.exports) {
     validateCapacityForWrite: validateCapacityForWrite,
     validateCapacityForRead: validateCapacityForRead,
     migrateCapacity: migrateCapacity,
+    // #53 архив
+    readCapacityArchive: readCapacityArchive,
+    splitCapacityForArchive: splitCapacityForArchive,
     // handlers (для unit-тестов endpoint-логики)
     handleGetCapacity: handleGetCapacity,
+    handleGetCapacityArchive: handleGetCapacityArchive, // #53
     handlePostCapacity: handlePostCapacity,
     handleGetCalendar: handleGetCalendar,
     handlePostCalendar: handlePostCalendar,
@@ -691,6 +782,8 @@ if (typeof module !== 'undefined' && module.exports) {
     ABSENCE_TYPES: ABSENCE_TYPES,
     DAY_TYPES: DAY_TYPES,
     EPS: EPS,
-    MAX_CAPACITY_SIZE: MAX_CAPACITY_SIZE
+    MAX_CAPACITY_SIZE: MAX_CAPACITY_SIZE,
+    CAP_ARCHIVE_TRIGGER: CAP_ARCHIVE_TRIGGER, // #53
+    CAP_ARCHIVE_TARGET: CAP_ARCHIVE_TARGET    // #53
   });
 }

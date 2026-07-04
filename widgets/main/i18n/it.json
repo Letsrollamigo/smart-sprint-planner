@@ -965,5 +965,10 @@
   "relPvResult": "{changed} modificate, {errors} errori",
   "relPvErrDetails": "Dettagli errori ({n})",
   "relPvRetry": "riprova",
-  "relPvNoMapping": "Nessuna mappatura di stato configurata per lo stato «{status}»"
+  "relPvNoMapping": "Nessuna mappatura di stato configurata per lo stato «{status}»",
+  "capacityPartialHours": "Giorno parziale, h:",
+  "capacityFullDay": "giornata intera",
+  "capacityHoursShort": "h",
+  "capacityArchiveNode": "Archivio",
+  "capacityArchivePeople": "pers."
 }

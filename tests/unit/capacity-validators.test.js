@@ -11,7 +11,8 @@ const path = require('node:path');
 const backend = require(path.join(__dirname, '..', '..', 'backend-project.js'));
 const {
   validateCalendarForWrite, validateAbsencesForWrite, validateCapacityForWrite,
-  handlePostCapacity, handleGetCapacity, handlePostCalendar, handlePostAbsences, handleGetCalendar
+  handlePostCapacity, handleGetCapacity, handlePostCalendar, handlePostAbsences, handleGetCalendar,
+  splitCapacityForArchive, handleGetCapacityArchive, CAP_ARCHIVE_TRIGGER, CAP_ARCHIVE_TARGET // #53
 } = backend;
 
 const JUN = function (d) { return Date.UTC(2026, 5, d); };
@@ -128,6 +129,21 @@ test('absences: лишние ключи записи отфильтрованы 
   const r = validateAbsencesForWrite({ alice: [{ from: '2026-06-23', to: '2026-06-25', type: 'vacation', evil: 1 }] });
   assert.strictEqual(r.ok, true);
   assert.ok(!('evil' in r.normalized.alice[0]));
+});
+test('#53 absences: hoursDelta валидный → ok + перенесён в normalized', () => {
+  const r = validateAbsencesForWrite({ alice: [{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 2 }] });
+  assert.strictEqual(r.ok, true);
+  assert.strictEqual(r.normalized.alice[0].hoursDelta, 2);
+});
+test('#53 absences: hoursDelta вне [0.5..24] → invalid_delta', () => {
+  assert.strictEqual(validateAbsencesForWrite({ a: [{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 0 }] }).errors[0].code, 'invalid_delta');
+  assert.strictEqual(validateAbsencesForWrite({ a: [{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 25 }] }).errors[0].code, 'invalid_delta');
+  assert.strictEqual(validateAbsencesForWrite({ a: [{ from: '2026-06-23', to: '2026-06-23', type: 'other', hoursDelta: 'x' }] }).errors[0].code, 'invalid_delta');
+});
+test('#53 absences: без hoursDelta → ok, поле отсутствует (backward-compat = полный день)', () => {
+  const r = validateAbsencesForWrite({ alice: [{ from: '2026-06-23', to: '2026-06-25', type: 'vacation' }] });
+  assert.strictEqual(r.ok, true);
+  assert.ok(!('hoursDelta' in r.normalized.alice[0]));
 });
 
 /* ═══════════════════ Валидатор записи ёмкости ═══════════════════ */
@@ -348,4 +364,66 @@ test('#12 regression: длинный lead-in out_of_membership даёт полн
   handlePostCapacity(ctx);
   // человек отсутствует весь спринт → base 0 (а не завышенный из-за guard-обрезки)
   assert.strictEqual(ctx._res()._out.capacity.persons.a.base, 0);
+});
+
+/* ═══════════════════ #53 архив ёмкости (splitCapacityForArchive + endpoints) ═══════════════════ */
+
+// Толстая запись для инфляции JSON стора (split — pure, поля не валидируются на read).
+function fatCap(dateEnd, kb) { return { dateEnd: dateEnd, base: 0, _pad: 'x'.repeat(kb * 1024) }; }
+
+test('#53 split: ниже CAP_ARCHIVE_TRIGGER — no-op', () => {
+  const store = { S1: fatCap(1000, 1), S2: fatCap(2000, 1) };
+  const r = splitCapacityForArchive(store, {}, 'S2');
+  assert.strictEqual(r.moved, 0);
+  assert.deepStrictEqual(Object.keys(store).sort(), ['S1', 'S2']);
+});
+
+test('#53 split: старейшие по dateEnd уезжают, текущий спринт НИКОГДА не архивируется', () => {
+  const store = { S1: fatCap(1000, 90), S2: fatCap(2000, 90), S3: fatCap(3000, 90), S4: fatCap(4000, 90) };
+  const before = JSON.stringify(store).length;
+  assert.ok(before > CAP_ARCHIVE_TRIGGER, 'сетап: стор выше порога');
+  const r = splitCapacityForArchive(store, {}, 'S4'); // S4 — текущий, самый свежий
+  assert.ok(r.moved >= 1, 'что-то уехало');
+  assert.ok(JSON.stringify(store).length <= CAP_ARCHIVE_TARGET, 'активный ужат до цели');
+  assert.ok(Object.prototype.hasOwnProperty.call(store, 'S4'), 'текущий спринт остался активным');
+  assert.ok(Object.prototype.hasOwnProperty.call(r.archive, 'S1'), 'старейший S1 в архиве');
+  assert.ok(!Object.prototype.hasOwnProperty.call(r.archive, 'S4'), 'текущий НЕ в архиве');
+});
+
+test('#53 split: ключ карты уникален → дедуп by construction (перенос не дублит существующий архив)', () => {
+  const store = { S1: fatCap(1000, 90), S2: fatCap(2000, 90), S3: fatCap(3000, 90), S4: fatCap(4000, 90) };
+  const r = splitCapacityForArchive(store, { S0: fatCap(500, 1) }, 'S4');
+  const archKeys = Object.keys(r.archive);
+  assert.strictEqual(archKeys.length, new Set(archKeys).size, 'без дублей ключей');
+  assert.ok(archKeys.indexOf('S0') >= 0, 'прежний архив сохранён');
+});
+
+test('#53 handler: POST выше порога → archived>0, архив-проп записан, GET отдаёт archivedCount + rows', () => {
+  const s = new Stand();
+  seedSprint(s, 'CUR', JUN(1), JUN(5));
+  // Пред-сид: 4 старых толстых спринта (не текущие) в активном сторе.
+  s.props.ssp_capacity = JSON.stringify({
+    OLD1: fatCap(1000, 90), OLD2: fatCap(2000, 90), OLD3: fatCap(3000, 90), OLD4: fatCap(4000, 90)
+  });
+  const post = s.ctx({ role: 'planner', params: { sprintId: 'CUR', action: 'save' },
+    body: { persons: { a: { grade: 'Middle', rate: 1, alloc: { analysis: 1 } } } } });
+  handlePostCapacity(post);
+  const out = post._res()._out;
+  assert.strictEqual(out.success, true);
+  assert.ok(out.archived > 0, 'archived>0 в ответе POST');
+  const active = JSON.parse(s.props.ssp_capacity);
+  assert.ok(Object.prototype.hasOwnProperty.call(active, 'CUR'), 'текущий спринт активен');
+  assert.ok(s.props.ssp_capacity_archive, 'архив-проп записан');
+
+  const get = s.ctx({ role: 'planner', params: { sprintId: 'CUR' } });
+  handleGetCapacity(get);
+  assert.ok(get._res()._out.archivedCount > 0, 'GET /capacity отдаёт archivedCount');
+
+  const arch = s.ctx({ role: 'planner' });
+  handleGetCapacityArchive(arch);
+  const rows = arch._res()._out.capacity;
+  assert.ok(Array.isArray(rows) && rows.length > 0, 'GET /capacity-archive → массив rows');
+  assert.ok(rows[0].sprintId, 'sprintId вложен в row');
+  // сортировка по dateEnd убыв.: первый row — самый свежий из архивных
+  assert.ok(rows[0].dateEnd >= rows[rows.length - 1].dateEnd, 'rows отсортированы по dateEnd убыв.');
 });

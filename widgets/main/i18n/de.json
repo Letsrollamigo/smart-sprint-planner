@@ -965,5 +965,10 @@
   "relPvResult": "{changed} geändert, {errors} Fehler",
   "relPvErrDetails": "Fehlerdetails ({n})",
   "relPvRetry": "wiederholen",
-  "relPvNoMapping": "Für den Status „{status}“ ist keine Zuordnung konfiguriert"
+  "relPvNoMapping": "Für den Status „{status}“ ist keine Zuordnung konfiguriert",
+  "capacityPartialHours": "Teiltag, Std.:",
+  "capacityFullDay": "ganzer Tag",
+  "capacityHoursShort": "Std.",
+  "capacityArchiveNode": "Archiv",
+  "capacityArchivePeople": "Pers."
 }

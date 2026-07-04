@@ -213,7 +213,8 @@ var ALLOWED_CALENDAR_KEYS = [
 var ALLOWED_ABSENCE_ENTRY_KEYS = [
   'from',
   'to',
-  'type'
+  'type',
+  'hoursDelta'
 ];
 var ALLOWED_CAPACITY_RECORD_KEYS = [
   'mode',
@@ -225,6 +226,7 @@ var ALLOWED_CAPACITY_RECORD_KEYS = [
   'approvedBy',
   'approvedAt',
   'reapprovals',
+  'dateEnd',
   'pluginVersion'
 ];
 var ALLOWED_CAPACITY_PERSON_KEYS = [
@@ -271,7 +273,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
-var APP_VERSION = '2.18.0';
+var APP_VERSION = '2.18.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 

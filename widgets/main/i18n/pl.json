@@ -965,5 +965,10 @@
   "relPvResult": "{changed} zmieniono, {errors} błędów",
   "relPvErrDetails": "Szczegóły błędów ({n})",
   "relPvRetry": "ponów",
-  "relPvNoMapping": "Brak mapowania stanu dla statusu „{status}”"
+  "relPvNoMapping": "Brak mapowania stanu dla statusu „{status}”",
+  "capacityPartialHours": "Dzień częściowy, godz.:",
+  "capacityFullDay": "cały dzień",
+  "capacityHoursShort": "godz.",
+  "capacityArchiveNode": "Archiwum",
+  "capacityArchivePeople": "os."
 }

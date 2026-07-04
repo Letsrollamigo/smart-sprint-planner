@@ -14,6 +14,7 @@
         "ssp_calendar":   { "type": "string" },
         "ssp_absences":   { "type": "string" },
         "ssp_capacity":   { "type": "string" },
+        "ssp_capacity_archive": { "type": "string" },
         "ssp_releases":   { "type": "string" },
         "ssp_releases_archive": { "type": "string" }
       }

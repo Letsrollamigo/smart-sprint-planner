@@ -965,5 +965,10 @@
   "relPvResult": "{changed} değiştirildi, {errors} hata",
   "relPvErrDetails": "Hata ayrıntıları ({n})",
   "relPvRetry": "yinele",
-  "relPvNoMapping": "«{status}» durumu için durum eşlemesi yapılandırılmamış"
+  "relPvNoMapping": "«{status}» durumu için durum eşlemesi yapılandırılmamış",
+  "capacityPartialHours": "Kısmi gün, sa:",
+  "capacityFullDay": "tüm gün",
+  "capacityHoursShort": "sa",
+  "capacityArchiveNode": "Arşiv",
+  "capacityArchivePeople": "kişi"
 }

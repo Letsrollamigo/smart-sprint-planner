@@ -31,11 +31,11 @@
     "years", "uploadedBy", "uploadedAt", "pluginVersion"
   ],
   "ALLOWED_ABSENCE_ENTRY_KEYS": [
-    "from", "to", "type"
+    "from", "to", "type", "hoursDelta"
   ],
   "ALLOWED_CAPACITY_RECORD_KEYS": [
     "mode", "status", "dirty", "constants", "calendarRef", "persons",
-    "approvedBy", "approvedAt", "reapprovals", "pluginVersion"
+    "approvedBy", "approvedAt", "reapprovals", "dateEnd", "pluginVersion"
   ],
   "ALLOWED_CAPACITY_PERSON_KEYS": [
     "grade", "rate", "participation", "alloc", "base", "absencesApplied"

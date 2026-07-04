@@ -965,5 +965,10 @@
   "relPvResult": "已更改 {changed} 个，{errors} 个错误",
   "relPvErrDetails": "错误详情 ({n})",
   "relPvRetry": "重试",
-  "relPvNoMapping": "未为状态「{status}」配置状态映射"
+  "relPvNoMapping": "未为状态「{status}」配置状态映射",
+  "capacityPartialHours": "部分日, 小时:",
+  "capacityFullDay": "全天",
+  "capacityHoursShort": "小时",
+  "capacityArchiveNode": "归档",
+  "capacityArchivePeople": "人"
 }

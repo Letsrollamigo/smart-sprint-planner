@@ -965,5 +965,10 @@
   "relPvResult": "{changed} cambiadas, {errors} errores",
   "relPvErrDetails": "Detalles de errores ({n})",
   "relPvRetry": "reintentar",
-  "relPvNoMapping": "No hay mapeo de estado configurado para el estado «{status}»"
+  "relPvNoMapping": "No hay mapeo de estado configurado para el estado «{status}»",
+  "capacityPartialHours": "Día parcial, h:",
+  "capacityFullDay": "día completo",
+  "capacityHoursShort": "h",
+  "capacityArchiveNode": "Archivo",
+  "capacityArchivePeople": "pers."
 }

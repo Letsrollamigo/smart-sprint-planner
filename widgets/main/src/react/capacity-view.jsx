@@ -165,7 +165,7 @@ function CalendarGrid({ vm, absDayType, absLabel, absAbbrev, roleMode, combined,
         cls += ' ssp-capacity-day--hasabs';
         if (detailDay === day.iso) cls += ' ssp-capacity-day--detailopen';
         const types = []; list.forEach((e) => { if (types.indexOf(e.type) < 0) types.push(e.type); });
-        title += '\n' + L.absentLabel + '\n' + list.map((e) => (e.name + ' — ' + (absLabel[e.type] || e.type))).join('\n');
+        title += '\n' + L.absentLabel + '\n' + list.map((e) => (e.name + ' — ' + (absLabel[e.type] || e.type) + (e.hoursDelta > 0 ? ' (' + e.hoursDelta + L.hoursShort + ')' : ''))).join('\n');
         cells.push(
           <button key={day.iso} type="button" className={cls} title={title}
                   onClick={() => onDayDetails(day.iso)}>
@@ -186,14 +186,20 @@ function CalendarGrid({ vm, absDayType, absLabel, absAbbrev, roleMode, combined,
         );
       }
     } else {
-      const abs = absDayType[day.iso];
-      if (abs) { cls += ' ssp-capacity-day--absent ssp-capacity-day--abs-' + abs; title += ' · ' + (absLabel[abs] || ''); }
+      const cell = absDayType[day.iso];          // #53 — {type,hoursDelta} (частичный день)
+      const abs = cell && cell.type;
+      const partial = cell && cell.hoursDelta > 0 ? cell.hoursDelta : 0;
+      if (abs) {
+        cls += ' ssp-capacity-day--absent ssp-capacity-day--abs-' + abs;
+        title += ' · ' + (absLabel[abs] || '');
+        if (partial) { cls += ' ssp-capacity-day--partial'; title += ' · ' + partial + L.hoursShort; }
+      }
       cells.push(
         <button key={day.iso} type="button" className={cls} title={title}
                 disabled={!editable} onClick={editable ? () => onToggleDay(day.iso) : undefined}>
           <span className="ssp-capacity-day__col">
             <span className="ssp-capacity-day__dom">{day.dom}</span>
-            {abs ? <span className="ssp-capacity-day__abbr">{absAbbrev[abs] || ''}</span> : null}
+            {abs ? <span className="ssp-capacity-day__abbr">{partial ? (partial + L.hoursShort) : (absAbbrev[abs] || '')}</span> : null}
           </span>
         </button>
       );
@@ -216,6 +222,7 @@ function CapacityInner({ vm }) {
     const o = {}; (vm.personsView || []).forEach((p) => { o[p.login] = true; }); return o;
   });
   const [absType, setAbsType] = React.useState(() => (vm.absenceTypes && vm.absenceTypes[0] && vm.absenceTypes[0].key) || 'vacation');
+  const [absHours, setAbsHours] = React.useState(''); // #53 — частичный день: '' = весь день, >0 = часы отсутствия
   const [detailDay, setDetailDay] = React.useState(null);
 
   /* type→label / type→2-3-символьная аббревиатура (из локализованной подписи — без отдельных i18n-ключей). */
@@ -246,7 +253,8 @@ function CapacityInner({ vm }) {
     setAbsByLogin((prev) => {
       const next = JSON.parse(JSON.stringify(prev));
       const dayType = vm.expandAbs(next[login] || []);
-      if (dayType[iso]) delete dayType[iso]; else dayType[iso] = absType;
+      if (dayType[iso]) delete dayType[iso];
+      else { const h = parseFloat(absHours); dayType[iso] = { type: absType, hoursDelta: (isFinite(h) && h > 0) ? h : null }; } // #53
       next[login] = vm.collapseAbs(dayType);
       return next;
     });
@@ -270,7 +278,7 @@ function CapacityInner({ vm }) {
   if (viewMode === 'role' && roleObj) {
     roleObj.people.forEach((p) => {
       const dt = vm.expandAbs(absByLogin[p.login] || []);
-      Object.keys(dt).forEach((iso) => { (combined[iso] || (combined[iso] = [])).push({ login: p.login, name: p.name || p.login, type: dt[iso] }); });
+      Object.keys(dt).forEach((iso) => { (combined[iso] || (combined[iso] = [])).push({ login: p.login, name: p.name || p.login, type: dt[iso].type, hoursDelta: dt[iso].hoursDelta }); }); // #53
     });
   }
 
@@ -414,12 +422,20 @@ function CapacityInner({ vm }) {
 
           <div className="ssp-capacity-calctx">{ctxLine}</div>
           {viewMode === 'person' && selLogin && !readOnly
-            ? <label className="ssp-capacity-abstype">{L.absType + ' '}
-                <span className="ssp-capacity-headsel">
-                  <RingSelect value={absType} onChange={setAbsType} size="S"
-                              options={(vm.absenceTypes || []).map((a) => ({ key: a.key, label: a.label }))} />
-                </span>
-              </label>
+            ? <div className="ssp-capacity-absctrl">
+                <label className="ssp-capacity-abstype">{L.absType + ' '}
+                  <span className="ssp-capacity-headsel">
+                    <RingSelect value={absType} onChange={setAbsType} size="S"
+                                options={(vm.absenceTypes || []).map((a) => ({ key: a.key, label: a.label }))} />
+                  </span>
+                </label>
+                {/* #53 — частичный день: часы отсутствия (пусто = весь день) */}
+                <label className="ssp-capacity-abstype ssp-capacity-abshours">{L.absPartialHours + ' '}
+                  <input type="number" step="0.5" min="0" max="24" className="app-input ssp-capacity-num"
+                         value={absHours} placeholder={L.absFullDay}
+                         onChange={(e) => setAbsHours(e.target.value)} />
+                </label>
+              </div>
             : null}
           <CalendarGrid vm={vm} absDayType={absDayType} absLabel={absLabel} absAbbrev={absAbbrev}
                         roleMode={viewMode === 'role'} combined={combined}
@@ -434,7 +450,7 @@ function CapacityInner({ vm }) {
                 </div>
                 <ul className="ssp-capacity-details__list">
                   {combined[detailDay].map((e, i) => (
-                    <li key={i}><span className={'ssp-capacity-dot ssp-capacity-dot--' + e.type} />{' ' + e.name + ' — ' + (absLabel[e.type] || e.type)}</li>
+                    <li key={i}><span className={'ssp-capacity-dot ssp-capacity-dot--' + e.type} />{' ' + e.name + ' — ' + (absLabel[e.type] || e.type) + (e.hoursDelta > 0 ? ' (' + e.hoursDelta + L.hoursShort + ')' : '')}</li>
                   ))}
                 </ul>
               </div>
@@ -455,6 +471,40 @@ function CapacityInner({ vm }) {
             ? <button type="button" className="ring-button-button ring-button-block ring-button-heightS ssp-capacity-saveabs"
                       onClick={() => vm.onSaveAbsences(absByLogin)}>{L.saveAbs}</button>
             : null}
+        </div>
+      </div>
+      <CapacityArchive archive={vm.archive} L={L} onLoad={vm.onLoadArchive} />
+    </div>
+  );
+}
+
+/* #53 — read-only спойлер «Архив (N)»: старые спринты, свёрнутые бэкендом при росте стора.
+   Lazy-fetch по первому раскрытию (зеркало release-view ArchiveSection). */
+function CapacityArchive({ archive, L, onLoad }) {
+  const [open, setOpen] = React.useState(false);
+  if (!archive || !archive.count) return null;
+  const toggle = () => setOpen((o) => { if (!o && !archive.loaded) onLoad(); return !o; });
+  const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+  return (
+    <div className={'spoiler ssp-capacity-archive' + (open ? ' open' : '')}>
+      <div className="spoiler__head" role="button" tabIndex={0} aria-expanded={open} onClick={toggle} onKeyDown={onKey}>
+        <span className="ssp-capacity-archive__title">{L.archiveNode} ({archive.count})</span>
+        <span className="spoiler__arrow" aria-hidden="true">▶</span>
+      </div>
+      <div className="spoiler__body">
+        <div className="ssp-capacity-archive__pad">
+          {archive.loaded
+            ? (archive.rows.length
+              ? <ul className="ssp-capacity-archive__list">
+                  {archive.rows.map((r) => (
+                    <li key={r.sprintId} className="ssp-capacity-archive__row">
+                      <span className="ssp-capacity-archive__date">{r.dateEndLabel}</span>
+                      <span className="ssp-capacity-archive__meta">{r.people + ' ' + L.archivePeople + ' · ' + r.baseLabel}</span>
+                    </li>
+                  ))}
+                </ul>
+              : <div className="empty">—</div>)
+            : <div className="empty">…</div>}
         </div>
       </div>
     </div>

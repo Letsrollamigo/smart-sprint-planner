@@ -964,5 +964,10 @@
   "relPvResult": "{changed} changed, {errors} failed",
   "relPvErrDetails": "Error details ({n})",
   "relPvRetry": "retry",
-  "relPvNoMapping": "No state mapping configured for status “{status}”"
+  "relPvNoMapping": "No state mapping configured for status “{status}”",
+  "capacityPartialHours": "Partial day, h:",
+  "capacityFullDay": "full day",
+  "capacityHoursShort": "h",
+  "capacityArchiveNode": "Archive",
+  "capacityArchivePeople": "ppl"
 }

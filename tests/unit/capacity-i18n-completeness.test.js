@@ -36,6 +36,10 @@ const CAPACITY_KEYS = [
   'errCalendarParse', 'msgCalendarSaved', 'errCalendarSave',
   // #45 (b) — подзаголовок «источник ресурса» в объединённом admin-блоке ёмкости
   'capGroupResource',
+  // #53 — частичный день отсутствия (hoursDelta) — редактор часов + бейдж
+  'capacityPartialHours', 'capacityFullDay', 'capacityHoursShort',
+  // #53 — read-only спойлер архива ёмкости
+  'capacityArchiveNode', 'capacityArchivePeople',
 ];
 
 /* Ключи, чьё не-EN значение легитимно равно EN во ВСЕХ локалях (имена режимов brand-нейтральны). */
@@ -50,6 +54,9 @@ const COGNATE_OK = new Set([
   'hu.capacitySprintLabel', 'it.capacitySprintLabel', 'it.lblBase', 'nl.capacitySprintLabel',
   'nl.lblGrade', 'nl.dayWeekend', 'pl.capacitySprintLabel', 'pl.lblGrade',
   'pt.capacitySprintLabel', 'pt.lblBase', 'tr.capacitySprintLabel',
+  // #53 — короткое «ч» легитимно = EN «h» в романских/чешском (реальная аббревиатура часа).
+  'es.capacityHoursShort', 'fr.capacityHoursShort', 'it.capacityHoursShort',
+  'cs.capacityHoursShort', 'pt.capacityHoursShort',
 ]);
 
 const dicts = {};

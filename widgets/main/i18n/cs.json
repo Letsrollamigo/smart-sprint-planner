@@ -965,5 +965,10 @@
   "relPvResult": "{changed} změněno, {errors} chyb",
   "relPvErrDetails": "Podrobnosti chyb ({n})",
   "relPvRetry": "opakovat",
-  "relPvNoMapping": "Pro stav „{status}“ není nakonfigurováno mapování"
+  "relPvNoMapping": "Pro stav „{status}“ není nakonfigurováno mapování",
+  "capacityPartialHours": "Částečný den, h:",
+  "capacityFullDay": "celý den",
+  "capacityHoursShort": "h",
+  "capacityArchiveNode": "Archiv",
+  "capacityArchivePeople": "os."
 }

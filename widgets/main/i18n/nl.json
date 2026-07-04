@@ -965,5 +965,10 @@
   "relPvResult": "{changed} gewijzigd, {errors} fouten",
   "relPvErrDetails": "Foutdetails ({n})",
   "relPvRetry": "opnieuw",
-  "relPvNoMapping": "Geen statustoewijzing geconfigureerd voor status «{status}»"
+  "relPvNoMapping": "Geen statustoewijzing geconfigureerd voor status «{status}»",
+  "capacityPartialHours": "Deeldag, u:",
+  "capacityFullDay": "hele dag",
+  "capacityHoursShort": "u",
+  "capacityArchiveNode": "Archief",
+  "capacityArchivePeople": "pers."
 }
