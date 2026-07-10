@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.0.0] — 2026-07-10
+
+> **Operational reporting (#50): 13 reports in two contours, charts, Excel/PDF export.**
+
+### Added
+
+- **Contour A «Operational»** — A7 Aging (days in state, traffic-light thresholds), A1 Progress (transitions into target states over a period), A3 WIP/Done slice (business fields, per-role estimates), A2 Time-to-market (lead/team/cycle medians, norms, buckets, risk counter, pause deduction by states and tags), A8/A9 Flow (bottleneck by dwell + rework), A4 Workload (work items by roles), A5 Plan vs fact (as-of estimate reconstruction at the start anchor vs logged effort), A6 Backlog capacity (Σ hours and «months» per role), A10 Spillover (sprint under-delivery, carried tails, zombie age).
+- **Contour B «Management»** — B0 Roll-up (monthly trends of 5 metrics per system, multi-line charts), B1 Tech debt, B2 Bug tax (share of hours on bugs + feature attribution), B3 «1000 small things».
+- **Charts** — vendored Recharts; per-system lines with an aggregate.
+- **Export** — any report to XLSX and PDF (vendored pdfmake, Cyrillic-safe; truncation/incompleteness flagged in the file meta).
+- **Reporting settings (admin tier)** — aging thresholds, A1 target states, TTM anchors & norms, pause markers (states/tags), ordered status flow, A3 slice fields, B1–B3 tags/types, A6 role capacity, per-contour access groups, run timeout.
+- **Access** — the «Operational»/«Management» tabs are visible by group membership (server-side gate, default deny).
+- **Run safety (D10)** — configurable timeout backstop, Cancel button, rollback to the last good view; cancellation stops the request chain between chunks.
+- **Data honesty (D7)** — on all activities fetches: «an exact number OR an explicit incompleteness signal», truncation banners for the population limit.
+
+### Fixed (pre-release adversarial review)
+
+- Rolling back an interrupted run can no longer show another project's data; an error view is never the rollback target.
+- A1: the population contract (issues currently in target states) is stated right in the report.
+- Tag-activity window truncation ($top) no longer silently inflates TTM/dwell — honest incompleteness signal.
+- Timeout input in settings: typing «30» no longer saves 900 (clamp on blur, not per keystroke).
+- Export: truncation and incompleteness reach the file; wide PDF tables no longer clip past the page edge; emojis don't break the PDF; a Cyrillic project key survives in the file name.
+- B0 roll-up: the no-charts fallback table shows values; filter/dates reset on project switch.
+- Duplicate states in reporting settings block saving; a contradictory threshold pair is highlighted.
+
+### Optimized
+
+- One activities fetch feeds both anchors and as-of estimates — roughly half the requests for A5/B0 runs.
+- Workday math is closed-form with no allocations; the B0 roll-up skips unneeded TTM aggregates (lite mode); month-invariant work hoisted out of loops.
+
+### Internal
+
+- New modules: `backend-reporting.js`, `data/reporting-data.js`, `domain/reporting-view.js`, six pure engines, `react/reporting-view.jsx`; ~190 dedicated unit tests; vendored Recharts + pdfmake (licenses bundled).
+
 ## [2.19.0] — 2026-07-10
 
 > **Release-management & backlog polish + «Distribution by assignees» tab.**
