@@ -991,7 +991,45 @@ var ALLOWED_SETTINGS_KEYS = [
      fanout официальным REST тегов от имени юзера (backend теги не трогает); тег
      предыдущего статуса снимается, нового — ставится. Теги НЕ создаются автоматически
      (авто-созданный тег приватен владельцу и невидим команде). */
-  'releaseTagMapping'
+  'releaseTagMapping',
+  /* #50 — Оперативная отчётность (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
+     reportingEnabled — мастер-тумблер модуля (гейтит узлы дерева/секцию, как releaseEnabled).
+     reportingGroups{A,B}/*Names — reporting-access группы (US-ACC): контур A (лиды) /
+     контур B (руководство, B⊇A). ОТДЕЛЬНО от planning/release ACL — отчёты вскрывают
+     individual performance. Сегментация/паузы — со своими потребителями (S5/S6+). */
+  'reportingEnabled',
+  'reportingGroupsA','reportingGroupsANames',
+  'reportingGroupsB','reportingGroupsBNames',
+  /* #50 S1c — reportingThresholds: порог aging на статус { <state> → {yellow,red} } (раб.дн). */
+  'reportingThresholds',
+  /* #50 S2 — A1 Прогресс: reportingTargetStatuses (целевые статусы, str[]) +
+     reportingStatusLabels (статус→подпись { <state> → <label> }). */
+  'reportingTargetStatuses','reportingStatusLabels',
+  /* #50 S3a — A2 TTM: reportingAnchors (пары якорей lead/team/cycle → {start,end}) +
+     reportingTtmNorms (нормативы lead/team в раб.дн, int|null) +
+     reportingPauseMarkers (маркеры пауз {states,tags}). */
+  'reportingAnchors','reportingTtmNorms','reportingPauseMarkers',
+  /* #50 S4 — A8 Bottleneck / A9 Rework: reportingFlowStates (УПОРЯДОЧЕННЫЙ список статусов
+     потока, str[]) — порядок баров/WIP (A8) + детект обратных переходов против потока (A9). */
+  'reportingFlowStates',
+  /* #50 S5b — A5 План-факт: reportingVariancePct (порог |расхождения| %, num 0..10000). */
+  'reportingVariancePct',
+  /* #50 D10 — таймаут-бэкстоп прогона отчёта (сек, num 5..3600) — «не завесить систему». */
+  'reportingTimeoutSec',
+  /* #50 S6a — A3 срез: имена YT-полей бизнес-колонок (Бизнес-этап/Орг-юнит/Приоритет),
+     str|null — колонка рендерится только при заданном поле (graceful-degrade). */
+  'reportingA3StageField','reportingA3OrgField','reportingA3PriorityField',
+  /* #50 S6b — A6 Бэклог в ЧЧ: месячная ёмкость роли { roleKey → ч/мес } (top-down B1);
+     знаменатель «месяцев бэклога» = Σ ЧЧ ÷ ёмкость. Роль без ёмкости → гейдж «—». */
+  'reportingRoleMonthlyCapacity',
+  /* #50 S7a — A10 Spillover: пороги «возраста хвоста» { warm|hot → int 1..1000 спринтов } (бэйджи зомби). */
+  'reportingSpilloverAgeBands',
+  /* #50 S8a — B3 «1000 мелочей» (контур B): тег YT мелких задач (str≤200|null). */
+  'reportingThousandTag',
+  /* #50 S8b — B1 Техдолг (контур B): отбор техдолга = значение типа задачи ИЛИ имя тега (str≤200|null; одно из двух). */
+  'reportingTechDebtType','reportingTechDebtTag',
+  /* #50 S8c — B2 «Налог на баги» (контур B): тип задачи-бага (str≤200|null) + имена типов связей баг→фича (str[]). */
+  'reportingBugType','reportingLinkTypes'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1035,7 +1073,25 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'releaseManagerGroups','releaseManagerGroupNames',
   'releaseEngineerGroups','releaseEngineerGroupNames',
   'releaseStatusStateMapping',
-  'releaseTagMapping' /* #55 — как и весь раздел релиз-менеджмента */
+  'releaseTagMapping', /* #55 — как и весь раздел релиз-менеджмента */
+  /* #50 — Оперативная отчётность: весь раздел настроек — admin-тир (доступ к чувствительным
+     метрикам; reporting-access группы задаёт только settings-менеджер). preserve-merge из
+     stored для не-settings-менеджера, как release/backlog. */
+  'reportingEnabled',
+  'reportingGroupsA','reportingGroupsANames',
+  'reportingGroupsB','reportingGroupsBNames',
+  'reportingThresholds', /* #50 S1c — пороги aging на статус */
+  'reportingTargetStatuses','reportingStatusLabels', /* #50 S2 — A1 целевые статусы + ярлыки */
+  'reportingAnchors','reportingTtmNorms','reportingPauseMarkers', /* #50 S3a — A2 якоря/нормативы/паузы */
+  'reportingFlowStates', /* #50 S4 — A8/A9 упорядоченные статусы потока */
+  'reportingVariancePct', /* #50 S5b — A5 порог расхождения */
+  'reportingTimeoutSec', /* #50 D10 — таймаут-бэкстоп прогона отчёта */
+  'reportingA3StageField','reportingA3OrgField','reportingA3PriorityField', /* #50 S6a — A3 бизнес-поля среза */
+  'reportingRoleMonthlyCapacity', /* #50 S6b — A6 месячная ёмкость роли ч/мес */
+  'reportingSpilloverAgeBands', /* #50 S7a — A10 пороги возраста хвоста */
+  'reportingThousandTag', /* #50 S8a — B3 тег «1000 мелочей» (контур B) */
+  'reportingTechDebtType','reportingTechDebtTag', /* #50 S8b — B1 отбор техдолга тип/тег (контур B) */
+  'reportingBugType','reportingLinkTypes' /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1314,6 +1370,145 @@ function validateSettings(settings) {
       if (TAG_STATUS_KEYS.indexOf(tmk[tm]) < 0) return false;
       if (!assertStr(tmap[tmk[tm]], 200)) return false;
     }
+  }
+  /* #50 — Оперативная отчётность. reportingEnabled — bool; reporting-access группы —
+     str[] (ids ≤200, names ≤500), как release-группы. Пороги/паузы — со своими
+     потребителями (S1c+), здесь пока не валидируются. */
+  if (settings.reportingEnabled !== undefined && settings.reportingEnabled !== null
+      && typeof settings.reportingEnabled !== 'boolean') return false;
+  var repIdArrKeys = ['reportingGroupsA','reportingGroupsB'];
+  for (var rpg = 0; rpg < repIdArrKeys.length; rpg++) {
+    var rpgv = settings[repIdArrKeys[rpg]];
+    if (rpgv !== undefined && rpgv !== null && !isStrArr(rpgv, 200, 100)) return false;
+  }
+  var repNameArrKeys = ['reportingGroupsANames','reportingGroupsBNames'];
+  for (var rpn = 0; rpn < repNameArrKeys.length; rpn++) {
+    var rpnv = settings[repNameArrKeys[rpn]];
+    if (rpnv !== undefined && rpnv !== null && !isStrArr(rpnv, 500, 100)) return false;
+  }
+  /* #50 S1c — reportingThresholds: { <state str≤200> → { yellow:num|null, red:num|null } } —
+     порог aging A7 на статус (рабочих дней). ≤100 статусов; yellow/red в 0..10000. */
+  if (settings.reportingThresholds !== undefined && settings.reportingThresholds !== null) {
+    var rt = settings.reportingThresholds;
+    if (typeof rt !== 'object' || Array.isArray(rt)) return false;
+    var rtk = Object.keys(rt);
+    if (rtk.length > 100) return false;
+    for (var rti = 0; rti < rtk.length; rti++) {
+      if (typeof rtk[rti] !== 'string' || !rtk[rti] || rtk[rti].length > 200) return false;
+      var band = rt[rtk[rti]];
+      if (!band || typeof band !== 'object' || Array.isArray(band)) return false;
+      var bandKeys = Object.keys(band);   /* ревью #50: посторонние вложенные ключи не персистим */
+      for (var bki = 0; bki < bandKeys.length; bki++) { if (bandKeys[bki] !== 'yellow' && bandKeys[bki] !== 'red') return false; }
+      if (band.yellow !== undefined && band.yellow !== null && !isNumInRange(band.yellow, 0, 10000)) return false;
+      if (band.red !== undefined && band.red !== null && !isNumInRange(band.red, 0, 10000)) return false;
+    }
+  }
+  /* #50 S2 — reportingTargetStatuses: str[] (имена статусов ≤200, ≤100) — целевые статусы A1. */
+  if (settings.reportingTargetStatuses !== undefined && settings.reportingTargetStatuses !== null
+      && !isStrArr(settings.reportingTargetStatuses, 200, 100)) return false;
+  /* #50 S4 — reportingFlowStates: str[] (имена статусов ≤200, ≤100) — УПОРЯДОЧЕННЫЙ поток
+     (порядок = последовательность статусов). Кормит A8 (порядок баров/WIP) и A9 (обратность). */
+  if (settings.reportingFlowStates !== undefined && settings.reportingFlowStates !== null
+      && !isStrArr(settings.reportingFlowStates, 200, 100)) return false;
+  /* #50 S2 — reportingStatusLabels: { <state str≤200> → <label str≤200> } (≤100) — ярлык A1. */
+  if (settings.reportingStatusLabels !== undefined && settings.reportingStatusLabels !== null) {
+    var rsl = settings.reportingStatusLabels;
+    if (typeof rsl !== 'object' || Array.isArray(rsl)) return false;
+    var rslk = Object.keys(rsl);
+    if (rslk.length > 100) return false;
+    for (var rsi = 0; rsi < rslk.length; rsi++) {
+      if (typeof rslk[rsi] !== 'string' || !rslk[rsi] || rslk[rsi].length > 200) return false;
+      if (typeof rsl[rslk[rsi]] !== 'string' || rsl[rslk[rsi]].length > 200) return false;
+    }
+  }
+  /* #50 S3a — reportingAnchors: { <metric в lead|team|cycle> → { start, end } } — пары
+     якорей TTM. start/end — опциональные имена состояний (str≤200|null); метрика считается
+     только при обоих концах. Метрик-ключи фиксированы (⊆ [lead,team,cycle]). */
+  if (settings.reportingAnchors !== undefined && settings.reportingAnchors !== null) {
+    var ra = settings.reportingAnchors;
+    if (typeof ra !== 'object' || Array.isArray(ra)) return false;
+    var raAllowed = ['lead','team','cycle'];
+    var rak = Object.keys(ra);
+    for (var rai = 0; rai < rak.length; rai++) {
+      if (raAllowed.indexOf(rak[rai]) < 0) return false;
+      var pair = ra[rak[rai]];
+      if (!pair || typeof pair !== 'object' || Array.isArray(pair)) return false;
+      var pairKeys = Object.keys(pair);   /* ревью #50: посторонние вложенные ключи не персистим */
+      for (var pki = 0; pki < pairKeys.length; pki++) { if (pairKeys[pki] !== 'start' && pairKeys[pki] !== 'end') return false; }
+      if (!assertStr(pair.start, 200)) return false;   // start str≤200|null (опционально)
+      if (!assertStr(pair.end, 200)) return false;      // end   str≤200|null (опционально)
+    }
+  }
+  /* #50 S3a — reportingTtmNorms: { lead|team → int|null } — нормативы TTM в раб. днях
+     (Cycle норматива не имеет). Ключи фиксированы (⊆ [lead,team]); значение 0..10000|null. */
+  if (settings.reportingTtmNorms !== undefined && settings.reportingTtmNorms !== null) {
+    var rtn = settings.reportingTtmNorms;
+    if (typeof rtn !== 'object' || Array.isArray(rtn)) return false;
+    var rtnAllowed = ['lead','team'];
+    var rtnk = Object.keys(rtn);
+    for (var rtni = 0; rtni < rtnk.length; rtni++) {
+      if (rtnAllowed.indexOf(rtnk[rtni]) < 0) return false;
+      var rtnv = rtn[rtnk[rtni]];
+      if (rtnv !== undefined && rtnv !== null && !isNumInRange(rtnv, 0, 10000)) return false;
+    }
+  }
+  /* #50 S5b — reportingVariancePct: порог |расхождения| план-факт (%, num 0..10000|null). */
+  if (settings.reportingVariancePct !== undefined && settings.reportingVariancePct !== null
+      && !isNumInRange(settings.reportingVariancePct, 0, 10000)) return false;
+  /* #50 D10 — reportingTimeoutSec: таймаут-бэкстоп прогона отчёта (сек, num 5..3600|null). */
+  if (settings.reportingTimeoutSec !== undefined && settings.reportingTimeoutSec !== null
+      && !isNumInRange(settings.reportingTimeoutSec, 5, 3600)) return false;
+  /* #50 S7a — reportingSpilloverAgeBands: { warm|hot → int 1..1000|null } — пороги «возраста хвоста»
+     A10 (подряд спринтов не-done): warm→жёлтый бэйдж, hot→красный. Ключи фиксированы (⊆ [warm,hot]). */
+  if (settings.reportingSpilloverAgeBands !== undefined && settings.reportingSpilloverAgeBands !== null) {
+    var rsab = settings.reportingSpilloverAgeBands;
+    if (typeof rsab !== 'object' || Array.isArray(rsab)) return false;
+    var rsabAllowed = ['warm', 'hot'];
+    var rsabk = Object.keys(rsab);
+    for (var rsabi = 0; rsabi < rsabk.length; rsabi++) {
+      if (rsabAllowed.indexOf(rsabk[rsabi]) < 0) return false;
+      var rsabv = rsab[rsabk[rsabi]];
+      if (rsabv !== undefined && rsabv !== null && !isNumInRange(rsabv, 1, 1000)) return false;
+    }
+  }
+  /* #50 S6a — reportingA3StageField/OrgField/PriorityField: имена YT-полей бизнес-колонок A3
+     (str≤200|null, опц.). Пустое/отсутствует → колонка не рендерится (graceful-degrade). */
+  var repA3Fields = ['reportingA3StageField', 'reportingA3OrgField', 'reportingA3PriorityField'];
+  for (var r3f = 0; r3f < repA3Fields.length; r3f++) {
+    if (!assertStr(settings[repA3Fields[r3f]], 200)) return false;
+  }
+  /* #50 S8a — reportingThousandTag: имя YT-тега мелких задач B3 (str≤200|null, опц.). Пусто → B3 показывает подсказку. */
+  if (!assertStr(settings.reportingThousandTag, 200)) return false;
+  /* #50 S8b — reportingTechDebtType/Tag: отбор техдолга B1 = значение типа задачи ИЛИ имя тега (str≤200|null, опц., одно из двух). */
+  if (!assertStr(settings.reportingTechDebtType, 200)) return false;
+  if (!assertStr(settings.reportingTechDebtTag, 200)) return false;
+  /* #50 S8c — reportingBugType: значение типа задачи-бага B2 (str≤200|null, опц.). Пусто → B2 подсказка. */
+  if (!assertStr(settings.reportingBugType, 200)) return false;
+  /* #50 S8c — reportingLinkTypes: имена типов связей баг→фича (str[] ≤200/≤100, опц.). Пусто → B2 подсказка. */
+  if (settings.reportingLinkTypes !== undefined && settings.reportingLinkTypes !== null
+      && !isStrArr(settings.reportingLinkTypes, 200, 100)) return false;
+  /* #50 S6b — reportingRoleMonthlyCapacity: { <roleKey str≤200> → ч/мес num 0..100000|null } —
+     месячная ёмкость роли для A6 (знаменатель «месяцев»). ≤50 ролей; значение опц. */
+  if (settings.reportingRoleMonthlyCapacity !== undefined && settings.reportingRoleMonthlyCapacity !== null) {
+    var rmc = settings.reportingRoleMonthlyCapacity;
+    if (typeof rmc !== 'object' || Array.isArray(rmc)) return false;
+    var rmck = Object.keys(rmc);
+    if (rmck.length > 50) return false;
+    for (var rmi = 0; rmi < rmck.length; rmi++) {
+      if (typeof rmck[rmi] !== 'string' || !rmck[rmi] || rmck[rmi].length > 200) return false;
+      var rmv = rmc[rmck[rmi]];
+      if (rmv !== undefined && rmv !== null && !isNumInRange(rmv, 0, 100000)) return false;
+    }
+  }
+  /* #50 S3a — reportingPauseMarkers: { states:[str≤200 ≤100], tags:[str≤200 ≤100] } —
+     маркеры пауз (статусы/теги); интервал вычитается из TTM. */
+  if (settings.reportingPauseMarkers !== undefined && settings.reportingPauseMarkers !== null) {
+    var rpm = settings.reportingPauseMarkers;
+    if (typeof rpm !== 'object' || Array.isArray(rpm)) return false;
+    var rpmKeys = Object.keys(rpm);   /* ревью #50: посторонние вложенные ключи не персистим */
+    for (var rpmi = 0; rpmi < rpmKeys.length; rpmi++) { if (rpmKeys[rpmi] !== 'states' && rpmKeys[rpmi] !== 'tags') return false; }
+    if (rpm.states !== undefined && rpm.states !== null && !isStrArr(rpm.states, 200, 100)) return false;
+    if (rpm.tags !== undefined && rpm.tags !== null && !isStrArr(rpm.tags, 200, 100)) return false;
   }
   return true;
 }
@@ -1791,6 +1986,36 @@ function isReleaseEngineer(ctx) {
   var s = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (s && s.releaseEngineerGroups)     || [];
   var names = (s && s.releaseEngineerGroupNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+/**
+ * #50 — reporting-access контур B (руководство). Членство в ssp_settings.reportingGroupsB.
+ * Deny-by-default. Потребитель — backend-reporting.js (GET reporting-access) + фронт-гейт
+ * узлов дерева/секции отчётности. Данные отчётности чувствительны → доступ не опционален.
+ */
+function isReportingViewerB(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var s = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (s && s.reportingGroupsB)      || [];
+  var names = (s && s.reportingGroupsBNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+/**
+ * #50 — reporting-access контур A (лиды). B⊇A (US-ACC-02): руководитель (viewer B) видит и
+ * оперативные (A). Членство в reportingGroupsA ИЛИ доступ к B. Deny-by-default.
+ */
+function isReportingViewerA(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
+  if (isReportingViewerB(ctx)) return true; /* B ⊇ A (US-ACC-02) */
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var s = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (s && s.reportingGroupsA)      || [];
+  var names = (s && s.reportingGroupsANames) || [];
   if (!ids.length && !names.length) return false;
   return userInGroups(ctx, ids, names);
 }
@@ -2793,6 +3018,8 @@ exports.isInstanceAdmin             = isInstanceAdmin;       // #51 — байп
 exports.isPlanningManager           = isPlanningManager;
 exports.isReleaseManager            = isReleaseManager;      // #48 R2.4 — релиз-роли (D-C)
 exports.isReleaseEngineer           = isReleaseEngineer;     // #48 R2.4
+exports.isReportingViewerA          = isReportingViewerA;    // #50 — reporting-access контур A
+exports.isReportingViewerB          = isReportingViewerB;    // #50 — reporting-access контур B (B⊇A)
 exports.ALLOWED_CALENDAR_KEYS       = ALLOWED_CALENDAR_KEYS;
 exports.ALLOWED_ABSENCE_ENTRY_KEYS  = ALLOWED_ABSENCE_ENTRY_KEYS;
 exports.ALLOWED_CAPACITY_RECORD_KEYS = ALLOWED_CAPACITY_RECORD_KEYS;

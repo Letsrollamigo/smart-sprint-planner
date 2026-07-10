@@ -85,12 +85,11 @@
     kids.appendChild(mkChild('planning-roles',   'planningLevelRoles',   'group'));
     kids.appendChild(mkChild('planning-people',  'planningLevelPeople',  'user'));
     kids.appendChild(mkChild('planning-standup', 'planningLevelStandup', 'comment'));
+    /* Гант + История — дети «Планирования» (2-й уровень, ⚖ владелец 2026-07-09; nodeId неизменен → поведение то же). */
+    kids.appendChild(mkChild('gantt',   'tabGantt',   'bars'));
+    kids.appendChild(mkChild('history', 'tabHistory', 'history'));
     grp.appendChild(kids);
     tree.appendChild(grp);
-
-    /* 3. Гант / История */
-    tree.appendChild(mkItem('gantt',   'tabGantt',   'bars'));
-    tree.appendChild(mkItem('history', 'tabHistory', 'history'));
 
     /* #48 R1.2b — Релиз-менеджмент: раскрываемая группа «Релизы» с детьми
        (планируемые / история релизов), только при releaseEnabled (иначе группы нет —
@@ -106,6 +105,24 @@
       relKids.appendChild(mkChild('release-history', 'relNodeHistory', 'history'));
       relGrp.appendChild(relKids);
       tree.appendChild(relGrp);
+    }
+
+    /* #50 — Отчётность: раскрываемая группа с детьми контур A / контур B. Гейт — двойной:
+       reportingEnabled (настройка) × членство в reporting-группе (getReportingAccess —
+       async-флаги с бэка, US-ACC; core пересобирает дерево по приходу ответа). Дочерний узел
+       строится только при доступе к его контуру (B⊇A вшито на бэке). Паттерн группы «Релизы». */
+    var _repAcc = (deps.state && deps.state.getReportingAccess) ? deps.state.getReportingAccess() : { a: false, b: false };
+    if (_capS && _capS.reportingEnabled && _repAcc && (_repAcc.a || _repAcc.b)) {
+      var repGrp = document.createElement('details'); repGrp.className = 'ssp-tree__group'; repGrp.open = true;
+      var repSum = document.createElement('summary'); repSum.className = 'ssp-tree__group-summary';
+      repSum.appendChild(_treeIcon('bars'));
+      var repTxt = document.createElement('span'); repTxt.setAttribute('data-i18n', 'repNavSettings'); repTxt.textContent = T('repNavSettings');
+      repSum.appendChild(repTxt); repGrp.appendChild(repSum);
+      var repKids = document.createElement('div'); repKids.className = 'ssp-tree__children';
+      if (_repAcc.a) repKids.appendChild(mkChild('reporting-a', 'repNodeA', 'bars'));
+      if (_repAcc.b) repKids.appendChild(mkChild('reporting-b', 'repNodeB', 'bars'));
+      repGrp.appendChild(repKids);
+      tree.appendChild(repGrp);
     }
 
     /* 4. Поделиться (#36) — копирует текущий deep-link URL; enable/disable по наличию спринта.
@@ -154,6 +171,8 @@
     else if (nodeId === 'history')          { _clickTab('history'); }
     else if (nodeId === 'release-planned')  { _clickTab('release-planned'); }   /* #48 R1.2b */
     else if (nodeId === 'release-history')  { _clickTab('release-history'); }
+    else if (nodeId === 'reporting-a')      { _clickTab('reporting-a'); }        /* #50 */
+    else if (nodeId === 'reporting-b')      { _clickTab('reporting-b'); }
     /* persist */
     try { var ui = deps.draftGet('ui') || {}; ui.dashNode = nodeId; deps.draftSet('ui', ui); } catch(_){}
     /* #36 — отразить узел в URL (no-op до _urlSyncEnabled / вне global) */

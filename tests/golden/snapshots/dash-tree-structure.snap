@@ -38,14 +38,14 @@
     {
       "node": "gantt",
       "tag": "BUTTON",
-      "cls": "ssp-tree__item",
+      "cls": "ssp-tree__child",
       "i18n": "tabGantt",
       "text": "Диаграмма Ганта"
     },
     {
       "node": "history",
       "tag": "BUTTON",
-      "cls": "ssp-tree__item",
+      "cls": "ssp-tree__child",
       "i18n": "tabHistory",
       "text": "История спринтов"
     },

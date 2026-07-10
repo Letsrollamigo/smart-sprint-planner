@@ -1,6 +1,7 @@
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
 import * as jsxRuntime from 'react/jsx-runtime';
+import * as Recharts from 'recharts';   /* #50 S9-VIZ — чарт-либа (MIT, React+SVG), доступ как SSP_VENDORED.Recharts */
 import Dialog from '@jetbrains/ring-ui-built/components/dialog/dialog';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
 import DatePicker from '@jetbrains/ring-ui-built/components/date-picker/date-picker';
@@ -46,4 +47,4 @@ import { pt } from 'date-fns/locale/pt';
 import { hu } from 'date-fns/locale/hu';
 import { es } from 'date-fns/locale/es';
 const DateFnsLocales = { en: enUS, ru, fr, de, 'zh-CN': zhCN, it, pl, tr, ja, ko, cs, nl, pt, hu, es };
-globalThis.SSP_VENDORED = { React, ReactDOMClient, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, DateFnsLocales };
+globalThis.SSP_VENDORED = { React, ReactDOMClient, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, DateFnsLocales, Recharts };

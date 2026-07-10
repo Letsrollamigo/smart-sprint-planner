@@ -1388,7 +1388,7 @@
      Узлы: sprint-params (D6) · planning-{roles,people,standup} (D5) · gantt · history · share(#36 — copy deep-link URL).
      Кликает по дереву → программно дёргаем существующие tracker-узлы (.tab-btn / .planning-level-btn),
      callsite'ы целы. Состояние в _draft.ui.dashNode + body-класс ssp-dashnode-<id>. */
-  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history','capacity','release-planned','release-history'];
+  var SSP_DASH_NODES = ['sprint-params','backlog','planning-roles','planning-people','planning-standup','gantt','history','capacity','release-planned','release-history','reporting-a','reporting-b'];
 
   /* #25 Ф2 dash-shell вынесен в dash-shell.js (Фаза 5 слайс 13, домен E6) за __SSP_DASH_SHELL.
      SSP_DASH_NODES остаётся в ядре (читается init-зоной _loadAndRenderProject) — приходит депом.
@@ -1418,6 +1418,8 @@
         /* #45 — _buildDashTree гейтит узел «Ёмкость» по capacityMode; без getSettings
            здесь _capS=null → узел «Ёмкость» НИКОГДА не строился в global-дереве (баг 2.16.0). */
         getSettings: function () { return _settings; },
+        /* #50 — членство в reporting-группе (контуры A/B) для гейта узлов отчётности. */
+        getReportingAccess: function () { return _reportingAccess || { a: false, b: false }; },
       },
     };
   }
@@ -1777,6 +1779,9 @@
     }
     /* v5.0 — refresh кнопки перехода в overlay настроек (видимость по серверной проверке) */
     refreshOpenSettingsBtn();
+    /* #50 — reporting-access: серверный гейт членства (US-ACC); узлы дерева/вкладки
+       отчётности появляются по reportingEnabled × членству. Async → rebuild по приходу. */
+    refreshReportingAccess();
     /* v5.0.1 — refresh кнопки «Очистить всю историю» (отдельная роль historyManager) */
     refreshClearHistoryBtn();
     /* ── I18N init: apply language and set selector ── */
@@ -2069,7 +2074,11 @@
          (иначе при выборе проекта с releaseEnabled узлы не строятся — баг 2.16.0). */
       var hasRel = !!navTree.querySelector('[data-node="release-planned"]');
       var wantRel = !!(_settings && _settings.releaseEnabled);
-      if (hasCap === wantCap && hasRel === wantRel) return;
+      /* #50 — узлы отчётности появляются/исчезают по reportingEnabled × членству (async-флаги
+         reporting-access; refreshReportingAccess зовёт этот sync по приходу ответа). */
+      var hasRep = !!navTree.querySelector('[data-node="reporting-a"]') || !!navTree.querySelector('[data-node="reporting-b"]');
+      var wantRep = !!(_settings && _settings.reportingEnabled && _reportingAccess && (_reportingAccess.a || _reportingAccess.b));
+      if (hasCap === wantCap && hasRel === wantRel && hasRep === wantRep) return;
       var act = navTree.querySelector('[data-node].active');
       var activeNode = act ? act.dataset.node : null;
       var fresh = _buildDashTree();
@@ -2079,6 +2088,34 @@
         if (el) el.classList.add('active');
       }
     } catch(_){}
+  }
+
+  /* #50 — reporting-access: членство в reporting-группе (контуры A/B) считает backend
+     (GET reporting-access, US-ACC-04). Default deny → узлы скрыты, пока фетч не подтвердит.
+     Фетчим только при reportingEnabled (иначе модуль выключен). По приходу — обновляем флаги
+     + пересобираем вкладки/дерево (паттерн refreshOpenSettingsBtn; live-обновление после
+     смены групп в настройках — на перезаходе, узел в S1 пуст). */
+  var _reportingAccess = { a: false, b: false };
+  function refreshReportingAccess() {
+    if (!(_settings && _settings.reportingEnabled)) { _reportingAccess = { a: false, b: false }; return; }
+    apiGet('reporting-access').then(function (r) {
+      _reportingAccess = { a: !!(r && r.a), b: !!(r && r.b) };
+      try { if (typeof _mountTabsAndSync === 'function') _mountTabsAndSync(); } catch (_) {}
+      try { if (typeof _syncGlobalDashTree === 'function') _syncGlobalDashTree(); } catch (_) {}
+      /* F5 на вкладке отчётности (ревью #50): restoreUiState отработал ДО прихода access —
+         кнопки ещё не существовали, click был no-op. Дощёлкиваем сохранённую вкладку; если
+         юзер уже ушёл на другую, ui.activeTab перезаписан его кликом — не дёргаем. */
+      try {
+        var ui0 = (typeof _draftGet === 'function' && _draftGet('ui')) || {};
+        if (ui0.activeTab === 'reporting-a' || ui0.activeTab === 'reporting-b') {
+          var tb0 = document.querySelector('.tab-btn[data-tab="' + ui0.activeTab + '"]');
+          if (tb0 && !tb0.classList.contains('active') && tb0.style.display !== 'none') tb0.click();
+        }
+      } catch (_) {}
+    }).catch(function (e) {
+      _reportingAccess = { a: false, b: false };
+      diag('reporting-access ERR: ' + String(e), 'err');
+    });
   }
 
   /* #45 R3 — видимость вкладки «Ёмкость» по _settings.capacityMode ('full' → видна).
@@ -2121,6 +2158,7 @@
       checkAssignerRights: checkAssignerRights,
       applyPersonalPlanningVisibility: applyPersonalPlanningVisibility,
       applyCapacityModeVisibility: _applyCapacityModeVisibility,
+      refreshReportingAccess: refreshReportingAccess,   /* #50 (ревью) — оживление вкладок отчётности post-save */
       refreshClearHistoryBtn: refreshClearHistoryBtn,
       renderPlannerRoles: renderPlannerRoles,
       applyDiagLogVisibility: _applyDiagLogVisibility,
@@ -2299,6 +2337,12 @@
       _tabs.push({ id: 'release-planned', title: T('relNodePlanned') || 'Планируемые релизы' });
       _tabs.push({ id: 'release-history', title: T('relNodeHistory') || 'История релизов' });
     }
+    /* #50 — вкладки отчётности (условно: reportingEnabled × членство в reporting-группе;
+       контур A — при доступе a, контур B — при доступе b, B⊇A вшито на бэке). */
+    if (_settings && _settings.reportingEnabled) {
+      if (_reportingAccess && _reportingAccess.a) _tabs.push({ id: 'reporting-a', title: T('repNodeA') || 'Оперативные (A)' });
+      if (_reportingAccess && _reportingAccess.b) _tabs.push({ id: 'reporting-b', title: T('repNodeB') || 'Управленческие (B)' });
+    }
     host.dataset.tabsJson = JSON.stringify(_tabs);
     /* Sync selected from active tracker (если кто-то уже выбрал tab до mount). */
     var activeTracker = document.querySelector('.tab-btn.tab-state-tracker.active');
@@ -2338,7 +2382,8 @@
         btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
         btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
         btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity' ||
-        btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history');
+        btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history' ||
+        btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b');
       /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
       var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
       var tabsHost = document.getElementById('sspTabsHost');
@@ -2408,6 +2453,12 @@
       if (btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history') {
         try { RELEASE_VIEW.loadAndRender(_releaseDeps(), btn.dataset.tab === 'release-history' ? 'history' : 'planned'); }
         catch(e){ diag('release render err: '+e,'err'); }
+      }
+      /* #50 S1c — вкладки отчётности: контур A → A7 Aging (pull активных задач → примитив →
+         buildAgingRows), контур B → плейсхолдер. Доменный вью reporting-view.js. */
+      if (btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b') {
+        try { loadReportingView(btn.dataset.tab === 'reporting-b' ? 'b' : 'a'); }
+        catch(e){ diag('reporting render err: '+e,'err'); }
       }
       if (btn.dataset.tab === 'settings') {
         checkSettingsManager().then(function(canManage) {
@@ -3569,6 +3620,28 @@
     });
     return _xlsxLoadPromise;
   }
+  /* #50 S9-EXP-b — pdfmake (vendored, offline, тот же relative-script паттерн что XLSX):
+     грузим ПОСЛЕДОВАТЕЛЬНО min→vfs (vfs зовёт pdfMake.addVirtualFileSystem → pdfMake должен
+     существовать). Roboto с кириллицей — дефолтный шрифт, конфиг шрифтов не нужен. */
+  var _pdfLoadPromise = null;
+  function loadPdfMakeLib() {
+    /* memo-промис = гейт готовности; НЕ проверяем pdfMake.vfs (в 0.2.x он undefined — шрифты
+       во внутреннем store, см. writeReportPdf). Первый вызов грузит min→vfs, дальше — кэш. */
+    if (_pdfLoadPromise) return _pdfLoadPromise;
+    _pdfLoadPromise = new Promise(function (resolve, reject) {
+      function inject(src, next) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = next;
+        s.onerror = function () { _pdfLoadPromise = null; reject(new Error('pdfmake load failed: ' + src)); };
+        document.head.appendChild(s);
+      }
+      inject('lib/pdfmake.min.js', function () {
+        inject('lib/pdfmake-vfs.js', function () { diag('pdfmake lib loaded (bundled)', 'ok'); resolve(); });
+      });
+    });
+    return _pdfLoadPromise;
+  }
   /* Тир B — тело в excel-export.js; lazy-load XLSX и AOA-сборка 1:1. */
   function exportSprintToExcel(rec) {
     return EXCEL_EXPORT.exportSprintToExcel(rec, _excelDeps());
@@ -4219,6 +4292,33 @@
     };
   }
   function loadBacklogPool() { return BACKLOG_LOADER.loadBacklogPool(_backlogDeps()); }
+
+  /* #50 S1c — Оперативная отчётность: вью-делегатор + deps. Примитив bulkStateTransitions
+     инжектится из REPORTING_DATA-моста (вью — domain, чужой domain-мост не зовёт, B1). */
+  var REPORTING_VIEW = (typeof window !== 'undefined' && window.__SSP_REPORTING_VIEW) || {};
+  var REPORTING_DATA = (typeof window !== 'undefined' && window.__SSP_REPORTING_DATA) || {};
+  function _reportingDeps() {
+    return {
+      T: T, diag: diag, host: _host, ctx: _ctx, settings: _settings,
+      activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),
+      draftGet: _draftGet, draftSet: _draftSet,
+      bulkStateTransitions: REPORTING_DATA.bulkStateTransitions, bulkWorkItems: REPORTING_DATA.bulkWorkItems, bulkAsOfEstimates: REPORTING_DATA.bulkAsOfEstimates, /* #50 S5a A4 · S5b A5 */
+      bulkAnchorTransitions: REPORTING_DATA.bulkAnchorTransitions, bulkPauseTagIntervals: REPORTING_DATA.bulkPauseTagIntervals, /* S3c A2 TTM */
+      combinePauses: REPORTING_DATA.combinePauses, searchAssist: REPORTING_DATA.searchAssist, fetchHistory: REPORTING_DATA.fetchHistory, /* #50 QueryAssist отбора · S7b A10 fetchHistory (планер-нативный GET /history) */
+      roles: (typeof getActiveRoles === 'function' ? getActiveRoles() : []).map(function (r) { return { key: r.key, fieldName: (_settings && _settings[r.userField]) || null, estField: (_settings && _settings[r.fieldEst]) || null, label: roleLabel(r) }; }), /* #50 S5a-iii A4 · S5b A5 estField */
+      exportReport: function (fmt, vm) {   /* #50 S9-EXP — композиция-рут: pure-проекция отчёта → XLS/PDF-писатель */
+        var EXP = (typeof window !== 'undefined' && window.__SSP_REPORTING_EXPORT_PURE) || null;
+        if (!EXP || !vm) return;
+        var model = EXP.reportToSheets(vm, { fmtDate: fmtDate, nowTs: Date.now() });
+        if (fmt === 'pdf') EXCEL_EXPORT.writeReportPdf(model, { t: T, toast: toast, diag: diag, loadPdfMakeLib: loadPdfMakeLib });
+        else EXCEL_EXPORT.writeReportXlsx(model, _excelDeps());
+      },
+      state: { getSettings: function () { return _settings; } },
+    };
+  }
+  function loadReportingView(contour) {
+    if (typeof REPORTING_VIEW.loadAndRender === 'function') REPORTING_VIEW.loadAndRender(_reportingDeps(), contour);
+  }
   function _backlogAssist(req) { return BACKLOG_LOADER._backlogAssist(req, _backlogDeps()); }
   /* §8 schema-level fail-loud — сверить бандл состояний fieldState с маппингом (зоны/старт/
      пауза/resolved); незамапленные → _backlogUnmapped (баннер). Бандл — через общий

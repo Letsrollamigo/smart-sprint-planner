@@ -221,7 +221,88 @@ function exportSprintToExcel(rec, deps) {
   diag('Excel exported: ' + fileName, 'ok');
 }
 
-const api = { buildConflictAOA, exportSprintToExcel };
+/* #50 S9-EXP-a — экспорт любого отчёта отчётности в XLSX. model = выход
+   reporting-export-pure.reportToSheets: { fileStem, title, meta:[[k,v]], sections:[{title,columns,rows}] }.
+   Один лист: заголовок + мета + секции (подзаголовок + колонки + строки), разделённые пустой строкой.
+   Lazy-load XLSX 1:1 как exportSprintToExcel (первый клик грузит vendored lib, дальше — напрямую). */
+function writeReportXlsx(model, deps) {
+  var T = deps.t, toast = deps.toast, diag = deps.diag, loadXLSXLib = deps.loadXLSXLib;
+  if (typeof XLSX === 'undefined') {
+    if (toast) toast((T && T('toastXlsxLoading')) || 'Загружаем XLSX-библиотеку…', 'info');
+    loadXLSXLib().then(function () { writeReportXlsx(model, deps); }).catch(function (e) {
+      if (diag) diag('XLSX load failed: ' + (e && e.message ? e.message : e), 'err');
+      if (toast) toast(T ? T('toastXlsxErr') : 'Ошибка XLSX');
+    });
+    return;
+  }
+  var aoa = [];
+  if (model.title) aoa.push([model.title]);
+  (model.meta || []).forEach(function (m) { aoa.push([m[0], m[1]]); });
+  (model.sections || []).forEach(function (sec) {
+    aoa.push([]);                                        /* разделитель секций */
+    if (sec.title) aoa.push([sec.title]);
+    aoa.push(sec.columns || []);
+    (sec.rows || []).forEach(function (r) { aoa.push(r); });
+  });
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  var wb = XLSX.utils.book_new();
+  var sheetName = String(model.title || 'Report').replace(/[\\/:*?"[\]]/g, ' ').slice(0, 31) || 'Report';
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  XLSX.writeFile(wb, (model.fileStem || 'report') + '.xlsx');
+  if (diag) diag('Report XLSX exported: ' + (model.fileStem || 'report'), 'ok');
+}
+
+/* #50 S9-EXP-b — экспорт отчёта в PDF через vendored pdfmake (Roboto с кириллицей по умолчанию).
+   Тот же выход reportToSheets, что и XLS: заголовок + мета-таблица (2 колонки) + секции
+   (подзаголовок + таблица). Landscape — отчёты широкие. Все ячейки строкой (pdfmake не любит
+   голые числа в body). Lazy-load pdfmake 1:1 как writeReportXlsx. */
+function writeReportPdf(model, deps) {
+  var T = deps.t, toast = deps.toast, diag = deps.diag, loadPdfMakeLib = deps.loadPdfMakeLib;
+  if (typeof window === 'undefined' || !window.pdfMake) {
+    if (toast) toast((T && T('repExportPdfLoading')) || 'Загружаем PDF-библиотеку…', 'info');
+  }
+  /* ⚠️ pdfmake 0.2.x регистрирует шрифты во ВНУТРЕННИЙ store (addVirtualFileSystem → приватная
+     переменная), а pdfMake.vfs остаётся undefined. Поэтому готовность НЕЛЬЗЯ проверять по PM.vfs
+     (это давало бесконечную ре-инъекцию → фриз потока). Гейт готовности = резолв memo-промиса
+     loadPdfMakeLib (грузит min→vfs один раз); createPdf сам читает внутренний store. */
+  loadPdfMakeLib().then(function () {
+    var PM = window.pdfMake;
+    if (!PM) { if (diag) diag('pdfMake unavailable after load', 'err'); if (toast) toast(T ? T('repExportPdfErr') : 'Ошибка PDF'); return; }
+    /* Астральные символы (эмодзи в названиях задач) — вне cmap вшитого Roboto → .notdef-боксы
+       в PDF; вычищаем суррогатные пары (ревью #50). Кириллица в cmap есть — не трогаем. */
+    var S = function (v) { return String(v == null ? '' : v).replace(/[\uD800-\uDFFF]/g, ''); };
+    var content = [];
+    if (model.title) content.push({ text: S(model.title), style: 'h' });
+    if ((model.meta || []).length) {
+      content.push({ table: { widths: ['auto', '*'], body: (model.meta || []).map(function (m) { return [{ text: S(m[0]), bold: true }, S(m[1])]; }) }, layout: 'noBorders', margin: [0, 2, 0, 8], fontSize: 9 });
+    }
+    (model.sections || []).forEach(function (sec) {
+      if (sec.title) content.push({ text: S(sec.title), style: 'sh' });
+      var head = (sec.columns || []).map(function (c) { return { text: S(c), bold: true, fillColor: '#eef0f3' }; });
+      var body = [head].concat((sec.rows || []).map(function (r) { return (r || []).map(function (c) { return S(c); }); }));
+      /* ревью #50: без widths auto-таблица шире страницы РИСУЕТСЯ за правое поле и обрезается
+         (pdfmake не сжимает auto ниже длиннейшего слова). Широкие секции (B0 месяц×системы,
+         A3 роли) — равные '*' (перенос по словам внутри колонки); узкие ≤4 — auto (компактнее). */
+      var tbl = { headerRows: 1, body: body };
+      var colsN = (sec.columns || []).length;
+      if (colsN >= 5) { tbl.widths = []; for (var wi = 0; wi < colsN; wi++) tbl.widths.push('*'); }
+      content.push({ table: tbl, layout: 'lightHorizontalLines', margin: [0, 2, 0, 10], fontSize: 9 });
+    });
+    var dd = {
+      content: content,
+      defaultStyle: { fontSize: 10 },
+      styles: { h: { fontSize: 15, bold: true, margin: [0, 0, 0, 6] }, sh: { fontSize: 12, bold: true, margin: [0, 6, 0, 3] } },
+      pageMargins: [26, 26, 26, 26], pageOrientation: 'landscape',
+    };
+    PM.createPdf(dd).download((model.fileStem || 'report') + '.pdf');
+    if (diag) diag('Report PDF exported: ' + (model.fileStem || 'report'), 'ok');
+  }).catch(function (e) {
+    if (diag) diag('pdfmake export failed: ' + (e && e.message ? e.message : e), 'err');
+    if (toast) toast(T ? T('repExportPdfErr') : 'Ошибка PDF');
+  });
+}
+
+const api = { buildConflictAOA, exportSprintToExcel, writeReportXlsx, writeReportPdf };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_EXCEL_EXPORT = api; } catch (_) { /* sandboxed write may throw */ }

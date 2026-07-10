@@ -16,6 +16,9 @@ require('./backend-issuefields.js');
 /* #48 R1.2 — Release Management backend: тело дописывает releases-endpoints в core.ENDPOINTS
    (тот же читает backend-global.js — gotcha #7). require ДО публикации httpHandler ниже. */
 require('./backend-release.js');
+/* #50 — Оперативная отчётность backend: тело дописывает reporting-endpoints в core.ENDPOINTS
+   (тот же читает backend-global.js — gotcha #7). require ДО публикации httpHandler ниже. */
+require('./backend-reporting.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

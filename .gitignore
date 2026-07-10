@@ -11,3 +11,6 @@ Thumbs.db
 # Playwright auth state — session cookies, never commit
 playwright/.auth/user.json
 playwright/.auth/*.json
+
+# Claude Design internal mirror — не публикуем в public GitHub
+design/

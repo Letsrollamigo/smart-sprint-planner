@@ -25,6 +25,7 @@
     "@jetbrains/ring-ui-built": "~7.0.108",
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",
     "esbuild": "^0.28.0",
-    "jsdom": "^29.1.1"
+    "jsdom": "^29.1.1",
+    "recharts": "^3.9.2"
   }
 }

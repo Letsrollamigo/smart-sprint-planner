@@ -2550,6 +2550,10 @@
          (callsite _setDashNode/restoreUiState); видимость рулит tabsJson (push при releaseEnabled). -->
     <button class="tab-btn tab-state-tracker" data-tab="release-planned" data-i18n="relNodePlanned" aria-hidden="true" tabindex="-1" style="display:none">Планируемые релизы</button>
     <button class="tab-btn tab-state-tracker" data-tab="release-history" data-i18n="relNodeHistory" aria-hidden="true" tabindex="-1" style="display:none">История релизов</button>
+    <!-- #50 — tracker'ы вкладок отчётности (контур A/B). Всегда в DOM (callsite _setDashNode/
+         restoreUiState); видимость рулит tabsJson (push при reportingEnabled × членстве в reporting-группе). -->
+    <button class="tab-btn tab-state-tracker" data-tab="reporting-a" data-i18n="repNodeA" aria-hidden="true" tabindex="-1" style="display:none">Оперативные (A)</button>
+    <button class="tab-btn tab-state-tracker" data-tab="reporting-b" data-i18n="repNodeB" aria-hidden="true" tabindex="-1" style="display:none">Управленческие (B)</button>
   </div>
 
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
@@ -2830,6 +2834,10 @@
 <!-- ════ ВКЛАДКИ: РЕЛИЗ-МЕНЕДЖМЕНТ (#48 R1.2b) — содержимое строит release-view.render() ════ -->
 <div class="tab-panel" id="tab-release-planned"></div>
 <div class="tab-panel" id="tab-release-history"></div>
+
+<!-- ════ ВКЛАДКИ: ОТЧЁТНОСТЬ (#50) — содержимое монтирует __SSP_REPORTING_MOUNT (плейсхолдер S1) ════ -->
+<div class="tab-panel" id="tab-reporting-a"></div>
+<div class="tab-panel" id="tab-reporting-b"></div>
 
   <!-- v5.0.3 — Диагностическая панель. Видна всегда, свёрнута по умолчанию.
        Пользователь сам разворачивает <details> при необходимости диагностики. -->

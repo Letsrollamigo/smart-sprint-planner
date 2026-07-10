@@ -93,6 +93,9 @@
       deps.applyPersonalPlanningVisibility();
       /* #45 R3 — таб «Ёмкость» появляется/исчезает по capacityMode без перезагрузки виджета. */
       if (typeof deps.applyCapacityModeVisibility === 'function') deps.applyCapacityModeVisibility();
+      /* #50 (ревью) — включение reportingEnabled/смена групп оживляет вкладки отчётности
+         без перезахода (refreshReportingAccess перезапросит членство и пересоберёт вкладки). */
+      if (typeof deps.refreshReportingAccess === 'function') deps.refreshReportingAccess();
       deps.refreshClearHistoryBtn();
       deps.renderPlannerRoles();
       try { deps.applyDiagLogVisibility(); } catch (_) {}
