@@ -40,6 +40,18 @@
       ]
     },
     {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": "td-state",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "Исправлена",
+        "Исправлена"
+      ]
+    },
+    {
       "id": "priority",
       "title": "Приоритет",
       "sortable": true,

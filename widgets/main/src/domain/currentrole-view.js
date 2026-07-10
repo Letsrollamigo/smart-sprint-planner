@@ -403,6 +403,7 @@ function _buildTaskTableVm(deps) {
   var hasExternalTicket = !!(_settings && _settings.fieldExternalTicketId);
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
   var hasSystem = !!(_settings && _settings.fieldSystem);
+  var hasState = !!(_settings && _settings.fieldState);   /* #polish — read-only статус задачи по настройке поля состояния */
 
   var rows = active.map(function (item) {
     var taEntry = ta[item.issueId] || {};
@@ -416,6 +417,7 @@ function _buildTaskTableVm(deps) {
     var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
     var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
     cells.title = { __html: esc(item.title || '') + warn };
+    if (hasState) { cells.state = esc(dispEnum(item.state) || '—'); }   /* #polish — read-only статус (как rolecomposition state-cell read-only ветка) */
     cells.priority = esc(dispEnum(item.priority) || '—');
     if (hasXPriority) {
       cells.xpriority = esc(dispEnum(item.xpriority) || '—');
@@ -465,6 +467,7 @@ function _buildTaskTableVm(deps) {
     hasExternalTicket: hasExternalTicket,
     hasXPriority: hasXPriority,
     hasSystem: hasSystem,
+    hasState: hasState,
   };
 }
 
@@ -495,6 +498,9 @@ function renderCurrentRoleTaskTable(deps) {
   }
   /* min-width keeps task titles legible (default Ring cell collapses to text wrap on every word). */
   columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
+  if (vm.hasState) {   /* #polish — read-only статус задачи (по настройке fieldState) */
+    columns.push({ id: 'state', title: T('thState'), sortable: false, className: 'td-state', getValue: _vmCell });
+  }
   columns.push({ id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority', getValue: _vmCell });
   if (vm.hasXPriority) {
     columns.push({ id: 'xpriority', title: T('thXpriority'), sortable: true, className: 'td-xpriority', getValue: _vmCell });

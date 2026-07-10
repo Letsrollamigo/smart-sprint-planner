@@ -4,8 +4,8 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4324,
-      "locBudget": 4324,
+      "loc": 4326,
+      "locBudget": 4326,
       "stateBaseline": 77,
       "budgetNote": "#55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4/#56-7 — осознанный +8: _slotRev+getSlotRev/setSlotRev+toast/T в _ytApiDeps (optimistic lock, логика в youtrack-api/backend-core) + read-гард заражённого PP-канона в _getPersonalPlanningForCurrent. Прошлое: #48 R4 +4 (архив в _releaseDeps), R2.4 +2 (perms), R2.3 +4 (onStatePreview+fetchIssueData), R2.2 +2 (onToggleFreeze), R2.1 +4 (onStatusMenu+buildSnapshot), bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
@@ -77,8 +77,8 @@
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
     "core": {
-      "loc": 2718,
-      "locBudget": 2718,
+      "loc": 2719,
+      "locBudget": 2719,
       "budgetNote": "#53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
     },
     "modules": {
@@ -100,8 +100,8 @@
         "locBudget": 416
       },
       "backend-release.js": {
-        "loc": 263,
-        "locBudget": 263,
+        "loc": 264,
+        "locBudget": 264,
         "budgetNote": "#48 R4 архив (US-R4-02): +58 — splitForArchive (pure in-memory разрез активный/архив: терминальные-старейшие по snapshot.closedAt, trigger 300КБ → target 250КБ, дедуп против split-brain недописи, стоп на лимите архива — без молчаливой потери) + readArchive + GET releases-archive + archivedCount в GET / archived в POST; первая реализация паттерна #53. R2.4 authz: +73 — releasePerms (D-C; perms в GET) + engineerDiffAllowed (серверная валидация диффа РИ) + stampAudit (серверный стамп аудита) + ужесточение POST. Роль-хелперы is* — в backend-core."
       }
     }
@@ -144,8 +144,8 @@
     "domain/backlog-loader.js": {
       "layer": "domain",
       "domain": "domain/backlog-loader",
-      "loc": 273,
-      "locBudget": 306,
+      "loc": 316,
+      "locBudget": 316,
       "state": [
         "BACKLOG_ISSUE_FIELDS",
         "_api"
@@ -341,8 +341,8 @@
     "domain/release-controller.js": {
       "layer": "domain",
       "domain": "domain/release-controller",
-      "loc": 547,
-      "locBudget": 547,
+      "loc": 548,
+      "locBudget": 548,
       "budgetNote": "#55 авто-теги: +103 — buildTagOps (pure план remove/add) + _applyTagOps (fanout официальным REST от имени юзера; снятие = per-issue реконсиляция полного массива tags POST issues/{id} — DELETE через host.fetchYouTrack молча не выполняется, эмпирика стенда 2026-07-04) + _applyTags/applyTagsForIssues/applyTagsForTransfer + хуки onOk. Прошлое: #48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29.",
       "state": [],
       "publishes": [
@@ -386,8 +386,8 @@
     "domain/release-view.js": {
       "layer": "domain",
       "domain": "domain/release-view",
-      "loc": 430,
-      "locBudget": 430,
+      "loc": 432,
+      "locBudget": 432,
       "budgetNote": "#48 R4-ревью владельца: +1 — patchNote в live-VM (патчноут виден и на планируемой карточке). R4: +92 — экспорт .txt (US-R4-01: buildExportText pure-golden + _downloadTxt Blob-канон диаг-лога + exportRelease/_findRelease по активным+архиву) + архив (US-R4-02: _loadArchive lazy-GET, archive-срез в history-VM, archivedCount из GET) + share-гейт (US-R4-03: canShareRelease × _RELEASE_EXT_SHARE=false до YT 2026.1 — host.navigation НЕ признак, он есть в 2025.x) + _histRow извлечён (общая строка история/архив; + patchNote/notes полировка). R3.2 дерево: +61 — fetchIssueData links(Subtask INWARD)+_cfType; _treeRows → RELEASE_TREE_PURE; tree в обоих VM; слепок замораживает parentId+type (additive). R3.1 светофор: +26 нетто — computeZone/_anchorState/_countZones + readiness live+слепок; −14 снос _fetchTitles. R2.4: +4 — VM гейтит контролы серверными правами. R2.3: +42 — fetchIssueData (КАНОНИЧЕСКОЕ v.name — localizedName давал ложный рассинхрон). R2.2 база = 204. R2.1: +1. R1.5b/c: +80. R1.5 база = 121.",
       "state": [],
       "publishes": [

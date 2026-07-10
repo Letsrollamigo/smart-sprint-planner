@@ -31,6 +31,21 @@ function Rep({ role, login, name, variant }) {
   );
 }
 
+/* #polish — кликабельная ссылка на внешнюю задачу релиза. Рендерим <a> ТОЛЬКО для http(s)
+   (защита от javascript:/data: — XSS на пользовательском вводе); иначе показываем текстом. */
+function TaskLink({ url, L }) {
+  if (!url) return null;
+  const safe = /^https?:\/\//i.test(url) ? url : null;
+  return (
+    <React.Fragment>
+      <div className="ssp-release-hist__sect">{L.taskUrl}</div>
+      <div className="ssp-release-hist__pre">
+        {safe ? <a href={safe} target="_blank" rel="noopener noreferrer">{url}</a> : url}
+      </div>
+    </React.Fragment>
+  );
+}
+
 /* R3.1 — светофор готовности: сегментная полоса + легенда со счётчиками (4 зоны, макет
    design/mirror/release/planned-card.html .tl-full). readiness = {green,yellow,red,grey};
    пустой состав → не рендерим. Живой (карточка) и frozen (история из snapshot) — один компонент. */
@@ -188,6 +203,14 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
           <div className="ssp-release-hist__pre">{r.patchNote}</div>
         </React.Fragment>
       ) : null}
+      {/* #polish — заметки тоже на планируемой карточке (раньше только в ✎) */}
+      {r.notes ? (
+        <React.Fragment>
+          <div className="ssp-release-hist__sect">{L.notes}</div>
+          <div className="ssp-release-hist__pre">{r.notes}</div>
+        </React.Fragment>
+      ) : null}
+      <TaskLink url={r.taskUrl} L={L} />
       <CompositionSection r={r} L={L} />
       {canAdvance ? (
         <div className="ssp-release-card__actions">
@@ -261,6 +284,7 @@ function HistorySpoiler({ r, L, onExport }) {
               <div className="ssp-release-hist__pre">{r.notes}</div>
             </React.Fragment>
           ) : null}
+          <TaskLink url={r.taskUrl} L={L} />
           <div className="ssp-release-hist__sect">{L.composition} ({r.issuesCount})</div>
           {/* R3.2 — frozen-дерево из parentId слепка (легаси без parentId → плоско) */}
           {(r.tree && r.tree.rows.length) ? <TreeSection tree={r.tree} L={L} /> : <div className="ssp-release-hist__empty">—</div>}

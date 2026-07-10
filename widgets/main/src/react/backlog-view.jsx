@@ -78,6 +78,8 @@ const ST = {
   /* §12 carry-over бейджи */
   carryOver: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(229,109,23,.12)', color: AMBER, border: '1px solid ' + AMBER, whiteSpace: 'nowrap' },
   carryCont: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' },
+  /* #polish — бейдж «в спринте» (задача уже в составе любого спринта планера) */
+  inSprint: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(43,108,176,.12)', color: '#2b6cb0', border: '1px solid #2b6cb0', whiteSpace: 'nowrap' },
 };
 
 /* #3 — локальная сортировка таблицы вида «по ролям» (ID / Приоритет / Состояние), по аналогии
@@ -118,6 +120,12 @@ function CarryBadge({ carry, i18n }) {
   const isCarry = carry === 'carryover';
   const label = isCarry ? i18n.carryover : i18n.continuation;
   return <span style={isCarry ? ST.carryOver : ST.carryCont} title={label}>{label}</span>;
+}
+
+/* #polish — бейдж «в спринте»: задача уже в составе любого спринта планера (не тащить повторно). */
+function InSprintBadge({ inSprint, i18n }) {
+  if (!inSprint) return null;
+  return <span style={ST.inSprint} title={i18n.inSprintHint || i18n.inSprint}>{i18n.inSprint}</span>;
 }
 
 function Flag({ priority }) {
@@ -179,7 +187,7 @@ function TaskRow({ t, roleContext, showState, ytBase, fmt, i18n, onToSprint }) {
         <a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a>
       </td>
       <td style={ST.td}>{t.system || '—'}</td>
-      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
+      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /></td>
       {showState ? <td style={ST.td}>{t.stateName || '—'}</td> : null}
       {roleContext ? (
         <td style={ST.td}>
@@ -343,7 +351,7 @@ function TreeLeafTable({ tasks, colorOf, i18n, ytBase, onToSprint, pageSize }) {
             <tr key={t.issueId + ':' + i} style={t.isPaused ? undefined : undefined}>
               <td style={ST.td}><span style={{ ...ST.dot, background: colorOf[t.zone] || 'var(--muted)' }} title={zoneLabel(t.zone, i18n)} /></td>
               <td style={ST.td}><a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a></td>
-              <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /></td>
+              <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /></td>
               <td style={ST.td}>
                 <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.toSprint}
                         disabled={!onToSprint} title={i18n.toSprint}

@@ -66,6 +66,19 @@
       ]
     },
     {
+      "id": "state",
+      "title": "Состояние",
+      "sortable": false,
+      "className": "td-state",
+      "rightAlign": false,
+      "header": null,
+      "cells": [
+        "В работе",
+        "Открыта",
+        "Открыта"
+      ]
+    },
+    {
       "id": "priority",
       "title": "Приоритет",
       "sortable": true,

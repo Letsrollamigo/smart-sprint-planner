@@ -44,7 +44,7 @@
   "ALLOWED_RELEASES_KEYS": [
     "id", "name", "kind", "source", "status",
     "plannedDate", "freezeDate", "freezeLocked",
-    "patchNote", "notes", "roleReps", "issues", "snapshot", "readiness",
+    "patchNote", "notes", "taskUrl", "roleReps", "issues", "snapshot", "readiness",
     "createdBy", "createdAt", "updatedBy", "updatedAt", "pluginVersion"
   ]
 }

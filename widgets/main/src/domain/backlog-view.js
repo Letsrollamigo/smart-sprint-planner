@@ -131,6 +131,8 @@ function renderBacklog(deps) {
       unmappedSchema: deps.t('backlogUnmappedSchema'),
       carryover: deps.t('backlogCarryover'),
       continuation: deps.t('backlogContinuation'),
+      inSprint: deps.t('backlogInSprint'),          /* #polish — задача уже в составе любого спринта */
+      inSprintHint: deps.t('backlogInSprintHint'),
       colKey: deps.t('thId'),
       colSystem: deps.t('thSystem'),
       colSummary: deps.t('thTitle'),

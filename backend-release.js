@@ -64,6 +64,8 @@ function validateReleaseRecord(rec) {
   if (rec.freezeLocked !== undefined && rec.freezeLocked !== null && typeof rec.freezeLocked !== 'boolean') return false;
   if (!isStr(rec.patchNote, 20000)) return false;
   if (!isStr(rec.notes, 20000)) return false;
+  if (!isStr(rec.taskUrl, 2000)) return false; // #polish — ссылка на внешнюю задачу релиза (опц.); клик-санитайзинг http/https на фронте
+
   if (!isStr(rec.createdBy, 200) || !isStr(rec.updatedBy, 200) || !isStr(rec.pluginVersion, 40)) return false;
   if (rec.createdAt !== undefined && rec.createdAt !== null && typeof rec.createdAt !== 'number') return false;
   if (rec.updatedAt !== undefined && rec.updatedAt !== null && typeof rec.updatedAt !== 'number') return false;

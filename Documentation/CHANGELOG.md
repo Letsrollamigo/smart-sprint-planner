@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [2.19.0] — 2026-07-10
+
+> **Release-management & backlog polish + «Distribution by assignees» tab.**
+
+### Added
+
+- **Release task link (#48)** — a release gained an optional «Release task link» field: a URL to the release ticket in an external system. Set in the create/edit dialog, rendered as a clickable link on the planned-release card and in the history spoiler, and in the `.txt` export. Non-`http/https` values render as plain text, not a link.
+- **Notes on the release card (#48)** — the planned-release card now shows both the patch note and the notes (notes were previously visible only in edit mode and in history).
+- **«In a sprint» backlog marker (#21)** — in the backlog workspace, tasks already part of any sprint's composition (the current sprint or one from sprint history) are tagged with an «in a sprint» badge — so you don't add them twice and can see which epic tasks are already laid out. Works in both the by-role and tree views.
+- **State column in «Distribution by assignees»** — the task table on the tab gained a read-only «State» column showing each task's current state (per the configured State field).
+
+### Internal
+
+- `taskUrl` — additive release-record whitelist key (`≤2000` chars, `http/https` click-sanitizing on the frontend); the `inSprint` marker is built from `ssp_history` + the current `roleItems` with no extra network call. No schema-marker bump and no migration (changes are additive; old records read as-is).
+
 ## [2.18.1] — 2026-07-04
 
 > **Capacity tails (#53): archive of old sprints + partial-day absence.**

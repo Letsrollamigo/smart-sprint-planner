@@ -729,7 +729,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '2.18.1';
+  var APP_VERSION = '2.19.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4213,6 +4213,8 @@
         getSettings: function () { return _settings; },
         setBacklogPool: function (p) { _backlogPool = p; },
         getBacklogPool: function () { return _backlogPool; },
+        getHistory: function () { return _history; },        /* #polish — маркер «в спринте» (loader строит set из истории+roleItems) */
+        getRoleItems: function () { return _roleItems; },
       },
     };
   }

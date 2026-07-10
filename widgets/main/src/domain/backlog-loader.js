@@ -253,6 +253,25 @@ function _loadCarryover(acc, deps, stateFieldId) {
   }));
 }
 
+/* #polish — множество idReadable задач, состоящих в СОСТАВЕ любого спринта: текущий состав
+   (roleItems) ∪ все снимки истории (ssp_history). Из стейта, БЕЗ доп. фетча (история и
+   roleItems уже загружены ядром). null-proto lookup. Best-effort: нет аксессора → пустой set. */
+function _inSprintIdSet(deps) {
+  var set = Object.create(null);
+  var st = (deps && deps.state) || {};
+  var hist = (typeof st.getHistory === 'function' && st.getHistory()) || [];
+  for (var i = 0; i < hist.length; i++) {
+    var items = hist[i] && hist[i].items;
+    if (Array.isArray(items)) for (var j = 0; j < items.length; j++) { var id = items[j] && items[j].issueId; if (id) set[id] = true; }
+  }
+  var ri = (typeof st.getRoleItems === 'function' && st.getRoleItems()) || {};
+  for (var rk in ri) {
+    if (!Object.prototype.hasOwnProperty.call(ri, rk) || !Array.isArray(ri[rk])) continue;
+    for (var k = 0; k < ri[rk].length; k++) { var id2 = ri[rk][k] && ri[rk][k].issueId; if (id2) set[id2] = true; }
+  }
+  return set;
+}
+
 /* Постранично выгрести пул (cap maxBacklogTotal), смапить, положить в transient _backlogPool.
    Возвращает Promise<{ count, capped }>; ошибка → reject (вызывающий ловит). */
 function loadBacklogPool(deps) {
@@ -287,6 +306,8 @@ function loadBacklogPool(deps) {
   return loop()
     .then(function () { return _loadCarryover(acc, deps, stateFieldId); })   /* §7 — обогащение историей */
     .then(function () {
+      var inSet = _inSprintIdSet(deps);   /* #polish — пометить задачи уже в составе любого спринта */
+      acc.forEach(function (t) { if (inSet[t.idReadable]) t._inSprint = true; });
       deps.state.setBacklogPool(acc);
       if (capped && deps.diag) deps.diag('loadBacklogPool: capped at ' + cap + ' (' + acc.length + ' loaded)', 'warn');
       return { count: acc.length, capped: capped };

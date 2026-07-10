@@ -81,6 +81,7 @@ function _labels(deps) {
     source: T('relSrcLabel'), srcInternal: T('relSrcInternal'), srcVendor: T('relSrcVendor'),
     manager: T('relFieldManager'), engineer: T('relFieldEngineer'),
     patchNote: T('relFieldPatchnote'), notes: T('relFieldNotes'),
+    taskUrl: T('relFieldTaskUrl'),
     create: T('relBtnCreate'), cancel: T('btnCancel'), notSelected: T('phNotSelected'), selectDate: T('phNotSelected'),
     hintFreeze: T('relHintFreezeRule'), hintManager: T('relHintManagerDefault'), hintEngineer: T('relHintEngineerRequired'),
     valNameRequired: T('relValNameRequired'), valFreezeAfterPlan: T('relValFreezeAfterPlan'),
@@ -106,7 +107,7 @@ function _doCreate(deps, payload, closeModal) {
     name: payload.name,
     kind: payload.kind, source: payload.source, status: 'planned',
     plannedDate: _ymdToMs(payload.planDate), freezeDate: _ymdToMs(payload.freezeDate), freezeLocked: false,
-    patchNote: payload.patchNote || '', notes: payload.notes || '',
+    patchNote: payload.patchNote || '', notes: payload.notes || '', taskUrl: payload.taskUrl || '',
     roleReps: roleReps, issues: [],
     createdBy: me.login || '', createdAt: now, updatedBy: me.login || '', updatedAt: now,
     pluginVersion: deps.appVersion || '',
@@ -160,7 +161,7 @@ function _doUpdate(deps, releaseId, payload, closeModal) {
     var m = {}; for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) m[k] = r[k];
     m.name = payload.name; m.kind = payload.kind; m.source = payload.source;
     m.plannedDate = _ymdToMs(payload.planDate); m.freezeDate = _ymdToMs(payload.freezeDate);
-    m.patchNote = payload.patchNote || ''; m.notes = payload.notes || '';
+    m.patchNote = payload.patchNote || ''; m.notes = payload.notes || ''; m.taskUrl = payload.taskUrl || '';
     m.roleReps = roleReps; m.updatedBy = me.login || ''; m.updatedAt = Date.now();
     return m;
   });
@@ -207,7 +208,7 @@ function openEditDialog(deps, releaseId) {
           name: rec.name || '', kind: rec.kind || 'release', source: rec.source || 'internal',
           planDate: _msToLocalDate(rec.plannedDate), freezeDate: _msToLocalDate(rec.freezeDate),
           manager: reps.manager || '', engineer: reps.engineer || '',
-          patchNote: rec.patchNote || '', notes: rec.notes || '',
+          patchNote: rec.patchNote || '', notes: rec.notes || '', taskUrl: rec.taskUrl || '',
         },
         onCreate: function (payload) { _doUpdate(deps, releaseId, payload, function () { if (handle && handle.close) handle.close(); }); },
         onCancel: function () { if (handle && handle.close) handle.close(); },

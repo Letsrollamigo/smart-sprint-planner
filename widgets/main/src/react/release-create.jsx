@@ -64,7 +64,7 @@ function RingDate({ value, onChange, translations, locale }) {
 
 /* props: { labels:L, managerOptions:[{value,label}], engineerOptions, defaultManager,
             noGroups:bool, loadError:bool, onCreate, onCancel,
-            initial?:{name,kind,source,planDate:Date|null,freezeDate:Date|null,manager,engineer,patchNote,notes},
+            initial?:{name,kind,source,planDate:Date|null,freezeDate:Date|null,manager,engineer,patchNote,notes,taskUrl},
             submitLabel? } — R1.5a: initial+submitLabel переключают форму в режим редактирования. */
 function ReleaseCreateForm(props) {
   const Input = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Input;
@@ -84,6 +84,7 @@ function ReleaseCreateForm(props) {
   const [engineer, setEngineer] = React.useState(init.engineer || '');
   const [patchNote, setPatchNote] = React.useState(init.patchNote || '');
   const [notes, setNotes] = React.useState(init.notes || '');
+  const [taskUrl, setTaskUrl] = React.useState(init.taskUrl || '');   /* #polish — ссылка на внешнюю задачу релиза (опц.) */
   const [err, setErr] = React.useState('');
 
   const dpLocale = getDateFnsLocale(getCurrentSspLang());
@@ -101,7 +102,7 @@ function ReleaseCreateForm(props) {
     onCreate({
       name: name.trim(), planDate: fmtYmd(planDate), freezeDate: fmtYmd(freezeDate),
       kind: kind, source: source, manager: manager, engineer: engineer,
-      patchNote: patchNote.trim(), notes: notes.trim(),
+      patchNote: patchNote.trim(), notes: notes.trim(), taskUrl: taskUrl.trim(),
     });
   };
 
@@ -155,6 +156,14 @@ function ReleaseCreateForm(props) {
       <div className="ssp-release-row2">
         {repField(L.manager, manager, setManager, mgrOpts, L.hintManager, props.managerNoGroups, props.managerLoadError)}
         {repField(L.engineer, engineer, setEngineer, engOpts, L.hintEngineer, props.engineerNoGroups, props.engineerLoadError)}
+      </div>
+
+      {/* #polish — опц. ссылка на задачу релиза во внешней системе (кликабельна на карточке) */}
+      <div className="ssp-release-fld-row">
+        {label(L.taskUrl)}
+        {Input
+          ? <Input value={taskUrl} maxLength={2000} placeholder="https://…" onChange={(ev) => setTaskUrl(inputVal(ev))} />
+          : <input type="url" className="ssp-release-fld" value={taskUrl} maxLength={2000} placeholder="https://…" onChange={(e) => setTaskUrl(e.target.value)} />}
       </div>
 
       <div className="ssp-release-fld-row">

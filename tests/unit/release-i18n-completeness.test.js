@@ -36,7 +36,7 @@ const RELEASE_KEYS = [
   'relSetTypeTitle', 'relSetTypeFixedNote',
   // §6 модалка создания релиза (R1.3)
   'relNewTitle', 'relFieldName', 'relFieldPlanDate', 'relFieldFreezeDate',
-  'relFieldManager', 'relFieldEngineer', 'relFieldPatchnote', 'relFieldNotes',
+  'relFieldManager', 'relFieldEngineer', 'relFieldPatchnote', 'relFieldNotes', 'relFieldTaskUrl',
   'relBtnCreate', 'relHintFreezeRule', 'relHintManagerDefault', 'relHintEngineerRequired',
   'relValNameRequired', 'relValFreezeAfterPlan', 'relPickerNoGroups', 'relPickerLoadError',
   'relBadgeOutOfPool',

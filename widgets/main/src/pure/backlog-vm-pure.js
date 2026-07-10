@@ -40,6 +40,7 @@ function _baseTaskVm(t, paused, sprintStart) {
     priorityName: t.priorityName || t.priority || null,   /* #3 — канон для сортировки (value.name) */
     isPaused: !!paused,
     carry: carryoverLabel(t._sinceTs, t._prevState, sprintStart),
+    inSprint: !!t._inSprint,   /* #polish — задача уже в составе любого спринта (текущий roleItems ∪ ssp_history) */
   };
 }
 
@@ -155,6 +156,7 @@ function _leafVm(t, paused, zone, sprintStart) {
     summary: t.summary || '', system: t.system || null, priority: t.priority || null,
     isPaused: !!paused, zone: zone,
     carry: carryoverLabel(t._sinceTs, t._prevState, sprintStart),
+    inSprint: !!t._inSprint,   /* #polish — задача уже в составе любого спринта */
   };
 }
 function buildTreeVm(tasks, settings) {

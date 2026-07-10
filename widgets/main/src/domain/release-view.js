@@ -98,7 +98,7 @@ function _labels(T) {
        патчноут/заметки в истории (полировка; reuse подписей формы). */
     export: T('relBtnExport'), share: T('treeShare'), archiveNode: T('relArchiveNode'),
     kindLabel: T('relKindLabel'), srcLabel: T('relSrcLabel'),
-    patchNote: T('relFieldPatchnote'), notes: T('relFieldNotes'),
+    patchNote: T('relFieldPatchnote'), notes: T('relFieldNotes'), taskUrl: T('relFieldTaskUrl'),
   };
 }
 
@@ -117,6 +117,7 @@ function buildExportText(rec, labels) {
   if (typeof rec.plannedDate === 'number' && isFinite(rec.plannedDate)) out.push((L.planDate || 'Date') + ': ' + _fmtDate(rec.plannedDate));
   var snap = (rec.snapshot && typeof rec.snapshot === 'object') ? rec.snapshot : null;
   if (snap && typeof snap.closedAt === 'number') out.push((L.closedAt || 'Closed') + ': ' + _fmtDateTime(snap.closedAt));
+  if (rec.taskUrl) { out.push((L.taskUrl || 'Task') + ': ' + String(rec.taskUrl)); }
   if (rec.patchNote) { out.push('', (L.patchNote || 'Patch note') + ':', String(rec.patchNote)); }
   if (rec.notes) { out.push('', (L.notes || 'Notes') + ':', String(rec.notes)); }
   return out.join('\n') + '\n';
@@ -205,7 +206,8 @@ function _buildVm(deps, mode, list) {
         manager: reps.manager || '', managerName: repNames[reps.manager] || '',
         engineer: reps.engineer || '', engineerName: repNames[reps.engineer] || '',
         issuesCount: issueList.length, compositionLabel: T('relCardComposition').replace('{n}', String(issueList.length)),
-        patchNote: r.patchNote || '', // R4-ревью владельца: патчноут виден и на планируемой карточке (заметки — только в ✎)
+        patchNote: r.patchNote || '', notes: r.notes || '', // #polish — патчноут И заметки на планируемой карточке; taskUrl — кликабельная внешняя ссылка
+        taskUrl: r.taskUrl || '',
         shareVisible: canShareRelease(r, _RELEASE_EXT_SHARE), // R4 (US-R4-03) — negative-якорь: false до YT 2026.1
 
         /* R3.2 — live-дерево состава из _issueData (parents/type подтянуты fetchIssueData) */
@@ -245,7 +247,7 @@ function _histRow(r) {
     engineerName: (reps.engineer && reps.engineer.name) || '',
     wasOverdue: !!(snap && snap.wasOverdue),
     hasSnapshot: !!snap,
-    patchNote: r.patchNote || '', notes: r.notes || '', // R4 полировка — текст в спойлере (заморожен закрытием: терминальные не редактируются)
+    patchNote: r.patchNote || '', notes: r.notes || '', taskUrl: r.taskUrl || '', // R4 полировка — текст в спойлере (заморожен закрытием: терминальные не редактируются)
     /* R3.1 (US-R3-03) — светофор истории ИЗ СЛЕПКА (network-clean US-R1-14); легаси-слепки
        pre-R3 несут honest-заглушку (всё grey) — рисуем как есть. */
     readiness: (snap && snap.readiness && typeof snap.readiness === 'object') ? snap.readiness : null,
