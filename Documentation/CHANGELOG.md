@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.1.0] — 2026-07-11
+
+> **Auto-forecast of task start/end dates (#40).**
+
+### Added
+
+- **«Forecast dates» button** on the assignee-distribution level: planned start/end dates for every assigned task are computed automatically. The assignee's sprint capacity (approved business capacity `base×alloc` in the Full model, personal resource in Light) is spread across sprint days proportionally to each day's availability (production calendar, absences incl. partial days) with a useful-hours-per-day cap; tasks are packed sequentially along the assignee's personal queue. The forecast writes into the same dates you edit by hand — Gantt, Excel export and sprint history pick them up as usual.
+- **Personal task queue** — a queue-position column with up/down arrows; swapping instantly repacks that assignee's forecast. The queue is virtual: the order lives in the dates themselves, sprint history is untouched.
+- **Honest over-capacity** — tasks that don't fit the sprint capacity get no fake dates: an «over capacity» badge and a summary toast.
+- **«Auto-forecast dates» setting** in Planning modes (planning tier, off by default). Re-running the forecast overwrites all dates after a confirmation.
+
+### Internal
+
+- New pure module `forecast-pure.js` (queue/quotas/packing); per-day absence primitives `absenceBounds`/`absenceHoursOfDay` extracted from `absenceHours` (bit-identical behavior).
+- The setting is additive (no schema-marker bump); v3.0.0 fixture + compat regression; 20 unit tests + forecast-i18n-completeness (15 locales).
+
+---
+
 ## [3.0.0] — 2026-07-10
 
 > **Operational reporting (#50): 13 reports in two contours, charts, Excel/PDF export.**

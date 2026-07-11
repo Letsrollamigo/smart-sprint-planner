@@ -3,7 +3,7 @@
 > 🇬🇧 [Read in English](../README.md) · 🇷🇺 По-русски
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v3.0.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
+[![GitHub Release](https://img.shields.io/badge/GitHub-v3.1.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
 [![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v2.18.1-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
 [![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
 [![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
@@ -21,6 +21,7 @@
 
 Два виджета над общим ядром логики (`backend-core.js`) и общим хранилищем (`Project.extensionProperties`):
 
+- **Авто-прогноз дат задач** — кнопка «Спрогнозировать даты» на уровне «Распределение по исполнителям» рассчитывает плановые даты старта/окончания каждой назначенной задачи от ёмкости исполнителя на спринт («Полная» модель — утверждённая бизнес-ёмкость, «Лёгкая» — персональный ресурс), производственного календаря и отсутствий (включая частичный день), с дневным капом «полезных часов». Личная очередь со стрелками ↑/↓ (своп мгновенно перепаковывает прогноз); ручные правки дат сохраняются до явного пересчёта; задачи сверх ёмкости — честный бейдж «не помещается» вместо фиктивных дат. По умолчанию выключено — включается в «Режимах планирования».
 - **`ssp-main-global` (MAIN_MENU_ITEM)** — полный планер в главном меню YouTrack: дашборд «рельс + пейн» (на широком экране — панель навигации слева ~210px + рабочая область; на узком — стопка), выбор проекта в шапке-рельсе, дерево навигации (Параметры спринта / Планирование / Работа с бэклогом / Гант / История). Здесь идёт всё планирование. Планирование — два уровня: «Аллокация общего ресурса» (accordion-карточки ролей с editable-составом и вводом ёмкости — вручную либо расчётом) и «Распределение по исполнителям» (per-role селектор, ассайни и даты). Второй уровень виден **только при модели планирования «Лёгкая»**; при «Простой» распределение исполнителей ведётся на диаграмме Ганта.
 - **`ssp-main` (PROJECT_SETTINGS)** — страница настроек проекта: роли, поля, режимы, **группа управления настройками** (указание группы = «подключение» проекта, после которого он становится виден в планере главного меню). Самого планирования здесь нет.
 
@@ -33,7 +34,7 @@
 | Канал | Текущая версия | Каденс | Кому подходит |
 |---|---|---|---|
 | **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v2.18.1** | Стабильные релизы, проверены JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая новая выгрузка проходит модерацию JetBrains marketplace (1–3 рабочих дня) перед публикацией. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v3.0.0** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз здесь полностью протестирован в CI (`node --test`: unit + golden), но выходит раньше прохождения marketplace-модерации. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v3.1.0** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз здесь полностью протестирован в CI (`node --test`: unit + golden), но выходит раньше прохождения marketplace-модерации. |
 
 GitHub Releases — авторитетный источник: каждая marketplace-выгрузка собирается из тегированного GitHub-релиза. Если вы видите фичу в этом README, которой ещё нет в marketplace-версии — значит, очередной цикл модерации ещё не завершён.
 
