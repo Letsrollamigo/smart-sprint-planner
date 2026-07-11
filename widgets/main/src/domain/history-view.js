@@ -269,7 +269,13 @@ function buildSpoiler(rec, idx, deps) {
           h.close();
           if (!deps.state.getIsValidator()) { deps.toast(T('toastNoValidRights'), 'warn'); return; }
           var _history = deps.state.getHistory();
-          _history.splice(histIdx, 1);
+          /* v3.2.1 (P0) — histIdx — позиция в ОТСОРТИРОВАННОЙ display-копии (сортировка
+             по confirmedAt), а сплайс шёл по живому массиву, порядок которого расходится
+             (in-place авто-снапшоты) → удалялась и персистилась ЧУЖАЯ запись. Резолв по
+             sprintId записи спойлера. */
+          var liveIdx = _history.findIndex(function (h) { return h && h.sprintId === rec.sprintId; });
+          if (liveIdx < 0) { deps.renderHistory(); return; }
+          _history.splice(liveIdx, 1);
           deps.apiPost('history', { history: _history }).then(function() {
             deps.renderHistory();
             try {

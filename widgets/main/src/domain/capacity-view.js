@@ -152,7 +152,14 @@ function _expandAbs(deps, ranges) {
   (ranges || []).forEach(function (r) {
     if (!r) return;
     var hd = (typeof r.hoursDelta === 'number' && isFinite(r.hoursDelta) && r.hoursDelta > 0) ? r.hoursDelta : null;
-    CP.isoRangeDays(r.from, r.to).forEach(function (d) { out[d] = { type: r.type || 'other', hoursDelta: hd }; });
+    CP.isoRangeDays(r.from, r.to).forEach(function (d) {
+      /* v3.2.1 — overlap-семантика как в расчёте (MAX): полный день (hd=null) сильнее
+         частичного, из частичных — больший. Раньше last-wins терял absence при
+         пересечении диапазонов на roundtrip'е редактирования. */
+      var prev = out[d];
+      if (prev && (prev.hoursDelta === null || (hd !== null && prev.hoursDelta >= hd))) return;
+      out[d] = { type: r.type || 'other', hoursDelta: hd };
+    });
   });
   return out;
 }
@@ -209,6 +216,10 @@ function _labels(deps) {
 
 /* ───────────────────── persist / actions ───────────────────── */
 function _persist(deps, sel, action, model) {
+  /* v3.2.1 — ростер не загрузился → модель пуста не по воле пользователя;
+     сохранение затёрло бы grade/rate/alloc всех людей спринта. */
+  var _uiPersist = deps.state.getCapacityUiState ? (deps.state.getCapacityUiState() || {}) : {};
+  if (_uiPersist.rosterLoadFailed) { deps.toast(deps.T('errCapacityLoad'), 'err'); return; }
   var persons = {};
   Object.keys(model || {}).forEach(function (login) {
     var p = model[login] || {}, alloc = {};
@@ -220,6 +231,9 @@ function _persist(deps, sel, action, model) {
   deps.apiPost('capacity', { persons: persons }, { action: action, sprintId: sel.id }).then(function (r) {
     if (r && r.success) {
       deps.toast(deps.T(action === 'save' ? 'msgCapacitySaved' : 'msgCapacityApproved'), 'success');
+      /* v3.2.1 — сброс _planCap ядра: без него Full-остатки планирования
+         считались по устаревшей записи ёмкости до полной перезагрузки. */
+      if (typeof deps.invalidatePlanCap === 'function') deps.invalidatePlanCap(sel.id);
       loadAndRender(deps); // перезагрузка → ++dataVersion → React пере-сидит локальный стейт
     } else {
       var reason = (r && r.reason) || 'unknown';
@@ -230,7 +244,9 @@ function _persist(deps, sel, action, model) {
 
 function _saveAbsences(deps, fullMap) {
   var map = fullMap || deps.state.getAbsences() || {};
-  deps.apiPost('absences', map).then(function (r) {
+  /* v3.2.1 — явная обёртка: backend отличает осознанно-пустую карту от битого тела
+     (анти-wipe guard absences_empty_body). */
+  deps.apiPost('absences', { absences: map }).then(function (r) {
     if (r && r.success) { deps.state.setAbsences(JSON.parse(JSON.stringify(map))); deps.toast(deps.T('msgAbsencesSaved'), 'success'); loadAndRender(deps); }
     else deps.toast(deps.T('errAbsencesSave'), 'err');
   }).catch(function (e) { deps.diag('saveAbsences err: ' + e, 'err'); deps.toast(deps.T('errAbsencesSave'), 'err'); });
@@ -423,9 +439,14 @@ function loadAndRender(deps) {
   var fieldByRole = {}, uniqFields = [];
   roles.forEach(function (role) { var fn = settings[role.userField] || null; fieldByRole[role.key] = fn; if (fn && uniqFields.indexOf(fn) < 0) uniqFields.push(fn); });
   var fieldUsers = {};
+  /* v3.2.1 — сбой загрузки ростера раньше глотался молча: вкладка рисовала «нет людей»
+     с активной «Сохранить», и POST persons:{} затирал состав ёмкости спринта. Флагаем
+     сбой → тост + блок _persist до успешной перезагрузки. */
+  var rosterFailed = false;
   var jobs = uniqFields.map(function (fn) {
     return deps.apiGet('get-user-field-values?fieldName=' + encodeURIComponent(fn))
-      .then(function (r) { fieldUsers[fn] = (r && r.users) ? r.users : []; }).catch(function () { fieldUsers[fn] = []; });
+      .then(function (r) { fieldUsers[fn] = (r && r.users) ? r.users : []; })
+      .catch(function () { fieldUsers[fn] = []; rosterFailed = true; });
   });
   jobs.push(deps.apiGet('calendar').then(function (r) { deps.state.setCalendar(r && r.calendar ? r.calendar : null); }).catch(function () {}));
   jobs.push(deps.apiGet('absences').then(function (r) { deps.state.setAbsences(r && r.absences ? r.absences : {}); }).catch(function () { deps.state.setAbsences({}); }));
@@ -447,6 +468,8 @@ function loadAndRender(deps) {
     deps.state.setRoster(roster);
     deps.state.setCapacity(rec);
     var u = deps.state.getCapacityUiState() || {};
+    u.rosterLoadFailed = rosterFailed;   /* v3.2.1 — гейт _persist */
+    if (rosterFailed) { try { deps.toast(deps.T('errCapacityLoad'), 'err'); } catch (_) {} }
     u.archivedCount = capRes.archivedCount; u.archiveRows = null; /* #53 — сброс: спойлер перезагрузит по раскрытию */
     if (sel && sel.isActive && !rec) {
       _carryForward(deps, function (carry) { u.carry = carry; deps.state.setCapacityUiState(u); render(deps); });

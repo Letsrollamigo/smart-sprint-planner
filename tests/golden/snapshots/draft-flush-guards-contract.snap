@@ -11,7 +11,7 @@
     "pendingStays": true
   },
   "afterReject": {
-    "pending": false,
+    "pending": true,
     "diagTail": [
       {
         "msg": "draft FLUSH → backend (size=98B)",

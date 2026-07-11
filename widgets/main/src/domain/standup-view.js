@@ -254,7 +254,13 @@ function doStandupRefresh(deps) {
         });
         if (!changed) { renderStandupView(deps); deps.toast(deps.T('toastSyncFromYtNoChange'), 'info'); return; }
         deps.markDirty('roleItems');
-        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(function () {});
+        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(function (e) {
+          /* v3.2.1 — 409/сеть глотались молча: UI уже показал «Обновлено», а изменения
+             жили только в памяти вкладки. rev_conflict тостится внутри apiPost. */
+          var msg = (e && e.message) ? e.message : String(e);
+          deps.diag('standup persist ERR: ' + msg, 'err');
+          if (msg !== 'rev_conflict') { try { deps.toast(deps.T('toastError') + msg, 'err'); } catch (_) {} }
+        });
         if (isCur) deps.saveCurrentRoleState();
         renderStandupView(deps);
         deps.toast(deps.T('toastStandupRefreshed'), 'success');

@@ -8,6 +8,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.2.1] — 2026-07-11
+
+> **Stability patch following a full codebase audit.**
+
+### Fixed
+
+- **Gantt state badges (#20):** the transition-history line («was … · N days ago») was clipped by the fixed 64px row height (content ≈82px) — row height raised; revisiting the tab within 5 minutes left badges stuck on "Loading…" (a cache hit didn't refill freshly remounted placeholders) — the cache now replays values; the chart re-renders after a date drag (missing dependency).
+- **Sprint history:** deleting and "Finish sprint" resolve the record by sprintId instead of its position in the sorted list — they could hit the wrong record; the working-copy flag suffered the same class of bug.
+- **Historical sprint view is fully read-only:** row delete / inclusion status / enum edits while viewing a non-active sprint mutated the live composition of the active one (carried-over tasks silently dropped). The ALLOCATED lock now also covers inclusion selects, row delete and enum cells.
+- **Working copies:** a copy is discarded only after the server confirms the commit (a failed POST used to lose the edits for good); a bulk flush no longer overwrites other users' copies with stale snapshots; pending flushes are cancelled on project switch.
+- **"New sprint"** snapshots the outgoing planning sprint's composition into history (a gap in the 2.16.6 fix) and reports persist errors instead of silence.
+- **"Refresh from task"** with a stale role context (sprint switched from the Roles level) no longer writes the new sprint's assignees into the old sprint's canon.
+- **Backend anti-wipe:** a malformed or truncated request body can no longer wipe releases, absences or capacity (explicit required keys + the shared body envelope on releases); history rejects `null`; the sprint slot is not persisted before roleItems authorization/validation (torn write); `?action=validate` writes the composition under validator rights per the access matrix; the transient `_orphanGanttIssues` key is stripped on write (it could permanently block saves on legacy projects); the slot revision re-syncs after a sprint reset (no more stuck 409s).
+- **Errors are visible:** the `'err'` toast type (46 call sites) rendered errors as neutral info — alias added; fire-and-forget saves (task pick, composition, stand-up, role status) now show a red toast on failure.
+- **Project switch (global mode):** field-value caches (dropdowns showing another project's values), the backlog filter/pool and the approved-capacity cache are reset.
+- **Timezones:** `YYYY-MM-DD` parses to local midnight — for users west of Greenwich sprint dates displayed a day earlier and drifted a day per open-save cycle.
+- **Input & UI:** decimal effort ("1.5"/"0,5") parses as hours (was 360/300 minutes); Escape inside an open dropdown no longer closes the whole settings form; "Cancel" on the project settings page actually resets the form; clearing a numeric capacity field no longer snaps to 1; overlapping absence ranges keep their hours; a roster load failure blocks capacity save (can't wipe the composition with an empty roster); the language dictionary is no longer poisoned by EN on a transient network error; the "over capacity" badge resets on role/sprint switch; the assignee select is truly disabled for non-assigners.
+- **Workflows:** the DTA guard checks the cheap condition before parsing settings; state rollup no longer spams messages on idempotent saves.
+
+### Changed
+
+- Long absence-range guard raised 1200 → 7400 days (real `out_of_membership` lead-ins from 2021 were truncated when editing the calendar).
+- "Add all" in the release picker: page size 10 → 100.
+- Drafts and working copies retry their flush after a network failure; a transient permission-check failure is no longer cached for the whole session.
+
 ## [3.2.0] — 2026-07-11
 
 > **Gantt on a new engine (date drag) + charts across the report catalog.**

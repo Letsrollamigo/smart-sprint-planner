@@ -66,8 +66,12 @@ function createWorkingDraftFromSnapshot(snap, idx, deps) {
 
   deps.state.getWorkingDrafts()[key] = draft;
   var history = deps.state.getHistory();
-  if (idx != null && history[idx]) {
-    history[idx].hasWorkingCopy = true;
+  /* v3.2.1 — idx приходит из ОТСОРТИРОВАННОГО display-списка истории (renderHistory
+     сортирует по confirmedAt, порядок живого массива расходится из-за in-place
+     авто-снапшотов) → флаг hasWorkingCopy садился на чужую запись. Резолв по sprintId. */
+  var liveIdx = history.findIndex(function (h) { return h && h.sprintId === key; });
+  if (liveIdx >= 0) {
+    history[liveIdx].hasWorkingCopy = true;
     deps.apiPost('history', { history: history }).catch(function(){});
   }
   deps.workingDraftsScheduleFlush();
@@ -226,7 +230,7 @@ function _doDiscardWorkingDraft(key, deps) {
 function _commitWorkingCopy(rk, idx, draft, snapFromCurrent, deps) {
   var history = deps.state.getHistory();
   var baseSnap = history[idx];
-  if (!baseSnap) return;
+  if (!baseSnap) return Promise.resolve();   /* v3.2.1 — вызывающие чейнят .catch */
   var level = deps.computeRequiredRevalidationLevel(baseSnap, draft);
   var newStatus = deps.applyRevalidationLevel(baseSnap.status, level);
   deps.diag('[COMMIT-WC] role='+rk+' baseStatus='+baseSnap.status+' level='+level+' newStatus='+newStatus+' snapFromStatus='+(snapFromCurrent&&snapFromCurrent.status), 'info');
@@ -257,14 +261,16 @@ function _commitWorkingCopy(rk, idx, draft, snapFromCurrent, deps) {
   if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
 
   history[idx] = finalSnap;
-  delete deps.state.getWorkingDrafts()[draft.key];
-  deps.workingDraftsScheduleFlush();
-  deps.workingDraftsDeleteOnBackend(draft.key);
-  deps.state.setActiveWorkingDraftKey(null);
 
-  if (typeof deps.hideWorkingCopyBanner === 'function') deps.hideWorkingCopyBanner();
-
+  /* v3.2.1 — рабочая копия уничтожается ТОЛЬКО после подтверждённого POST: раньше
+     драфт удалялся (локально + backend) ДО записи, и отказ persist'а
+     (history_data_too_large / 403 / сеть) молча терял все правки WC навсегда. */
   return deps.apiPost('history', { history: history }).then(function(){
+    delete deps.state.getWorkingDrafts()[draft.key];
+    deps.workingDraftsScheduleFlush();
+    deps.workingDraftsDeleteOnBackend(draft.key);
+    deps.state.setActiveWorkingDraftKey(null);
+    if (typeof deps.hideWorkingCopyBanner === 'function') deps.hideWorkingCopyBanner();
     if (typeof deps.renderHistory === 'function') deps.renderHistory();
     if (typeof deps.renderRoleComposition === 'function') deps.renderRoleComposition(rk);
     /* v1.8.1 — после commit working copy шапка должна пересчитаться, иначе
@@ -279,6 +285,13 @@ function _commitWorkingCopy(rk, idx, draft, snapFromCurrent, deps) {
       deps.toast(deps.t('wcRevalidatedToast').replace('{status}', deps.t(statusLabelKey)).replace('{level}', deps.t(levelKey)),
             level === 'CONFIRMED_REVAL' ? 'warn' : 'info');
     } catch(_){}
+  }).catch(function(e){
+    /* Откат локальной подмены: база прежняя, WC жива — пользователь может повторить. */
+    history[idx] = baseSnap;
+    var msg = (e && e.message) ? e.message : String(e);
+    deps.diag('[COMMIT-WC] persist failed, WC сохранена: ' + msg, 'err');
+    try { deps.toast(deps.t('toastError') + msg, 'err'); } catch(_){}
+    throw e;
   });
 }
 
@@ -457,7 +470,8 @@ function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps
         if (typeof deps.showWorkingCopyConflictModal === 'function') {
           deps.showWorkingCopyConflictModal(snapKey, baseSnap, snap, function(decision){
             if (decision === 'overwrite') {
-              _commitWorkingCopy(rk, commitIdx, draft, snap, deps);
+              /* v3.2.1 — тост об ошибке показывает сам commit; глушим rejection. */
+              _commitWorkingCopy(rk, commitIdx, draft, snap, deps).catch(function(){});
             } else if (decision === 'export' && typeof deps.exportConflictToExcel === 'function') {
               /* v5.7.0 — KL#5: один xlsx с двумя листами + diff-маркер. */
               deps.exportConflictToExcel(baseSnap, snap);

@@ -232,6 +232,13 @@ var ISSUEFIELDS_ENDPOINTS = [
             ctx.response.json({ success: false, error: 'issue_not_found' });
             return;
           }
+          /* v3.2.1 — изоляция проекта на app-уровне: authz считается по ssp_settings
+             ЭТОГО проекта, а findById достаёт задачу любого — assigner проекта A мог
+             писать поля задач проекта B (страховала только платформенная ACL YT). */
+          if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) {
+            ctx.response.json({ success: false, error: 'issue_not_in_project' });
+            return;
+          }
 
           var projectField = null;
           try { projectField = issue.project.findFieldByName(fieldName); } catch (fe) { /* ignore */ }
@@ -355,6 +362,9 @@ var ISSUEFIELDS_ENDPOINTS = [
           try {
             var issue = entities.Issue.findById(issueId);
             if (!issue) continue;
+            /* v3.2.1 — изоляция проекта (см. update-issue-field): чтение assignee/state
+               чужих проектов через viewer-ручку закрыто на app-уровне. */
+            if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) continue;
             var raw = readField(issue, fieldName);
             var entry = null;
             if (raw && typeof raw === 'object') {

@@ -213,11 +213,13 @@ function GanttChart({ host }) {
           </button>
         ))}
       </div>
+      {/* v3.2.1 — rowHeight 88: 4 строки ячейки (ссылка+исполнитель+бейдж+hist) при
+          наследуемом line-height 1.5 занимают ~82px; при 64px строка «← было…» клипалась. */}
       <Gantt
         tasks={tasks}
         viewMode={ViewMode[zoom]}
         locale={vm.lang || 'en'}
-        rowHeight={64}
+        rowHeight={88}
         headerHeight={50}
         listCellWidth="220px"
         columnWidth={ZOOM_COLUMN_W[zoom] || 60}

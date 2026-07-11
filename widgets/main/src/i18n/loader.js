@@ -133,7 +133,10 @@ export function loadDictionary(lang) {
       if (typeof console !== 'undefined' && console.warn) {
         console.warn('[ssp-i18n] failed to load dictionary for ' + v + ', falling back to EN:', err);
       }
-      _cache[v] = enInline;
+      /* v3.2.1 — транзиентный сетевой сбой раньше НАВСЕГДА кэшировал EN под ключом
+         чужого языка (повторный выбор бил в отравленный кэш), а resolve маскировал
+         сбой от контроллера (его rollback-ветка была мёртвым кодом). Возвращаем EN
+         как fallback ТЕКУЩЕГО вызова, но кэш не пишем — следующий выбор перезагрузит. */
       return enInline;
     });
 }

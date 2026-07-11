@@ -488,7 +488,10 @@
     if (idx < 0) return;
     _history[idx].status = status;
     apiPost('history', { history: _history }).catch(function(e){
-      diag('setRoleStatus persist ERR: '+(e&&e.message?e.message:e), 'err');
+      var msg = (e&&e.message?e.message:String(e));
+      diag('setRoleStatus persist ERR: '+msg, 'err');
+      /* v3.2.1 — бейдж уже показал новый статус, сервер отверг: молчать нельзя. */
+      try { toast(T('toastError') + msg, 'err'); } catch(_){}
     });
     try { if (typeof renderRoleStatusBadge === 'function') renderRoleStatusBadge(rk); } catch(_){}
     try { if (typeof renderWidgetHeader === 'function') renderWidgetHeader(); } catch(_){}
@@ -729,7 +732,7 @@
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
      common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '3.2.0';
+  var APP_VERSION = '3.2.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1042,6 +1045,12 @@
           if (_sprint && Array.isArray(r.orphanGanttIssues) && r.orphanGanttIssues.length) {
             _sprint._orphanGanttIssues = r.orphanGanttIssues;
           }
+          /* v3.2.1 — синк снапшотов/baseRevHash (паттерн _performDraftBackendClear):
+             без него draft-meta писалась со stale-хэшем → после F5 черновик считался
+             «устаревшим» и молча гасился; diff refresh'а считался от старого снимка. */
+          SPRINT_STORE.setServerSnapshotSprint(_sprint ? deepClone(_sprint) : null);
+          SPRINT_STORE.setServerSnapshotRoleItems(_roleItems ? deepClone(_roleItems) : null);
+          SPRINT_STORE.setBaseRevHash(computeRevHash(_sprint, _roleItems));
           if (typeof renderPlannerRoles === 'function') renderPlannerRoles();
           if (typeof renderHistory === 'function') renderHistory();
         }
@@ -1501,7 +1510,10 @@
         var nkcSel = document.getElementById('currentRoleNkcSel');
         if (nkcSel && nkcSel.querySelector('option[value="'+ui.currentRoleNkcKey+'"]')) {
           nkcSel.value = ui.currentRoleNkcKey;
-          nkcSel.dispatchEvent(new Event('change'));
+          /* v3.2.1 — синтетический change не должен пачкать draft/историю: без флага
+             каждый F5 давал фантомный бейдж «Несохранённые изменения» + мусорный POST. */
+          _draftRestoreInProgress = true;
+          try { nkcSel.dispatchEvent(new Event('change')); } finally { _draftRestoreInProgress = false; }
         }
       }
       /* v5.4.0 — финальный рендер шапки виджета после восстановления UI */
@@ -1985,6 +1997,20 @@
     _isEditor = false;
     _isAssigner = false;
     RELEASE_STORE.reset(_releaseDeps());   // #48 — сброс релизного среза per-project
+    /* v3.2.1 — хвосты смены проекта (global-режим), раньше переживали switch:
+       • field-values кэш по ИМЕНИ поля → дропдауны проекта B наполнялись значениями A;
+       • бэклог: пользовательский фильтр/пул/schema-warn чужого проекта;
+       • _planCap: остатки планирования считались по ёмкости чужого спринта;
+       • _workingDraftsDirty + отложенные флаши draft-store: stale-таймер постил
+         ПУСТУЮ карту WC уже с роутингом на новый проект → терял его working copies. */
+    invalidateFieldValuesCache();
+    _userBacklogFilter = '';
+    _backlogPool = null;
+    _backlogUnmapped = null;
+    _planCap = { sprintId: null, record: null };
+    _planCapLoading = false;
+    _workingDraftsDirty = false;
+    if (typeof DRAFT_STORE.cancelScheduledFlushes === 'function') DRAFT_STORE.cancelScheduledFlushes();
   }
 
   /* Модалка-предупреждение «черновик будет очищен» — делегатор project-nav.js (golden-вход). */
@@ -3366,6 +3392,11 @@
       checkSettingsManager: checkSettingsManager,
       checkInstanceAdmin: checkInstanceAdmin, /* #51 — гейт глобального пуша календаря */
       CAPACITY_PURE: CAPACITY_PURE,
+      /* v3.2.1 — сброс кэша утверждённой ёмкости планирования после save/approve
+         на вкладке «Ёмкость» (иначе Full-остатки живут по устаревшей записи до F5). */
+      invalidatePlanCap: function (sid) {
+        if (!sid || _planCap.sprintId === sid) { _planCap = { sprintId: null, record: null }; _planCapLoading = false; }
+      },
       state: {
         getMode: function () { return _mode; },                       /* #51 */
         getGlobalProjects: function () { return _globalProjects; },   /* #51 */
@@ -3906,6 +3937,9 @@
     if (newBtn && !newBtn.dataset.bound) {
       newBtn.dataset.bound = '1';
       newBtn.addEventListener('click', function() {
+        /* v3.2.1 — синхронный editor-гейт здесь НЕВОЗМОЖЕН: _isEditor=false и до
+           резолва прав (ложный блок легитимного редактора на первом клике).
+           Viewer'а страхуют backend-403 + .catch-тост в doNewSprint (v3.2.1). */
         var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
         if (!roles.length) {
           if (typeof toast === 'function') toast(T('toastSelectRole') || 'Select a role', 'warn');
@@ -3964,9 +3998,13 @@
   /* ── НКЧ изменён вручную ── */
   document.getElementById('currentRoleNkcSel').addEventListener('change', function() {
     _currentRoleNkcKey = this.value;
-    if (_currentRolePP) { _currentRolePP.nkcKey = _currentRoleNkcKey; saveCurrentRoleState(); }
+    if (_currentRolePP) {
+      _currentRolePP.nkcKey = _currentRoleNkcKey;
+      if (!_draftRestoreInProgress) saveCurrentRoleState();   /* v3.2.1 — restore не постит */
+    }
     updateCurrentRoleTotals();
     renderCurrentRoleAssigneeTable();
+    if (_draftRestoreInProgress) return;   /* v3.2.1 — синтетический change из restoreUiState */
     /* v5.0.3 — UI-state + draft mark */
     var ui = _draftGet('ui') || {}; ui.currentRoleNkcKey = _currentRoleNkcKey; _draftSet('ui', ui);
     _markDirty('currentRole');
@@ -4257,6 +4295,9 @@
          что авто-прогноз #40 (saveCurrentRoleState) + синк таблицы текущей роли. */
       saveCurrentRoleState: saveCurrentRoleState,
       renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
+      /* v3.2.1 — самоперерендер после drag'а дат: _makeGanttDateChange зовёт этот деп;
+         без него rerender был тихим no-op (ось не нормализовалась, откат у не-editor). */
+      renderGanttChart: renderGanttChart,
       getLang: function () { return _lang; },
       state: {
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },

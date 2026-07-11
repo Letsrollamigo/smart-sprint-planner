@@ -69,7 +69,9 @@ function mkCtx(groups, storedReleases, body) {
       ssp_settings: JSON.stringify({ releaseManagerGroups: ['g-rm'], releaseEngineerGroups: ['g-re'], editGroups: ['g-edit'] }),
       ssp_releases: JSON.stringify({ releases: storedReleases || [] }),
     } },
-    request: { json: () => body },
+    /* v3.2.1 — handlePostReleases читает через core.getBody (ctx.request.body — сырая
+       строка) вместо raw json(): мок отдаёт оба представления. */
+    request: { json: () => body, body: body === undefined ? '' : JSON.stringify(body) },
     response: { status: 200, body: null, json(v) { this.body = v; } },
   };
 }

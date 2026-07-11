@@ -279,7 +279,7 @@ function renderCurrentRoleAssigneeTable(deps) {
         if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
         _currentRolePP.resourcesByAssignee[login].grade = t.value;
         var mm = !!(_settings && _settings.manualPersonalResource);
-        if (!mm) {
+        if (!mm && _settings) {   /* v3.2.1 — _settings=null ронял _settings.kpe ниже */
           var nkc2 = getCurrentRoleNkcHours(deps);
           var kpeMap = deps.migrateKpeObject(_settings.kpe || {});
           var kpe   = (kpeMap[t.value] !== undefined) ? kpeMap[t.value] : (KPE_DEFAULTS_LOCAL[t.value] || 0.65);
@@ -422,6 +422,8 @@ function _buildTaskTableVm(deps) {
     }
   }
 
+  /* v3.2.1 — unfit-сет валиден только в контексте своего прогноза (sprintId_rk). */
+  var unfitSet = _forecastUnfitFor(deps.state.getCurrentSprintRoleRec());
   var rows = active.map(function (item) {
     var taEntry = ta[item.issueId] || {};
     var cells = {};
@@ -434,7 +436,7 @@ function _buildTaskTableVm(deps) {
     var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
     var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
     /* #40 — transient-бейдж «не помещается в ёмкость» последнего прогноза (сессионный). */
-    var unfitWarn = _forecastUnfit[item.issueId]
+    var unfitWarn = unfitSet[item.issueId]
       ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('forecastUnfitBadge')) + '</span>' : '';
     cells.title = { __html: esc(item.title || '') + warn + unfitWarn };
     if (hasState) { cells.state = esc(dispEnum(item.state) || '—'); }   /* #polish — read-only статус (как rolecomposition state-cell read-only ветка) */
@@ -607,6 +609,10 @@ function renderCurrentRoleTaskTable(deps) {
       var _currentSprintRoleRec = deps.state.getCurrentSprintRoleRec();
       var _sprint = deps.state.getSprint();
       var _settings = deps.state.getSettings();
+      /* v3.2.1 — pp=null при живом rec достижим (draft-restore setCurrentRolePP(dd.pp||null)):
+         хендлеры ниже писали в _currentRolePP.taskAssignments без guard'а → TypeError,
+         назначение терялось. Grade-хендлер аналогичный guard уже имеет. */
+      if (!_currentRolePP) return;
       /* Assignee select change */
       var sel = (t.matches && t.matches('select.currentRole-task-assignee[data-issue]')) ? t : null;
       if (sel) {
@@ -681,6 +687,7 @@ function doRecalcResource(deps) {
     deps.toast(T('toastAssigneesEmpty'));
     return;
   }
+  if (!_settings) return;   /* v3.2.1 — паттерн doCurrentRoleCalc: без настроек не считаем */
   var nkc = getCurrentRoleNkcHours(deps);
   var kpeMap = deps.migrateKpeObject(_settings.kpe || {});
   var mm = !!(_settings && _settings.manualPersonalResource);
@@ -879,8 +886,16 @@ function doCurrentRoleCalc(deps) {
    Очередь ВИРТУАЛЬНАЯ (§6 спеки): порядок = даты, ничего не персистится. */
 
 /* Transient-сет «не помещается в ёмкость» последнего прогноза (issueId→1).
-   Сессионный по построению: не персистится (unfit-задачи и так без дат). */
+   Сессионный по построению: не персистится (unfit-задачи и так без дат).
+   v3.2.1 — привязан к контексту прогноза (sprintId_rk): смена роли/спринта
+   сбрасывает сет, иначе задача из двух ролей несла ложный бейдж «⚠ не помещается». */
 var _forecastUnfit = {};
+var _forecastUnfitCtx = '';
+function _forecastUnfitFor(rec) {
+  var ctx = (rec && rec.sprintId) || '';
+  if (ctx !== _forecastUnfitCtx) { _forecastUnfitCtx = ctx; _forecastUnfit = {}; }
+  return _forecastUnfit;
+}
 
 function _forecastPure()  { return (typeof window !== 'undefined' && window.__SSP_FORECAST_PURE) || null; }
 function _capacityPureRef() { return (typeof window !== 'undefined' && window.__SSP_CAPACITY_PURE) || null; }
@@ -961,6 +976,7 @@ function runForecastDates(deps, loginsFilter, queueOverride) {
     var baseDays = CP.dayKeysUTC(sprintStart, sprintEnd).map(function (iso) {
       return { iso: iso, workH: CP.workingHoursOfDay(iso, calendar, hoursPerDay), absH: 0 };
     });
+    _forecastUnfitFor(deps.state.getCurrentSprintRoleRec());   /* v3.2.1 — синк контекста */
     if (!loginsFilter) _forecastUnfit = {};
     var unfitN = 0;
     logins.forEach(function (login) {

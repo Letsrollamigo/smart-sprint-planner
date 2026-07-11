@@ -227,7 +227,10 @@ function _readIssueStateName(issue, stateFieldName) {
  * Вычислить target state для parent на основе children.
  * Возвращает { target: string|null, reason: string }.
  */
-function computeRollupTarget(parent, settings, outwardLinkName, stateFieldName, lang) {
+/* v3.2.1 — сообщения копятся в msgs и эмитятся ВЫЗЫВАЮЩИМ только при реальном
+   применении: раньше unknown-state/floor-баннеры сыпались на КАЖДЫЙ save каждого
+   ребёнка даже при идемпотентном no-op (curState===target) — воспринималось как сбой. */
+function computeRollupTarget(parent, settings, outwardLinkName, stateFieldName, lang, msgs) {
   const order = settings.stateRollupOrder || [];
   if (!Array.isArray(order) || order.length < 2) return { target: null, reason: 'no-order' };
 
@@ -240,10 +243,8 @@ function computeRollupTarget(parent, settings, outwardLinkName, stateFieldName, 
     const childState = _readIssueStateName(children[i], stateFieldName);
     const idx = _stateOrderIndex(childState, order);
     if (idx < 0) {
-      if (childState) {
-        try {
-          workflow.message(tWf(lang || FALLBACK_LANG, 'rollupUnknownState', { state: childState }));
-        } catch (_) {}
+      if (childState && msgs) {
+        msgs.push(tWf(lang || FALLBACK_LANG, 'rollupUnknownState', { state: childState }));
       }
       continue;
     }
@@ -256,13 +257,13 @@ function computeRollupTarget(parent, settings, outwardLinkName, stateFieldName, 
   if (floor && typeof floor === 'string') {
     const floorIdx = _stateOrderIndex(floor, order);
     if (floorIdx >= 0 && minIdx < floorIdx) {
-      try {
-        workflow.message(tWf(lang || FALLBACK_LANG, 'rollupFloorHit', {
+      if (msgs) {
+        msgs.push(tWf(lang || FALLBACK_LANG, 'rollupFloorHit', {
           issueId: parent.id,
           floorState: floor,
           minState: order[minIdx]
         }));
-      } catch (_) {}
+      }
       return { target: order[floorIdx], reason: 'ok-floor' };
     }
   }
@@ -274,18 +275,18 @@ function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lan
   const curStateName = _readIssueStateName(parent, stateFieldName);
   const resolved = Array.isArray(settings.stateRollupResolvedStates) ? settings.stateRollupResolvedStates : [];
   if (curStateName && resolved.indexOf(curStateName) >= 0) {
-    try {
-      workflow.message(tWf(lang, 'rollupResolvedSkipped', {
-        issueId: parent.id, state: curStateName
-      }));
-    } catch (_) {}
+    /* v3.2.1 — resolved-parent скипается ТИХО: message на каждый save каждого
+       ребёнка резолвнутого эпика был баннер-спамом (ponytail: осознанное удаление
+       информационного сообщения — skip штатный, не сбой). */
     return;
   }
 
-  const res = computeRollupTarget(parent, settings, outwardLink, stateFieldName, lang);
+  const msgs = [];
+  const res = computeRollupTarget(parent, settings, outwardLink, stateFieldName, lang, msgs);
   if (!res.target) return;
 
-  if (curStateName === res.target) return; // idempotent — защита от loop
+  if (curStateName === res.target) return; // idempotent — защита от loop (тихо, без msgs)
+  for (let mi = 0; mi < msgs.length; mi++) { try { workflow.message(msgs[mi]); } catch (_) {} }
 
   try {
     parent.fields[stateFieldName] = res.target;

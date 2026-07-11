@@ -425,8 +425,17 @@
       _sprint.dateEnd = null;
       deps.ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
     } else {
+      /* v3.2.1 — снимок уходящего PLANNING-спринта в историю ДО замены слота: кнопка
+         «Новый спринт» шла в обход гейта setCurrentSprintId (дыра фикса v2.16.6) —
+         состав, собранный только на уровне «Роли» (авто-снапшот гейтится по activeSubtab),
+         терялся безвозвратно при setRoleItems({}). Гейты newId/PLANNING — внутри. */
+      var newIdNS = deps.uid();
+      if (st.getSprint() && (!st.getIsEditor || st.getIsEditor())) {
+        try { deps.snapshotPlanningRolesToHistory(newIdNS); }
+        catch(e){ if (deps.diag) deps.diag('doNewSprint snapPlanningRoles err: '+e,'err'); }
+      }
       _sprint = {
-        sprintId: deps.uid(),
+        sprintId: newIdNS,
         name: draftName,
         dateStart: null, dateEnd: null,
         status: STATUS.PLANNING
@@ -467,6 +476,12 @@
         var nameEl = document.getElementById('sprintName');
         if (nameEl) { try { nameEl.focus(); nameEl.select(); } catch(_){} }
       }, 50);
+    }).catch(function(e) {
+      /* v3.2.1 — отказ persist'а (403 у viewer, rev_conflict, сеть) раньше был
+         unhandled rejection: локально уже «пустой планер», ни тоста, ни отката. */
+      var msg = (e && e.message) ? e.message : String(e);
+      if (deps.diag) deps.diag('doNewSprint persist ERR: ' + msg, 'err');
+      try { deps.toast(T('toastError') + msg, 'err'); } catch(_){}
     });
   }
 

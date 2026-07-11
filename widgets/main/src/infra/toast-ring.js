@@ -335,6 +335,9 @@
     info:    function(text, opts) { return _toastShow('info',    text, opts); },
     warn:    function(text, opts) { return _toastShow('warn',    text, opts); },
     error:   function(text, opts) { return _toastShow('error',   text, opts); },
+    /* v3.2.1 — легаси-алиас: 46 колл-сайтов зовут toast(…, 'err'); до алиаса
+       резолвер `toastApi[t] || toastApi.info` молча деградировал ошибки до info. */
+    err:     function(text, opts) { return _toastShow('error',   text, opts); },
     success: function(text, opts) { return _toastShow('success', text, opts); },
     dismissAll: function() {
       var svc = _ringAlertService();

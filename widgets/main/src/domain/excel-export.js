@@ -22,13 +22,17 @@ function buildConflictAOA(snap, otherSnap, deps) {
   var rk = snap && snap.roleKey;
   var role = rk ? ALL_ROLES.find(function(r){ return r.key === rk; }) : null;
   var roleName = role ? roleLabel(role) : (rk || '—');
+  /* v3.2.1 — PP-канон #49 давно SINGLE-FLAT ({resourcesByAssignee, taskAssignments}),
+     а diff-экспорт всё ещё читал keyed-map pp[rk] → ta всегда {} → колонки
+     Исполнитель/Старт/Финиш пусты и Δ по ним не помечался (сосед exportSprintToExcel
+     читает flat). Legacy keyed-снимки страхуем фолбэком. */
   var pp = (snap && snap.personalPlanning) || null;
-  var ppRole = (pp && rk && pp[rk]) ? pp[rk] : null;
-  var ta = (ppRole && ppRole.taskAssignments) || {};
+  var ppFlat = (pp && pp.taskAssignments) ? pp : ((pp && rk && pp[rk]) ? pp[rk] : null);
+  var ta = (ppFlat && ppFlat.taskAssignments) || {};
   /* Зеркальные данные другой стороны для diff-сравнения */
   var otherPP = (otherSnap && otherSnap.personalPlanning) || null;
-  var otherPPRole = (otherPP && rk && otherPP[rk]) ? otherPP[rk] : null;
-  var otherTA = (otherPPRole && otherPPRole.taskAssignments) || {};
+  var otherPPFlat = (otherPP && otherPP.taskAssignments) ? otherPP : ((otherPP && rk && otherPP[rk]) ? otherPP[rk] : null);
+  var otherTA = (otherPPFlat && otherPPFlat.taskAssignments) || {};
 
   var meta = [
     [T('excelSprintName'),      snap && snap.name || '—'],

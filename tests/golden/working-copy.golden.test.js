@@ -21,6 +21,12 @@ function bootWithUser() {
   return host;
 }
 
+/* v3.2.1 — макротиковый settle (паттерн refresh.golden.test.js): _commitWorkingCopy
+   уничтожает WC ПОСЛЕ подтверждённого POST history — контракт снимается пост-settle. */
+async function settle(n) {
+  for (let i = 0; i < (n || 4); i++) await new Promise((r) => setTimeout(r, 0));
+}
+
 test('golden: computeRevHash / computeBaseSnapshotHash на фикстуре', () => {
   const { gm } = bootWithUser();
   checkJsonSnapshot('rev-hashes', {
@@ -95,7 +101,7 @@ test('golden: applyRevalidationLevel — матрица статус × уров
   checkJsonSnapshot('apply-revalidation-matrix', out);
 });
 
-test('golden: _commitWorkingCopy — коммит драфта в историю', () => {
+test('golden: _commitWorkingCopy — коммит драфта в историю', async () => {
   const { gm } = bootWithUser();
   const draft = gm.call('createWorkingDraftFromSnapshot', gm.get('_history')[0], 0);
   draft.items[0].alloc_analysis = 720;
@@ -105,6 +111,7 @@ test('golden: _commitWorkingCopy — коммит драфта в историю
   const snapFromCurrent = JSON.parse(JSON.stringify(gm.get('_history')[0]));
   snapFromCurrent.items = JSON.parse(JSON.stringify(draft.items));
   gm.call('_commitWorkingCopy', 'analysis', 0, draft, snapFromCurrent);
+  await settle();   /* v3.2.1 — WC гибнет после подтверждённого POST (анти-потеря правок) */
   const rec = JSON.parse(JSON.stringify(gm.get('_history')[0]));
   checkJsonSnapshot('working-copy-committed', {
     record: rec,

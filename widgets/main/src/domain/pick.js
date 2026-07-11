@@ -256,6 +256,13 @@ function _pickAddSelected(rk, selectedIds, deps) {
     deps.updateRoleRemaining(rk);
     toast(T('toastPickDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
     if (newIds.length) deps.refreshRoleEstimates(rk);
+  }).catch(function(e) {
+    /* v3.2.1 — отказ persist'а был unhandled rejection: задачи уже в _roleItems/draft,
+       сервер их не принял, а пользователь видел тишину вместо ошибки. rev_conflict
+       тостится внутри apiPost. */
+    var msg = (e && e.message) ? e.message : String(e);
+    deps.diag('pick persist ERR: ' + msg, 'err');
+    if (msg !== 'rev_conflict') { try { toast(T('toastError') + msg, 'err'); } catch (_) {} }
   });
 }
 

@@ -103,8 +103,12 @@
           h.close();
           if (!st.getIsValidator()) { deps.toast(T('toastNoValidRights'), 'warn'); return; }
           var hist = st.getHistory();
-          if (!hist[idx]) return;
-          var histRec = hist[idx];
+          /* v3.2.1 — idx из ОТСОРТИРОВАННОГО display-списка (renderHistory), порядок
+             живого массива с ним расходится → FINISHED штамповался на чужую запись.
+             Резолв по sprintId переданной записи. */
+          var liveIdx = hist.findIndex(function (h) { return h && h.sprintId === rec.sprintId; });
+          if (liveIdx < 0) return;
+          var histRec = hist[liveIdx];
           deps.openConfirmGoalDialog(histRec.sprintGoal, histRec.goalOutcome).then(function (goalFields) {
             if (!goalFields) return;
             histRec.status = deps.STATUS.FINISHED;

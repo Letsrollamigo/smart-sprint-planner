@@ -98,7 +98,7 @@ function dayKeysUTC(startMs, endMs) {
   var s = floorUTCDay(startMs), e = floorUTCDay(endMs);
   if (e < s) return out;
   var cur = s, guard = 0;
-  while (cur <= e && guard < 1200) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }
+  while (cur <= e && guard < 7400) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }  /* v3.2.1 — 1200 дней резал реальные lead-in диапазоны (out_of_membership 2021→2026) на UI-roundtrip'е; потолок ~20 лет */
   return out;
 }
 
@@ -106,7 +106,7 @@ function isoRangeDays(fromIso, toIso) {
   var s = isoToUTCms(fromIso), e = isoToUTCms(toIso);
   if (isNaN(s) || isNaN(e) || e < s) return [];
   var out = [], cur = s, guard = 0;
-  while (cur <= e && guard < 1200) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }
+  while (cur <= e && guard < 7400) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }  /* v3.2.1 — 1200 дней резал реальные lead-in диапазоны (out_of_membership 2021→2026) на UI-roundtrip'е; потолок ~20 лет */
   return out;
 }
 
@@ -535,6 +535,12 @@ function handlePostCapacity(ctx) {
   var body = core.getBody(ctx);
   if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
   body = core.filterKeys(body, core.ALLOWED_CAPACITY_RECORD_KEYS);
+  /* v3.2.1 — анти-wipe: битое тело (getBody → {}) валидно перезаписывало запись ёмкости
+     спринта пустыми persons. Ключ persons обязан присутствовать явно (фронт шлёт всегда). */
+  if (body.persons === undefined || typeof body.persons !== 'object' || Array.isArray(body.persons)) {
+    core.badRequest(ctx, 'capacity_persons_required');
+    return;
+  }
   if (!validateCapacityForWrite(body)) { core.badRequest(ctx, 'invalid_capacity_structure'); return; }
 
   // gotcha #2: окно спринта — серверно из ssp_sprint (R2 = только активный спринт).
@@ -706,6 +712,14 @@ function handlePostAbsences(ctx) {
   // логин буквально «absences» (значение = массив) ложно принялся бы за обёртку и весь POST
   // (включая других людей) терялся бы с 400.
   var map = (body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences)) ? body.absences : body;
+  /* v3.2.1 — анти-wipe: битое/оборванное тело парсится в {} (core.getBody) и до фикса
+     ВАЛИДНО затирало реестр отсутствий всех людей с success:true. Пустая карта легальна
+     только через ЯВНУЮ обёртку {absences:{}} (фронт v3.2.1+ всегда шлёт обёртку). */
+  if (!Object.keys(map).length
+      && !(body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences))) {
+    core.badRequest(ctx, 'absences_empty_body');
+    return;
+  }
   var va = validateAbsencesForWrite(map);
   if (!va.ok) { badWithErrors(ctx, 'absences_invalid', va.errors); return; }
   var s = JSON.stringify(va.normalized);

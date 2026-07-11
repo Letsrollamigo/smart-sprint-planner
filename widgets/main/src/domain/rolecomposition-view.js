@@ -622,8 +622,15 @@ function _buildRoleCompositionVm(rk, deps) {
   var _wcKey = _sprint ? (_sprint.sprintId + '_' + rk) : null;
   var _wcActive = !!(_wcKey && deps.state.getActiveWorkingDraftKey &&
                      deps.state.getActiveWorkingDraftKey() === _wcKey);
-  var isLocked = !!(_sprint && deps.statusForRole(rk) === deps.STATUS.ALLOCATED && !_wcActive);
+  /* v3.2.1 — лок закрывает И «исторический вид» (просмотр не-активного спринта без WC):
+     раньше он рендерил снапшот, но АКТИВНЫЕ контролы мутировали живой _roleItems активного
+     спринта (для carried-over issueId клик 🗑 тихо выносил задачу из текущего состава). */
+  var isLocked = !!(isHistoricalView || (_sprint && deps.statusForRole(rk) === deps.STATUS.ALLOCATED && !_wcActive));
   var roAttr = isLocked ? ' readonly="readonly" tabindex="-1"' : '';
+  /* v3.2.1 — лок теперь дотягивается и до inc-sel/делита/enum-ячеек (раньше read-only
+     были только два текстовых инпута — валидированный состав правился в обход WC-флоу). */
+  var lockAttr = isLocked ? ' disabled' : '';
+  var dynCellEnabled = dynEdit && !isLocked;
   var dynStyle = 'cursor:pointer;text-decoration:underline dotted;color:var(--primary)';
 
   var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
@@ -653,19 +660,19 @@ function _buildRoleCompositionVm(rk, deps) {
       cells.externalTicketId = { __html: _renderExternalTicketInnerHtml(item.externalTicketId, deps) };
     }
     if (hasSystem) {
-      cells.system = dynEdit
+      cells.system = dynCellEnabled
         ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span>' }
         : esc(item.system||'—');
     }
-    cells.priority = (dynEdit && _settings && _settings.fieldPriority)
+    cells.priority = (dynCellEnabled && _settings && _settings.fieldPriority)
       ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.priority)||'—')+'</span>' }
       : esc(deps.dispEnum(item.priority)||'—');
     if (hasXPriority) {
-      cells.xpriority = dynEdit
+      cells.xpriority = dynCellEnabled
         ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.xpriority)||'—')+'</span>' }
         : esc(deps.dispEnum(item.xpriority)||'—');
     }
-    cells.state = (dynEdit && _settings && _settings.fieldState)
+    cells.state = (dynCellEnabled && _settings && _settings.fieldState)
       ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(deps.dispEnum(item.state)||'—')+'</span>' }
       : esc(deps.dispEnum(item.state)||'—');
     cells.title = esc(item.title||'');
@@ -679,10 +686,10 @@ function _buildRoleCompositionVm(rk, deps) {
     }
     cells.resource = { __html: fmtDelta(delta) };
     cells.allocation = { __html: '<input type="text" class="alloc-input" data-iid="'+esc(iid)+'" data-rk="'+rk+'" value="'+esc(allocDisplay)+'" placeholder="'+esc(T('phHours'))+'" style="min-width:70px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:2px 6px"'+roAttr+'/>' };
-    cells.incStatus = { __html: '<select class="inc-sel" data-iid="'+esc(iid)+'" data-rk="'+rk+'">'+
+    cells.incStatus = { __html: '<select class="inc-sel" data-iid="'+esc(iid)+'" data-rk="'+rk+'"'+lockAttr+'>'+
       Object.values(deps.INC).map(function(v){return '<option value="'+v+'"'+(item.inclusionStatus===v?' selected':'')+'>'+esc(deps.incLabel(v))+'</option>';}).join('')+
       '</select>' };
-    cells['delete'] = { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(iid)+'" data-rk="'+rk+'" title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+deps.icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
+    cells['delete'] = { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(iid)+'" data-rk="'+rk+'"'+lockAttr+' title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+deps.icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
 
     return { iid: iid, isDirty: isDirty, cells: cells };
   });
@@ -784,6 +791,27 @@ function renderRoleComposition(rk, deps) {
     });
   }
 
+  /* v3.2.1 — гейт мутаций состава НА МОМЕНТ СОБЫТИЯ (defense-in-depth поверх
+     disabled/readonly разметки): исторический вид — просмотр не-активного спринта
+     без WC, где контролы мутировали живой _roleItems активного. Viewer'а здесь НЕ
+     гейтим по _isEditor: он false и ДО резолва прав (ложный блок легитимного
+     редактора на первых кликах); viewer держат disabled-разметка (permissions.js),
+     backend-403 и persist-тосты (_persistErrToast). */
+  function _compEditBlocked() {
+    var _s = deps.state.getSprint();
+    var _cur = deps.state.getCurrentSprintId();
+    return !!(_cur && _s && _cur !== _s.sprintId);   /* historical view */
+  }
+
+  /* v3.2.1 — persist-ошибки fire-and-forget POST'ов (сеть/403/rev_conflict) раньше
+     были unhandled: UI показывал успех, сервер отвергал. rev_conflict уже тостится
+     внутри apiPost — не дублируем. */
+  function _persistErrToast(e) {
+    var msg = (e && e.message) ? e.message : String(e);
+    deps.diag('sprint-data persist ERR: ' + msg, 'err');
+    if (msg !== 'rev_conflict') { try { deps.toast(deps.T('toastError') + msg, 'err'); } catch (_) {} }
+  }
+
   /* v1.6.2 D127 — стабильный lookup по issueId; индекс в _roleItems[rk] не совпадает
      с позицией в DOM-таблице, когда применена сортировка через multiKeySort. */
   function _findIdxByIid(rkx, iidx) {
@@ -808,6 +836,7 @@ function renderRoleComposition(rk, deps) {
     host.addEventListener('change', function(ev) {
       var t = ev.target;
       if (!t || !t.matches || !t.matches('select.inc-sel[data-iid]')) return;
+      if (_compEditBlocked()) return;   /* v3.2.1 */
       var rk2 = t.dataset.rk;
       var iid = t.dataset.iid;
       var idx = _findIdxByIid(rk2, iid);
@@ -816,13 +845,15 @@ function renderRoleComposition(rk, deps) {
       deps.updateRoleRemaining(rk2);
       deps.markDirty('roleItems');
       deps.draftSaveDebounced('roleItems', function(){ return deps.state.getRoleItems(); });
-      deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() });
+      deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(_persistErrToast);
     });
 
     host.addEventListener('focusout', function(ev) {
       var t = ev.target;
       if (!t || !t.matches) return;
       if (t.readOnly) return;
+      if ((t.matches('input.alloc-input[data-iid]') || t.matches('input.dyn-period-input[data-iid]'))
+          && _compEditBlocked()) return;   /* v3.2.1 */
       /* Аллокация: blur-обработчик (оба режима) */
       if (t.matches('input.alloc-input[data-iid]')) {
         var rk2  = t.dataset.rk;
@@ -849,7 +880,7 @@ function renderRoleComposition(rk, deps) {
         deps.updateRoleRemaining(rk2);
         deps.markDirty('roleItems');
         deps.draftSaveDebounced('roleItems', function(){ return deps.state.getRoleItems(); });
-        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() });
+        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(_persistErrToast);
         return;
       }
       /* dynEdit: оценка-period blur */
@@ -874,7 +905,7 @@ function renderRoleComposition(rk, deps) {
               deps.updateIssueField(item3.issueId, _settings3[deps.ALL_ROLES.find(function(r){return r.key===rk3;}).fieldEst], newVal3, 'period');
               deps.updateRoleRemaining(rk3);
               deps.renderRoleComposition(rk3);
-              deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).then(function(){ deps.renderRoleComposition(rk3); });
+              deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).then(function(){ deps.renderRoleComposition(rk3); }).catch(_persistErrToast);
             } else {
               inpEl.value = oldVal3 !== null && oldVal3 !== undefined ? deps.fmtPeriod(oldVal3) : '';
             }
@@ -901,6 +932,7 @@ function renderRoleComposition(rk, deps) {
       if (ev.button !== 0) return;
       var tgt = ev.target;
       if (!tgt || typeof tgt.closest !== 'function') return;
+      if (_compEditBlocked()) return;   /* v3.2.1 — делит/enum-мутации только в edit-контексте */
 
       var delBtn = tgt.closest('button.del-item-btn[data-iid]');
       if (delBtn && host.contains(delBtn)) {
@@ -913,7 +945,7 @@ function renderRoleComposition(rk, deps) {
         deps.updateRoleRemaining(rk2);
         deps.markDirty('roleItems');
         deps.draftSaveDebounced('roleItems', function(){ return deps.state.getRoleItems(); });
-        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() });
+        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(_persistErrToast);
         return;
       }
 
@@ -943,7 +975,7 @@ function renderRoleComposition(rk, deps) {
                 item[itemKey] = newVal;
                 cell.textContent = deps.localizeEnumVal(newVal) || newVal;
                 deps.updateIssueField(item.issueId, fieldName, newVal, 'enum');
-                deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).then(function(){ deps.renderRoleComposition(rkc); });
+                deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).then(function(){ deps.renderRoleComposition(rkc); }).catch(_persistErrToast);
               }
             }
           );

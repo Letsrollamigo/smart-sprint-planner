@@ -231,9 +231,14 @@ function handlePostReleases(ctx) {
   if (!core.authzGuard(ctx, 'viewer')) return; // аутентификация (инвариант: authzGuard первым)
   var perms = releasePerms(ctx);
   if (!perms.canAdvance) { core.forbidden(ctx, 'release_rights_required'); return; }
-  var body = ctx.request.json();
-  if (!body || typeof body !== 'object') { core.badRequest(ctx, 'invalid_body'); return; }
-  var blob = { releases: Array.isArray(body.releases) ? body.releases : [] };
+  /* v3.2.1 — core.getBody вместо raw json(): лимит 2МБ + sanitizeDeep + не-500 на не-JSON
+     (единственный handler, ходивший мимо общего конверта). */
+  var body = core.getBody(ctx);
+  if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
+  /* v3.2.1 — тело без ЯВНОГО releases-массива больше не коэрсится в []: один битый/
+     оборванный POST стирал все релизы проекта с success:true. */
+  if (!Array.isArray(body.releases)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
+  var blob = { releases: body.releases };
   if (!validateReleasesBlob(blob)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
   var stored = readReleases(ctx);
   if (!perms.canManage) {

@@ -61,6 +61,15 @@ function parsePeriod(s) {
   s = String(s).trim().toLowerCase();
   if (!s) return 0;
   var minTok = _minuteTokens(), total = 0, found = false;
+  /* v3.2.1 — десятичный ввод «1.5»/«0,5» (± суффикс) раньше разваливался на ДВА
+     regex-матча (разделитель шёл «неизвестным суффиксом = часы»): '1.5' → 360 мин
+     вместо 90. Голое десятичное — часы; с minute-суффиксом — минуты. */
+  var dec = /^(\d+)[.,](\d+)\s*([^\d\s]*)$/.exec(s);
+  if (dec) {
+    var df = parseFloat(dec[1] + '.' + dec[2]);
+    var du = (dec[3] || '').toLowerCase();
+    return Math.round(minTok[du] ? df : df * 60);
+  }
   var re = /(\d+)\s*([^\d\s]*)/g, m;
   while ((m = re.exec(s)) !== null) {
     if (m[0] === '') { re.lastIndex++; continue; }

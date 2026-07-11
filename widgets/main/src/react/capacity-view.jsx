@@ -244,7 +244,13 @@ function CapacityInner({ vm }) {
       const p = next[login] || (next[login] = { grade: 'Middle', rate: 1, participation: 1, alloc: {} });
       if (field === 'grade') p.grade = value;
       else if (field === 'alloc') { if (!p.alloc) p.alloc = {}; p.alloc[roleKey] = _num(parseFloat(value), 0); }
-      else p[field] = _num(parseFloat(value), 1);
+      else {
+        /* v3.2.1 — очистка поля (parseFloat('')=NaN) раньше снапила rate/participation
+           к 1: стёр «0.8», отвлёкся → ёмкость завышена на 25% без предупреждения.
+           NaN → прежнее значение остаётся. */
+        const f = parseFloat(value);
+        if (isFinite(f)) p[field] = f;
+      }
       return next;
     });
   }

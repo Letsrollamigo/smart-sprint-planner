@@ -823,12 +823,14 @@ function _commonGuard(issue) {
     if (issue.isReported === false) return false;
     if (issue.isResolved === true) return false;
   } catch (_) { /* fields могут быть недоступны — пропускаем чек */ }
+  /* v3.2.1 — дешёвый отсекатель ПЕРВЫМ: readSettings парсит многокилобайтный
+     ssp_settings на КАЖДОЕ изменение любого поля любой задачи проекта; раньше
+     parse стоял до чека workItems и налогом ложился на все массовые правки. */
+  if (!_hasWorkItemChanges(issue)) return false;
   const settings = readSettings(issue);
   if (!settings || !settings.dtaEnabled) return false;
   if (!settings.workItemTypeMapping) return false;
   if (!Object.keys(settings.workItemTypeMapping).length) return false;
-  /* Skip если workItems не менялись. */
-  if (!_hasWorkItemChanges(issue)) return false;
   return true;
 }
 

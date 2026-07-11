@@ -230,24 +230,39 @@ function buildTreeVm(tasks, settings) {
     dp.zoneCount[leaf.zone] = (dp.zoneCount[leaf.zone] || 0) + 1;
   });
 
-  /* финализация снизу вверх: агрегат count + зоны контейнера = свои листья ⊕ потомки. */
+  /* финализация снизу вверх: агрегат count + зоны контейнера = свои листья ⊕ потомки.
+     v3.2.1 — visited-guard: цикл связей (cascadeParentLinkInward настраиваемый, YT не
+     запрещает A↔B) раньше давал бесконечную рекурсию (RangeError, вид «Дерево» мёртв),
+     ромб — двойную финализацию (дубли задач и задвоенный agg.count). */
+  var _finalized = {};
   function finalize(id) {
+    if (_finalized[id]) return null;
+    _finalized[id] = true;
     var n = nodes[id];
     var zones = {}; Object.keys(n.zoneCount).forEach(function (z) { zones[z] = n.zoneCount[z]; });
     var count = n.tasks.length;
     var children = n.children.map(function (cid) {
       var fc = finalize(cid);
+      if (!fc) return null;   /* уже финализирован по другому пути (цикл/ромб) */
       count += fc.agg.count;
       fc.agg.zones.forEach(function (zc) { zones[zc.zone] = (zones[zc.zone] || 0) + zc.count; });
       return fc;
-    });
+    }).filter(Boolean);
     return {
       issueId: n.issueId, summary: n.summary, kind: n.kind, level: n.level,
       tasks: n.tasks, children: children,
       agg: { count: count, zones: Object.keys(zones).map(function (z) { return { zone: z, count: zones[z] }; }) },
     };
   }
-  var roots = order.filter(function (id) { return !hasParent[id]; }).map(finalize);
+  var roots = order.filter(function (id) { return !hasParent[id]; }).map(finalize).filter(Boolean);
+  /* v3.2.1 — цикл без корня (каждый узел «имеет родителя»): его листья не должны
+     молча исчезать из дерева — доносим задачи в orphans. */
+  order.forEach(function (id) {
+    if (_finalized[id]) return;
+    _finalized[id] = true;
+    var n = nodes[id];
+    if (n && n.tasks && n.tasks.length) n.tasks.forEach(function (t) { orphans.push(t); });
+  });
 
   return { roots: roots, orphans: orphans, counts: counts };
 }

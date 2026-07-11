@@ -97,8 +97,15 @@
       host.textContent = deps.T('settingsNotConfiguredHint');
       return;
     }
-    /* inline «отмена/закрыть» = перезагрузить страницу (сброс несохранённых правок). */
-    var props = deps.buildSettingsFormProps(function () { _renderProjectSettingsPage(deps); }, { canEditWorkflow: !!canEditWorkflow });
+    /* inline «отмена/закрыть» = перезагрузить страницу (сброс несохранённых правок).
+       v3.2.1 — реюз inline-root реконсилировал ТОТ ЖЕ компонент: useState-инициализаторы
+       не перезапускались, свежий initial игнорировался — «Отмена» была no-op, а юзер,
+       считая правки сброшенными, мог позже сохранить нежелательное. Демонтируем дерево
+       перед свежим маунтом — стейт формы гарантированно пересоздаётся. */
+    var props = deps.buildSettingsFormProps(function () {
+      try { window.__SSP_RING_MODAL.unmountInline(host); } catch (_) {}
+      _renderProjectSettingsPage(deps);
+    }, { canEditWorkflow: !!canEditWorkflow });
     window.__SSP_RING_MODAL.mountInline(host, 'settingsForm', props);
   }
 

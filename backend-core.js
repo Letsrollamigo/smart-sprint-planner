@@ -277,7 +277,7 @@ var CURRENT_PLUGIN_VERSION = '2.14.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.2.0';
+var APP_VERSION = '3.2.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -425,7 +425,11 @@ function migrateHistoryArr(h) {
    и in-memory state'ы могут его содержать; pipeline READ → modify → WRITE приводит к
    invalid_history_structure / invalid_sprint_structure (баг #4 v6.0.0 testbench).
    Стрипаем silent на WRITE для обратной совместимости. */
-var DEPRECATED_HISTORY_SNAP_KEYS = ['gantt'];
+/* v3.2.1 — '_orphanGanttIssues': транзиентный ключ фронта (D59 orphan-детект вешает его
+   на _sprint/_history[i] при чтении), НИКОГДА не легитимен в сторадже. Без стрипа
+   legacy-проект с orphan-gantt данными брикал ВСЕ сейвы: strict-whitelist отвергал
+   ключ → запись не проходила → gantt не вычищался → детект срабатывал вечно. */
+var DEPRECATED_HISTORY_SNAP_KEYS = ['gantt', '_orphanGanttIssues'];
 function stripDeprecatedHistoryKeys(h) {
   if (!Array.isArray(h)) return h;
   for (var i = 0; i < h.length; i++) {
@@ -438,7 +442,7 @@ function stripDeprecatedHistoryKeys(h) {
   }
   return h;
 }
-var DEPRECATED_SPRINT_KEYS = ['gantt'];
+var DEPRECATED_SPRINT_KEYS = ['gantt', '_orphanGanttIssues'];   /* v3.2.1 — см. коммент выше */
 function stripDeprecatedSprintKeys(s) {
   if (!s || typeof s !== 'object') return s;
   for (var j = 0; j < DEPRECATED_SPRINT_KEYS.length; j++) {
@@ -2284,6 +2288,26 @@ var ENDPOINTS = [
           }
         }
 
+        /* v3.2.1 — анти-torn-write: проверки roleItems (права/структура/размер)
+           выполняются ДО записи ssp_sprint. Раньше 4xx из roleItems-ветки уходил
+           ПОСЛЕ setProp спринта (обе записи коммитились независимо) → CONFIRMED-спринт
+           персистился без согласованного состава. Заодно выровнена матрица прав шапки:
+           action=validate пишет roleItems под validator-гейтом (как sprint-ветка выше),
+           не требуя editor. assignerSync roleItems игнорирует (ранний return ниже). */
+        var roleItemsStrPre = null;
+        if (body.roleItems !== undefined && action !== 'assignerSync') {
+          if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+          if (!validateRoleItems(body.roleItems)) {
+            badRequest(ctx, 'invalid_role_items_structure');
+            return;
+          }
+          roleItemsStrPre = JSON.stringify(body.roleItems);
+          if (roleItemsStrPre.length > MAX_PROP_SIZE) {
+            badRequest(ctx, 'role_items_data_too_large');
+            return;
+          }
+        }
+
         if (body.sprint !== undefined) {
           if (body.sprint === null) {
             /* S3 (кластер-баг спринтов): явный сброс активного спринта — фронт шлёт
@@ -2292,6 +2316,9 @@ var ENDPOINTS = [
                переживает хард-релоад. ssp_roleitems сбрасывается ниже (фронт шлёт {}). */
             if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
             setProp(ctx, 'ssp_sprint', '');
+            /* v3.2.1 — слот пуст → его rev теперь 0; сообщаем клиенту (иначе вкладка
+               держала старый _slotRev и все последующие записи ловили 409 до F5). */
+            newSlotRev = 0;
           } else if (action === 'assignerSync') {
             /* В action=assignerSync разрешаем перезапись только personalPlanning;
                прочие поля sprint игнорируем — берём из storage. */
@@ -2373,18 +2400,9 @@ var ENDPOINTS = [
           }
         }
 
-        if (body.roleItems !== undefined) {
-          if (!authzGuard(ctx, 'editor')) return;
-          if (!validateRoleItems(body.roleItems)) {
-            badRequest(ctx, 'invalid_role_items_structure');
-            return;
-          }
-          var riStr = JSON.stringify(body.roleItems);
-          if (riStr.length > MAX_PROP_SIZE) {
-            badRequest(ctx, 'role_items_data_too_large');
-            return;
-          }
-          setProp(ctx, 'ssp_roleitems', riStr);
+        if (roleItemsStrPre !== null) {
+          /* v3.2.1 — права/структура/размер проверены pre-flight'ом выше (анти-torn-write). */
+          setProp(ctx, 'ssp_roleitems', roleItemsStrPre);
           /* #56-4 — roleItems-only write тоже двигает rev слота (иначе два таких
              писателя проходят с одним baseRev и последний молча затирает состав
              первого). Спринт в этом запросе не менялся — переписываем хранимый
@@ -2598,6 +2616,12 @@ var ENDPOINTS = [
         body = filterKeys(body, ALLOWED_HISTORY_KEYS);
 
         if (body.history !== undefined) {
+          /* v3.2.1 — {"history": null} проходил undefined-чек и ронял handler
+             TypeError'ом на .length (500); import-ветки Array-гейт имеют, основная — нет. */
+          if (!Array.isArray(body.history)) {
+            badRequest(ctx, 'invalid_history_structure: not_array');
+            return;
+          }
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedHistoryKeys).
           body.history = stripDeprecatedHistoryKeys(body.history);
           // v1.6.0 D125 — stamp each record before validate+persist.
@@ -2922,11 +2946,17 @@ var ENDPOINTS = [
           var existingForKey = data[k];
           if (existingForKey && existingForKey.editorLogin
               && existingForKey.editorLogin !== login
-              && d.editorLogin === login
               && !isSettingsManager(ctx)) {
-            // Take-over working copy другого пользователя — запрещено
-            forbidden(ctx, 'not_owner');
-            return;
+            if (d.editorLogin === login) {
+              // Take-over working copy другого пользователя — запрещено
+              forbidden(ctx, 'not_owner');
+              return;
+            }
+            /* v3.2.1 — bulk-flush клиента несёт и ЧУЖИЕ записи (снимок карты на момент
+               загрузки): раньше out перекрывал merge и stale-копия затирала живой чужой
+               драфт (обход not_owner с сохранённым чужим editorLogin). Чужой ключ —
+               серверная версия побеждает, свою копию молча пропускаем. */
+            continue;
           }
           // Перезаписываем editorLogin на серверное значение если запись новая
           if (!existingForKey) {

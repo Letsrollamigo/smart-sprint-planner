@@ -81,7 +81,7 @@ function dayKeysUTC(startMs, endMs) {
   var cur = s;
   // защита от рантайм-зацикливания на абсурдном окне (>3 лет)
   var guard = 0;
-  while (cur <= e && guard < 1200) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }
+  while (cur <= e && guard < 7400) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }  /* v3.2.1 — 1200 дней резал реальные lead-in диапазоны (out_of_membership 2021→2026) на UI-roundtrip'е; потолок ~20 лет */
   return out;
 }
 
@@ -90,7 +90,7 @@ function isoRangeDays(fromIso, toIso) {
   var s = isoToUTCms(fromIso), e = isoToUTCms(toIso);
   if (isNaN(s) || isNaN(e) || e < s) return [];
   var out = [], cur = s, guard = 0;
-  while (cur <= e && guard < 1200) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }
+  while (cur <= e && guard < 7400) { out.push(msToIso(cur)); cur += MS_PER_DAY; guard++; }  /* v3.2.1 — 1200 дней резал реальные lead-in диапазоны (out_of_membership 2021→2026) на UI-roundtrip'е; потолок ~20 лет */
   return out;
 }
 

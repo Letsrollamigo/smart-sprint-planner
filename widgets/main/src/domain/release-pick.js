@@ -15,7 +15,9 @@
 'use strict';
 
 const TERMINAL = { released: 1, cancelled: 1 };
-const PAGE = 10, MAX_TOTAL = 1000;
+/* v3.2.1 — PAGE 10→100: «Добавить все» на широком запросе гнал до ~100 последовательных
+   round-trip'ов (десятки секунд «зависания»); поля плоские — страница 100 лёгкая. */
+const PAGE = 100, MAX_TOTAL = 1000;
 const ASSIST_FIELDS = '$type,id,suggestions($type,caret,completionStart,completionEnd,matchingStart,matchingEnd,description,group,icon,option,prefix,suffix)';
 const ISSUE_FIELDS = 'id,idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation))';
 

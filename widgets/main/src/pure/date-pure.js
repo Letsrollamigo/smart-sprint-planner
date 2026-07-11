@@ -14,7 +14,17 @@ function toDateIn(ts) {
 }
 
 /* 'YYYY-MM-DD' (или иная распознаваемая дата) → timestamp. */
-function fromDateIn(s) { return s ? new Date(s).getTime() : null; }
+function fromDateIn(s) {
+  if (!s) return null;
+  /* v3.2.1 — 'YYYY-MM-DD' через new Date(s) по ES-спеке парсится как UTC-полночь,
+     а отображение/обратный путь (toDateIn/fmtDate) — локальные: западнее Гринвича
+     дата казала −1 день и ДРЕЙФОВАЛА на день за каждый цикл «открыл форму → сохранил».
+     Парсим календарные компоненты руками в ЛОКАЛЬНУЮ полночь (симметрично toDateIn);
+     не-ISO строки — прежним путём. */
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+  return new Date(s).getTime();
+}
 
 /* timestamp → 'DD.MM.YYYY' (ru-RU). */
 function fmtDate(ts) { return ts ? new Date(ts).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }

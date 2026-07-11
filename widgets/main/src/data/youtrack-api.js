@@ -56,9 +56,12 @@ function apiGet(path, deps) {
   return _backendCall(path, {}, deps)
     .then(function (r) {
       deps.diag('OK ' + path, 'ok');
-      /* #56-4 — синк rev слота sprint-data при загрузке (optimistic lock). */
-      if (typeof deps.state.setSlotRev === 'function' && path.indexOf('sprint-data') === 0 && r && r.sprint) {
-        deps.state.setSlotRev(typeof r.sprint._rev === 'number' ? r.sprint._rev : 0);
+      /* #56-4 — синк rev слота sprint-data при загрузке (optimistic lock).
+         v3.2.1 — синкаем и ПУСТОЙ слот (sprint=null после S3-сброса → rev 0):
+         раньше stale _slotRev оставался и все записи вкладки ловили 409 до F5. */
+      if (typeof deps.state.setSlotRev === 'function' && path.indexOf('sprint-data') === 0
+          && r && r.success !== false) {
+        deps.state.setSlotRev((r.sprint && typeof r.sprint._rev === 'number') ? r.sprint._rev : 0);
       }
       return r;
     })
@@ -166,7 +169,19 @@ function _fetchGanttStateHistory(ids, sprintKey, force, curStates, fieldId, deps
   if (!force &&
       cached._sprintKey === sprintKey &&
       cached._fetchedAt &&
-      (now - cached._fetchedAt) < TTL) return;
+      (now - cached._fetchedAt) < TTL) {
+    /* v3.2.1 (#20-v2) — кэш-hit обязан заполнить СВЕЖИЕ плейсхолдеры: gantt-task-react
+       ремаунтит список на каждый новый vm (useMemo([vm]) даёт новые типы компонентов),
+       сбрасывая поканный текст в «Загрузка…»; ранний return без поков оставлял его
+       навсегда до истечения TTL. Реплеим DOM-апдейты из кэша. */
+    var cachedContainer = deps.getGanttContainer();
+    if (cachedContainer) {
+      ids.forEach(function (issueId) {
+        if (cached[issueId]) deps.updateGanttHistDOM(cachedContainer, issueId, cached[issueId]);
+      });
+    }
+    return;
+  }
   /* Сброс: очищаем все issueId-записи, иначе processChunk пропустит их как «уже загруженные». */
   deps.state.setGanttStateHist({ _sprintKey: sprintKey, _fetchedAt: 0 });
   curStates = curStates || {};

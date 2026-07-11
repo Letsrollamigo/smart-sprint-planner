@@ -199,6 +199,10 @@ function SspModal({ spec, onClose }) {
     if (spec.blockEscape) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
+        /* v3.2.1 — открытый Ring-попап (Select/QueryAssist/DatePicker) потребляет
+           Escape первым: раньше capture-слушатель закрывал ВСЮ модалку (правки формы
+           настроек гибли), когда пользователь закрывал лишь дропдаун. */
+        if (document.querySelector('.ring-popup-popup:not(.ring-popup-hidden)')) return;
         e.stopPropagation();
         onClose();
       }

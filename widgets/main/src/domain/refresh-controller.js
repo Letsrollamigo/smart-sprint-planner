@@ -45,9 +45,9 @@ function _setRefreshBtnsBusy(busy) {
     document.querySelectorAll(sel).forEach(function (btn) { btn.disabled = !!busy; });
   } catch (_) {}
 }
-function _persistAndRerenderRefresh(curRk, deps) {
+function _persistAndRerenderRefresh(curRk, deps, skipPPSave) {
   deps.markDirty('roleItems');
-  deps.markDirty('currentRole');
+  if (!skipPPSave) deps.markDirty('currentRole');
   deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(function () {});
   try { if (typeof deps.renderPlanningRoles === 'function') deps.renderPlanningRoles(); } catch (_) {}
   if (curRk) { try { if (typeof deps.renderRoleComposition === 'function') deps.renderRoleComposition(curRk); } catch (_) {} }
@@ -56,7 +56,9 @@ function _persistAndRerenderRefresh(curRk, deps) {
   try { if (typeof deps.updateCurrentRoleTotals === 'function') deps.updateCurrentRoleTotals(); } catch (_) {}
   deps.state.getGanttStateHist()._fetchedAt = 0;
   try { if (typeof deps.renderGanttChart === 'function') deps.renderGanttChart(); } catch (_) {}
-  deps.saveCurrentRoleState();
+  /* v3.2.1 — при протухшем _currentSprintRoleRec (skipPPSave) PP-канон не персистим:
+     saveCurrentRoleState записал бы клон PP ЧУЖОГО спринта в его запись истории. */
+  if (!skipPPSave) deps.saveCurrentRoleState();
 }
 
 /* S7 #35 — открыт ли незакоммиченный редактор ячейки в таблицах планирования.
@@ -192,6 +194,16 @@ function refreshFromYouTrack(deps) {
 
   /* null-safe: _currentSprintRoleRec может быть null на вкладке «Состав ролей» или при _sprint===null. */
   var curRoleRec = state.getCurrentSprintRoleRec();
+  /* v3.2.1 — rec может ПРОТУХНУТЬ: смена спринта пикером с уровня «Роли» не перезагружает
+     _currentSprintRoleRec/_currentRolePP (их обновляет только рендер «Люди»/Ганта). Протухший
+     rec ДРУГОГО спринта направлял remote-assignee задач НОВОГО спринта в PP-канон СТАРОГО
+     (класс прод-бага #56-7). Протух = rec есть, но sprintId не матчится префиксом; тогда
+     assignee-ось и PP-персист выключаем. rec=null — легитимный live-кейс (уровень «Роли»,
+     curRk из activeSubtab) — прежнее поведение. */
+  var recStale = !!(curRoleRec && curSprintId
+      && String(curRoleRec.sprintId || '').indexOf(curSprintId + '_') !== 0);
+  if (recStale) curRoleRec = null;
+  var recFresh = !recStale;
   var curRk = (curRoleRec && curRoleRec.roleKey) || state.getActiveSubtab()
             || (roles[0] && roles[0].key) || null;
   var curRole = deps.ALL_ROLES.find(function (r) { return r.key === curRk; });
@@ -311,7 +323,7 @@ function refreshFromYouTrack(deps) {
         if (fXPriority) remote.xpriority        = getStr(issue, fXPriority);
         if (fSystem)    remote.system           = getStr(issue, fSystem);
         if (fExtId)     remote.externalTicketId = getStr(issue, fExtId);
-        if (isCur && curUserField) remote.assignee = getUser(issue, curUserField); /* {login,fullName}|null */
+        if (isCur && curUserField && recFresh) remote.assignee = getUser(issue, curUserField); /* {login,fullName}|null; v3.2.1 — только при свежем rec */
 
         var sItem = snapItem(rk, item.issueId);
         var local = {
@@ -374,7 +386,7 @@ function refreshFromYouTrack(deps) {
           else { var u = {}; u[c.field] = c.to; _applyRefreshItemUpdates(c._item, u, c._rk); }
         });
       }
-      _persistAndRerenderRefresh(curRk, deps);
+      _persistAndRerenderRefresh(curRk, deps, !recFresh);
       var applied = pendingItemUpdates.length + pendingAssignee.length + (mode === 'all' ? conflicts.length : 0);
       if (!applied) toast(T('toastSyncFromYtNoChange'), 'info');
       else toast(T('toastSyncFromYtUpdated').replace('{n}', String(applied)), 'success');

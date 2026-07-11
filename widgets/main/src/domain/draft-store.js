@@ -61,7 +61,15 @@ function draftFlushNow(deps) {
   deps.state.setDraftPending(false);
   deps.diag('draft FLUSH → backend (size='+sz+'B)', 'info');
   deps.apiPost('draft', { data: _draft })
-    .catch(function(e){ deps.diag('draft flush failed: '+(e&&e.message?e.message:e),'err'); });
+    .catch(function(e){
+      deps.diag('draft flush failed: '+(e&&e.message?e.message:e),'err');
+      /* v3.2.1 — ретрай: pending гасится ДО POST, отказ раньше оставлял черновик
+         только в памяти до следующего draftSet. Перевзводим отложенный повтор.
+         ponytail: бесконечный 5с-ретрай при лежащем backend — самолечится. */
+      deps.state.setDraftPending(true);
+      clearTimeout(_draftFlushTimer);
+      _draftFlushTimer = setTimeout(function () { draftFlushNow(deps); }, 5000);
+    });
 }
 function draftLoadFromBackend(deps) {
   return deps.apiGet('draft').then(function(r){
@@ -198,6 +206,10 @@ function workingDraftsFlushNow(deps) {
     }
     /* Не теряем dirty — следующий debounced flush попробует снова */
     deps.state.setWorkingDraftsDirty(true);
+    /* v3.2.1 — таймер тоже перевзводим: если это был последний ввод сессии,
+       без него WC оставалась только в памяти вкладки. */
+    if (_workingDraftsFlushTimer) clearTimeout(_workingDraftsFlushTimer);
+    _workingDraftsFlushTimer = setTimeout(function () { workingDraftsFlushNow(deps); }, 5000);
   });
 }
 function workingDraftsDeleteOnBackend(key, deps) {
@@ -321,8 +333,17 @@ function syncWorkingDraftFromMemory(rk, deps) {
   if (typeof deps.renderWorkingCopyBanner === 'function') deps.renderWorkingCopyBanner();
 }
 
+/* v3.2.1 — отмена отложенных флашей при смене проекта (global-режим): stale-таймер
+   стрелял бы уже с роутингом на НОВЫЙ проект (deps читают активный ключ на момент
+   таймера) — пустая карта WC затирала working copies нового проекта. */
+function cancelScheduledFlushes() {
+  if (_draftFlushTimer) { clearTimeout(_draftFlushTimer); _draftFlushTimer = null; }
+  if (_workingDraftsFlushTimer) { clearTimeout(_workingDraftsFlushTimer); _workingDraftsFlushTimer = null; }
+}
+
 const api = {
   draftSet: draftSet,
+  cancelScheduledFlushes: cancelScheduledFlushes,
   draftGet: draftGet,
   draftFlushNow: draftFlushNow,
   draftLoadFromBackend: draftLoadFromBackend,

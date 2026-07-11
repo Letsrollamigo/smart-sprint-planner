@@ -108,6 +108,13 @@ function _startPermissionsCheck(deps) {
   var all = Promise.all([validator, editor, assigner]).then(function() {
     try { document.body.classList.toggle('has-assigner-rights', !!(deps.state.getIsEditor() || deps.state.getIsAssigner())); } catch(_){}
     if (typeof applyEditorRightsToUI === 'function') { try { applyEditorRightsToUI(deps); } catch(_){} }
+    /* v3.2.1 — transient-сбой чеков (их внутренние catch → false) раньше кэшировался
+       НАВСЕГДА → сессия «без прав» до F5. Итог все-три-false не кэшируем: следующий
+       гейтнутый клик перепроверит. ponytail: честный viewer платит повторным лёгким
+       чеком на редких кликах — приемлемо против залипшей сессии. */
+    if (!deps.state.getIsEditor() && !deps.state.getIsValidator() && !deps.state.getIsAssigner()) {
+      deps.state.setPermissionsCheckPromise(null);
+    }
   });
   deps.state.setPermissionsCheckPromise(all);
   return all;
@@ -143,7 +150,9 @@ function _applyEditorRightsTo(panel, deps) {
     if (_isEditor) {
       btn.classList.remove('btn--disabled-rights');
       btn.removeAttribute('data-tooltip');
-      btn.disabled = false;
+      /* v3.2.1 — не сбрасываем disabled у кнопки, занятой withLoader (in-flight
+         double-click guard): поздний permissions-проход открывал окно двойного submit. */
+      if (!btn.__sspLoaderRoot) btn.disabled = false;
     } else {
       btn.classList.add('btn--disabled-rights');
       btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
@@ -186,12 +195,15 @@ function _applyEditorRightsTo(panel, deps) {
     if (_isEditor || _isAssigner) {
       el.classList.remove('btn--disabled-rights');
       el.removeAttribute('data-tooltip');
-      el.disabled = false;
+      if (!el.__sspLoaderRoot) el.disabled = false;   /* v3.2.1 — см. editor-btns */
       try { el.readOnly = false; } catch (_) {}
     } else {
       el.classList.add('btn--disabled-rights');
       el.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
       try { el.readOnly = true; } catch (_) {}
+      /* v3.2.1 — SELECT игнорирует readOnly (действует только на input/textarea):
+         селект смены исполнителя оставался интерактивным у не-assigner. */
+      if (el.tagName === 'SELECT') el.disabled = true;
     }
   });
 }
