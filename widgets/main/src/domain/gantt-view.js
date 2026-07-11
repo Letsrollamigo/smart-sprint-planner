@@ -222,7 +222,14 @@ function renderGanttChart(deps) {
     if (emptyEl) emptyEl.style.display = '';
     return;
   }
-  var built = _buildGanttVm(deps);
+  var built;
+  try {
+    built = _buildGanttVm(deps);
+  } catch (e) {
+    /* #20-v2 fail-loud: OOPIF прячет исключения от top-консоли — показываем в пейне. */
+    if (container) container.textContent = 'Gantt vm error: ' + String((e && e.message) || e);
+    return;
+  }
   if (!built) {
     /* Empty-ветка vanilla (вне React): демонтировать root, показать баннер.
        Квирк v4.0.0 сохранён: emptyEl переносится ВНУТРЬ контейнера и гибнет

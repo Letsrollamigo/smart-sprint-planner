@@ -273,7 +273,10 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
 var CURRENT_PLUGIN_VERSION = '2.14.0';
-/* Presentation-версия (единый источник для GET /app-version обоих handler-файлов). */
+/* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
+   Бампить синхронно с manifest.json/version + frontend APP_VERSION.
+   ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
+   YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
 var APP_VERSION = '3.1.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)

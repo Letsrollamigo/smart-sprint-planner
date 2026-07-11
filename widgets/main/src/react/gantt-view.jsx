@@ -151,6 +151,24 @@ function makeTooltip(vm) {
 
 const ZOOM_COLUMN_W = { Day: 44, Week: 120, Month: 200 };
 
+/* Фейл-громко (#20-v2): OOPIF прячет ошибки фрейма от top-консоли (память
+   feedback_oopif_hidden_errors_harness) — падение либы/рендера показываем ТЕКСТОМ
+   в самом пейне (видно и юзеру, и a11y-смоуку), не роняя остальной виджет. */
+class GanttErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  render() {
+    if (this.state.err) {
+      return (
+        <div style={{ padding: '12px', color: 'var(--error,#c22)', fontSize: '12px' }}>
+          {'Gantt render error: ' + String((this.state.err && this.state.err.message) || this.state.err)}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function GanttChart({ host }) {
   const [, force] = React.useReducer((x) => x + 1, 0);
   const [zoom, setZoom] = React.useState('Day');
@@ -232,7 +250,7 @@ window.__SSP_GANTT_MOUNT = {
       return;
     }
     const root = ReactDOMClient.createRoot(host);
-    root.render(<GanttChart host={host} />);
+    root.render(<GanttErrorBoundary><GanttChart host={host} /></GanttErrorBoundary>);
     _mounted.set(host, root);
   },
   unmountAt(host) {
