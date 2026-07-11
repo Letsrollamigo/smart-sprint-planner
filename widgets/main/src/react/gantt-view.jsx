@@ -207,8 +207,12 @@ function GanttChart({ host }) {
     <div>
       <div style={{ display: 'flex', gap: '2px', margin: '0 0 8px' }}>
         {zoomBtns.map(([m, label]) => (
+          /* v3.2.2 — паритет с тогглом вида бэклога (2.16.6): без ring-button-block
+             кнопка не несёт визуала Ring (рамка/фон/паддинги) и читалась голым текстом;
+             активное состояние — ring-button-active (ring-button-primary без block-
+             контекста subset не рисует). */
           <button type="button" key={m} onClick={() => setZoom(m)}
-            className={'ring-button-button ring-button-heightS' + (zoom === m ? ' ring-button-primary' : '')}>
+            className={'ring-button-button ring-button-block ring-button-heightS' + (zoom === m ? ' ring-button-active' : '')}>
             {label || m}
           </button>
         ))}

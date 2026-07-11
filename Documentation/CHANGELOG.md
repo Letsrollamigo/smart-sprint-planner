@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.2.2] — 2026-07-11
+
+### Fixed
+
+- **Gantt zoom switcher renders as Ring UI buttons** — the Day / Week / Month toggle looked like plain text (the `ring-button-block` class carrying the button visuals was missing) and the active scale wasn't highlighted. Now it matches the backlog view toggle: bordered buttons with an accented active state.
+
 ## [3.2.1] — 2026-07-11
 
 > **Stability patch following a full codebase audit.**
