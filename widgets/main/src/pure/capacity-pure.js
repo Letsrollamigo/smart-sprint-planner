@@ -128,17 +128,13 @@ function workingHoursInSprint(startMs, endMs, calendar, hoursPerDay) {
   return h;
 }
 
-/* Σ рабочих часов отсутствий человека: ОБЪЕДИНЕНИЕ absent-рабочих-дней ∩ окно спринта,
-   каждый день учитывается ОДИН раз (set-union, D5/gotcha #12 — перекрытия не двоятся;
-   тип отсутствия = только ярлык, математика 0ч в эти дни одинаковая). */
-function absenceHours(ranges, startMs, endMs, calendar, hoursPerDay) {
-  if (!ranges || !ranges.length) return 0;
-  var windowDays = dayKeysUTC(startMs, endMs);
-  if (!windowDays.length) return 0;
-  // Числовые границы диапазонов. НЕ разворачиваем диапазон в список дней (gotcha #12):
-  // длинный lead-in (напр. out_of_membership {from:'2021-…'} до окна) съел бы guard-лимит
-  // итераций isoRangeDays и дни окна не проверились бы → absence=0, base завышен.
+/* Диапазоны отсутствий → числовые границы [[startMs, endMs, hoursDelta|-1]].
+   НЕ разворачиваем диапазон в список дней (gotcha #12): длинный lead-in
+   (напр. out_of_membership {from:'2021-…'} до окна) съел бы guard-лимит
+   итераций isoRangeDays и дни окна не проверились бы → absence=0, base завышен. */
+function absenceBounds(ranges) {
   var bounds = [];
+  if (!ranges || !ranges.length) return bounds;
   for (var r = 0; r < ranges.length; r++) {
     var rng = ranges[r];
     if (!rng) continue;
@@ -148,23 +144,40 @@ function absenceHours(ranges, startMs, endMs, calendar, hoursPerDay) {
     var hd = (typeof rng.hoursDelta === 'number' && isFinite(rng.hoursDelta) && rng.hoursDelta > 0) ? rng.hoursDelta : -1;
     bounds.push([rs, re, hd]);
   }
+  return bounds;
+}
+
+/* Часы отсутствия ОДНОГО дня по границам absenceBounds (#40 — нужен и прогнозу пер-дневно).
+   #53 — часы отсутствия дня = МАКСИМУМ по перекрывающим диапазонам (полный день ⊃ частичный),
+   capped рабочими часами дня (частичное отсутствие на праздник = 0ч, как и полное). */
+function absenceHoursOfDay(dayKey, bounds, calendar, hoursPerDay) {
+  if (!bounds || !bounds.length) return 0;
+  var dayMs = isoToUTCms(dayKey);
+  var full = workingHoursOfDay(dayKey, calendar, hoursPerDay);
+  var dayAbs = 0;
+  for (var b = 0; b < bounds.length; b++) {
+    if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) {
+      var thisAbs = (bounds[b][2] < 0) ? full : Math.min(bounds[b][2], full);
+      if (thisAbs > dayAbs) dayAbs = thisAbs;
+    }
+  }
+  return dayAbs;
+}
+
+/* Σ рабочих часов отсутствий человека: ОБЪЕДИНЕНИЕ absent-рабочих-дней ∩ окно спринта,
+   каждый день учитывается ОДИН раз (set-union, D5/gotcha #12 — перекрытия не двоятся;
+   тип отсутствия = только ярлык, математика 0ч в эти дни одинаковая). */
+function absenceHours(ranges, startMs, endMs, calendar, hoursPerDay) {
+  if (!ranges || !ranges.length) return 0;
+  var windowDays = dayKeysUTC(startMs, endMs);
+  if (!windowDays.length) return 0;
+  var bounds = absenceBounds(ranges);
   if (!bounds.length) return 0;
   // Идём по дням ОКНА (set-union by construction — каждый день учтён ≤1 раза, перекрытия
   // не двоятся). Число итераций = длине спринта, независимо от длины диапазонов.
   var h = 0;
   for (var w = 0; w < windowDays.length; w++) {
-    var dayMs = isoToUTCms(windowDays[w]);
-    var full = workingHoursOfDay(windowDays[w], calendar, hoursPerDay);
-    // #53 — часы отсутствия дня = МАКСИМУМ по перекрывающим диапазонам (полный день ⊃ частичный),
-    // capped рабочими часами дня (частичное отсутствие на праздник = 0ч, как и полное).
-    var dayAbs = 0;
-    for (var b = 0; b < bounds.length; b++) {
-      if (dayMs >= bounds[b][0] && dayMs <= bounds[b][1]) {
-        var thisAbs = (bounds[b][2] < 0) ? full : Math.min(bounds[b][2], full);
-        if (thisAbs > dayAbs) dayAbs = thisAbs;
-      }
-    }
-    h += dayAbs;
+    h += absenceHoursOfDay(windowDays[w], bounds, calendar, hoursPerDay);
   }
   return h;
 }
@@ -303,6 +316,8 @@ const _api = {
   // formula
   workingHoursOfDay: workingHoursOfDay,
   workingHoursInSprint: workingHoursInSprint,
+  absenceBounds: absenceBounds,
+  absenceHoursOfDay: absenceHoursOfDay,
   absenceHours: absenceHours,
   kpeFor: kpeFor,
   nominal: nominal,

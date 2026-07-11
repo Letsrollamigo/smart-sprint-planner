@@ -28,6 +28,7 @@ import './pure/share-url-pure.js';
 import './pure/planning-model-pure.js';
 import './pure/backlog-vm-pure.js';
 import './pure/capacity-pure.js';
+import './pure/forecast-pure.js';
 import './pure/release-tree-pure.js';
 import './pure/reporting-pure.js';
 import './pure/reporting-b-pure.js';

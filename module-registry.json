@@ -79,7 +79,8 @@
       "REPORTING_PERIOD": "pure",
       "REPORTING_ROLLUP": "pure",
       "REPORTING_EXPORT_PURE": "pure",
-      "REPORTING_MOUNT": "infra"
+      "REPORTING_MOUNT": "infra",
+      "FORECAST_PURE": "pure"
     },
     "_fatCountNote": "#50 S8b — pure/reporting-pure.js пересёк 600 (595→640) на движке B1 buildTechDebtRows → 4-й «жирный» (reporting-view domain уже 3-й). Осознанно: reporting-pure легитимно владеет ВСЕМИ pure-движками отчётности (10 функций A1–A10+B1+B3); декомпозиция (вынос B-движков в reporting-b-pure) — отдельный техдолг, если продолжит расти. fatCountBaseline 3→4."
   },
@@ -637,8 +638,8 @@
     "pure/capacity-pure.js": {
       "layer": "pure",
       "domain": "pure/capacity-pure",
-      "loc": 293,
-      "locBudget": 296,
+      "loc": 306,
+      "locBudget": 343,
       "state": [],
       "publishes": [
         "CAPACITY_PURE"
@@ -666,6 +667,16 @@
       ],
       "publishes": [
         "ENUM_PURE"
+      ]
+    },
+    "pure/forecast-pure.js": {
+      "layer": "pure",
+      "domain": "pure/forecast-pure",
+      "loc": 116,
+      "locBudget": 136,
+      "state": [],
+      "publishes": [
+        "FORECAST_PURE"
       ]
     },
     "pure/hash-pure.js": {
