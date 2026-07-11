@@ -303,6 +303,25 @@ it. If your team owns its own capacity and calibrates it at retros,
 "Light" is simpler and sufficient. The tab reference is
 [USER-GUIDE.md, section 6](USER-GUIDE.md#6-picking-tasks-and-setting-role-capacity).
 
+### Capacity → planned dates: the auto-forecast
+
+Since v3.1.0 the approved capacity stops being just an "hour budget"
+and starts working on the calendar: the **Forecast dates** button
+lays the assignee's tasks over the sprint days — sequentially, in the
+order of their personal queue, respecting the production calendar,
+absences and the daily "useful hours" cap. The methodological point
+is twofold. First, **dates are derived from capacity, not the other
+way around**: the team stops eyeballing deadlines and gets a calendar
+projection of the same budget that was approved in §3. Second,
+**overload becomes visible before the sprint starts**: tasks that
+don't fit the capacity honestly stay without dates with an "over
+capacity" badge — the same signal as the planning overlimit, just in
+calendar form. The assignee's queue (the "#" column) is a
+prioritization within one person: what we do first. The forecast is
+an explicit lead action, not background magic; manual date edits
+(including dragging bars on the Gantt, v3.2.0) persist until the next
+recalculation.
+
 ---
 
 ## 4. Time-tracking discipline: DTA + cascade
@@ -562,6 +581,23 @@ same as with overlimit in §3: if the traffic light is red every
 sprint, fix either the process or the threshold — don't get used to
 red. After two or three sprints you'll have enough data to shift the
 thresholds toward your team's reality.
+
+### TTM under reopens: first close or settled close
+
+Tasks come back: "done" turns into "reopened" and gets finished
+again. Since v3.2.0 the plugin lets you choose how to read that (the
+"Terminal milestone on reopen" setting). **First close** (default) —
+the metric stops at the first entry into the end anchor: that's the
+speed of the *first delivery*; returns don't blur it, but they're
+invisible in it. **Settled close** — the metric end follows the last
+entry: that's the *full cost of finishing*, more honest under
+frequent returns, but the median will grow. Cycle is always computed
+**by episodes**: only time in development is summed, pauses between
+rounds (testing, waiting) don't tick. A practical rule: if you live
+by an SLA on the first release — keep "first"; if the retro keeps
+arguing about the "real" duration of rework — switch to "settled"
+and compare: the difference between the two modes is the price of
+your returns (cross-check with the Flow report's rework section).
 
 ### What must be in order for the reports to come alive
 

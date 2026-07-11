@@ -376,6 +376,26 @@ This is the main table of the mode. Each row is a task in the role:
 
 Changes in this table are saved automatically — a separate save button isn't needed.
 
+### Auto-forecast of start and finish dates
+
+> Added in v3.1.0. The button is visible when the configurator enables **Auto-forecast dates** in the "Planning modes" section ([Appendix A](#appendix-a-full-reference-of-project-settings)).
+
+The **Forecast dates** button computes the planned Start / Finish dates of all distributed tasks automatically:
+
+- **The assignee's sprint capacity** (approved business capacity in the Full model, personal resource in Light) is spread over the sprint days respecting the production calendar and absences (including partial days), with a daily "useful hours" cap from settings.
+- **Tasks are laid out sequentially** — in the order of the assignee's personal queue (see below). The dates are written into the same fields as manual input: the Gantt chart, exports and history treat forecasted dates like regular ones.
+- **What doesn't fit, honestly doesn't fit.** Tasks over capacity stay without dates, get an "over capacity" badge and a summary warning. That's a signal to revisit the scope or the capacity — not to cram at any cost.
+
+#### The assignee's personal queue (the "#" column)
+
+In the task-distribution table every task has a number in its assignee's queue and **↑ / ↓** arrows. The queue defines the layout order for the forecast; swapping two tasks instantly recomputes that assignee's forecast. The order is stored in the dates themselves — there is no extra field, and sprint history doesn't grow.
+
+#### Good to know
+
+- **Re-running the forecast overwrites all dates** (after a confirmation) — including manually adjusted ones. Make manual corrections after the final forecast run: they persist until you recalculate again.
+- **The forecast is an explicit action.** Changing an assignee or an estimate does not recompute dates by itself.
+- After the forecast you can also adjust dates with the mouse — by dragging bars on the [Gantt chart](#8-calendar-timeline) (v3.2.0).
+
 ### Buttons at the top of the page
 
 - **Calculate resource** — recalculates resources for all assignees by the hour quota and grade (useful if quota settings or roster changed).
@@ -393,36 +413,37 @@ Changes in this table are saved automatically — a separate save button isn't n
 
 ## 8. Calendar timeline
 
-The **Gantt chart** tab shows the tasks of the active sprint on a timeline — who's doing what on which days. Each task is one horizontal bar; bar color matches the assignee, bar length matches the **Start / Finish** date range set in **By assignees** mode (see [section 7](#7-distributing-tasks-among-assignees)).
+The **Gantt chart** tab shows the tasks of the active sprint on a timeline — what's in which state on which days. Each task is one horizontal bar; **bar color matches the task's state** (native YouTrack state colors), bar length matches the **Start / Finish** date range (set manually in **By assignees** mode, by the [auto-forecast](#7-distributing-tasks-among-assignees), or right here by dragging). Since v3.2.0 the chart runs on a full Gantt engine: bars can be dragged with the mouse and the scale can be zoomed.
 
 ### What's on the page
 
 - **Role selector at the top.** The chart always shows tasks for **one role** — this is intentional, so the chart doesn't turn into a mess. If you have three roles, switch between them with the selector.
-- **Task list on the left** — YouTrack ID and assignee name.
-- **Date scale at the top** — dates within the active sprint.
-- **Colored bars** — tasks. Color is the same for all tasks of one assignee.
-- **Grey bars** — tasks without an assignee.
-- **Refresh Gantt button** — re-renders the chart from current data (useful if something changed in parallel).
-- **Refresh task data button** — same as in **By assignees**: pulls fresh assignees from YouTrack.
+- **Day / Week / Month zoom buttons** — scale density: "Day" for working inside the sprint, "Week" and "Month" for longer ranges.
+- **Task list on the left** — the YouTrack ID (as a link), the assignee, and the **current state badge** (in the state's color). If the state changed recently, the previous state and how many days ago it changed are shown under the badge.
+- **Date scale at the top**; **today** is highlighted with a vertical stripe.
+- **Colored bars** — tasks; hovering shows a tooltip with the ID, title, assignee and dates. Tasks without a state are grey; tasks without their own dates are drawn across the sprint boundaries.
+- **Refresh from task button** — pulls fresh assignees, task states and their transition history from YouTrack and re-renders the chart (useful if something changed in parallel).
 
 ### What you can do directly on the chart
 
-#### Single click on a bar → reassign
+#### Drag or resize a bar → change the dates
 
-A small dialog opens with the list of all picked assignees for the role plus **— Unassigned —**. Pick the person and click **Apply** — the bar instantly recolors, and the assignee is **written back to the YouTrack task**.
+A bar can be **dragged as a whole** (both dates shift) or **stretched by its left/right edge** (only Start or Finish changes). The new dates are immediately written into the same Start / Finish fields as in **By assignees** mode — the section 7 table, exports and history see them as regular dates. This is the fastest way to manually adjust the [auto-forecast](#7-distributing-tasks-among-assignees) result.
 
-> ⚠ This works only if **Inline field editing** is enabled in settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)). If disabled, the plugin won't write changes back to YouTrack — and click-reassign is blocked, so you don't end up with "I changed it locally, but the YouTrack task still has the old assignee".
+> ⚠ Dragging requires date-editing permissions (the **Editors** or **Assignee-and-date-only** groups) and an editable sprint. An old sprint without an edit draft is view-only: bars don't move.
 
-#### Double click on a bar → mark with a color
+#### Double click on a bar → reassign
 
-Double click cycles the bar color: *original → red → blue → original*. This is a local marker for yourself (e.g. red = "discuss at daily", blue = "ready for review"). The marker isn't written to YouTrack — it's just for your own navigation.
+A small dialog opens with the list of all picked assignees for the role plus **— Unassigned —**. Pick the person and click **Apply** — the assignee is **written back to the YouTrack task**. A single click doesn't change the assignee: it selects the bar and starts a drag.
+
+> ⚠ This works only if **Inline field editing** is enabled in settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)) and you have edit permissions. If disabled, the plugin won't write changes back to YouTrack — and reassign is blocked, so you don't end up with "I changed it locally, but the YouTrack task still has the old assignee".
 
 ### If the chart is empty
 
 Possible reasons:
 
 - The selected role has no tasks — add them in **Composition by roles** mode.
-- Tasks exist but **Start / Finish** dates aren't set — set them in **By assignees** mode.
+- Neither the tasks nor the sprint itself have dates (sprint dates are usually enough: tasks without their own dates are drawn across the sprint boundaries).
 - An old sprint without an edit draft is selected — the chart is in view mode. To edit, open the sprint for editing from history.
 
 ---
@@ -708,7 +729,7 @@ If there's a lot of data and the report takes long to build, a **"⏹ Cancel"** 
 | **Aging / stuck** | Which issues have been sitting in their current status longer than the threshold — "what's on fire now". Thresholds in working days (yellow/red) are set per status. |
 | **Progress** | What entered the target statuses in the period — "what got done". Target statuses and their labels are configurable. |
 | **ITBP WIP/Done** | A "now" slice of epics and solo stories: what's in progress and what's done — with business columns (stage, org unit, priority) from configurable fields. |
-| **TTM · Time to Market** | Median delivery time for the period in working days: **Lead** (analysis → prod), **Team** (analysis → business testing), **Cycle** (dev-start → dev-done). A traffic light against the norms, pause subtraction (pause statuses and tags), Lead Time distribution buckets. |
+| **TTM · Time to Market** | Median delivery time for the period in working days: **Lead** (analysis → prod), **Team** (analysis → business testing), **Cycle** (dev-start → dev-done). A traffic light against the norms, pause subtraction (pause statuses and tags), Lead Time distribution buckets. Cycle is computed from development episodes (repeat rounds after returns are summed); how the "closed" milestone is read on reopen is configurable (see Appendix A). |
 | **Flow** | The bottleneck (median days per flow status + WIP per status) and rework — backward transitions against the configured status order. |
 | **Effort** | Hours by person and role for the period + a "no hours logged" list. |
 | **Plan vs fact** | Estimate accuracy: average variance per role and the issues whose fact-vs-estimate variance exceeded the threshold. The estimate is taken "as it was" when the issue entered work — it can't be rewritten in hindsight. |
@@ -725,6 +746,10 @@ If there's a lot of data and the report takes long to build, a **"⏹ Cancel"** 
 | **Thousand small tasks** | The flow of small tagged tasks in the period versus the monthly pace year-to-date. |
 
 The "system" in the reports is the value of the issue's **subsystem field** (the "Task fields" → "Subsystem field" setting).
+
+### Charts in reports
+
+Since v3.2.0 nearly every report has a chart above its table: **Progress** — transition tempo by day (by month on long periods), **Effort** — hours by assignee (top-12; the full list is in the table below), **Plan vs fact** — average variance by role in traffic-light colors, **Aging** — task counts by zone (ok / yellow / red), **Spillover** — carried/dropped stack by role, **Tech debt** and **Bug tax** — hours by role. TTM's distribution buckets and the five Roll-up trends have been there since v3.0.0; "A thousand small things" stays a counter. Charts show the same data as the tables — Excel/PDF exports carry the tables.
 
 ### Export to Excel and PDF
 
@@ -807,8 +832,8 @@ Correct behavior. This group is deliberately limited: you can change **only** th
 **The "Done" column in Stand-up is empty even though tasks are closed in YouTrack.**
 Check the plugin settings (gear → **Stand-up**) for the **"Done" states** field. If empty — the plugin doesn't know which YouTrack states count as completed. Pick the relevant states (typically *Done*, *Closed*, *Verified*) and save — the stand-up stops being empty.
 
-**Single-clicking a bar on the Gantt chart does nothing.**
-Reassign-by-click only works when **Inline field editing** is enabled in settings. This is intentional: if the plugin can't write the change back to the task, the reassign would only be "local" and the YouTrack task would still show the old assignee — a source of confusion. To enable, ask the plugin configurator (or do it yourself if you have rights) to turn on the corresponding option in settings.
+**I can't reassign a task by clicking a bar on the Gantt chart.**
+Since v3.2.0 reassign is a **double click** on the bar: a single click selects the bar and starts a date drag. Besides that, reassign only works when **Inline field editing** is enabled in settings. This is intentional: if the plugin can't write the change back to the task, the reassign would only be "local" and the YouTrack task would still show the old assignee — a source of confusion. To enable, ask the plugin configurator (or do it yourself if you have rights) to turn on the corresponding option in settings.
 
 **The "External ID" column doesn't appear in tables.**
 Check the plugin settings, in the **Task fields** section, for the **External ID field** option. If empty — the column is hidden. If filled with a YouTrack field name — the column appears, but only for tasks that have a value in that field (rows without an external ID just skip the cell).
@@ -914,6 +939,7 @@ After setting the state order, a **🔄 State roll-up: on/off** chip appears at 
 ### "Planning modes" section
 
 - **Allow planning over the limits** — when enabled, a role's resource overlimit **does not block** the "Validate" button and doesn't trigger a warning dialog. A negative remainder is still highlighted in red as an indicator, and a mode chip is shown in the plugin header. Off by default (overlimit blocks validation).
+- **Auto-forecast dates** (v3.1.0) — enables the **Forecast dates** button and the "#" queue column on the **By assignees** level (see [section 7](#7-distributing-tasks-among-assignees)). Off by default.
 
 ### "Backlog" section
 
@@ -940,8 +966,9 @@ Settings of the operational reporting module (see [section 13](#13-operational-r
 - **Reporting access** — the **"Contour A — operational (leads)"** and **"Contour B — management"** groups. Separate reporting groups (not reusing planning/release permissions); contour-B membership also grants contour A; membership is checked on the server as well.
 - **Aging thresholds (per status)** — working days in a status before the yellow/red flag in "Aging / stuck". An empty row means the status isn't monitored; red must exceed yellow.
 - **Progress (A1) — target statuses + labels** — entry into which statuses counts as movement, and the caption shown in the report.
-- **TTM anchors** — start/end state pairs for the **Lead** (analysis → prod), **Team** (analysis → biz-test) and **Cycle** (dev-start → dev-done) metrics. A milestone is the first entry into a state; a metric is computed only when both ends are set.
+- **TTM anchors** — start/end state pairs for the **Lead** (analysis → prod), **Team** (analysis → biz-test) and **Cycle** (dev-start → dev-done) metrics. The start milestone is the first entry into a state; the end milestone follows the "Terminal milestone on reopen" setting (below). A metric is computed only when both ends are set. Cycle sums **development episodes**: every "start anchor → end anchor" round adds to the metric (time between episodes — testing, waiting — is not counted).
 - **TTM norms, workdays** — "Lead ≤" and "Team ≤" (21 and 15 by default); a median above the norm is flagged by the traffic light. Cycle has no norm.
+- **Terminal milestone on reopen** (v3.2.0) — how "closed" is read when a task was reopened: **First close** (default) — the metric stops at the first entry into the end anchor, a reopen doesn't extend it; **Settled (last) close** — the metric end and the period membership follow the last entry, and Cycle sums all development episodes. Affects the TTM report and the TTM line of the Roll-up.
 - **Pause markers** — pause statuses and pause tags: such intervals are subtracted from TTM. Unmarked time accrues into TTM.
 - **Flow statuses (A8/A9)** — the ordered list of work-flow statuses; it drives "Bottleneck" (median dwell + WIP) and "Rework" (backward moves against the order). A status without an order number is outside the flow.
 - **Plan vs fact** — the variance threshold in percent (20 by default): issues whose absolute variance exceeds it are listed.
