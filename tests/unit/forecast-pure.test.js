@@ -129,6 +129,19 @@ test('forecast: детерминизм — повторный вызов с те
 
 /* ── orderQueue: виртуальная очередь ──────────────────────────────────────── */
 
+test('orderQueue: равный startMs → tie-break по endMs (раньше финишировавшая раньше в очереди)', () => {
+  // смоук-кейс #40: своп стрелкой внутри дня — упакованная второй задача финиширует
+  // раньше (01.07), третья растянулась (02.07); порядок очереди обязан это отразить,
+  // иначе своп «съедается» визуально (id-tie-break вернул бы PG-2 перед PG-4)
+  const q = F.orderQueue([
+    { issueId: 'PG-2', startMs: Date.UTC(2026, 6, 1), endMs: Date.UTC(2026, 6, 2), rank: 1 },
+    { issueId: 'PG-4', startMs: Date.UTC(2026, 6, 1), endMs: Date.UTC(2026, 6, 1), rank: 3 },
+    { issueId: 'PG-1', startMs: Date.UTC(2026, 6, 1), endMs: Date.UTC(2026, 6, 1), rank: 0 },
+  ]).map(function (e) { return e.issueId; });
+  // равные (start,end) PG-1/PG-4 → rank; PG-2 (end 02.07) — в хвост
+  assert.deepStrictEqual(q, ['PG-1', 'PG-4', 'PG-2']);
+});
+
 test('orderQueue: датированные по startMs, недатированные в хвост по rank, tie-break id', () => {
   const q = F.orderQueue([
     { issueId: 'B-2', startMs: null, rank: 1 },

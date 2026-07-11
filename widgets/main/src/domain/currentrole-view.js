@@ -631,6 +631,11 @@ function renderCurrentRoleTaskTable(deps) {
         if (_settings && _settings.fieldSystem && _settings.personalPlanningEnabled) {
           try { renderCurrentRoleAssigneeTable(deps); } catch (_) {}
         }
+        /* #40 — смена исполнителя меняет очереди обоих исполнителей → перерендер
+           таблицы (иначе колонка «№» показывает «—»/устаревшие позиции до релоада). */
+        if (_settings && _settings.autoForecastEnabled) {
+          try { renderCurrentRoleTaskTable(deps); } catch (_) {}
+        }
         deps.saveCurrentRoleState();
         var rkNow = _currentSprintRoleRec && _currentSprintRoleRec.roleKey;
         deps.updateIssueAssigneeField(issueId, login, rkNow);
@@ -912,6 +917,7 @@ function _forecastByLogin(deps, rec, pp, rk, loginsFilter) {
       issueId: it.issueId,
       needMin: _forecastNeedMin(it, rk),
       startMs: (e && typeof e.dateStart === 'number') ? e.dateStart : null,
+      endMs:   (e && typeof e.dateEnd === 'number') ? e.dateEnd : null,
       rank: rankOf[it.issueId],
     });
   });

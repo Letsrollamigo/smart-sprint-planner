@@ -26,9 +26,13 @@ function numOr(v, d) {
   return (typeof v === 'number' && isFinite(v)) ? v : d;
 }
 
-/* Виртуальная очередь исполнителя: [{issueId, startMs|null, rank}] → тот же массив,
-   отсортированный. Датированные — по startMs asc; без дат — в хвост; tie-break
-   rank asc → issueId (строковое сравнение — стабильный детерминизм). */
+/* Виртуальная очередь исполнителя: [{issueId, startMs|null, endMs|null, rank}] → тот же
+   массив, отсортированный. Датированные — по startMs asc; при равном startMs — по endMs asc
+   (несколько задач стартуют в один день: раньше упакованная раньше и финиширует — иначе
+   своп стрелкой внутри дня «съедался» бы визуально); без дат — в хвост; tie-break
+   rank asc → issueId (строковое сравнение — стабильный детерминизм). Задачи с равными
+   (startMs, endMs) — уместились в остатке одного дня; их взаимный порядок не влияет на
+   даты (честный потолок виртуальной очереди). */
 function orderQueue(entries) {
   if (!Array.isArray(entries)) return [];
   var arr = entries.slice();
@@ -36,6 +40,9 @@ function orderQueue(entries) {
     var as = (typeof a.startMs === 'number' && isFinite(a.startMs)) ? a.startMs : Infinity;
     var bs = (typeof b.startMs === 'number' && isFinite(b.startMs)) ? b.startMs : Infinity;
     if (as !== bs) return as < bs ? -1 : 1;
+    var ae = (typeof a.endMs === 'number' && isFinite(a.endMs)) ? a.endMs : Infinity;
+    var be = (typeof b.endMs === 'number' && isFinite(b.endMs)) ? b.endMs : Infinity;
+    if (ae !== be) return ae < be ? -1 : 1;
     var ar = numOr(a.rank, Infinity), br = numOr(b.rank, Infinity);
     if (ar !== br) return ar < br ? -1 : 1;
     var ai = String(a.issueId || ''), bi = String(b.issueId || '');

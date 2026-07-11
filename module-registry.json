@@ -195,7 +195,7 @@
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
-      "loc": 1023,
+      "loc": 1029,
       "locBudget": 1049,
       "state": [
         "GRADES_LOCAL",
@@ -674,7 +674,7 @@
     "pure/forecast-pure.js": {
       "layer": "pure",
       "domain": "pure/forecast-pure",
-      "loc": 116,
+      "loc": 123,
       "locBudget": 136,
       "state": [],
       "publishes": [
