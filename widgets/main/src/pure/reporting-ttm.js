@@ -8,8 +8,14 @@
    модуль остаётся чистым и node-тестируемым, не тянет чужой мост (leaf-слой, B2). Публикует
    __SSP_REPORTING_TTM ДО исполнения IIFE core.js; node-тестируемо (module.exports).
 
-   Терминальная политика = first-close (естественно: первый вход в конец-якорь; reopen не
-   продлевает метрику) — отдельной логики не требует, следует из «первого входа» примитива. */
+   Терминальная политика (v3.2.0, US-A2-02): config.terminalPolicy = 'first-close' (дефолт;
+   первый вход в конец-якорь, reopen не продлевает) | 'last-stable-close' (устоявшееся закрытие =
+   ПОСЛЕДНИЙ вход в конец-якорь). Для 'last-stable-close' нужен полный timelines (9-й аргумент
+   computeTtm); без него — деградация к first-close по anchorEntries (первые входы).
+   Cycle Time (v3.2.0, точная модель): при наличии timelines — Σ ЗАКРЫТЫХ dev-эпизодов
+   (вход в start-якорь → следующий вход в end-якорь), нетто пауз; first-close = только первый
+   эпизод (= прежний span для нормальных траекторий), last-stable-close = все закрытые эпизоды
+   (время между эпизодами — тест/ожидание — НЕ считается). Без timelines — прежний span. */
 
 /* Медиана: только конечные числа, копия+сорт asc. Пусто→null; нечётное→середина;
    чётное→среднее двух средних (дробное допустимо — округляет UI). */
@@ -108,8 +114,10 @@ function _incLookup(incompleteSet) {
    win            — окно ПОПУЛЯЦИИ [fromTs,toTs) (период НЕ режет глубину истории).
    nowTs          — «сейчас» для риск-счётчика (инжектится ⇒ тест детерминирован).
    Возврат { tiles:[{metric,median,n,norm,level}], rows:[{unitType,count,lead,team,cycle}],
-     buckets:{le40,mid,gt120}, riskCount, populationCount, incomplete:[id…] }. */
-function computeTtm(units, anchorEntries, pauses, incompleteSet, config, win, nowTs, deps) {
+     buckets:{le40,mid,gt120}, riskCount, populationCount, incomplete:[id…] }.
+   timelines (опц., 9-й) — { id → [{ts,from,to}…хронологически] } (bulkAnchorTransitions.timelines):
+   включает terminalPolicy='last-stable-close' и точную (эпизодную) модель Cycle. */
+function computeTtm(units, anchorEntries, pauses, incompleteSet, config, win, nowTs, deps, timelines) {
   units = Array.isArray(units) ? units : [];
   anchorEntries = anchorEntries || {};
   pauses = pauses || {};
@@ -129,11 +137,51 @@ function computeTtm(units, anchorEntries, pauses, incompleteSet, config, win, no
   /* O2 (ревью #50): lite-режим для свода B0 — нужна только lead-плитка; rows/buckets/риск-счётчик
      (wb до now по ВСЕМ units — O(лет застрявшей задачи)) не пересчитываем месяцы×системы раз. */
   var lite = !!config.liteLeadOnly;
+  var policyLast = config.terminalPolicy === 'last-stable-close';
+
+  /* Реплей таймлайнов (один проход на задачу, только если timelines переданы):
+     lastEntry { id → { state → lastTs } } — для last-stable-close;
+     cycEp { id → [{s,e}…] } — ЗАКРЫТЫЕ dev-эпизоды cycle (вход в start → следующий вход в end;
+     повторный вход в start при открытом эпизоде НЕ переоткрывает). cycEp заведён (пусть пустой)
+     для каждой задачи с непустым таймлайном ⇒ «эпизодов нет» = null, а НЕ span-фолбэк. */
+  var lastEntry = null, cycEp = null;
+  var cycA = anchors.cycle || {};
+  var needCyc = !lite && cycA.start != null && cycA.end != null;   /* lite (B0) cycle не считает */
+  if (timelines && typeof timelines === 'object' && (policyLast || needCyc)) {
+    if (policyLast) lastEntry = {};
+    if (needCyc) cycEp = {};
+    for (var tid in timelines) {
+      if (!Object.prototype.hasOwnProperty.call(timelines, tid)) continue;
+      var tl = _sanitizeTimeline(timelines[tid]);
+      if (!tl.length) continue;
+      var le = policyLast ? {} : null, eps = [], open = null;
+      for (var k = 0; k < tl.length; k++) {
+        var ev = tl[k];
+        if (le) le[ev.to] = ev.ts;             /* хронология → последняя запись побеждает */
+        if (needCyc) {
+          if (ev.to === cycA.end && open != null && ev.ts >= open) { eps.push({ s: open, e: ev.ts }); open = null; }
+          else if (ev.to === cycA.start && open == null) { open = ev.ts; }
+        }
+      }
+      if (le) lastEntry[tid] = le;
+      if (needCyc) cycEp[tid] = eps;
+    }
+  }
 
   /* Метрика настроена, только если ОБА конца пары якорей заданы. */
   function configured(metric) {
     var a = anchors[metric];
     return !!(a && a.start != null && a.end != null);
+  }
+  /* Терминальный ts конца-якоря метрики по политике: last-stable-close → последний вход
+     (из реплея), иначе/при отсутствии таймлайна — первый вход (anchorEntries). */
+  function endTsOf(id, metric) {
+    var a = anchors[metric] || {};
+    if (a.end == null) return undefined;
+    if (policyLast && lastEntry && lastEntry[id] && typeof lastEntry[id][a.end] === 'number') {
+      return lastEntry[id][a.end];
+    }
+    return (anchorEntries[id] || {})[a.end];
   }
   /* Длительность метрики для задачи в раб.днях (нетто пауз). Нет одного из входов → null;
      конец раньше старта (first-end < first-start) = аномалия → null; иначе max(0, брутто−паузы).
@@ -142,24 +190,39 @@ function computeTtm(units, anchorEntries, pauses, incompleteSet, config, win, no
   function dur(id, metric) {
     var ck = id + '|' + metric;
     if (ck in durCache) return durCache[ck];
-    var a = anchors[metric] || {};
-    var e2 = anchorEntries[id] || {};
-    var s = (a.start != null) ? e2[a.start] : undefined;
-    var e = (a.end != null) ? e2[a.end] : undefined;
     var net = null;
-    if (typeof s === 'number' && typeof e === 'number' && e >= s) {
-      net = wb(s, e) - pauseWorkdays(pauses[id] || [], s, e, wb);
-      net = net > 0 ? net : 0;
+    if (metric === 'cycle' && cycEp && cycEp[id]) {
+      /* Точная модель Cycle (эпизоды из реплея): first-close → первый закрытый эпизод,
+         last-stable-close → Σ всех закрытых; нет закрытых эпизодов → null (не мерено). */
+      var eps = policyLast ? cycEp[id] : cycEp[id].slice(0, 1);
+      if (eps.length) {
+        var sum = 0;
+        for (var ei = 0; ei < eps.length; ei++) {
+          var d = wb(eps[ei].s, eps[ei].e) - pauseWorkdays(pauses[id] || [], eps[ei].s, eps[ei].e, wb);
+          if (d > 0) sum += d;
+        }
+        net = sum;
+      }
+    } else {
+      var a = anchors[metric] || {};
+      var e2 = anchorEntries[id] || {};
+      var s = (a.start != null) ? e2[a.start] : undefined;
+      var e = endTsOf(id, metric);
+      if (typeof s === 'number' && typeof e === 'number' && e >= s) {
+        net = wb(s, e) - pauseWorkdays(pauses[id] || [], s, e, wb);
+        net = net > 0 ? net : 0;
+      }
     }
     durCache[ck] = net;
     return net;
   }
   /* Популяция: вход в КОНЕЦ-якорь популяционной метрики попал в окно [from,to). Окно фильтрует
-     ТОЛЬКО по этому входу — никогда по старту (старт может быть за месяцы до окна). */
+     ТОЛЬКО по этому входу — никогда по старту (старт может быть за месяцы до окна).
+     Терминальная политика применяется и здесь: last-stable-close сдвигает окно на последний вход. */
   var popAnchor = anchors[popMetric] || {};
   function inPopulation(id) {
     if (popAnchor.end == null) return false;
-    var endTs = (anchorEntries[id] || {})[popAnchor.end];
+    var endTs = endTsOf(id, popMetric);
     return typeof endTs === 'number' && endTs >= fromTs && endTs < toTs;
   }
 

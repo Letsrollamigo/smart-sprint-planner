@@ -86,6 +86,11 @@ function _labels(T) {
     loading: T('repLoading'), empty: T('repEmpty'), error: T('repError'),
     a1NoTargets: T('repA1NoTargets'), a1PopNote: T('repA1PopNote'), rangePrompt: T('repRangePrompt'),
     flagOver: T('repFlagOver'), flagWarn: T('repFlagWarn'), flagOk: T('repFlagOk'), flagNone: T('repFlagNone'),
+    /* #50 v3.2.0 — подписи графиков каталога (A1/A4/A5/A7/B1/B2). */
+    a1ChartByDay: T('repA1ChartByDay'), a1ChartByMonth: T('repA1ChartByMonth'),
+    a4ChartTitle: T('repA4ChartTitle'), a5ChartTitle: T('repA5ChartTitle'), a7ChartTitle: T('repA7ChartTitle'),
+    b1ChartTitle: T('repB1ChartTitle'), b2ChartTitle: T('repB2ChartTitle'),
+    chartTasks: T('repChartTasks'), chartTopN: T('repChartTopN'),
     incomplete: T('repIncomplete'), limitHit: T('repLimitHit'),
     /* #50 S3c — A2 TTM вью */
     a2Title: T('repA2Title'), a2Sub: T('repA2Sub'),
@@ -269,6 +274,12 @@ function _anchorStateSet(anchors) {
     [p.start, p.end].forEach(function (s) { if (s && !set[s]) { set[s] = true; out.push(s); } });
   });
   return out;
+}
+/* Терминальная политика A2 (US-A2-02, v3.2.0): нормализация настройки к enum;
+   всё, кроме явного 'last-stable-close', — дефолт 'first-close'. */
+function _terminalPolicy(settings) {
+  return (settings && settings.reportingTerminalPolicy === 'last-stable-close')
+    ? 'last-stable-close' : 'first-close';
 }
 /* Уровень плитки из median/norm (S3b держим стабильным): >norm→over, ≤norm→ok, нет нормы/данных→none. */
 function _tileLevel(med, norm) {
@@ -505,10 +516,11 @@ function _loadA2(deps, base, settings, fieldState, proj, pure) {
             var pauses = (typeof deps.combinePauses === 'function')
               ? deps.combinePauses(aRes.timelines, pm.states, tRes.intervals || {}) : {};
             var units = ttm.foldChildUnits(m.issues);
-            var config = { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead' };
+            var config = { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead',
+              terminalPolicy: _terminalPolicy(settings) };
             var incA2 = _unionIds(aRes.incomplete, tRes.incomplete);   /* hitTop пауз-тегов = тоже неполнота */
             var res = ttm.computeTtm(units, aRes.anchors, pauses, incA2, config, win, Date.now(),
-              { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel });
+              { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel }, aRes.timelines);
             var tiles = res.tiles.map(function (t) {
               return { metric: t.metric, median: t.median, n: t.n, norm: t.norm, level: _tileLevel(t.median, t.norm) };
             });
@@ -1195,7 +1207,9 @@ function _loadB0(deps, base, settings, fieldState, proj, pure) {
                 var input = {
                   issues: m.issues, systemOf: systemOf, N: 6, nowTs: Date.now(),
                   ttm: { units: ttm.foldChildUnits(m.issues), anchorEntries: aRes.anchors, pauses: pauses,
-                    incompleteSet: aRes.incomplete, config: { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead' } },
+                    timelines: aRes.timelines, incompleteSet: aRes.incomplete,
+                    config: { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead',
+                      terminalPolicy: _terminalPolicy(settings) } },
                   planfact: { issues: m.issues, leadEndBy: leadEndBy, asOf: esAsOf, workItems: wi.items,
                     roleExecutors: built.roleExecutors, roles: rolesEng, threshold: threshold, incomplete: incomplete },
                   bottleneck: { timelines: aRes.timelines, pauses: pauses, incompleteSet: aRes.incomplete,

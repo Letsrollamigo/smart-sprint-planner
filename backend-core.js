@@ -1012,6 +1012,9 @@ var ALLOWED_SETTINGS_KEYS = [
      reportingTtmNorms (нормативы lead/team в раб.дн, int|null) +
      reportingPauseMarkers (маркеры пауз {states,tags}). */
   'reportingAnchors','reportingTtmNorms','reportingPauseMarkers',
+  /* #50 v3.2.0 — A2 терминальная политика при reopen (US-A2-02): enum
+     'first-close' (дефолт, первый вход в конец-якорь) | 'last-stable-close' (последний вход). */
+  'reportingTerminalPolicy',
   /* #50 S4 — A8 Bottleneck / A9 Rework: reportingFlowStates (УПОРЯДОЧЕННЫЙ список статусов
      потока, str[]) — порядок баров/WIP (A8) + детект обратных переходов против потока (A9). */
   'reportingFlowStates',
@@ -1086,6 +1089,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'reportingThresholds', /* #50 S1c — пороги aging на статус */
   'reportingTargetStatuses','reportingStatusLabels', /* #50 S2 — A1 целевые статусы + ярлыки */
   'reportingAnchors','reportingTtmNorms','reportingPauseMarkers', /* #50 S3a — A2 якоря/нормативы/паузы */
+  'reportingTerminalPolicy', /* #50 v3.2.0 — A2 терминальная политика reopen (US-A2-02) */
   'reportingFlowStates', /* #50 S4 — A8/A9 упорядоченные статусы потока */
   'reportingVariancePct', /* #50 S5b — A5 порог расхождения */
   'reportingTimeoutSec', /* #50 D10 — таймаут-бэкстоп прогона отчёта */
@@ -1455,6 +1459,10 @@ function validateSettings(settings) {
       if (rtnv !== undefined && rtnv !== null && !isNumInRange(rtnv, 0, 10000)) return false;
     }
   }
+  /* #50 v3.2.0 — reportingTerminalPolicy: терминальная политика A2 при reopen (US-A2-02).
+     Enum 'first-close'|'last-stable-close' (|null → дефолт first-close на фронте). */
+  if (settings.reportingTerminalPolicy !== undefined && settings.reportingTerminalPolicy !== null
+      && ['first-close', 'last-stable-close'].indexOf(settings.reportingTerminalPolicy) < 0) return false;
   /* #50 S5b — reportingVariancePct: порог |расхождения| план-факт (%, num 0..10000|null). */
   if (settings.reportingVariancePct !== undefined && settings.reportingVariancePct !== null
       && !isNumInRange(settings.reportingVariancePct, 0, 10000)) return false;

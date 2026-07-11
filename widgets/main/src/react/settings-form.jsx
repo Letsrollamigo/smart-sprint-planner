@@ -1117,6 +1117,16 @@ function ReportingSection(props) {
         </div>
       </div>
 
+      {/* #50 v3.2.0 — A2 терминальная политика при reopen (US-A2-02): enum-селект. */}
+      <div className="card-subtitle" style={subCls}>{t('repSetA2Tp')}</div>
+      <span className="hint" style={hintCls}>{t('repSetA2TpHint')}</span>
+      <div className="field" style={{ marginTop: '8px', maxWidth: '360px' }}>
+        <RingSelLite
+          options={[{ key: 'first-close', label: t('repSetA2TpFirst') }, { key: 'last-stable-close', label: t('repSetA2TpLast') }]}
+          value={v.terminalPolicy === 'last-stable-close' ? 'last-stable-close' : 'first-close'}
+          onChange={(val) => patch({ terminalPolicy: val === 'last-stable-close' ? 'last-stable-close' : 'first-close' })} />
+      </div>
+
       <div className="card-subtitle" style={subCls}>{t('repSetA5')}</div>
       <span className="hint" style={hintCls}>{t('repSetA5Hint')}</span>
       <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
@@ -1452,6 +1462,8 @@ function SettingsForm(props) {
       const ok = n && typeof n === 'object' && !Array.isArray(n);
       return { lead: ok && n.lead !== undefined ? n.lead : 21, team: ok && n.team !== undefined ? n.team : 15 };
     })(),
+    /* #50 v3.2.0 — A2 терминальная политика reopen: enum, всё кроме 'last-stable-close' → дефолт. */
+    terminalPolicy: (initial.reportingTerminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close',
     variancePct: (typeof initial.reportingVariancePct === 'number' && isFinite(initial.reportingVariancePct)) ? initial.reportingVariancePct : 20,
     timeoutSec: (typeof initial.reportingTimeoutSec === 'number' && isFinite(initial.reportingTimeoutSec)) ? initial.reportingTimeoutSec : 90,   /* #50 D10 таймаут-бэкстоп */
     /* #50 S6a — A3 : имена YT-полей бизнес-колонок среза (пусто = колонка скрыта). */
@@ -1718,6 +1730,7 @@ function SettingsForm(props) {
     /* #50 S3a — A2 TTM: якоря / нормативы / маркеры пауз (admin-тир, preserve-merge на бэке). */
     data.reportingAnchors = reporting.anchors || {};
     data.reportingTtmNorms = reporting.ttmNorms || { lead: 21, team: 15 };
+    data.reportingTerminalPolicy = (reporting.terminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close'; /* #50 v3.2.0 — A2 политика reopen */
     data.reportingVariancePct = (typeof reporting.variancePct === 'number' && isFinite(reporting.variancePct)) ? reporting.variancePct : 20; /* #50 S5b A5 */
     data.reportingTimeoutSec = (typeof reporting.timeoutSec === 'number' && isFinite(reporting.timeoutSec)) ? reporting.timeoutSec : 90; /* #50 D10 таймаут */
     data.reportingPauseMarkers = reporting.pauseMarkers || { states: [], tags: [] };

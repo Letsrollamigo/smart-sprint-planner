@@ -537,3 +537,87 @@ test('A8/A9 регресс#4: NaN-ts не даёт фантомный сэмпл
   const w = computeRework(tl2, [], { flowStates: ['A', 'B'] }, { fromTs: day(0), toTs: day(10) });
   assert.equal(w.totalBack, 0);
 });
+
+// ─────────────── computeTtm: терминальная политика + точный Cycle (v3.2.0, US-A2-02) ───────────────
+
+/* Reopen-сценарий: InProgress@10 → Dev@20 → Done@50 → Dev@60 (reopen) → Done@90.
+   Первые входы (как parseAnchorsChunk.anchors): InProgress=10, Dev=20, Done=50.
+   Эпизоды cycle (Dev→Done): [20,50] = 30 дн и [60,90] = 30 дн. */
+const TP_ANCHORS = { R1: { InProgress: day(10), Dev: day(20), Done: day(50) } };
+const TP_TIMELINES = { R1: [
+  { ts: day(10), from: 'Open', to: 'InProgress' },
+  { ts: day(20), from: 'InProgress', to: 'Dev' },
+  { ts: day(50), from: 'Dev', to: 'Done' },
+  { ts: day(60), from: 'Done', to: 'Dev' },
+  { ts: day(90), from: 'Dev', to: 'Done' }
+] };
+const TP_UNITS = [{ id: 'R1', type: 'story' }];
+const tile = (res, m) => res.tiles.find((t) => t.metric === m);
+
+test('computeTtm ХАРАКТЕРИЗАЦИЯ: без timelines reopen НЕ продлевает (first-close из первых входов)', () => {
+  const res = computeTtm(TP_UNITS, TP_ANCHORS, {}, null, CFG, { fromTs: day(40), toTs: day(100) }, day(300), DEPS);
+  assert.equal(res.populationCount, 1);                          // Done первый вход @50 ∈ [40,100)
+  assert.equal(tile(res, 'lead').median, 40);                    // 10→50
+  assert.equal(tile(res, 'cycle').median, 30);                   // span первых входов 20→50
+});
+
+test('computeTtm: timelines + дефолт first-close ≡ прежнее поведение (lead 40, cycle = 1-й эпизод 30)', () => {
+  const res = computeTtm(TP_UNITS, TP_ANCHORS, {}, null, CFG, { fromTs: day(40), toTs: day(100) }, day(300), DEPS, TP_TIMELINES);
+  assert.equal(res.populationCount, 1);
+  assert.equal(tile(res, 'lead').median, 40);
+  assert.equal(tile(res, 'cycle').median, 30);                   // только первый закрытый эпизод
+});
+
+test('computeTtm: last-stable-close — конец метрики и ОКНО популяции по ПОСЛЕДНЕМУ входу; cycle = Σ эпизодов', () => {
+  const cfg = Object.assign({}, CFG, { terminalPolicy: 'last-stable-close' });
+  // Окно ловит последний вход @90 (первый @50 — вне окна): популяция сдвинулась на устоявшееся закрытие.
+  const res = computeTtm(TP_UNITS, TP_ANCHORS, {}, null, cfg, { fromTs: day(60), toTs: day(100) }, day(300), DEPS, TP_TIMELINES);
+  assert.equal(res.populationCount, 1);
+  assert.equal(tile(res, 'lead').median, 80);                    // 10→90 (последний Done)
+  assert.equal(tile(res, 'cycle').median, 60);                   // 30 + 30 — межэпизодный простой [50,60] НЕ считается
+  // Окно вокруг ПЕРВОГО входа при last-stable уже НЕ ловит задачу.
+  const res2 = computeTtm(TP_UNITS, TP_ANCHORS, {}, null, cfg, { fromTs: day(40), toTs: day(60) }, day(300), DEPS, TP_TIMELINES);
+  assert.equal(res2.populationCount, 0);
+});
+
+test('computeTtm: last-stable-close БЕЗ timelines — деградация к первым входам (fail-safe)', () => {
+  const cfg = Object.assign({}, CFG, { terminalPolicy: 'last-stable-close' });
+  const res = computeTtm(TP_UNITS, TP_ANCHORS, {}, null, cfg, { fromTs: day(40), toTs: day(100) }, day(300), DEPS);
+  assert.equal(res.populationCount, 1);                          // по первому входу @50
+  assert.equal(tile(res, 'lead').median, 40);
+});
+
+test('computeTtm: cycle без ЗАКРЫТОГО эпизода при живом таймлайне → null (не 0 и не span)', () => {
+  // Cycle-якоря Dev→DevDone; задача вошла в Dev, но DevDone не достигла. Lead закрыт → в популяции.
+  const cfg = Object.assign({}, CFG, { anchors: { lead: { start: 'InProgress', end: 'Done' }, cycle: { start: 'Dev', end: 'DevDone' } } });
+  const tls = { R1: [
+    { ts: day(10), from: 'Open', to: 'InProgress' },
+    { ts: day(20), from: 'InProgress', to: 'Dev' },
+    { ts: day(50), from: 'Dev', to: 'Done' }
+  ] };
+  const res = computeTtm(TP_UNITS, { R1: { InProgress: day(10), Dev: day(20), Done: day(50) } }, {}, null, cfg,
+    { fromTs: day(40), toTs: day(100) }, day(300), DEPS, tls);
+  assert.equal(res.populationCount, 1);
+  const c = tile(res, 'cycle');
+  assert.equal(c.median, null);                                  // эпизод не закрыт — не мерено
+  assert.equal(c.n, 0);
+});
+
+test('computeTtm: точный Cycle спасает аномалию «конец раньше старта» (мусорный ранний вход в конец-якорь)', () => {
+  // Done@5 (аномалия/импорт) → Dev@20 → Done@40: span первых входов дал бы null (40>5, e<s по cycle Dev@20>Done@5).
+  const anchors = { R1: { InProgress: day(3), Dev: day(20), Done: day(5) } };
+  const tls = { R1: [
+    { ts: day(5), from: 'Open', to: 'Done' },
+    { ts: day(20), from: 'Done', to: 'Dev' },
+    { ts: day(40), from: 'Dev', to: 'Done' }
+  ] };
+  const res = computeTtm(TP_UNITS, anchors, {}, null, CFG, { fromTs: day(0), toTs: day(100) }, day(300), DEPS, tls);
+  assert.equal(tile(res, 'cycle').median, 20);                   // эпизод [20,40] закрыт — мерим честно
+});
+
+test('computeTtm: паузы вычитаются ВНУТРИ каждого cycle-эпизода', () => {
+  const cfg = Object.assign({}, CFG, { terminalPolicy: 'last-stable-close' });
+  const pauses = { R1: [{ fromTs: day(25), toTs: day(30) }, { fromTs: day(65), toTs: day(70) }] };  // по 5 дн в каждом эпизоде
+  const res = computeTtm(TP_UNITS, TP_ANCHORS, pauses, null, cfg, { fromTs: day(60), toTs: day(100) }, day(300), DEPS, TP_TIMELINES);
+  assert.equal(tile(res, 'cycle').median, 50);                   // (30-5) + (30-5)
+});

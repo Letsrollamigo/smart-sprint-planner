@@ -367,6 +367,123 @@ function BucketBars({ buckets, L }) {
   );
 }
 
+/* #50 v3.2.0 — универсальный категорийный бар-чарт каталога (A1/A4/A5/A7/B1/B2): Recharts из
+   SSP_VENDORED; либы нет (jsdom/тест) → полосный SVG-фолбэк (паттерн BucketBars).
+   items: [{label, value, color?}]. horizontal → бары-строки (роли/люди, длинные подписи);
+   вертикальные столбцы — временные бакеты (A1) и зоны (A7). unitLabel — суффикс значений;
+   valueName — имя ряда в тултипе. Отрицательные значения (A5) — ReferenceLine на нуле. */
+function RepCatBars({ title, sub, items, horizontal, unitLabel, valueName, L }) {
+  const data = (items || []).filter((it) => it && typeof it.value === 'number' && isFinite(it.value));
+  if (!data.length) return null;
+  const RC = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts;
+  const head = (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '0 0 8px' }}>
+      <span style={{ fontSize: '13px', fontWeight: 600 }}>{title}</span>
+      {sub ? <span style={{ fontSize: '11px', color: 'var(--muted,#6b7785)' }}>{sub}</span> : null}
+    </div>
+  );
+  const fmt = (v) => String(v) + (unitLabel ? ' ' + unitLabel : '');
+  if (RC && RC.BarChart) {
+    const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, ReferenceLine, LabelList } = RC;
+    const rows = data.map((it) => ({ name: it.label, v: it.value, color: it.color || CHART.neutral }));
+    const hasNeg = rows.some((r) => r.v < 0);
+    const h = horizontal ? Math.max(120, rows.length * 34 + 30) : 200;
+    return (
+      <div style={{ marginTop: '18px', marginBottom: '6px' }}>
+        {head}
+        <div style={{ width: '100%', maxWidth: '620px', height: h + 'px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} layout={horizontal ? 'vertical' : 'horizontal'}
+              margin={{ top: 6, right: 40, bottom: 4, left: horizontal ? 8 : -12 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={!horizontal} vertical={!!horizontal} stroke={CHART.gridStroke} />
+              {horizontal
+                ? <XAxis type="number" tick={CHART.axisTick} />
+                : <XAxis dataKey="name" tick={CHART.axisTick} />}
+              {horizontal
+                ? <YAxis type="category" dataKey="name" width={150} tick={CHART.axisTick} />
+                : <YAxis allowDecimals={false} tick={CHART.axisTick} />}
+              <Tooltip cursor={CHART.tooltipCursor} formatter={(v) => fmt(v)} />
+              {hasNeg ? <ReferenceLine {...(horizontal ? { x: 0 } : { y: 0 })} stroke="var(--muted,#6b7785)" /> : null}
+              <Bar dataKey="v" name={valueName || title} radius={horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]} isAnimationActive={false}>
+                {rows.map((r, i) => <Cell key={i} fill={r.color} />)}
+                <LabelList dataKey="v" position={horizontal ? 'right' : 'top'} formatter={fmt}
+                  style={{ fontSize: 11, fill: 'var(--muted,#6b7785)' }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  }
+  /* SVG-фолбэк (тесты / нет Recharts): полосы; отрицательные — |v| полосой, знак в числе. */
+  const max = Math.max(1, ...data.map((it) => Math.abs(it.value)));
+  return (
+    <div style={{ marginTop: '18px', marginBottom: '6px' }}>
+      {head}
+      {data.map((it, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '5px 0', maxWidth: '620px' }}>
+          <span style={{ flex: '0 0 150px', fontSize: '12px', color: 'var(--muted,#6b7785)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
+          <span style={{ flex: '1 1 auto', height: '10px', borderRadius: '5px', background: 'var(--surface2,#eef0f3)', overflow: 'hidden' }}>
+            <i style={{ display: 'block', height: '100%', width: (Math.abs(it.value) / max * 100) + '%', background: it.color || CHART.neutral, borderRadius: '5px' }} />
+          </span>
+          <span style={{ flex: '0 0 auto', minWidth: '40px', textAlign: 'right', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(it.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* #50 v3.2.0 — A1: агрегация переходов в бакеты времени для чарта. Ключ дня в ЛОКАЛЬНОЙ зоне
+   (консистентно _fmtDate таблицы); диапазон > 62 дней → помесячно. Zero-fill дыр НЕ делаем:
+   ряды разрежены естественно (нет перехода = нет бара) — ось всё равно категорийная. */
+function _a1ChartItems(rows) {
+  const stamps = rows.map((r) => r.enteredAt).filter((v) => typeof v === 'number' && isFinite(v));
+  if (!stamps.length) return { items: [], byMonth: false };
+  const span = (Math.max.apply(null, stamps) - Math.min.apply(null, stamps)) / 86400000;
+  const byMonth = span > 62;
+  const p2 = (n) => String(n).padStart(2, '0');
+  const cnt = {};
+  stamps.forEach((ms) => {
+    const d = new Date(ms);
+    const key = byMonth
+      ? d.getFullYear() + '-' + p2(d.getMonth() + 1)
+      : d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+    cnt[key] = (cnt[key] || 0) + 1;
+  });
+  const items = Object.keys(cnt).sort().map((k) => ({
+    label: byMonth ? k : k.slice(5),                     /* день: без года (окно ≤ 62 дн) */
+    value: cnt[k], color: '#2b6cb0',
+  }));
+  return { items, byMonth };
+}
+
+/* #50 v3.2.0 — A10: стековые бары «перенесено/снято» (часы) по ролям на Recharts;
+   % недоезда — в подписи роли. Фолбэк (нет либы) — прежние ручные полосы в A10View. */
+function RechartsSpillover({ roleRows, L, RC }) {
+  const { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } = RC;
+  const toH = (m) => Math.round(((Number(m) || 0) / 60) * 10) / 10;
+  const data = roleRows.map((r) => ({
+    name: r.label + ' · ' + Math.round(r.pct * 100) + '%',
+    carried: toH(r.carriedMinutes), dropped: toH(r.droppedMinutes),
+  }));
+  const h = Math.max(120, data.length * 34 + 44);
+  return (
+    <div style={{ width: '100%', maxWidth: '680px', height: h + 'px' }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart layout="vertical" data={data} margin={{ top: 6, right: 40, bottom: 4, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={CHART.gridStroke} />
+          <XAxis type="number" tick={CHART.axisTick} />
+          <YAxis type="category" dataKey="name" width={200} tick={CHART.axisTick} />
+          <Tooltip cursor={CHART.tooltipCursor} formatter={(v) => v + ' ' + L.a10HoursUnit} />
+          <Legend wrapperStyle={{ fontSize: '11px' }} />
+          <Bar dataKey="carried" stackId="s" fill="#e6a817" name={L.a10Carried} isAnimationActive={false} />
+          <Bar dataKey="dropped" stackId="s" fill="#e5493a" name={L.a10Dropped} isAnimationActive={false} radius={[0, 3, 3, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 /* A2 TTM — тайлы медиан (3 метрики) + таблица по типу единицы + бакеты Lead + счётчик риска. */
 function A2View({ vm, L }) {
   if (vm.noAnchors) return <Banner kind="warn">{L.a2NoAnchors}</Banner>;
@@ -586,6 +703,17 @@ function A4View({ vm, L }) {
           sub={String(L.flowPopulation || '').replace('{n}', String(pop))} />
         <MetricChip label={L.a4ColPerson} value={vm.authorCount || 0} />
       </div>
+      {/* #50 v3.2.0 — часы по исполнителям (Σ ролей), топ-12: хвост не влезает по высоте — полный список в таблице ниже. */}
+      {rows.length ? (() => {
+        const byAuthor = {};
+        rows.forEach((r) => { byAuthor[r.author] = (byAuthor[r.author] || 0) + (Number(r.minutes) || 0); });
+        const all = Object.keys(byAuthor)
+          .map((a) => ({ label: a, value: Math.round((byAuthor[a] / 60) * 10) / 10, color: '#2b6cb0' }))
+          .sort((x, y) => y.value - x.value);
+        const sub = all.length > 12 ? String(L.chartTopN || '').replace('{n}', '12') : null;
+        return <RepCatBars title={L.a4ChartTitle} sub={sub} items={all.slice(0, 12)} horizontal
+          unitLabel={L.a4HoursUnit} valueName={L.a4ChartTitle} L={L} />;
+      })() : null}
       {rows.length ? <A4Table rows={rows} roleLabels={roleLabels} L={L} /> : <_Muted>{L.a4Empty}</_Muted>}
       {noLog.length ? (
         <div style={{ marginTop: '16px' }}>
@@ -677,6 +805,9 @@ function A5View({ vm, L }) {
           {rollups.map((r) => <RoleVarianceTile key={r.roleKey} r={r} L={L} threshold={vm.threshold} />)}
         </div>
       ) : null}
+      {/* #50 v3.2.0 — знаковое ср. расхождение по ролям (цвет = светофор уровня, нулевая ось). */}
+      {rollups.length > 1 ? <RepCatBars title={L.a5ChartTitle} horizontal unitLabel="%" valueName={L.a5ChartTitle} L={L}
+        items={rollups.map((r) => ({ label: r.label, value: (r.avgVariancePct == null) ? null : Math.round(r.avgVariancePct), color: _lvlColor(r.level) }))} /> : null}
       {rows.length ? <A5Table rows={rows} L={L} /> : <_Muted>{L.a5Empty}</_Muted>}
     </React.Fragment>
   );
@@ -809,7 +940,11 @@ function A10View({ vm, L }) {
       {!vm.hasN1 ? <Banner kind="warn">{L.a10NoN1}</Banner> : null}
       {vm.noDoneCfg ? <Banner kind="warn">{L.a10NoDoneCfg}</Banner> : null}
       <div style={{ fontSize: '13px', fontWeight: 600, margin: '2px 0 10px' }}>{L.a10SectUnder}</div>
-      {roleRows.length ? (
+      {/* #50 v3.2.0 — Recharts-стек по ролям (перенесено/снято, часы); нет либы → прежние ручные полосы. */}
+      {roleRows.length && globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts
+        && globalThis.SSP_VENDORED.Recharts.BarChart ? (
+        <RechartsSpillover roleRows={roleRows} L={L} RC={globalThis.SSP_VENDORED.Recharts} />
+      ) : roleRows.length ? (
         <div style={{ maxWidth: '680px' }}>
           {roleRows.map((r) => {
             const carriedPct = r.plannedMinutes > 0 ? (r.carriedMinutes / r.plannedMinutes * 100) : 0;
@@ -917,6 +1052,19 @@ function B1View({ vm, L }) {
         <MetricChip label={L.b1TotalPct} value={pct(vm.totalPct)} />
         <MetricChip label={L.b1Unestimated} value={vm.unestimated || 0} bad={(vm.unestimated || 0) > 0} />
       </div>
+      {/* #50 v3.2.0 — долг по ролям (Σ по системам), часы. */}
+      {groups.length ? (() => {
+        const byRole = {};
+        groups.forEach((g) => g.rows.forEach((r) => {
+          if (!byRole[r.roleKey]) byRole[r.roleKey] = { label: r.label, min: 0 };
+          byRole[r.roleKey].min += (Number(r.debtMinutes) || 0);
+        }));
+        const items = Object.keys(byRole)
+          .map((k) => ({ label: byRole[k].label, value: Math.round((byRole[k].min / 60) * 10) / 10, color: CHART.amber }))
+          .sort((x, y) => y.value - x.value);
+        return items.length > 1 ? <RepCatBars title={L.b1ChartTitle} horizontal unitLabel={L.b1HoursUnit}
+          valueName={L.b1ChartTitle} items={items} L={L} /> : null;
+      })() : null}
       {groups.length ? groups.map((g, gi) => {
         const gDebt = g.rows.reduce((s, r) => s + r.debtMinutes, 0);
         return (
@@ -961,6 +1109,19 @@ function B2View({ vm, L }) {
         <MetricChip label={L.b2TotalBug} value={_fmtHours(vm.totalBugMinutes) + ' ' + L.b2HoursUnit} />
         {(vm.fallbackBugCount || 0) > 0 ? <MetricChip label={L.b2Fallback} value={vm.fallbackBugCount} /> : null}
       </div>
+      {/* #50 v3.2.0 — часы на баги по ролям (Σ по системам). */}
+      {groups.length ? (() => {
+        const byRole = {};
+        groups.forEach((g) => g.rows.forEach((r) => {
+          if (!byRole[r.roleKey]) byRole[r.roleKey] = { label: r.label, min: 0 };
+          byRole[r.roleKey].min += (Number(r.bugMinutes) || 0);
+        }));
+        const items = Object.keys(byRole)
+          .map((k) => ({ label: byRole[k].label, value: Math.round((byRole[k].min / 60) * 10) / 10, color: CHART.red }))
+          .sort((x, y) => y.value - x.value);
+        return items.length > 1 ? <RepCatBars title={L.b2ChartTitle} horizontal unitLabel={L.b2HoursUnit}
+          valueName={L.b2ChartTitle} items={items} L={L} /> : null;
+      })() : null}
       {groups.length ? groups.map((g, gi) => {
         const gBug = g.rows.reduce((s, r) => s + r.bugMinutes, 0);
         return (
@@ -1120,6 +1281,17 @@ function ReportBody({ vm, L }) {
       {/* A1: явный контракт популяции (D7 «точная цифра или явный сигнал») — считаются задачи,
           СЕЙЧАС стоящие в целевых статусах; реопенутые/ушедшие дальше в окно не попадают. */}
       {vm.report === 'a1' ? <div style={{ ...(_mutedS), margin: '2px 0 8px' }}>{L.a1PopNote}</div> : null}
+      {/* #50 v3.2.0 — графики каталога: A1 темп переходов по дням/месяцам; A7 счёт задач по зонам. */}
+      {vm.report === 'a1' && rows.length ? (() => {
+        const c = _a1ChartItems(rows);
+        return <RepCatBars title={c.byMonth ? L.a1ChartByMonth : L.a1ChartByDay} items={c.items} valueName={L.chartTasks} L={L} />;
+      })() : null}
+      {vm.report === 'a7' && rows.length ? <RepCatBars title={L.a7ChartTitle} valueName={L.chartTasks} L={L}
+        items={[
+          { label: L.flagOk, value: rows.filter((r) => r.level === 'ok').length, color: CHART.green },
+          { label: L.flagWarn, value: rows.filter((r) => r.level === 'warn').length, color: CHART.amber },
+          { label: L.flagOver, value: rows.filter((r) => r.level === 'over').length, color: CHART.red },
+        ]} /> : null}
       {rows.length ? <Table rows={rows} L={L} /> : <_Muted>{L.empty}</_Muted>}
     </React.Fragment>
   );

@@ -114,12 +114,15 @@ function _ttmSeries(input, deps, months, systems) {
   var eng = { workdaysBetween: deps.workdaysBetween, agingLevel: deps.agingLevel };
   /* O2 (ревью #50): своду нужна только lead-медиана — rows/buckets/risk не считаем месяцы×системы раз. */
   var liteCfg = Object.assign({}, cfg, { liteLeadOnly: true });
+  /* timelines пробрасываем ТОЛЬКО при last-stable-close (v3.2.0): под first-close lite-режим
+     реплей не читает — не гоняем его месяцы×системы вхолостую. */
+  var tls = (cfg.terminalPolicy === 'last-stable-close') ? t.timelines : undefined;
   var lines = {};
   systems.forEach(function (sys) {
     /* фильтр по системе месяц-инвариантен — hoist из цикла месяцев (O2) */
     var units = (t.units || []).filter(function (u) { return u && u.id && _inSys(u.id, input.systemOf, sys.key); });
     lines[sys.key] = months.map(function (w) {
-      var res = deps.computeTtm(units, t.anchorEntries, t.pauses, t.incompleteSet, liteCfg, w, input.nowTs, eng);
+      var res = deps.computeTtm(units, t.anchorEntries, t.pauses, t.incompleteSet, liteCfg, w, input.nowTs, eng, tls);
       var tile = _findLead(res.tiles), val = tile ? tile.median : null;
       return { value: val, level: (norm != null && val != null) ? deps.agingLevel(val, { red: norm }) : 'none' };
     });
