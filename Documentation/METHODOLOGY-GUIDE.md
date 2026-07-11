@@ -19,9 +19,10 @@
 3. [Capacity planning: KPI, Grade and Availability](#3-capacity-planning-kpi-grade-and-availability)
 4. [Time-tracking discipline: DTA + cascade](#4-time-tracking-discipline-dta--cascade)
 5. [Multi-team coordination via roles](#5-multi-team-coordination-via-roles)
-6. [Anti-patterns and common mistakes](#6-anti-patterns-and-common-mistakes)
-7. [First-week checklist for the team lead](#7-first-week-checklist-for-the-team-lead)
-8. [Further reading](#8-further-reading)
+6. [Operational reporting: the feedback loop](#6-operational-reporting-the-feedback-loop)
+7. [Anti-patterns and common mistakes](#7-anti-patterns-and-common-mistakes)
+8. [First-week checklist for the team lead](#8-first-week-checklist-for-the-team-lead)
+9. [Further reading](#9-further-reading)
 
 ---
 
@@ -281,6 +282,27 @@ external resource, partner-team loans) and the team lead owns the
 number directly. Switch back to the three-knob model when capacity
 becomes a function of structural inputs the team itself can tune.
 
+### The "Full" model: approved capacity instead of three knobs (v2.16.0+)
+
+The three knobs above are the **"Light"** model: the lead enters or
+auto-calculates people's resource right inside planning. The
+**"Full"** model inverts the flow: sprint capacity is computed in
+advance on a dedicated **Capacity** tab — from the production
+calendar (uploaded as CSV, optionally to all projects at once),
+grades and people's absences (including partial days) — and goes
+through explicit **approval**. Planning then consumes the approved
+numbers: the role and per-person resource fields become read-only.
+
+The methodological point is separation of roles: whoever *owns*
+capacity (a manager, a planning manager) approves it before the
+planning meeting; whoever *distributes* (the lead) works inside the
+approved budget and can't quietly nudge it to fit a desired
+composition. The sign you've outgrown "Light": role capacity has
+become something negotiated *during* planning instead of an input to
+it. If your team owns its own capacity and calibrates it at retros,
+"Light" is simpler and sufficient. The tab reference is
+[USER-GUIDE.md, section 6](USER-GUIDE.md#6-picking-tasks-and-setting-role-capacity).
+
 ---
 
 ## 4. Time-tracking discipline: DTA + cascade
@@ -341,7 +363,7 @@ thresholds and emits a different message at each:
 - **Over 110% of plan** — hard warning. Stop and discuss before
   logging more time. Either the estimate was wrong (calibration data
   for retro), the scope grew (separate ticket, separate budget), or
-  the team is silently absorbing overrun (anti-pattern; see §6).
+  the team is silently absorbing overrun (anti-pattern; see §7).
 
 The thresholds are not a performance management tool. They're a real-
 time conversation prompt — the plugin fires them per log so that
@@ -476,7 +498,117 @@ roll-up.
 
 ---
 
-## 6. Anti-patterns and common mistakes
+## 6. Operational reporting: the feedback loop
+
+Chapters §2–§5 are about *agreeing*: composition, capacity, roles,
+tracking discipline. The operational reporting module (v3.0.0) is about
+*finding out what actually happened*: the planner captures intent,
+the reports show fact. Without the second half, the first degenerates
+into ritual — the team plans beautifully, but nobody sees where the
+plan systematically diverges from reality.
+
+The reference for every report and setting is
+[USER-GUIDE.md, section 13](USER-GUIDE.md#13-operational-reporting).
+This chapter is about *which report to read at which ritual* and the
+organisational decisions the module will demand from you.
+
+### The planner says "as agreed", reporting says "as it went"
+
+Reports are computed from live YouTrack data — state-transition
+history, work logs, sprint snapshots — at the moment you build them.
+The module stores nothing: it's a pull model. The practical
+consequence cuts both ways. Upside: a report is never "yesterday's",
+there are no nightly jobs and no drift. Downside: the module won't
+show you "how it looked a month ago" — except the Roll-up, which
+reconstructs the monthly trend for the last 6 months from transition
+history. History is something *you* create — with an export ritual
+(see below).
+
+### Reading rhythm: which report at which ritual
+
+Don't try to read all 13 reports every day — each has its own data
+tempo and its own conversation.
+
+| Rhythm | Reports | Conversation |
+|---|---|---|
+| **Daily, before stand-up** | Aging / stuck | "What's on fire" — issues that have outsat their status thresholds. Complements the stand-up view: that one is about people, aging is about issues. |
+| **Weekly** | Flow · Progress · Effort | Where the bottleneck is and whether there's rework; what actually reached the target statuses; where the hours went and who didn't log. |
+| **At the sprint retro** | Spillover · Plan vs fact · TTM | Underfulfilment by role and "zombie issues"; estimate accuracy against the threshold; median delivery speed against the norms. |
+| **Monthly / quarterly (contour B)** | Roll-up · Technical debt · Bug tax · Thousand small tasks | Trends by system; tech-debt volume and share; how many engineering hours bugs eat; the small-stuff flow against the yearly pace. |
+
+### Two contours — two different conversations
+
+Contour A ("Operational") is the lead's tool: issues and people of
+their own team at an operational tempo. Contour B ("Management") is
+the manager's tool: aggregates by role and system, monthly trends.
+Access is granted via **separate reporting groups** that don't reuse
+planning permissions: contour-B membership automatically grants A,
+but not the other way around.
+
+Don't hand contour A to "the whole team just in case": the Effort
+report shows hours by name, Plan vs fact shows whose estimates didn't
+hold. That's material for a lead's conversation with the team, not a
+public wall of shame. A sensible starting lineup: contour A — leads
+and the Scrum master; contour B — the department manager and PM.
+
+### Thresholds and norms are agreements, not physics
+
+The module ships with starting values: TTM norms (Lead ≤ 21,
+Team ≤ 15 working days), the plan-vs-fact threshold (±20 %), the
+Spillover zombie thresholds (yellow from the 2nd, red from the 5th
+sprint); the aging thresholds you set yourself. All of them are
+**hypotheses to calibrate**, not industry constants. The rule is the
+same as with overlimit in §3: if the traffic light is red every
+sprint, fix either the process or the threshold — don't get used to
+red. After two or three sprints you'll have enough data to shift the
+thresholds toward your team's reality.
+
+### What must be in order for the reports to come alive
+
+The reports are consumers of the discipline from the previous
+chapters. Before enabling, check what the module will feed on:
+
+- **Aging, Progress, TTM, Flow** read state-transition history.
+  They work out of the box, but they're only meaningful if the team
+  actually moves statuses rather than jumping "Open → Done" on
+  closing day.
+- **Effort** and the **Bug tax** count logged hours — without the §4
+  discipline (DTA, mandatory work type) they'll show garbage.
+- **Plan vs fact** compares role-field estimates against fact — it
+  needs the pre-sizing practice from §2 Backlog Refinement.
+- **Spillover** debriefs closed sprints with history snapshots — no
+  validated sprints, no debrief.
+- **The "by system" split** (Technical debt, Bug tax, Roll-up) needs
+  the subsystem field filled in on issues.
+
+Hence the practical rule: it makes sense to enable reporting in
+**week 3** of the rollout (see the checklist in §8), once the first
+sprint is closed and the first work logs have accumulated.
+
+### A metric that becomes a target stops being a metric
+
+Goodhart's law applies to every one of the 13 reports. Don't hang KPIs
+on "median TTM" and don't reward "zero red aging" — you'll get issues
+shuffled through statuses for the report's sake and pauses marked
+after the fact. Reports are raw material for the stand-up and retro
+conversation: "why has this issue been sitting for 12 days — how can
+we help?", not "who's to blame". The tell-tale sign of abuse: the
+team starts discussing *how to look better in the report* instead of
+discussing the work.
+
+### History through an export ritual
+
+Any report exports to Excel/PDF with one button — with a header
+(project, period, generation time). Agree on a ritual: at the end of
+the month a designated person exports the Roll-up (and, to taste,
+Technical debt and Bug tax) to the wiki or a drive. This buys you
+three things: history beyond the Roll-up's 6-month window, an
+artefact for the quarterly review without a live YouTrack demo, and a
+bridge into BI — the Excel files will travel anywhere.
+
+---
+
+## 7. Anti-patterns and common mistakes
 
 The five most common ways teams quietly break the value of the plugin —
 and the test that tells you you're doing one of them.
@@ -559,7 +691,7 @@ team's onboarding notes so the responsibility is explicit, not folkloric.
 
 ---
 
-## 7. First-week checklist for the team lead
+## 8. First-week checklist for the team lead
 
 A pragmatic ramp-up plan. Stretch it across two weeks if your team has
 a sprint mid-rollout — don't try to introduce every feature in one go.
@@ -570,7 +702,7 @@ Install the plugin from the release zip (Project Settings → Apps →
 Install from file). Open the widget on the project's settings page and
 click **⚙ Plugin settings**. Until `settingsManagerGroup` is configured,
 *all* mutating endpoints are denied — this is intentional, not a bug.
-Add at least two people to the group (team lead + deputy, see §6),
+Add at least two people to the group (team lead + deputy, see §7),
 save, confirm a reload still respects the rule.
 
 ### Day 2 — enable the roles your team actually uses
@@ -629,15 +761,33 @@ Once the team has one sprint under the new model:
 - If your team uses parent/child issue structure, enable cascade
   aggregation and `forbidContainerWorkItems` together. Don't enable
   cascade alone — without the container lock, the math will drift
-  (see §6).
+  (see §7).
 
 By the end of week 2, the team has the full plugin behaviour on, and
 you have one sprint of actual data to start calibrating KPI in week 3
 and beyond.
 
+### Week 3 — enable operational reporting
+
+Once the first sprint is closed and the first work logs have
+accumulated, the reports have something to feed on (see §6, "What
+must be in order"):
+
+- Enable the module in settings → **Reporting**; set the contour
+  groups: A — leads and the Scrum master, B — the manager/PM.
+- Configure the minimum for the daily rhythm: aging thresholds for
+  two or three working statuses and the Progress target statuses.
+- If you want TTM and Flow — set the Lead/Team/Cycle anchors and
+  order the flow statuses; leave the norms at their defaults
+  (21/15 wd) until you calibrate on your own data.
+- Run every report once: an empty report with a hint is not an
+  error but a signal telling you which setting is missing.
+- Agree on a reading rhythm (see the table in §6) and on the ritual
+  of exporting the Roll-up at the end of each month.
+
 ---
 
-## 8. Further reading
+## 9. Further reading
 
 - [USER-GUIDE.md](USER-GUIDE.md) — every screen, every button, every
   setting. The reference companion to this guide.

@@ -22,8 +22,9 @@ A short guide to working with the plugin: creating a sprint, adding tasks, distr
 10. [Sprint stages: review, commit, complete](#10-sprint-stages-review-commit-complete)
 11. [Sprint history and re-editing](#11-sprint-history-and-re-editing)
 12. [Releases (release management)](#12-releases-release-management)
-13. [Who can do what: group permissions](#13-who-can-do-what-group-permissions)
-14. [FAQ](#14-faq)
+13. [Operational reporting](#13-operational-reporting)
+14. [Who can do what: group permissions](#14-who-can-do-what-group-permissions)
+15. [FAQ](#15-faq)
 
 **Appendix A.** [Full reference of project settings](#appendix-a-full-reference-of-project-settings)
 
@@ -68,7 +69,7 @@ The planner has two parts:
 - **Sprint dropdown.** The current sprint is on top, followed by completed ones. Switching sprints instantly re-renders what's shown on the right.
 - **Sprint status badge** and **"Edit draft exists" badge** — short hints about the sprint stage and an unfinished edit (see [section 10](#10-sprint-stages-review-commit-complete) and [section 11](#11-sprint-history-and-re-editing)).
 - **"+ New sprint" button** (see [section 4](#4-creating-a-new-sprint)).
-- **Navigation tree** — switch between sections: "Sprint parameters", "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Working with the backlog" (if configured — see [section 5](#5-working-with-the-backlog)), "Gantt chart", "Sprint history".
+- **Navigation tree** — switch between sections: "Sprint parameters", "Capacity" (with the "Full" planning model — see [section 6](#6-picking-tasks-and-setting-role-capacity)), "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Working with the backlog" (if configured — see [section 5](#5-working-with-the-backlog)), "Gantt chart", "Sprint history". When the corresponding modules are enabled, the release items (see [section 12](#12-releases-release-management)) and the "Reporting" group (see [section 13](#13-operational-reporting)) appear as well.
 - **«Share» button** (at the bottom of the navigation tree) — copies a link to the current view (see below).
 - **Service links at the bottom:** the user guide, feedback, language switcher.
 
@@ -116,7 +117,7 @@ After saving these four settings, the plugin becomes functional: you can create 
 
 **What else can be configured** (not required for launch): groups that can confirm sprints; groups that can only change assignees; monthly hour quotas; cascading effort aggregation; automatic state roll-up from child tasks to parent containers; "external ID" field for integration with another system; daily stand-up settings. The full list is in [Appendix A](#appendix-a-full-reference-of-project-settings).
 
-> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 12](#13-who-can-do-what-group-permissions).
+> 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 14](#14-who-can-do-what-group-permissions).
 
 ---
 
@@ -186,6 +187,7 @@ The same tasks, grouped by the **Epic ▸ Story ▸ Task** hierarchy (by task li
 - **Needs estimate** — the task has no estimate for the required role (it can't be laid out meaningfully until it's estimated).
 - **Carryover** / **Continuation** — based on the transition history: the task was already in work in a previous sprint (carried over / continuing).
 - **Paused** — the task is in a paused state or has a pause tag (both are configurable).
+- **In a sprint** — the task is already part of some sprint's composition (the current one or one from history). The badge tooltip warns you not to lay it out again. Visible in both pool views.
 
 ### Laying a task into a sprint
 
@@ -240,6 +242,8 @@ There are two ways to set capacity:
 
 On the right — the **Resource remainder** badge: the difference between capacity and the sum of hours by tasks. It tells you whether there's still room to add tasks or whether the role is already overloaded.
 
+> 💡 With the **Full** planning model, role capacity is not entered here: the field shows the **approved** capacity from the Capacity tab (see below) and is edited only there.
+
 #### Sprint composition by role
 
 This is the table of tasks that are in the sprint for this role. It's empty for a new sprint.
@@ -290,13 +294,30 @@ When tasks are picked, capacity is set, and the sum of hours fits within capacit
 
 Each role is reviewed separately on purpose — so a team where one role is ready earlier than the others doesn't have to wait for everyone.
 
+### The Capacity tab: calculation and approval (the "Full" model)
+
+> Appeared when the "Full" model was unlocked (v2.16.0). The **Capacity** item is shown in the navigation tree right below "Sprint parameters" — only with the "Full" planning model (see [Appendix A](#appendix-a-full-reference-of-project-settings)).
+
+With the "Full" model, role capacity is neither entered manually nor calculated by a button in the role card — planning consumes the **approved** capacity computed on this tab from the production calendar, grades and people's absences.
+
+What's on the tab:
+
+- **Sprint selector.** The calculation targets a specific sprint (its dates are required). Historical sprints open with a "Read-only (historical sprint)" note.
+- **"By roles" / "By persons" view switch.** "By roles" — the aggregated capacity of each role; "By persons" — the per-person breakdown (added in v2.18.0).
+- **The "Calendar & absences" block.**
+  - The **production calendar** is uploaded as a CSV file: **Download template** → fill it in → **Upload CSV** (the button is visible to members of the settings manager group). If there's no calendar for the required year, the plugin warns ("No production calendar for: …") and falls back to "weekends = Saturday and Sunday".
+  - **Upload to all projects** — the same CSV pushed to every project connected to the planner in one go. The button is visible only in the main-menu planner and only to global instance administrators; on completion you get a summary "Calendar updated in X of N projects" (added in v2.18.0).
+  - **Absences** are marked per person: select a person on the left, mark the days and set the **absence type** — Vacation, Sick leave, Out of team, Regional holiday, Training, Team leading, Other. An absence can be **partial**: instead of "full day", enter the number of hours in the "Partial day, h" field — only that share is subtracted from capacity (added in v2.18.1). The **Save absences** button commits the changes.
+- **Status and approval.** **Save** stores a draft of the calculation; **Approve** makes the capacity effective — the approved numbers are what feeds "Role resource" and "Available resources" on the Planning tab. Record statuses: **"Not approved"** → **"Approved"** → **"Changed after approval"** (after editing an approved record, re-approve it). Approving is blocked while over limit.
+- **The "Archive (N)" spoiler** at the bottom — capacities of old sprints move to a read-only archive automatically (content loads on expand), so the working record doesn't balloon (added in v2.18.1).
+
 ---
 
 ## 7. Distributing tasks among assignees
 
 Once role compositions are picked, you usually need to decide **who specifically does what** and on which days. That's what the second mode of the **Planning** tab — **By assignees** — is for.
 
-> **Depends on the planning model.** This section is available only with the **Light** model (the [Capacity management](#appendix-a-full-reference-of-project-settings) section). With the **Simple** model the **Per-assignee distribution** nav item is **hidden**: no per-person capacity accounting is done, role capacity is entered **manually** on the "Shared resource allocation" tab, and task owners are assigned directly on the [Gantt chart](#8-calendar-timeline) — clicking a task opens the assignee picker.
+> **Depends on the planning model.** This section is available with the **Light** and **Full** models (the [Capacity management](#appendix-a-full-reference-of-project-settings) section); with "Full", per-person resources come from the approved capacity (see [section 6](#6-picking-tasks-and-setting-role-capacity)). With the **Simple** model the **Per-assignee distribution** nav item is **hidden**: no per-person capacity accounting is done, role capacity is entered **manually** on the "Shared resource allocation" tab, and task owners are assigned directly on the [Gantt chart](#8-calendar-timeline) — clicking a task opens the assignee picker.
 
 ### How to enter
 
@@ -349,6 +370,7 @@ This is the main table of the mode. Each row is a task in the role:
 | Priority / Cross-priority | Standard. |
 | Allocation (h) | Hours for this task within this role. |
 | Subsystem | From the corresponding YouTrack field. |
+| State | The task's current YouTrack state — read-only, for orientation while distributing (the column appears when the state field is mapped; added in v2.19.0). |
 | Assignee | Dropdown: pick which person from those selected does the task. Can leave as **— Unassigned —**. |
 | Start / Finish | Dates when the person plans to start and finish the task. |
 
@@ -548,7 +570,7 @@ Click the card — it expands and shows the full task table with assignees and h
 | **✓ Finish** | Available if the sprint isn't finished yet. Opens the outcome dialog (see [section 10](#10-sprint-stages-review-commit-complete)). |
 | **🗑 Delete** | Full sprint deletion. Two-step confirmation. |
 
-Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 12](#13-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
+Separately, above the whole list, there are buttons: **🗑 Clear all history** (available only to members of a special group — see [section 14](#14-who-can-do-what-group-permissions)), **All history (JSON)** and **Import from file** — see below.
 
 ### Export and import history (JSON)
 
@@ -630,11 +652,11 @@ Once enabled, **«Planned releases»** (cards of open releases) and **«Release 
 
 ### The release card
 
-- **«Create release»** — name, kind (**Release / Hotfix**), source (**Internal / Vendor**), planned date, composition-freeze date, the release's RM/RE, patch note, notes.
+- **«Create release»** — name, kind (**Release / Hotfix**), source (**Internal / Vendor**), planned date, composition-freeze date, the release's RM/RE, patch note, notes, **release task link** (an optional URL — shown as a clickable link on the card, in history and in the .txt export; added in v2.19.0). Since v2.19.0 the notes are shown right on the planned card, not only in the edit form and history.
 - **«+ Tasks»** — pick project tasks into the release. A task can be moved from another release — the plugin shows the collision and asks for confirmation.
 - **Readiness traffic-light** — a composition summary: done / in progress / not started / no state. Zones derive automatically from the State field and the mapping anchor; an overdue planned date adds an **«Overdue»** badge.
 - **Composition tree** — epic ▸ story ▸ task (from Subtask links), readiness rolled up from the subtree leaves; tasks without a parent are listed separately.
-- **«Change status ▾»** — Planned → Preparation → In progress → **Released** / **Cancelled**. Closing is irreversible: the composition is frozen as a snapshot and the release moves to «Release history».
+- **«Change status ▾»** — Planned → Preparation → In progress → **Released** / **Cancelled**. Closing is irreversible: the composition is frozen as a snapshot and the release moves to «Release history». If **task tags** are configured in the mapping (see below), entering a new release status removes the previous status's tag from the composition's tasks and adds the new one (added in v2.18.0).
 - **«Update task states»** — a mapping preview (which task gets which State, with «already there», «diverged», «unreachable» marks) and bulk or per-task application to YouTrack tasks.
 - **«❄ Freeze composition»** — blocks composition edits until explicitly unfrozen.
 - **«⤓ Export to .txt»** — downloads the card (type, dates, patch note, notes, traffic-light, composition). Available to everyone including viewers; the button is on the live card and on history/archive records.
@@ -645,13 +667,78 @@ History records are spoilers with the at-close snapshot (traffic-light, composit
 
 ---
 
-## 13. Who can do what: group permissions
+## 13. Operational reporting
+
+> The module appeared in v3.0.0 and is **off by default** — the project configurator enables it.
+
+### What it is
+
+A showcase of **13 reports** about what is actually happening to the project's issues: where they get stuck, how fast they reach the finish line, where the hours go, how accurate the estimates turn out. If the planner answers "what did we agree on", reporting answers "what is really happening".
+
+Reports are computed **from live YouTrack data** (state-transition history, logged work, sprint snapshots) at the moment you build them — the plugin stores nothing and runs no nightly jobs. Open a report → the plugin reads YouTrack → shows the result. A report is therefore always current "as of now", and for capturing history there's Excel/PDF export (see below).
+
+### Two contours and access
+
+The reports are split into two contours with separate access via YouTrack groups:
+
+- **"Operational (A)"** — 9 reports for leads and Scrum masters: the daily and weekly work with the task flow.
+- **"Management (B)"** — 4 reports for management: monthly trends, technical debt, the "bug tax".
+
+Access groups are set in plugin settings, in the **Reporting** section — these are separate groups, not reusing planning or release permissions. Membership in a contour-B group automatically grants contour A as well. Membership is also checked on the server — a hidden button is not the only line of defence.
+
+Once the module is enabled, the navigation tree gets a **"Reporting"** group with the items **"Operational (A)"** and **"Management (B)"** — each person sees only the contours their groups grant. If you see neither, you are not in any reporting group — ask the project configurator.
+
+### How to build a report
+
+At the top of a contour page there's a control bar:
+
+1. **Report** — a dropdown with the contour's reports.
+2. **Period** — for "windowed" reports (Progress, TTM, Flow, Effort, Plan vs fact, Bug tax, Thousand small tasks): presets from "Today" to "Calendar year" plus "Custom range" (two dates). Snapshot reports (Aging, ITBP WIP/Done, Backlog in hours, Technical debt, Roll-up) don't ask for a period — they show the "now" slice (Roll-up itself looks 6 months back). Spillover picks a **closed sprint** instead of a period.
+3. **Task filter** — a YouTrack query field (with suggestions, like the YouTrack search): the condition is AND-ed with the project scope. Available in contour A only.
+4. **↻ Refresh** — re-read the data and rebuild the report.
+
+If there's a lot of data and the report takes long to build, a **"⏹ Cancel"** button appears next to it. There's also a timeout backstop (90 seconds by default): on expiry the report cancels itself gracefully instead of hanging the tab.
+
+> 💡 If a report shows a "…not set — configure…" hint instead of data — that's not an error. Every report needs its own configuration (thresholds, anchors, states, tags — see [Appendix A](#appendix-a-full-reference-of-project-settings), the "Reporting" section), and the hint tells you exactly what's missing.
+
+### Reports of the "Operational (A)" contour
+
+| Report | The question it answers |
+|---|---|
+| **Aging / stuck** | Which issues have been sitting in their current status longer than the threshold — "what's on fire now". Thresholds in working days (yellow/red) are set per status. |
+| **Progress** | What entered the target statuses in the period — "what got done". Target statuses and their labels are configurable. |
+| **ITBP WIP/Done** | A "now" slice of epics and solo stories: what's in progress and what's done — with business columns (stage, org unit, priority) from configurable fields. |
+| **TTM · Time to Market** | Median delivery time for the period in working days: **Lead** (analysis → prod), **Team** (analysis → business testing), **Cycle** (dev-start → dev-done). A traffic light against the norms, pause subtraction (pause statuses and tags), Lead Time distribution buckets. |
+| **Flow** | The bottleneck (median days per flow status + WIP per status) and rework — backward transitions against the configured status order. |
+| **Effort** | Hours by person and role for the period + a "no hours logged" list. |
+| **Plan vs fact** | Estimate accuracy: average variance per role and the issues whose fact-vs-estimate variance exceeded the threshold. The estimate is taken "as it was" when the issue entered work — it can't be rewritten in hindsight. |
+| **Backlog in hours** | How many "months of work" have piled up in the backlog per role: the sum of estimates divided by the role's monthly capacity. |
+| **Spillover** | A closed-sprint debrief: underfulfilment by role, tails — carried into or dropped from the next sprint — and "zombie issues": how many consecutive sprints an issue keeps rolling over not-done. "Done-ness" is determined by the "Done" states from the Stand-up settings. |
+
+### Reports of the "Management (B)" contour
+
+| Report | The question it answers |
+|---|---|
+| **Roll-up** | The monthly trend of five metrics over the last 6 months, split by system, each metric as its own chart: TTM (Lead, median), estimate accuracy, bottleneck, backlog in months and backlog in hours. |
+| **Technical debt** | Tech-debt volume (sum of estimates in person-hours) and its share of all issues — by role, split by system. Tech debt is selected by issue type or tag. |
+| **Bug tax** | The share of engineering hours spent on bugs rather than features — by system and role. A bug is linked to its feature via the configured link types. |
+| **Thousand small tasks** | The flow of small tagged tasks in the period versus the monthly pace year-to-date. |
+
+The "system" in the reports is the value of the issue's **subsystem field** (the "Task fields" → "Subsystem field" setting).
+
+### Export to Excel and PDF
+
+The **⭳ Excel** and **⭳ PDF** buttons download the current report as a file: the same data plus a header — project, period (or a "Snapshot (now)" mark) and generation time. Since the reports themselves store nothing, regular export **is** your archive: e.g. export the Roll-up at the end of every month and the history accumulates in files. The Excel files can travel further into a BI system if you have one.
+
+---
+
+## 14. Who can do what: group permissions
 
 Access to different actions in the plugin is regulated through **YouTrack groups**. In plugin settings, the project admin specifies which group is responsible for which permissions.
 
 Groups are **additive**: one person can be in multiple groups and gets the sum of their permissions.
 
-### Seven permission groups
+### Nine permission groups
 
 | Group | What they can do |
 |---|---|
@@ -661,6 +748,8 @@ Groups are **additive**: one person can be in multiple groups and gets the sum o
 | **Assignee-and-date-only** | Limited permissions: can change **only** assignees and Start / Finish dates in **By assignees** and on the Gantt chart. Composition, capacities, status — not allowed. Useful for team leads who shuffle assignees inside a fixed sprint but shouldn't change "what was agreed". |
 | **Release managers** | Full release management (when the «Releases» module is enabled, see [section 12](#12-releases-release-management)): create and edit, pick tasks, any status changes, cancellation, composition freeze. |
 | **Release engineers** | Advance a release's status to the next step in the chain (Planned → Preparation → In progress → Released). Composition and release fields are read-only. |
+| **Reporting: contour A** | See the "Reporting" group and the "Operational (A)" section — 9 operational reports (with the module enabled, see [section 13](#13-operational-reporting)). Grants no sprint-editing permissions. |
+| **Reporting: contour B** | Everything contour A sees, plus the "Management (B)" section — 4 management reports. Contour-B membership automatically includes contour A. |
 | **History cleaners** | See and can click **🗑 Clear all history** above the History list. A strong, irreversible action — usually given to 1–2 responsible people. |
 
 **If a person isn't in any of these groups** — they see the plugin in read-only mode: they can browse compositions, charts, history, but editing buttons are hidden.
@@ -683,7 +772,7 @@ If you see a button hidden or a field greyed out — it's probably permissions. 
 
 ---
 
-## 14. FAQ
+## 15. FAQ
 
 **The plugin says «The sprint was modified by another user. Reload the page and try saving again» — what is this?**
 Concurrent-editing protection (added in v2.17.0). Someone saved this sprint after you loaded it — your save was rejected so it wouldn't silently wipe their work. Reload the page (your view picks up their changes) and re-apply your edit.
@@ -783,7 +872,7 @@ Formula: `month_quota × rate × participation_percent × grade_coefficient`.
 - **Light** — per-person resource calculation; the "Per-assignee distribution" tab appears. Additionally, a **resource calculation method** is chosen:
   - **Auto-calculate by formula** — people's capacity is calculated from the quota (the formula above), and their sum is automatically filled into the role's resource (the field becomes read-only).
   - **Manual per-assignee entry** — each person's capacity is entered manually in hours instead of being auto-calculated from grade.
-- **Full (in development)** — not yet available (a stub); the extended capacity model will arrive in future versions.
+- **Full** — the planner consumes **approved** business capacity (unlocked in v2.16.0). A **Capacity** tab appears in the navigation tree (see [section 6](#6-picking-tasks-and-setting-role-capacity)): per-sprint personal capacity calculated from the production calendar, grades and absences, "By roles" / "By persons" views, record approval. The "Role resource" field and per-person resources become read-only — approved capacity is their only source.
 
 > Before version 2.14.0 these were three separate toggles ("Personal-planning mode" + two sub-modes). Now it's a single dropdown; the modes' behavior is unchanged.
 
@@ -841,6 +930,28 @@ Configures the **Working with the backlog** module (see [section 5](#5-working-w
 - **Release manager groups** and **release engineer groups** — who manages releases and who advances statuses.
 - **Representative candidate groups** — which groups the RM/RE of a specific release are picked from (separate from the permission groups).
 - **«Release status → task State» mapping** — the target task State for each release status; the «Planned» status serves as the traffic-light zone anchor.
+- **Task tag** (a column in the same mapping, optional; added in v2.18.0) — a YouTrack tag applied to the composition's tasks when the release enters a status; the previous status's tag is removed at the same time. Pick **existing** tags: an auto-created tag would be private to its owner and invisible to everyone else.
+
+### "Reporting" section (administration)
+
+Settings of the operational reporting module (see [section 13](#13-operational-reporting)). While the master toggle is off, there's no "Reporting" group in the navigation.
+
+- **Enable reporting module for the project** — the master toggle.
+- **Reporting access** — the **"Contour A — operational (leads)"** and **"Contour B — management"** groups. Separate reporting groups (not reusing planning/release permissions); contour-B membership also grants contour A; membership is checked on the server as well.
+- **Aging thresholds (per status)** — working days in a status before the yellow/red flag in "Aging / stuck". An empty row means the status isn't monitored; red must exceed yellow.
+- **Progress (A1) — target statuses + labels** — entry into which statuses counts as movement, and the caption shown in the report.
+- **TTM anchors** — start/end state pairs for the **Lead** (analysis → prod), **Team** (analysis → biz-test) and **Cycle** (dev-start → dev-done) metrics. A milestone is the first entry into a state; a metric is computed only when both ends are set.
+- **TTM norms, workdays** — "Lead ≤" and "Team ≤" (21 and 15 by default); a median above the norm is flagged by the traffic light. Cycle has no norm.
+- **Pause markers** — pause statuses and pause tags: such intervals are subtracted from TTM. Unmarked time accrues into TTM.
+- **Flow statuses (A8/A9)** — the ordered list of work-flow statuses; it drives "Bottleneck" (median dwell + WIP) and "Rework" (backward moves against the order). A status without an order number is outside the flow.
+- **Plan vs fact** — the variance threshold in percent (20 by default): issues whose absolute variance exceeds it are listed.
+- **A3 · ITBP slice fields** — names of the YouTrack fields for the business columns ("Business stage", "Org unit", "Priority"); a column is shown only when its field is set.
+- **A6 · role monthly capacity** — hours per month per role; the denominator of "months of backlog".
+- **A10 · tail-age thresholds (zombie)** — how many consecutive not-done sprints before the yellow (default 2) and red (default 5) badge in Spillover.
+- **B1 · technical debt** — the tech-debt filter: issue type OR tag (if a type is set, the tag is ignored).
+- **B2 · bug tax** — the bug issue type and the bug→feature link types.
+- **B3 · thousand small tasks** — the small-tasks tag.
+- **Report timeout** — the maximum data-collection time in seconds (90 by default); on expiry the report auto-cancels and rolls back — a protection against hangs.
 
 ### "Other" section
 
@@ -850,4 +961,4 @@ Configures the **Working with the backlog** module (see [section 5](#5-working-w
 
 ---
 
-_Updated 2026-07-03, plugin v2.17.0._
+_Updated 2026-07-11, plugin v3.0.0._
