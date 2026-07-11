@@ -1339,6 +1339,8 @@ function SettingsForm(props) {
       legacyHybrid: PM.isLegacyHybrid(initial),
       dynEditEnabled: !!initial.dynEditEnabled,
       allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
+      /* #40 — авто-прогноз дат (кнопка + очередь на уровне «Люди»); планировочный тир. */
+      autoForecastEnabled: !!initial.autoForecastEnabled,
     };
   });
   const toggleMode = (k) => setModes((p) => Object.assign({}, p, { [k]: !p[k] }));
@@ -1566,6 +1568,7 @@ function SettingsForm(props) {
     data.usePersonalForResource = _ppFlags.usePersonalForResource;
     data.manualPersonalResource = _ppFlags.manualPersonalResource;
     data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
+    data.autoForecastEnabled = modes.autoForecastEnabled;   /* #40 */
     data.showDiagLogUi = showDiagLogUi;   /* #56-5 — hideDiagLogUi больше не пишем (soft-deprecated) */
 
     const num = (v, d) => { const f = parseFloat(v); return isFinite(f) ? f : d; };
@@ -1930,6 +1933,9 @@ function SettingsForm(props) {
           <RoleCheck on={modes.dynEditEnabled} label={t('lblDynEdit')} hint={t('descDynEdit')} tooltip={t('tooltipDynEdit')} onToggle={() => toggleMode('dynEditEnabled')} />
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.allowOverlimitPlanning} label={t('lblAllowOverlimit')} hint={t('descAllowOverlimit')} onToggle={() => toggleMode('allowOverlimitPlanning')} />
+          </div>
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.autoForecastEnabled} label={t('lblAutoForecast')} hint={t('descAutoForecast')} onToggle={() => toggleMode('autoForecastEnabled')} />
           </div>
         </React.Fragment>
       ),

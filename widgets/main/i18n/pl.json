@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Raport przerwany po przekroczeniu limitu czasu",
   "repSetTimeout": "Limit czasu raportu",
   "repSetTimeoutHint": "Maksymalny czas zbierania danych raportu; po jego upływie raport zostaje automatycznie przerwany i wycofany (ochrona przed zawieszeniem).",
-  "repSetTimeoutSec": "Sekundy"
+  "repSetTimeoutSec": "Sekundy",
+  "btnForecastDates": "Prognozuj daty",
+  "forecastConfirmTitle": "Przelicz prognozę",
+  "forecastConfirmText": "Daty wszystkich przypisanych zadań roli zostaną przeliczone i nadpisane, łącznie z poprawionymi ręcznie. Kontynuować?",
+  "btnForecastConfirm": "Przelicz",
+  "toastForecastDone": "Daty zaprognozowane",
+  "toastForecastUnfit": "Prognoza obliczona; ponad pojemność: {n}",
+  "toastForecastEmpty": "Brak przypisanych zadań z oszacowaniem — nie ma czego prognozować",
+  "toastForecastErr": "Nie udało się obliczyć prognozy",
+  "toastForecastNoDates": "Sprint nie ma dat — prognoza niemożliwa",
+  "forecastUnfitBadge": "ponad pojemność",
+  "lblAutoForecast": "Automatyczna prognoza dat",
+  "descAutoForecast": "Włącza przycisk „Prognozuj daty” i zarządzanie kolejką zadań na poziomie podziału według wykonawców.",
+  "thQueue": "#",
+  "queueMoveUp": "W górę kolejki",
+  "queueMoveDown": "W dół kolejki"
 }

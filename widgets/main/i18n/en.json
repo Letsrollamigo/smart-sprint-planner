@@ -1245,5 +1245,20 @@
   "repAbortedTimeout": "Report timed out",
   "repSetTimeout": "Report timeout",
   "repSetTimeoutHint": "Maximum report data-collection time; on expiry the report auto-cancels and rolls back (prevents hangs).",
-  "repSetTimeoutSec": "Seconds"
+  "repSetTimeoutSec": "Seconds",
+  "btnForecastDates": "Forecast dates",
+  "forecastConfirmTitle": "Recalculate forecast",
+  "forecastConfirmText": "Dates will be recalculated and overwritten for all assigned tasks of the role, including manually adjusted ones. Continue?",
+  "btnForecastConfirm": "Recalculate",
+  "toastForecastDone": "Dates forecasted",
+  "toastForecastUnfit": "Forecast done; over capacity: {n}",
+  "toastForecastEmpty": "No assigned tasks with estimates — nothing to forecast",
+  "toastForecastErr": "Failed to compute the forecast",
+  "toastForecastNoDates": "Sprint has no dates — cannot forecast",
+  "forecastUnfitBadge": "over capacity",
+  "lblAutoForecast": "Auto-forecast dates",
+  "descAutoForecast": "Enables the “Forecast dates” button and the task queue controls on the assignee distribution level.",
+  "thQueue": "#",
+  "queueMoveUp": "Move up in the queue",
+  "queueMoveDown": "Move down in the queue"
 }

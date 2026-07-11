@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "タイムアウトによりレポートを中止しました",
   "repSetTimeout": "レポートのタイムアウト",
   "repSetTimeoutHint": "レポートのデータ収集の最大時間。超過すると自動的に中止してロールバックします（ハングの防止）。",
-  "repSetTimeoutSec": "秒"
+  "repSetTimeoutSec": "秒",
+  "btnForecastDates": "日付を予測",
+  "forecastConfirmTitle": "予測の再計算",
+  "forecastConfirmText": "ロールの割り当て済みタスクすべての日付が再計算され上書きされます（手動修正分を含む）。続行しますか？",
+  "btnForecastConfirm": "再計算",
+  "toastForecastDone": "日付を予測しました",
+  "toastForecastUnfit": "予測完了。キャパシティ超過: {n}",
+  "toastForecastEmpty": "見積りのある割り当て済みタスクがありません — 予測対象なし",
+  "toastForecastErr": "予測の計算に失敗しました",
+  "toastForecastNoDates": "スプリントに日付が設定されていないため予測できません",
+  "forecastUnfitBadge": "キャパシティ超過",
+  "lblAutoForecast": "日付の自動予測",
+  "descAutoForecast": "「日付を予測」ボタンと担当者別配分レベルのタスクキュー操作を有効にします。",
+  "thQueue": "#",
+  "queueMoveUp": "キューで上へ",
+  "queueMoveDown": "キューで下へ"
 }

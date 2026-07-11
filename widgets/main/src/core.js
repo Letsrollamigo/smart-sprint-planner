@@ -4160,6 +4160,7 @@
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentRoleNkcKey: function () { return _currentRoleNkcKey; },
+        isEditor: function () { return _isEditor; }, /* #40 — гейт кнопки прогноза */
       },
     };
   }

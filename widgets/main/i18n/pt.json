@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Relatório interrompido por tempo limite",
   "repSetTimeout": "Tempo limite do relatório",
   "repSetTimeoutHint": "Tempo máximo de coleta de dados do relatório; ao expirar, o relatório é cancelado e revertido automaticamente (evita travamentos).",
-  "repSetTimeoutSec": "Segundos"
+  "repSetTimeoutSec": "Segundos",
+  "btnForecastDates": "Prever datas",
+  "forecastConfirmTitle": "Recalcular previsão",
+  "forecastConfirmText": "As datas de todas as tarefas atribuídas do papel serão recalculadas e sobrescritas, incluindo as ajustadas manualmente. Continuar?",
+  "btnForecastConfirm": "Recalcular",
+  "toastForecastDone": "Datas previstas",
+  "toastForecastUnfit": "Previsão calculada; acima da capacidade: {n}",
+  "toastForecastEmpty": "Nenhuma tarefa atribuída com estimativa — nada a prever",
+  "toastForecastErr": "Falha ao calcular a previsão",
+  "toastForecastNoDates": "O sprint não tem datas — previsão impossível",
+  "forecastUnfitBadge": "acima da capacidade",
+  "lblAutoForecast": "Previsão automática de datas",
+  "descAutoForecast": "Ativa o botão «Prever datas» e o controle da fila de tarefas no nível de distribuição por executores.",
+  "thQueue": "#",
+  "queueMoveUp": "Subir na fila",
+  "queueMoveDown": "Descer na fila"
 }

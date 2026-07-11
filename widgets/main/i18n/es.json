@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Se agotó el tiempo de espera del informe",
   "repSetTimeout": "Tiempo de espera del informe",
   "repSetTimeoutHint": "Tiempo máximo de recopilación de datos del informe; al agotarse, el informe se cancela y revierte automáticamente (evita bloqueos).",
-  "repSetTimeoutSec": "Segundos"
+  "repSetTimeoutSec": "Segundos",
+  "btnForecastDates": "Pronosticar fechas",
+  "forecastConfirmTitle": "Recalcular pronóstico",
+  "forecastConfirmText": "Las fechas de todas las tareas asignadas del rol se recalcularán y sobrescribirán, incluidas las ajustadas manualmente. ¿Continuar?",
+  "btnForecastConfirm": "Recalcular",
+  "toastForecastDone": "Fechas pronosticadas",
+  "toastForecastUnfit": "Pronóstico calculado; fuera de capacidad: {n}",
+  "toastForecastEmpty": "No hay tareas asignadas con estimación — nada que pronosticar",
+  "toastForecastErr": "No se pudo calcular el pronóstico",
+  "toastForecastNoDates": "El sprint no tiene fechas — pronóstico imposible",
+  "forecastUnfitBadge": "fuera de capacidad",
+  "lblAutoForecast": "Pronóstico automático de fechas",
+  "descAutoForecast": "Activa el botón «Pronosticar fechas» y la gestión de la cola de tareas en el nivel de distribución por ejecutores.",
+  "thQueue": "#",
+  "queueMoveUp": "Subir en la cola",
+  "queueMoveDown": "Bajar en la cola"
 }

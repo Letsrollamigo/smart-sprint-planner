@@ -2269,6 +2269,10 @@
     .planning-people-summary__label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
     .planning-people-summary__value { font-size: 18px; font-weight: 600; margin-top: 2px; }
     .planning-people-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    /* #40 — стрелки очереди исполнителя в колонке «№» */
+    .currentRole-queue-move { border: none; background: transparent; cursor: pointer; font-size: 10px; line-height: 1; padding: 2px 3px; color: var(--muted); border-radius: 3px; }
+    .currentRole-queue-move:hover:not(:disabled) { color: var(--primary); }
+    .currentRole-queue-move:disabled { opacity: .3; cursor: default; }
     .resource-indicator { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 12px; }
     .resource-indicator.hidden { display: none; }
     .resource-indicator__row { display: flex; gap: 6px; align-items: baseline; font-size: 13px; }
@@ -2749,7 +2753,11 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-title" data-i18n="cardTaskCurrentRole">Распределение задач</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div class="card-title" style="margin-bottom:0" data-i18n="cardTaskCurrentRole">Распределение задач</div>
+            <!-- #40 — авто-прогноз дат; скрыта без settings.autoForecastEnabled (синк в renderCurrentRoleTaskTable) -->
+            <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn hidden" id="currentRoleForecastBtn" data-i18n="btnForecastDates" data-icon="calendar">Спрогнозировать даты</button>
+          </div>
           <!-- v2.0.0 D7 — Ring Table host. Native <table> + <thead> + <tbody> removed;
                Ring Table renders its own table structure inside this host. The IIFE
                function renderCurrentRoleTaskTable() mounts via window.__SSP_TABLE.mountAt. -->

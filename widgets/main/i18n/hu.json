@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "A jelentés időtúllépés miatt megszakítva",
   "repSetTimeout": "Jelentés időkorlátja",
   "repSetTimeoutHint": "A jelentés adatgyűjtésének maximális ideje; ennek lejártakor a jelentés automatikusan megszakad és visszaáll (megakadályozza a lefagyást).",
-  "repSetTimeoutSec": "Másodperc"
+  "repSetTimeoutSec": "Másodperc",
+  "btnForecastDates": "Dátumok előrejelzése",
+  "forecastConfirmTitle": "Előrejelzés újraszámítása",
+  "forecastConfirmText": "A szerep összes hozzárendelt feladatának dátumai újraszámításra és felülírásra kerülnek, beleértve a kézzel javítottakat is. Folytatja?",
+  "btnForecastConfirm": "Újraszámítás",
+  "toastForecastDone": "Dátumok előrejelezve",
+  "toastForecastUnfit": "Előrejelzés kész; kapacitáson felül: {n}",
+  "toastForecastEmpty": "Nincs becsléssel rendelkező hozzárendelt feladat — nincs mit előrejelezni",
+  "toastForecastErr": "Az előrejelzés kiszámítása nem sikerült",
+  "toastForecastNoDates": "A sprintnek nincsenek dátumai — az előrejelzés nem lehetséges",
+  "forecastUnfitBadge": "kapacitáson felül",
+  "lblAutoForecast": "Dátumok automatikus előrejelzése",
+  "descAutoForecast": "Bekapcsolja a „Dátumok előrejelzése” gombot és a feladatsor kezelését a végrehajtók szerinti elosztás szintjén.",
+  "thQueue": "#",
+  "queueMoveUp": "Feljebb a sorban",
+  "queueMoveDown": "Lejjebb a sorban"
 }

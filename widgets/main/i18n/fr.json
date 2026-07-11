@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Délai d'attente du rapport dépassé",
   "repSetTimeout": "Délai d'expiration du rapport",
   "repSetTimeoutHint": "Durée maximale de collecte des données du rapport ; à son expiration, le rapport est automatiquement interrompu et annulé (évite les blocages).",
-  "repSetTimeoutSec": "Secondes"
+  "repSetTimeoutSec": "Secondes",
+  "btnForecastDates": "Prévoir les dates",
+  "forecastConfirmTitle": "Recalculer la prévision",
+  "forecastConfirmText": "Les dates de toutes les tâches assignées du rôle seront recalculées et écrasées, y compris celles ajustées manuellement. Continuer ?",
+  "btnForecastConfirm": "Recalculer",
+  "toastForecastDone": "Dates prévues",
+  "toastForecastUnfit": "Prévision calculée ; au-delà de la capacité : {n}",
+  "toastForecastEmpty": "Aucune tâche assignée avec estimation — rien à prévoir",
+  "toastForecastErr": "Échec du calcul de la prévision",
+  "toastForecastNoDates": "Le sprint n'a pas de dates — prévision impossible",
+  "forecastUnfitBadge": "hors capacité",
+  "lblAutoForecast": "Prévision automatique des dates",
+  "descAutoForecast": "Active le bouton « Prévoir les dates » et la gestion de la file de tâches au niveau de la répartition par exécutant.",
+  "thQueue": "#",
+  "queueMoveUp": "Monter dans la file",
+  "queueMoveDown": "Descendre dans la file"
 }

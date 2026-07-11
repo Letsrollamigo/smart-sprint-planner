@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Rapor zaman aşımına uğradı",
   "repSetTimeout": "Rapor zaman aşımı",
   "repSetTimeoutHint": "Rapor veri toplamanın azami süresi; süre dolduğunda rapor otomatik olarak iptal edilir ve geri alınır (donmayı önler).",
-  "repSetTimeoutSec": "Saniye"
+  "repSetTimeoutSec": "Saniye",
+  "btnForecastDates": "Tarihleri öngör",
+  "forecastConfirmTitle": "Öngörüyü yeniden hesapla",
+  "forecastConfirmText": "Rolün atanmış tüm görevlerinin tarihleri yeniden hesaplanacak ve üzerine yazılacak (elle düzeltilenler dahil). Devam edilsin mi?",
+  "btnForecastConfirm": "Yeniden hesapla",
+  "toastForecastDone": "Tarihler öngörüldü",
+  "toastForecastUnfit": "Öngörü hesaplandı; kapasite aşımı: {n}",
+  "toastForecastEmpty": "Tahmini olan atanmış görev yok — öngörülecek bir şey yok",
+  "toastForecastErr": "Öngörü hesaplanamadı",
+  "toastForecastNoDates": "Sprintin tarihleri yok — öngörü yapılamaz",
+  "forecastUnfitBadge": "kapasite aşımı",
+  "lblAutoForecast": "Tarihleri otomatik öngör",
+  "descAutoForecast": "\"Tarihleri öngör\" düğmesini ve yürütücülere göre dağıtım düzeyindeki görev kuyruğu yönetimini etkinleştirir.",
+  "thQueue": "#",
+  "queueMoveUp": "Kuyrukta yukarı",
+  "queueMoveDown": "Kuyrukta aşağı"
 }

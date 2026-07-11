@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "报表因超时而中止",
   "repSetTimeout": "报表超时",
   "repSetTimeoutHint": "报表数据收集的最长时间；超过后将自动中止并回滚（防止卡死）。",
-  "repSetTimeoutSec": "秒"
+  "repSetTimeoutSec": "秒",
+  "btnForecastDates": "预测日期",
+  "forecastConfirmTitle": "重新计算预测",
+  "forecastConfirmText": "将重新计算并覆盖该角色所有已分配任务的日期（包括手动调整的日期）。是否继续？",
+  "btnForecastConfirm": "重新计算",
+  "toastForecastDone": "日期已预测",
+  "toastForecastUnfit": "预测完成；超出容量：{n}",
+  "toastForecastEmpty": "没有带估算的已分配任务 — 无可预测内容",
+  "toastForecastErr": "预测计算失败",
+  "toastForecastNoDates": "冲刺未设置日期 — 无法预测",
+  "forecastUnfitBadge": "超出容量",
+  "lblAutoForecast": "自动预测日期",
+  "descAutoForecast": "启用“预测日期”按钮以及按执行人分配层级的任务队列管理。",
+  "thQueue": "#",
+  "queueMoveUp": "在队列中上移",
+  "queueMoveDown": "在队列中下移"
 }

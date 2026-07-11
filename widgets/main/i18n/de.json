@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Bericht wegen Zeitüberschreitung abgebrochen",
   "repSetTimeout": "Berichts-Timeout",
   "repSetTimeoutHint": "Maximale Dauer der Datenerfassung für den Bericht; nach Ablauf wird der Bericht automatisch abgebrochen und zurückgesetzt (verhindert Hänger).",
-  "repSetTimeoutSec": "Sekunden"
+  "repSetTimeoutSec": "Sekunden",
+  "btnForecastDates": "Termine prognostizieren",
+  "forecastConfirmTitle": "Prognose neu berechnen",
+  "forecastConfirmText": "Die Termine aller zugewiesenen Aufgaben der Rolle werden neu berechnet und überschrieben, auch manuell angepasste. Fortfahren?",
+  "btnForecastConfirm": "Neu berechnen",
+  "toastForecastDone": "Termine prognostiziert",
+  "toastForecastUnfit": "Prognose fertig; über Kapazität: {n}",
+  "toastForecastEmpty": "Keine zugewiesenen Aufgaben mit Schätzung — nichts zu prognostizieren",
+  "toastForecastErr": "Prognoseberechnung fehlgeschlagen",
+  "toastForecastNoDates": "Der Sprint hat keine Termine — Prognose nicht möglich",
+  "forecastUnfitBadge": "über Kapazität",
+  "lblAutoForecast": "Termine automatisch prognostizieren",
+  "descAutoForecast": "Aktiviert die Schaltfläche „Termine prognostizieren“ und die Warteschlangen-Steuerung auf der Ebene der Verteilung nach Bearbeitern.",
+  "thQueue": "#",
+  "queueMoveUp": "In der Warteschlange nach oben",
+  "queueMoveDown": "In der Warteschlange nach unten"
 }

@@ -1,0 +1,11 @@
+{
+  "sprintId": "ssp-fixture-2026-05-20-baseline",
+  "name": "Fixture Sprint Baseline",
+  "status": "PLANNING",
+  "dateStart": 1779148800000,
+  "dateEnd": 1780358400000,
+  "updatedBy": "fixture_user_1",
+  "updatedAt": 1779148800000,
+  "personalPlanning": {},
+  "pluginVersion": "3.0.0"
+}

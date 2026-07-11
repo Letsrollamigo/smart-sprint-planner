@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "시간 초과로 보고서가 중단됨",
   "repSetTimeout": "보고서 시간 제한",
   "repSetTimeoutHint": "보고서 데이터 수집의 최대 시간이며, 초과되면 보고서가 자동으로 중단되고 롤백됩니다(멈춤 방지).",
-  "repSetTimeoutSec": "초"
+  "repSetTimeoutSec": "초",
+  "btnForecastDates": "날짜 예측",
+  "forecastConfirmTitle": "예측 다시 계산",
+  "forecastConfirmText": "역할에 할당된 모든 작업의 날짜가 다시 계산되어 덮어써집니다(수동 수정 포함). 계속하시겠습니까?",
+  "btnForecastConfirm": "다시 계산",
+  "toastForecastDone": "날짜가 예측되었습니다",
+  "toastForecastUnfit": "예측 완료. 용량 초과: {n}",
+  "toastForecastEmpty": "추정치가 있는 할당된 작업이 없습니다 — 예측할 항목 없음",
+  "toastForecastErr": "예측 계산에 실패했습니다",
+  "toastForecastNoDates": "스프린트에 날짜가 없어 예측할 수 없습니다",
+  "forecastUnfitBadge": "용량 초과",
+  "lblAutoForecast": "날짜 자동 예측",
+  "descAutoForecast": "'날짜 예측' 버튼과 담당자별 배분 수준의 작업 대기열 관리를 활성화합니다.",
+  "thQueue": "#",
+  "queueMoveUp": "대기열에서 위로",
+  "queueMoveDown": "대기열에서 아래로"
 }

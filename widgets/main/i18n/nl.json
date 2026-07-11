@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Rapport afgebroken wegens time-out",
   "repSetTimeout": "Time-out van rapport",
   "repSetTimeoutHint": "Maximale tijd voor het verzamelen van rapportgegevens; bij het verstrijken wordt het rapport automatisch afgebroken en teruggedraaid (voorkomt vastlopen).",
-  "repSetTimeoutSec": "Seconden"
+  "repSetTimeoutSec": "Seconden",
+  "btnForecastDates": "Datums voorspellen",
+  "forecastConfirmTitle": "Prognose herberekenen",
+  "forecastConfirmText": "De datums van alle toegewezen taken van de rol worden herberekend en overschreven, inclusief handmatig aangepaste. Doorgaan?",
+  "btnForecastConfirm": "Herberekenen",
+  "toastForecastDone": "Datums voorspeld",
+  "toastForecastUnfit": "Prognose berekend; boven capaciteit: {n}",
+  "toastForecastEmpty": "Geen toegewezen taken met schatting — niets te voorspellen",
+  "toastForecastErr": "Prognose berekenen mislukt",
+  "toastForecastNoDates": "De sprint heeft geen datums — prognose onmogelijk",
+  "forecastUnfitBadge": "boven capaciteit",
+  "lblAutoForecast": "Datums automatisch voorspellen",
+  "descAutoForecast": "Schakelt de knop 'Datums voorspellen' en het beheer van de taakwachtrij op het niveau van verdeling per uitvoerder in.",
+  "thQueue": "#",
+  "queueMoveUp": "Omhoog in de wachtrij",
+  "queueMoveDown": "Omlaag in de wachtrij"
 }

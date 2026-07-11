@@ -900,6 +900,9 @@ var ALLOWED_SETTINGS_KEYS = [
   /* #38 — разрешить планирование с превышением лимитов роли (не блокировать
      валидацию и не показывать overlimit-модалку; детекция остаётся). */
   'allowOverlimitPlanning',
+  /* #40 — авто-прогноз дат старта/окончания (кнопка «Спрогнозировать даты» + очередь
+     на уровне «Распределение по исполнителям»). Планировочный тир, как dynEdit/overlimit. */
+  'autoForecastEnabled',
   'nkcJanuary','nkcMay','nkcOther','rate','participation',
   'kpe',
   /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI.
@@ -1194,7 +1197,7 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','hideDiagLogUi','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','hideDiagLogUi','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled','stateRollupRescanRequested'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];

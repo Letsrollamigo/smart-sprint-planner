@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Report interrotto per timeout",
   "repSetTimeout": "Timeout del report",
   "repSetTimeoutHint": "Tempo massimo per la raccolta dei dati del report; alla scadenza il report viene annullato e ripristinato automaticamente (previene i blocchi).",
-  "repSetTimeoutSec": "Secondi"
+  "repSetTimeoutSec": "Secondi",
+  "btnForecastDates": "Prevedi le date",
+  "forecastConfirmTitle": "Ricalcola previsione",
+  "forecastConfirmText": "Le date di tutte le attività assegnate del ruolo verranno ricalcolate e sovrascritte, incluse quelle corrette manualmente. Continuare?",
+  "btnForecastConfirm": "Ricalcola",
+  "toastForecastDone": "Date previste",
+  "toastForecastUnfit": "Previsione calcolata; oltre la capacità: {n}",
+  "toastForecastEmpty": "Nessuna attività assegnata con stima — niente da prevedere",
+  "toastForecastErr": "Calcolo della previsione non riuscito",
+  "toastForecastNoDates": "Lo sprint non ha date — previsione impossibile",
+  "forecastUnfitBadge": "oltre la capacità",
+  "lblAutoForecast": "Previsione automatica delle date",
+  "descAutoForecast": "Attiva il pulsante «Prevedi le date» e la gestione della coda delle attività a livello di distribuzione per esecutori.",
+  "thQueue": "#",
+  "queueMoveUp": "Sposta su nella coda",
+  "queueMoveDown": "Sposta giù nella coda"
 }

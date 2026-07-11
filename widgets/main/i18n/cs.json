@@ -1246,5 +1246,20 @@
   "repAbortedTimeout": "Sestava přerušena kvůli vypršení časového limitu",
   "repSetTimeout": "Časový limit sestavy",
   "repSetTimeoutHint": "Maximální doba sběru dat sestavy; po jejím uplynutí se sestava automaticky přeruší a vrátí zpět (ochrana proti zaseknutí).",
-  "repSetTimeoutSec": "Sekundy"
+  "repSetTimeoutSec": "Sekundy",
+  "btnForecastDates": "Prognóza termínů",
+  "forecastConfirmTitle": "Přepočítat prognózu",
+  "forecastConfirmText": "Termíny všech přiřazených úkolů role budou přepočítány a přepsány, včetně ručně upravených. Pokračovat?",
+  "btnForecastConfirm": "Přepočítat",
+  "toastForecastDone": "Termíny prognózovány",
+  "toastForecastUnfit": "Prognóza spočtena; nad kapacitu: {n}",
+  "toastForecastEmpty": "Žádné přiřazené úkoly s odhadem — není co prognózovat",
+  "toastForecastErr": "Výpočet prognózy se nezdařil",
+  "toastForecastNoDates": "Sprint nemá termíny — prognózu nelze provést",
+  "forecastUnfitBadge": "nad kapacitu",
+  "lblAutoForecast": "Automatická prognóza termínů",
+  "descAutoForecast": "Zapíná tlačítko „Prognóza termínů“ a správu fronty úkolů na úrovni rozdělení podle řešitelů.",
+  "thQueue": "#",
+  "queueMoveUp": "Výš ve frontě",
+  "queueMoveDown": "Níž ve frontě"
 }
