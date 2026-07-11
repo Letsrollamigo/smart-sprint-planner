@@ -26,6 +26,15 @@
     "@jetbrains/youtrack-scripting-api": "2022.1.46592",
     "esbuild": "^0.28.0",
     "jsdom": "^29.1.1",
-    "recharts": "^3.9.2"
+    "recharts": "^3.9.2",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "gantt-task-react": "^0.3.9"
+  },
+  "overrides": {
+    "gantt-task-react": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
   }
 }

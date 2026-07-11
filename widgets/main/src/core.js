@@ -4253,6 +4253,11 @@
       isActiveSprintRecord: isActiveSprintRecord,
       startPermissionsCheck: _startPermissionsCheck,
       openReassignModal: openReassignModal,
+      /* #20-v2 (v3.2.0) — drag дат на Ганте: запись ta.dateStart/dateEnd тем же каналом,
+         что авто-прогноз #40 (saveCurrentRoleState) + синк таблицы текущей роли. */
+      saveCurrentRoleState: saveCurrentRoleState,
+      renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
+      getLang: function () { return _lang; },
       state: {
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
         getCurrentRolePP: function () { return _currentRolePP; },

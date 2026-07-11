@@ -89,6 +89,7 @@ function _buildGanttVm(deps) {
   }
 
   // Строки: позиция полосы в днях + данные бейджа состояния (#20)
+  // #20-v2 (v3.2.0) — startTs/endTs (сырые ms, канон ta) для gantt-task-react (drag дат).
   var rows = ganttItems.map(function(g) {
     var badge = null;
     if (g.state || g.stateLocalized) {
@@ -111,6 +112,8 @@ function _buildGanttVm(deps) {
       bg:       g.bg,
       startDay: Math.round((g.start - minTs) / dayMs),
       endDay:   Math.round((g.end   - minTs) / dayMs),
+      startTs:  g.start,
+      endTs:    g.end,
       badge:    badge,
     };
   });
@@ -134,9 +137,48 @@ function _buildGanttVm(deps) {
     };
   }
 
+  /* #20-v2 (v3.2.0) — гейт редактирования drag'а дат: права editor + не readonly-режим
+     панели (проверка на момент БИЛДА; повторный гейт — в самом onDateChange). */
+  var ganttPanel = (typeof document !== 'undefined') ? document.getElementById('tab-gantt') : null;
+  var readonly = !!(ganttPanel && ganttPanel.classList.contains('readonly-mode'));
+  var isEditor = deps.state.getIsEditor();
+  var editable = !(typeof isEditor !== 'undefined' && isEditor === false) && !readonly;
+
   return {
-    vm: { taskColHeader: deps.T('ganttColTask'), days: days, rows: rows },
+    vm: {
+      taskColHeader: deps.T('ganttColTask'), days: days, rows: rows,
+      /* #20-v2 — поля gantt-task-react: зум, локаль оси, редактируемость drag'а */
+      editable: editable,
+      lang: (typeof deps.getLang === 'function' && deps.getLang()) || 'en',
+      zoomLabels: { day: deps.T('ganttZoomDay'), week: deps.T('ganttZoomWeek'), month: deps.T('ganttZoomMonth') },
+      fmtDate: deps.fmtGanttDate,
+    },
     fetchPlan: fetchPlan,
+  };
+}
+
+/* #20-v2 (v3.2.0) — фабрика записи дат с drag'а бара: тот же канал, что авто-прогноз #40 —
+   ta[issueId].dateStart/dateEnd (UTC-полночь ms, dateEnd ИНКЛЮЗИВНЫЙ последний день) +
+   saveCurrentRoleState + синк таблицы текущей роли и самого Ганта (нормализация оси).
+   Права перепроверяются на момент drop'а (не билда); не-editor — тихий no-op + перерендер
+   (откат визуального сдвига либы). */
+function _makeGanttDateChange(deps) {
+  return function (issueId, startMs, endMs) {
+    var isEditor = deps.state.getIsEditor();
+    var pp = deps.state.getCurrentRolePP();
+    var rerender = function () {
+      if (typeof deps.renderGanttChart === 'function') { try { deps.renderGanttChart(); } catch (_) {} }
+    };
+    if ((typeof isEditor !== 'undefined' && isEditor === false) || !pp) { rerender(); return; }
+    if (typeof startMs !== 'number' || typeof endMs !== 'number' || endMs < startMs) { rerender(); return; }
+    if (!pp.taskAssignments) pp.taskAssignments = {};
+    var ta = pp.taskAssignments;
+    if (!ta[issueId]) ta[issueId] = {};
+    ta[issueId].dateStart = startMs;
+    ta[issueId].dateEnd   = endMs;
+    deps.saveCurrentRoleState();
+    if (typeof deps.renderCurrentRoleTaskTable === 'function') { try { deps.renderCurrentRoleTaskTable(); } catch (_) {} }
+    rerender();
   };
 }
 
@@ -194,7 +236,12 @@ function renderGanttChart(deps) {
   if (emptyEl) emptyEl.style.display = 'none';
 
   var vm = built.vm;
-  vm.onCellClick = _makeGanttCellClick(deps);
+  var cellClick = _makeGanttCellClick(deps);
+  vm.onCellClick = cellClick;
+  /* #20-v2 — контракты gantt-task-react: drag дат + реассайн D46 двойным кликом по бару
+     (одиночный клик у либы = select; прежний cell-click недоступен — ячеек больше нет). */
+  vm.onDateChange = _makeGanttDateChange(deps);
+  vm.onBarDoubleClick = function (issueId) { cellClick(issueId, null); };
   vm.onAfterRender = function () {
     if (!built.fetchPlan) return;
     deps.fetchGanttStateHistory(built.fetchPlan.ids, built.fetchPlan.key, false,

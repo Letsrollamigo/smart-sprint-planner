@@ -115,6 +115,8 @@
       "bg": "#9aa3ad",
       "startDay": 0,
       "endDay": 25,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
       "badge": {
         "label": "In Progress",
         "pillBg": "var(--ring-tag-background-color, #c8c8c8)",
@@ -131,6 +133,8 @@
       "bg": "#9aa3ad",
       "startDay": 0,
       "endDay": 25,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
       "badge": {
         "label": "Open",
         "pillBg": "var(--ring-tag-background-color, #c8c8c8)",
@@ -139,5 +143,12 @@
         "loadingText": "загрузка истории…"
       }
     }
-  ]
+  ],
+  "editable": false,
+  "lang": "ru",
+  "zoomLabels": {
+    "day": "День",
+    "week": "Неделя",
+    "month": "Месяц"
+  }
 }

@@ -10,6 +10,8 @@
     "bg": "#d7e9f7",
     "startDay": 0,
     "endDay": 25,
+    "startTs": 1779408000000,
+    "endTs": 1781568000000,
     "badge": {
       "label": "Готово",
       "pillBg": "#d7e9f7",
