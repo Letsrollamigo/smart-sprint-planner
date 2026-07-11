@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.2.0] — 2026-07-11
+
+> **Gantt on a new engine (date drag) + charts across the report catalog.**
+
+### Added
+
+- **Gantt chart on a new engine** (vendored `gantt-task-react`, MIT): drag and resize bars with the mouse — the new dates are written into the same planned task dates the 3.1.0 auto-forecast uses (editor rights required; read-only mode disables dragging); **Day / Week / Month** zoom; today highlight; bar tooltip (ID, title, assignee, dates). Preserved from the previous Gantt: bar color = the task's native YouTrack state color, state badges with transition history (current/previous + date) in the left column, sprint-boundary fallback for missing dates. Assignee reassign moved to a **double click** on the bar (single click = select/start drag).
+- **Charts across the whole report catalog**: A1 Progress — transition tempo by day/month; A4 Effort — hours by assignee (top-12); A5 Plan vs fact — signed variance by role with a traffic light; A7 Aging — tasks by age zone; A10 Spillover — carried/dropped stack by role; B1 Tech debt and B2 Bug tax — hours by role. B3 stays a counter (two scalars — a chart adds nothing).
+- **“Terminal milestone on reopen” setting** (A2 TTM, admin tier): “first close” (default — the metric stops at the first entry into the end anchor) or “settled (last) close” (the metric end and the population window follow the last entry; the B0 roll-up honors the policy).
+- **Precise Cycle Time model**: sums closed development episodes from the full transition trajectory (repeat development rounds after returns are counted; idle time between episodes — testing/waiting — is not). Under “first close” — the first episode (matches the previous behavior on normal trajectories).
+
+### Fixed
+
+- The header version badge shows the actually installed app version (stand temp deploys are patched by `scripts/stand-deploy.sh`; hand-rolled flat zips used to lose the main-menu logo and the version literal).
+- Gantt render errors are no longer silent: the error text is shown in the pane (the isolated YouTrack frame hides exceptions from the browser console).
+
+### Technical
+
+- Vendored `gantt-task-react` 0.3.9 following the Recharts precedent (vendor chunk + CSS with theme overrides on widget variables); MIT licenses shipped in `widgets/main/lib/` (+ closed the missing Recharts license gap); NOTICE.md attributions added.
+- `computeTtm` accepts full transition timelines (9th argument) — the terminal policy and the episode-based Cycle are computed in a single replay with no extra fetches; without timelines the previous behavior is kept (fail-safe).
+- 3.1.0 snapshot fixture + compatibility regression; the schema marker was not bumped (additive changes only).
+
 ## [3.1.0] — 2026-07-11
 
 > **Auto-forecast of task start/end dates (#40).**
