@@ -68,8 +68,8 @@
     document.querySelectorAll('[data-i18n-tooltip]').forEach(function(el) {
       el.setAttribute('data-tooltip', T(el.getAttribute('data-i18n-tooltip')));
     });
-    /* v2.0.0 D5-B — i18n для Ring Checkbox/Radio host-spans: пишет в dataset.label,
-       MutationObserver в checkbox-mount.jsx подхватит и перерендерит метку. */
+    /* v2.0.0 D5-B — i18n для Ring Radio host-spans: пишет в dataset.label,
+       MutationObserver в radio-mount.jsx подхватит и перерендерит метку. */
     document.querySelectorAll('[data-i18n-label]').forEach(function(el) {
       el.dataset.label = T(el.getAttribute('data-i18n-label'));
     });

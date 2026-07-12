@@ -1,6 +1,5 @@
 /* Smart Sprint Planner — entry point.
-   v5.12.0: src/ layout (OQ61/OQ64). esbuild inlines imports before the monolith IIFE,
-   so APP_VERSION from common/version.js is accessible via closure inside the IIFE.
+   v5.12.0: src/ layout (OQ61/OQ64). esbuild inlines imports before the monolith IIFE.
 
    v1.1.0: i18n bridge MUST be imported BEFORE core.js — ES modules execute
    side-effects in declaration order, and the bridge sets `window.__SSP_*` properties
@@ -80,7 +79,6 @@ import './react/modal-bodies.jsx';
 import './react/settings-form.jsx';
 import './react/loader-mount.jsx';
 import './react/datepicker-mount.jsx';
-import './react/checkbox-mount.jsx';
 import './react/radio-mount.jsx';
 import './react/tabs-mount.jsx';
 import './react/table-mount.jsx';

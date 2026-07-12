@@ -7,7 +7,6 @@
 
 import * as i18nLoader from './loader.js';
 import { LANGS } from './languages.js';
-import * as plural from './plural.js';
 import enInline from '../../i18n/en.json';
 import ruInline from '../../i18n/ru.json';
 
@@ -15,5 +14,4 @@ if (typeof window !== 'undefined') {
   window.__SSP_I18N__ = i18nLoader;
   window.__SSP_I18N_DICTS__ = { en: enInline, ru: ruInline };
   window.__SSP_I18N_LANGS__ = LANGS;
-  window.__SSP_I18N_PLURAL__ = plural;
 }

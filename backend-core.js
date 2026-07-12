@@ -125,7 +125,10 @@ function getBody(ctx) {
     }
     return cleaned;
   } catch (e) {
+    /* Битый JSON — reject, НЕ {}: молчаливый {} делал parse-fail неотличимым от
+       пустого тела и рождал класс anti-wipe багов (см. фиксы v3.2.1 в capacity/absences). */
     dlog(ctx, 'getBody: parse error');
+    return { __rejected__: true, __reason__: 'invalid_json' };
   }
   return {};
 }
@@ -277,7 +280,7 @@ var CURRENT_PLUGIN_VERSION = '2.14.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.2.2';
+var APP_VERSION = '3.3.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -442,7 +445,7 @@ function stripDeprecatedHistoryKeys(h) {
   }
   return h;
 }
-var DEPRECATED_SPRINT_KEYS = ['gantt', '_orphanGanttIssues'];   /* v3.2.1 — см. коммент выше */
+var DEPRECATED_SPRINT_KEYS = DEPRECATED_HISTORY_SNAP_KEYS;   /* v3.2.1 — тот же набор, см. коммент выше */
 function stripDeprecatedSprintKeys(s) {
   if (!s || typeof s !== 'object') return s;
   for (var j = 0; j < DEPRECATED_SPRINT_KEYS.length; j++) {
@@ -692,54 +695,16 @@ function validatePluginVersion(v) {
   return /^\d+\.\d+\.\d+$/.test(v);
 }
 
-/* v1.6.0 D125 — Sprint validator split: ForWrite (strict whitelist) + ForRead (tolerant). */
-function validateSprintForWrite(sprint) {
+/* v1.6.0 D125 — Sprint validator split: ForWrite (strict whitelist) + ForRead (tolerant).
+   Единое тело со strict-флагом — по образцу _validateHistoryRecord/_validateWorkingDraftBody:
+   различие ForWrite/ForRead ровно одно — реакция на неизвестный ключ (reject vs WARN-лог). */
+function _validateSprintBody(sprint, strict) {
   if (!sprint || typeof sprint !== 'object') return false;
   var keys = Object.keys(sprint);
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
     if (ALLOWED_SPRINT_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
-      return false;
-    }
-  }
-  if (!assertStr(sprint.sprintId,        100)) return false;
-  if (!assertStr(sprint.name,            500)) return false;
-  if (!assertStr(sprint.updatedBy,       200)) return false;
-  if (!assertStr(sprint.sprintFieldVal,  500)) return false;
-  if (!assertStr(sprint.versionFieldVal, 500)) return false;
-  if (sprint.status !== undefined && sprint.status !== null) {
-    if (typeof sprint.status !== 'string' || STATUS_CODES.indexOf(sprint.status) < 0) return false;
-  }
-  if (!assertNum(sprint.dateStart))  return false;
-  if (!assertNum(sprint.dateEnd))    return false;
-  if (!assertNum(sprint.updatedAt))  return false;
-  if (sprint.historyIdx !== undefined && sprint.historyIdx !== null && !assertNum(sprint.historyIdx)) return false;
-  if (sprint.editingFromHistory !== undefined && sprint.editingFromHistory !== null
-      && typeof sprint.editingFromHistory !== 'boolean') return false;
-  for (var j = 0; j < keys.length; j++) {
-    var sk = keys[j];
-    if (/^(resource|remain)[A-Za-z0-9_]*$/.test(sk)) {
-      var sv = sprint[sk];
-      if (sv !== null && sv !== undefined && (!assertNum(sv) || sv < 0 || sv > 1e8)) return false;
-    }
-  }
-  if (sprint.personalPlanning !== undefined && sprint.personalPlanning !== null
-      && typeof sprint.personalPlanning !== 'object') return false;
-  /* v1.9.0 D132 — Sprint goal: optional string ≤ 500. */
-  if (sprint.sprintGoal !== undefined && sprint.sprintGoal !== null) {
-    if (!assertStr(sprint.sprintGoal, 500)) return false;
-  }
-  if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
-  if (!validatePluginVersion(sprint.pluginVersion)) return false;
-  return true;
-}
-
-function validateSprintForRead(sprint) {
-  if (!sprint || typeof sprint !== 'object') return false;
-  var keys = Object.keys(sprint);
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    if (ALLOWED_SPRINT_KEYS.indexOf(k) < 0 && !/^(resource|remain)[A-Za-z0-9_]*$/.test(k)) {
+      if (strict) return false;
       _appendMigrationLog(sprint, { at: Date.now(), level: 'WARN_UNKNOWN_KEY',
         fromVersion: sprint.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: k });
     }
@@ -775,6 +740,9 @@ function validateSprintForRead(sprint) {
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
 }
+
+function validateSprintForWrite(sprint) { return _validateSprintBody(sprint, true); }
+function validateSprintForRead(sprint)  { return _validateSprintBody(sprint, false); }
 
 // Whitelist ключей задачи (без динамических estimate_*/fact_*/alloc_*/allocation*/estH_*/factH_*)
 var ALLOWED_ITEM_KEYS = [
@@ -955,15 +923,13 @@ var ALLOWED_SETTINGS_KEYS = [
      stateRollupResolvedStates— states treated as resolved; guard prevents re-opening.
      stateRollupFloor         — optional floor state (parent won't go below this).
      stateRollupStrategy      — enum, v1.7.0 accepts only 'min' (reserved for future).
-     stateRollupRescanRequested    — manual rescan flag (v1.7.1 impl, forward-compat key).
-     stateRollupRescanRequestedAt  — timestamp for rescan cooldown (v1.7.1 impl). */
+     (rescan-ключи v1.7.1 удалены: фича manual-rescan не была реализована — ключи
+      никогда не писались фронтом и не читались workflow.) */
   'stateRollupEnabled',
   'stateRollupOrder',
   'stateRollupResolvedStates',
   'stateRollupFloor',
   'stateRollupStrategy',
-  'stateRollupRescanRequested',
-  'stateRollupRescanRequestedAt',
   /* v1.9.0 D132 — Stand-up assist: admin-configurable list of state names that count as Done. */
   'standupDoneStates',
   /* v2.8.0 #45 R1 — Capacity Management. capacityMode (light|full) — взаимоисключающий
@@ -1061,7 +1027,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
   // State Rollup
   'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
-  'stateRollupStrategy','stateRollupRescanRequested','stateRollupRescanRequestedAt',
+  'stateRollupStrategy',
   /* #45 (b) — рекомпозиция блока ёмкости (3 секции настроек → 2): параметры расчёта
      ёмкости (нормы + КПЕ) и источник ресурса исполнителей (personalPlanning-кластер)
      перенесены в admin-тир. Редактируются только settings-менеджером; для планировочного
@@ -1209,7 +1175,7 @@ function validateSettings(settings) {
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
   var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','hideDiagLogUi','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
-    /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled','stateRollupRescanRequested'];
+    /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
     if (bv !== undefined && bv !== null && typeof bv !== 'boolean') return false;
@@ -1305,11 +1271,6 @@ function validateSettings(settings) {
   // stateRollupStrategy: enum, v1.7.0 accepts only 'min'
   if (settings.stateRollupStrategy !== undefined && settings.stateRollupStrategy !== null) {
     if (settings.stateRollupStrategy !== 'min') return false;
-  }
-  // stateRollupRescanRequestedAt: number (ms timestamp) | null
-  if (settings.stateRollupRescanRequestedAt !== undefined && settings.stateRollupRescanRequestedAt !== null) {
-    if (typeof settings.stateRollupRescanRequestedAt !== 'number'
-        || !isFinite(settings.stateRollupRescanRequestedAt)) return false;
   }
   /* v1.9.0 D132 — Stand-up assist: standupDoneStates — array<string ≤200>, max 50, unique. */
   if (settings.standupDoneStates !== undefined && settings.standupDoneStates !== null) {

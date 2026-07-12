@@ -533,14 +533,13 @@
     "i18n/i18n-bridge.js": {
       "layer": "i18n",
       "domain": "i18n-i18n-bridge",
-      "loc": 16,
+      "loc": 14,
       "locBudget": 36,
       "state": [],
       "publishes": [
         "I18N__",
         "I18N_DICTS__",
-        "I18N_LANGS__",
-        "I18N_PLURAL__"
+        "I18N_LANGS__"
       ]
     },
     "i18n/i18n-controller.js": {
@@ -573,16 +572,6 @@
         "_currentLang",
         "_projectDefault",
         "_subscribers"
-      ],
-      "publishes": []
-    },
-    "i18n/plural.js": {
-      "layer": "i18n",
-      "domain": "i18n-plural",
-      "loc": 66,
-      "locBudget": 86,
-      "state": [
-        "_rulesCache"
       ],
       "publishes": []
     },

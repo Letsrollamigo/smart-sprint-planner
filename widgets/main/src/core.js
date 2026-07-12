@@ -165,9 +165,6 @@
   /* v2.0.0 D125 D4 — expose T to React mount-points (datepicker translations etc.). */
   try { window.__SSP_T = T; } catch(_) {}
 
-  /** Plural-форматирование через CLDR-engine (Intl.PluralRules внутри). Если plural-engine
-     не доступен — возвращает строку как есть. */
-
   /* ═══════════════════════════════════════════════════════════
      ICONS — Ring UI ярус 1 (v1.9.6). SVG-иконки из @jetbrains/icons +
      наш loader.svg. Поставлены через window.__SSP_ICONS (аналог i18n-bridge).
@@ -730,9 +727,8 @@
      синхронности значений между manifest и кодом). Полное автоподтягивание из
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
-     v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description.
-     common/version.js — placeholder для полного извлечения при конвертации IIFE→module. */
-  var APP_VERSION = '3.2.2';
+     v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
+  var APP_VERSION = '3.3.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4711,7 +4707,7 @@
 
   /* S6 #35 — syncAssigneesFromYouTrack удалён: assignee-логика поглощена единым
      refreshFromYouTrack (field-class merge). Все три кнопки (roles/people/Гант) → refreshFromYouTrack.
-     Backend-эндпоинт refresh-assignees теперь без вызовов — снос отдельной задачей (whitelist+fixture). */
+     Backend-эндпоинт refresh-assignees ЖИВ: им пользуется standup-refresh (standup-view.js). */
   var _peopleSyncBtn = document.getElementById('currentRoleSyncFromYtBtn');
   if (_peopleSyncBtn) _peopleSyncBtn.addEventListener('click', refreshFromYouTrack); /* #35 */
   var _ganttSyncBtn = document.getElementById('ganttSyncFromYtBtn');

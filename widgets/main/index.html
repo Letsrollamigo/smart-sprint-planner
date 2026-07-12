@@ -125,7 +125,6 @@
       vertical-align: middle;
       line-height: 0;
     }
-    .ssp-loader--20 { width: 20px; height: 20px; }
     .ssp-loader svg { width: 100%; height: 100%; }
     @keyframes ssp-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .ssp-loader { animation: none; opacity: 0.6; } }
@@ -386,10 +385,6 @@
     body.ssp-global-mode .ssp-tree__icon svg { width: 15px; height: 15px; }
     body.ssp-global-mode .ssp-tree__item.active .ssp-tree__icon,
     body.ssp-global-mode .ssp-tree__child.active .ssp-tree__icon { color: var(--primary); }
-    body.ssp-global-mode .ssp-tree__soon {
-      margin-left: auto; font-size: 10px; padding: 1px 6px; border-radius: 10px;
-      background: var(--surface2); color: var(--muted); text-transform: uppercase; letter-spacing: .3px;
-    }
     /* #36 — кратковременная подсветка элемента при focus=role:/user: из share-ссылки */
     @keyframes ssp-focus-flash {
       0%   { box-shadow: 0 0 0 2px var(--primary), 0 0 0 6px rgba(90,125,232,.35); }
@@ -567,7 +562,6 @@
     /* v2.0.0 D5 — Ring Checkbox/Radio host-spans рендерят свой <label class="ring-*-cell">
        внутри .field. Глобальное правило выше делает их uppercase/grey/tiny — переопределяем
        к нормальному виду метки рядом с control'ом. */
-    .field [data-ssp-checkbox-host] label,
     .field [data-ssp-radio-host] label {
       text-transform: none;
       font-size: 13px;
@@ -2167,8 +2161,6 @@
     .ssp-release-comp__table td { padding: 4px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
     .ssp-release-comp__id { white-space: nowrap; color: #0f5acd; font-weight: 600; width: 1%; }
     .ssp-release-comp__title { color: var(--text); }
-    .ssp-release-comp__state { white-space: nowrap; color: var(--muted); width: 1%; text-align: right; }
-    .ssp-release-comp__zone { width: 1%; }
 
     /* R3.1 — светофор готовности (полоса + легенда; макет planned-card.html .tl-full).
        Цвета зон — Ring-токены с фолбэками макета. */

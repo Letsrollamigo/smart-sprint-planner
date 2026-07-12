@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.3.0] — 2026-07-13
+
+> **Spring cleaning: architecture-audit follow-up (wave R1). No functional changes.**
+
+### Changed
+
+- **Malformed requests are rejected** — the backend answers 400 `invalid_json` to corrupted JSON bodies instead of silently treating them as empty. The targeted anti-wipe guards from 3.2.1 remain; the protection is now the default for every endpoint.
+
+### Removed
+
+- Dead code: unused modules (`checkbox-mount.jsx`, `i18n/plural.js`, `common/version.js`), 88 unused translation keys across all 15 locales, 4 unused CSS classes, never-implemented `stateRollupRescanRequested(At)` settings keys.
+
+### Internal
+
+- Sprint validators consolidated into a single strict-flag body (−38 duplicated lines); `build:check` now covers `backend-release.js` and `backend-reporting.js`; new unit test for the malformed-body rejection.
+
 ## [3.2.2] — 2026-07-11
 
 ### Fixed

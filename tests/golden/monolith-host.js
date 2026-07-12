@@ -237,7 +237,6 @@ function createHost(opts) {
     { code: 'en', label: 'English' },
     { code: 'ru', label: 'Русский' },
   ];
-  window.__SSP_I18N_PLURAL__ = { plural: function (n, forms) { return Array.isArray(forms) ? forms[0] : forms; } };
   window.__SSP_I18N__ = {
     getCurrentLang: function () { return lang; },
     setLang: function () { return window.Promise.resolve(); },
