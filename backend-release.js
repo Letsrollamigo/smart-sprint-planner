@@ -40,6 +40,7 @@ var MAX_RELEASES = 500;
    уляжется в ARCHIVE_TARGET. Read-only история: архив отдаёт GET releases-archive,
    POST'а на архив нет. Первая реализация паттерна #53. */
 var ARCHIVE_PROP = 'ssp_releases_archive';
+var ARCHIVE_COUNT_PROP = 'ssp_releases_archive_count'; /* счётчик для спойлера истории без парса блоба */
 var ARCHIVE_TRIGGER = 300 * 1024;
 var ARCHIVE_TARGET  = 250 * 1024;
 
@@ -110,6 +111,13 @@ function readReleases(ctx) {
   var raw = core.getProp(ctx, 'ssp_releases', null);
   var blob = core.parseJson(raw, null);
   return (blob && Array.isArray(blob.releases)) ? blob.releases : [];
+}
+
+/* Счётчик архива без полного парса блоба; legacy-фолбэк — полный парс. */
+function readArchiveCount(ctx) {
+  var raw = core.getProp(ctx, ARCHIVE_COUNT_PROP, null);
+  if (raw !== null && raw !== undefined && raw !== '' && isFinite(Number(raw))) return Number(raw);
+  return readArchive(ctx).length;
 }
 
 function readArchive(ctx) {
@@ -218,7 +226,7 @@ function stampAudit(ctx, stored, next) {
 
 function handleGetReleases(ctx) {
   if (!core.authzGuard(ctx, 'viewer')) return;
-  ctx.response.json({ success: true, releases: readReleases(ctx), perms: releasePerms(ctx), archivedCount: readArchive(ctx).length });
+  ctx.response.json({ success: true, releases: readReleases(ctx), perms: releasePerms(ctx), archivedCount: readArchiveCount(ctx) });
 }
 
 /* R4 (US-R4-02) — read-only архив истории (lazy-fetch фронта по раскрытию спойлера). */
@@ -233,8 +241,8 @@ function handlePostReleases(ctx) {
   if (!perms.canAdvance) { core.forbidden(ctx, 'release_rights_required'); return; }
   /* v3.2.1 — core.getBody вместо raw json(): лимит 2МБ + sanitizeDeep + не-500 на не-JSON
      (единственный handler, ходивший мимо общего конверта). */
-  var body = core.getBody(ctx);
-  if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
+  var body = core.parseBodyOrReject(ctx, null); /* blob валидируется целиком ниже */
+  if (body === null) return;
   /* v3.2.1 — тело без ЯВНОГО releases-массива больше не коэрсится в []: один битый/
      оборванный POST стирал все релизы проекта с success:true. */
   if (!Array.isArray(body.releases)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
@@ -252,7 +260,10 @@ function handlePostReleases(ctx) {
   var split = splitForArchive(blob, readArchive(ctx));
   var serialized = JSON.stringify(blob);
   if (serialized.length > MAX_RELEASES_SIZE) { core.badRequest(ctx, 'releases_too_large'); return; }
-  if (split.moved > 0) core.setProp(ctx, ARCHIVE_PROP, JSON.stringify({ releases: split.archive }));
+  if (split.moved > 0) {
+    core.setProp(ctx, ARCHIVE_PROP, JSON.stringify({ releases: split.archive }));
+    core.setProp(ctx, ARCHIVE_COUNT_PROP, String(split.archive.length));
+  }
   core.setProp(ctx, 'ssp_releases', serialized);
   ctx.response.json({ success: true, releases: blob.releases, archived: split.moved });
 }

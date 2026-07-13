@@ -71,6 +71,7 @@ const BRIDGE_SCRIPTS = [
   'settings-controller.js',
   'data-loaders.js',
   'dash-shell.js',
+  'tab-router.js',   /* v3.4.0 — вынос из ядра: голдены кликают .tab-btn (resumeWorkingDraft) */
   'project-nav.js',
   'standup-view.js',
   'currentrole-view.js',

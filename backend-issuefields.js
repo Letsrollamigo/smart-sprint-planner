@@ -21,6 +21,7 @@ var authzGuard = core.authzGuard;
 var badRequest = core.badRequest;
 var getBody    = core.getBody;
 var filterKeys = core.filterKeys;
+var parseBodyOrReject = core.parseBodyOrReject;
 var dlog       = core.dlog;
 
 /* Константы домена issue-fields (переехали из backend-core.js). */
@@ -195,12 +196,8 @@ var ISSUEFIELDS_ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'assigner')) return;
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-        body = filterKeys(body, ALLOWED_UPDATE_ISSUE_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_UPDATE_ISSUE_KEYS);
+        if (body === null) return;
 
         var issueId   = body.issueId;
         var fieldName = body.fieldName;
@@ -310,12 +307,8 @@ var ISSUEFIELDS_ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-        body = filterKeys(body, ALLOWED_REFRESH_ASSIGNEES_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_REFRESH_ASSIGNEES_KEYS);
+        if (body === null) return;
 
         var issueIds = body.issueIds;
         var fieldName = body.fieldName;

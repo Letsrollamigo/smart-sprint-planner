@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.4.0] — 2026-07-13
+
+> **Architecture-audit wave R2. No functional changes.**
+
+### Changed
+
+- **One protective envelope for all POST bodies** — all 12 write endpoints share a single `parseBodyOrReject` preamble (malformed-body reject + whitelist filter); future endpoints inherit the anti-wipe protection by default.
+- **Archive counters without blob parse** — `archivedCount` on hot capacity/release GETs is read from a dedicated property (written on archiving) instead of JSON-parsing the whole archive blob on every request; transparent fallback for legacy data.
+- **Work-day length from settings** — workflow aggregation (cascade, DTA) converts period days/weeks using the project's `hoursPerDay` (was a hardcoded 8h in two copies).
+
+### Internal
+
+- Tab router extracted from the core module into `domain/tab-router.js` (−83 core lines; extraction verified by the golden tab-click trace through the real module).
+- Conscious BE-ratchet bumps: backend-capacity 734→745, backend-release 274→285 (count-props).
+- New tests: archivedCount from the property (no-parse proven with a deliberately broken blob) + day ≠ 8h conversion.
+
 ## [3.3.0] — 2026-07-13
 
 > **Spring cleaning: architecture-audit follow-up (wave R1). No functional changes.**

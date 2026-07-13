@@ -55,6 +55,7 @@ import './domain/history-controller.js';
 import './domain/settings-controller.js';
 import './data/data-loaders.js';
 import './domain/dash-shell.js';
+import './domain/tab-router.js';
 import './domain/project-nav.js';
 import './domain/standup-view.js';
 import './domain/currentrole-view.js';

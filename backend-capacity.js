@@ -47,6 +47,7 @@ var MAX_ABSENCES_SIZE  = 300 * 1024;
    переезжают в ssp_capacity_archive, пока активный не уляжется в CAP_ARCHIVE_TARGET.
    Read-only история: архив отдаёт GET capacity-archive, POST'а на архив нет. */
 var CAP_ARCHIVE_PROP    = 'ssp_capacity_archive';
+var CAP_ARCHIVE_COUNT_PROP = 'ssp_capacity_archive_count'; /* счётчик для бейджа «Архив (N)» без парса блоба */
 var CAP_ARCHIVE_TRIGGER = 300 * 1024;
 var CAP_ARCHIVE_TARGET  = 250 * 1024;
 var CAP_ARCHIVE_MAX     = 480 * 1024; // потолок архив-пропа (буфер до MAX_PROP_SIZE 500КБ)
@@ -307,6 +308,14 @@ function _capDateEndOf(rec) {
   return (rec && typeof rec.dateEnd === 'number' && isFinite(rec.dateEnd)) ? rec.dateEnd : 0;
 }
 
+/* Счётчик архива без полного парса блоба (до сотен КБ на каждый GET): живёт в отдельном
+   пропе, пишется вместе с архивом. Legacy-фолбэк — полный парс, пока архив не перезаписан. */
+function readCapacityArchiveCount(ctx) {
+  var raw = core.getProp(ctx, CAP_ARCHIVE_COUNT_PROP, null);
+  if (raw !== null && raw !== undefined && raw !== '' && isFinite(Number(raw))) return Number(raw);
+  return Object.keys(readCapacityArchive(ctx)).length;
+}
+
 function readCapacityArchive(ctx) {
   var blob = core.parseJson(core.getProp(ctx, CAP_ARCHIVE_PROP, null), null);
   return (blob && typeof blob === 'object' && !Array.isArray(blob)) ? blob : {};
@@ -500,7 +509,7 @@ function handleGetCapacity(ctx) {
   // hasOwnProperty-guard: иначе sprintId='__proto__' вернул бы Object.prototype ({}) как
   // фантомную запись для несуществующего спринта (read-side probing).
   var record = (sprintId && Object.prototype.hasOwnProperty.call(store, sprintId)) ? store[sprintId] : null;
-  ctx.response.json({ success: true, sprintId: sprintId, capacity: record, archivedCount: Object.keys(readCapacityArchive(ctx)).length }); // #53
+  ctx.response.json({ success: true, sprintId: sprintId, capacity: record, archivedCount: readCapacityArchiveCount(ctx) }); // #53
 }
 
 /* #53 — read-only архив ёмкости (lazy-fetch фронта по раскрытию спойлера «Архив (N)»).
@@ -532,9 +541,8 @@ function handlePostCapacity(ctx) {
   var sprintId = (ctx.request.getParameter('sprintId') || '').trim();
   if (!sprintId) { core.badRequest(ctx, 'sprint_id_required'); return; }
 
-  var body = core.getBody(ctx);
-  if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
-  body = core.filterKeys(body, core.ALLOWED_CAPACITY_RECORD_KEYS);
+  var body = core.parseBodyOrReject(ctx, core.ALLOWED_CAPACITY_RECORD_KEYS);
+  if (body === null) return;
   /* v3.2.1 — анти-wipe: битое тело (getBody → {}) валидно перезаписывало запись ёмкости
      спринта пустыми persons. Ключ persons обязан присутствовать явно (фронт шлёт всегда). */
   if (body.persons === undefined || typeof body.persons !== 'object' || Array.isArray(body.persons)) {
@@ -666,7 +674,10 @@ function handlePostCapacity(ctx) {
   var archiveSplit = splitCapacityForArchive(store, readCapacityArchive(ctx), sprintId);
   var serialized = JSON.stringify(store);
   if (serialized.length > MAX_CAPACITY_SIZE) { core.badRequest(ctx, 'capacity_data_too_large'); return; }
-  if (archiveSplit.moved > 0) core.setProp(ctx, CAP_ARCHIVE_PROP, JSON.stringify(archiveSplit.archive));
+  if (archiveSplit.moved > 0) {
+    core.setProp(ctx, CAP_ARCHIVE_PROP, JSON.stringify(archiveSplit.archive));
+    core.setProp(ctx, CAP_ARCHIVE_COUNT_PROP, String(Object.keys(archiveSplit.archive).length));
+  }
   core.setProp(ctx, 'ssp_capacity', serialized);
   ctx.response.json({ success: true, sprintId: sprintId, action: action, capacity: rec, allocOk: allocCheck.ok, archived: archiveSplit.moved });
 }
@@ -680,9 +691,8 @@ function handleGetCalendar(ctx) {
 function handlePostCalendar(ctx) {
   // admin-тир (загрузка произв. календаря); calendar = политика модели.
   if (!core.authzGuard(ctx, 'settingsManager')) return;
-  var body = core.getBody(ctx);
-  if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
-  body = core.filterKeys(body, core.ALLOWED_CALENDAR_KEYS);
+  var body = core.parseBodyOrReject(ctx, core.ALLOWED_CALENDAR_KEYS);
+  if (body === null) return;
   var vc = validateCalendarForWrite(body);
   if (!vc.ok) { badWithErrors(ctx, 'calendar_invalid', vc.errors); return; }
   var cal = vc.normalized;
@@ -704,8 +714,8 @@ function handleGetAbsences(ctx) {
 function handlePostAbsences(ctx) {
   // планировочный тир (ввод отсутствий).
   if (!core.authzGuard(ctx, 'settingsOrPlanning')) return;
-  var body = core.getBody(ctx);
-  if (body.__rejected__) { core.badRequest(ctx, body.__reason__ || 'invalid_input'); return; }
+  var body = core.parseBodyOrReject(ctx, null); /* динамические login-ключи — без whitelist */
+  if (body === null) return;
   // body = карта login→[entry] (динамические login-ключи → filterKeys не применим; validator
   // нормализует каждую запись до {from,to,type} — gotcha #8). Обёртку
   // {absences:{…}} распознаём по ШЕЙПУ (non-array object), не по наличию ключа: иначе легит-

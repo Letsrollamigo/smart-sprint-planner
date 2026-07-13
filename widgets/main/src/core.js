@@ -728,7 +728,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.3.0';
+  var APP_VERSION = '3.4.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2387,111 +2387,40 @@
     }
   }
 
-  /* ═══ Вкладки первого уровня ══════════════════════════════ */
-  document.querySelectorAll('.tab-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      /* v5.8.0 — A.5 (D56): скрыть все overlay'и до манипуляций с DOM, чтобы избежать
-         leakage класса багов (открытый #reassignOverlay/#overlimitOverlay/etc. «всплывающий»
-         позже на чужой вкладке). Settings-overlay управляется собственным flow. */
-      if (typeof _hideAllOverlays === 'function') _hideAllOverlays();
-      document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-      document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
-      btn.classList.add('active');
-      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-      /* v5.6.0 — Этап 4: legacy planner/distrib физически удалены; planner-wide
-         распространяется на planning/gantt/history/settings (всё что не settings overlay). */
-      document.body.classList.toggle('planner-wide',
-        btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
-        btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
-        btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity' ||
-        btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history' ||
-        btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b');
-      /* v5.0.3 — UI-state в localStorage (без debounce, мгновенно) */
-      var ui = _draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; _draftSet('ui', ui);
-      var tabsHost = document.getElementById('sspTabsHost');
-      if (tabsHost && tabsHost.dataset.selected !== btn.dataset.tab) { tabsHost.dataset.selected = btn.dataset.tab; }
-      if (btn.dataset.tab === 'history') {
-        apiGet('history').then(function(r){
-          if(r && r.history) {
-            _history = r.history;
-            renderHistory();
-            /* v5.4.0 — после reload _history переcинхронизировать шапку
-               (новые non-FINAL записи могли появиться в селекторе) */
-            if (typeof renderWidgetHeader === 'function') {
-              try { renderWidgetHeader(); } catch(_){}
-            }
-          }
-        }).catch(function(e){ diag('history reload err: '+String(e),'err'); });
-      }
-      /* v5.6.0 — Этап 4 (4c): legacy ветки 'distrib' и 'planner' удалены.
-         Спринт-контекст для всех вкладок устанавливается через шапку виджета (.widget-header). */
-      /* v5.5.0 — Этап 3: единая вкладка «Планирование» с уровнями детализации.
-         Реальный рендер уровня будет заполнен в C2/C3/C4; здесь — диспетчер. */
-      if (btn.dataset.tab === 'planning') {
-        if (typeof _renderPlanningLevel === 'function') {
-          try { _renderPlanningLevel(_planningLevel); }
-          catch(e){ diag('planning render err: '+e,'err'); }
-        }
-      }
-      /* v5.6.0 — Этап 4: Гант на верхнем уровне (D6/D41/D42).
-         Per-role селектор #ganttRoleSel синхронизирован с localStorage.ssp_lastActiveRole.
-         v6.1.0 D76 — populateGanttRoleSel() явно сначала, чтобы dropdown заполнился даже если
-         refreshGanttForCurrentSprint бросит (баг #11 part 2: dropdown пустой до клика «Обновить»). */
-      if (btn.dataset.tab === 'gantt') {
-        try { if (typeof populateGanttRoleSel === 'function') populateGanttRoleSel(); }
-        catch(e){ diag('populateGanttRoleSel on tab switch err: '+e,'err'); }
-        try {
-          var rkG = safeLs.get('ssp_lastActiveRole')
-                 || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
-          if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
-        } catch(e){ diag('gantt render on tab switch err: '+e,'err'); }
-      }
-      /* #21 слайс 3 — Работа с бэклогом: грузим transient-пул (§4: не храним,
-         спрашиваем трекер при открытии вкладки) и рендерим вид «по зонам». */
-      if (btn.dataset.tab === 'backlog') {
-        var _blZones = _settings && Array.isArray(_settings.backlogZones) && _settings.backlogZones.length;
-        if (!_blZones) {
-          renderBacklog(); /* зоны не настроены → empty-баннер, без бесполезного fetch всего проекта */
-        } else {
-          var blLoad = document.getElementById('backlogLoading');
-          if (blLoad) blLoad.classList.remove('hidden');
-          Promise.all([loadBacklogPool(), loadBacklogSchemaWarn()])  /* §8 schema-warn параллельно */
-            .then(function(){ renderBacklog(); })
-            .catch(function(e){
-              if (blLoad) blLoad.classList.add('hidden');
-              diag('backlog load err: '+e,'err');
-              try { toast(T('backlogLoadErr'), 'err'); } catch(_){}
-            });
-        }
-      }
-      /* #45 R3 — вкладка ёмкости: async-загрузка (calendar/absences/capacity/ростер +
-         carry-forward) → render. Иначе панель пуста на первом клике. */
-      if (btn.dataset.tab === 'capacity') {
-        try { CAPACITY_VIEW.loadAndRender(_capacityDeps()); }
-        catch(e){ diag('capacity render err: '+e,'err'); }
-      }
-      /* #48 R1.2b — вкладки релиз-менеджмента: грузим список релизов из backend в
-         RELEASE_STORE и рендерим (empty-state, если пусто). mode по узлу. */
-      if (btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history') {
-        try { RELEASE_VIEW.loadAndRender(_releaseDeps(), btn.dataset.tab === 'release-history' ? 'history' : 'planned'); }
-        catch(e){ diag('release render err: '+e,'err'); }
-      }
-      /* #50 S1c — вкладки отчётности: контур A → A7 Aging (pull активных задач → примитив →
-         buildAgingRows), контур B → плейсхолдер. Доменный вью reporting-view.js. */
-      if (btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b') {
-        try { loadReportingView(btn.dataset.tab === 'reporting-b' ? 'b' : 'a'); }
-        catch(e){ diag('reporting render err: '+e,'err'); }
-      }
-      if (btn.dataset.tab === 'settings') {
-        checkSettingsManager().then(function(canManage) {
-          if (!canManage) {
-            document.getElementById('tab-settings').innerHTML =
-              '<div class="empty" style="color:var(--muted);padding:60px 20px;">'+T('noRightsSettings')+'</div>';
-          }
-        });
-      }
+  /* ═══ Вкладки первого уровня — роутер вынесен в domain/tab-router.js (аудит R2, v3.4.0).
+     Ядро отдаёт live-стейт геттерами (_mode/_settings/_planningLevel читаются в момент
+     клика), запись _history — сеттером; CAPACITY_VIEW/RELEASE_VIEW замкнуты здесь
+     (B1-топология: домен не читает чужие мосты). Обёртки — late binding, как в IIFE. ═══ */
+  if (window.__SSP_TAB_ROUTER && typeof window.__SSP_TAB_ROUTER.init === 'function') {
+    window.__SSP_TAB_ROUTER.init({
+      hideAllOverlays: function(){ if (typeof _hideAllOverlays === 'function') _hideAllOverlays(); },
+      draftGet: function(k){ return _draftGet(k); },
+      draftSet: function(k, v){ return _draftSet(k, v); },
+      getMode: function(){ return _mode; },
+      apiGet: function(p){ return apiGet(p); },
+      diag: function(m, lvl){ diag(m, lvl); },
+      toast: function(m, kind){ toast(m, kind); },
+      t: function(k){ return T(k); },
+      setHistory: function(h){ _history = h; },
+      renderHistory: function(){ renderHistory(); },
+      renderWidgetHeader: function(){ if (typeof renderWidgetHeader === 'function') renderWidgetHeader(); },
+      renderPlanningLevel: function(){ if (typeof _renderPlanningLevel === 'function') _renderPlanningLevel(_planningLevel); },
+      populateGanttRoleSel: function(){ if (typeof populateGanttRoleSel === 'function') populateGanttRoleSel(); },
+      refreshGantt: function(){
+        var rkG = safeLs.get('ssp_lastActiveRole')
+               || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
+        if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
+      },
+      hasBacklogZones: function(){ return !!(_settings && Array.isArray(_settings.backlogZones) && _settings.backlogZones.length); },
+      renderBacklog: function(){ renderBacklog(); },
+      loadBacklogPool: function(){ return loadBacklogPool(); },
+      loadBacklogSchemaWarn: function(){ return loadBacklogSchemaWarn(); },
+      capacityLoadAndRender: function(){ CAPACITY_VIEW.loadAndRender(_capacityDeps()); },
+      releaseLoadAndRender: function(mode){ RELEASE_VIEW.loadAndRender(_releaseDeps(), mode); },
+      loadReportingView: function(c){ loadReportingView(c); },
+      checkSettingsManager: function(){ return checkSettingsManager(); },
     });
-  });
+  }
 
 
   /* ═══ v5.5.0 — Этап 3 / v5.6.0 — Этап 4: segmented control «Роли / Люди» внутри tab-planning ═══

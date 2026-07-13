@@ -180,13 +180,23 @@ function readSettings(issue) {
   } catch (_) { return null; }
 }
 
+/* Часы в рабочем дне — из ssp_settings.hoursPerDay (admin-тир, дефолт 8); выставляется
+   в начале action после readSettings. Scripting API НЕ отдаёт WorkTimeSettings инстанса
+   (только REST-админка; сами JB в доках хардкодят константы) — норма проекта честнее.
+   ponytail: рабочая неделя = 5 дней константой; понадобится иная — заводить settings-ключ. */
+var WF_HOURS_PER_DAY = 8;
+function _normHoursPerDay(v) {
+  v = Number(v);
+  return (isFinite(v) && v >= 1 && v <= 24) ? v : 8;
+}
+
 function getMinutes(period) {
   if (!period) return 0;
   const weeks = period.getWeeks ? (period.getWeeks() || 0) : 0;
   const days = period.getDays ? (period.getDays() || 0) : 0;
   const hours = period.getHours ? (period.getHours() || 0) : 0;
   const minutes = period.getMinutes ? (period.getMinutes() || 0) : 0;
-  return weeks * 5 * 8 * 60 + days * 8 * 60 + hours * 60 + minutes;
+  return weeks * 5 * WF_HOURS_PER_DAY * 60 + days * WF_HOURS_PER_DAY * 60 + hours * 60 + minutes;
 }
 
 function formatMinutes(m) {
@@ -329,6 +339,7 @@ function aggregateToParent(parent, settings, lang) {
 function _runCascade(issue, ctx) {
   const settings = readSettings(issue);
   if (!settings || !settings.cascadeAggregationEnabled) return;
+  WF_HOURS_PER_DAY = _normHoursPerDay(settings.hoursPerDay);
   const lvl2 = Array.isArray(settings.cascadeLevel2Values) ? settings.cascadeLevel2Values : [];
   const lvl3 = Array.isArray(settings.cascadeLevel3Values) ? settings.cascadeLevel3Values : [];
   if (!lvl2.length && !lvl3.length) return;

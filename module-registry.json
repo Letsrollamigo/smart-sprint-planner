@@ -94,7 +94,7 @@
     "modules": {
       "backend-capacity.js": {
         "loc": 729,
-        "locBudget": 734,
+        "locBudget": 745,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
       "backend-global.js": {
@@ -111,7 +111,7 @@
       },
       "backend-release.js": {
         "loc": 269,
-        "locBudget": 274,
+        "locBudget": 285,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #48 R4 архив (US-R4-02): +58 — splitForArchive (pure in-memory разрез активный/архив: терминальные-старейшие по snapshot.closedAt, trigger 300КБ → target 250КБ, дедуп против split-brain недописи, стоп на лимите архива — без молчаливой потери) + readArchive + GET releases-archive + archivedCount в GET / archived в POST; первая реализация паттерна #53. R2.4 authz: +73 — releasePerms (D-C; perms в GET) + engineerDiffAllowed (серверная валидация диффа РИ) + stampAudit (серверный стамп аудита) + ужесточение POST. Роль-хелперы is* — в backend-core."
       },
       "backend-reporting.js": {
@@ -498,6 +498,18 @@
         "SPRINT_STORE"
       ],
       "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; с 2026-07-03 (⚖ владелец, TechDEBT+Sanitary) резет чистит ВЕСЬ срез, включая PP/Gantt-снимки и slotRev — residual slotRev чужого проекта мог случайно совпасть с rev нового слота и молча обойти rev-lock #56-4 (loc 53→58)."
+    },
+    "domain/tab-router.js": {
+      "layer": "domain",
+      "domain": "tab-router",
+      "loc": 116,
+      "locBudget": 136,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "TAB_ROUTER"
+      ]
     },
     "domain/standup-view.js": {
       "layer": "domain",

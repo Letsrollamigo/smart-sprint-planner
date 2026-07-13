@@ -436,3 +436,15 @@ test('locale: unknown lang falls back to en', () => {
   wfModule.rule.spec.action(makeIssueCtx(issue, 'xx'));
   assert.ok(messageLog.some(s => /Distributed/.test(s)), 'unknown locale → en fallback');
 });
+
+test('action: getMinutes уважает settings.hoursPerDay (день = 6ч, не хардкод 8)', () => {
+  resetLogs();
+  const dayPeriod = { getWeeks: () => 0, getDays: () => 1, getHours: () => 0, getMinutes: () => 0 };
+  const issue = makeIssue({
+    id: 'PRJ-6H',
+    settings: settingsWith({ hoursPerDay: 6 }),
+    workItems: [{ type: { name: 'Development' }, duration: dayPeriod }]
+  });
+  wfModule.rule.spec.action(makeIssueCtx(issue));
+  assert.strictEqual(issue.fields['Факт разработка ФРОНТ ЧЧ'].__mins, 360);
+});

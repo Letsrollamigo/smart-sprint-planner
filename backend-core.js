@@ -133,6 +133,18 @@ function getBody(ctx) {
   return {};
 }
 
+/* Единый конверт POST-тела: getBody → reject-гейт → whitelist-фильтр.
+   Возвращает body либо null (400 уже отправлен). whitelist === null — без фильтра
+   (динамические ключи верхнего уровня, напр. карта login→absences). */
+function parseBodyOrReject(ctx, whitelist) {
+  var body = getBody(ctx);
+  if (body.__rejected__) {
+    badRequest(ctx, body.__reason__ || 'invalid_input');
+    return null;
+  }
+  return whitelist ? filterKeys(body, whitelist) : body;
+}
+
 // Белые списки ключей верхнего уровня
 var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items', 'baseRev']; /* #56-4 — optimistic lock */
 var ALLOWED_HISTORY_KEYS     = ['history'];
@@ -280,7 +292,7 @@ var CURRENT_PLUGIN_VERSION = '2.14.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.3.0';
+var APP_VERSION = '3.4.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2199,13 +2211,8 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-
-        body = filterKeys(body, ALLOWED_SPRINT_DATA_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_SPRINT_DATA_KEYS);
+        if (body === null) return;
 
         var action = (ctx.request.getParameter('action') || '').trim();
         if (action && action !== 'validate' && action !== 'assignerSync') {
@@ -2504,9 +2511,8 @@ var ENDPOINTS = [
         // Атомарная замена: валидирует + перезаписывает в одной транзакции.
         if (action === 'import-replace') {
           if (!authzGuard(ctx, 'historyManager')) return;
-          var bodyIR = getBody(ctx);
-          if (bodyIR.__rejected__) { badRequest(ctx, bodyIR.__reason__ || 'invalid_input'); return; }
-          bodyIR = filterKeys(bodyIR, ALLOWED_HISTORY_KEYS);
+          var bodyIR = parseBodyOrReject(ctx, ALLOWED_HISTORY_KEYS);
+          if (bodyIR === null) return;
           if (!Array.isArray(bodyIR.history)) { badRequest(ctx, 'invalid_history_structure'); return; }
           bodyIR.history = stripDeprecatedHistoryKeys(bodyIR.history);
           for (var iri = 0; iri < bodyIR.history.length; iri++) {
@@ -2529,9 +2535,8 @@ var ENDPOINTS = [
            в существующий snap по sprintId. Прочие поля snap'ов не трогаются. */
         if (action === 'assignerSync') {
           if (!authzGuard(ctx, 'assigner')) return;
-          var bodyAS = getBody(ctx);
-          if (bodyAS.__rejected__) { badRequest(ctx, bodyAS.__reason__ || 'invalid_input'); return; }
-          bodyAS = filterKeys(bodyAS, ALLOWED_HISTORY_KEYS);
+          var bodyAS = parseBodyOrReject(ctx, ALLOWED_HISTORY_KEYS);
+          if (bodyAS === null) return;
           if (!Array.isArray(bodyAS.history)) { badRequest(ctx, 'invalid_history_structure'); return; }
           var existing = parseJson(getProp(ctx, 'ssp_history'), []);
           if (!Array.isArray(existing)) existing = [];
@@ -2569,12 +2574,8 @@ var ENDPOINTS = [
 
         if (!authzGuard(ctx, 'validator')) return;
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-        body = filterKeys(body, ALLOWED_HISTORY_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_HISTORY_KEYS);
+        if (body === null) return;
 
         if (body.history !== undefined) {
           /* v3.2.1 — {"history": null} проходил undefined-чек и ронял handler
@@ -2763,12 +2764,8 @@ var ENDPOINTS = [
         var login = (ctx.currentUser && ctx.currentUser.login) || '';
         if (!login) { badRequest(ctx, 'auth_required'); return; }
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-        body = filterKeys(body, ALLOWED_DRAFT_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_DRAFT_KEYS);
+        if (body === null) return;
 
         var action = (ctx.request.getParameter('action') || '').trim();
 
@@ -2872,12 +2869,8 @@ var ENDPOINTS = [
           return;
         }
 
-        var body = getBody(ctx);
-        if (body.__rejected__) {
-          badRequest(ctx, body.__reason__ || 'invalid_input');
-          return;
-        }
-        body = filterKeys(body, ALLOWED_WORKING_DRAFTS_KEYS);
+        var body = parseBodyOrReject(ctx, ALLOWED_WORKING_DRAFTS_KEYS);
+        if (body === null) return;
 
         var inMap = body.data;
         if (!inMap || typeof inMap !== 'object' || Array.isArray(inMap)) {
@@ -3003,6 +2996,7 @@ exports.ENDPOINTS   = ENDPOINTS;
 exports.APP_VERSION = APP_VERSION;
 exports.parseJson   = parseJson;
 exports.getBody     = getBody;
+exports.parseBodyOrReject = parseBodyOrReject;
 exports.MAX_PROP_SIZE = MAX_PROP_SIZE;
 
 /* #45 R2 — символы ядра, нужные backend-capacity.js в YT-рантайме (первый per-feature
