@@ -151,6 +151,12 @@ function tWf(lang, key, vars) {
   return s;
 }
 
+/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
+   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
+   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
+   action выполняются в одной транзакции события. */
+var _settingsStash = null;
+
 function readSettings(issue) {
   if (!issue) return null;
   try {
@@ -302,7 +308,8 @@ function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lan
 }
 
 function _runRollup(issue, ctx) {
-  const settings = readSettings(issue);
+  const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
+  _settingsStash = null;
   if (!settings || !settings.stateRollupEnabled) return;
 
   if (settings.stateRollupStrategy && settings.stateRollupStrategy !== 'min') return;
@@ -357,6 +364,7 @@ function _guard(ctx) {
   const issue = ctx && ctx.issue;
   if (!issue) return false;
   const settings = readSettings(issue);
+  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
   if (!settings || !settings.stateRollupEnabled) return false;
 
   const stateFieldName = (typeof settings.fieldState === 'string' && settings.fieldState.length)

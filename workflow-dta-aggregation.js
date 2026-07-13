@@ -471,6 +471,12 @@ function tWf(lang, key, vars) {
   return s;
 }
 
+/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
+   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
+   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
+   action выполняются в одной транзакции события. */
+var _settingsStash = null;
+
 function readSettings(issue) {
   if (!issue) return null;
   try {
@@ -775,7 +781,8 @@ function _assertAllAddedHaveType(issue, lang) {
 
 function _runIfDtaEnabled(issue, ctx) {
   if (!issue) return;
-  const settings = readSettings(issue);
+  const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
+  _settingsStash = null;
   if (!settings || !settings.dtaEnabled) return;
   if (!settings.workItemTypeMapping || !Object.keys(settings.workItemTypeMapping).length) return;
   WF_HOURS_PER_DAY = _normHoursPerDay(settings.hoursPerDay);
@@ -839,6 +846,7 @@ function _commonGuard(issue) {
      parse стоял до чека workItems и налогом ложился на все массовые правки. */
   if (!_hasWorkItemChanges(issue)) return false;
   const settings = readSettings(issue);
+  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
   if (!settings || !settings.dtaEnabled) return false;
   if (!settings.workItemTypeMapping) return false;
   if (!Object.keys(settings.workItemTypeMapping).length) return false;

@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.5.0] — 2026-07-13
+
+> **Architecture-audit wave R3a: gates & micro-optimizations. No functional changes.**
+
+### Internal
+
+- **React layer under the LOC ratchet** — new J-gate (`jsx-size-ratchet.test.js`): all 21 `react/*.jsx` views got size budgets in the module registry (`jsx` section); the layer grew unchecked before. JSX topology is still not analyzed — size only.
+- **Workflows parse settings once per event** — guard and action share a single parse of the settings blob via an issue-reference handoff cache (was two parses).
+- **Sibling-require experiment** — confirmed on a stand probe: the YT Apps workflow runtime supports `require('./local.js')` (a broken require fails the app import fast). Unblocks future extraction of shared workflow infrastructure.
+- The registry generator no longer wipes the backend/jsx sections on regeneration; informational `loc` fields refreshed (29 entries).
+
 ## [3.4.0] — 2026-07-13
 
 > **Architecture-audit wave R2. No functional changes.**

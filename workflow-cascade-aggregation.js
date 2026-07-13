@@ -163,6 +163,12 @@ function tWf(lang, key, vars) {
   return s;
 }
 
+/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
+   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
+   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
+   action выполняются в одной транзакции события. */
+var _settingsStash = null;
+
 function readSettings(issue) {
   if (!issue) return null;
   try {
@@ -337,7 +343,8 @@ function aggregateToParent(parent, settings, lang) {
 }
 
 function _runCascade(issue, ctx) {
-  const settings = readSettings(issue);
+  const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
+  _settingsStash = null;
   if (!settings || !settings.cascadeAggregationEnabled) return;
   WF_HOURS_PER_DAY = _normHoursPerDay(settings.hoursPerDay);
   const lvl2 = Array.isArray(settings.cascadeLevel2Values) ? settings.cascadeLevel2Values : [];
@@ -384,6 +391,7 @@ function _guard(ctx) {
   const issue = ctx && ctx.issue;
   if (!issue) return false;
   const settings = readSettings(issue);
+  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
   if (!settings || !settings.cascadeAggregationEnabled) return false;
   const fields = _activeFieldList(settings);
   if (!fields.length) return false;

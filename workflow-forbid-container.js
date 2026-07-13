@@ -60,6 +60,12 @@ function tWf(lang, key) {
   return (dict && dict[key]) || (WF_I18N[FALLBACK_LANG][key]) || key;
 }
 
+/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
+   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
+   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
+   action выполняются в одной транзакции события. */
+var _settingsStash = null;
+
 function readSettings(issue) {
   if (!issue) return null;
   try {
@@ -116,6 +122,7 @@ function _guard(ctx) {
   const issue = ctx && ctx.issue;
   if (!issue) return false;
   const settings = readSettings(issue);
+  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
   if (!settings || !settings.forbidContainerWorkItems) return false;
   if (!_hasWorkItemMutation(issue)) return false;
   const kind = _kindName(issue, settings);
@@ -127,7 +134,8 @@ exports.rule = entities.Issue.onChange({
   guard: _guard,
   action: function(ctx) {
     const issue = ctx && ctx.issue;
-    const settings = readSettings(issue);
+    const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
+    _settingsStash = null;
     const lang = pickLocale(ctx, settings);
     workflow.check(false, tWf(lang, 'errForbidContainer'));
   }

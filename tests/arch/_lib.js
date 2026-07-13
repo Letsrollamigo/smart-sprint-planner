@@ -13,7 +13,8 @@
  * Ограничения (задокументированы намеренно): regex-литералы с фигурными скобками
  * (напр. /a{2}/) на УРОВНЕ МОДУЛЯ могли бы сбить счётчик глубины — в кодовой базе
  * такого нет (regex живут внутри функций, глубже module-level); если появится —
- * вынести в исключение. JSX (.jsx) не анализируется (другой слой/синтаксис).
+ * вынести в исключение. JSX (.jsx) не анализируется ТОПОЛОГИЧЕСКИ (другой синтаксис);
+ * LOC-ратчет на react/*.jsx — отдельный J-гейт (jsx-size-ratchet.test.js, аудит 2026-07-12).
  */
 'use strict';
 const fs = require('fs');
@@ -25,7 +26,8 @@ const SRC = path.resolve(__dirname, '..', '..', 'widgets', 'main', 'src');
 const EXCLUDE = new Set(['core.js', 'index.js', 'icons.generated.js']);
 
 /* Каталоги-слои («доминионы звезды»), в которые разнесены модули. '' = корень src/
-   (после фолдинга там только EXCLUDE-файлы). react/common/icons НЕ сканируются намеренно. */
+   (после фолдинга там только EXCLUDE-файлы). react/common/icons топологически НЕ
+   сканируются намеренно; react/*.jsx — под LOC-ратчетом J (listJsxModules ниже). */
 const MODULE_DIRS = ['', 'domain', 'infra', 'pure', 'data', 'i18n'];
 
 /** Список анализируемых модулей (layer-папки src/), относительными именами. */
@@ -45,6 +47,17 @@ function listModules() {
 
 function readModule(rel) {
   return fs.readFileSync(path.join(SRC, rel), 'utf8');
+}
+
+/** react/*.jsx — только имена для LOC-ратчета (J-гейт); shims/vendor (.js) и
+    подкаталоги не входят, топология JSX не анализируется. */
+function listJsxModules() {
+  const dir = path.join(SRC, 'react');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter((f) => f.endsWith('.jsx'))
+    .map((f) => 'react/' + f)
+    .sort();
 }
 
 function nonEmptyLOC(src) {
@@ -109,11 +122,11 @@ function moduleLevelVarLet(src) {
   return [...names].sort();
 }
 
-/** Все токены мостов (__SSP_ / __SSP_), встречающиеся в КОДЕ (комменты уже вырезаны). */
+/** Все токены мостов (__SCBT_ / __SSP_), встречающиеся в КОДЕ (комменты уже вырезаны). */
 function bridgeTokens(src) {
   const s = stripCommentsAndStrings(src);
   const set = new Set();
-  const re = /__SSP_[A-Z0-9_]+/g;
+  const re = /__(?:SCBT|SSP)_[A-Z0-9_]+/g;
   let m;
   while ((m = re.exec(s))) set.add(m[0]);
   return set;
@@ -123,13 +136,13 @@ function bridgeTokens(src) {
 function publishedBridges(src) {
   const s = stripCommentsAndStrings(src);
   const set = new Set();
-  const re = /(?:window\.)?(__SSP_[A-Z0-9_]+)\s*=(?!=)/g;
+  const re = /(?:window\.)?(__(?:SCBT|SSP)_[A-Z0-9_]+)\s*=(?!=)/g;
   let m;
   while ((m = re.exec(s))) set.add(m[1]);
   return set;
 }
 
-/* Классификация моста по СЛОЮ (fork-agnostic — по суффиксу без __SSP_/__SSP_).
+/* Классификация моста по СЛОЮ (fork-agnostic — по суффиксу без __SCBT_/__SSP_).
    leaf-слои (infra/pure/i18n) может тянуть кто угодно; domain — нет (только через core deps). */
 const INFRA_SUFFIX = new Set([
   'ICONS', 'TABLE', 'DATEPICKER', 'DP_BRIDGE', 'RADIO', 'CHECKBOX', 'INPUT', 'SELECT',
@@ -138,7 +151,7 @@ const INFRA_SUFFIX = new Set([
 ]);
 const I18N_SUFFIX = new Set(['T', 'I']);
 function bridgeLayer(token) {
-  const s = token.replace(/^__SSP_/, '');
+  const s = token.replace(/^__(?:SCBT|SSP)_/, '');
   if (/_PURE$/.test(s)) return 'pure';
   if (I18N_SUFFIX.has(s)) return 'i18n';
   if (INFRA_SUFFIX.has(s)) return 'infra';
@@ -174,6 +187,7 @@ module.exports = {
   EXCLUDE,
   bridgeLayer,
   listModules,
+  listJsxModules,
   readModule,
   nonEmptyLOC,
   stripCommentsAndStrings,

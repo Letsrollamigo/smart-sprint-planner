@@ -448,3 +448,18 @@ test('action: getMinutes уважает settings.hoursPerDay (день = 6ч, н
   wfModule.rule.spec.action(makeIssueCtx(issue));
   assert.strictEqual(issue.fields['Факт разработка ФРОНТ ЧЧ'].__mins, 360);
 });
+
+test('P-6: guard→action — один доступ к settings (handoff-кэш)', () => {
+  resetLogs();
+  const issue = makeIssue({
+    settings: settingsWith(),
+    workItems: [{ type: { name: 'Development' }, duration: 60 }]
+  });
+  const ep = issue.project.extensionProperties;
+  const raw = ep.ssp_settings;
+  let reads = 0;
+  Object.defineProperty(ep, 'ssp_settings', { get() { reads++; return raw; } });
+  assert.strictEqual(wfModule.rule.spec.guard(makeIssueCtx(issue)), true);
+  wfModule.rule.spec.action(makeIssueCtx(issue));
+  assert.strictEqual(reads, 1, 'guard+action должны читать settings один раз (handoff-кэш)');
+});

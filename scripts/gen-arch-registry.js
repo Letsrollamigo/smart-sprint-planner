@@ -15,7 +15,7 @@ const lib = require(path.join(__dirname, '..', 'tests', 'arch', '_lib.js'));
 
 const ROOT = path.join(__dirname, '..');
 const FAT = 600;
-const suffix = (tok) => tok.replace(/^__SSP_/, '');
+const suffix = (tok) => tok.replace(/^__(?:SCBT|SSP)_/, '');
 const domainOf = (f) => f.replace(/\.js$/, '').replace(/^i18n\//, 'i18n-');
 
 function moduleLayer(f, published) {
@@ -48,6 +48,23 @@ for (const f of mods) {
   };
 }
 
+/* R3a (аудит 2026-07-12) — LOC-ратчет react/*.jsx: только размер, топология JSX
+   не анализируется (J-гейт, tests/arch/jsx-size-ratchet.test.js). */
+out.jsx = {
+  _note: 'react/*.jsx — только LOC-ратчет (J1/J2); топология и стейт JSX не анализируются.',
+  modules: {},
+};
+for (const f of lib.listJsxModules()) {
+  const jloc = lib.nonEmptyLOC(lib.readModule(f));
+  out.jsx.modules[f] = { loc: jloc, locBudget: Math.max(jloc + 20, Math.ceil(jloc * 1.12)) };
+}
+
+/* Секция backend ведётся BE-гейтами/вручную — переносим из существующего реестра,
+   НЕ затираем (до R3a перегенерация молча сносила backend-секцию). */
+try {
+  out.backend = JSON.parse(fs.readFileSync(path.join(ROOT, 'module-registry.json'), 'utf8')).backend;
+} catch (_) { /* первый прогон без реестра */ }
+
 const coreLoc = lib.nonEmptyLOC(fs.readFileSync(path.join(ROOT, 'widgets', 'main', 'src', 'core.js'), 'utf8'));
 out._meta = {
   note: 'Architecture baseline. LOC-бюджеты ratchet-only-down; state-baseline и layer = контракт. Перегенерация — node scripts/gen-arch-registry.js. Подробно — Spec/ARCH_FITNESS_FUNCTIONS_SPEC.md.',
@@ -60,5 +77,6 @@ out._meta = {
   bridgeLayers,
 };
 
-fs.writeFileSync(path.join(ROOT, 'module-registry.json'), JSON.stringify(out, null, 2) + '\n');
-console.log(`module-registry.json: ${mods.length} модулей, fat(>${FAT})=${fatCount}, core=${coreLoc} LOC`);
+const final = { _meta: out._meta, backend: out.backend, jsx: out.jsx, modules: out.modules };
+fs.writeFileSync(path.join(ROOT, 'module-registry.json'), JSON.stringify(final, null, 2) + '\n');
+console.log(`module-registry.json: ${mods.length} модулей + ${Object.keys(out.jsx.modules).length} jsx, fat(>${FAT})=${fatCount}, core=${coreLoc} LOC`);
