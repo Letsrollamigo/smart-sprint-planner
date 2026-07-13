@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.6.0] — 2026-07-13
+
+> **Architecture-audit wave R3b: the schema release. Old data migrates automatically; no functional changes.**
+
+### Internal
+
+- **Hard-removal of `hideDiagLogUi`** — the deprecated inverse settings key (v6.3.0 D110) finished its deprecation ladder (soft since #56-5: the form writes only `showDiagLogUi`): removed from the whitelist and the boolean-keys list. The key is silently stripped from old blobs on read — including settings frozen inside sprint-history records at confirm; no migration entry is needed (the settings blob is not versioned by the snapshot-migration registry).
+- **Snapshot-migration registry collapsed** — 14 historical entries (1.6.0 → … → 2.14.0), all verified no-op (audit V13), replaced by a single collapsed entry `1.4.2 → 3.6.0`. The `_corpBaselineBridge` (7.x → 2.0.0) and the STATUS/INC migration dictionaries are preserved unchanged.
+- **Schema marker `CURRENT_PLUGIN_VERSION`** re-synced with the app version: `2.14.0 → 3.6.0`. Snapshots receive a single `SCHEMA_BUMP` entry to 3.6.0 in `migrationLog` on first read.
+- Fixture discipline: added v3.5.0 and v3.6.0 snapshot fixtures; the `migrate → validateForRead → validateForWrite` regression is green across all 30 versions. New coverage: `hideDiagLogUi` strip from both the main and the history-embedded settings blob.
+
 ## [3.5.0] — 2026-07-13
 
 > **Architecture-audit wave R3a: gates & micro-optimizations. No functional changes.**

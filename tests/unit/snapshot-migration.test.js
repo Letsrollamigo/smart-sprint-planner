@@ -97,55 +97,32 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
 });
 
-test('SCHEMA_MIGRATIONS has expected entries (v1.7.0 State Rollup + v1.8.0 External ticket ID + v1.9.0 Sprint goals + v1.9.3 status-contamination hotfix + v1.9.4 visual refresh + v1.9.6 Ring UI tier 1 + v1.9.7 aria translations + v1.9.9 Ring UI tier 2 + v1.9.10 group search hotfix + v1.9.11 modal/toast UX overhaul + v1.10.0 sort by assignee + v2.1.0 Ring UI tier 3 + v2.8.0 Capacity Management R1 + v2.14.0 Planning model dropdown)', function () {
+/* v3.6.0 — реестр свёрнут: 14 исторических no-op записей (1.6.0 → … → 2.14.0,
+   аудит 2026-07-12 V13) заменены одной. hideDiagLogUi hard-removal живёт в
+   settings-whitelist, не здесь (снапшоты shape не меняли). */
+test('SCHEMA_MIGRATIONS: одна свёрнутая запись 1.4.2 → 3.6.0 (collapsed no-op chain)', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 14,
-    'Registry should have 14 entries; update this test when next entry is added');
-  assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '1.7.0');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 1,
+    'Registry должен содержать 1 свёрнутую запись; при следующем schema-change добавляй from="3.6.0"');
+  assert.strictEqual(SCHEMA_MIGRATIONS[0].from, '1.4.2');
+  assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '3.6.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[0].migrate, 'function');
-  /* v1.8.0 D130 — second entry: external ticket ID (no-op additive migration). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[1].to, '1.8.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[1].migrate, 'function');
-  /* v1.9.0 D132 — third entry: sprint goals + standup settings (no-op additive). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[2].to, '1.9.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[2].migrate, 'function');
-  /* v1.9.3 D134 — fourth entry: per-role status contamination hotfix (no-op, pure runtime). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[3].to, '1.9.3');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[3].migrate, 'function');
-  /* v1.9.4 D135 — fifth entry: visual refresh (icon swap, no-op). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[4].to, '1.9.4');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[4].migrate, 'function');
-  /* v1.9.6 — sixth entry: Ring UI tier 1 (UI-only polish, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[5].to, '1.9.6');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[5].migrate, 'function');
-  /* v1.9.7 — seventh entry: aria translations (i18n-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[6].to, '1.9.7');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[6].migrate, 'function');
-  /* v1.9.9 — eighth entry: Ring UI tier 2 (CSS classes, frontend-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[7].to, '1.9.9');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[7].migrate, 'function');
-  /* v1.9.10 — ninth entry: group search visibility hotfix (frontend-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[8].to, '1.9.10');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[8].migrate, 'function');
-  /* v1.9.11 — tenth entry: modal+toast UX overhaul + B-31 polish (frontend-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[9].to, '1.9.11');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[9].migrate, 'function');
-  /* v1.10.0 — eleventh entry: sort tasks by assignee column (B-23, frontend-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[10].to, '1.10.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[10].migrate, 'function');
-  /* v2.1.0 — twelfth entry: Ring UI ярус 3 — full Ring Table migration + Ring Input
-     mount-points + visual unification (frontend-only, no shape change). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[11].to, '2.1.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[11].migrate, 'function');
-  /* v2.8.0 #45 R1 — thirteenth entry: Capacity Management foundation — new stores
-     (ssp_calendar/ssp_absences/ssp_capacity) + capacityMode/hoursPerDay/usefulHoursPerDay
-     settings (additive); sprint/history/working-draft snapshot shape unchanged (no-op). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[12].to, '2.8.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[12].migrate, 'function');
-  /* v2.14.0 — fourteenth entry: Planning model dropdown (simple|light|full) — additive
-     planningModel setting; old personalPlanning flags kept as derived mirror (no-op). */
-  assert.strictEqual(SCHEMA_MIGRATIONS[13].to, '2.14.0');
-  assert.strictEqual(typeof SCHEMA_MIGRATIONS[13].migrate, 'function');
+});
+
+test('migrateSnap: legacy snapshot получает ровно один SCHEMA_BUMP до 3.6.0', function () {
+  const snap = { pluginVersion: '2.14.0' };
+  migrateSnap(snap);
+  assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
+  const bumps = (snap.migrationLog || []).filter(function (e) { return e.level === 'SCHEMA_BUMP'; });
+  assert.strictEqual(bumps.length, 1, 'ровно один SCHEMA_BUMP от свёрнутой записи');
+  assert.strictEqual(bumps[0].toVersion, '3.6.0');
+});
+
+test('migrateSnap: snapshot уже на 3.6.0 — без новых SCHEMA_BUMP', function () {
+  const snap = { pluginVersion: '3.6.0' };
+  migrateSnap(snap);
+  assert.strictEqual(snap.pluginVersion, '3.6.0');
+  assert.ok(!snap.migrationLog, 'migrationLog не должен появиться');
 });
 
 test('CURRENT_PLUGIN_VERSION matches semver pattern', function () {

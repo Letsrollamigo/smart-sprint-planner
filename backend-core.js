@@ -287,12 +287,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '2.14.0';
+var CURRENT_PLUGIN_VERSION = '3.6.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.5.0';
+var APP_VERSION = '3.6.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -420,6 +420,14 @@ function migrateHistoryArr(h) {
   h.forEach(function (rec) {
     if (!rec || typeof rec !== 'object') return;
     if (rec.status) rec.status = migrateStatus(rec.status);
+    /* v3.6.0 — history-запись может встраивать settings-блоб (заморозка при
+       confirm). Ему нужна та же read-time чистка, что и основному блобу
+       (v2.15.2 ремап + defensive strip): после hard-removal hideDiagLogUi
+       строгий validateSettings внутри history-валидатора иначе бракует
+       легаси-запись целиком (найдено на прод-фикстуре v7.5.0). */
+    if (rec.settings && typeof rec.settings === 'object' && !Array.isArray(rec.settings)) {
+      migrateSettingsObj(rec.settings);
+    }
     if (Array.isArray(rec.items)) {
       rec.items.forEach(function (it) {
         if (it && it.inclusionStatus) it.inclusionStatus = migrateInc(it.inclusionStatus);
@@ -476,89 +484,17 @@ function stripDeprecatedSprintKeys(s) {
    Правило для PR: любое изменение whitelist'ов или shape snapshot'а ОБЯЗАНО
    добавить запись сюда + fixture в tests/fixtures/snapshots/<new-version>/. */
 var SCHEMA_MIGRATIONS = [
-  /* v1.7.0 D128 — State Rollup.
-     sprint/history/working-draft shape НЕ меняется (settings additive, snapshot no-op).
-     Settings-defaults инициализируются на GET /settings load (§8.2 spec), не здесь. */
-  { from: '1.6.0', to: '1.7.0',
-    migrate: function (snap) { /* no-op: shape unchanged */ },
-    note: 'v1.7.0: State Rollup — stateRollup* settings keys added; sprint/history shape unchanged'
-  },
-  /* v1.8.0 D130 — Etap В.2 — External ticket ID.
-     item.externalTicketId — optional additive field; undefined допустим на старых snapshot'ах.
-     Settings: fieldExternalTicketId — optional string field name; null/undefined допустимо. */
-  { from: '1.7.0', to: '1.8.0',
-    migrate: function (snap) { /* no-op: items.externalTicketId — optional additive field */ },
-    note: 'v1.8.0: Added optional externalTicketId on sprint items (Etap В.2)'
-  },
-  /* v1.9.0 D132 — Etap Г — Sprint goals + Stand-up assist.
-     sprint.sprintGoal — optional string ≤ 500 (shared sprint-level goal).
-     history[i].sprintGoal — optional string ≤ 500 (frozen from sprint at confirm).
-     history[i].goalOutcome — optional enum {achieved,partial,missed}.
-     history[i].goalRetroNote — optional string ≤ 1000 (retro comment at confirm).
-     settings.standupDoneStates — optional array<string>, state names for Done bucket.
-     All fields optional/additive — no-op migration. */
-  { from: '1.8.0', to: '1.9.0',
-    migrate: function (snap) { /* no-op: all goal/standup fields are optional additive */ },
-    note: 'v1.9.0: Added optional sprintGoal (_sprint + _history) + goalOutcome/goalRetroNote (_history) + standupDoneStates (settings) — Etap Г'
-  },
-  /* v1.9.3 D134 — Hotfix Etap О.1 + О.2/П.2: per-role status в saveRoleHistorySnapshot
-     (cross-role contamination в History/Excel) + resumeWorkingDraft грузит _roleItems
-     для всех ролей из их history snapshot (не только активную из draft). Cherry-pick
-     из proprietary v7.3.1 + v7.3.2. Schema без изменений — no-op entry для registry. */
-  { from: '1.9.0', to: '1.9.3',
-    migrate: function (snap) { /* no-op: pure runtime fixes, no schema impact */ },
-    note: 'v1.9.3: Hotfix per-role status contamination (О.1) + stale _roleItems on edit (О.2/П.2) — schema unchanged'
-  },
-  /* v1.9.4 D135 — Visual refresh: new Gantt-cascade app icon (light + dark).
-     Pure asset swap — no schema, no runtime behaviour changes. */
-  { from: '1.9.3', to: '1.9.4',
-    migrate: function (snap) { /* no-op: icon-only asset update, no schema impact */ },
-    note: 'v1.9.4: Visual refresh — new app icon (light + dark) — schema unchanged'
-  },
-  { from: '1.9.4', to: '1.9.6',
-    migrate: function (snap) { return snap; }, /* no-op: UI-only polish (Ring tier 1), no shape change */
-    note: 'v1.9.6: Ring UI tier 1 — emoji→SVG icons, focus-ring, z-index scale, aria sweep — schema unchanged'
-  },
-  { from: '1.9.6', to: '1.9.7',
-    migrate: function (snap) { return snap; }, /* no-op: i18n aria translations only, no schema change */
-    note: 'v1.9.7: aria translations only — schema unchanged'
-  },
-  { from: '1.9.7', to: '1.9.9',
-    migrate: function (snap) { return snap; }, /* no-op: Ring UI tier 2 is frontend-only, no schema change */
-    note: 'v1.9.9: Ring UI tier 2 (CSS classes) — schema unchanged'
-  },
-  { from: '1.9.9', to: '1.9.10',
-    migrate: function (snap) { return snap; }, /* no-op: group search fix is frontend-only, no schema change */
-    note: 'v1.9.10: Group search visibility hotfix ($top: 5000 + auto-refresh on dropdown open) — schema unchanged'
-  },
-  { from: '1.9.10', to: '1.9.11',
-    migrate: function (snap) { return snap; }, /* no-op: modal/toast UX overhaul is frontend-only, no schema change */
-    note: 'v1.9.11: Modal+toast UX overhaul (B-32) + B-31 polish (textarea/buttons) — schema unchanged'
-  },
-  { from: '1.9.11', to: '1.10.0',
-    migrate: function (snap) { return snap; }, /* no-op: sort-by-assignee is frontend-only, no schema change */
-    note: 'v1.10.0: Sort tasks by assignee column (B-23) — schema unchanged'
-  },
-  { from: '1.10.0', to: '2.1.0',
-    migrate: function (snap) { return snap; }, /* no-op: Ring UI ярус 3 + Ring Input mount-points are frontend-only, no schema change */
-    note: 'v2.1.0: Ring UI ярус 3 — full Ring Table migration + Ring Input mount-points для main-view text/number/textarea fields + visual unification'
-  },
-  /* v2.8.0 #45 R1 — Capacity Management фундамент.
-     Новые сторы (ssp_calendar/ssp_absences/ssp_capacity) — отдельные системные
-     объекты, НЕ часть sprint/history/working-draft snapshot'ов → shape снимков НЕ
-     меняется (no-op). Новые settings-ключи (capacityMode/hoursPerDay/usefulHoursPerDay)
-     — optional/additive, undefined допустим на старых снимках. */
-  { from: '2.1.0', to: '2.8.0',
-    migrate: function (snap) { return snap; }, /* no-op: capacity — separate stores + additive optional settings, snapshot shape unchanged */
-    note: 'v2.8.0: Capacity Management R1 — ssp_calendar/ssp_absences/ssp_capacity stores + capacityMode/hoursPerDay/usefulHoursPerDay settings (additive); sprint/history/working-draft shape unchanged'
-  },
-  /* v2.14.0 — «Модель планирования» (simple|light|full). Новый settings-ключ planningModel
-     — optional/additive, undefined допустим на старых снимках (фронт деривит из старых
-     флагов в init формы — PLANNING_MODEL_SHIM). Старые флаги сохраняются (derived-зеркало).
-     sprint/history/working-draft shape НЕ меняется → no-op. */
-  { from: '2.8.0', to: '2.14.0',
-    migrate: function (snap) { return snap; }, /* no-op: planningModel — additive optional setting, snapshot shape unchanged */
-    note: 'v2.14.0: Planning model dropdown (simple|light|full) — additive planningModel setting; old personalPlanning flags kept as derived mirror; snapshot shape unchanged'
+  /* v3.6.0 — свёртка исторической цепочки 1.6.0 → … → 2.14.0 (14 записей).
+     Все 14 шагов были no-op (арх-аудит 2026-07-12, V13: additive settings-ключи
+     и frontend-only фичи; migrateSnap результат migrate() не использует —
+     мутация-only). Полные note'ы шагов — git history до v3.5.0 +
+     Documentation/CHANGELOG.md. Схемный сдвиг v3.6.0: hideDiagLogUi снят с
+     settings-whitelist (hard-removal по лестнице #56-5); ключ живёт в
+     settings-блобе, НЕ в снапшотах → shape снимков не меняется, migrate no-op
+     (чистку блоба делает migrateSettingsObj шаг 3 на READ). */
+  { from: '1.4.2', to: '3.6.0',
+    migrate: function (snap) { /* no-op: свёрнутая no-op-цепочка; снапшоты shape не меняли */ },
+    note: 'v3.6.0: collapsed no-op chain 1.6.0→2.14.0 (14 steps) + settings hideDiagLogUi hard-removal; snapshot shape unchanged'
   }
 ];
 
@@ -892,12 +828,11 @@ var ALLOWED_SETTINGS_KEYS = [
   'autoForecastEnabled',
   'nkcJanuary','nkcMay','nkcOther','rate','participation',
   'kpe',
-  /* v6.3.0 D110 — флаг скрытия панели диагностического лога из UI.
-     #56-5 — SOFT-DEPRECATED: форма больше не пишет (заменён на showDiagLogUi,
-     инверсия дефолта — лог теперь скрыт по умолчанию). Принимаем для обратной
-     совместимости; hard-removal по лестнице ≥2 minor. */
-  'hideDiagLogUi',
-  /* #56-5 — показывать панель диагностического лога (default: скрыта). */
+  /* #56-5 — показывать панель диагностического лога (default: скрыта).
+     Legacy-инверсия hideDiagLogUi (v6.3.0 D110) прошла лестницу deprecation:
+     soft #56-5 (форма пишет только showDiagLogUi) → hard-removal v3.6.0.
+     Ключ вне whitelist; из старых блобов тихо уходит на READ
+     (migrateSettingsObj, шаг 3 — defensive strip). */
   'showDiagLogUi',
   /* v1.1.0 — project-default язык интерфейса (один из ALLOWED_LANG_CODES).
      Если не задан — клиент использует localStorage.ssp_lang ⊃ navigator.language ⊃ 'ru'. */
@@ -1186,7 +1121,7 @@ function validateSettings(settings) {
   if (settings.historyClearGroupNames !== undefined && settings.historyClearGroupNames !== null
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
-  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','hideDiagLogUi','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
+  var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];

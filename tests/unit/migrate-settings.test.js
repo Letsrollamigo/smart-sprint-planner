@@ -100,3 +100,34 @@ test('round-trip: вывод миграции (GET) → POST проходит va
   // ...после — принимается, что и проигрывает фронтовый re-POST.
   assert.strictEqual(validateSettings(migrateSettingsObj(harBlobA())), true);
 });
+
+/* v3.6.0 — hard-removal hideDiagLogUi (лестница #56-5: soft → hard).
+   Ключ снят с ALLOWED_SETTINGS_KEYS; из легаси-блобов тихо уходит на READ
+   (defensive strip, шаг 3) — петля re-POST'а сирот не возникает. */
+test('v3.6.0 hard-removal: hideDiagLogUi срезается на READ, round-trip валиден', function () {
+  var legacy = { fieldState: 'State', hideDiagLogUi: true, showDiagLogUi: true, savedAt: 1782381675258 };
+  assert.strictEqual(validateSettings(legacy), false, 'сырой блоб с hideDiagLogUi должен отклоняться');
+  var m = migrateSettingsObj(legacy);
+  assert.ok(!('hideDiagLogUi' in m), 'hideDiagLogUi должен быть срезан');
+  assert.strictEqual(m.showDiagLogUi, true, 'showDiagLogUi не трогаем');
+  assert.strictEqual(validateSettings(m), true, 'после strip блоб валиден для POST');
+});
+
+/* v3.6.0 — history-записи встраивают settings-блоб (заморозка при confirm);
+   migrateHistoryArr обязан чистить его тем же нормализатором, иначе строгий
+   validateSettings внутри history-валидатора бракует легаси-запись целиком.
+   Найдено на corp прод-фикстуре v7.5.0 (hideDiagLogUi в history[0].settings). */
+test('v3.6.0: hideDiagLogUi во встроенном history.settings срезается migrateHistoryArr', function () {
+  var backend2 = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  var rec = {
+    sprintId: 'hist-legacy-1', name: 'Legacy', roleKey: 'devPlatform',
+    status: 'FINISHED', dateStart: 1770000000000, dateEnd: 1771000000000,
+    items: [], personalPlanning: {}, revisions: [], pluginVersion: '2.14.0',
+    settings: { fieldState: 'State', hideDiagLogUi: true, showDiagLogUi: true }
+  };
+  var arr = backend2.migrateHistoryArr([rec]);
+  assert.ok(!('hideDiagLogUi' in arr[0].settings), 'вложенный hideDiagLogUi должен быть срезан');
+  assert.strictEqual(arr[0].settings.showDiagLogUi, true);
+  assert.strictEqual(backend2.validateHistoryForRead(arr), true, 'ForRead принимает запись после чистки');
+  assert.strictEqual(backend2.validateHistoryForWrite(arr), true, 'ForWrite принимает запись после чистки');
+});
