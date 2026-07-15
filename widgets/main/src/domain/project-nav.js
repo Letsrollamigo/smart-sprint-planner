@@ -206,6 +206,20 @@
     }).then(function (projects) {
       deps.state.setGlobalProjects(projects || []);
       _renderProjectPicker(deps);
+      /* issue #28 — в global-режиме статические [data-i18n] шапки/сайдбара (ссылки
+         «Руководство»/«Обратная связь», спойлер статуса, диаг-панель, лейбл и кнопка
+         «Текущий/Новый спринт») локализуются только в _loadAndRenderProject (applyI18N
+         там же). Без выбранного проекта (нет проектов / prompt / no-access) тот путь не
+         достигается — throw NO_PROJECT_SENTINEL ниже — и статика оставалась на RU-дефолтах
+         из index.html, а язык-селектор шапки был без обработчика (баг «Setting EN has no
+         effect»). Локализуем и биндим селектор ЗДЕСЬ, до любого выхода из init. */
+      try { deps.populateLangSelect(document.getElementById('langSel')); } catch (_) {}
+      var _langSelG = document.getElementById('langSel');
+      if (_langSelG) {
+        _langSelG.value = deps.state.getLang();
+        if (!_langSelG._sspBound) { _langSelG.addEventListener('change', function () { deps.setLang(_langSelG.value); }); _langSelG._sspBound = true; }
+      }
+      deps.applyI18N();
       var globalProjects = deps.state.getGlobalProjects();
       if (!globalProjects.length) {
         _setGlobalBanner(deps, 'globalNoProjects');

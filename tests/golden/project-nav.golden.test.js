@@ -234,6 +234,41 @@ test('_initGlobalProjectSelection — нет проектов: banner globalNoPr
   });
 });
 
+/* issue #28 — регресс: в global-режиме без выбранного проекта applyI18N ДОЛЖЕН вызваться
+   (иначе статические [data-i18n] шапки/сайдбара остаются на RU-дефолтах index.html, а язык-
+   селектор — без обработчика). Ранее applyI18N жил только в _loadAndRenderProject, недостижимом
+   до выбора проекта → баг «Setting EN language has no effect» (GitHub #28). */
+test('issue #28 — global no-project: applyI18N + langSel populate вызваны до NO_PROJECT_SENTINEL', async () => {
+  const { gm } = createHost();
+  const i18nCalls = [];
+  primeInit(gm, { adminProjects: [], projects: [] });
+  gm.set({
+    applyI18N: function () { i18nCalls.push('applyI18N'); },
+    _populateLangSelect: function () { i18nCalls.push('populateLangSelect'); },
+  });
+  const r = await runInit(gm);
+  assert.strictEqual(r.sentinel, true, 'нет проектов → NO_PROJECT_SENTINEL');
+  assert.ok(i18nCalls.indexOf('applyI18N') >= 0,
+    'applyI18N должен вызваться в global-no-project (локализация статики шапки/сайдбара) — issue #28');
+  assert.ok(i18nCalls.indexOf('populateLangSelect') >= 0,
+    'язык-селектор шапки должен заполняться в global-no-project — issue #28');
+});
+
+/* issue #28 — тот же инвариант для ветки «несколько проектов без last-used» (globalPickPrompt):
+   applyI18N до throw, иначе экран выбора проекта тоже был бы полу-русским. */
+test('issue #28 — global pick-prompt: applyI18N вызван до NO_PROJECT_SENTINEL', async () => {
+  const { gm } = createHost();
+  const i18nCalls = [];
+  primeInit(gm, {
+    adminProjects: [{ shortName: 'A', archived: false }, { shortName: 'B', archived: false }],
+    projects: [{ key: 'A', name: 'Project A' }, { key: 'B', name: 'Project B' }],
+  });
+  gm.set({ applyI18N: function () { i18nCalls.push('applyI18N'); } });
+  const r = await runInit(gm);
+  assert.strictEqual(r.sentinel, true, 'несколько без last → NO_PROJECT_SENTINEL');
+  assert.ok(i18nCalls.indexOf('applyI18N') >= 0, 'applyI18N до pick-prompt throw — issue #28');
+});
+
 test('_initGlobalProjectSelection — share.projectKey valid: apply + load (приоритет над last)', async () => {
   const { gm } = createHost();
   const loadLog = primeInit(gm, {

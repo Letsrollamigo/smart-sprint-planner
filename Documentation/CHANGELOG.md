@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.7.1] — 2026-07-16
+
+> **Patch: main-menu widget localization.**
+
+### Fixed
+
+- **The main-menu (global) widget showed a Russian interface with another language selected, until a project was picked** (GitHub #28). Root cause: `applyI18N()` (which localizes the static `[data-i18n]` elements) and the language-selector binding ran only inside `_loadAndRenderProject`, unreachable before a project is selected — so on the project-selection / no-projects screen the sidebar links, the status spoiler, the diagnostic panel and the sprint controls kept their Russian defaults from `index.html`, and the language switcher had no handler. Localization and the selector binding now run in `_initGlobalProjectSelection` before any early exit. Guarded by a golden regression test (fails without the fix).
+
 ## [3.7.0] — 2026-07-15
 
 > **Architecture-audit wave R3c: workflow-infrastructure extraction. No functional changes.**
