@@ -11,9 +11,9 @@
  *   B-8: kind-field name + values конфигурируемы (settings.cascadeKindField,
  *        cascadeLevel2Values, cascadeLevel3Values).
  *   B-9: generic — никаких русско-специфичных хардкодов.
- *   B-10: workflow.message локализуется в 15 языках (WF_I18N inline).
- *   B-11: self-contained файл, exports.rule = entities.Issue.onChange (см.
- *         v1.2.3 lesson learned — YT регистрирует rule только при имени `rule`).
+ *   B-10: workflow.message локализуется в 15 языках (WF_I18N — workflow-common.js, R3c).
+ *   B-11 (снят R3c): общая инфраструктура — ./workflow-common.js; exports.rule =
+ *         entities.Issue.onChange (v1.2.3 lesson — YT регистрирует только имя `rule`).
  *   B-12: parent.fields.updated = Date.now() после агрегации.
  *   B-13: idempotency через cur !== target diff — безопасно от infinite loop
  *         когда cascade триггерит сам себя на parent.
@@ -22,195 +22,20 @@ const entities = require('@jetbrains/youtrack-scripting-api/entities');
 const workflow = require('@jetbrains/youtrack-scripting-api/workflow');
 const dateTime = require('@jetbrains/youtrack-scripting-api/date-time');
 
-const SETTINGS_KEY = 'ssp_settings';
-const FALLBACK_LANG = 'en';
-
-/* role-key → settings-key для fact/plan полей. Дублируется с
-   workflow-dta-aggregation.js (self-contained per B-11). */
-const FIELD_FACT_KEY_BY_ROLE = {
-  analysis:    'fieldFactAnalysis',
-  testing:     'fieldFactTesting',
-  devPlatform: 'fieldFactDevPlatform',
-  devBack:     'fieldFactDevBack',
-  devFront:    'fieldFactDevFront',
-  devIos:      'fieldFactDevIos',
-  devAndroid:  'fieldFactDevAndroid',
-  devFs:       'fieldFactDevFullstack',
-  devDb:       'fieldFactDevDb'
-};
-
-const FIELD_EST_KEY_BY_ROLE = {
-  analysis:    'fieldAnalysis',
-  testing:     'fieldTesting',
-  devPlatform: 'fieldDevPlatform',
-  devBack:     'fieldDevBack',
-  devFront:    'fieldDevFront',
-  devIos:      'fieldDevIos',
-  devAndroid:  'fieldDevAndroid',
-  devFs:       'fieldDevFullstack',
-  devDb:       'fieldDevDb'
-};
-
-/* v1.3.1: разделили cascadeUpdated на est (оценки) / fact (трудозатраты).
-   Backward-compat: старый ключ cascadeUpdated больше не используется
-   workflow'ом; читать его из settings админам не нужно. */
-const WF_I18N = {
-  en: {
-    cascadeUpdatedEst:  'Cascade-updated estimates in {issueId}: {details}',
-    cascadeUpdatedFact: 'Cascade-updated work hours in {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  ru: {
-    cascadeUpdatedEst:  'Каскадно обновлены оценки в {issueId}: {details}',
-    cascadeUpdatedFact: 'Каскадно обновлены трудозатраты в {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  cs: {
-    cascadeUpdatedEst:  'Kaskádově aktualizovány odhady v {issueId}: {details}',
-    cascadeUpdatedFact: 'Kaskádově aktualizovány pracovní hodiny v {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  de: {
-    cascadeUpdatedEst:  'Schätzungen in {issueId} kaskadierend aktualisiert: {details}',
-    cascadeUpdatedFact: 'Arbeitszeit in {issueId} kaskadierend aktualisiert: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  es: {
-    cascadeUpdatedEst:  'Estimaciones actualizadas en cascada en {issueId}: {details}',
-    cascadeUpdatedFact: 'Horas de trabajo actualizadas en cascada en {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  fr: {
-    cascadeUpdatedEst:  'Estimations mises à jour en cascade dans {issueId} : {details}',
-    cascadeUpdatedFact: 'Heures de travail mises à jour en cascade dans {issueId} : {details}',
-    cascadeFieldChange: '{field} : {from} → {to}'
-  },
-  hu: {
-    cascadeUpdatedEst:  'Becslések kaszkádosan frissítve a(z) {issueId} esetén: {details}',
-    cascadeUpdatedFact: 'Munkaóra kaszkádosan frissítve a(z) {issueId} esetén: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  it: {
-    cascadeUpdatedEst:  'Stime aggiornate a cascata in {issueId}: {details}',
-    cascadeUpdatedFact: 'Ore di lavoro aggiornate a cascata in {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  ja: {
-    cascadeUpdatedEst:  '{issueId} の見積もりがカスケードで更新されました: {details}',
-    cascadeUpdatedFact: '{issueId} の作業時間がカスケードで更新されました: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  ko: {
-    cascadeUpdatedEst:  '{issueId}의 추정치가 캐스케이드로 업데이트되었습니다: {details}',
-    cascadeUpdatedFact: '{issueId}의 작업 시간이 캐스케이드로 업데이트되었습니다: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  nl: {
-    cascadeUpdatedEst:  'Schattingen in cascade bijgewerkt in {issueId}: {details}',
-    cascadeUpdatedFact: 'Werkuren in cascade bijgewerkt in {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  pl: {
-    cascadeUpdatedEst:  'Szacunki zaktualizowane kaskadowo w {issueId}: {details}',
-    cascadeUpdatedFact: 'Godziny pracy zaktualizowane kaskadowo w {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  pt: {
-    cascadeUpdatedEst:  'Estimativas atualizadas em cascata em {issueId}: {details}',
-    cascadeUpdatedFact: 'Horas de trabalho atualizadas em cascata em {issueId}: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  tr: {
-    cascadeUpdatedEst:  '{issueId} içindeki tahminler kademeli olarak güncellendi: {details}',
-    cascadeUpdatedFact: '{issueId} içindeki çalışma saatleri kademeli olarak güncellendi: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  },
-  zh: {
-    cascadeUpdatedEst:  '{issueId} 中的估算已级联更新: {details}',
-    cascadeUpdatedFact: '{issueId} 中的工作时间已级联更新: {details}',
-    cascadeFieldChange: '{field}: {from} → {to}'
-  }
-};
-
-function _normLang(raw) {
-  if (typeof raw !== 'string') return null;
-  const lower = raw.toLowerCase().split(/[-_]/)[0];
-  return lower || null;
-}
-
-function pickLocale(ctx, settings) {
-  if (settings && settings.defaultLang) {
-    const norm = _normLang(settings.defaultLang);
-    if (norm && WF_I18N[norm]) return norm;
-  }
-  try {
-    const userLang = ctx && ctx.currentUser && ctx.currentUser.profile
-      && ctx.currentUser.profile.locale && ctx.currentUser.profile.locale.language;
-    const norm = _normLang(userLang);
-    if (norm && WF_I18N[norm]) return norm;
-  } catch (_) {}
-  return FALLBACK_LANG;
-}
-
-function tWf(lang, key, vars) {
-  const dict = WF_I18N[lang] || WF_I18N[FALLBACK_LANG];
-  let s = (dict && dict[key]) || (WF_I18N[FALLBACK_LANG][key]) || key;
-  if (vars) {
-    Object.keys(vars).forEach(function(v) {
-      s = s.replace(new RegExp('\\{' + v + '\\}', 'g'), String(vars[v]));
-    });
-  }
-  return s;
-}
-
-/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
-   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
-   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
-   action выполняются в одной транзакции события. */
-var _settingsStash = null;
-
-function readSettings(issue) {
-  if (!issue) return null;
-  try {
-    const project = issue.project;
-    if (!project) return null;
-    const ep = project.extensionProperties;
-    if (!ep) return null;
-    const raw = ep[SETTINGS_KEY];
-    if (!raw) return null;
-    if (typeof raw === 'string') {
-      try { return JSON.parse(raw); } catch (_) { return null; }
-    }
-    if (typeof raw === 'object') return raw;
-    return null;
-  } catch (_) { return null; }
-}
-
-/* Часы в рабочем дне — из ssp_settings.hoursPerDay (admin-тир, дефолт 8); выставляется
-   в начале action после readSettings. Scripting API НЕ отдаёт WorkTimeSettings инстанса
-   (только REST-админка; сами JB в доках хардкодят константы) — норма проекта честнее.
-   ponytail: рабочая неделя = 5 дней константой; понадобится иная — заводить settings-ключ. */
-var WF_HOURS_PER_DAY = 8;
-function _normHoursPerDay(v) {
-  v = Number(v);
-  return (isFinite(v) && v >= 1 && v <= 24) ? v : 8;
-}
-
-function getMinutes(period) {
-  if (!period) return 0;
-  const weeks = period.getWeeks ? (period.getWeeks() || 0) : 0;
-  const days = period.getDays ? (period.getDays() || 0) : 0;
-  const hours = period.getHours ? (period.getHours() || 0) : 0;
-  const minutes = period.getMinutes ? (period.getMinutes() || 0) : 0;
-  return weeks * 5 * WF_HOURS_PER_DAY * 60 + days * WF_HOURS_PER_DAY * 60 + hours * 60 + minutes;
-}
-
-function formatMinutes(m) {
-  const mm = m || 0;
-  const h = Math.floor(mm / 60);
-  const r = mm % 60;
-  return h + 'h ' + r + 'm';
-}
+/* R3c (v3.7.0) — общая WF-инфраструктура вынесена в ./workflow-common.js
+   (B-11 снят, см. workflow-common.js). WF_I18N — объединённый словарь. */
+const wfCommon = require('./workflow-common.js');
+const WF_I18N                = wfCommon.WF_I18N;
+const pickLocale             = wfCommon.pickLocale;
+const tWf                    = wfCommon.tWf;
+const readSettings           = wfCommon.readSettings;
+const getMinutes             = wfCommon.getMinutes;
+const formatMinutes          = wfCommon.formatMinutes;
+const FIELD_FACT_KEY_BY_ROLE = wfCommon.FIELD_FACT_KEY_BY_ROLE;
+const FIELD_EST_KEY_BY_ROLE  = wfCommon.FIELD_EST_KEY_BY_ROLE;
+const _kindName              = wfCommon.kindName;
+const _firstLink             = wfCommon.firstLink;
+const _collectChildren       = wfCommon.collectChildren;
 
 /* List всех cascade-агрегируемых полей: settings.fieldFact* +
    settings.fieldEst* для active roles, в порядке activeRoles. Пустые
@@ -224,45 +49,6 @@ function _activeFieldList(settings) {
     if (factKey && typeof settings[factKey] === 'string' && settings[factKey].length) out.push(settings[factKey]);
     if (estKey && typeof settings[estKey] === 'string' && settings[estKey].length) out.push(settings[estKey]);
   });
-  return out;
-}
-
-/* Имя kind-значения issue. settings.cascadeKindField задаёт имя field'а
-   (default 'Type'). Возвращаемый объект может быть либо bundle-element с
-   .name, либо string — обрабатываем оба. */
-function _kindName(issue, settings) {
-  if (!issue) return null;
-  const kf = (settings && typeof settings.cascadeKindField === 'string' && settings.cascadeKindField.length)
-    ? settings.cascadeKindField : 'Type';
-  try {
-    const v = issue.fields[kf];
-    if (!v) return null;
-    if (typeof v === 'string') return v;
-    if (v.name) return v.name;
-  } catch (_) {}
-  return null;
-}
-
-function _firstLink(issue, linkName) {
-  if (!issue || !issue.links) return null;
-  const coll = issue.links[linkName];
-  if (!coll) return null;
-  if (typeof coll.first === 'function') {
-    try { return coll.first(); } catch (_) { return null; }
-  }
-  return null;
-}
-
-function _collectChildren(parent, outwardLinkName) {
-  const out = [];
-  if (!parent || !parent.links) return out;
-  const coll = parent.links[outwardLinkName];
-  if (!coll) return out;
-  if (typeof coll.forEach === 'function') {
-    try {
-      coll.forEach(function(c) { if (c) out.push(c); });
-    } catch (_) {}
-  }
   return out;
 }
 
@@ -343,10 +129,9 @@ function aggregateToParent(parent, settings, lang) {
 }
 
 function _runCascade(issue, ctx) {
-  const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
-  _settingsStash = null;
+  const settings = wfCommon.takeSettings(issue);
   if (!settings || !settings.cascadeAggregationEnabled) return;
-  WF_HOURS_PER_DAY = _normHoursPerDay(settings.hoursPerDay);
+  wfCommon.setHoursPerDay(settings.hoursPerDay);
   const lvl2 = Array.isArray(settings.cascadeLevel2Values) ? settings.cascadeLevel2Values : [];
   const lvl3 = Array.isArray(settings.cascadeLevel3Values) ? settings.cascadeLevel3Values : [];
   if (!lvl2.length && !lvl3.length) return;
@@ -391,7 +176,7 @@ function _guard(ctx) {
   const issue = ctx && ctx.issue;
   if (!issue) return false;
   const settings = readSettings(issue);
-  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
+  wfCommon.stashSettings(issue, settings); /* handoff guard→action — workflow-common */
   if (!settings || !settings.cascadeAggregationEnabled) return false;
   const fields = _activeFieldList(settings);
   if (!fields.length) return false;

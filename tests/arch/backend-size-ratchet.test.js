@@ -10,6 +10,10 @@
  * Что НЕ переносим (осознанно): топология слоёв (B/C) и state-baseline — они построены
  * на window.__-мостах; бэкенд использует require, мостов нет → сигнал был бы пустым.
  * Числа в registry.backend — per-fork (форки дрейфят), правятся вручную в каждом форке.
+ *
+ * WF1/WF2 (R3c, v3.7.0): та же дисциплина на workflow-*.js. Общая инфраструктура вынесена
+ * в workflow-common.js (sibling-require), правила require'ят её — ратчет фиксирует ужатие
+ * и ловит регресс «правило снова обросло локальной копией». registry.workflow — per-fork.
  */
 'use strict';
 const { test } = require('node:test');
@@ -68,4 +72,38 @@ test('BE3 — реестр полон: каждый backend-*.js имеет за
     'Новый backend-*.js без записи в registry.backend.modules (добавь loc/locBudget): ' + missing.join(', '));
   assert.deepStrictEqual(orphan, [],
     'Осиротевшие записи в registry.backend.modules (файла нет на диске): ' + orphan.join(', '));
+});
+/** Все workflow-*.js в корне репо. */
+function listWorkflowModules() {
+  return fs.readdirSync(ROOT)
+    .filter((f) => /^workflow-.*\.js$/.test(f))
+    .sort();
+}
+
+test('WF1 — каждый workflow-модуль не превышает свой LOC-бюджет (ratchet only down)', () => {
+  const wf = reg.workflow;
+  assert.ok(wf && wf.modules, 'module-registry.json: отсутствует секция workflow.modules');
+  const over = [];
+  for (const f of listWorkflowModules()) {
+    const entry = wf.modules[f];
+    if (!entry) continue; // ловит WF2
+    const loc = locOf(f);
+    if (loc > entry.locBudget) over.push(`${f}: ${loc} > бюджет ${entry.locBudget}`);
+  }
+  assert.deepStrictEqual(over, [],
+    'Workflow-модули переросли бюджет. Общая инфраструктура едет в workflow-common.js ' +
+    '(не копия в правиле!) ИЛИ, если рост оправдан, осознанно подними locBudget в ' +
+    'module-registry.json (workflow.modules):\n  ' + over.join('\n  '));
+});
+
+test('WF2 — реестр полон: каждый workflow-*.js имеет запись, нет осиротевших', () => {
+  const wf = reg.workflow;
+  const onDisk = listWorkflowModules();
+  const inReg = Object.keys(wf.modules);
+  const missing = onDisk.filter((f) => !wf.modules[f]);
+  const orphan = inReg.filter((f) => !fs.existsSync(path.join(ROOT, f)));
+  assert.deepStrictEqual(missing, [],
+    'Новый workflow-*.js без записи в registry.workflow.modules (добавь loc/locBudget): ' + missing.join(', '));
+  assert.deepStrictEqual(orphan, [],
+    'Осиротевшие записи в registry.workflow.modules (файла нет на диске): ' + orphan.join(', '));
 });

@@ -6,8 +6,7 @@
  *   - Idempotent: cur === target → no-op (защита от loop).
  *   - isResolved guard: parent.State ∈ stateRollupResolvedStates → skip write.
  *   - Floor: target = order[max(minChildIdx, floorIdx)] если задан stateRollupFloor.
- *   - i18n WF_I18N inline (15 локалей).
- *   - Self-contained per B-11; не require'ит другие workflow-файлы.
+ *   - i18n WF_I18N — объединённый словарь в workflow-common.js (R3c; B-11 снят).
  *   - Reuses cascade hierarchy config (cascadeKindField, cascadeLevel2/3Values,
  *     cascadeParentLinkInward/Outward, fieldState) — no duplicate settings.
  *
@@ -20,195 +19,17 @@
 const entities = require('@jetbrains/youtrack-scripting-api/entities');
 const workflow = require('@jetbrains/youtrack-scripting-api/workflow');
 
-const SETTINGS_KEY = 'ssp_settings';
-const FALLBACK_LANG = 'en';
-
-/* v1.7.0 D128 — WF_I18N: 4 workflow-side keys × 15 локалей.
-   EN + RU полностью; 13 остальных — EN placeholder до i18n-pass v1.7.x. */
-const WF_I18N = {
-  en: {
-    rollupUpdated:         'State rollup updated for {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'State rollup clamped to floor «{floorState}» for {issueId} (children min would be «{minState}»)',
-    rollupResolvedSkipped: 'State rollup skipped — {issueId} is already in resolved state «{state}»',
-    rollupUnknownState:    'State rollup ignored unknown child state «{state}» (not in stateRollupOrder)'
-  },
-  ru: {
-    rollupUpdated:         'Состояние контейнера {issueId} автоматически обновлено: {fromState} → {toState}',
-    rollupFloorHit:        'Состояние контейнера {issueId} удержано на минимуме «{floorState}» (по children было бы «{minState}»)',
-    rollupResolvedSkipped: 'Состояние контейнера {issueId} уже «{state}» — rollup не пересчитывает завершённые контейнеры',
-    rollupUnknownState:    'Rollup проигнорировал неизвестное состояние «{state}» (нет в настройке stateRollupOrder)'
-  },
-  cs: {
-    rollupUpdated:         'Stav kontejneru aktualizován pro {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Stav kontejneru udržen na minimu «{floorState}» pro {issueId} (podle podřízených by byl «{minState}»)',
-    rollupResolvedSkipped: 'Aktualizace stavu přeskočena — {issueId} je již ve stavu «{state}»',
-    rollupUnknownState:    'Aktualizace stavu ignorovala neznámý stav podřízeného «{state}» (není v nastavení stateRollupOrder)'
-  },
-  de: {
-    rollupUpdated:         'Container-Status aktualisiert für {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Container-Status für {issueId} bei Mindestwert «{floorState}» gehalten (Kinder-Minimum wäre «{minState}»)',
-    rollupResolvedSkipped: 'Status-Rollup übersprungen — {issueId} ist bereits im Status «{state}»',
-    rollupUnknownState:    'Status-Rollup ignorierte unbekannten Kind-Status «{state}» (nicht in stateRollupOrder)'
-  },
-  es: {
-    rollupUpdated:         'Estado del contenedor actualizado para {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Estado del contenedor limitado al mínimo «{floorState}» para {issueId} (el mínimo de hijos sería «{minState}»)',
-    rollupResolvedSkipped: 'Actualización de estado omitida — {issueId} ya está en estado «{state}»',
-    rollupUnknownState:    'La actualización de estado ignoró el estado hijo desconocido «{state}» (no está en stateRollupOrder)'
-  },
-  fr: {
-    rollupUpdated:         'État du conteneur mis à jour pour {issueId} : {fromState} → {toState}',
-    rollupFloorHit:        'État du conteneur limité au minimum « {floorState} » pour {issueId} (le minimum des enfants serait « {minState} »)',
-    rollupResolvedSkipped: 'Mise à jour d’état ignorée — {issueId} est déjà à l’état « {state} »',
-    rollupUnknownState:    'La mise à jour d’état a ignoré l’état enfant inconnu « {state} » (pas dans stateRollupOrder)'
-  },
-  hu: {
-    rollupUpdated:         'Konténer állapota frissítve a(z) {issueId} esetén: {fromState} → {toState}',
-    rollupFloorHit:        'Konténer állapota a(z) {issueId} esetén a minimumon «{floorState}» tartva (gyermekek minimuma «{minState}» lenne)',
-    rollupResolvedSkipped: 'Állapot-frissítés kihagyva — {issueId} már «{state}» állapotban van',
-    rollupUnknownState:    'Az állapot-frissítés figyelmen kívül hagyta az ismeretlen gyermekállapotot «{state}» (nincs a stateRollupOrder beállításban)'
-  },
-  it: {
-    rollupUpdated:         'Stato del contenitore aggiornato per {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Stato del contenitore limitato al minimo «{floorState}» per {issueId} (il minimo dei figli sarebbe «{minState}»)',
-    rollupResolvedSkipped: 'Aggiornamento dello stato ignorato — {issueId} è già nello stato «{state}»',
-    rollupUnknownState:    'L’aggiornamento dello stato ha ignorato lo stato figlio sconosciuto «{state}» (non in stateRollupOrder)'
-  },
-  ja: {
-    rollupUpdated:         'コンテナの状態を更新しました（{issueId}）: {fromState} → {toState}',
-    rollupFloorHit:        'コンテナの状態を最小値「{floorState}」に保持しました（{issueId}、子の最小は「{minState}」）',
-    rollupResolvedSkipped: '状態の集約をスキップ — {issueId} は既に「{state}」状態です',
-    rollupUnknownState:    '状態の集約が不明な子ステート「{state}」を無視しました（stateRollupOrder に未登録）'
-  },
-  ko: {
-    rollupUpdated:         '컨테이너 상태가 업데이트되었습니다 ({issueId}): {fromState} → {toState}',
-    rollupFloorHit:        '컨테이너 상태를 최소값 「{floorState}」(으)로 유지했습니다 ({issueId}, 자식 최소는 「{minState}」)',
-    rollupResolvedSkipped: '상태 롤업 건너뜀 — {issueId}은(는) 이미 「{state}」 상태입니다',
-    rollupUnknownState:    '상태 롤업이 알 수 없는 자식 상태 「{state}」을(를) 무시했습니다 (stateRollupOrder에 없음)'
-  },
-  nl: {
-    rollupUpdated:         'Containerstatus bijgewerkt voor {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Containerstatus voor {issueId} op minimum «{floorState}» gehouden (minimum van onderliggende issues zou «{minState}» zijn)',
-    rollupResolvedSkipped: 'Status-rollup overgeslagen — {issueId} heeft al de status «{state}»',
-    rollupUnknownState:    'Status-rollup negeerde onbekende onderliggende status «{state}» (niet in stateRollupOrder)'
-  },
-  pl: {
-    rollupUpdated:         'Status kontenera zaktualizowany dla {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Status kontenera utrzymany na minimum «{floorState}» dla {issueId} (minimum dzieci wynosiłoby «{minState}»)',
-    rollupResolvedSkipped: 'Aktualizacja statusu pominięta — {issueId} ma już status «{state}»',
-    rollupUnknownState:    'Aktualizacja statusu zignorowała nieznany status dziecka «{state}» (nie ma w stateRollupOrder)'
-  },
-  pt: {
-    rollupUpdated:         'Estado do contêiner atualizado para {issueId}: {fromState} → {toState}',
-    rollupFloorHit:        'Estado do contêiner limitado ao mínimo «{floorState}» para {issueId} (o mínimo dos filhos seria «{minState}»)',
-    rollupResolvedSkipped: 'Atualização de estado ignorada — {issueId} já está no estado «{state}»',
-    rollupUnknownState:    'A atualização de estado ignorou o estado filho desconhecido «{state}» (não está em stateRollupOrder)'
-  },
-  tr: {
-    rollupUpdated:         'Konteyner durumu güncellendi ({issueId}): {fromState} → {toState}',
-    rollupFloorHit:        'Konteyner durumu minimumda «{floorState}» tutuldu ({issueId}, alt öğelerin minimumu «{minState}» olurdu)',
-    rollupResolvedSkipped: 'Durum toplaması atlandı — {issueId} zaten «{state}» durumunda',
-    rollupUnknownState:    'Durum toplaması bilinmeyen alt durumu «{state}» yok saydı (stateRollupOrder içinde değil)'
-  },
-  zh: {
-    rollupUpdated:         '容器状态已更新（{issueId}）：{fromState} → {toState}',
-    rollupFloorHit:        '容器状态保持在最小值「{floorState}」（{issueId}，子任务最小为「{minState}」）',
-    rollupResolvedSkipped: '状态汇总已跳过 — {issueId} 已处于「{state}」状态',
-    rollupUnknownState:    '状态汇总忽略了未知的子状态「{state}」（不在 stateRollupOrder 中）'
-  }
-};
-
-/* ---- Утилиты (self-contained copy per B-11) ---- */
-
-function _normLang(raw) {
-  if (typeof raw !== 'string') return null;
-  const lower = raw.toLowerCase().split(/[-_]/)[0];
-  return lower || null;
-}
-
-function pickLocale(ctx, settings) {
-  if (settings && settings.defaultLang) {
-    const norm = _normLang(settings.defaultLang);
-    if (norm && WF_I18N[norm]) return norm;
-  }
-  try {
-    const userLang = ctx && ctx.currentUser && ctx.currentUser.profile
-      && ctx.currentUser.profile.locale && ctx.currentUser.profile.locale.language;
-    const norm = _normLang(userLang);
-    if (norm && WF_I18N[norm]) return norm;
-  } catch (_) {}
-  return FALLBACK_LANG;
-}
-
-function tWf(lang, key, vars) {
-  const dict = WF_I18N[lang] || WF_I18N[FALLBACK_LANG];
-  let s = (dict && dict[key]) || (WF_I18N[FALLBACK_LANG][key]) || key;
-  if (vars) {
-    Object.keys(vars).forEach(function(v) {
-      s = s.replace(new RegExp('\\{' + v + '\\}', 'g'), String(vars[v]));
-    });
-  }
-  return s;
-}
-
-/* Handoff-кэш guard→action (аудит P-6): guard и action одного срабатывания парсили
-   один и тот же многокилобайтный ssp_settings дважды. Guard кладёт распарсенное,
-   action-вход забирает при совпадении issue.id и чистит; стейл-окна нет — guard и
-   action выполняются в одной транзакции события. */
-var _settingsStash = null;
-
-function readSettings(issue) {
-  if (!issue) return null;
-  try {
-    const project = issue.project;
-    if (!project) return null;
-    const ep = project.extensionProperties;
-    if (!ep) return null;
-    const raw = ep[SETTINGS_KEY];
-    if (!raw) return null;
-    if (typeof raw === 'string') {
-      try { return JSON.parse(raw); } catch (_) { return null; }
-    }
-    if (typeof raw === 'object') return raw;
-    return null;
-  } catch (_) { return null; }
-}
-
-function _kindName(issue, settings) {
-  if (!issue) return null;
-  const kf = (settings && typeof settings.cascadeKindField === 'string' && settings.cascadeKindField.length)
-    ? settings.cascadeKindField : 'Type';
-  try {
-    const v = issue.fields[kf];
-    if (!v) return null;
-    if (typeof v === 'string') return v;
-    if (v.name) return v.name;
-  } catch (_) {}
-  return null;
-}
-
-function _firstLink(issue, linkName) {
-  if (!issue || !issue.links) return null;
-  const coll = issue.links[linkName];
-  if (!coll) return null;
-  if (typeof coll.first === 'function') {
-    try { return coll.first(); } catch (_) { return null; }
-  }
-  return null;
-}
-
-function _collectChildren(parent, outwardLinkName) {
-  const out = [];
-  if (!parent || !parent.links) return out;
-  const coll = parent.links[outwardLinkName];
-  if (!coll) return out;
-  if (typeof coll.forEach === 'function') {
-    try {
-      coll.forEach(function(c) { if (c) out.push(c); });
-    } catch (_) {}
-  }
-  return out;
-}
+/* R3c (v3.7.0) — общая WF-инфраструктура вынесена в ./workflow-common.js
+   (B-11 снят, см. workflow-common.js). WF_I18N — объединённый словарь. */
+const wfCommon = require('./workflow-common.js');
+const WF_I18N          = wfCommon.WF_I18N;
+const FALLBACK_LANG    = wfCommon.FALLBACK_LANG;
+const pickLocale       = wfCommon.pickLocale;
+const tWf              = wfCommon.tWf;
+const readSettings     = wfCommon.readSettings;
+const _kindName        = wfCommon.kindName;
+const _firstLink       = wfCommon.firstLink;
+const _collectChildren = wfCommon.collectChildren;
 
 /* ---- State rollup logic ---- */
 
@@ -308,8 +129,7 @@ function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lan
 }
 
 function _runRollup(issue, ctx) {
-  const settings = (_settingsStash && issue && _settingsStash.issue === issue) ? _settingsStash.s : readSettings(issue);
-  _settingsStash = null;
+  const settings = wfCommon.takeSettings(issue);
   if (!settings || !settings.stateRollupEnabled) return;
 
   if (settings.stateRollupStrategy && settings.stateRollupStrategy !== 'min') return;
@@ -364,7 +184,7 @@ function _guard(ctx) {
   const issue = ctx && ctx.issue;
   if (!issue) return false;
   const settings = readSettings(issue);
-  _settingsStash = { issue: issue, s: settings }; /* ключ — референс: в одной транзакции guard/action делят инстанс issue; иначе — безвредный re-read */
+  wfCommon.stashSettings(issue, settings); /* handoff guard→action — workflow-common */
   if (!settings || !settings.stateRollupEnabled) return false;
 
   const stateFieldName = (typeof settings.fieldState === 'string' && settings.fieldState.length)

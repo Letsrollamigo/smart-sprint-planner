@@ -113,14 +113,16 @@ allWorkflows.forEach(function(entry) {
   /* v1.7.1 — strict guard: every locale (cs/de/.../zh) must have NON-EN content
      for every key (no placeholder=EN copies). Catches accidental v1.7.0-style
      placeholder regressions on future releases.
-     Allowlist for legitimate non-translatable values:
-       - cascade.cascadeFieldChange — template '{field}: {from} → {to}' (no words)
-       - dta.unitH / unitM — universal unit symbols (h, m); some languages share them */
+     R3c (v3.7.0): словарь ОБЩИЙ (workflow-common.js) — каждый файл экспортирует
+     один и тот же слитый WF_I18N, поэтому allowlist общий:
+       - cascadeFieldChange — template '{field}: {from} → {to}' (no words)
+       - unitH / unitM — universal unit symbols (h, m); some languages share them */
+  const MERGED_ALLOWLIST = ['cascadeFieldChange', 'unitH', 'unitM'];
   const NON_TRANSLATABLE_KEYS = {
-    'cascade-aggregation': ['cascadeFieldChange'],
-    'dta-aggregation':     ['unitH', 'unitM'],
-    'forbid-container':    [],
-    'state-rollup':        []
+    'cascade-aggregation': MERGED_ALLOWLIST,
+    'dta-aggregation':     MERGED_ALLOWLIST,
+    'forbid-container':    MERGED_ALLOWLIST,
+    'state-rollup':        MERGED_ALLOWLIST
   };
 
   test(entry.name + ': WF_I18N has no placeholder (EN copy) translations for any locale × key', function() {
@@ -141,4 +143,19 @@ allWorkflows.forEach(function(entry) {
     assert.strictEqual(placeholders.length, 0,
       entry.name + ' has ' + placeholders.length + ' placeholder=EN translations: ' + placeholders.join(', '));
   });
+});
+
+/* R3c (v3.7.0) — словарь один на все правила: каждый файл ре-экспортирует
+   WF_I18N из workflow-common.js. Identity-тест ловит регресс «правило снова
+   завело локальную копию» (шэдоуинг общего модуля — класс молчаливого
+   неприменения дедупа). */
+test('R3c: все 4 правила разделяют ОДИН инстанс WF_I18N из workflow-common', function() {
+  const common = require(path.join(__dirname, '..', '..', 'workflow-common.js'));
+  allWorkflows.forEach(function(entry) {
+    assert.strictEqual(entry.wf.WF_I18N, common.WF_I18N,
+      entry.name + ' экспортирует НЕ общий словарь (локальная копия?)');
+    assert.strictEqual(entry.wf.tWf, common.tWf, entry.name + ': tWf не из common');
+    assert.strictEqual(entry.wf.pickLocale, common.pickLocale, entry.name + ': pickLocale не из common');
+  });
+  assert.strictEqual(Object.keys(common.WF_I18N.en).length, 30, 'слитый словарь: 30 ключей');
 });

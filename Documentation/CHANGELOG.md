@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.7.0] — 2026-07-15
+
+> **Architecture-audit wave R3c: workflow-infrastructure extraction. No functional changes.**
+
+### Internal
+
+- **Shared  module** — the duplicated infrastructure of the four workflow rules (time aggregation, cascade roll-up, container-logging ban, state roll-up) is consolidated into one shared sibling module: a merged  dictionary (30 keys × 15 locales; the rules' keys are disjoint, 0 translation conflicts), ///settings handoff cache/////. The rules now  — the "self-contained file" invariant (B-11) is dropped deliberately: sibling-require in the YT Apps workflow runtime is confirmed (a broken require fails the app import fast — no silent degradation).
+- **−~250 lines of duplication** per fork: the rules shrank (dta 879→402, cascade 422→207, forbid 152→69, state-rollup 394→214 lines).
+- **New gates** — a LOC ratchet and registry-completeness for  (a  registry section, WF1/WF2) plus an identity test: all four rules share one dictionary instance (catches a "rule grew a local copy again" regression).
+- Data schema untouched — the schema marker stays at 3.6.0.
+
 ## [3.6.0] — 2026-07-13
 
 > **Architecture-audit wave R3b: the schema release. Old data migrates automatically; no functional changes.**
