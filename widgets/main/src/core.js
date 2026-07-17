@@ -516,21 +516,9 @@
   // _items теперь хранится по ролям: { roleKey: [items] }
   var _roleItems = {};
   var _history = [];
-  /* #45 R3 — стейт вкладки ёмкости (домен capacity инкапсулирован: pure+view+отдельные
-     сторы). Все — closure-стейт ядра, в capacity-view идут через _capacityDeps().state
-     get/set (C1). _capacity = запись выбранного спринта (или null); _calendar/_absences —
-     сторы (full map); _capacityRoster = {roleKey:[{login,name}]}; _capacityUiState —
-     эфемерное UI (выбор спринта/человека, рабочая модель правок, carry-forward). */
-  var _capacity = null;
-  var _calendar = null;
-  var _absences = {};
-  var _capacityRoster = {};
-  var _capacityUiState = { selectedSprintId: null, selectedPerson: null, persons: null, absences: null, carry: null };
-  /* #45 R4 — кэш утверждённой ёмкости ПЛАНИРУЕМОГО спринта (отвязан от _capacity вкладки:
-     вкладка может смотреть другой спринт). Lazy-load по _sprint.sprintId в Full-режиме;
-     адаптеры §9 отдают запись лишь если _planCap.sprintId === текущий планируемый спринт. */
-  var _planCap = { sprintId: null, record: null };
-  var _planCapLoading = false;
+  /* #45 R3/R4 → R6: весь стейт домена «ёмкость» (вкладка + кэш утверждённой ёмкости
+     планируемого спринта) инкапсулирован в domain/capacity-store.js (ADR-001, третье
+     применение; аудит §7 п.14). Ядро делегирует через CAPACITY_STORE-аксессоры. */
   /* ═══ v5.4.0 — Общий контекст спринта (Этап 2) ═══
      _currentSprintId — id «логического спринта» виджета (соответствует _sprint.sprintId
      для активного и любому уникальному <sprintId> из _history для исторических).
@@ -774,6 +762,7 @@
      через deps.state-аксессоры; reset per-project — SPRINT_STORE.resetProjectSlice()
      в _resetProjectStateCaches. */
   var SPRINT_STORE = (typeof window !== 'undefined' && window.__SSP_SPRINT_STORE) || {};
+  var CAPACITY_STORE = (typeof window !== 'undefined' && window.__SSP_CAPACITY_STORE) || {};   /* R6 — стор ёмкости (ADR-001) */
   var _draftRestoreInProgress = false;
 
   /* v5.0.3 — серверный черновик (через GET/POST /draft).
@@ -2005,8 +1994,7 @@
     _userBacklogFilter = '';
     _backlogPool = null;
     _backlogUnmapped = null;
-    _planCap = { sprintId: null, record: null };
-    _planCapLoading = false;
+    CAPACITY_STORE.invalidatePlanCap(null);
     _workingDraftsDirty = false;
     if (typeof DRAFT_STORE.cancelScheduledFlushes === 'function') DRAFT_STORE.cancelScheduledFlushes();
   }
@@ -3321,9 +3309,7 @@
       CAPACITY_PURE: CAPACITY_PURE,
       /* v3.2.1 — сброс кэша утверждённой ёмкости планирования после save/approve
          на вкладке «Ёмкость» (иначе Full-остатки живут по устаревшей записи до F5). */
-      invalidatePlanCap: function (sid) {
-        if (!sid || _planCap.sprintId === sid) { _planCap = { sprintId: null, record: null }; _planCapLoading = false; }
-      },
+      invalidatePlanCap: function (sid) { CAPACITY_STORE.invalidatePlanCap(sid); },
       state: {
         getMode: function () { return _mode; },                       /* #51 */
         getGlobalProjects: function () { return _globalProjects; },   /* #51 */
@@ -3331,16 +3317,16 @@
         getSprint: function () { return _sprint; },
         getHistory: function () { return _history; },
         getCurrentUser: function () { return _currentUser; },
-        getCapacity: function () { return _capacity; },
-        setCapacity: function (v) { _capacity = v; },
-        getCalendar: function () { return _calendar; },
-        setCalendar: function (v) { _calendar = v; },
-        getAbsences: function () { return _absences; },
-        setAbsences: function (v) { _absences = v || {}; },
-        getRoster: function () { return _capacityRoster; },
-        setRoster: function (v) { _capacityRoster = v || {}; },
-        getCapacityUiState: function () { return _capacityUiState; },
-        setCapacityUiState: function (v) { _capacityUiState = v || {}; },
+        getCapacity: CAPACITY_STORE.getCapacity,
+        setCapacity: CAPACITY_STORE.setCapacity,
+        getCalendar: CAPACITY_STORE.getCalendar,
+        setCalendar: CAPACITY_STORE.setCalendar,
+        getAbsences: CAPACITY_STORE.getAbsences,
+        setAbsences: CAPACITY_STORE.setAbsences,
+        getRoster: CAPACITY_STORE.getRoster,
+        setRoster: CAPACITY_STORE.setRoster,
+        getCapacityUiState: CAPACITY_STORE.getCapacityUiState,
+        setCapacityUiState: CAPACITY_STORE.setCapacityUiState,
       },
     };
   }
@@ -4346,21 +4332,22 @@
   function _ensurePlanCapacity() {
     if (!_settings || _settings.capacityMode !== 'full') return;
     var sid = _sprint && _sprint.sprintId;
-    if (!sid || _planCap.sprintId === sid || _planCapLoading) return;
-    _planCapLoading = true;
+    if (!sid || CAPACITY_STORE.getPlanCap().sprintId === sid || CAPACITY_STORE.isPlanCapLoading()) return;
+    CAPACITY_STORE.setPlanCapLoading(true);
     apiGet('capacity?sprintId=' + encodeURIComponent(sid)).then(function (r) {
-      _planCap = { sprintId: sid, record: (r && r.capacity) ? r.capacity : null };
-      _planCapLoading = false;
+      CAPACITY_STORE.setPlanCap({ sprintId: sid, record: (r && r.capacity) ? r.capacity : null });
+      CAPACITY_STORE.setPlanCapLoading(false);
       try { if (typeof renderPlannerRoles === 'function') renderPlannerRoles(); } catch (_) {}
-    }).catch(function () { _planCap = { sprintId: sid, record: null }; _planCapLoading = false; });
+    }).catch(function () { CAPACITY_STORE.setPlanCap({ sprintId: sid, record: null }); CAPACITY_STORE.setPlanCapLoading(false); });
   }
   /* Утверждённая запись ёмкости для ПЛАНИРУЕМОГО спринта, либо null (Light/draft/нет/чужой
      спринт). Side-effect: триггерит lazy-load при промахе кэша (re-render по готовности). */
   function _approvedRecordForPlanning() {
     _ensurePlanCapacity();
     var sid = _sprint && _sprint.sprintId;
-    var rec = _planCap.record;
-    if (!sid || _planCap.sprintId !== sid || !rec) return null;
+    var pc = CAPACITY_STORE.getPlanCap();
+    var rec = pc.record;
+    if (!sid || pc.sprintId !== sid || !rec) return null;
     if (rec.mode !== 'full' || rec.status !== 'approved') return null;
     return rec;
   }

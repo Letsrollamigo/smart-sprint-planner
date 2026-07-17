@@ -83,6 +83,7 @@ const BRIDGE_SCRIPTS = [
   'intro-view.js',
   'capacity-view.js',
   'sprint-store.js',
+  'capacity-store.js',   /* R6 — стор ёмкости (ADR-001) */
 ];
 
 /* Модули разнесены по layer-папкам (domain/infra/pure/data/i18n); icons.generated.js — в корне.
@@ -99,9 +100,21 @@ function resolveModulePath(name) {
 const GM_HOOK = `
   /* === GOLDEN-MASTER HOOK — инжектируется только в тестах (monolith-host.js), в бандл не попадает === */
   var __gmTmp;
+  /* R6 — capacity-стейт переехал в domain/capacity-store.js (ADR-001): исторические
+     gm.get/set по именам бывших closure-переменных ядра роутятся в стор (тесты не
+     переписываем — имена остаются стабильным тест-контрактом). */
+  var __gmStore = {
+    _capacity:        { g: function () { return window.__SSP_CAPACITY_STORE.getCapacity(); },        s: function (v) { window.__SSP_CAPACITY_STORE.setCapacity(v); } },
+    _calendar:        { g: function () { return window.__SSP_CAPACITY_STORE.getCalendar(); },        s: function (v) { window.__SSP_CAPACITY_STORE.setCalendar(v); } },
+    _absences:        { g: function () { return window.__SSP_CAPACITY_STORE.getAbsences(); },        s: function (v) { window.__SSP_CAPACITY_STORE.setAbsences(v); } },
+    _capacityRoster:  { g: function () { return window.__SSP_CAPACITY_STORE.getRoster(); },          s: function (v) { window.__SSP_CAPACITY_STORE.setRoster(v); } },
+    _capacityUiState: { g: function () { return window.__SSP_CAPACITY_STORE.getCapacityUiState(); }, s: function (v) { window.__SSP_CAPACITY_STORE.setCapacityUiState(v); } },
+    _planCap:         { g: function () { return window.__SSP_CAPACITY_STORE.getPlanCap(); },         s: function (v) { window.__SSP_CAPACITY_STORE.setPlanCap(v); } },
+    _planCapLoading:  { g: function () { return window.__SSP_CAPACITY_STORE.isPlanCapLoading(); },   s: function (v) { window.__SSP_CAPACITY_STORE.setPlanCapLoading(v); } }
+  };
   window.__GM = {
-    get: function (name) { return eval(name); },
-    set: function (vars) { for (var __gmK in vars) { __gmTmp = vars[__gmK]; eval(__gmK + ' = __gmTmp;'); } },
+    get: function (name) { if (__gmStore[name]) return __gmStore[name].g(); return eval(name); },
+    set: function (vars) { for (var __gmK in vars) { if (__gmStore[__gmK]) { __gmStore[__gmK].s(vars[__gmK]); continue; } __gmTmp = vars[__gmK]; eval(__gmK + ' = __gmTmp;'); } },
     call: function (name) { var __gmF = eval(name); return __gmF.apply(null, Array.prototype.slice.call(arguments, 1)); }
   };
 `;

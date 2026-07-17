@@ -70,6 +70,7 @@ import './domain/intro-view.js';
 import './domain/capacity-view.js';
 import './domain/sprint-store.js';
 import './domain/release-store.js';
+import './domain/capacity-store.js';   /* R6 — стор ёмкости (ADR-001) */
 import './domain/release-view.js';
 import './domain/reporting-view.js';
 import './domain/release-controller.js';
