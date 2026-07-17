@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.11.0] — 2026-07-18
+
+> **Audit epic R6 "trigger zones": optimistic locking for three stores, aggregation perf, capacity store, settings decomposition. No functional behavior changes.**
+
+### Added
+
+- **Optimistic locking for sprint history, releases and the absence register** (stability audit §3, P1 #11/#13/#14) — a generalization of the #56-4 mechanism: a per-slot rev counter in a dedicated extension property, the client sends `baseRev`, a mismatch returns 409 `rev_conflict` with a clear message ("The data was modified by another user…", new `errSlotRevConflict` key, 15 locales) — a parallel edit by two users can no longer be silently overwritten; saving succeeds after a reload. Legacy clients without `baseRev` keep the old behavior; blob schemas and migrations untouched.
+
+### Improved
+
+- **Workflow aggregation performance** — intra-run target dedup in the estimate-cascade and state-rollup rules: a direct story-level edit made both rule paths recompute the same node (the second pass was an idempotent no-op costing CPU × children); each node is now computed once. The full re-sum and the bootstrap contract are intentionally preserved.
+
+### Internal
+
+- **capacity-store** — 7 capacity-domain state variables extracted from the core into `domain/capacity-store.js` (ADR-001, third application); the core state ratchet tightened 79→72; accessor and reset semantics 1:1.
+- **settings-form decomposition** — shared controls in `settings-shared.jsx` plus 7 per-section files; the JSX ratchet tightened 2317→895. The stand smoke caught and fixed a ReferenceError of a non-imported `ADMIN_SECTION_IDS`.
+- `ALLOWED_HISTORY_KEYS` += `baseRev`; rev props declared in entity-extensions; fixtures `3.10.0/`+`3.11.0/`; 11 rev-lock unit tests; full stand smoke (settings / capacity / 409 cycle with recovery).
+
 ## [3.10.0] — 2026-07-17
 
 > **Audit wave R5: backlog pool performance. No functional changes.**
