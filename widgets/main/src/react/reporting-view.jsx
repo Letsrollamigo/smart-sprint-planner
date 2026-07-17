@@ -315,54 +315,69 @@ const CHART = {
   tooltipCursor: { fill: 'rgba(0,0,0,0.04)' },
 };
 
-/* #50 S9-VIZ — распределение бакетов A2 на Recharts (вертикальные бары: оси/тултип/анимация).
-   Либа — globalThis.SSP_VENDORED.Recharts (вендор-чанк, как Ring-компоненты); стиль — CHART. */
-function RechartsBuckets({ items, L, RC }) {
-  const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } = RC;
-  const data = items.map((it) => ({ name: it.label, count: it.count, color: it.color }));
+/* R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts-чарта. RC-гейт (вендор-чанк
+   globalThis.SSP_VENDORED.Recharts, gate — ключевой компонент 'BarChart'|'LineChart'),
+   сайзинг-контейнер и ResponsiveContainer — единой точкой вместо копии в каждой обвязке.
+   children — render-prop (RC)=>чарт (компоненты живут в RC, статически не импортируются);
+   fallback — render-prop без RC (SVG-полосы/таблица; ленивый — не собирается при живой либе).
+   Оси/грид/тултип/серии и сами фолбэки остаются bespoke у вызывающих (разные типы чартов;
+   фолбэки — тестовая поверхность jsdom). */
+function ChartFrame({ gate, maxWidth, height, style, fallback, children }) {
+  const RC = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts;
+  if (!RC || !RC[gate || 'BarChart']) return fallback ? fallback() : null;
+  const { ResponsiveContainer } = RC;
+  const s = Object.assign({ width: '100%', height: height + 'px' }, maxWidth ? { maxWidth } : {}, style || {});
   return (
-    <div style={{ marginTop: '18px' }}>
-      <div style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 8px' }}>{L.bucketTitle}</div>
-      <div style={{ width: '100%', maxWidth: '520px', height: '200px' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -18 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.gridStroke} />
-            <XAxis dataKey="name" tick={CHART.axisTick} />
-            <YAxis allowDecimals={false} tick={CHART.axisTick} />
-            <Tooltip cursor={CHART.tooltipCursor} />
-            <Bar dataKey="count" radius={[3, 3, 0, 0]}>
-              {data.map((d, i) => <Cell key={i} fill={d.color} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+    <div style={s}>
+      <ResponsiveContainer width="100%" height="100%">{children(RC)}</ResponsiveContainer>
     </div>
   );
 }
 
-/* Распределение Lead Time по бакетам. Recharts-бары (если либа доступна) иначе inline-SVG-фолбэк. */
+/* Распределение Lead Time по бакетам (A2). Recharts-бары через ChartFrame (D5);
+   фолбэк — inline-SVG-полосы (тесты / нет Recharts). Стиль — CHART. */
 function BucketBars({ buckets, L }) {
   const items = [
     { key: 'le40', label: L.bucketLe40, count: (buckets && buckets.le40) || 0, color: '#1b7a43' },
     { key: 'mid', label: L.bucketMid, count: (buckets && buckets.mid) || 0, color: '#c98a00' },
     { key: 'gt120', label: L.bucketGt120, count: (buckets && buckets.gt120) || 0, color: '#c62828' },
   ];
-  const RC = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts;
-  if (RC && RC.BarChart) return <RechartsBuckets items={items} L={L} RC={RC} />;
-  /* SVG-фолбэк (тесты / нет Recharts). */
-  const max = Math.max(1, items[0].count, items[1].count, items[2].count);
+  const fallback = () => {
+    const max = Math.max(1, items[0].count, items[1].count, items[2].count);
+    return (
+      <React.Fragment>
+        {items.map((it) => (
+          <div key={it.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '5px 0' }}>
+            <span style={{ flex: '0 0 118px', fontSize: '12px', color: 'var(--muted,#6b7785)' }}>{it.label}</span>
+            <span style={{ flex: '1 1 auto', height: '10px', borderRadius: '5px', background: 'var(--surface2,#eef0f3)', overflow: 'hidden' }}>
+              <i style={{ display: 'block', height: '100%', width: (it.count / max * 100) + '%', background: it.color, borderRadius: '5px' }} />
+            </span>
+            <span style={{ flex: '0 0 auto', minWidth: '22px', textAlign: 'right', fontSize: '13px', fontWeight: 600 }}>{it.count}</span>
+          </div>
+        ))}
+      </React.Fragment>
+    );
+  };
+  const data = items.map((it) => ({ name: it.label, count: it.count, color: it.color }));
   return (
     <div style={{ marginTop: '18px' }}>
       <div style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 8px' }}>{L.bucketTitle}</div>
-      {items.map((it) => (
-        <div key={it.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '5px 0' }}>
-          <span style={{ flex: '0 0 118px', fontSize: '12px', color: 'var(--muted,#6b7785)' }}>{it.label}</span>
-          <span style={{ flex: '1 1 auto', height: '10px', borderRadius: '5px', background: 'var(--surface2,#eef0f3)', overflow: 'hidden' }}>
-            <i style={{ display: 'block', height: '100%', width: (it.count / max * 100) + '%', background: it.color, borderRadius: '5px' }} />
-          </span>
-          <span style={{ flex: '0 0 auto', minWidth: '22px', textAlign: 'right', fontSize: '13px', fontWeight: 600 }}>{it.count}</span>
-        </div>
-      ))}
+      <ChartFrame gate="BarChart" maxWidth="520px" height={200} fallback={fallback}>
+        {(RC) => {
+          const { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } = RC;
+          return (
+            <BarChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -18 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART.gridStroke} />
+              <XAxis dataKey="name" tick={CHART.axisTick} />
+              <YAxis allowDecimals={false} tick={CHART.axisTick} />
+              <Tooltip cursor={CHART.tooltipCursor} />
+              <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                {data.map((d, i) => <Cell key={i} fill={d.color} />)}
+              </Bar>
+            </BarChart>
+          );
+        }}
+      </ChartFrame>
     </div>
   );
 }
@@ -375,7 +390,6 @@ function BucketBars({ buckets, L }) {
 function RepCatBars({ title, sub, items, horizontal, unitLabel, valueName, L }) {
   const data = (items || []).filter((it) => it && typeof it.value === 'number' && isFinite(it.value));
   if (!data.length) return null;
-  const RC = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts;
   const head = (
     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '0 0 8px' }}>
       <span style={{ fontSize: '13px', fontWeight: 600 }}>{title}</span>
@@ -383,16 +397,33 @@ function RepCatBars({ title, sub, items, horizontal, unitLabel, valueName, L }) 
     </div>
   );
   const fmt = (v) => String(v) + (unitLabel ? ' ' + unitLabel : '');
-  if (RC && RC.BarChart) {
-    const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, ReferenceLine, LabelList } = RC;
-    const rows = data.map((it) => ({ name: it.label, v: it.value, color: it.color || CHART.neutral }));
-    const hasNeg = rows.some((r) => r.v < 0);
-    const h = horizontal ? Math.max(120, rows.length * 34 + 30) : 200;
+  /* SVG-фолбэк (тесты / нет Recharts): полосы; отрицательные — |v| полосой, знак в числе. */
+  const fallback = () => {
+    const max = Math.max(1, ...data.map((it) => Math.abs(it.value)));
     return (
-      <div style={{ marginTop: '18px', marginBottom: '6px' }}>
-        {head}
-        <div style={{ width: '100%', maxWidth: '620px', height: h + 'px' }}>
-          <ResponsiveContainer width="100%" height="100%">
+      <React.Fragment>
+        {data.map((it, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '5px 0', maxWidth: '620px' }}>
+            <span style={{ flex: '0 0 150px', fontSize: '12px', color: 'var(--muted,#6b7785)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
+            <span style={{ flex: '1 1 auto', height: '10px', borderRadius: '5px', background: 'var(--surface2,#eef0f3)', overflow: 'hidden' }}>
+              <i style={{ display: 'block', height: '100%', width: (Math.abs(it.value) / max * 100) + '%', background: it.color || CHART.neutral, borderRadius: '5px' }} />
+            </span>
+            <span style={{ flex: '0 0 auto', minWidth: '40px', textAlign: 'right', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(it.value)}</span>
+          </div>
+        ))}
+      </React.Fragment>
+    );
+  };
+  const h = horizontal ? Math.max(120, data.length * 34 + 30) : 200;
+  return (
+    <div style={{ marginTop: '18px', marginBottom: '6px' }}>
+      {head}
+      <ChartFrame gate="BarChart" maxWidth="620px" height={h} fallback={fallback}>
+        {(RC) => {
+          const { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, ReferenceLine, LabelList } = RC;
+          const rows = data.map((it) => ({ name: it.label, v: it.value, color: it.color || CHART.neutral }));
+          const hasNeg = rows.some((r) => r.v < 0);
+          return (
             <BarChart data={rows} layout={horizontal ? 'vertical' : 'horizontal'}
               margin={{ top: 6, right: 40, bottom: 4, left: horizontal ? 8 : -12 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={!horizontal} vertical={!!horizontal} stroke={CHART.gridStroke} />
@@ -410,25 +441,9 @@ function RepCatBars({ title, sub, items, horizontal, unitLabel, valueName, L }) 
                   style={{ fontSize: 11, fill: 'var(--muted,#6b7785)' }} />
               </Bar>
             </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  }
-  /* SVG-фолбэк (тесты / нет Recharts): полосы; отрицательные — |v| полосой, знак в числе. */
-  const max = Math.max(1, ...data.map((it) => Math.abs(it.value)));
-  return (
-    <div style={{ marginTop: '18px', marginBottom: '6px' }}>
-      {head}
-      {data.map((it, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '5px 0', maxWidth: '620px' }}>
-          <span style={{ flex: '0 0 150px', fontSize: '12px', color: 'var(--muted,#6b7785)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.label}</span>
-          <span style={{ flex: '1 1 auto', height: '10px', borderRadius: '5px', background: 'var(--surface2,#eef0f3)', overflow: 'hidden' }}>
-            <i style={{ display: 'block', height: '100%', width: (Math.abs(it.value) / max * 100) + '%', background: it.color || CHART.neutral, borderRadius: '5px' }} />
-          </span>
-          <span style={{ flex: '0 0 auto', minWidth: '40px', textAlign: 'right', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>{fmt(it.value)}</span>
-        </div>
-      ))}
+          );
+        }}
+      </ChartFrame>
     </div>
   );
 }
@@ -460,7 +475,7 @@ function _a1ChartItems(rows) {
 /* #50 v3.2.0 — A10: стековые бары «перенесено/снято» (часы) по ролям на Recharts;
    % недоезда — в подписи роли. Фолбэк (нет либы) — прежние ручные полосы в A10View. */
 function RechartsSpillover({ roleRows, L, RC }) {
-  const { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } = RC;
+  const { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } = RC;
   const toH = (m) => Math.round(((Number(m) || 0) / 60) * 10) / 10;
   const data = roleRows.map((r) => ({
     name: r.label + ' · ' + Math.round(r.pct * 100) + '%',
@@ -468,8 +483,8 @@ function RechartsSpillover({ roleRows, L, RC }) {
   }));
   const h = Math.max(120, data.length * 34 + 44);
   return (
-    <div style={{ width: '100%', maxWidth: '680px', height: h + 'px' }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <ChartFrame gate="BarChart" maxWidth="680px" height={h}>
+      {() => (
         <BarChart layout="vertical" data={data} margin={{ top: 6, right: 40, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={CHART.gridStroke} />
           <XAxis type="number" tick={CHART.axisTick} />
@@ -479,8 +494,8 @@ function RechartsSpillover({ roleRows, L, RC }) {
           <Bar dataKey="carried" stackId="s" fill="#e6a817" name={L.a10Carried} isAnimationActive={false} />
           <Bar dataKey="dropped" stackId="s" fill="#e5493a" name={L.a10Dropped} isAnimationActive={false} radius={[0, 3, 3, 0]} />
         </BarChart>
-      </ResponsiveContainer>
-    </div>
+      )}
+    </ChartFrame>
   );
 }
 
@@ -535,7 +550,7 @@ function SectionHead({ title, badge, sub }) {
 /* #50 S9-VIZ — A8 «Узкое место» на Recharts: горизонтальные бары медианы dwell (цвет по светофору,
    _lvlColor как SVG), dwell подписан у бара, WIP — в тултипе. Стиль — CHART. SVG-фолбэк в FlowBars. */
 function RechartsBottleneck({ states, L, RC }) {
-  const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, LabelList } = RC;
+  const { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, LabelList } = RC;
   const data = states.map((s) => ({ state: s.state, median: (typeof s.median === 'number' ? s.median : 0), wip: s.wip || 0, level: s.level }));
   const h = Math.max(120, data.length * 40 + 24);
   const tip = ({ active, payload }) => {
@@ -550,8 +565,8 @@ function RechartsBottleneck({ states, L, RC }) {
     );
   };
   return (
-    <div style={{ width: '100%', maxWidth: '620px', height: h + 'px', marginTop: '4px' }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <ChartFrame gate="BarChart" maxWidth="620px" height={h} style={{ marginTop: '4px' }}>
+      {() => (
         <BarChart layout="vertical" data={data} margin={{ top: 6, right: 40, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={CHART.gridStroke} />
           <XAxis type="number" allowDecimals={false} tick={CHART.axisTick} />
@@ -562,8 +577,8 @@ function RechartsBottleneck({ states, L, RC }) {
             <LabelList dataKey="median" position="right" style={{ fontSize: 11, fill: 'var(--muted,#6b7785)' }} />
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
-    </div>
+      )}
+    </ChartFrame>
   );
 }
 
@@ -1188,12 +1203,12 @@ function B0Chart({ title, unit, series, metricKey, systems, months, L, RC }) {
   });
   const head = title + (unit ? ' · ' + unit : '');
   if (RC && RC.LineChart) {
-    const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } = RC;
+    const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } = RC;
     return (
       <div style={{ marginBottom: '20px' }}>
         <div style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 8px' }}>{head}</div>
-        <div style={{ width: '100%', height: '220px' }}>
-          <ResponsiveContainer width="100%" height="100%">
+        <ChartFrame gate="LineChart" height={220}>
+          {() => (
             <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: -12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={CHART.gridStroke} />
               <XAxis dataKey="name" tick={CHART.axisTick} />
@@ -1206,8 +1221,8 @@ function B0Chart({ title, unit, series, metricKey, systems, months, L, RC }) {
                   dot={{ r: 2 }} connectNulls isAnimationActive={false} />
               ))}
             </LineChart>
-          </ResponsiveContainer>
-        </div>
+          )}
+        </ChartFrame>
       </div>
     );
   }

@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.8.0] — 2026-07-17
+
+> **Architecture-audit wave R4: reporting consolidation. Report behavior and data are unchanged.**
+
+### Internal
+
+- **`makeReportLoader`** — the thirteen report loaders (`domain/reporting-view.js`) now share one envelope: a single catch (`__reportAborted` → silent rollback; per-report diagnostics; error vm), the LIMIT+1 fetch limiter, the project+QueryAssist scope query and the period guards. The reports' own control flow (multi-fetch chains, engines, mid-chain fresh gates) was not restructured — vm keys are preserved byte-for-byte (the vm is the XLSX/PDF export contract). Inline `_min`/`_sysVal`/`_typeVal` duplicates hoisted to module level. Domain −66 LOC, ratchet tightened 1295→1228.
+- **`ChartFrame`** — the five Recharts wrappers (`react/reporting-view.jsx`) now share one shell (vendor-chunk gate + sizing container + ResponsiveContainer). Axes/series/tooltips and the SVG/table fallbacks stay bespoke (different chart types; fallbacks are the jsdom test surface). J-ratchet tightened 1474→1343.
+- **Reporting golden net** — new `tests/golden/reporting-view.golden.test.js` (17 tests): all 13 loaders against the real pure engines with stubs only at the I/O boundary; snapshots pin vm keys (the export contract), YT queries and primitive contracts, plus abort/fresh-gate/early-exit branches. Written BEFORE the refactor; the refactor ran under a green golden.
+- Stand smoke: the live A/B catalog (Spillover/TTM/Flow/Roll-up), every ChartFrame path, and Excel+PDF export (files valid).
+
 ## [3.7.1] — 2026-07-16
 
 > **Patch: main-menu widget localization.**

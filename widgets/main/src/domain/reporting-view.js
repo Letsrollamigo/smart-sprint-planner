@@ -377,6 +377,70 @@ function _fresh(base) {
   return !(h && base.gen && h.__sspReportingGen !== base.gen);
 }
 
+/* ═══ R4 (v3.8.0, аудит D4) — makeReportLoader: конверт лоадера отчёта. ═══
+   Снимает boilerplate ×13: единый catch (__reportAborted → тихо: откат уже смонтирован
+   _cancelRun, gen-гейт актуален; иначе diag 'reporting <TAG> err' + error-vm), fetch с
+   LIMIT+1-обрезом, scope-запрос project+QueryAssist, период-гарды. Управляющая логика
+   отчётов (мульти-фетчи, движки, mid-chain _fresh) остаётся в run(ctx) as-is — конверт
+   НЕ перекраивает внутренности (риск тихого дрейфа vm; ключи vm = экспорт-контракт
+   reportToSheets). run вызывается СИНХРОННО (ранние config-гарды монтируют vm в том же
+   тике, как до R4); вернувшийся promise получает общий catch. */
+function makeReportLoader(tag, contour, run) {
+  return function (deps, base, settings, fieldState, proj, pure) {
+    var ctx = {
+      deps: deps, base: base, settings: settings, fieldState: fieldState, proj: proj, pure: pure,
+      /* mount(patch) — vm = base + patch (report в патче избыточен: base уже несёт). */
+      mount: function (patch) { _mountVm(contour, Object.assign({}, base, patch)); },
+      /* scope-запрос: project + серверные клаузы отчёта + QueryAssist-хвост юзера (AND). */
+      queryParts: function (extras) {
+        var parts = ['project: ' + proj];
+        if (extras) for (var i = 0; i < extras.length; i++) parts.push(extras[i]);
+        if (base.query.trim()) parts.push(base.query.trim());
+        return parts;
+      },
+      /* Один issues-фетч с ограничителем D10: $top=LIMIT+1 → {arr≤LIMIT, limitHit}. */
+      fetchIssues: function (fields, parts) {
+        return deps.host.fetchYouTrack('issues', { query: { fields: fields, query: parts.join(' '), $top: LIMIT + 1 } })
+          .then(function (raw) {
+            var arr = Array.isArray(raw) ? raw : [];
+            var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
+            return { arr: arr, limitHit: limitHit };
+          });
+      },
+      /* Период-гарды + окно. Патчи per-loader (исторически гетерогенны — {loading:false,…}
+         vs {report:'xx',…}; сохраняем формы vm байт-в-байт). null = vm уже смонтирован. */
+      window: function (promptPatch, failPatch) {
+        if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
+          ctx.mount(promptPatch); return null;
+        }
+        var pd = _period();
+        var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
+        if (!win) ctx.mount(failPatch);
+        return win;
+      }
+    };
+    function fail(e) {
+      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun */
+      if (deps.diag) deps.diag('reporting ' + tag + ' err: ' + String(e && e.message ? e.message : e), 'err');
+      ctx.mount({ error: true });
+    }
+    try {
+      var p = run(ctx);
+      if (p && typeof p.catch === 'function') p.catch(fail);
+    } catch (e) { fail(e); }
+  };
+}
+
+/* ═══ R4 (D4) — бывшие инлайн-дубли лоадеров, подняты на module-level. ═══ */
+/* Текущее period-значение поля задачи в минутах (был _min ×3: A3/A6/B1). */
+function _cfMin(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return (v && typeof v.minutes === 'number') ? v.minutes : null; }
+/* Дисплей-текст значения поля (был _text в A3): localizedName ⊃ name ⊃ presentation. */
+function _cfText(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return v ? (v.localizedName || v.name || v.presentation || '') : ''; }
+/* Канон-имя типа задачи (был _typeVal ×2: B1/B2) — value.name (матч конфига). */
+function _typeValOf(iss, fieldType) { var c = _cf(iss, fieldType); var v = c && c.value; return (v && v.name) || ''; }
+/* Дисплей-имя системы (был _sysVal ×3: B1/B2/B0); пустое имя поля → ''. */
+function _sysValOf(iss, fieldSystem) { if (!fieldSystem) return ''; var c = _cf(iss, fieldSystem); var v = c && c.value; return v ? (v.localizedName || v.name || '') : ''; }
+
 /* #50 S8a — epoch-ms UTC → 'YYYY-MM-DD' для YT-запроса created-окна (B3). */
 function _ymdISO(ms) {
   var d = new Date(ms), p = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -404,28 +468,19 @@ function _countIssues(deps, query, shouldAbort) {
 }
 
 /* A7 Aging: #Unresolved задачи проекта → примитив → дни-в-статусе + флаг порога. */
-function _loadA7(deps, base, settings, fieldState, proj, pure) {
-  var thresholds = settings.reportingThresholds || {};
-  var parts = ['project: ' + proj, '#Unresolved'];      /* активные = нерешённые */
-  if (base.query.trim()) parts.push(base.query.trim());  /* QueryAssist AND под scope (сырой ввод) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssues(arr, fieldState);
-      return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
-        if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
-        var built = pure.buildAgingRows(m.issues, prim, prim.incomplete, thresholds, Date.now());
-        _mountVm('a', Object.assign({}, base, { loading: false, rows: built.rows,
-          incompleteCount: built.incomplete.length, limitHit: limitHit, limit: LIMIT, diag: prim.diag }));
-      });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A7 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { error: true }));
+const _loadA7 = makeReportLoader('A7', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, pure = ctx.pure;
+  var thresholds = ctx.settings.reportingThresholds || {};
+  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(['#Unresolved'])).then(function (f) {   /* активные = нерешённые */
+    var m = _mapIssues(f.arr, ctx.fieldState);
+    return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
+      if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
+      var built = pure.buildAgingRows(m.issues, prim, prim.incomplete, thresholds, Date.now());
+      ctx.mount({ loading: false, rows: built.rows,
+        incompleteCount: built.incomplete.length, limitHit: f.limitHit, limit: LIMIT, diag: prim.diag });
     });
-}
+  });
+});
 
 /* A1 Прогресс: задачи В целевых статусах (State: {t1},{t2} — БЕЗ #Unresolved) → примитив →
    окно периода (полуоткрытое, live Date.now — контракт) → buildProgressRows (переходы в окне).
@@ -433,47 +488,35 @@ function _loadA7(deps, base, settings, fieldState, proj, pure) {
    прогона, по НОВЕЙШЕМУ входу (примитив хранит один переход). Реопенутая после входа в окне или
    ушедшая дальше по цепочке целевых → в отчёт не попадает. Ретро-семантика требует activities по
    всей популяции проекта (кратно дороже) — осознанный трейд-офф; юзеру сигналим L.a1PopNote. */
-function _loadA1(deps, base, settings, fieldState, proj, pure) {
+const _loadA1 = makeReportLoader('A1', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   var targets = Array.isArray(settings.reportingTargetStatuses) ? settings.reportingTargetStatuses.filter(Boolean) : [];
-  if (!targets.length) { _mountVm('a', Object.assign({}, base, { loading: false, noTargets: true })); return; }
+  if (!targets.length) { ctx.mount({ loading: false, noTargets: true }); return; }
   /* «Свой диапазон» без обеих дат — не ошибка, а незаданный ввод: нейтральная подсказка. */
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('a', Object.assign({}, base, { loading: false, rangePrompt: true })); return;
-  }
-  var pm = _period();
-  var win = pm ? pm.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('a', Object.assign({}, base, { loading: false, error: true })); return; }
+  var win = ctx.window({ loading: false, rangePrompt: true }, { loading: false, error: true });
+  if (!win) return;
   var statusLabels = (settings.reportingStatusLabels && typeof settings.reportingStatusLabels === 'object'
     && !Array.isArray(settings.reportingStatusLabels)) ? settings.reportingStatusLabels : {};
-  var parts = ['project: ' + proj,
-    fieldState + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')];
-  if (base.query.trim()) parts.push(base.query.trim());  /* QueryAssist AND под scope */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssues(arr, fieldState);
-      return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
-        if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
-        var built = pure.buildProgressRows(m.issues, prim, prim.incomplete, statusLabels, win);
-        _mountVm('a', Object.assign({}, base, { loading: false, rows: built.rows,
-          incompleteCount: built.incomplete.length, limitHit: limitHit, limit: LIMIT, diag: prim.diag }));
-      });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A1 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { error: true }));
+  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(
+    [ctx.fieldState + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')])).then(function (f) {
+    var m = _mapIssues(f.arr, ctx.fieldState);
+    return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
+      if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
+      var built = pure.buildProgressRows(m.issues, prim, prim.incomplete, statusLabels, win);
+      ctx.mount({ loading: false, rows: built.rows,
+        incompleteCount: built.incomplete.length, limitHit: f.limitHit, limit: LIMIT, diag: prim.diag });
     });
-}
+  });
+});
 
 /* A2 TTM: популяция задач проекта (Type скоупит аналитик через QueryAssist — НЕ форсим) →
    первые входы в якорные состояния + таймлайн + паузы (состояния+теги) → computeTtm.
    Окно [from,to) фильтрует популяцию по входу в КОНЕЦ-якорь lead (populationMetric). */
-function _loadA2(deps, base, settings, fieldState, proj, pure) {
+const _loadA2 = makeReportLoader('A2', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   var ttm = _ttm();
   if (!ttm || typeof deps.bulkAnchorTransitions !== 'function') {
-    _mountVm('a', Object.assign({}, base, { report: 'a2', error: true })); return;
+    ctx.mount({ report: 'a2', error: true }); return;
   }
   var anchors = (settings.reportingAnchors && typeof settings.reportingAnchors === 'object'
     && !Array.isArray(settings.reportingAnchors)) ? settings.reportingAnchors : {};
@@ -486,58 +529,45 @@ function _loadA2(deps, base, settings, fieldState, proj, pure) {
   var lead = anchors.lead || {};
   /* lead — популяционная метрика: без обоих концов пары считать нечего → подсказка. */
   if (lead.start == null || lead.end == null) {
-    _mountVm('a', Object.assign({}, base, { report: 'a2', noAnchors: true })); return;
+    ctx.mount({ report: 'a2', noAnchors: true }); return;
   }
   /* «Свой диапазон» без обеих дат — незаданный ввод, нейтральная подсказка (не ошибка). */
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('a', Object.assign({}, base, { report: 'a2', rangePrompt: true })); return;
-  }
-  var pd = _period();
-  var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('a', Object.assign({}, base, { report: 'a2', error: true })); return; }
+  var win = ctx.window({ report: 'a2', rangePrompt: true }, { report: 'a2', error: true });
+  if (!win) return;
   var typeNames = settings.fieldType ? [settings.fieldType, 'Type', 'Тип'] : ['Type', 'Тип'];
   var anchorStates = _anchorStateSet(anchors);
   var pausesActive = (pm.states.length || pm.tags.length) > 0;
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());  /* QueryAssist AND — Type НЕ форсим (D-скоуп аналитика) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_A2, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssuesA2(arr, fieldState, typeNames);
-      if (deps.diag) deps.diag('reporting A2 map: issues=' + m.issues.length +
-        ' typed=' + m.diag.typed + ' parentEpic=' + m.diag.parentResolved, 'ok');
-      return deps.bulkAnchorTransitions(deps, m.ids, { fieldId: m.fieldId, anchorStates: anchorStates, shouldAbort: base.shouldAbort })
-        .then(function (aRes) {
-          var tagP = pm.tags.length ? deps.bulkPauseTagIntervals(deps, m.ids, { tags: pm.tags, shouldAbort: base.shouldAbort })
-            : { intervals: {}, diag: {} };
-          return Promise.resolve(tagP).then(function (tRes) {
-            if (!_fresh(base)) return;                        /* устаревший ответ — не монтируем */
-            var pauses = (typeof deps.combinePauses === 'function')
-              ? deps.combinePauses(aRes.timelines, pm.states, tRes.intervals || {}) : {};
-            var units = ttm.foldChildUnits(m.issues);
-            var config = { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead',
-              terminalPolicy: _terminalPolicy(settings) };
-            var incA2 = _unionIds(aRes.incomplete, tRes.incomplete);   /* hitTop пауз-тегов = тоже неполнота */
-            var res = ttm.computeTtm(units, aRes.anchors, pauses, incA2, config, win, Date.now(),
-              { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel }, aRes.timelines);
-            var tiles = res.tiles.map(function (t) {
-              return { metric: t.metric, median: t.median, n: t.n, norm: t.norm, level: _tileLevel(t.median, t.norm) };
-            });
-            _mountVm('a', Object.assign({}, base, { report: 'a2', loading: false, noAnchors: false,
-              rangePrompt: false, pausesActive: pausesActive, tiles: tiles, typeRows: res.rows,
-              buckets: res.buckets, riskCount: res.riskCount, riskDays: 80,
-              populationCount: res.populationCount, incompleteCount: incA2.length,
-              limitHit: limitHit, limit: LIMIT, tagPausePending: !!(tRes.diag && tRes.diag.needsSmokeVerify) }));
+  /* QueryAssist AND — Type НЕ форсим (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_A2, ctx.queryParts()).then(function (f) {
+    var m = _mapIssuesA2(f.arr, ctx.fieldState, typeNames);
+    if (deps.diag) deps.diag('reporting A2 map: issues=' + m.issues.length +
+      ' typed=' + m.diag.typed + ' parentEpic=' + m.diag.parentResolved, 'ok');
+    return deps.bulkAnchorTransitions(deps, m.ids, { fieldId: m.fieldId, anchorStates: anchorStates, shouldAbort: base.shouldAbort })
+      .then(function (aRes) {
+        var tagP = pm.tags.length ? deps.bulkPauseTagIntervals(deps, m.ids, { tags: pm.tags, shouldAbort: base.shouldAbort })
+          : { intervals: {}, diag: {} };
+        return Promise.resolve(tagP).then(function (tRes) {
+          if (!_fresh(base)) return;                        /* устаревший ответ — не монтируем */
+          var pauses = (typeof deps.combinePauses === 'function')
+            ? deps.combinePauses(aRes.timelines, pm.states, tRes.intervals || {}) : {};
+          var units = ttm.foldChildUnits(m.issues);
+          var config = { anchors: anchors, norms: norms, buckets: [40, 120], riskDays: 80, populationMetric: 'lead',
+            terminalPolicy: _terminalPolicy(settings) };
+          var incA2 = _unionIds(aRes.incomplete, tRes.incomplete);   /* hitTop пауз-тегов = тоже неполнота */
+          var res = ttm.computeTtm(units, aRes.anchors, pauses, incA2, config, win, Date.now(),
+            { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel }, aRes.timelines);
+          var tiles = res.tiles.map(function (t) {
+            return { metric: t.metric, median: t.median, n: t.n, norm: t.norm, level: _tileLevel(t.median, t.norm) };
           });
+          ctx.mount({ report: 'a2', loading: false, noAnchors: false,
+            rangePrompt: false, pausesActive: pausesActive, tiles: tiles, typeRows: res.rows,
+            buckets: res.buckets, riskCount: res.riskCount, riskDays: 80,
+            populationCount: res.populationCount, incompleteCount: incA2.length,
+            limitHit: f.limitHit, limit: LIMIT, tagPausePending: !!(tRes.diag && tRes.diag.needsSmokeVerify) });
         });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A2 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'a2', error: true }));
-    });
-}
+      });
+  });
+});
 
 /* A8/A9 «Поток»: популяция задач проекта (QueryAssist скоупит аналитик — НЕ форсим) → ПОЛНЫЙ
    таймлайн переходов (bulkAnchorTransitions.timelines = все переходы стейт-поля; anchorStates —
@@ -545,22 +575,19 @@ function _loadA2(deps, base, settings, fieldState, proj, pure) {
    (dwell+WIP, открытый интервал до now) + computeRework (откаты в окне [from,to)). Окно периода
    режет ТОЛЬКО откаты A9 (как A1); dwell A8 — по всей истории (D9). currentStates = текущий статус
    задачи из фетча → точный WIP (вкл. задачи без переходов). incomplete D7 вне обоих движков. */
-function _loadFlow(deps, base, settings, fieldState, proj, pure) {
+const _loadFlow = makeReportLoader('Flow', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   var ttm = _ttm();
   if (!ttm || typeof deps.bulkAnchorTransitions !== 'function') {
-    _mountVm('a', Object.assign({}, base, { report: 'flow', error: true })); return;
+    ctx.mount({ report: 'flow', error: true }); return;
   }
   var flowStates = Array.isArray(settings.reportingFlowStates) ? settings.reportingFlowStates.filter(Boolean) : [];
   /* Поток не задан (нужно ≥2 статуса для порядка/откатов) → подсказка настроить. */
   if (flowStates.length < 2) {
-    _mountVm('a', Object.assign({}, base, { report: 'flow', noFlow: true })); return;
+    ctx.mount({ report: 'flow', noFlow: true }); return;
   }
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('a', Object.assign({}, base, { report: 'flow', rangePrompt: true })); return;
-  }
-  var pd = _period();
-  var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('a', Object.assign({}, base, { report: 'flow', error: true })); return; }
+  var win = ctx.window({ report: 'flow', rangePrompt: true }, { report: 'flow', error: true });
+  if (!win) return;
   var thresholds = (settings.reportingThresholds && typeof settings.reportingThresholds === 'object'
     && !Array.isArray(settings.reportingThresholds)) ? settings.reportingThresholds : {};
   var pmRaw = (settings.reportingPauseMarkers && typeof settings.reportingPauseMarkers === 'object'
@@ -568,43 +595,34 @@ function _loadFlow(deps, base, settings, fieldState, proj, pure) {
   var pm = { states: Array.isArray(pmRaw.states) ? pmRaw.states.filter(Boolean) : [],
              tags: Array.isArray(pmRaw.tags) ? pmRaw.tags.filter(Boolean) : [] };
   var pausesActive = (pm.states.length || pm.tags.length) > 0;
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());  /* QueryAssist AND — скоуп аналитика (D-скоуп) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssues(arr, fieldState);
-      var currentStates = {};
-      m.issues.forEach(function (u) { if (u.state) currentStates[u.id] = u.state; });   /* текущий статус → WIP */
-      var anchorStates = flowStates.concat(pm.states);
-      if (deps.diag) deps.diag('reporting Flow map: issues=' + m.issues.length + ' flow=' + flowStates.length, 'ok');
-      return deps.bulkAnchorTransitions(deps, m.ids, { fieldId: m.fieldId, anchorStates: anchorStates, shouldAbort: base.shouldAbort })
-        .then(function (aRes) {
-          var tagP = pm.tags.length ? deps.bulkPauseTagIntervals(deps, m.ids, { tags: pm.tags, shouldAbort: base.shouldAbort })
-            : { intervals: {}, diag: {} };
-          return Promise.resolve(tagP).then(function (tRes) {
-            if (!_fresh(base)) return;                        /* устаревший ответ — не монтируем */
-            var pauses = (typeof deps.combinePauses === 'function')
-              ? deps.combinePauses(aRes.timelines, pm.states, tRes.intervals || {}) : {};
-            var deps2 = { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel };
-            var incFlow = _unionIds(aRes.incomplete, tRes.incomplete);   /* hitTop пауз-тегов = тоже неполнота */
-            var bn = ttm.computeBottleneck(aRes.timelines, pauses, incFlow,
-              { flowStates: flowStates, thresholds: thresholds, currentStates: currentStates }, Date.now(), deps2);
-            var rw = ttm.computeRework(aRes.timelines, incFlow, { flowStates: flowStates }, win);
-            _mountVm('a', Object.assign({}, base, { report: 'flow', loading: false, noFlow: false, rangePrompt: false,
-              pausesActive: pausesActive, bottleneck: bn.states, populationCount: bn.populationCount,
-              rework: rw, incompleteCount: incFlow.length,
-              limitHit: limitHit, limit: LIMIT, tagPausePending: !!(tRes.diag && tRes.diag.needsSmokeVerify) }));
-          });
+  /* QueryAssist AND — скоуп аналитика (D-скоуп) */
+  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts()).then(function (f) {
+    var m = _mapIssues(f.arr, ctx.fieldState);
+    var currentStates = {};
+    m.issues.forEach(function (u) { if (u.state) currentStates[u.id] = u.state; });   /* текущий статус → WIP */
+    var anchorStates = flowStates.concat(pm.states);
+    if (deps.diag) deps.diag('reporting Flow map: issues=' + m.issues.length + ' flow=' + flowStates.length, 'ok');
+    return deps.bulkAnchorTransitions(deps, m.ids, { fieldId: m.fieldId, anchorStates: anchorStates, shouldAbort: base.shouldAbort })
+      .then(function (aRes) {
+        var tagP = pm.tags.length ? deps.bulkPauseTagIntervals(deps, m.ids, { tags: pm.tags, shouldAbort: base.shouldAbort })
+          : { intervals: {}, diag: {} };
+        return Promise.resolve(tagP).then(function (tRes) {
+          if (!_fresh(base)) return;                        /* устаревший ответ — не монтируем */
+          var pauses = (typeof deps.combinePauses === 'function')
+            ? deps.combinePauses(aRes.timelines, pm.states, tRes.intervals || {}) : {};
+          var deps2 = { workdaysBetween: pure.workdaysBetween, agingLevel: pure.agingLevel };
+          var incFlow = _unionIds(aRes.incomplete, tRes.incomplete);   /* hitTop пауз-тегов = тоже неполнота */
+          var bn = ttm.computeBottleneck(aRes.timelines, pauses, incFlow,
+            { flowStates: flowStates, thresholds: thresholds, currentStates: currentStates }, Date.now(), deps2);
+          var rw = ttm.computeRework(aRes.timelines, incFlow, { flowStates: flowStates }, win);
+          ctx.mount({ report: 'flow', loading: false, noFlow: false, rangePrompt: false,
+            pausesActive: pausesActive, bottleneck: bn.states, populationCount: bn.populationCount,
+            rework: rw, incompleteCount: incFlow.length,
+            limitHit: f.limitHit, limit: LIMIT, tagPausePending: !!(tRes.diag && tRes.diag.needsSmokeVerify) });
         });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting Flow err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'flow', error: true }));
-    });
-}
+      });
+  });
+});
 
 /* Логин исполнителя из user-cf: value = {login} (одиночное) или [{login}] (мульти → первый). */
 function _userLogin(cf) {
@@ -635,79 +653,61 @@ function _buildRoleExecutors(arr, roles) {
 /* A4 Трудозатраты: популяция проекта (QueryAssist скоупит аналитик) + user-поля ролей → roleExecutors;
    нативные workItems за окно периода (bulkWorkItems, серверный `work date:`) → buildWorkloadRows
    (часы по человек×роль + «кто не списал»). Окно режет workItems по дате списания (D9). */
-function _loadA4(deps, base, settings, fieldState, proj, pure) {
+const _loadA4 = makeReportLoader('A4', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, pure = ctx.pure;
   if (typeof deps.bulkWorkItems !== 'function' || typeof pure.buildWorkloadRows !== 'function') {
-    _mountVm('a', Object.assign({}, base, { report: 'a4', error: true })); return;
+    ctx.mount({ report: 'a4', error: true }); return;
   }
   var roles = Array.isArray(deps.roles) ? deps.roles : [];
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('a', Object.assign({}, base, { report: 'a4', rangePrompt: true })); return;
-  }
-  var pd = _period();
-  var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('a', Object.assign({}, base, { report: 'a4', error: true })); return; }
+  var win = ctx.window({ report: 'a4', rangePrompt: true }, { report: 'a4', error: true });
+  if (!win) return;
   var roleLabels = {};
   roles.forEach(function (r) { roleLabels[r.key] = r.label || r.key; });
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());   /* QueryAssist AND — скоуп аналитика (D-скоуп) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_A4, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var built = _buildRoleExecutors(arr, roles);
-      if (deps.diag) deps.diag('reporting A4 pop=' + built.ids.length +
-        ' withRole=' + Object.keys(built.roleExecutors).length + ' roles=' + roles.length, 'ok');
-      return deps.bulkWorkItems(deps, built.ids, { window: win, shouldAbort: base.shouldAbort }).then(function (wi) {
-        if (!_fresh(base)) return;                          /* устаревший ответ — не монтируем */
-        var res = pure.buildWorkloadRows(wi.items, built.roleExecutors, wi.incomplete);
-        /* incompleteCount из ПРИМИТИВА (wi.incomplete), не из res: движок строит incomplete по
-           присутствующим items → полностью упавший чанк (0 items, D7) в res не попал бы, баннер
-           бы молчал. wi.incomplete — авторитетный суперсет (как _loadFlow/_loadA2). */
-        _mountVm('a', Object.assign({}, base, { report: 'a4', loading: false,
-          workloadRows: res.rows, noLog: res.noLog, roleLabels: roleLabels,
-          totalMinutes: res.totalMinutes, authorCount: res.authorCount, populationCount: built.ids.length,
-          incompleteCount: (wi.incomplete || []).length, limitHit: limitHit, limit: LIMIT }));
-      });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A4 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'a4', error: true }));
+  /* QueryAssist AND — скоуп аналитика (D-скоуп) */
+  return ctx.fetchIssues(ISSUE_FIELDS_A4, ctx.queryParts()).then(function (f) {
+    var built = _buildRoleExecutors(f.arr, roles);
+    if (deps.diag) deps.diag('reporting A4 pop=' + built.ids.length +
+      ' withRole=' + Object.keys(built.roleExecutors).length + ' roles=' + roles.length, 'ok');
+    return deps.bulkWorkItems(deps, built.ids, { window: win, shouldAbort: base.shouldAbort }).then(function (wi) {
+      if (!_fresh(base)) return;                          /* устаревший ответ — не монтируем */
+      var res = pure.buildWorkloadRows(wi.items, built.roleExecutors, wi.incomplete);
+      /* incompleteCount из ПРИМИТИВА (wi.incomplete), не из res: движок строит incomplete по
+         присутствующим items → полностью упавший чанк (0 items, D7) в res не попал бы, баннер
+         бы молчал. wi.incomplete — авторитетный суперсет (как _loadFlow/_loadA2). */
+      ctx.mount({ report: 'a4', loading: false,
+        workloadRows: res.rows, noLog: res.noLog, roleLabels: roleLabels,
+        totalMinutes: res.totalMinutes, authorCount: res.authorCount, populationCount: built.ids.length,
+        incompleteCount: (wi.incomplete || []).length, limitHit: f.limitHit, limit: LIMIT });
     });
-}
+  });
+});
 
 /* A5 План-факт: популяция = задачи, вошедшие в Лид-КОНЕЦ в окне периода (как A2 — завершённая
    работа, факт финален). На КАЖДУЮ роль: as-of оценка (значение period-поля на входе в Лид-СТАРТ,
    bulkAsOfEstimates) vs кумулятивный факт (Σ workItems роли, всё время) → знаковое расхождение.
    name→id полей оценки резолвим ОДИН раз из CF отобранных задач (тот же id и в fieldIds примитива,
    и в roles движка — иначе тихий current-as-asof). incomplete = ОБЪЕДИНЕНИЕ якорь∪asOf∪workItems (D7). */
-function _loadA5(deps, base, settings, fieldState, proj, pure) {
+const _loadA5 = makeReportLoader('A5', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   if (typeof deps.bulkAsOfEstimates !== 'function' || typeof deps.bulkAnchorTransitions !== 'function'
       || typeof deps.bulkWorkItems !== 'function' || typeof pure.computePlanFact !== 'function') {
-    _mountVm('a', Object.assign({}, base, { report: 'a5', error: true })); return;
+    ctx.mount({ report: 'a5', error: true }); return;
   }
   var anchors = (settings.reportingAnchors && typeof settings.reportingAnchors === 'object'
     && !Array.isArray(settings.reportingAnchors)) ? settings.reportingAnchors : {};
   var lead = anchors.lead || {};
   if (lead.start == null || lead.end == null) {           /* без Лид-пары нет ни популяции, ни as-of */
-    _mountVm('a', Object.assign({}, base, { report: 'a5', noAnchors: true })); return;
+    ctx.mount({ report: 'a5', noAnchors: true }); return;
   }
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('a', Object.assign({}, base, { report: 'a5', rangePrompt: true })); return;
-  }
-  var pd = _period();
-  var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('a', Object.assign({}, base, { report: 'a5', error: true })); return; }
+  var win = ctx.window({ report: 'a5', rangePrompt: true }, { report: 'a5', error: true });
+  if (!win) return;
   var roles = Array.isArray(deps.roles) ? deps.roles : [];
   var threshold = (typeof settings.reportingVariancePct === 'number' && isFinite(settings.reportingVariancePct)
     && settings.reportingVariancePct > 0) ? settings.reportingVariancePct : 20;
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());   /* QueryAssist AND (D-скоуп аналитика) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_A5, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssues(arr, fieldState);                 /* state-field id для якорей + summary */
+  /* QueryAssist AND (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_A5, ctx.queryParts()).then(function (f) {
+      var arr = f.arr, limitHit = f.limitHit;
+      var m = _mapIssues(arr, ctx.fieldState);             /* state-field id для якорей + summary */
       var built = _buildRoleExecutors(arr, roles);         /* исполнители ролей (login) */
       /* name→id полей оценки (ОДИН резолв) + rolesEng для движка + fieldIds для примитива. */
       var fieldIds = [], seenFid = {}, rolesEng = [], unresolved = 0;
@@ -748,18 +748,13 @@ function _loadA5(deps, base, settings, fieldState, proj, pure) {
             var incomplete = Object.keys(incSet);
             var res = pure.computePlanFact({ issues: popIssues, asOf: esAsOf, workItems: wi.items,
               roleExecutors: built.roleExecutors, roles: rolesEng, incomplete: incomplete, threshold: threshold });
-            _mountVm('a', Object.assign({}, base, { report: 'a5', loading: false, noAnchors: false, rangePrompt: false,
+            ctx.mount({ report: 'a5', loading: false, noAnchors: false, rangePrompt: false,
               rollups: res.rollups, rows: res.rows, threshold: threshold,
-              populationCount: res.populationCount, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT }));
+              populationCount: res.populationCount, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT });
           });
         });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A5 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'a5', error: true }));
     });
-}
+});
 
 /* A3 WIP/Done — СНИМОК текущего среза (арх-спека §56: вне движка, БЕЗ activities/примитивов
    /без периода). Популяция = задачи проекта (+ QueryAssist). Классификация WIP/Done по
@@ -768,7 +763,8 @@ function _loadA5(deps, base, settings, fieldState, proj, pure) {
    опциональны: рендерятся только при заданном имени поля (reportingA3*Field, graceful-degrade).
    Оценки — per-role текущее value.minutes. Стейт-имя для среза берём из value.name (как _mapIssues,
    матч с reportingTargetStatuses), бизнес-значения — localizedName||name||presentation (RU-дисплей). */
-function _loadA3(deps, base, settings, fieldState, proj) {
+const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings;
   var doneSet = {};
   (Array.isArray(settings.reportingTargetStatuses) ? settings.reportingTargetStatuses : []).forEach(function (s) { if (s) doneSet[s] = true; });
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).filter(function (r) { return r && r.estField; })
@@ -776,38 +772,28 @@ function _loadA3(deps, base, settings, fieldState, proj) {
   var stageField = (typeof settings.reportingA3StageField === 'string' && settings.reportingA3StageField) || '';
   var orgField = (typeof settings.reportingA3OrgField === 'string' && settings.reportingA3OrgField) || '';
   var prioField = (typeof settings.reportingA3PriorityField === 'string' && settings.reportingA3PriorityField) || '';
-  function _text(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return v ? (v.localizedName || v.name || v.presentation || '') : ''; }
-  function _min(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return (v && typeof v.minutes === 'number') ? v.minutes : null; }
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());   /* QueryAssist AND (D-скоуп аналитика) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_A3, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      if (!_fresh(base)) return;                           /* устаревший ответ — не монтируем */
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var rows = [], wipCount = 0, doneCount = 0;
-      for (var i = 0; i < arr.length; i++) {
-        var iss = arr[i]; if (!iss || !iss.idReadable) continue;
-        var st = _cf(iss, fieldState); var state = (st && st.value && st.value.name) || '';
-        var mode = doneSet[state] ? 'done' : 'wip';
-        if (mode === 'done') doneCount++; else wipCount++;
-        var est = {};
-        for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _min(iss, roles[ri].estField);
-        rows.push({ id: iss.idReadable, summary: iss.summary || '', state: state, mode: mode, est: est,
-          stage: stageField ? _text(iss, stageField) : '', org: orgField ? _text(iss, orgField) : '',
-          priority: prioField ? _text(iss, prioField) : '' });
-      }
-      _mountVm('a', Object.assign({}, base, { report: 'a3', loading: false, rows: rows,
-        wipCount: wipCount, doneCount: doneCount, limitHit: limitHit, limit: LIMIT,
-        snapRoles: roles.map(function (r) { return { key: r.key, label: r.label }; }),
-        snapCols: { stage: !!stageField, org: !!orgField, priority: !!prioField } }));
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A3 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'a3', error: true }));
-    });
-}
+  /* QueryAssist AND (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts()).then(function (f) {
+    if (!_fresh(base)) return;                           /* устаревший ответ — не монтируем */
+    var arr = f.arr;
+    var rows = [], wipCount = 0, doneCount = 0;
+    for (var i = 0; i < arr.length; i++) {
+      var iss = arr[i]; if (!iss || !iss.idReadable) continue;
+      var st = _cf(iss, ctx.fieldState); var state = (st && st.value && st.value.name) || '';
+      var mode = doneSet[state] ? 'done' : 'wip';
+      if (mode === 'done') doneCount++; else wipCount++;
+      var est = {};
+      for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _cfMin(iss, roles[ri].estField);
+      rows.push({ id: iss.idReadable, summary: iss.summary || '', state: state, mode: mode, est: est,
+        stage: stageField ? _cfText(iss, stageField) : '', org: orgField ? _cfText(iss, orgField) : '',
+        priority: prioField ? _cfText(iss, prioField) : '' });
+    }
+    ctx.mount({ report: 'a3', loading: false, rows: rows,
+      wipCount: wipCount, doneCount: doneCount, limitHit: f.limitHit, limit: LIMIT,
+      snapRoles: roles.map(function (r) { return { key: r.key, label: r.label }; }),
+      snapCols: { stage: !!stageField, org: !!orgField, priority: !!prioField } });
+  });
+});
 
 /* A6 Бэклог в ЧЧ по ролям — СНИМОК (арх §56: вне движка, без activities/периода). Популяция =
    определение бэклога #21 (backlogStartStates ∪ backlogZones[].state + backlogTypeFilter) СВОИМ
@@ -815,8 +801,9 @@ function _loadA3(deps, base, settings, fieldState, proj) {
    конфигурация → все #Unresolved проекта + подсказка донастроить (noBacklogCfg). QueryAssist AND.
    На КАЖДУЮ активную роль: Σ текущих оценок (value.minutes, как A3) → ЧЧ + «месяцев» = ЧЧ ÷ месячная
    ёмкость роли (reportingRoleMonthlyCapacity, ч/мес — B1 top-down; нет ёмкости → гейдж «—»). */
-function _loadA6(deps, base, settings, fieldState, proj, pure) {
-  if (typeof pure.buildBacklogRows !== 'function') { _mountVm('a', Object.assign({}, base, { report: 'a6', error: true })); return; }
+const _loadA6 = makeReportLoader('A6', 'a', function (ctx) {
+  var deps = ctx.deps, settings = ctx.settings, base = ctx.base, pure = ctx.pure;
+  if (typeof pure.buildBacklogRows !== 'function') { ctx.mount({ report: 'a6', error: true }); return; }
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).filter(function (r) { return r && r.estField; })
     .map(function (r) { return { key: r.key, label: r.label || r.key, estField: r.estField }; });
   var capRaw = (settings.reportingRoleMonthlyCapacity && typeof settings.reportingRoleMonthlyCapacity === 'object'
@@ -827,44 +814,37 @@ function _loadA6(deps, base, settings, fieldState, proj, pure) {
   var types = (Array.isArray(settings.backlogTypeFilter) ? settings.backlogTypeFilter : []).filter(Boolean);
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
   var noBacklogCfg = states.length === 0;
-  var parts = ['project: ' + proj];
-  if (states.length) parts.push(fieldState + ': ' + states.map(function (s) { return '{' + s + '}'; }).join(', '));
-  else parts.push('#Unresolved');                          /* нет конфигурации бэклога → все нерешённые + подсказка */
-  if (types.length) parts.push(fieldType + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
-  if (base.query.trim()) parts.push(base.query.trim());    /* QueryAssist AND (D-скоуп аналитика) */
-  function _min(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return (v && typeof v.minutes === 'number') ? v.minutes : null; }
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_A3, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      if (!_fresh(base)) return;                            /* устаревший ответ — не монтируем */
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var perIssue = [];
-      for (var i = 0; i < arr.length; i++) {
-        var iss = arr[i]; if (!iss || !iss.idReadable) continue;
-        var est = {};
-        for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _min(iss, roles[ri].estField);
-        perIssue.push({ est: est });
-      }
-      var capHours = {};
-      for (var ci = 0; ci < roles.length; ci++) { var cv = capRaw[roles[ci].key]; if (typeof cv === 'number' && isFinite(cv)) capHours[roles[ci].key] = cv; }
-      var built = pure.buildBacklogRows(perIssue, roles.map(function (r) { return { key: r.key, label: r.label }; }), capHours, A6_NORM_MONTHS);
-      _mountVm('a', Object.assign({}, base, { report: 'a6', loading: false, rows: built.rows, norm: built.norm,
-        noBacklogCfg: noBacklogCfg, populationCount: perIssue.length, limitHit: limitHit, limit: LIMIT }));
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting A6 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('a', Object.assign({}, base, { report: 'a6', error: true }));
-    });
-}
+  var extras = [];
+  if (states.length) extras.push(ctx.fieldState + ': ' + states.map(function (s) { return '{' + s + '}'; }).join(', '));
+  else extras.push('#Unresolved');                         /* нет конфигурации бэклога → все нерешённые + подсказка */
+  if (types.length) extras.push(fieldType + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
+  /* QueryAssist AND (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(extras)).then(function (f) {
+    if (!_fresh(base)) return;                            /* устаревший ответ — не монтируем */
+    var arr = f.arr;
+    var perIssue = [];
+    for (var i = 0; i < arr.length; i++) {
+      var iss = arr[i]; if (!iss || !iss.idReadable) continue;
+      var est = {};
+      for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _cfMin(iss, roles[ri].estField);
+      perIssue.push({ est: est });
+    }
+    var capHours = {};
+    for (var ci = 0; ci < roles.length; ci++) { var cv = capRaw[roles[ci].key]; if (typeof cv === 'number' && isFinite(cv)) capHours[roles[ci].key] = cv; }
+    var built = pure.buildBacklogRows(perIssue, roles.map(function (r) { return { key: r.key, label: r.label }; }), capHours, A6_NORM_MONTHS);
+    ctx.mount({ report: 'a6', loading: false, rows: built.rows, norm: built.norm,
+      noBacklogCfg: noBacklogCfg, populationCount: perIssue.length, limitHit: f.limitHit, limit: LIMIT });
+  });
+});
 
 /* A10 Spillover — планер-нативный из ssp_history (retro-only): свежий GET /history через
    deps.fetchHistory → база закрытых спринтов (dedupe по baseId, FINISHED) для пикера N → дифф
    соседних снимков по-рольно (pure.computeSpillover). done = standupDoneStates (fallback = 2 послед.
    stateRollupOrder). Единица ЧЧ (estimate_<rk>=минуты). Свой sprint-пикер (вне isWindowed). */
-function _loadA10(deps, base, settings, pure) {
+const _loadA10 = makeReportLoader('A10', 'a', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   if (typeof pure.computeSpillover !== 'function' || typeof deps.fetchHistory !== 'function') {
-    _mountVm('a', Object.assign({}, base, { report: 'a10', error: true })); return;
+    ctx.mount({ report: 'a10', error: true }); return;
   }
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).map(function (r) { return { key: r.key, label: r.label || r.key }; });
   var doneStates = (Array.isArray(settings.standupDoneStates) && settings.standupDoneStates.length)
@@ -873,7 +853,7 @@ function _loadA10(deps, base, settings, pure) {
   var ab = (settings.reportingSpilloverAgeBands && typeof settings.reportingSpilloverAgeBands === 'object') ? settings.reportingSpilloverAgeBands : {};
   var ageBands = { warm: (typeof ab.warm === 'number' ? ab.warm : 2), hot: (typeof ab.hot === 'number' ? ab.hot : 5) };
   var ui = (deps.draftGet && deps.draftGet('ui')) || {};
-  deps.fetchHistory(deps).then(function (r) {
+  return deps.fetchHistory(deps).then(function (r) {
     if (!_fresh(base)) return;
     var history = (r && Array.isArray(r.history)) ? r.history : [];
     var byBase = {}, order = [];                              /* база закрытых спринтов для пикера */
@@ -884,22 +864,17 @@ function _loadA10(deps, base, settings, pure) {
       if (!byBase[bid]) { byBase[bid] = { key: bid, label: rec.name || bid, dateStart: (typeof rec.dateStart === 'number' ? rec.dateStart : 0) }; order.push(byBase[bid]); }
     }
     order.sort(function (a, b) { return b.dateStart - a.dateStart; });   /* новейшие первыми */
-    if (!order.length) { _mountVm('a', Object.assign({}, base, { report: 'a10', loading: false, sprints: [], a10Empty: true })); return; }
+    if (!order.length) { ctx.mount({ report: 'a10', loading: false, sprints: [], a10Empty: true }); return; }
     var sel = (ui.reportingSpillSprint && byBase[ui.reportingSpillSprint]) ? ui.reportingSpillSprint
       : (order.length >= 2 ? order[1].key : order[0].key);   /* дефолт — спринт С преемником (второй новейший) */
     var out = pure.computeSpillover(history, { roles: roles, doneStates: doneStates, ageBands: ageBands }, sel);
     var roleRows = (out.roleRows || []).filter(function (rr) { return rr.plannedMinutes > 0; });   /* пустые роли — шум */
-    _mountVm('a', Object.assign({}, base, { report: 'a10', loading: false,
+    ctx.mount({ report: 'a10', loading: false,
       sprints: order.map(function (b) { return { key: b.key, label: b.label }; }), spillSprint: sel,
       roleRows: roleRows, tails: out.tails || [], ages: out.ages || [], hasN1: out.hasN1,
-      noDoneCfg: !doneStates.length }));
-  })
-  .catch(function (e) {
-    if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-    if (deps.diag) deps.diag('reporting A10 err: ' + String(e && e.message ? e.message : e), 'err');
-    _mountVm('a', Object.assign({}, base, { report: 'a10', error: true }));
+      noDoneCfg: !doneStates.length });
   });
-}
+});
 
 /* #50 S8a — контур B (управленческий): диспетч по ui.reportingReportB (пока только B3).
    Своя ветка стейта (reportingReportB/PeriodB/PeriodOptsB) — ui.reportingReport общий, но под
@@ -951,53 +926,43 @@ function _loadContourB(deps, L) {
   if (report === 'b1') _loadB1(deps, base, settings, fieldState, proj, pure);
   else if (report === 'b2') _loadB2(deps, base, settings, fieldState, proj, pure);
   else if (report === 'b0') _loadB0(deps, base, settings, fieldState, proj, pure);
-  else _loadB3(deps, base, settings, proj, pure);
+  else _loadB3(deps, base, settings, fieldState, proj, pure);
 }
 
 /* #50 S8b — B1 Техдолг (СНИМОК оценок, контур B): один issues-фетч проекта → классификация техдолг
    (тип задачи reportingTechDebtType ИЛИ тег reportingTechDebtTag — одно из двух) → per-система×роль
    Σ оценок техдолга + Σ всех оценок + % по ЧЧ + «неоценённый долг». Реюз ISSUE_FIELDS_A3/_cf; система
    = значение планерного поля settings.fieldSystem (реюз, как A10 item.system). Без activities/периода. */
-function _loadB1(deps, base, settings, fieldState, proj, pure) {
-  if (typeof pure.buildTechDebtRows !== 'function') { _mountVm('b', Object.assign({}, base, { error: true })); return; }
+const _loadB1 = makeReportLoader('B1', 'b', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
+  if (typeof pure.buildTechDebtRows !== 'function') { ctx.mount({ error: true }); return; }
   var tdType = (typeof settings.reportingTechDebtType === 'string') ? settings.reportingTechDebtType.trim() : '';
   var tdTag = (typeof settings.reportingTechDebtTag === 'string') ? settings.reportingTechDebtTag.trim() : '';
-  if (!tdType && !tdTag) { _mountVm('b', Object.assign({}, base, { loading: false, b1NoCfg: true })); return; }
+  if (!tdType && !tdTag) { ctx.mount({ loading: false, b1NoCfg: true }); return; }
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).filter(function (r) { return r && r.estField; })
     .map(function (r) { return { key: r.key, label: r.label || r.key, estField: r.estField }; });
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
   var fieldSystem = (typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
-  function _min(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return (v && typeof v.minutes === 'number') ? v.minutes : null; }
-  function _typeVal(iss) { var c = _cf(iss, fieldType); var v = c && c.value; return (v && v.name) || ''; }   /* канон name (матч конфига) */
-  function _sysVal(iss) { if (!fieldSystem) return ''; var c = _cf(iss, fieldSystem); var v = c && c.value; return v ? (v.localizedName || v.name || '') : ''; }
   function _hasTag(iss, tag) { var ts = Array.isArray(iss.tags) ? iss.tags : []; for (var i = 0; i < ts.length; i++) { if (ts[i] && ts[i].name === tag) return true; } return false; }
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());   /* QueryAssist AND */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_B1, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      if (!_fresh(base)) return;
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var perIssue = [];
-      for (var i = 0; i < arr.length; i++) {
-        var iss = arr[i]; if (!iss || !iss.idReadable) continue;
-        var isTd = tdType ? (_typeVal(iss) === tdType) : _hasTag(iss, tdTag);   /* тип имеет приоритет над тегом */
-        var est = {};
-        for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _min(iss, roles[ri].estField);
-        perIssue.push({ est: est, isTechDebt: isTd, system: _sysVal(iss) });
-      }
-      var built = pure.buildTechDebtRows(perIssue, roles.map(function (r) { return { key: r.key, label: r.label }; }));
-      _mountVm('b', Object.assign({}, base, { loading: false,
-        groups: built.groups, unestimated: built.unestimated, estimated: built.estimated, debtTasks: built.debtTasks,
-        totalDebtMinutes: built.totalDebtMinutes, totalPct: built.totalPct,
-        hasSystem: !!fieldSystem, populationCount: perIssue.length, limitHit: limitHit, limit: LIMIT }));
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting B1 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('b', Object.assign({}, base, { error: true }));
-    });
-}
+  /* QueryAssist AND */
+  return ctx.fetchIssues(ISSUE_FIELDS_B1, ctx.queryParts()).then(function (f) {
+    if (!_fresh(base)) return;
+    var arr = f.arr;
+    var perIssue = [];
+    for (var i = 0; i < arr.length; i++) {
+      var iss = arr[i]; if (!iss || !iss.idReadable) continue;
+      var isTd = tdType ? (_typeValOf(iss, fieldType) === tdType) : _hasTag(iss, tdTag);   /* тип имеет приоритет над тегом */
+      var est = {};
+      for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _cfMin(iss, roles[ri].estField);
+      perIssue.push({ est: est, isTechDebt: isTd, system: _sysValOf(iss, fieldSystem) });
+    }
+    var built = pure.buildTechDebtRows(perIssue, roles.map(function (r) { return { key: r.key, label: r.label }; }));
+    ctx.mount({ loading: false,
+      groups: built.groups, unestimated: built.unestimated, estimated: built.estimated, debtTasks: built.debtTasks,
+      totalDebtMinutes: built.totalDebtMinutes, totalPct: built.totalPct,
+      hasSystem: !!fieldSystem, populationCount: perIssue.length, limitHit: f.limitHit, limit: LIMIT });
+  });
+});
 
 /* #50 S8c — B2 «Налог на баги» (ОКОННЫЙ, контур B): доля инженерных ЧЧ на баги vs фичи, на
    систему×роль. Баг = тип reportingBugType; «фича» = задача, слинкованная с багом через
@@ -1005,29 +970,24 @@ function _loadB1(deps, base, settings, fieldState, proj, pure) {
    (bulkWorkItems) + resolve-время багов (bulkStateTransitions → done ∈ standupDoneStates, для
    верхней границы fallback-окна) → pure(B).computeBugTax. Роль workitem'а = исполнитель роли
    задачи == автор (реюз A4 _buildRoleExecutors). */
-function _loadB2(deps, base, settings, fieldState, proj, pure) {
+const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings;
   var bpure = _bpure();
   if (!bpure || typeof bpure.computeBugTax !== 'function'
       || typeof deps.bulkWorkItems !== 'function' || typeof deps.bulkStateTransitions !== 'function') {
-    _mountVm('b', Object.assign({}, base, { error: true })); return;
+    ctx.mount({ error: true }); return;
   }
   var bugType = (typeof settings.reportingBugType === 'string') ? settings.reportingBugType.trim() : '';
   var linkTypes = Array.isArray(settings.reportingLinkTypes) ? settings.reportingLinkTypes.filter(Boolean) : [];
-  if (!bugType || !linkTypes.length) { _mountVm('b', Object.assign({}, base, { loading: false, b2NoCfg: true })); return; }
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('b', Object.assign({}, base, { loading: false, rangePrompt: true })); return;
-  }
-  var pd = _period();
-  var win = pd ? pd.computeWindow(base.period, Date.now(), base.periodOpts) : null;
-  if (!win) { _mountVm('b', Object.assign({}, base, { loading: false, error: true })); return; }
+  if (!bugType || !linkTypes.length) { ctx.mount({ loading: false, b2NoCfg: true }); return; }
+  var win = ctx.window({ loading: false, rangePrompt: true }, { loading: false, error: true });
+  if (!win) return;
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).map(function (r) { return { key: r.key, label: r.label || r.key, fieldName: r.fieldName }; });
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
   var fieldSystem = (typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
   var doneSet = {};
   (Array.isArray(settings.standupDoneStates) ? settings.standupDoneStates : []).forEach(function (s) { if (s) doneSet[s] = true; });
   var linkSet = {}; linkTypes.forEach(function (n) { linkSet[n] = true; });
-  function _typeVal(iss) { var c = _cf(iss, fieldType); var v = c && c.value; return (v && v.name) || ''; }   /* канон name (матч конфига) */
-  function _sysVal(iss) { if (!fieldSystem) return ''; var c = _cf(iss, fieldSystem); var v = c && c.value; return v ? (v.localizedName || v.name || '') : ''; }
   function _linkedIds(iss) {
     var out = [], links = Array.isArray(iss.links) ? iss.links : [];
     for (var i = 0; i < links.length; i++) {
@@ -1037,84 +997,68 @@ function _loadB2(deps, base, settings, fieldState, proj, pure) {
     }
     return out;
   }
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());   /* QueryAssist AND (D-скоуп аналитика) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_B2, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
+  /* QueryAssist AND (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_B2, ctx.queryParts()).then(function (f) {
+    if (!_fresh(base)) return;
+    var arr = f.arr;
+    var m = _mapIssues(arr, ctx.fieldState);             /* fieldId состояния для resolve-переходов */
+    var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */
+    var issues = [], bugIds = [];
+    for (var i = 0; i < arr.length; i++) {
+      var iss = arr[i]; if (!iss || !iss.idReadable) continue;
+      var isBug = _typeValOf(iss, fieldType) === bugType;
+      if (isBug) bugIds.push(iss.idReadable);
+      issues.push({ id: iss.idReadable, isBug: isBug, system: _sysValOf(iss, fieldSystem),
+        created: (typeof iss.created === 'number') ? iss.created : null, resolveTs: null,
+        featureIds: isBug ? _linkedIds(iss) : [] });
+    }
+    return deps.bulkStateTransitions(deps, bugIds, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
-      var m = _mapIssues(arr, fieldState);                 /* fieldId состояния для resolve-переходов */
-      var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */
-      var issues = [], bugIds = [];
-      for (var i = 0; i < arr.length; i++) {
-        var iss = arr[i]; if (!iss || !iss.idReadable) continue;
-        var isBug = _typeVal(iss) === bugType;
-        if (isBug) bugIds.push(iss.idReadable);
-        issues.push({ id: iss.idReadable, isBug: isBug, system: _sysVal(iss),
-          created: (typeof iss.created === 'number') ? iss.created : null, resolveTs: null,
-          featureIds: isBug ? _linkedIds(iss) : [] });
+      var trans = prim.transitions || {};
+      for (var k = 0; k < issues.length; k++) {          /* resolveTs бага = вход в done-статус (иначе null = открыт до конца окна) */
+        if (!issues[k].isBug) continue;
+        var tr = trans[issues[k].id];
+        if (tr && doneSet[tr.toState] && typeof tr.enteredAt === 'number') issues[k].resolveTs = tr.enteredAt;
       }
-      return deps.bulkStateTransitions(deps, bugIds, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
+      return deps.bulkWorkItems(deps, built.ids, { window: win, shouldAbort: base.shouldAbort }).then(function (wi) {
         if (!_fresh(base)) return;
-        var trans = prim.transitions || {};
-        for (var k = 0; k < issues.length; k++) {          /* resolveTs бага = вход в done-статус (иначе null = открыт до конца окна) */
-          if (!issues[k].isBug) continue;
-          var tr = trans[issues[k].id];
-          if (tr && doneSet[tr.toState] && typeof tr.enteredAt === 'number') issues[k].resolveTs = tr.enteredAt;
-        }
-        return deps.bulkWorkItems(deps, built.ids, { window: win, shouldAbort: base.shouldAbort }).then(function (wi) {
-          if (!_fresh(base)) return;
-          var out = bpure.computeBugTax({ issues: issues, workItems: wi.items, roleExecutors: built.roleExecutors,
-            roles: roles.map(function (r) { return { key: r.key, label: r.label }; }), windowToTs: win.toTs });
-          if (deps.diag) deps.diag('reporting B2 bugs=' + out.bugCount + ' features=' + out.featureCount +
-            ' fallback=' + out.fallbackBugCount + ' orphan=' + out.orphanBugCount + ' pct=' + out.totalPct.toFixed(3), 'ok');
-          _mountVm('b', Object.assign({}, base, { loading: false,
-            groups: out.groups, basket: out.basket, totalBugMinutes: out.totalBugMinutes, totalPct: out.totalPct,
-            hasSystem: !!fieldSystem, bugCount: out.bugCount, featureCount: out.featureCount,
-            fallbackBugCount: out.fallbackBugCount, orphanBugCount: out.orphanBugCount,
-            incompleteCount: (wi.incomplete || []).length, limitHit: limitHit, limit: LIMIT }));
-        });
+        var out = bpure.computeBugTax({ issues: issues, workItems: wi.items, roleExecutors: built.roleExecutors,
+          roles: roles.map(function (r) { return { key: r.key, label: r.label }; }), windowToTs: win.toTs });
+        if (deps.diag) deps.diag('reporting B2 bugs=' + out.bugCount + ' features=' + out.featureCount +
+          ' fallback=' + out.fallbackBugCount + ' orphan=' + out.orphanBugCount + ' pct=' + out.totalPct.toFixed(3), 'ok');
+        ctx.mount({ loading: false,
+          groups: out.groups, basket: out.basket, totalBugMinutes: out.totalBugMinutes, totalPct: out.totalPct,
+          hasSystem: !!fieldSystem, bugCount: out.bugCount, featureCount: out.featureCount,
+          fallbackBugCount: out.fallbackBugCount, orphanBugCount: out.orphanBugCount,
+          incompleteCount: (wi.incomplete || []).length, limitHit: f.limitHit, limit: LIMIT });
       });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting B2 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('b', Object.assign({}, base, { error: true }));
     });
-}
+  });
+});
 
 /* #50 S8a — B3 «1000 мелочей»: счётчик задач с тегом (настройка reportingThousandTag) за период
    vs среднемесячный темп с начала года. Два YT-подсчёта (created-окно) пагинацией → computeThousand. */
-function _loadB3(deps, base, settings, proj, pure) {
+const _loadB3 = makeReportLoader('B3', 'b', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, pure = ctx.pure;
   var tag = (typeof settings.reportingThousandTag === 'string') ? settings.reportingThousandTag.trim() : '';
-  if (!tag) { _mountVm('b', Object.assign({}, base, { loading: false, b3NoTag: true })); return; }
-  if (base.period === 'custom' && (!base.periodOpts.from || !base.periodOpts.to)) {
-    _mountVm('b', Object.assign({}, base, { loading: false, rangePrompt: true })); return;
-  }
-  var pm = _period();
+  if (!tag) { ctx.mount({ loading: false, b3NoTag: true }); return; }
   var now = Date.now();
-  var win = pm ? pm.computeWindow(base.period, now, base.periodOpts) : null;
-  if (!win) { _mountVm('b', Object.assign({}, base, { loading: false, error: true })); return; }
+  var win = ctx.window({ loading: false, rangePrompt: true }, { loading: false, error: true });
+  if (!win) return;
   var yearStart = Date.UTC(new Date(now).getUTCFullYear(), 0, 1);
-  var tagScope = 'project: ' + proj + ' tag: {' + tag + '}';
+  var tagScope = 'project: ' + ctx.proj + ' tag: {' + tag + '}';
   /* created-окно в YT-запросе (окно полуоткрытое [from,to) → верх = день to-1мс; YT '..' вкл. оба конца по дню). */
   var qPeriod = tagScope + ' created: ' + _ymdISO(win.fromTs) + ' .. ' + _ymdISO(win.toTs - 1);
   var qYtd = tagScope + ' created: ' + _ymdISO(yearStart) + ' .. ' + _ymdISO(now);
-  Promise.all([_countIssues(deps, qPeriod, base.shouldAbort), _countIssues(deps, qYtd, base.shouldAbort)])
+  return Promise.all([_countIssues(deps, qPeriod, base.shouldAbort), _countIssues(deps, qYtd, base.shouldAbort)])
     .then(function (res) {
       if (!_fresh(base)) return;
       var out = pure.computeThousand(res[0].total, res[1].total, now);
-      _mountVm('b', Object.assign({}, base, { loading: false,
+      ctx.mount({ loading: false,
         b3Period: out.countPeriod, b3Ytd: out.countYtd, b3Avg: out.avgPerMonth,
-        b3Capped: !!(res[0].capped || res[1].capped) }));   /* упор в 20k-кап счётчика → «≥» (ревью #50) */
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting B3 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('b', Object.assign({}, base, { error: true }));
+        b3Capped: !!(res[0].capped || res[1].capped) });   /* упор в 20k-кап счётчика → «≥» (ревью #50) */
     });
-}
+});
 
 /* #50 B0-d — «Свод» (контур B, управленческий roll-up): помесячный тренд 4 метрик (TTM / План-факт /
    Bottleneck / Бэклог) × система+агрегат за N месяцев. Внутренний период — N=6 месяцев (свой, НЕ
@@ -1124,17 +1068,18 @@ function _loadB3(deps, base, settings, proj, pure) {
    снимок-метрик). Популяция маппится _mapIssuesA2 (type/parentIsEpic → foldChildUnits для TTM).
    Гейт: без Лид-пары нет ни TTM, ни план-факт → мягкая подсказка (bottleneck/бэклог без своей
    конфигурации деградируют пустыми линиями, не ошибкой). */
-function _loadB0(deps, base, settings, fieldState, proj, pure) {
+const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
+  var deps = ctx.deps, base = ctx.base, settings = ctx.settings, fieldState = ctx.fieldState, pure = ctx.pure;
   var ttm = _ttm(), pm = _period(), roll = _rollup();
   if (!ttm || !pm || !roll || typeof deps.bulkAnchorTransitions !== 'function'
       || typeof deps.bulkAsOfEstimates !== 'function' || typeof deps.bulkWorkItems !== 'function') {
-    _mountVm('b', Object.assign({}, base, { error: true })); return;
+    ctx.mount({ error: true }); return;
   }
   var anchors = (settings.reportingAnchors && typeof settings.reportingAnchors === 'object'
     && !Array.isArray(settings.reportingAnchors)) ? settings.reportingAnchors : {};
   var lead = anchors.lead || {};
   if (lead.start == null || lead.end == null) {           /* без Лид-пары — ни окна популяции, ни as-of */
-    _mountVm('b', Object.assign({}, base, { loading: false, b0NoCfg: true })); return;
+    ctx.mount({ loading: false, b0NoCfg: true }); return;
   }
   var norms = (settings.reportingTtmNorms && typeof settings.reportingTtmNorms === 'object'
     && !Array.isArray(settings.reportingTtmNorms)) ? settings.reportingTtmNorms : { lead: 21, team: 15, cycle: null };
@@ -1156,13 +1101,9 @@ function _loadB0(deps, base, settings, fieldState, proj, pure) {
   (Array.isArray(settings.backlogZones) ? settings.backlogZones : []).forEach(function (z) { var s = z && z.state; if (s) backlogStates[s] = true; });
   var anchorStates = _anchorStateSet(anchors);             /* концы lead/team/cycle (timelines всё равно полные) */
   flowStates.forEach(function (s) { if (anchorStates.indexOf(s) < 0) anchorStates.push(s); });
-  function _sysVal(iss) { if (!fieldSystem) return ''; var c = _cf(iss, fieldSystem); var v = c && c.value; return v ? (v.localizedName || v.name || '') : ''; }
-  var parts = ['project: ' + proj];
-  if (base.query.trim()) parts.push(base.query.trim());    /* QueryAssist AND (D-скоуп аналитика) */
-  deps.host.fetchYouTrack('issues', { query: { fields: ISSUE_FIELDS_B0, query: parts.join(' '), $top: LIMIT + 1 } })
-    .then(function (issuesRaw) {
-      var arr = Array.isArray(issuesRaw) ? issuesRaw : [];
-      var limitHit = arr.length > LIMIT; if (limitHit) arr = arr.slice(0, LIMIT);
+  /* QueryAssist AND (D-скоуп аналитика) */
+  return ctx.fetchIssues(ISSUE_FIELDS_B0, ctx.queryParts()).then(function (f) {
+      var arr = f.arr, limitHit = f.limitHit;
       var m = _mapIssuesA2(arr, fieldState, typeNames);    /* type/parentIsEpic для foldChildUnits (TTM) + fieldId состояния */
       var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */
       var fieldIds = [], seenFid = {}, rolesEng = [];      /* estField name→id (ОДИН резолв) → rolesEng {key,label,fieldId} + fieldIds примитива (как A5) */
@@ -1176,7 +1117,7 @@ function _loadB0(deps, base, settings, fieldState, proj, pure) {
       for (var ai = 0; ai < arr.length; ai++) {
         var iss = arr[ai]; if (!iss || !iss.idReadable) continue;
         var id = iss.idReadable;
-        if (fieldSystem) { var sv = _sysVal(iss); if (sv) systemOf[id] = sv; }
+        if (fieldSystem) { var sv = _sysValOf(iss, fieldSystem); if (sv) systemOf[id] = sv; }
         var stc = _cf(iss, fieldState); var sn = (stc && stc.value && stc.value.name) || '';
         if (sn) currentStates[id] = sn;
         var cur = {};
@@ -1226,18 +1167,13 @@ function _loadB0(deps, base, settings, fieldState, proj, pure) {
                 if (deps.diag) deps.diag('reporting B0 pop=' + m.ids.length + ' roles=' + rolesEng.length +
                   ' systems=' + series.systems.length + ' months=' + series.months.length +
                   ' incomplete=' + incomplete.length, incomplete.length ? 'warn' : 'ok');
-                _mountVm('b', Object.assign({}, base, { loading: false, b0NoCfg: false, series: series,
+                ctx.mount({ loading: false, b0NoCfg: false, series: series,
                   hasSystem: !!fieldSystem, hasFlow: flowStates.length >= 2,   /* поток осмыслен от 2 статусов (гейт = _loadFlow) */ hasBacklog: Object.keys(backlogStates).length > 0,
-                  populationCount: m.ids.length, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT }));
+                  populationCount: m.ids.length, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT });
           });
         });
-    })
-    .catch(function (e) {
-      if (e && e.__reportAborted) return;   /* прерывание — не ошибка: откат смонтирован _cancelRun, gen-гейт актуален */
-      if (deps.diag) deps.diag('reporting B0 err: ' + String(e && e.message ? e.message : e), 'err');
-      _mountVm('b', Object.assign({}, base, { error: true }));
     });
-}
+});
 
 /* loadAndRender(deps, contour): контур B → _loadContourB (B3); контур A → диспетч по ui.reportingReport. */
 function loadAndRender(deps, contour) {
@@ -1302,9 +1238,9 @@ function loadAndRender(deps, contour) {
   else if (report === 'a4') _loadA4(deps, base, settings, fieldState, proj, pure);
   else if (report === 'a5') _loadA5(deps, base, settings, fieldState, proj, pure);
   else if (report === 'a1') _loadA1(deps, base, settings, fieldState, proj, pure);
-  else if (report === 'a3') _loadA3(deps, base, settings, fieldState, proj);
+  else if (report === 'a3') _loadA3(deps, base, settings, fieldState, proj, pure);
   else if (report === 'a6') _loadA6(deps, base, settings, fieldState, proj, pure);
-  else if (report === 'a10') _loadA10(deps, base, settings, pure);
+  else if (report === 'a10') _loadA10(deps, base, settings, fieldState, proj, pure);
   else _loadA7(deps, base, settings, fieldState, proj, pure);
 }
 

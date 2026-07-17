@@ -1,0 +1,815 @@
+{
+  "vmKeys": [
+    "b0NoCfg",
+    "contour",
+    "gen",
+    "hasBacklog",
+    "hasFlow",
+    "hasSystem",
+    "incompleteCount",
+    "labels",
+    "limit",
+    "limitHit",
+    "loading",
+    "onAssist",
+    "onCancel",
+    "onExport",
+    "onRefresh",
+    "onSetPeriod",
+    "onSwitchReport",
+    "period",
+    "periodOpts",
+    "populationCount",
+    "projectName",
+    "query",
+    "report",
+    "series",
+    "shouldAbort",
+    "years"
+  ],
+  "labelKeys": [
+    "a10AgeUnit",
+    "a10Carried",
+    "a10ColAge",
+    "a10ColHours",
+    "a10ColSystem",
+    "a10ColType",
+    "a10Dropped",
+    "a10Empty",
+    "a10HoursUnit",
+    "a10Menu",
+    "a10NoDoneCfg",
+    "a10NoN1",
+    "a10PickSprint",
+    "a10SectAge",
+    "a10SectTails",
+    "a10SectUnder",
+    "a10Sub",
+    "a10Title",
+    "a1ChartByDay",
+    "a1ChartByMonth",
+    "a1Menu",
+    "a1NoTargets",
+    "a1PopNote",
+    "a1Sub",
+    "a1Title",
+    "a2Menu",
+    "a2NoAnchors",
+    "a2NoPauses",
+    "a2Sub",
+    "a2Title",
+    "a3ColOrg",
+    "a3ColPriority",
+    "a3ColStage",
+    "a3ColUnit",
+    "a3Empty",
+    "a3EstPrefix",
+    "a3Menu",
+    "a3ModeDone",
+    "a3ModeWip",
+    "a3Sub",
+    "a3Title",
+    "a4ChartTitle",
+    "a4ColDays",
+    "a4ColHours",
+    "a4ColPerson",
+    "a4ColRole",
+    "a4Empty",
+    "a4HoursUnit",
+    "a4Menu",
+    "a4NoLogTitle",
+    "a4RoleNone",
+    "a4Sub",
+    "a4Title",
+    "a4Total",
+    "a5ChartTitle",
+    "a5ColEst",
+    "a5ColFact",
+    "a5ColVar",
+    "a5Empty",
+    "a5Menu",
+    "a5MetricSuffix",
+    "a5NormHint",
+    "a5OverCount",
+    "a5OverEst",
+    "a5Sub",
+    "a5Title",
+    "a5UnderEst",
+    "a6AtThreshold",
+    "a6ColCapacity",
+    "a6ColMonths",
+    "a6ColSum",
+    "a6ColTasks",
+    "a6Empty",
+    "a6Menu",
+    "a6MonthsUnit",
+    "a6NoBacklogHint",
+    "a6NormMarker",
+    "a6Sub",
+    "a6Title",
+    "a7ChartTitle",
+    "a7Menu",
+    "a7Sub",
+    "a7Title",
+    "abortedManual",
+    "abortedTimeout",
+    "b0AllSystems",
+    "b0ColMonth",
+    "b0Empty",
+    "b0Menu",
+    "b0MetricBacklogHours",
+    "b0MetricBacklogMonths",
+    "b0MetricBottleneck",
+    "b0MetricPlanfact",
+    "b0MetricTtm",
+    "b0NoBacklogHint",
+    "b0NoCfg",
+    "b0NoFlowHint",
+    "b0Sub",
+    "b0Title",
+    "b0UnitDays",
+    "b0UnitHours",
+    "b0UnitMonths",
+    "b0Window",
+    "b1AllSystems",
+    "b1ChartTitle",
+    "b1ColDebt",
+    "b1ColPct",
+    "b1ColRole",
+    "b1Empty",
+    "b1HoursUnit",
+    "b1Menu",
+    "b1NoCfg",
+    "b1Sub",
+    "b1Title",
+    "b1TotalDebt",
+    "b1TotalPct",
+    "b1Unestimated",
+    "b2AllSystems",
+    "b2Basket",
+    "b2ChartTitle",
+    "b2ColBug",
+    "b2ColPct",
+    "b2ColRole",
+    "b2Empty",
+    "b2Fallback",
+    "b2HoursUnit",
+    "b2Menu",
+    "b2NoCfg",
+    "b2Sub",
+    "b2Title",
+    "b2TotalBug",
+    "b2TotalPct",
+    "b3Avg",
+    "b3Menu",
+    "b3NoTag",
+    "b3Period",
+    "b3Sub",
+    "b3Title",
+    "b3Unit",
+    "b3Ytd",
+    "bottleneckSub",
+    "bottleneckTitle",
+    "bucketGt120",
+    "bucketLe40",
+    "bucketMid",
+    "bucketTitle",
+    "cancelReport",
+    "cancelReportHint",
+    "chartTasks",
+    "chartTopN",
+    "colCount",
+    "colDays",
+    "colEnteredDate",
+    "colEnteredStatus",
+    "colFlag",
+    "colId",
+    "colLabel",
+    "colStatus",
+    "colTask",
+    "colUnitType",
+    "contourA",
+    "contourB",
+    "daysUnit",
+    "empty",
+    "error",
+    "exportGenerated",
+    "exportLabel",
+    "exportPeriod",
+    "exportProject",
+    "exportSnapshot",
+    "exportTotal",
+    "filterLabel",
+    "filterPh",
+    "flagNone",
+    "flagOk",
+    "flagOver",
+    "flagWarn",
+    "flowColWip",
+    "flowEmpty",
+    "flowMenu",
+    "flowNoFlow",
+    "flowPopulation",
+    "flowSub",
+    "flowTitle",
+    "incomplete",
+    "limitHit",
+    "loading",
+    "metricCycle",
+    "metricLead",
+    "metricTeam",
+    "period.calendarYear",
+    "period.currentQuarter",
+    "period.custom",
+    "period.last30",
+    "period.last7",
+    "period.lastMonth",
+    "period.lastQuarter",
+    "period.today",
+    "period.yesterday",
+    "period.ytd",
+    "periodLabel",
+    "pickReport",
+    "placeholder",
+    "rangeFrom",
+    "rangePrompt",
+    "rangeTo",
+    "refresh",
+    "reworkColCount",
+    "reworkColTransition",
+    "reworkIssues",
+    "reworkSub",
+    "reworkTitle",
+    "reworkTotal",
+    "riskSuffix",
+    "ttmNoNorm",
+    "ttmNormPrefix",
+    "ttmOk",
+    "ttmOver",
+    "ttmUnit",
+    "unitEpic",
+    "unitStory",
+    "yearLabel"
+  ],
+  "fetchCalls": [
+    {
+      "$skip": "[undefined]",
+      "$top": 201,
+      "endpoint": "issues",
+      "fields": "idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(login,name,localizedName,minutes)),links(direction,linkType(name),issues(idReadable,customFields(name,value(name))))",
+      "query": "project: DEMO"
+    }
+  ],
+  "primCalls": [
+    {
+      "ids": [
+        "T-1",
+        "T-2",
+        "T-3",
+        "T-4",
+        "T-5",
+        "T-6",
+        "T-7"
+      ],
+      "name": "bulkAnchorTransitions",
+      "opts": {
+        "anchorStates": [
+          "Open",
+          "Done",
+          "In Progress",
+          "Review"
+        ],
+        "estFieldIds": [
+          "fld-est-an",
+          "fld-est-dev"
+        ],
+        "fieldId": "fld-state",
+        "shouldAbort": "[Function]"
+      }
+    },
+    {
+      "ids": [
+        "T-1",
+        "T-2",
+        "T-3",
+        "T-4",
+        "T-5",
+        "T-6",
+        "T-7"
+      ],
+      "name": "bulkWorkItems",
+      "opts": {
+        "shouldAbort": "[Function]",
+        "window": {
+          "fromTs": 0,
+          "toTs": 1780315200000
+        }
+      }
+    }
+  ],
+  "vm": {
+    "b0NoCfg": false,
+    "contour": "b",
+    "gen": 1,
+    "hasBacklog": true,
+    "hasFlow": true,
+    "hasSystem": true,
+    "incompleteCount": 0,
+    "limit": 200,
+    "limitHit": false,
+    "loading": false,
+    "onAssist": "[Function]",
+    "onCancel": "[Function]",
+    "onExport": "[Function]",
+    "onRefresh": "[Function]",
+    "onSetPeriod": "[Function]",
+    "onSwitchReport": "[Function]",
+    "period": "last30",
+    "periodOpts": {},
+    "populationCount": 7,
+    "projectName": "DEMO",
+    "query": "",
+    "report": "b0",
+    "series": {
+      "metrics": {
+        "backlogHours": {
+          "lines": {
+            "CRM": [
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 132
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              }
+            ],
+            "ERP": [
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 40
+              },
+              {
+                "level": "none",
+                "value": 60
+              },
+              {
+                "level": "none",
+                "value": 60
+              }
+            ],
+            "__all__": [
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 0
+              },
+              {
+                "level": "none",
+                "value": 172
+              },
+              {
+                "level": "none",
+                "value": 60
+              },
+              {
+                "level": "none",
+                "value": 60
+              }
+            ]
+          },
+          "norm": null,
+          "unit": "hours"
+        },
+        "backlogMonths": {
+          "lines": {
+            "CRM": [
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0.525
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              }
+            ],
+            "ERP": [
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0.25
+              },
+              {
+                "level": "ok",
+                "value": 0.375
+              },
+              {
+                "level": "ok",
+                "value": 0.375
+              }
+            ],
+            "__all__": [
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0
+              },
+              {
+                "level": "ok",
+                "value": 0.775
+              },
+              {
+                "level": "ok",
+                "value": 0.375
+              },
+              {
+                "level": "ok",
+                "value": 0.375
+              }
+            ]
+          },
+          "norm": 6,
+          "unit": "months"
+        },
+        "bottleneck": {
+          "lines": {
+            "CRM": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": 15.5
+              },
+              {
+                "level": "none",
+                "value": 14
+              },
+              {
+                "level": "none",
+                "value": 14
+              }
+            ],
+            "ERP": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": 9.5
+              },
+              {
+                "level": "none",
+                "value": 9.5
+              }
+            ],
+            "__all__": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": 15.5
+              },
+              {
+                "level": "none",
+                "value": 14
+              },
+              {
+                "level": "none",
+                "value": 14
+              }
+            ]
+          },
+          "norm": null,
+          "unit": "days"
+        },
+        "planfact": {
+          "lines": {
+            "CRM": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "warn",
+                "value": -20
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ],
+            "ERP": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "over",
+                "value": -37.5
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ],
+            "__all__": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "over",
+                "value": -24.375
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ]
+          },
+          "norm": 20,
+          "unit": "pct"
+        },
+        "ttm": {
+          "lines": {
+            "CRM": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ],
+            "ERP": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "ok",
+                "value": 15
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ],
+            "__all__": [
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "none",
+                "value": null
+              },
+              {
+                "level": "ok",
+                "value": 15
+              },
+              {
+                "level": "none",
+                "value": null
+              }
+            ]
+          },
+          "norm": 21,
+          "unit": "days"
+        }
+      },
+      "months": [
+        {
+          "fromTs": 1767225600000,
+          "key": "2026-01",
+          "mo": 0,
+          "toTs": 1769904000000,
+          "y": 2026
+        },
+        {
+          "fromTs": 1769904000000,
+          "key": "2026-02",
+          "mo": 1,
+          "toTs": 1772323200000,
+          "y": 2026
+        },
+        {
+          "fromTs": 1772323200000,
+          "key": "2026-03",
+          "mo": 2,
+          "toTs": 1775001600000,
+          "y": 2026
+        },
+        {
+          "fromTs": 1775001600000,
+          "key": "2026-04",
+          "mo": 3,
+          "toTs": 1777593600000,
+          "y": 2026
+        },
+        {
+          "fromTs": 1777593600000,
+          "key": "2026-05",
+          "mo": 4,
+          "toTs": 1780272000000,
+          "y": 2026
+        },
+        {
+          "fromTs": 1780272000000,
+          "key": "2026-06",
+          "mo": 5,
+          "toTs": 1782864000000,
+          "y": 2026
+        }
+      ],
+      "systems": [
+        "__all__",
+        "CRM",
+        "ERP"
+      ]
+    },
+    "shouldAbort": "[Function]",
+    "years": [
+      2026,
+      2025,
+      2024,
+      2023,
+      2022
+    ]
+  }
+}
