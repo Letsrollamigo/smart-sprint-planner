@@ -16,7 +16,7 @@
 
 import * as React from 'react';
 /* R6 (аудит §7 п.13) — декомпозиция: общие контролы и 7 Section'ов вынесены по файлам. */
-import { noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, GrpMultiSelect, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
+import { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, GrpMultiSelect, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
 import { DtaSection } from './settings-dta.jsx';
 import { CascadeSection } from './settings-cascade.jsx';
 import { StateRollupSection } from './settings-rollup.jsx';

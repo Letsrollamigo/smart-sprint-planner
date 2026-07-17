@@ -351,4 +351,4 @@ function TextField(props) {
 }
 
 /* ── Секция: DTA (дифференцированный учёт трудозатрат) ── */
-export { noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField };
+export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField };
