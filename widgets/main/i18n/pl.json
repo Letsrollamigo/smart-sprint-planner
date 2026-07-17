@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Pokaż panel dziennika diagnostycznego",
   "hintShowDiagLogUi": "Pokazuje blok «Dziennik diagnostyczny» na dole widżetu. Domyślnie ukryty; włączaj tylko podczas badania incydentu.",
   "errRevConflict": "Sprint został zmieniony przez innego użytkownika. Odśwież stronę i spróbuj zapisać ponownie.",
+  "errSlotRevConflict": "Dane zostały zmienione przez innego użytkownika. Odśwież stronę i spróbuj zapisać ponownie.",
   "ganttBarTooltipUnassigned": "Nieprzypisane",
   "cardSprintIntro": "Przegląd sprintu",
   "lblSprintName": "Nazwa sprintu",

@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Diagnosztikai napló panel megjelenítése",
   "hintShowDiagLogUi": "Megjeleníti a «Diagnosztikai napló» blokkot a widget alján. Alapértelmezés szerint rejtett; csak incidens kivizsgálásakor kapcsolja be.",
   "errRevConflict": "A sprintet egy másik felhasználó módosította. Töltse újra az oldalt, és próbálja újra menteni.",
+  "errSlotRevConflict": "Az adatokat egy másik felhasználó módosította. Töltse újra az oldalt, és próbálja újra menteni.",
   "ganttBarTooltipUnassigned": "Nincs hozzárendelve",
   "cardSprintIntro": "Sprint áttekintés",
   "lblSprintName": "Sprint neve",

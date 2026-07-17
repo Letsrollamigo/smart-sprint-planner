@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Tanılama günlüğü panelini göster",
   "hintShowDiagLogUi": "Widget’ın altındaki «Tanılama günlüğü» bloğunu gösterir. Varsayılan olarak gizlidir; yalnızca bir olayı incelerken etkinleştirin.",
   "errRevConflict": "Sprint başka bir kullanıcı tarafından değiştirildi. Sayfayı yenileyin ve tekrar kaydetmeyi deneyin.",
+  "errSlotRevConflict": "Veriler başka bir kullanıcı tarafından değiştirildi. Sayfayı yenileyin ve tekrar kaydetmeyi deneyin.",
   "ganttBarTooltipUnassigned": "Atanmamış",
   "cardSprintIntro": "Sprint genel bakış",
   "lblSprintName": "Sprint adı",

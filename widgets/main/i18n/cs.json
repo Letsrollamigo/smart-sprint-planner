@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Zobrazit panel diagnostického protokolu",
   "hintShowDiagLogUi": "Zobrazí blok «Diagnostický protokol» ve spodní části widgetu. Ve výchozím nastavení skrytý; zapněte jen při vyšetřování incidentu.",
   "errRevConflict": "Sprint byl změněn jiným uživatelem. Obnovte stránku a zkuste uložit znovu.",
+  "errSlotRevConflict": "Data byla změněna jiným uživatelem. Obnovte stránku a zkuste uložit znovu.",
   "ganttBarTooltipUnassigned": "Nepřiřazeno",
   "cardSprintIntro": "Přehled sprintu",
   "lblSprintName": "Název sprintu",

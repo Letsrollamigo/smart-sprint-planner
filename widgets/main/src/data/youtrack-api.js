@@ -108,7 +108,8 @@ function apiPost(path, body, query, deps) {
         deps.diag('ERR ' + path + ': server returned success=false reason=' + reason, 'err');
         /* #56-4 — конкурентная правка: понятный тост вместо генерик-ошибки. */
         if (reason === 'rev_conflict' && typeof deps.toast === 'function') {
-          deps.toast(deps.T('errRevConflict'), 'err');
+          /* R6 — у слотов history/releases/absences своя формулировка («данные», не «спринт»). */
+          deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
         }
         throw new Error(reason);
       }

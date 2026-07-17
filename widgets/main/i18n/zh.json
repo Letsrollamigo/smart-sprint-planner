@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "显示诊断日志面板",
   "hintShowDiagLogUi": "显示小部件底部的«诊断日志»块。默认隐藏；仅在排查事件时启用。",
   "errRevConflict": "冲刺已被其他用户修改。请刷新页面后重新保存。",
+  "errSlotRevConflict": "数据已被其他用户修改。请刷新页面后重新保存。",
   "ganttBarTooltipUnassigned": "未分配",
   "cardSprintIntro": "冲刺概述",
   "lblSprintName": "冲刺名称",

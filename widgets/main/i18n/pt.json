@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Mostrar o painel do log de diagnóstico",
   "hintShowDiagLogUi": "Mostra o bloco «Log de diagnóstico» na parte inferior do widget. Oculto por padrão; ative apenas ao investigar um incidente.",
   "errRevConflict": "O sprint foi modificado por outro usuário. Recarregue a página e tente salvar novamente.",
+  "errSlotRevConflict": "Os dados foram modificados por outro usuário. Recarregue a página e tente salvar novamente.",
   "ganttBarTooltipUnassigned": "Não atribuído",
   "cardSprintIntro": "Visão geral do sprint",
   "lblSprintName": "Nome do sprint",

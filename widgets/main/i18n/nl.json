@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "Diagnoselogboekpaneel tonen",
   "hintShowDiagLogUi": "Toont het blok «Diagnoselogboek» onderaan de widget. Standaard verborgen; alleen inschakelen bij het onderzoeken van een incident.",
   "errRevConflict": "De sprint is door een andere gebruiker gewijzigd. Vernieuw de pagina en probeer opnieuw op te slaan.",
+  "errSlotRevConflict": "De gegevens zijn door een andere gebruiker gewijzigd. Vernieuw de pagina en probeer opnieuw op te slaan.",
   "ganttBarTooltipUnassigned": "Niet toegewezen",
   "cardSprintIntro": "Sprint-overzicht",
   "lblSprintName": "Sprint-naam",

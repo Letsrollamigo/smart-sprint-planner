@@ -173,6 +173,7 @@
   "lblShowDiagLogUi": "진단 로그 패널 표시",
   "hintShowDiagLogUi": "위젯 하단의 «진단 로그» 블록을 표시합니다. 기본적으로 숨겨져 있으며, 인시던트 조사 시에만 활성화하세요.",
   "errRevConflict": "다른 사용자가 스프린트를 수정했습니다. 페이지를 새로 고친 후 다시 저장하세요.",
+  "errSlotRevConflict": "다른 사용자가 데이터를 수정했습니다. 페이지를 새로 고친 후 다시 저장하세요.",
   "ganttBarTooltipUnassigned": "미할당",
   "cardSprintIntro": "스프린트 개요",
   "lblSprintName": "스프린트 이름",
