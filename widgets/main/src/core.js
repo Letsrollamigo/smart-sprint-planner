@@ -728,7 +728,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.9.0';
+  var APP_VERSION = '3.10.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4240,7 +4240,7 @@
      Транзиентный пул (§4 спеки: НЕ храним — спрашиваем трекер при открытии вкладки);
      deps собираются per-call, логика — в domain/backlog-loader.js. Рендер — слайс 3. */
   var BACKLOG_LOADER = (typeof window !== 'undefined' && window.__SSP_BACKLOG_LOADER) || {};
-  var BACKLOG_PAGE = 50, MAX_BACKLOG_TOTAL = 1000;
+  var BACKLOG_PAGE = 200, MAX_BACKLOG_TOTAL = 1000;   /* R5 — крупные страницы (payload плоский); было 50×20 round-trip'ов */
   var _backlogPool = null;
   var _userBacklogFilter = ''; /* §2/§10 слайс 5 — query-assist фильтр пула (session-scoped) */
   var _backlogViewMode = 'zones'; /* §10 слайс 6 — вид: 'zones' | 'tree' (session-scoped) */

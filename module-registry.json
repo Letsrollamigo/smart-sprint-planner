@@ -276,15 +276,16 @@
   "domain/backlog-loader.js": {
    "layer": "domain",
    "domain": "domain/backlog-loader",
-   "loc": 316,
-   "locBudget": 316,
+   "loc": 397,
+   "locBudget": 415,
    "state": [
     "BACKLOG_ISSUE_FIELDS",
     "_api"
    ],
    "publishes": [
     "BACKLOG_LOADER"
-   ]
+   ],
+   "budgetNote": "R5 (v3.10.0, аудит стабильности §1) — осознанный рост: перф пула бэклога — плоский links-селектор (снят O(N×siblings)-разворот), батч-дозагрузка родителей/прародителей по уникальным id (_loadParentChains, 2 новых fields-константы), параллельная пагинация раундами PARALLEL_PAGES, sort by: created asc."
   },
   "domain/backlog-view.js": {
    "layer": "domain",

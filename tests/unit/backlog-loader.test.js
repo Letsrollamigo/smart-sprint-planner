@@ -59,12 +59,12 @@ test('_poolStates: дедуп стартовых состояний + состо
 });
 
 test('_buildPoolQuery: project + State + Type, ЗНАЧЕНИЯ В БРЕЙСАХ (многословные не мис-парсятся; запятая = OR)', function () {
-  assert.strictEqual(LOADER._buildPoolQuery(depsBase()), 'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature}');
+  assert.strictEqual(LOADER._buildPoolQuery(depsBase()), 'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} sort by: created asc');
 });
 
 test('_buildPoolQuery: без проекта/типов — только то, что задано', function () {
   const d = depsBase({ ctx: {}, settings: { backlogStartStates: ['Open'] } });
-  assert.strictEqual(LOADER._buildPoolQuery(d), 'State: {Open}');
+  assert.strictEqual(LOADER._buildPoolQuery(d), 'State: {Open} sort by: created asc');
 });
 
 test('_buildPoolQuery: имя атрибута из настроек (fieldState/fieldType), многословное имя — в брейсах', function () {
@@ -73,7 +73,7 @@ test('_buildPoolQuery: имя атрибута из настроек (fieldState
     backlogStartStates: ['Открыта'], backlogZones: [{ state: 'В разработке', roles: [] }],
     backlogTypeFilter: ['Баг'],
   } });
-  assert.strictEqual(LOADER._buildPoolQuery(d), 'Состояние: {Открыта},{В разработке} {Вид работ}: {Баг}');
+  assert.strictEqual(LOADER._buildPoolQuery(d), 'Состояние: {Открыта},{В разработке} {Вид работ}: {Баг} sort by: created asc');
 });
 
 test('_mapPoolIssue: сырой issue → task-контракт (raw stateName, isResolved, est/fact по полям ролей, теги)', function () {
@@ -108,7 +108,7 @@ function stubHost(allIssues) {
   };
 }
 
-test('loadBacklogPool: пагинация ($top=page+1), маппинг, запись в transient pool', async function () {
+test('loadBacklogPool: R5 параллельный раунд страниц ($top=page), конец = неполная страница', async function () {
   const issues = [rawIssue(1, 'In Progress'), rawIssue(2, 'In Progress'), rawIssue(3, 'Open')];
   const host = stubHost(issues);
   let stored = null;
@@ -117,8 +117,9 @@ test('loadBacklogPool: пагинация ($top=page+1), маппинг, зап�
   assert.strictEqual(res.count, 3);
   assert.strictEqual(res.capped, false);
   assert.strictEqual(stored.length, 3);
-  assert.strictEqual(host.calls[0].query.$top, 3);     // page(2)+1 sentinel
-  assert.strictEqual(host.calls.length, 2);            // 3 issues / page 2 → 2 страницы
+  assert.strictEqual(host.calls[0].query.$top, 2);     // R5: $top=page (probe-sentinel убран)
+  assert.strictEqual(host.calls.length, 3);            // раунд из PARALLEL_PAGES=3 страниц; 2-я неполная → стоп
+  assert.deepStrictEqual(host.calls.map(function (c) { return c.query.$skip || 0; }), [0, 2, 4]);
   assert.strictEqual(stored[0].issueId, 'DEMO-1');
 });
 
@@ -129,7 +130,7 @@ test('loadBacklogPool: cap (maxBacklogTotal) обрывает выгрузку',
   const deps = depsBase({ host: host, maxBacklogTotal: 4, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () {} } });
   const res = await LOADER.loadBacklogPool(deps);
   assert.strictEqual(res.capped, true);
-  assert.ok(stored.length >= 4 && stored.length <= 6, 'capped near maxBacklogTotal, got ' + stored.length);
+  assert.strictEqual(stored.length, 4);   // R5: перебор раунда обрезается точно к cap
 });
 
 /* ── слайс 5 — query-assist фильтр пула ── */
@@ -138,15 +139,15 @@ test('_buildPoolQuery: пользовательский фильтр AND-итс�
   const d = depsBase({ userFilter: 'Priority: Critical #unresolved' });
   assert.strictEqual(
     LOADER._buildPoolQuery(d),
-    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} Priority: Critical #unresolved'
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} Priority: Critical #unresolved sort by: created asc'
   );
 });
 
 test('_buildPoolQuery: пустой/whitespace фильтр не добавляет суффикс', function () {
   assert.strictEqual(LOADER._buildPoolQuery(depsBase({ userFilter: '   ' })),
-    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature}');
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} sort by: created asc');
   assert.strictEqual(LOADER._buildPoolQuery(depsBase({ userFilter: undefined })),
-    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature}');
+    'project: DEMO State: {Open},{In Progress} Type: {Bug},{Feature} sort by: created asc');
 });
 
 test('_backlogAssist: POST search/assist со scope проекта → {query,caret,suggestions}', async function () {
@@ -288,4 +289,72 @@ test('computeUnmappedStates: всё замаплено/resolved → []', functio
 });
 test('computeUnmappedStates: не-массив values → []', function () {
   assert.deepStrictEqual(LOADER.computeUnmappedStates(null, [], {}), []);
+});
+
+/* ── R5 — плоский селектор + батч-дозагрузка родителей/прародителей ── */
+
+test('R5: селектор пула плоский (links → id-only), без вложенного разворота siblings', function () {
+  const host = stubHost([rawIssue(1, 'Open')]);
+  const deps = depsBase({ host: host, state: { setBacklogPool: function () {}, getBacklogPool: function () {} } });
+  return LOADER.loadBacklogPool(deps).then(function () {
+    const f = host.calls[0].query.fields;
+    assert.ok(f.indexOf('links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))') >= 0, f);
+    assert.ok(f.indexOf('issues(idReadable,summary') < 0, 'вложенного разворота быть не должно: ' + f);
+  });
+});
+
+test('R5: цепочка Стори→Эпик собирается батчами по уникальным id (issue id: …)', async function () {
+  const subtask = { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' };
+  const mk = (n) => {
+    const iss = rawIssue(n, 'Open');
+    iss.links = [{ direction: 'INWARD', linkType: subtask, issues: [{ idReadable: 'ST-1' }] }];   // плоско: только id
+    return iss;
+  };
+  const parentRaw = { idReadable: 'ST-1', summary: ' Стори ', customFields: [{ projectCustomField: { field: { name: 'Вид' } }, value: { name: 'Story' } }],
+    links: [{ direction: 'INWARD', linkType: subtask, issues: [{ idReadable: 'EP-1' }] }] };
+  const grandRaw = { idReadable: 'EP-1', summary: 'Эпик', customFields: [{ projectCustomField: { field: { name: 'Вид' } }, value: { name: 'Epic' } }] };
+  const batchCalls = [];
+  const host = { fetchYouTrack: function (p, opts) {
+    const q = opts.query.query || '';
+    if (q.indexOf('issue id:') === 0) {
+      batchCalls.push(q);
+      if (q.indexOf('ST-1') >= 0) return Promise.resolve([parentRaw]);
+      return Promise.resolve([grandRaw]);
+    }
+    return Promise.resolve(opts.query.$skip ? [] : [mk(1), mk(2)]);   // 2 задачи с ОДНИМ родителем
+  } };
+  let stored = null;
+  const deps = depsBase({ host: host, backlogPage: 50,
+    settings: Object.assign({}, SETTINGS, { cascadeParentLinkInward: 'subtask of', cascadeKindField: 'Вид' }),
+    state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () { return stored; } } });
+  await LOADER.loadBacklogPool(deps);
+  assert.deepStrictEqual(batchCalls, ['issue id: ST-1', 'issue id: EP-1']);   // дедуп: 1 родитель + 1 прародитель
+  stored.forEach(function (t) {
+    assert.deepStrictEqual(t.parentChain, [
+      { issueId: 'ST-1', summary: 'Стори', kind: 'Story' },
+      { issueId: 'EP-1', summary: 'Эпик', kind: 'Epic' },
+    ]);
+  });
+});
+
+test('R5: родитель, не вернувшийся батчем (нет прав/удалён) → id-only заглушка из плоских links', async function () {
+  const subtask = { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' };
+  const iss = rawIssue(1, 'Open');
+  iss.links = [{ direction: 'INWARD', linkType: subtask, issues: [{ idReadable: 'GONE-1' }] }];
+  const host = { fetchYouTrack: function (p, opts) {
+    const q = opts.query.query || '';
+    if (q.indexOf('issue id:') === 0) return Promise.resolve([]);   // батч ничего не вернул
+    return Promise.resolve(opts.query.$skip ? [] : [iss]);
+  } };
+  let stored = null;
+  const deps = depsBase({ host: host, backlogPage: 50, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () { return stored; } } });
+  await LOADER.loadBacklogPool(deps);
+  assert.deepStrictEqual(stored[0].parentChain, [{ issueId: 'GONE-1', summary: '', kind: null }]);
+});
+
+test('R5: _buildPoolQuery уважает пользовательский sort by (не дублирует клаузу)', function () {
+  const d = depsBase({ userFilter: 'sort by: updated desc' });
+  const q = LOADER._buildPoolQuery(d);
+  assert.strictEqual(q.indexOf('sort by: created asc'), -1);
+  assert.ok(/sort by: updated desc$/.test(q), q);
 });

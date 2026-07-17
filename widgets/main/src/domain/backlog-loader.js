@@ -12,21 +12,29 @@
            state:{ getSettings, setBacklogPool, getBacklogPool } } */
 
 /* YT issue-поля: customFields покрывают State/Type/System/Priority + ролевые est/fact
-   (value.minutes); value.isResolved — §8 resolved auto-hide; tags(name) — §8 пауза по тегу. */
+   (value.minutes); value.isResolved — §8 resolved auto-hide; tags(name) — §8 пауза по тегу.
+
+   R5 (аудит стабильности §1) — селектор ПЛОСКИЙ: links раскрывают только idReadable на другом
+   конце. Прежний 2-уровневый разворот links(issues(...,links(issues(...)))) заставлял YT
+   отдавать на каждую задачу пула ВСЕ типы связей её родителя, включая «parent for» → все
+   sibling-подзадачи стори с полными customFields — payload и серверный CPU росли как
+   O(N × siblings) (1–2 мин на проде). Родители/прародители теперь дотягиваются БАТЧАМИ по
+   уникальным id (_loadParentChains) — дерево §5 (depth=2) сохраняется полностью. */
 var BACKLOG_ISSUE_FIELDS = 'id,idReadable,summary,'
   /* field(name,id): id поля State нужен слайсу 7 (carry-over) — надёжный fieldId для
      activities-детекта смены состояния (без localized-mismatch; project-fields id не отдаёт). */
   + 'customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes,isResolved)),'
   + 'tags(name),'
-  /* §5 дерево: связи для цепочки родителей. REST IssueLink: {direction:OUTWARD|INWARD|BOTH,
-     linkType(name,sourceToTarget=outward,targetToSource=inward), issues:[…на другом конце]}.
-     Родитель = link где фраза-с-моей-стороны === cascadeParentLinkInward («subtask of»).
-     ВЛОЖЕННОСТЬ 2 уровня (Задача→Стори→Эпик) одним fetch — поле-селектор YT допускает
-     рекурсивное раскрытие links внутри issues. Kind — inline в customFields. Сверено по докам YT. */
-  + 'links(direction,linkType(name,sourceToTarget,targetToSource),'
-  + 'issues(idReadable,summary,customFields(name,projectCustomField(field(name)),value(name)),'
-  + 'links(direction,linkType(name,sourceToTarget,targetToSource),'
-  + 'issues(idReadable,summary,customFields(name,projectCustomField(field(name)),value(name))))))';
+  /* §5: только направление/фраза связи + id на другом конце (родитель = link, где фраза
+     с моей стороны === cascadeParentLinkInward, дефолт «subtask of»). */
+  + 'links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
+/* R5 фаза 2/3 — поля батч-дозагрузки родителей: summary + kind-CF (value(name) — как отдавал
+   прежний вложенный селектор) + плоские links для резолва прародителя. Прародителям links не нужны. */
+const BACKLOG_PARENT_FIELDS = 'idReadable,summary,'
+  + 'customFields(name,projectCustomField(field(name)),value(name)),'
+  + 'links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
+const BACKLOG_GRANDPARENT_FIELDS = 'idReadable,summary,'
+  + 'customFields(name,projectCustomField(field(name)),value(name))';
 
 /* Уникальные непустые состояния стартового пула + всех зон — для query 'State: ...'. */
 function _poolStates(settings) {
@@ -85,7 +93,13 @@ function _buildPoolQuery(deps) {
      (YT AND по пробелу). Сырой ввод пользователя — не брейсим (он сам пишет синтаксис YT). */
   var userQ = (deps.userFilter || '').trim();
   if (userQ) parts.push(userQ);
-  return parts.join(' ');
+  /* R5 — детерминированный порядок для постраничной выгрузки: без явной сортировки YT-порядок
+     нестабилен → при конкурентных правках между страницами возможны дубли/пропуски. created asc
+     append-only: задачи, созданные во время пагинации, встают В КОНЕЦ — уже выбранные страницы
+     не сдвигаются. Пользовательский sort by в фильтре уважаем (не дублируем клаузу). */
+  var q = parts.join(' ');
+  if (!/sort by:/i.test(q)) q += (q ? ' ' : '') + 'sort by: created asc';
+  return q;
 }
 
 /* §2/§10 слайс 5 — data-source подсказок Ring QueryAssist для фильтра пула в шапке вкладки.
@@ -168,7 +182,8 @@ function _toContainer(p, s) {
   };
 }
 /* §5 — цепочка родителей (ближний→дальний), depth хопов (вложенность links). Для
-   Эпик▸Стори▸Таск depth=2 (Стори, Эпик). Один issue-fetch с вложенными links. */
+   Эпик▸Стори▸Таск depth=2 (Стори, Эпик). Работает по тем данным, что есть в links
+   (плоский фетч R5 даст id-only заглушку — цепочку доуточняет _loadParentChains). */
 function _parentChain(iss, s, depth) {
   var chain = [], cur = iss, d = depth || 2;
   for (var i = 0; i < d; i++) {
@@ -178,6 +193,58 @@ function _parentChain(iss, s, depth) {
     cur = p;
   }
   return chain;
+}
+/* R5 — id родителя из плоских links (реюз _parentRaw). null если родителя нет. */
+function _parentIdOf(iss, s) {
+  var p = _parentRaw(iss, s);
+  return (p && (p.idReadable || p.id)) || null;
+}
+
+/* R5 фазы 2/3 — дотянуть цепочки родителей батчами по УНИКАЛЬНЫМ id (у 1000 задач обычно
+   100–200 стори и десятки эпиков): один-два запроса `issue id: …` на уровень вместо
+   квадратичного разворота siblings на каждую задачу пула. Мутирует task.parentChain
+   (контракт buildBacklogVm: ближний→дальний, ≤2). Родитель, недоступный батчу (нет прав/
+   удалён), остаётся id-only заглушкой из _parentChain. Ошибка фетча — reject (как падала
+   и страница прежнего вложенного селектора: fail-loud, не тихая деградация дерева). */
+const PARENT_BATCH = 100;   /* const — C1 arch-fitness */
+function _fetchByIds(deps, ids, fields) {
+  var chunks = [];
+  for (var i = 0; i < ids.length; i += PARENT_BATCH) chunks.push(ids.slice(i, i + PARENT_BATCH));
+  return Promise.all(chunks.map(function (chunk) {
+    return deps.host.fetchYouTrack('issues', {
+      query: { fields: fields, query: 'issue id: ' + chunk.join(', '), $top: chunk.length },
+    }).then(function (raw) { return Array.isArray(raw) ? raw : []; });
+  })).then(function (pages) {
+    var by = {};
+    pages.forEach(function (arr) { arr.forEach(function (p) { if (p && (p.idReadable || p.id)) by[p.idReadable || p.id] = p; }); });
+    return by;
+  });
+}
+function _loadParentChains(acc, deps) {
+  var s = deps.settings || {};
+  var pids = [], seen = {};
+  acc.forEach(function (t) { var id = t._parentId; if (id && !seen[id]) { seen[id] = true; pids.push(id); } });
+  if (!pids.length) return Promise.resolve();
+  return _fetchByIds(deps, pids, BACKLOG_PARENT_FIELDS).then(function (parents) {
+    var gids = [], gseen = {};
+    pids.forEach(function (pid) {
+      var p = parents[pid]; if (!p) return;
+      var gid = _parentIdOf(p, s);
+      if (gid && !gseen[gid]) { gseen[gid] = true; gids.push(gid); }
+    });
+    var gp = gids.length ? _fetchByIds(deps, gids, BACKLOG_GRANDPARENT_FIELDS) : Promise.resolve({});
+    return gp.then(function (grands) {
+      acc.forEach(function (t) {
+        var p = t._parentId && parents[t._parentId];
+        if (!p) return;                                   /* заглушка из _parentChain остаётся */
+        var chain = [_toContainer(p, s)];
+        var gid = _parentIdOf(p, s);
+        if (gid) chain.push(grands[gid] ? _toContainer(grands[gid], s) : { issueId: gid, summary: '', kind: null });
+        t.parentChain = chain;
+      });
+      if (deps.diag) deps.diag('backlog parents: ' + pids.length + ' uniq, grandparents: ' + gids.length, 'info');
+    });
+  });
 }
 
 /* Сырой issue → task-контракт для pure buildBacklogVm. stateName = value.name (НЕ
@@ -205,7 +272,8 @@ function _mapPoolIssue(iss, deps) {
     tags: (iss.tags || []).map(function (t) { return t && t.name; }).filter(Boolean),
     estByRole: estByRole,
     factByRole: factByRole,
-    parentChain: _parentChain(iss, s, 2),   /* §5 — цепочка родителей (Стори→Эпик) для дерева */
+    parentChain: _parentChain(iss, s, 2),   /* §5 — цепочка из данных links as-is (R5: id-заглушка до батча) */
+    _parentId: _parentIdOf(iss, s),         /* R5 — вход батч-дозагрузки _loadParentChains */
   };
 }
 
@@ -223,6 +291,8 @@ function _stateFieldId(iss, s) {
    роняет загрузку (бейджа просто не будет). */
 /* const — C1 arch-fitness: var/let = module-state; эти иммутабельны (как ASSIST_FIELDS). */
 const MAX_CARRYOVER_POOL = 300, CARRYOVER_CHUNK = 25;
+/* R5 — ширина раунда параллельной пагинации пула (аудит §1: батчи по 3–4 страницы). */
+const PARALLEL_PAGES = 3;
 function _loadCarryover(acc, deps, stateFieldId) {
   if (!acc.length || !stateFieldId || acc.length > MAX_CARRYOVER_POOL) {
     if (acc.length > MAX_CARRYOVER_POOL && deps.diag) deps.diag('carryover: пул ' + acc.length + ' > ' + MAX_CARRYOVER_POOL + ' — пропуск (перф)', 'info');
@@ -286,24 +356,37 @@ function loadBacklogPool(deps) {
   var page = deps.backlogPage || 50;
   var cap = deps.maxBacklogTotal || 1000;
   var acc = [], skip = 0, capped = false, stateFieldId = '';
-  function loop() {
-    if (acc.length >= cap) { capped = true; return Promise.resolve(); }
+  /* R5 — страницы раундами по PARALLEL_PAGES параллельно (было 20 последовательных
+     round-trip'ов по 50). Конец выборки = первая неполная страница (детерминизм порядка
+     между страницами даёт sort by: created asc в query); хвост раунда за ней игнорируем. */
+  function fetchPage(atSkip) {
     return deps.host.fetchYouTrack('issues', {
-      query: { fields: BACKLOG_ISSUE_FIELDS, query: query, $skip: skip, $top: page + 1 },
-    }).then(function (issues) {
-      if (!Array.isArray(issues) || !issues.length) return undefined;
-      var hasMore = issues.length > page;
-      if (hasMore) issues = issues.slice(0, page);
-      issues.forEach(function (iss) {
-        if (!stateFieldId) stateFieldId = _stateFieldId(iss, deps.settings);
-        acc.push(_mapPoolIssue(iss, deps));
-      });
-      skip += page;
-      if (hasMore) return loop();
-      return undefined;
+      query: { fields: BACKLOG_ISSUE_FIELDS, query: query, $skip: atSkip, $top: page },
+    }).then(function (issues) { return Array.isArray(issues) ? issues : []; });
+  }
+  function round() {
+    if (acc.length >= cap) { capped = true; return Promise.resolve(); }
+    var skips = [];
+    for (var i = 0; i < PARALLEL_PAGES; i++) skips.push(skip + i * page);
+    return Promise.all(skips.map(fetchPage)).then(function (pages) {
+      var short = false;
+      for (var pi = 0; pi < pages.length && !short; pi++) {
+        pages[pi].forEach(function (iss) {
+          if (!stateFieldId) stateFieldId = _stateFieldId(iss, deps.settings);
+          acc.push(_mapPoolIssue(iss, deps));
+        });
+        if (pages[pi].length < page) short = true;
+      }
+      skip += PARALLEL_PAGES * page;
+      if (short) return undefined;
+      return round();
     });
   }
-  return loop()
+  return round()
+    .then(function () {
+      if (acc.length > cap) { acc = acc.slice(0, cap); capped = true; }   /* раунд мог перебрать кап — обрезаем к прежнему контракту */
+      return _loadParentChains(acc, deps);                                /* R5 фазы 2/3 — цепочки родителей батчами */
+    })
     .then(function () { return _loadCarryover(acc, deps, stateFieldId); })   /* §7 — обогащение историей */
     .then(function () {
       var inSet = _inSprintIdSet(deps);   /* #polish — пометить задачи уже в составе любого спринта */

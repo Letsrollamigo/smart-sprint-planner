@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.10.0] — 2026-07-17
+
+> **Audit wave R5: backlog pool performance. No functional changes.**
+
+### Improved
+
+- **Backlog pool loads orders of magnitude faster** (stability-audit §1; the production pain was 1–2 minutes). Three changes to the `loadBacklogPool` path: (1) a flat links selector — removed the quadratic expansion where every pooled task carried its parent with ALL sibling subtasks and their full fields (O(N × siblings)); (2) unique parents and epics are now fetched in one or two batch requests per level (`_loadParentChains` — 1000 tasks typically mean 100–200 stories and a few dozen epics); (3) pages grew 50→200 and load 3 in parallel (was up to 20 sequential round-trips). Bench on the test stand (a story with 30 subtasks): payload 3.4 MB → 154 KB (−95%; about two orders of magnitude on production fields). The Epic ▸ Story ▸ Task tree (§5) is fully preserved; a parent the batch cannot return degrades to an id-only stub.
+- **Deterministic paging** — `sort by: created asc` in the pool query: issues created mid-pagination append at the end and can no longer shift already-fetched pages (no duplicates or gaps); a user-supplied `sort by` in the filter is respected. The clause syntax was verified against a live YouTrack.
+
+### Internal
+
+- 4 new unit tests for the R5 mechanics (flat selector, batch dedup, id-stub, sort-by respect); the backlog-loader LOC budget raised consciously with a budget note.
+
 ## [3.9.0] — 2026-07-17
 
 > **System field in reports, clickable task IDs, tidy table rows.**
