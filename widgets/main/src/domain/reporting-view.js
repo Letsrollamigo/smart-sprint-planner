@@ -132,6 +132,14 @@ function _labels(T) {
     /* #50 S7 — говорящие названия пикера (repA*Menu); заголовок <h2> остаётся коротким (repA*Title) */
     a7Menu: T('repA7Menu'), a1Menu: T('repA1Menu'), a3Menu: T('repA3Menu'), a2Menu: T('repA2Menu'),
     flowMenu: T('repFlowMenu'), a4Menu: T('repA4Menu'), a5Menu: T('repA5Menu'), a6Menu: T('repA6Menu'), a10Menu: T('repA10Menu'),
+    a11Menu: T('repA11Menu'),
+    /* v3.12.0 (#11) — A11 Velocity вью (скорость команды по ролям из снимков) */
+    a11Title: T('repA11Title'), a11Sub: T('repA11Sub'),
+    a11SectAvg: T('repA11SectAvg'), a11SectTrend: T('repA11SectTrend'),
+    a11ColAvgClosed: T('repA11ColAvgClosed'), a11ColAvgPct: T('repA11ColAvgPct'), a11ColPlanned: T('repA11ColPlanned'),
+    a11ColSprints: T('repA11ColSprints'), a11ColSprint: T('repA11ColSprint'), a11Sparse: T('repA11Sparse'),
+    a11WindowNote: T('repA11WindowNote'),
+    a11Empty: T('repA11Empty'), a11NoDoneCfg: T('repA11NoDoneCfg'),
     /* #50 S7c — A10 Spillover вью (снимки соседних спринтов) */
     a10Title: T('repA10Title'), a10Sub: T('repA10Sub'),
     a10SectUnder: T('repA10SectUnder'), a10SectTails: T('repA10SectTails'), a10SectAge: T('repA10SectAge'),
@@ -900,6 +908,36 @@ const _loadA10 = makeReportLoader('A10', 'a', function (ctx) {
   });
 });
 
+/* v3.12.0 (#11) — A11 Velocity: скорость команды по ролям из FINISHED-снимков ssp_history
+   (планер-нативный, как A10). done-канон = A10 (standupDoneStates || хвост stateRollupOrder);
+   окно среднего — settings.reportingVelocityWindow (1..10, дефолт 3). Расчёт —
+   pure/velocity-pure.computeRoleVelocity (ЕДИНЫЙ источник velocity: сюда же позже
+   подключается коэффициент авто-прогноза #40 v2). */
+function _vpure() { return (typeof window !== 'undefined' && window.__SSP_VELOCITY_PURE) || null; }
+
+const _loadA11 = makeReportLoader('A11', 'a', function (ctx) {
+  var deps = ctx.deps, settings = ctx.settings, base = ctx.base;
+  var vp = _vpure();
+  if (!vp || typeof vp.computeRoleVelocity !== 'function' || typeof deps.fetchHistory !== 'function') {
+    ctx.mount({ report: 'a11', error: true }); return;
+  }
+  var roles = (Array.isArray(deps.roles) ? deps.roles : []).map(function (r) { return { key: r.key, label: r.label || r.key }; });
+  var doneStates = (Array.isArray(settings.standupDoneStates) && settings.standupDoneStates.length)
+    ? settings.standupDoneStates
+    : (Array.isArray(settings.stateRollupOrder) ? settings.stateRollupOrder.slice(-2) : []);
+  var win = (typeof settings.reportingVelocityWindow === 'number' && isFinite(settings.reportingVelocityWindow)
+    && settings.reportingVelocityWindow >= 1 && settings.reportingVelocityWindow <= 10)
+    ? Math.round(settings.reportingVelocityWindow) : 3;
+  return deps.fetchHistory(deps).then(function (r) {
+    if (!_fresh(base)) return;
+    var history = (r && Array.isArray(r.history)) ? r.history : [];
+    var out = vp.computeRoleVelocity(history, { roles: roles, doneStates: doneStates, window: win });
+    var roleRows = out.roleRows || [];
+    ctx.mount({ report: 'a11', loading: false, window: win,
+      roleRows: roleRows, a11Empty: !roleRows.length, noDoneCfg: !doneStates.length });
+  });
+});
+
 /* #50 S8a — контур B (управленческий): диспетч по ui.reportingReportB (пока только B3).
    Своя ветка стейта (reportingReportB/PeriodB/PeriodOptsB) — ui.reportingReport общий, но под
    контур B он не действует (A монтируется по нему, B — по своему ключу). */
@@ -1208,7 +1246,8 @@ function loadAndRender(deps, contour) {
   var report = (ui.reportingReport === 'a1') ? 'a1' : (ui.reportingReport === 'a2') ? 'a2'
     : (ui.reportingReport === 'flow') ? 'flow' : (ui.reportingReport === 'a4') ? 'a4'
     : (ui.reportingReport === 'a5') ? 'a5' : (ui.reportingReport === 'a3') ? 'a3'
-    : (ui.reportingReport === 'a6') ? 'a6' : (ui.reportingReport === 'a10') ? 'a10' : 'a7';
+    : (ui.reportingReport === 'a6') ? 'a6' : (ui.reportingReport === 'a10') ? 'a10'
+    : (ui.reportingReport === 'a11') ? 'a11' : 'a7';
   var userQ = String(ui.reportingQuery || '');
   var period = String(ui.reportingPeriod || 'last30');
   var periodOpts = (ui.reportingPeriodOpts && typeof ui.reportingPeriodOpts === 'object') ? ui.reportingPeriodOpts : {};
@@ -1238,7 +1277,7 @@ function loadAndRender(deps, contour) {
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],
     onRefresh: function (q) { _patch({ reportingQuery: q == null ? '' : String(q) }); },
     onAssist: function (req) { return (typeof deps.searchAssist === 'function') ? deps.searchAssist(deps, req) : Promise.resolve({ query: (req && req.query) || '', caret: 0, suggestions: [] }); },
-    onSwitchReport: function (r) { _patch({ reportingReport: (r === 'a1' || r === 'a2' || r === 'a3' || r === 'a6' || r === 'a10' || r === 'flow' || r === 'a4' || r === 'a5') ? r : 'a7' }); },
+    onSwitchReport: function (r) { _patch({ reportingReport: (r === 'a1' || r === 'a2' || r === 'a3' || r === 'a6' || r === 'a10' || r === 'a11' || r === 'flow' || r === 'a4' || r === 'a5') ? r : 'a7' }); },
     onSetPeriod: function (preset, opts) { _patch({ reportingPeriod: String(preset || 'last30'), reportingPeriodOpts: opts || {} }); },
     onSetSprintN: function (sid) { _patch({ reportingSpillSprint: sid == null ? '' : String(sid) }); },   /* #50 S7c — пикер спринта N для A10 */
     onExport: function (fmt, vm) { if (typeof deps.exportReport === 'function') deps.exportReport(fmt, vm); },   /* #50 S9-EXP — экспорт текущего отчёта (композиция в ядре) */
@@ -1266,6 +1305,7 @@ function loadAndRender(deps, contour) {
   else if (report === 'a3') _loadA3(deps, base, settings, fieldState, proj, pure);
   else if (report === 'a6') _loadA6(deps, base, settings, fieldState, proj, pure);
   else if (report === 'a10') _loadA10(deps, base, settings, fieldState, proj, pure);
+  else if (report === 'a11') _loadA11(deps, base, settings, fieldState, proj, pure);
   else _loadA7(deps, base, settings, fieldState, proj, pure);
 }
 

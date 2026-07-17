@@ -87,8 +87,9 @@ function _coll(items) {
 
 /* makeIssue — issue с fields/links/kind. opts:
    { id, kindField='Type', kind, fields, parents:{linkName:[issue,...]},
-     children:{linkName:[issue,...]}, settings, changedFields:[...] }
-   isChanged() — стаб: возвращает true если name ∈ changedFields. */
+     children:{linkName:[issue,...]}, settings, changedFields:[...], tags:['name',...] }
+   isChanged() — стаб: возвращает true если name ∈ changedFields.
+   tags — стаб YT Set<IssueTag>: массив {name} (у Array есть .find, как у Set в scripting API). */
 function makeIssue(opts) {
   opts = opts || {};
   const fields = Object.assign({}, opts.fields || {});
@@ -106,6 +107,7 @@ function makeIssue(opts) {
     id: opts.id || 'TEST-1',
     fields: fields,
     links: links,
+    tags: (opts.tags || []).map(function(n) { return { name: n }; }),
     project: { extensionProperties: { ssp_settings: opts.settings || null } }
   };
 }
@@ -328,6 +330,104 @@ test('cascade action: emits both est and fact messages when both change', () => 
     'est message present');
   assert.ok(messageLog.some(s => /Cascade-updated work hours/.test(s)),
     'fact message present');
+});
+
+/* ── v3.12.0 — тег-маркер защиты ручных оценок (cascadeManualEstTag) ────────── */
+
+test('cascade tag-protect: tagged parent is skipped — no write, no message', () => {
+  resetLogs();
+  const settings = settingsCascade({ cascadeManualEstTag: 'manual-est' });
+  const story = makeIssue({
+    id: 'P-S', settings: settings, kind: 'Story',
+    fields: { 'Fact FE': periodOfMinutes(500) },
+    tags: ['manual-est']
+  });
+  const task = makeIssue({
+    id: 'P-1', settings: settings,
+    fields: { 'Fact FE': periodOfMinutes(60) },
+    parents: { 'subtask of': [story] },
+    changedFields: ['Fact FE']
+  });
+  story.links['parent for'] = _coll([task]);
+  const orig = story.fields['Fact FE'];
+  wfModule.rule.spec.action(makeCtx(task));
+  assert.strictEqual(story.fields['Fact FE'], orig,
+    'tagged story keeps its manual value untouched (500m, not overwritten by 60m sum)');
+  assert.strictEqual(messageLog.length, 0, 'no message for skipped node');
+});
+
+test('cascade tag-protect: tagged grandparent — parent aggregated, grand skipped', () => {
+  resetLogs();
+  const settings = settingsCascade({ cascadeManualEstTag: 'manual-est' });
+  const epic = makeIssue({
+    id: 'P-E', settings: settings, kind: 'Epic',
+    fields: { 'Fact FE': periodOfMinutes(999) },
+    tags: ['manual-est']
+  });
+  const story = makeIssue({
+    id: 'P-S', settings: settings, kind: 'Story',
+    fields: { 'Fact FE': null },
+    parents: { 'subtask of': [epic] }
+  });
+  const task = makeIssue({
+    id: 'P-1', settings: settings,
+    fields: { 'Fact FE': periodOfMinutes(60) },
+    parents: { 'subtask of': [story] },
+    changedFields: ['Fact FE']
+  });
+  story.links['parent for'] = _coll([task]);
+  epic.links['parent for'] = _coll([story]);
+  const origEpic = epic.fields['Fact FE'];
+  wfModule.rule.spec.action(makeCtx(task));
+  assert.strictEqual(story.fields['Fact FE'].__mins, 60, 'untagged story aggregated normally');
+  assert.strictEqual(epic.fields['Fact FE'], origEpic, 'tagged epic keeps manual value (999m)');
+});
+
+test('cascade tag-protect: tagged story skipped, untagged epic still recomputed', () => {
+  resetLogs();
+  const settings = settingsCascade({ cascadeManualEstTag: 'manual-est' });
+  const epic = makeIssue({
+    id: 'P-E', settings: settings, kind: 'Epic',
+    fields: { 'Fact FE': null }
+  });
+  const story = makeIssue({
+    id: 'P-S', settings: settings, kind: 'Story',
+    fields: { 'Fact FE': periodOfMinutes(500) },
+    parents: { 'subtask of': [epic] },
+    tags: ['manual-est']
+  });
+  const task = makeIssue({
+    id: 'P-1', settings: settings,
+    fields: { 'Fact FE': periodOfMinutes(60) },
+    parents: { 'subtask of': [story] },
+    changedFields: ['Fact FE']
+  });
+  story.links['parent for'] = _coll([task]);
+  epic.links['parent for'] = _coll([story]);
+  wfModule.rule.spec.action(makeCtx(task));
+  assert.strictEqual(story.fields['Fact FE'].__mins, 500, 'tagged story untouched');
+  assert.strictEqual(epic.fields['Fact FE'].__mins, 500,
+    'epic recomputed from story manual value (skip is per-node, not per-branch)');
+});
+
+test('cascade tag-protect: empty setting → prior behavior even with tag on parent', () => {
+  resetLogs();
+  const settings = settingsCascade(); /* cascadeManualEstTag не задан */
+  const story = makeIssue({
+    id: 'P-S', settings: settings, kind: 'Story',
+    fields: { 'Fact FE': periodOfMinutes(500) },
+    tags: ['manual-est']
+  });
+  const task = makeIssue({
+    id: 'P-1', settings: settings,
+    fields: { 'Fact FE': periodOfMinutes(60) },
+    parents: { 'subtask of': [story] },
+    changedFields: ['Fact FE']
+  });
+  story.links['parent for'] = _coll([task]);
+  wfModule.rule.spec.action(makeCtx(task));
+  assert.strictEqual(story.fields['Fact FE'].__mins, 60,
+    'no setting → tag ignored, story overwritten by sum as before');
 });
 
 test('cascade action: aggregates BOTH plan (Plan FE) and fact (Fact FE) fields', () => {

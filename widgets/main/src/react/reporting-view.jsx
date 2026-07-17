@@ -171,7 +171,7 @@ function Chrome({ vm, L }) {
         <RingSelect value={vm.report} size="AUTO" minWidth={480}
           options={vm.contour === 'b'
             ? [{ key: 'b1', label: L.b1Menu }, { key: 'b2', label: L.b2Menu }, { key: 'b3', label: L.b3Menu }, { key: 'b0', label: L.b0Menu }]   /* #50 S8/B0 — контур B: B1 Техдолг, B2 «Налог на баги», B3 «1000 мелочей», B0 Свод */
-            : [{ key: 'a7', label: L.a7Menu }, { key: 'a1', label: L.a1Menu }, { key: 'a3', label: L.a3Menu }, { key: 'a2', label: L.a2Menu }, { key: 'flow', label: L.flowMenu }, { key: 'a4', label: L.a4Menu }, { key: 'a5', label: L.a5Menu }, { key: 'a6', label: L.a6Menu }, { key: 'a10', label: L.a10Menu }]}
+            : [{ key: 'a7', label: L.a7Menu }, { key: 'a1', label: L.a1Menu }, { key: 'a3', label: L.a3Menu }, { key: 'a2', label: L.a2Menu }, { key: 'flow', label: L.flowMenu }, { key: 'a4', label: L.a4Menu }, { key: 'a5', label: L.a5Menu }, { key: 'a6', label: L.a6Menu }, { key: 'a10', label: L.a10Menu }, { key: 'a11', label: L.a11Menu }]}
           onChange={(r) => { if (typeof vm.onSwitchReport === 'function') vm.onSwitchReport(r); }} />
         <button type="button" className="ring-button-button ring-button-block ring-button-heightS" onClick={apply}>↻ {L.refresh}</button>
         {/* #50 S9-EXP — экспорт текущего отчёта (снимок точки во времени): Excel + PDF. */}
@@ -1073,6 +1073,104 @@ function A10View({ vm, L }) {
   );
 }
 
+/* v3.12.0 (#11) — A11 Velocity: средняя скорость по ролям (окно N закрытых спринтов из снимков)
+   + тренд закрытых ЧЧ по спринтам (Recharts LineChart, линия на роль; синтетический dataKey
+   s<idx> — паттерн B0Chart). Фолбэк без Recharts — таблица спринт×роль (jsdom/тест). */
+function A11View({ vm, L }) {
+  if (vm.a11Empty) return <_Muted>{L.a11Empty}</_Muted>;
+  const roleRows = vm.roleRows || [];
+  const hu = L.a10HoursUnit;
+  const pctS = (v) => Math.round((Number(v) || 0) * 100) + '%';
+  /* Объединённая ось спринтов (по dateStart), строка чарта — закрытые ЧАСЫ per-роль. */
+  const axis = [];
+  const seen = {};
+  roleRows.forEach((r) => (r.sprints || []).forEach((s) => {
+    if (!seen[s.sprintId]) { seen[s.sprintId] = true; axis.push({ id: s.sprintId, name: s.name, dateStart: s.dateStart }); }
+  }));
+  axis.sort((a, b) => a.dateStart - b.dateStart);
+  const data = axis.map((ax) => {
+    const row = { name: ax.name };
+    roleRows.forEach((r, ri) => {
+      const pt = (r.sprints || []).find((s) => s.sprintId === ax.id);
+      row['s' + ri] = pt ? Math.round(pt.closedMinutes / 60 * 10) / 10 : null;
+    });
+    return row;
+  });
+  const RC = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts;
+  return (
+    <React.Fragment>
+      {vm.noDoneCfg ? <Banner kind="warn">{L.a11NoDoneCfg}</Banner> : null}
+      <div style={{ fontSize: '13px', fontWeight: 600, margin: '2px 0 4px' }}>{L.a11SectAvg}</div>
+      <div style={{ ...(_mutedS), margin: '0 0 10px' }}>{L.a11WindowNote.replace('{n}', String(vm.window))}</div>
+      <div className="ring-table-tableWrapper" style={{ overflowX: 'auto', maxWidth: '680px' }}>
+        <table className="ring-table-table">
+          <thead className="ring-table-tableHead"><tr>
+            <th className="ring-table-headerCell">{L.a4ColRole}</th>
+            <th className="ring-table-headerCell ring-table-cellRight">{L.a11ColAvgClosed}</th>
+            <th className="ring-table-headerCell ring-table-cellRight">{L.a11ColAvgPct}</th>
+            <th className="ring-table-headerCell ring-table-cellRight">{L.a11ColSprints}</th>
+          </tr></thead>
+          <tbody>
+            {roleRows.map((r) => (
+              <tr className="ring-table-row" key={r.roleKey}>
+                <td className="ring-table-cell">{r.label}</td>
+                <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}><b>{_fmtHours(r.avgClosedMinutes)}</b> {hu}</td>
+                <td className="ring-table-cell ring-table-cellRight">{pctS(r.avgPct)}</td>
+                <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>
+                  {r.sprints.length}
+                  {r.sparse ? <span style={{ marginLeft: '6px', display: 'inline-block', padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, background: '#fdf3d9', color: '#8a6d1a' }}>{L.a11Sparse}</span> : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ height: '1px', background: 'var(--border,#dfe3e8)', margin: '22px 0 14px' }} />
+      <div style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 10px' }}>{L.a11SectTrend}</div>
+      {RC && RC.LineChart ? (
+        <ChartFrame gate="LineChart" height={220} maxWidth="680px">
+          {(RCl) => {
+            const { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } = RCl;
+            return (
+              <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: -12 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART.gridStroke} />
+                <XAxis dataKey="name" tick={CHART.axisTick} />
+                <YAxis tick={CHART.axisTick} />
+                <Tooltip cursor={CHART.tooltipCursor} formatter={(v) => v + ' ' + hu} />
+                {roleRows.length > 1 ? <Legend wrapperStyle={{ fontSize: '11px' }} /> : null}
+                {roleRows.map((r, ri) => (
+                  <Line key={r.roleKey} type="monotone" dataKey={'s' + ri} name={r.label}
+                    stroke={B0_SYS_COLORS[ri % B0_SYS_COLORS.length]} strokeWidth={1.8}
+                    dot={{ r: 2 }} connectNulls isAnimationActive={false} />
+                ))}
+              </LineChart>
+            );
+          }}
+        </ChartFrame>
+      ) : (
+        /* ponytail: нет Recharts (jsdom/тест) → таблица спринт×роль; прод-чанк несёт Recharts */
+        <div className="ring-table-tableWrapper" style={{ overflowX: 'auto', maxWidth: '680px' }}>
+          <table className="ring-table-table">
+            <thead className="ring-table-tableHead"><tr>
+              <th className="ring-table-headerCell">{L.a11ColSprint}</th>
+              {roleRows.map((r) => <th key={r.roleKey} className="ring-table-headerCell ring-table-cellRight">{r.label}</th>)}
+            </tr></thead>
+            <tbody>
+              {data.map((row) => (
+                <tr className="ring-table-row" key={row.name}>
+                  <td className="ring-table-cell">{row.name}</td>
+                  {roleRows.map((r, ri) => <td key={r.roleKey} className="ring-table-cell ring-table-cellRight">{row['s' + ri] == null ? '—' : row['s' + ri]}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
 /* #50 S8b — B1 Техдолг (контур B): плитки (Σ ЧЧ долга · % по ЧЧ · «без оценки») + таблица роль по системам. */
 function B1View({ vm, L }) {
   if (vm.b1NoCfg) return <Banner kind="warn">{L.b1NoCfg}</Banner>;
@@ -1297,6 +1395,7 @@ function ReportBody({ vm, L }) {
   if (vm.loading) return <_Muted>{L.loading}</_Muted>;
   if (vm.error) return <Banner kind="err">{L.error}</Banner>;
   if (vm.report === 'a10') return <A10View vm={vm} L={L} />;
+  if (vm.report === 'a11') return <A11View vm={vm} L={L} />;
   if (vm.report === 'flow') return <FlowView vm={vm} L={L} />;
   if (vm.report === 'a2') return <A2View vm={vm} L={L} />;
   if (vm.report === 'a4') return <A4View vm={vm} L={L} />;
@@ -1334,8 +1433,8 @@ function ReportBody({ vm, L }) {
 function ReportView({ vm }) {
   const L = vm.labels || {};
   const r = vm.report;
-  const title = r === 'a1' ? L.a1Title : r === 'a2' ? L.a2Title : r === 'a3' ? L.a3Title : r === 'a6' ? L.a6Title : r === 'a10' ? L.a10Title : r === 'flow' ? L.flowTitle : r === 'a4' ? L.a4Title : r === 'a5' ? L.a5Title : r === 'b3' ? L.b3Title : r === 'b2' ? L.b2Title : r === 'b1' ? L.b1Title : r === 'b0' ? L.b0Title : L.a7Title;
-  const sub = r === 'a1' ? L.a1Sub : r === 'a2' ? L.a2Sub : r === 'a3' ? L.a3Sub : r === 'a6' ? L.a6Sub : r === 'a10' ? L.a10Sub : r === 'flow' ? L.flowSub : r === 'a4' ? L.a4Sub : r === 'a5' ? L.a5Sub : r === 'b3' ? L.b3Sub : r === 'b2' ? L.b2Sub : r === 'b1' ? L.b1Sub : r === 'b0' ? L.b0Sub : L.a7Sub;
+  const title = r === 'a1' ? L.a1Title : r === 'a2' ? L.a2Title : r === 'a3' ? L.a3Title : r === 'a6' ? L.a6Title : r === 'a10' ? L.a10Title : r === 'a11' ? L.a11Title : r === 'flow' ? L.flowTitle : r === 'a4' ? L.a4Title : r === 'a5' ? L.a5Title : r === 'b3' ? L.b3Title : r === 'b2' ? L.b2Title : r === 'b1' ? L.b1Title : r === 'b0' ? L.b0Title : L.a7Title;
+  const sub = r === 'a1' ? L.a1Sub : r === 'a2' ? L.a2Sub : r === 'a3' ? L.a3Sub : r === 'a6' ? L.a6Sub : r === 'a10' ? L.a10Sub : r === 'a11' ? L.a11Sub : r === 'flow' ? L.flowSub : r === 'a4' ? L.a4Sub : r === 'a5' ? L.a5Sub : r === 'b3' ? L.b3Sub : r === 'b2' ? L.b2Sub : r === 'b1' ? L.b1Sub : r === 'b0' ? L.b0Sub : L.a7Sub;
   /* A2/Поток/A5: население периода в подзаголовке (только когда тело считается) */
   const showCount = ((r === 'a2' && !vm.noAnchors) || (r === 'flow' && !vm.noFlow) || (r === 'a5' && !vm.noAnchors))
     && !vm.rangePrompt && typeof vm.populationCount === 'number';
@@ -1364,7 +1463,7 @@ function Placeholder({ vm }) {
 }
 
 function ReportingInner({ vm }) {
-  const isReport = vm.report === 'a7' || vm.report === 'a1' || vm.report === 'a2' || vm.report === 'a3' || vm.report === 'a6' || vm.report === 'a10' || vm.report === 'flow' || vm.report === 'a4' || vm.report === 'a5' || vm.report === 'b3' || vm.report === 'b2' || vm.report === 'b1' || vm.report === 'b0';
+  const isReport = vm.report === 'a7' || vm.report === 'a1' || vm.report === 'a2' || vm.report === 'a3' || vm.report === 'a6' || vm.report === 'a10' || vm.report === 'a11' || vm.report === 'flow' || vm.report === 'a4' || vm.report === 'a5' || vm.report === 'b3' || vm.report === 'b2' || vm.report === 'b1' || vm.report === 'b0';
   return isReport ? <ReportView vm={vm} /> : <Placeholder vm={vm} />;
 }
 

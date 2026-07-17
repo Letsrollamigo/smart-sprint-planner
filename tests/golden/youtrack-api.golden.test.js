@@ -80,6 +80,26 @@ test('golden: apiGet — passthrough результата + diag ok/err', async 
   });
 });
 
+test('golden: apiGet слоты — stale rev (< виденного) не применяется, одиночный refetch (v3.12.0)', async () => {
+  const { gm } = bootApi();
+  let calls = 0;
+  const host = recHost(function () {
+    calls++;
+    if (calls === 1) return Promise.resolve({ success: true, history: [], rev: 5 });          /* прайм: клиент видел rev 5 */
+    if (calls === 2) return Promise.resolve({ success: true, history: ['stale'], rev: 3 });   /* устаревший снапшот */
+    return Promise.resolve({ success: true, history: ['fresh'], rev: 6 });                    /* refetch — свежий */
+  });
+  gm.set({ _host: host });
+  const first = await gm.call('apiGet', 'history');
+  const second = await gm.call('apiGet', 'history');
+  checkJsonSnapshot('yt-api-get-stale-slot', {
+    firstRev: first.rev,
+    totalCalls: calls,               /* 3 = прайм + stale + один refetch */
+    secondRev: second.rev,           /* 6 — отдан свежий ответ, не rev 3 */
+    secondHistory: second.history,   /* ['fresh'] — stale-данные не дошли до caller'а */
+  });
+});
+
 test('golden: apiPost — контракт success=false → reject + форма запроса', async () => {
   const { gm } = bootApi();
   /* стопорим сайд-эффекты save: интерес — только контракт reject */

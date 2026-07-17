@@ -72,9 +72,7 @@ function diffItemsForUI(snap, working) {
   return { added: added, removed: removed, changed: changed };
 }
 
-/* FNV-32 хеш сериализованного { sprint, roleItems } → hex (отпечаток ревизии). */
-function computeRevHash(sprint, roleItems) {
-  var s = JSON.stringify({ s: sprint, r: roleItems });
+function _fnv32(s) {
   var h = 0x811c9dc5;
   for (var i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -83,9 +81,31 @@ function computeRevHash(sprint, roleItems) {
   return h.toString(16);
 }
 
+/* FNV-32 хеш сериализованного { sprint, roleItems } → hex (отпечаток ревизии).
+   v3.12.0 — канонизация порядка ключей (_sortKeys): смена порядка ключей объекта
+   (апгрейд движка/пересборка) больше не даёт ложный «черновик изменён». */
+function computeRevHash(sprint, roleItems) {
+  return _fnv32(JSON.stringify(_sortKeys({ s: sprint, r: roleItems })));
+}
+
+/* v3.12.0 — переходный legacy-хеш (формат до канонизации): сравнение черновиков,
+   сохранённых ДО апгрейда, в working-copy.restoreDraftIfAny. Убрать через 1–2 минора
+   (⚖ владелец 2026-07-18: переходное сравнение вместо разового сброса черновиков). */
+function computeRevHashLegacy(sprint, roleItems) {
+  return _fnv32(JSON.stringify({ s: sprint, r: roleItems }));
+}
+
+const _api = {
+  _wcSha1Light: _wcSha1Light, _blockEq: _blockEq, _mapById: _mapById,
+  _numEq: _numEq, diffItemsForUI: diffItemsForUI, computeRevHash: computeRevHash,
+  computeRevHashLegacy: computeRevHashLegacy,
+};
+
 if (typeof window !== 'undefined') {
-  window.__SSP_HASH_PURE = {
-    _wcSha1Light: _wcSha1Light, _blockEq: _blockEq, _mapById: _mapById,
-    _numEq: _numEq, diffItemsForUI: diffItemsForUI, computeRevHash: computeRevHash,
-  };
+  window.__SSP_HASH_PURE = _api;
+}
+
+/* v3.12.0 — node:test доступ (паттерн sort-pure). */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = _api;
 }

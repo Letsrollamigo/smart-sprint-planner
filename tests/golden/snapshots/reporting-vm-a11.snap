@@ -1,13 +1,11 @@
 {
   "vmKeys": [
+    "a11Empty",
     "contour",
     "gen",
     "labels",
-    "limit",
-    "limitHit",
     "loading",
-    "noBacklogCfg",
-    "norm",
+    "noDoneCfg",
     "onAssist",
     "onCancel",
     "onExport",
@@ -17,12 +15,12 @@
     "onSwitchReport",
     "period",
     "periodOpts",
-    "populationCount",
     "projectName",
     "query",
     "report",
-    "rows",
+    "roleRows",
     "shouldAbort",
+    "window",
     "years",
     "ytBase"
   ],
@@ -267,24 +265,20 @@
     "unitStory",
     "yearLabel"
   ],
-  "fetchCalls": [
+  "fetchCalls": [],
+  "primCalls": [
     {
-      "$skip": "[undefined]",
-      "$top": 201,
-      "endpoint": "issues",
-      "fields": "idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes))",
-      "query": "project: DEMO State: {Open}, {Ready}"
+      "ids": [],
+      "name": "fetchHistory",
+      "opts": {}
     }
   ],
-  "primCalls": [],
   "vm": {
+    "a11Empty": false,
     "contour": "a",
     "gen": 1,
-    "limit": 200,
-    "limitHit": false,
     "loading": false,
-    "noBacklogCfg": false,
-    "norm": 6,
+    "noDoneCfg": false,
     "onAssist": "[Function]",
     "onCancel": "[Function]",
     "onExport": "[Function]",
@@ -294,33 +288,38 @@
     "onSwitchReport": "[Function]",
     "period": "last30",
     "periodOpts": {},
-    "populationCount": 7,
     "projectName": "DEMO",
     "query": "",
-    "report": "a6",
-    "rows": [
+    "report": "a11",
+    "roleRows": [
       {
-        "capacityHours": 100,
+        "avgClosedMinutes": 900,
+        "avgPct": 0.6666666666666666,
         "label": "Аналитика",
-        "level": "ok",
-        "months": 0.71,
         "roleKey": "analysis",
-        "sumHours": 71,
-        "sumMinutes": 4260,
-        "taskCount": 4
-      },
-      {
-        "capacityHours": 160,
-        "label": "Разработка",
-        "level": "ok",
-        "months": 0.9,
-        "roleKey": "dev",
-        "sumHours": 144,
-        "sumMinutes": 8640,
-        "taskCount": 4
+        "sparse": true,
+        "sprints": [
+          {
+            "closedMinutes": 600,
+            "dateStart": 1775037600000,
+            "name": "Спринт А",
+            "pct": 0.3333333333333333,
+            "plannedMinutes": 1800,
+            "sprintId": "sprA_analysis"
+          },
+          {
+            "closedMinutes": 1200,
+            "dateStart": 1777802400000,
+            "name": "Спринт Б",
+            "pct": 1,
+            "plannedMinutes": 1200,
+            "sprintId": "sprB_analysis"
+          }
+        ]
       }
     ],
     "shouldAbort": "[Function]",
+    "window": 3,
     "years": [
       2026,
       2025,

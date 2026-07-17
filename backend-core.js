@@ -313,7 +313,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.11.0';
+var APP_VERSION = '3.12.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -881,6 +881,9 @@ var ALLOWED_SETTINGS_KEYS = [
   'cascadeLevel3Values',
   'cascadeParentLinkInward',
   'cascadeParentLinkOutward',
+  /* v3.12.0 — тег-маркер защиты ручных оценок: родитель с этим тегом исключается
+     из каскадной агрегации (str≤200|null). */
+  'cascadeManualEstTag',
   // Метаданные
   'savedAt',
   // v5.3.0 — миграционный флаг (commit-as-PLANNING для in-flight v5.2.0 правок)
@@ -979,7 +982,9 @@ var ALLOWED_SETTINGS_KEYS = [
   'reportingBugType','reportingLinkTypes',
   /* v3.9.0 — тумблер «Система» в отчётах: значение поля fieldSystem в per-issue колонках
      A-отчётов, группировке B-отчётов и экспорте XLSX/PDF (bool, дефолт ON — семантика !== false). */
-  'reportingShowSystem'
+  'reportingShowSystem',
+  /* v3.12.0 (#11) — A11 Velocity: окно скользящего среднего (закрытые спринты, int 1..10|null, дефолт 3). */
+  'reportingVelocityWindow'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -996,6 +1001,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   // Каскад + forbid container
   'cascadeAggregationEnabled','forbidContainerWorkItems','cascadeKindField',
   'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
+  'cascadeManualEstTag', /* v3.12.0 — тег-маркер защиты ручных оценок */
   // State Rollup
   'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
   'stateRollupStrategy',
@@ -1043,7 +1049,8 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'reportingThousandTag', /* #50 S8a — B3 тег «1000 мелочей» (контур B) */
   'reportingTechDebtType','reportingTechDebtTag', /* #50 S8b — B1 отбор техдолга тип/тег (контур B) */
   'reportingBugType','reportingLinkTypes', /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
-  'reportingShowSystem' /* v3.9.0 — тумблер «Система» в отчётах */
+  'reportingShowSystem', /* v3.9.0 — тумблер «Система» в отчётах */
+  'reportingVelocityWindow' /* v3.12.0 (#11) — A11 Velocity: окно среднего */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1208,8 +1215,9 @@ function validateSettings(settings) {
       if (typeof wval !== 'string' || ROLE_KEYS.indexOf(wval) < 0) return false;
     }
   }
-  /* v1.3.0 Cascade — string-keys ≤200 для kind-field-name + 2 link names. */
-  var cascadeStrKeys = ['cascadeKindField','cascadeParentLinkInward','cascadeParentLinkOutward'];
+  /* v1.3.0 Cascade — string-keys ≤200 для kind-field-name + 2 link names.
+     v3.12.0 — + cascadeManualEstTag (тег-маркер защиты ручных оценок). */
+  var cascadeStrKeys = ['cascadeKindField','cascadeParentLinkInward','cascadeParentLinkOutward','cascadeManualEstTag'];
   for (var cs = 0; cs < cascadeStrKeys.length; cs++) {
     if (!assertStr(settings[cascadeStrKeys[cs]], 200)) return false;
   }
@@ -1412,6 +1420,9 @@ function validateSettings(settings) {
   /* #50 D10 — reportingTimeoutSec: таймаут-бэкстоп прогона отчёта (сек, num 5..3600|null). */
   if (settings.reportingTimeoutSec !== undefined && settings.reportingTimeoutSec !== null
       && !isNumInRange(settings.reportingTimeoutSec, 5, 3600)) return false;
+  /* v3.12.0 (#11) — reportingVelocityWindow: окно среднего A11 Velocity (закрытые спринты, num 1..10|null). */
+  if (settings.reportingVelocityWindow !== undefined && settings.reportingVelocityWindow !== null
+      && !isNumInRange(settings.reportingVelocityWindow, 1, 10)) return false;
   /* #50 S7a — reportingSpilloverAgeBands: { warm|hot → int 1..1000|null } — пороги «возраста хвоста»
      A10 (подряд спринтов не-done): warm→жёлтый бэйдж, hot→красный. Ключи фиксированы (⊆ [warm,hot]). */
   if (settings.reportingSpilloverAgeBands !== undefined && settings.reportingSpilloverAgeBands !== null) {

@@ -59,7 +59,7 @@ function _sprintLabel(vm) {
 
 /* заголовок отчёта (тот же, что <h2> вью). */
 function _reportTitle(report, L) {
-  var m = { a1: L.a1Title, a2: L.a2Title, a3: L.a3Title, a6: L.a6Title, a10: L.a10Title,
+  var m = { a1: L.a1Title, a2: L.a2Title, a3: L.a3Title, a6: L.a6Title, a10: L.a10Title, a11: L.a11Title,
     flow: L.flowTitle, a4: L.a4Title, a5: L.a5Title, b3: L.b3Title, b2: L.b2Title, b1: L.b1Title, b0: L.b0Title };
   return m[report] || L.a7Title;
 }
@@ -184,6 +184,21 @@ function _projectReport(vm, L, deps) {
         return row;
       }));
     return { sections: [under, tails, ages] };
+  }
+  /* v3.12.0 (#11) — A11 Velocity: сводка по ролям + плоский тренд роль×спринт (закрытые/план ЧЧ). */
+  if (report === 'a11') {
+    var avgSec = _section(L.a11SectAvg, [L.a4ColRole, L.a11ColAvgClosed, L.a11ColAvgPct, L.a11ColSprints],
+      (vm.roleRows || []).map(function (r) {
+        return [r.label, _h(r.avgClosedMinutes), Math.round((r.avgPct || 0) * 100), (r.sprints || []).length];
+      }));
+    var trendRows = [];
+    (vm.roleRows || []).forEach(function (r) {
+      (r.sprints || []).forEach(function (s) {
+        trendRows.push([r.label, s.name, _h(s.closedMinutes), _h(s.plannedMinutes), Math.round((s.pct || 0) * 100)]);
+      });
+    });
+    var trendSec = _section(L.a11SectTrend, [L.a4ColRole, L.a11ColSprint, L.a11ColAvgClosed, L.a11ColPlanned, '%'], trendRows);
+    return { sections: [avgSec, trendSec] };
   }
   if (report === 'flow') {
     var bottle = _section(L.bottleneckTitle, [L.colStatus, L.colDays, L.flowColWip],

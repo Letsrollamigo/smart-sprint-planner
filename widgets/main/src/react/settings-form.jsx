@@ -141,6 +141,7 @@ function SettingsForm(props) {
     level3: Array.isArray(initial.cascadeLevel3Values) ? initial.cascadeLevel3Values.slice() : [],
     linkIn: (typeof initial.cascadeParentLinkInward === 'string') ? initial.cascadeParentLinkInward : '',
     linkOut: (typeof initial.cascadeParentLinkOutward === 'string') ? initial.cascadeParentLinkOutward : '',
+    tag: (typeof initial.cascadeManualEstTag === 'string') ? initial.cascadeManualEstTag : '',
   }));
   const [rollup, setRollup] = React.useState(() => ({
     enabled: !!initial.stateRollupEnabled,
@@ -199,6 +200,7 @@ function SettingsForm(props) {
     /* #50 v3.2.0 — A2 терминальная политика reopen: enum, всё кроме 'last-stable-close' → дефолт. */
     terminalPolicy: (initial.reportingTerminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close',
     variancePct: (typeof initial.reportingVariancePct === 'number' && isFinite(initial.reportingVariancePct)) ? initial.reportingVariancePct : 20,
+    velocityWindow: (typeof initial.reportingVelocityWindow === 'number' && isFinite(initial.reportingVelocityWindow)) ? initial.reportingVelocityWindow : 3,
     timeoutSec: (typeof initial.reportingTimeoutSec === 'number' && isFinite(initial.reportingTimeoutSec)) ? initial.reportingTimeoutSec : 90,   /* #50 D10 таймаут-бэкстоп */
     showSystem: initial.reportingShowSystem !== false,   /* v3.9.0 — «Система» в отчётах (дефолт ON) */
     /* #50 S6a — A3 : имена YT-полей бизнес-колонок среза (пусто = колонка скрыта). */
@@ -386,6 +388,7 @@ function SettingsForm(props) {
     data.cascadeLevel3Values = capValues(cascade.level3);
     data.cascadeParentLinkInward = strOrNull(cascade.linkIn);
     data.cascadeParentLinkOutward = strOrNull(cascade.linkOut);
+    data.cascadeManualEstTag = strOrNull(cascade.tag);
 
     /* State rollup (5c): strategy всегда 'min' (enum пока только min). */
     data.stateRollupEnabled = rollup.enabled;
@@ -467,6 +470,7 @@ function SettingsForm(props) {
     data.reportingTtmNorms = reporting.ttmNorms || { lead: 21, team: 15 };
     data.reportingTerminalPolicy = (reporting.terminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close'; /* #50 v3.2.0 — A2 политика reopen */
     data.reportingVariancePct = (typeof reporting.variancePct === 'number' && isFinite(reporting.variancePct)) ? reporting.variancePct : 20; /* #50 S5b A5 */
+    data.reportingVelocityWindow = (typeof reporting.velocityWindow === 'number' && isFinite(reporting.velocityWindow)) ? reporting.velocityWindow : 3; /* v3.12.0 #11 A11 */
     data.reportingTimeoutSec = (typeof reporting.timeoutSec === 'number' && isFinite(reporting.timeoutSec)) ? reporting.timeoutSec : 90; /* #50 D10 таймаут */
     data.reportingShowSystem = reporting.showSystem !== false; /* v3.9.0 — «Система» в отчётах (bool, дефолт ON) */
     data.reportingPauseMarkers = reporting.pauseMarkers || { states: [], tags: [] };

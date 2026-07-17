@@ -127,6 +127,14 @@ function ReportingSection(props) {
     if (s !== '') { const num = Math.round(Number(s)); if (isFinite(num) && num >= 1) val = num > 1000 ? 1000 : num; }
     patch({ ageBands: Object.assign({}, ageBands, { [band]: val }) });
   };
+  /* v3.12.0 (#11) — A11 Velocity: окно среднего (закрытые спринты). Дефолт 3; пусто/<1 → 3; кламп 1..10. */
+  const velocityWindowVal = (v.velocityWindow != null ? v.velocityWindow : 3);
+  const setVelocityWindow = (raw) => {
+    const s = String(raw).trim();
+    let val = 3;
+    if (s !== '') { const num = Math.round(Number(s)); if (isFinite(num) && num >= 1) val = num > 10 ? 10 : num; }
+    patch({ velocityWindow: val });
+  };
   /* #50 S5b — A5 План-факт: порог |расхождения| (%). Дефолт 20; пусто/<1 → 20 (движок трактует ≤0 как unset). */
   const varianceVal = (v.variancePct != null ? v.variancePct : 20);
   const setVariance = (raw) => {
@@ -359,6 +367,17 @@ function ReportingSection(props) {
           <label>{t('repSetA10AgeHot')}</label>
           <input type="number" min="1" step="1" style={numCell}
             value={ageVal('hot')} onChange={(e) => setAge('hot', e.target.value)} />
+        </div>
+      </div>
+
+      {/* v3.12.0 (#11) — A11 Velocity: окно скользящего среднего (закрытые спринты). Дефолт 3; кламп 1..10. */}
+      <div className="card-subtitle" style={subCls}>{t('repSetA11')}</div>
+      <span className="hint" style={hintCls}>{t('repSetA11Hint')}</span>
+      <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
+        <div className="field">
+          <label>{t('repSetA11Window')}</label>
+          <input type="number" min="1" max="10" step="1" style={numCell}
+            value={velocityWindowVal} onChange={(e) => setVelocityWindow(e.target.value)} />
         </div>
       </div>
 

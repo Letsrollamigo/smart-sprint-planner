@@ -56,11 +56,22 @@ function _backendCall(path, baseOpts, deps) {
    путём ниже. Числовой rev живёт в sprint-store (map slot→rev, сброс на смене проекта). */
 const REV_SLOT_PATHS = { history: 1, releases: 1, absences: 1 };
 
-function apiGet(path, deps) {
+function apiGet(path, deps, _isRetry) {
   deps.diag('GET ' + path + ' [' + deps.state.getMode() + ']');
   return _backendCall(path, {}, deps)
     .then(function (r) {
       deps.diag('OK ' + path, 'ok');
+      /* v3.12.0 (P2-хвост v3.2.1) — анти-clobber слотов: GET, чей rev МЕНЬШЕ уже
+         виденного (свой POST успел бампнуть слот, пока GET был в полёте), — устаревший
+         снапшот: применять нельзя (затёр бы свежий локальный стейт), rev не даунгрейдим.
+         Перечитываем один раз — сервер заведомо ≥ виденного rev (монотонный bump). */
+      if (!_isRetry && REV_SLOT_PATHS[path] && r && r.success !== false
+          && typeof r.rev === 'number' && typeof deps.state.getSlotRevFor === 'function'
+          && r.rev < deps.state.getSlotRevFor(path)) {
+        deps.diag('stale ' + path + ' GET (rev ' + r.rev + ' < seen '
+          + deps.state.getSlotRevFor(path) + ') — refetch', 'warn');
+        return apiGet(path, deps, true);
+      }
       /* #56-4 — синк rev слота sprint-data при загрузке (optimistic lock).
          v3.2.1 — синкаем и ПУСТОЙ слот (sprint=null после S3-сброса → rev 0):
          раньше stale _slotRev оставался и все записи вкладки ловили 409 до F5. */

@@ -66,12 +66,26 @@ function _buildFieldKindIndex(settings) {
   return idx;
 }
 
+/* v3.12.0 — защита ручных оценок (⚖ владелец 2026-07-18): родитель, несущий
+   тег-маркер settings.cascadeManualEstTag, исключается из агрегации целиком —
+   его est/fact-поля не перетираются суммой детей. Точечный опт-аут узла:
+   остальные узлы иерархии пересуммируются полностью (бутстрап-контракт
+   «both DTA fields» не тронут). На State-rollup маркер НЕ распространяется. */
+function _hasProtectTag(issue, settings) {
+  var tagName = settings && settings.cascadeManualEstTag;
+  if (typeof tagName !== 'string' || !tagName.length) return false;
+  try {
+    return !!(issue.tags && issue.tags.find(function (t) { return !!t && t.name === tagName; }));
+  } catch (_) { return false; }
+}
+
 /* Сумма поля fieldName по всем children. Idempotent: пишет в parent
    только если cur !== target (B-13). Возвращает массив изменений.
    v1.3.1: workflow.message эмитится отдельно по группам est / fact —
    чтобы текст уведомления соответствовал реальному типу обновлённых
    полей (раньше всё описывалось как «трудозатраты»). */
 function aggregateToParent(parent, settings, lang) {
+  if (_hasProtectTag(parent, settings)) return [];
   const outwardLinkName = (settings && typeof settings.cascadeParentLinkOutward === 'string' && settings.cascadeParentLinkOutward.length)
     ? settings.cascadeParentLinkOutward : 'parent for';
   const children = _collectChildren(parent, outwardLinkName);

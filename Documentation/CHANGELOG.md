@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.12.0] — 2026-07-18
+
+> **"A11 · Team velocity" report (#11) + manual-estimate protection tag + three reliability tails (deferred from v3.2.1).**
+
+### Added
+
+- **"A11 · Team velocity" report** (#11, contour A) — average role velocity from closed-sprint snapshots: closed hours per sprint (Stand-up done-states or the tail of the State Rollup order) and plan-completion %, rolling average over a window; a per-sprint trend chart with a line per role (Recharts); a "low data" badge when the window is not filled; XLSX/PDF export. The window is the `reportingVelocityWindow` setting (admin tier, 1..10, default 3). The computation lives in the new `velocity-pure.js` module — the single velocity source (the #40 v2 auto-forecast coefficient will plug into it later).
+- **Manual-estimate protection tag** (`cascadeManualEstTag`, admin tier) — a parent issue carrying the configured tag is excluded from cascade aggregation: its estimates/spent time are never overwritten by the children sum (previously a zero sum wrote null over a manual parent estimate). The skip is per-node: the rest of the hierarchy re-sums as before; the State Rollup is intentionally unaffected.
+
+### Improved
+
+- **Bulk release operations run in chunks** — state application and release auto-tags go in batches of 25 (previously an unbounded parallel fan-out of requests).
+- **Slot anti-clobber** — a GET of history/releases/absences arriving with a rev lower than the one already seen (its own POST finished while the GET was in flight) is not applied — a single refetch is issued; clicking "History" can no longer roll data back to the pre-save state.
+- **Stable draft fingerprint** — the revision hash is key-order-canonicalized; drafts saved before the upgrade are checked with a transitional dual-compare and survive the plugin upgrade.
+
 ## [3.11.0] — 2026-07-18
 
 > **Audit epic R6 "trigger zones": optimistic locking for three stores, aggregation perf, capacity store, settings decomposition. No functional behavior changes.**

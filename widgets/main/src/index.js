@@ -31,6 +31,7 @@ import './pure/forecast-pure.js';
 import './pure/release-tree-pure.js';
 import './pure/reporting-pure.js';
 import './pure/reporting-b-pure.js';
+import './pure/velocity-pure.js';
 import './pure/reporting-ttm.js';
 import './pure/reporting-period.js';
 import './pure/reporting-rollup.js';

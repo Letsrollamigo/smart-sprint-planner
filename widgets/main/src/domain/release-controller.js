@@ -415,16 +415,37 @@ function buildPreviewRows(rec, mapping, issueData, bundleValues) {
   });
 }
 
+/* v3.12.0 (P2-хвост v3.2.1) — массовые операции по задачам релиза идут чанками
+   по 25 (образец — CARRYOVER_CHUNK backlog-loader), а не unbounded Promise-фанаутом:
+   релиз на сотни задач не выстреливает сотни конкурентных запросов в YT. */
+const APPLY_CHUNK = 25;
+
+/* Последовательные чанки: внутри чанка — параллельно, между чанками — цепочка.
+   Каждый job глотает свою ошибку сам (семантика частичного успеха не менялась). */
+function _runChunked(items, jobFn) {
+  var results = [];
+  var p = Promise.resolve();
+  for (var i = 0; i < items.length; i += APPLY_CHUNK) {
+    (function (chunk) {
+      p = p.then(function () {
+        return Promise.all(chunk.map(jobFn)).then(function (rs) {
+          results.push.apply(results, rs);
+        });
+      });
+    })(items.slice(i, i + APPLY_CHUNK));
+  }
+  return p.then(function () { return results; });
+}
+
 /* Массовое/точечное применение (US-R2-05/06/07): per-issue POST, частичный успех
    сохраняется (изменённый State не откатывается). done({applied:[id], failed:[{id,error}]}) —
    упавшие остаются отмеченными в модалке для повтора. */
 function _applyStates(deps, stateField, list, done) {
-  var jobs = (list || []).map(function (row) {
+  _runChunked(list || [], function (row) {
     return deps.apiPost('update-issue-field', { issueId: row.id, fieldName: stateField, value: row.target, type: 'state' })
       .then(function (r) { return { id: row.id, ok: !!(r && r.success), error: (r && r.error) || 'write_failed' }; })
       .catch(function (e) { return { id: row.id, ok: false, error: String((e && e.message) || e) }; });
-  });
-  Promise.all(jobs).then(function (results) {
+  }).then(function (results) {
     var applied = [], failed = [];
     results.forEach(function (r) { if (r.ok) applied.push(r.id); else failed.push({ id: r.id, error: r.error }); });
     var T = deps.T;
@@ -479,7 +500,8 @@ function _applyTagOps(deps, ops) {
       var e = byIssue[op.issueId] || (byIssue[op.issueId] = { adds: {}, removes: {} });
       e[op.action === 'add' ? 'adds' : 'removes'][tagId] = 1;
     });
-    var jobs = Object.keys(byIssue).map(function (iid) {
+    /* v3.12.0 — per-issue реконсиляции чанками по APPLY_CHUNK (см. _runChunked). */
+    return _runChunked(Object.keys(byIssue), function (iid) {
       var d = byIssue[iid];
       return Promise.resolve(host.fetchYouTrack('issues/' + iid + '/tags', { query: { fields: 'id', '$top': 500 } }))
         .then(function (cur) {
@@ -496,8 +518,7 @@ function _applyTagOps(deps, ops) {
           })).then(function () { return { ok: true, iid: iid }; });
         })
         .catch(function (e) { return { ok: false, iid: iid, error: String((e && e.message) || e) }; });
-    });
-    return Promise.all(jobs).then(function (results) { return { results: results, unresolved: unresolved }; });
+    }).then(function (results) { return { results: results, unresolved: unresolved }; });
   }).then(function (r) {
     if (!r) return null;
     var okN = 0, failed = [];

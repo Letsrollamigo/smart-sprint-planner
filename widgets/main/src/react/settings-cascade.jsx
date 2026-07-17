@@ -7,7 +7,7 @@ import { noop, FieldSelect, RoleCheck, MultiSelect, TextField } from './settings
 
 function CascadeSection(props) {
   const t = props.t;
-  const v = props.value; // { agg, forbid, kindField, level2, level3, linkIn, linkOut }
+  const v = props.value; // { agg, forbid, kindField, level2, level3, linkIn, linkOut, tag }
   const set = props.onChange;
   const enumFields = props.enumFields || [];
   const [bundle, setBundle] = React.useState([]);
@@ -60,6 +60,13 @@ function CascadeSection(props) {
         </div>
       </div>
       <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>{t('hintCascadeLinks')}</div>
+      <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
+        <div className="field">
+          <label>{t('lblCascadeManualEstTag')}</label>
+          <TextField value={v.tag} onChange={(val) => patch({ tag: val })} />
+        </div>
+      </div>
+      <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeManualEstTag')}</div>
     </React.Fragment>
   );
 }

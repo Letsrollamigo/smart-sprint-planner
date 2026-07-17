@@ -307,9 +307,14 @@ function restoreDraftIfAny(deps) {
   var hasAny = !!(dirty.sprint || dirty.roleItems || dirty.currentRole);
   deps.diag('draft: dirty='+JSON.stringify(dirty)+' hasAny='+hasAny, 'info');
   if (!hasAny) return;
-  /* Конфликт: серверная версия изменилась — не накатываем черновик, чтобы не затереть чужие правки */
+  /* Конфликт: серверная версия изменилась — не накатываем черновик, чтобы не затереть чужие правки.
+     v3.12.0 — переходное двойное сравнение: черновик, сохранённый ДО канонизации
+     computeRevHash (key-order), сверяется и с legacy-форматом — апгрейд не сбрасывает
+     живые черновики. Legacy-ветку убрать через 1–2 минора. */
   var baseRevHash = deps.state.getBaseRevHash();
-  if (meta.baseRevHash && meta.baseRevHash !== baseRevHash) {
+  var legacyHash = (typeof deps.computeRevHashLegacy === 'function') ? deps.computeRevHashLegacy() : null;
+  if (meta.baseRevHash && meta.baseRevHash !== baseRevHash
+      && (!legacyHash || meta.baseRevHash !== legacyHash)) {
     try { deps.toast(deps.t('toastDraftStale'), 'warn'); } catch(_){}
     deps.markClean('sprint'); deps.markClean('roleItems'); deps.markClean('currentRole');
     deps.diag('draft: stale, skipping restore (serverHash='+baseRevHash+', draftBase='+meta.baseRevHash+')', 'info');

@@ -51,6 +51,7 @@ require(path.join(SRC, 'pure', 'reporting-b-pure.js'));
 require(path.join(SRC, 'pure', 'reporting-period.js'));
 require(path.join(SRC, 'pure', 'reporting-ttm.js'));
 require(path.join(SRC, 'pure', 'reporting-rollup.js'));
+require(path.join(SRC, 'pure', 'velocity-pure.js'));   /* v3.12.0 (#11) — A11 Velocity */
 const REPORTING_DATA = require(path.join(SRC, 'data', 'reporting-data.js')); /* combinePauses (чистая) */
 const VIEW = require(path.join(SRC, 'domain', 'reporting-view.js'));
 
@@ -342,7 +343,7 @@ function snapOf(deps, vm) {
 }
 
 /* ── 13 лоадеров: happy-path через стабы ─────────────────────────────────────────── */
-const A_REPORTS = ['a7', 'a1', 'a2', 'flow', 'a4', 'a5', 'a3', 'a6', 'a10'];
+const A_REPORTS = ['a7', 'a1', 'a2', 'flow', 'a4', 'a5', 'a3', 'a6', 'a10', 'a11'];
 A_REPORTS.forEach(function (report) {
   test('golden: reporting vm — контур A / ' + report, async function () {
     const deps = makeDeps({ ui: { reportingReport: report, reportingPeriod: 'last30' } });

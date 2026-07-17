@@ -134,9 +134,9 @@
     "locBudget": 380
    },
    "workflow-cascade-aggregation.js": {
-    "loc": 207,
-    "locBudget": 219,
-    "budgetNote": "R6 — осознанный рост: intra-run дедуп целей агрегации (P-4/P-5 безопасное ядро — двойной идемпотентный проход по одному узлу устранён; семантика полной пересуммы и бутстрап-контракт сохранены)."
+    "loc": 220,
+    "locBudget": 220,
+    "budgetNote": "R6 — осознанный рост: intra-run дедуп целей агрегации (P-4/P-5 безопасное ядро — двойной идемпотентный проход по одному узлу устранён; семантика полной пересуммы и бутстрап-контракт сохранены). v3.12.0 — +тег-маркер защиты ручных оценок (cascadeManualEstTag): _hasProtectTag-гейт в aggregateToParent (⚖ владелец 2026-07-18)."
    },
    "workflow-forbid-container.js": {
     "loc": 63,
@@ -213,9 +213,9 @@
     "locBudget": 440
    },
    "react/reporting-view.jsx": {
-    "loc": 1349,
-    "locBudget": 1365,
-    "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат."
+    "loc": 1446,
+    "locBudget": 1446,
+    "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица)."
    },
    "react/select-mount.jsx": {
     "loc": 141,
@@ -274,9 +274,9 @@
     "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
    },
    "react/settings-reporting.jsx": {
-    "loc": 441,
-    "locBudget": 456,
-    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+    "loc": 459,
+    "locBudget": 459,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow)."
    }
   }
  },
@@ -296,13 +296,13 @@
   "data/youtrack-api.js": {
    "layer": "domain",
    "domain": "data/youtrack-api",
-   "loc": 293,
-   "locBudget": 300,
+   "loc": 305,
+   "locBudget": 305,
    "state": [],
    "publishes": [
     "YOUTRACK_API"
    ],
-   "budgetNote": "R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+   "budgetNote": "R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). v3.12.0 — +анти-clobber слотов: stale GET (rev < виденного) не применяется, одиночный refetch (P2-хвост v3.2.1)."
   },
   "domain/backlog-assign.js": {
    "layer": "domain",
@@ -522,9 +522,9 @@
   "domain/release-controller.js": {
    "layer": "domain",
    "domain": "domain/release-controller",
-   "loc": 548,
-   "locBudget": 548,
-   "budgetNote": "#55 авто-теги: +103 — buildTagOps (pure план remove/add) + _applyTagOps (fanout официальным REST от имени юзера; снятие = per-issue реконсиляция полного массива tags POST issues/{id} — DELETE через host.fetchYouTrack молча не выполняется, эмпирика стенда 2026-07-04) + _applyTags/applyTagsForIssues/applyTagsForTransfer + хуки onOk. Прошлое: #48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29.",
+   "loc": 567,
+   "locBudget": 567,
+   "budgetNote": "#55 авто-теги: +103 — buildTagOps (pure план remove/add) + _applyTagOps (fanout официальным REST от имени юзера; снятие = per-issue реконсиляция полного массива tags POST issues/{id} — DELETE через host.fetchYouTrack молча не выполняется, эмпирика стенда 2026-07-04) + _applyTags/applyTagsForIssues/applyTagsForTransfer + хуки onOk. Прошлое: #48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29. v3.12.0 — +чанкинг массовых операций (_runChunked, APPLY_CHUNK=25): _applyStates/_applyTagOps без unbounded фанаута (P2-хвост v3.2.1).",
    "state": [],
    "publishes": [
     "RELEASE_CTRL"
@@ -978,13 +978,13 @@
   "domain/reporting-view.js": {
    "layer": "domain",
    "domain": "domain/reporting-view",
-   "loc": 1241,
-   "locBudget": 1260,
+   "loc": 1279,
+   "locBudget": 1279,
    "state": [],
    "publishes": [
     "REPORTING_VIEW"
    ],
-   "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат."
+   "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат. v3.12.0 (#11) — +A11 Velocity: labels + _vpure + _loadA11 (расчёт в pure/velocity-pure)."
   },
   "pure/reporting-pure.js": {
    "layer": "pure",
@@ -1087,6 +1087,17 @@
     "CAPACITY_STORE"
    ],
    "stateNote": "ADR-001 третье применение (R6, аудит §7 п.14) — доменный стор ёмкости #45: стейт вкладки (запись/календарь/отсутствия/ростер/UI) + кэш утверждённой ёмкости планируемого спринта (planCap R4). Вынесен из стейт-ядра core.js (C3-счётчик −7); семантика сеттеров и сброса (только planCap на смене проекта, v3.2.1) — 1:1."
+  },
+  "pure/velocity-pure.js": {
+   "layer": "pure",
+   "domain": "pure/velocity-pure",
+   "loc": 67,
+   "locBudget": 77,
+   "state": [],
+   "publishes": [
+    "VELOCITY_PURE"
+   ],
+   "budgetNote": "v3.12.0 (#11) — новый модуль: computeRoleVelocity — единый источник velocity (отчёт A11 сейчас, коэффициент #40 v2 позже)."
   }
  }
 }
