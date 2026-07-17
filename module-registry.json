@@ -222,8 +222,9 @@
     "locBudget": 161
    },
    "react/settings-form.jsx": {
-    "loc": 2068,
-    "locBudget": 2317
+    "loc": 875,
+    "locBudget": 895,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
    },
    "react/standup-view.jsx": {
     "loc": 112,
@@ -236,6 +237,46 @@
    "react/tabs-mount.jsx": {
     "loc": 74,
     "locBudget": 94
+   },
+   "react/settings-shared.jsx": {
+    "loc": 331,
+    "locBudget": 346,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-dta.jsx": {
+    "loc": 77,
+    "locBudget": 92,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-cascade.jsx": {
+    "loc": 62,
+    "locBudget": 77,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-rollup.jsx": {
+    "loc": 89,
+    "locBudget": 104,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-standup.jsx": {
+    "loc": 21,
+    "locBudget": 36,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-backlog.jsx": {
+    "loc": 134,
+    "locBudget": 149,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-release.jsx": {
+    "loc": 100,
+    "locBudget": 115,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+   },
+   "react/settings-reporting.jsx": {
+    "loc": 441,
+    "locBudget": 456,
+    "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
    }
   }
  },
