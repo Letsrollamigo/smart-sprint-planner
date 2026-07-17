@@ -98,6 +98,7 @@ function computeRollupTarget(parent, settings, outwardLinkName, stateFieldName, 
   return { target: order[minIdx], reason: 'ok' };
 }
 
+/* R6/P-4 — возвращает true, если State parent'а реально записан (информационно; подъём к grandparent безусловный — см. Path 1+). */
 function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lang) {
   const curStateName = _readIssueStateName(parent, stateFieldName);
   const resolved = Array.isArray(settings.stateRollupResolvedStates) ? settings.stateRollupResolvedStates : [];
@@ -105,14 +106,14 @@ function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lan
     /* v3.2.1 — resolved-parent скипается ТИХО: message на каждый save каждого
        ребёнка резолвнутого эпика был баннер-спамом (ponytail: осознанное удаление
        информационного сообщения — skip штатный, не сбой). */
-    return;
+    return false;
   }
 
   const msgs = [];
   const res = computeRollupTarget(parent, settings, outwardLink, stateFieldName, lang, msgs);
-  if (!res.target) return;
+  if (!res.target) return false;
 
-  if (curStateName === res.target) return; // idempotent — защита от loop (тихо, без msgs)
+  if (curStateName === res.target) return false; // idempotent — защита от loop (тихо, без msgs)
   for (let mi = 0; mi < msgs.length; mi++) { try { workflow.message(msgs[mi]); } catch (_) {} }
 
   try {
@@ -125,7 +126,9 @@ function _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lan
     }));
   } catch (e) {
     try { console.error('[state-rollup] write failed for ' + parent.id + ': ' + e); } catch (_) {}
+    return false;
   }
+  return true;
 }
 
 function _runRollup(issue, ctx) {
@@ -148,18 +151,26 @@ function _runRollup(issue, ctx) {
 
   const lang = pickLocale(ctx, settings);
 
+  /* R6/P-4 — intra-run дедуп целей: для level-2-события Path 1 и Path 2 бьют ОДИН узел
+     (второй проход был идемпотентным no-op — CPU×children впустую). */
+  const done = {};
+
   // Path 1: child → parent (level-2 OR level-3).
   const parent = _firstLink(issue, inwardLink);
   if (parent) {
     const pKind = _kindName(parent, settings);
     if (pKind && (lvl2.indexOf(pKind) >= 0 || lvl3.indexOf(pKind) >= 0)) {
+      done[parent.id] = 1;
       _applyRollupToParent(parent, settings, outwardLink, stateFieldName, lang);
-      // Path 1+: если parent — level-2, пересчитать level-3 grandparent.
+      /* Path 1+: level-3 grandparent пересчитывается БЕЗУСЛОВНО (как раньше): гейт по
+         «parent изменился» отвергнут — ломал бутстрап рассинхронённого эпика при
+         включении фичи на живой иерархии (тот же контракт, что «both DTA fields»). */
       if (lvl2.indexOf(pKind) >= 0) {
         const grand = _firstLink(parent, inwardLink);
-        if (grand) {
+        if (grand && !done[grand.id]) {
           const gKind = _kindName(grand, settings);
           if (gKind && lvl3.indexOf(gKind) >= 0) {
+            done[grand.id] = 1;
             _applyRollupToParent(grand, settings, outwardLink, stateFieldName, lang);
           }
         }
@@ -171,9 +182,10 @@ function _runRollup(issue, ctx) {
   const myKind = _kindName(issue, settings);
   if (myKind && lvl2.indexOf(myKind) >= 0) {
     const myParent = _firstLink(issue, inwardLink);
-    if (myParent) {
+    if (myParent && !done[myParent.id]) {
       const mpKind = _kindName(myParent, settings);
       if (mpKind && lvl3.indexOf(mpKind) >= 0) {
+        done[myParent.id] = 1;
         _applyRollupToParent(myParent, settings, outwardLink, stateFieldName, lang);
       }
     }

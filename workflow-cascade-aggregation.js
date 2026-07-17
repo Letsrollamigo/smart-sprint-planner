@@ -75,6 +75,10 @@ function aggregateToParent(parent, settings, lang) {
   const outwardLinkName = (settings && typeof settings.cascadeParentLinkOutward === 'string' && settings.cascadeParentLinkOutward.length)
     ? settings.cascadeParentLinkOutward : 'parent for';
   const children = _collectChildren(parent, outwardLinkName);
+  /* R6/P-5 — пересумма осталась ПОЛНОЙ по всем активным полям (контракт «both DTA fields»:
+     любое событие бутстрапит родителя целиком — включение каскада на живой иерархии).
+     Сужение по isChanged-полям и value-дельта ОТВЕРГНУТЫ осознанно: ломают бутстрап /
+     несут дрейф. Экономию даёт intra-run дедуп целей в _runCascade. */
   const fields = _activeFieldList(settings);
   const fieldKind = _buildFieldKindIndex(settings);
   const changes = [];
@@ -140,18 +144,25 @@ function _runCascade(issue, ctx) {
     ? settings.cascadeParentLinkInward : 'subtask of';
   const lang = pickLocale(ctx, settings);
 
+  /* R6/P-4 — intra-run дедуп целей: для level-2-события Path (1) и Path (3) бьют ОДИН
+     и тот же узел (второй проход был идемпотентным no-op — чистое CPU×children×fields).
+     Семантика пересчёта не менялась: каждый узел по-прежнему пересуммируется целиком. */
+  const done = {};
+
   /* (1) child → parent (level-2 OR level-3). */
   const parent = _firstLink(issue, inwardLink);
   if (parent) {
     const pKind = _kindName(parent, settings);
     if (pKind && (lvl2.indexOf(pKind) >= 0 || lvl3.indexOf(pKind) >= 0)) {
+      done[parent.id] = 1;
       aggregateToParent(parent, settings, lang);
       /* (2) parent — level-2 → пересчитать level-3 grandparent. */
       if (lvl2.indexOf(pKind) >= 0) {
         const grand = _firstLink(parent, inwardLink);
-        if (grand) {
+        if (grand && !done[grand.id]) {
           const gKind = _kindName(grand, settings);
           if (gKind && lvl3.indexOf(gKind) >= 0) {
+            done[grand.id] = 1;
             aggregateToParent(grand, settings, lang);
           }
         }
@@ -163,9 +174,10 @@ function _runCascade(issue, ctx) {
   const myKind = _kindName(issue, settings);
   if (myKind && lvl2.indexOf(myKind) >= 0) {
     const myParent = _firstLink(issue, inwardLink);
-    if (myParent) {
+    if (myParent && !done[myParent.id]) {
       const mpKind = _kindName(myParent, settings);
       if (mpKind && lvl3.indexOf(mpKind) >= 0) {
+        done[myParent.id] = 1;
         aggregateToParent(myParent, settings, lang);
       }
     }
