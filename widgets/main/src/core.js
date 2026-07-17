@@ -1582,6 +1582,8 @@
         getSprint: function () { return _sprint; },
         getSlotRev: function () { return SPRINT_STORE.getSlotRev(); },        /* #56-4 */
         setSlotRev: function (v) { SPRINT_STORE.setSlotRev(v); },
+        getSlotRevFor: function (slot) { return SPRINT_STORE.getSlotRevFor(slot); },   /* R6 — history/releases/absences */
+        setSlotRevFor: function (slot, v) { SPRINT_STORE.setSlotRevFor(slot, v); },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },

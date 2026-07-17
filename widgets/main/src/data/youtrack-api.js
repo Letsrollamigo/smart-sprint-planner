@@ -51,6 +51,11 @@ function _backendCall(path, baseOpts, deps) {
   return deps.host.fetchApp('backend-global/' + cleanPath, baseOpts);
 }
 
+/* R6 — optimistic lock слотов history/releases/absences (обобщение #56-4): GET синкает
+   rev из ответа, POST прикладывает baseRev из стора; 409 rev_conflict тостится общим
+   путём ниже. Числовой rev живёт в sprint-store (map slot→rev, сброс на смене проекта). */
+const REV_SLOT_PATHS = { history: 1, releases: 1, absences: 1 };
+
 function apiGet(path, deps) {
   deps.diag('GET ' + path + ' [' + deps.state.getMode() + ']');
   return _backendCall(path, {}, deps)
@@ -62,6 +67,11 @@ function apiGet(path, deps) {
       if (typeof deps.state.setSlotRev === 'function' && path.indexOf('sprint-data') === 0
           && r && r.success !== false) {
         deps.state.setSlotRev((r.sprint && typeof r.sprint._rev === 'number') ? r.sprint._rev : 0);
+      }
+      /* R6 — синк rev слотов history/releases/absences при загрузке. */
+      if (REV_SLOT_PATHS[path] && r && r.success !== false && typeof r.rev === 'number'
+          && typeof deps.state.setSlotRevFor === 'function') {
+        deps.state.setSlotRevFor(path, r.rev);
       }
       return r;
     })
@@ -76,6 +86,12 @@ function apiPost(path, body, query, deps) {
   if (path === 'sprint-data' && body && (body.sprint !== undefined || body.roleItems !== undefined)
       && body.baseRev === undefined && typeof deps.state.getSlotRev === 'function') {
     body.baseRev = deps.state.getSlotRev();
+  }
+  /* R6 — write history/releases/absences несёт rev, который клиент видел (body=null —
+     операции без тела, напр. history?action=clear — не гейтятся, серверу нечего сверять). */
+  if (REV_SLOT_PATHS[path] && body && typeof body === 'object' && body.baseRev === undefined
+      && typeof deps.state.getSlotRevFor === 'function') {
+    body.baseRev = deps.state.getSlotRevFor(path);
   }
   var opts = { method: 'POST', body: body };
   if (query && typeof query === 'object') opts.query = query;
@@ -101,6 +117,11 @@ function apiPost(path, body, query, deps) {
       if (path === 'sprint-data' && r && typeof r.rev === 'number'
           && typeof deps.state.setSlotRev === 'function') {
         deps.state.setSlotRev(r.rev);
+      }
+      /* R6 — успешный write слота: сервер вернул новый rev. */
+      if (REV_SLOT_PATHS[path] && r && typeof r.rev === 'number'
+          && typeof deps.state.setSlotRevFor === 'function') {
+        deps.state.setSlotRevFor(path, r.rev);
       }
       /* v5.0.3 — после успешного сохранения снять dirty + обновить snapshot/baseRevHash */
       try {

@@ -253,13 +253,13 @@
   "data/youtrack-api.js": {
    "layer": "domain",
    "domain": "data/youtrack-api",
-   "loc": 273,
-   "locBudget": 278,
+   "loc": 293,
+   "locBudget": 300,
    "state": [],
    "publishes": [
     "YOUTRACK_API"
    ],
-   "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+   "budgetNote": "R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
   },
   "domain/backlog-assign.js": {
    "layer": "domain",
@@ -601,20 +601,21 @@
   "domain/sprint-store.js": {
    "layer": "domain",
    "domain": "domain/sprint-store",
-   "loc": 58,
-   "locBudget": 58,
+   "loc": 65,
+   "locBudget": 75,
    "state": [
     "_baseRevHash",
     "_serverSnapshotCurrentRoleGantt",
     "_serverSnapshotCurrentRolePP",
     "_serverSnapshotRoleItems",
     "_serverSnapshotSprint",
-    "_slotRev"
+    "_slotRev",
+    "_slotRevs"
    ],
    "publishes": [
     "SPRINT_STORE"
    ],
-   "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; с 2026-07-03 (⚖ владелец, TechDEBT+Sanitary) резет чистит ВЕСЬ срез, включая PP/Gantt-снимки и slotRev — residual slotRev чужого проекта мог случайно совпасть с rev нового слота и молча обойти rev-lock #56-4 (loc 53→58)."
+   "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; с 2026-07-03 (⚖ владелец, TechDEBT+Sanitary) резет чистит ВЕСЬ срез, включая PP/Gantt-снимки и slotRev — residual slotRev чужого проекта мог случайно совпасть с rev нового слота и молча обойти rev-lock #56-4 (loc 53→58). R6 (v3.11.0) — +_slotRevs: map slot→rev для optimistic lock history/releases/absences (обобщение _slotRev #56-4 в том же ADR-001-сторе; сброс в resetProjectSlice — residual rev чужого проекта давал бы ложный байпас/409)."
   },
   "domain/tab-router.js": {
    "layer": "domain",

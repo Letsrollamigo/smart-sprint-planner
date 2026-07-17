@@ -226,7 +226,8 @@ function stampAudit(ctx, stored, next) {
 
 function handleGetReleases(ctx) {
   if (!core.authzGuard(ctx, 'viewer')) return;
-  ctx.response.json({ success: true, releases: readReleases(ctx), perms: releasePerms(ctx), archivedCount: readArchiveCount(ctx) });
+  ctx.response.json({ success: true, releases: readReleases(ctx), perms: releasePerms(ctx), archivedCount: readArchiveCount(ctx),
+    rev: core.slotRev(ctx, 'ssp_releases_rev') /* R6 — optimistic lock */ });
 }
 
 /* R4 (US-R4-02) — read-only архив истории (lazy-fetch фронта по раскрытию спойлера). */
@@ -246,6 +247,8 @@ function handlePostReleases(ctx) {
   /* v3.2.1 — тело без ЯВНОГО releases-массива больше не коэрсится в []: один битый/
      оборванный POST стирал все релизы проекта с success:true. */
   if (!Array.isArray(body.releases)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
+  /* R6 — optimistic lock (P1 #14б): full-blob replace двумя РМ шёл last-write-wins. */
+  if (core.revConflict(ctx, body.baseRev, core.slotRev(ctx, 'ssp_releases_rev'))) return;
   var blob = { releases: body.releases };
   if (!validateReleasesBlob(blob)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
   var stored = readReleases(ctx);
@@ -265,7 +268,8 @@ function handlePostReleases(ctx) {
     core.setProp(ctx, ARCHIVE_COUNT_PROP, String(split.archive.length));
   }
   core.setProp(ctx, 'ssp_releases', serialized);
-  ctx.response.json({ success: true, releases: blob.releases, archived: split.moved });
+  ctx.response.json({ success: true, releases: blob.releases, archived: split.moved,
+    rev: core.bumpSlotRev(ctx, 'ssp_releases_rev') });
 }
 
 var RELEASE_ENDPOINTS = [

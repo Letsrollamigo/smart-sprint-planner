@@ -708,7 +708,7 @@ function handlePostCalendar(ctx) {
 function handleGetAbsences(ctx) {
   if (!core.authzGuard(ctx, 'viewer')) return;
   var abs = core.parseJson(core.getProp(ctx, 'ssp_absences'), {}) || {};
-  ctx.response.json({ success: true, absences: abs });
+  ctx.response.json({ success: true, absences: abs, rev: core.slotRev(ctx, 'ssp_absences_rev') /* R6 */ });
 }
 
 function handlePostAbsences(ctx) {
@@ -722,6 +722,10 @@ function handlePostAbsences(ctx) {
   // логин буквально «absences» (значение = массив) ложно принялся бы за обёртку и весь POST
   // (включая других людей) терялся бы с 400.
   var map = (body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences)) ? body.absences : body;
+  /* R6 — optimistic lock (P1 #13): full-map replace двумя менеджерами шёл last-write-wins.
+     baseRev уважаем ТОЛЬКО в обёрточной форме {absences:{…}, baseRev} — в raw-map теле
+     top-level ключи суть логины, baseRev там был бы «логином» (legacy-клиенты его не шлют). */
+  if (body.absences && core.revConflict(ctx, body.baseRev, core.slotRev(ctx, 'ssp_absences_rev'))) return;
   /* v3.2.1 — анти-wipe: битое/оборванное тело парсится в {} (core.getBody) и до фикса
      ВАЛИДНО затирало реестр отсутствий всех людей с success:true. Пустая карта легальна
      только через ЯВНУЮ обёртку {absences:{}} (фронт v3.2.1+ всегда шлёт обёртку). */
@@ -735,7 +739,7 @@ function handlePostAbsences(ctx) {
   var s = JSON.stringify(va.normalized);
   if (s.length > MAX_ABSENCES_SIZE) { core.badRequest(ctx, 'absences_data_too_large'); return; }
   core.setProp(ctx, 'ssp_absences', s);
-  ctx.response.json({ success: true });
+  ctx.response.json({ success: true, rev: core.bumpSlotRev(ctx, 'ssp_absences_rev') });
 }
 
 var CAPACITY_ENDPOINTS = [

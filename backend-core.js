@@ -67,6 +67,27 @@ function setProp(ctx, key, value) {
   ctx.project.extensionProperties[key] = value;
 }
 
+/* R6 — optimistic lock слотов history/releases/absences (обобщение #56-4, стабильность §3
+   P1 #11/#13/#14): rev — ОТДЕЛЬНЫЙ extProp-счётчик (данные/схему блобов не трогаем).
+   Контракт как у sprint-data: клиент шлёт baseRev (rev, который он загружал GET'ом);
+   расхождение → 409 rev_conflict + echo текущего rev; без baseRev (legacy) — прежнее
+   поведение last-write-wins; rev инкрементится на КАЖДОЙ записи слота. */
+function slotRev(ctx, prop) {
+  var v = parseInt(getProp(ctx, prop), 10);
+  return (isFinite(v) && v >= 0) ? v : 0;
+}
+function bumpSlotRev(ctx, prop) {
+  var nv = slotRev(ctx, prop) + 1;
+  setProp(ctx, prop, String(nv));
+  return nv;
+}
+function revConflict(ctx, baseRev, cur) {
+  if (baseRev === undefined || baseRev === null || baseRev === cur) return false;
+  ctx.response.status = 409;
+  ctx.response.json({ success: false, error: 'rev_conflict', rev: cur });
+  return true;
+}
+
 function parseJson(str, fallback) {
   if (!str) return fallback;
   try { return JSON.parse(str); } catch (e) { return fallback; }
@@ -147,7 +168,7 @@ function parseBodyOrReject(ctx, whitelist) {
 
 // Белые списки ключей верхнего уровня
 var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items', 'baseRev']; /* #56-4 — optimistic lock */
-var ALLOWED_HISTORY_KEYS     = ['history'];
+var ALLOWED_HISTORY_KEYS     = ['history', 'baseRev']; /* R6 — optimistic lock */
 // v5.0.3 — серверный draft (черновик в backend, поскольку YouTrack iframe
 // sandboxed без allow-same-origin, localStorage недоступен).
 var ALLOWED_DRAFT_KEYS       = ['data'];
@@ -2420,7 +2441,8 @@ var ENDPOINTS = [
         ctx.response.json({
           success:               true,
           history:               history,
-          orphanGanttBySprintId: orphanGanttBySprintId
+          orphanGanttBySprintId: orphanGanttBySprintId,
+          rev:                   slotRev(ctx, 'ssp_history_rev')   /* R6 — optimistic lock */
         });
       }
     },
@@ -2445,7 +2467,7 @@ var ENDPOINTS = [
           // Очистка — игнорируем тело, просто пишем пустой массив
           setProp(ctx, 'ssp_history', '[]');
           dlog(ctx, 'history cleared by ' + ((ctx.currentUser && ctx.currentUser.login) || '?'));
-          ctx.response.json({ success: true, cleared: true });
+          ctx.response.json({ success: true, cleared: true, rev: bumpSlotRev(ctx, 'ssp_history_rev') });
           return;
         }
 
@@ -2469,7 +2491,7 @@ var ENDPOINTS = [
           if (irStr.length > MAX_HISTORY_SIZE) { badRequest(ctx, 'history_data_too_large'); return; }
           setProp(ctx, 'ssp_history', irStr);
           dlog(ctx, 'history replaced by import (' + bodyIR.history.length + ' rec) by ' + ((ctx.currentUser && ctx.currentUser.login) || '?'));
-          ctx.response.json({ success: true, action: 'import-replace', count: bodyIR.history.length });
+          ctx.response.json({ success: true, action: 'import-replace', count: bodyIR.history.length, rev: bumpSlotRev(ctx, 'ssp_history_rev') });
           return;
         }
 
@@ -2510,7 +2532,7 @@ var ENDPOINTS = [
             return;
           }
           setProp(ctx, 'ssp_history', asStr);
-          ctx.response.json({ success: true, action: 'assignerSync' });
+          ctx.response.json({ success: true, action: 'assignerSync', rev: bumpSlotRev(ctx, 'ssp_history_rev') });
           return;
         }
 
@@ -2519,6 +2541,11 @@ var ENDPOINTS = [
         var body = parseBodyOrReject(ctx, ALLOWED_HISTORY_KEYS);
         if (body === null) return;
 
+        /* R6 — optimistic lock: full-replace истории (P1 #11 — параллельная работа двух
+           ролей теряла снапшоты, класс v2.16.6). Гейт ДО каких-либо записей. */
+        if (revConflict(ctx, body.baseRev, slotRev(ctx, 'ssp_history_rev'))) return;
+
+        var hRevNew = null;
         if (body.history !== undefined) {
           /* v3.2.1 — {"history": null} проходил undefined-чек и ронял handler
              TypeError'ом на .length (500); import-ветки Array-гейт имеют, основная — нет. */
@@ -2544,8 +2571,9 @@ var ENDPOINTS = [
             return;
           }
           setProp(ctx, 'ssp_history', hStr);
+          hRevNew = bumpSlotRev(ctx, 'ssp_history_rev');   /* rev двигается только с реальной записью */
         }
-        ctx.response.json({ success: true });
+        ctx.response.json(hRevNew !== null ? { success: true, rev: hRevNew } : { success: true });
       }
     },
 
@@ -2968,6 +2996,9 @@ exports.ALLOWED_CAPACITY_PERSON_KEYS = ALLOWED_CAPACITY_PERSON_KEYS;
 exports.ROLE_KEYS                   = ROLE_KEYS; // #45 R2 — capacity alloc-key whitelist
 exports.ALLOWED_RELEASES_KEYS       = ALLOWED_RELEASES_KEYS; // #48 R1.2 — release record whitelist
 exports.internalError               = internalError;         // #48 R1.2 — backend-release error path
+exports.slotRev                     = slotRev;               // R6 — optimistic lock слотов (releases/absences)
+exports.bumpSlotRev                 = bumpSlotRev;           // R6
+exports.revConflict                 = revConflict;           // R6
 exports.parseJson                   = parseJson;             // #48 R1.2 — stored blob parse
 
 /* v1.6.0 D125 — Test-only CommonJS exports.

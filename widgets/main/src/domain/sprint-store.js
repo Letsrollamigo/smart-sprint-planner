@@ -21,6 +21,7 @@ var _serverSnapshotCurrentRolePP    = null;  // снимок personalPlanning т
 var _serverSnapshotCurrentRoleGantt = null;  // снимок gantt текущей роли
 var _baseRevHash = '';  // v5.0.3 — хеш серверной базы (сравнение с черновиком/WC)
 var _slotRev     = 0;   // #56-4 — rev слота sprint-data (optimistic lock; синк в youtrack-api)
+var _slotRevs    = {};  // R6 — rev'ы слотов history/releases/absences (обобщение #56-4)
 
 function getServerSnapshotSprint()        { return _serverSnapshotSprint; }
 function setServerSnapshotSprint(v)       { _serverSnapshotSprint = v; }
@@ -34,6 +35,10 @@ function getBaseRevHash()  { return _baseRevHash; }
 function setBaseRevHash(v) { _baseRevHash = v; }
 function getSlotRev()  { return _slotRev; }
 function setSlotRev(v) { _slotRev = (typeof v === 'number') ? v : 0; }
+/* R6 — optimistic lock прочих слотов (history/releases/absences): map slot→rev.
+   Обобщение _slotRev (#56-4) в том же ADR-001-сторе — второй стор не заводим. */
+function getSlotRevFor(slot)    { return (typeof _slotRevs[slot] === 'number') ? _slotRevs[slot] : 0; }
+function setSlotRevFor(slot, v) { _slotRevs[slot] = (typeof v === 'number' && isFinite(v)) ? v : 0; }
 
 /* Сброс per-project — вызывает ядро из _resetProjectStateCaches. С 2026-07-03 чистит
    ВЕСЬ срез, включая PP/Gantt-снимки и _slotRev (⚖ владелец, TechDEBT+Sanitary):
@@ -47,6 +52,7 @@ function resetProjectSlice() {
   _serverSnapshotCurrentRoleGantt = null;
   _baseRevHash = '';
   _slotRev = 0;
+  _slotRevs = {};   /* R6 — residual rev чужого проекта = ложный байпас/409 (тот же класс, что _slotRev) */
 }
 
 const api = {
@@ -56,6 +62,7 @@ const api = {
   getServerSnapshotCurrentRoleGantt: getServerSnapshotCurrentRoleGantt, setServerSnapshotCurrentRoleGantt: setServerSnapshotCurrentRoleGantt,
   getBaseRevHash: getBaseRevHash, setBaseRevHash: setBaseRevHash,
   getSlotRev: getSlotRev, setSlotRev: setSlotRev,
+  getSlotRevFor: getSlotRevFor, setSlotRevFor: setSlotRevFor,   /* R6 */
   resetProjectSlice: resetProjectSlice,
 };
 
