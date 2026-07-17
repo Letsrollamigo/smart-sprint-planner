@@ -728,7 +728,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.8.0';
+  var APP_VERSION = '3.9.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4277,6 +4277,7 @@
       bulkStateTransitions: REPORTING_DATA.bulkStateTransitions, bulkWorkItems: REPORTING_DATA.bulkWorkItems, bulkAsOfEstimates: REPORTING_DATA.bulkAsOfEstimates, /* #50 S5a A4 · S5b A5 */
       bulkAnchorTransitions: REPORTING_DATA.bulkAnchorTransitions, bulkPauseTagIntervals: REPORTING_DATA.bulkPauseTagIntervals, /* S3c A2 TTM */
       combinePauses: REPORTING_DATA.combinePauses, searchAssist: REPORTING_DATA.searchAssist, fetchHistory: REPORTING_DATA.fetchHistory, /* #50 QueryAssist отбора · S7b A10 fetchHistory (планер-нативный GET /history) */
+      ytBase: _ytBase, /* кликабельные ID задач в отчётах (ссылка = ytBase + '/issue/' + id, как бэклог) */
       roles: (typeof getActiveRoles === 'function' ? getActiveRoles() : []).map(function (r) { return { key: r.key, fieldName: (_settings && _settings[r.userField]) || null, estField: (_settings && _settings[r.fieldEst]) || null, label: roleLabel(r) }; }), /* #50 S5a-iii A4 · S5b A5 estField */
       exportReport: function (fmt, vm) {   /* #50 S9-EXP — композиция-рут: pure-проекция отчёта → XLS/PDF-писатель */
         var EXP = (typeof window !== 'undefined' && window.__SSP_REPORTING_EXPORT_PURE) || null;

@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.9.0] — 2026-07-17
+
+> **System field in reports, clickable task IDs, tidy table rows.**
+
+### Added
+
+- **System column in reports** — the task's System field now shows in the per-issue tables of contour A: Aging (A7), Progress (A1), WIP/Done slice (A3), Plan vs fact (A5), Spillover (A10 — tails and tail age). Management reports (B1/B2/B0) keep their per-system grouping. A new admin-tier setting «Show the System field in reports» (`reportingShowSystem`, on by default) turns the column and the grouping off together — in the UI and in XLSX/PDF exports.
+- **Clickable task IDs** — IDs in report tables open the issue in a new tab (as in the backlog); the XLSX export carries a real hyperlink on the ID cell, the PDF export gets a clickable link.
+
+### Fixed
+
+- **Single-line report rows** — task IDs no longer wrap onto two lines and the type/label/flag/age badges no longer stretch rows vertically; the A10 tail-type badge is now short («Carried»/«Dropped») with the full wording kept in the chart legend and in exports.
+
+### Internal
+
+- `reportingShowSystem` added to the settings whitelist + admin tier + bool validator (`backend-core.js`); fixtures `3.8.0/`+`3.9.0/`; reporting-vm goldens regenerated (new vm keys `hasSystem`/`ytBase`/`system`); LOC budgets of 4 modules raised consciously with budget notes; 4 new i18n keys × 15 locales; +2 export-projection unit tests.
+
 ## [3.8.0] — 2026-07-17
 
 > **Architecture-audit wave R4: reporting consolidation. Report behavior and data are unchanged.**

@@ -66,6 +66,12 @@ function _reportTitle(report, L) {
 
 function _section(title, columns, rows) { return { title: title || '', columns: columns, rows: rows }; }
 
+/* v3.9.0 — ID-ячейка: при известном ytBase — линк-объект { v, link } (XLS-писатель ставит
+   гиперссылку, PDF — link-атрибут); иначе — просто строка (форма старых выгрузок не меняется). */
+function _idCell(vm, id) {
+  return vm.ytBase ? { v: id, link: String(vm.ytBase) + '/issue/' + id } : id;
+}
+
 /* per-report проекция: → { sections:[…], extraMeta:[[k,v],…] } */
 function _projectReport(vm, L, deps) {
   var report = vm.report, rows = vm.rows || [];
@@ -73,12 +79,24 @@ function _projectReport(vm, L, deps) {
   var fmtDate = deps.fmtDate || function (ts) { return String(ts); };
 
   if (report === 'a7') {
-    return { sections: [_section('', [L.colId, L.colTask, L.colStatus, L.colDays, L.colFlag],
-      rows.map(function (r) { return [r.id, r.summary, r.state, r.days, _flag(r.level, L)]; }))] };
+    var a7c = [L.colId, L.colTask, L.colStatus, L.colDays, L.colFlag];
+    if (vm.hasSystem) a7c.push(L.colSystem);              /* v3.9.0 — колонка «Система» по тумблеру */
+    return { sections: [_section('', a7c,
+      rows.map(function (r) {
+        var row = [_idCell(vm, r.id), r.summary, r.state, r.days, _flag(r.level, L)];
+        if (vm.hasSystem) row.push(r.system || '');
+        return row;
+      }))] };
   }
   if (report === 'a1') {
-    return { sections: [_section('', [L.colId, L.colTask, L.colEnteredStatus, L.colEnteredDate, L.colLabel],
-      rows.map(function (r) { return [r.id, r.summary, r.state, fmtDate(r.enteredAt), r.label]; }))] };
+    var a1c = [L.colId, L.colTask, L.colEnteredStatus, L.colEnteredDate, L.colLabel];
+    if (vm.hasSystem) a1c.push(L.colSystem);              /* v3.9.0 — колонка «Система» по тумблеру */
+    return { sections: [_section('', a1c,
+      rows.map(function (r) {
+        var row = [_idCell(vm, r.id), r.summary, r.state, fmtDate(r.enteredAt), r.label];
+        if (vm.hasSystem) row.push(r.system || '');
+        return row;
+      }))] };
   }
   if (report === 'a2') {
     var typeRows = vm.typeRows || [], tiles = vm.tiles || [], buckets = vm.buckets || {};
@@ -99,15 +117,17 @@ function _projectReport(vm, L, deps) {
       snapRoles.forEach(function (r) { c.push(L.a3EstPrefix + ' ' + r.label); });
       if (snapCols.org) c.push(L.a3ColOrg);
       if (snapCols.priority) c.push(L.a3ColPriority);
+      if (vm.hasSystem) c.push(L.colSystem);              /* v3.9.0 — колонка «Система» по тумблеру */
       return c;
     };
     var a3rows = function (mode) {
       return rows.filter(function (r) { return r.mode === mode; }).map(function (r) {
-        var row = [r.id, r.summary];
+        var row = [_idCell(vm, r.id), r.summary];
         if (snapCols.stage) row.push(r.stage || '');
         snapRoles.forEach(function (rr) { row.push(r.est && r.est[rr.key] != null ? _h(r.est[rr.key]) : ''); });
         if (snapCols.org) row.push(r.org || '');
         if (snapCols.priority) row.push(r.priority || '');
+        if (vm.hasSystem) row.push(r.system || '');
         return row;
       });
     };
@@ -129,8 +149,14 @@ function _projectReport(vm, L, deps) {
     var rollups = (vm.rollups || []).filter(function (r) { return (r.taskCount || 0) > 0; });
     var roleSec = _section(L.a5MetricSuffix, [L.a4ColRole, L.a5ColVar, L.colCount],
       rollups.map(function (r) { return [r.label, _ps(r.avgVariancePct), r.taskCount || 0]; }));
-    var taskSec = _section('', [L.colId, L.colTask, L.a4ColRole, L.a5ColEst, L.a5ColFact, L.a5ColVar],
-      rows.map(function (r) { return [r.id, r.summary, r.roleLabel, _h(r.asOfMin), _h(r.factMin), _ps(r.variancePct)]; }));
+    var a5c = [L.colId, L.colTask, L.a4ColRole, L.a5ColEst, L.a5ColFact, L.a5ColVar];
+    if (vm.hasSystem) a5c.push(L.colSystem);              /* v3.9.0 — колонка «Система» по тумблеру */
+    var taskSec = _section('', a5c,
+      rows.map(function (r) {
+        var row = [_idCell(vm, r.id), r.summary, r.roleLabel, _h(r.asOfMin), _h(r.factMin), _ps(r.variancePct)];
+        if (vm.hasSystem) row.push(r.system || '');
+        return row;
+      }));
     return { sections: [roleSec, taskSec] };
   }
   if (report === 'a6') {
@@ -140,10 +166,23 @@ function _projectReport(vm, L, deps) {
   if (report === 'a10') {
     var under = _section(L.a10SectUnder, [L.a4ColRole, '%', L.a10Carried, L.a10Dropped],
       (vm.roleRows || []).map(function (r) { return [r.label, Math.round((r.pct || 0) * 100), _h(r.carriedMinutes), _h(r.droppedMinutes)]; }));
-    var tails = _section(L.a10SectTails, [L.colId, L.colTask, L.a4ColRole, L.a10ColHours, L.a10ColType, L.a10ColSystem],
-      (vm.tails || []).map(function (t) { return [t.issueId, t.title, t.roleLabel, _h(t.minutes), t.type === 'carried' ? L.a10Carried : L.a10Dropped, t.system || '']; }));
-    var ages = _section(L.a10SectAge, [L.colId, L.colTask, L.a4ColRole, L.a10ColAge],
-      (vm.ages || []).map(function (a) { return [a.issueId, a.title, a.roleLabel, a.age]; }));
+    /* v3.9.0 — «Система» по тумблеру (hasSystem); в файле тип — полной формулировкой (легенды нет). */
+    var tailCols = [L.colId, L.colTask, L.a4ColRole, L.a10ColHours, L.a10ColType];
+    if (vm.hasSystem) tailCols.push(L.a10ColSystem);
+    var tails = _section(L.a10SectTails, tailCols,
+      (vm.tails || []).map(function (t) {
+        var row = [_idCell(vm, t.issueId), t.title, t.roleLabel, _h(t.minutes), t.type === 'carried' ? L.a10Carried : L.a10Dropped];
+        if (vm.hasSystem) row.push(t.system || '');
+        return row;
+      }));
+    var ageCols = [L.colId, L.colTask, L.a4ColRole, L.a10ColAge];
+    if (vm.hasSystem) ageCols.push(L.a10ColSystem);
+    var ages = _section(L.a10SectAge, ageCols,
+      (vm.ages || []).map(function (a) {
+        var row = [_idCell(vm, a.issueId), a.title, a.roleLabel, a.age];
+        if (vm.hasSystem) row.push(a.system || '');
+        return row;
+      }));
     return { sections: [under, tails, ages] };
   }
   if (report === 'flow') {

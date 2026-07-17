@@ -292,7 +292,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.8.0';
+var APP_VERSION = '3.9.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -955,7 +955,10 @@ var ALLOWED_SETTINGS_KEYS = [
   /* #50 S8b — B1 Техдолг (контур B): отбор техдолга = значение типа задачи ИЛИ имя тега (str≤200|null; одно из двух). */
   'reportingTechDebtType','reportingTechDebtTag',
   /* #50 S8c — B2 «Налог на баги» (контур B): тип задачи-бага (str≤200|null) + имена типов связей баг→фича (str[]). */
-  'reportingBugType','reportingLinkTypes'
+  'reportingBugType','reportingLinkTypes',
+  /* v3.9.0 — тумблер «Система» в отчётах: значение поля fieldSystem в per-issue колонках
+     A-отчётов, группировке B-отчётов и экспорте XLSX/PDF (bool, дефолт ON — семантика !== false). */
+  'reportingShowSystem'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1018,7 +1021,8 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'reportingSpilloverAgeBands', /* #50 S7a — A10 пороги возраста хвоста */
   'reportingThousandTag', /* #50 S8a — B3 тег «1000 мелочей» (контур B) */
   'reportingTechDebtType','reportingTechDebtTag', /* #50 S8b — B1 отбор техдолга тип/тег (контур B) */
-  'reportingBugType','reportingLinkTypes' /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
+  'reportingBugType','reportingLinkTypes', /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
+  'reportingShowSystem' /* v3.9.0 — тумблер «Система» в отчётах */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1298,6 +1302,9 @@ function validateSettings(settings) {
      потребителями (S1c+), здесь пока не валидируются. */
   if (settings.reportingEnabled !== undefined && settings.reportingEnabled !== null
       && typeof settings.reportingEnabled !== 'boolean') return false;
+  /* v3.9.0 — reportingShowSystem: тумблер «Система» в отчётах (bool, дефолт ON на фронте). */
+  if (settings.reportingShowSystem !== undefined && settings.reportingShowSystem !== null
+      && typeof settings.reportingShowSystem !== 'boolean') return false;
   var repIdArrKeys = ['reportingGroupsA','reportingGroupsB'];
   for (var rpg = 0; rpg < repIdArrKeys.length; rpg++) {
     var rpgv = settings[repIdArrKeys[rpg]];

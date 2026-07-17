@@ -137,7 +137,9 @@ function _labels(T) {
     a10SectUnder: T('repA10SectUnder'), a10SectTails: T('repA10SectTails'), a10SectAge: T('repA10SectAge'),
     a10Carried: T('repA10Carried'), a10Dropped: T('repA10Dropped'),
     a10ColHours: T('repA10ColHours'), a10ColType: T('repA10ColType'), a10ColSystem: T('repA10ColSystem'),
+    a10CarriedShort: T('repA10CarriedShort'), a10DroppedShort: T('repA10DroppedShort'),
     a10ColAge: T('repA10ColAge'), a10AgeUnit: T('repA10AgeUnit'), a10PickSprint: T('repA10PickSprint'),
+    colSystem: T('repA10ColSystem'),   /* v3.9.0 — общий заголовок колонки «Система» (реюз ключа A10) */
     a10NoN1: T('repA10NoN1'), a10Empty: T('repA10Empty'), a10NoDoneCfg: T('repA10NoDoneCfg'),
     a10HoursUnit: T('capacityHoursShort'),
     /* #50 S9-EXP — экспорт (кнопка + meta); exportPeriod/exportTotal реюзят существующие переводы */
@@ -440,6 +442,20 @@ function _cfText(iss, fn) { var c = _cf(iss, fn); var v = c && c.value; return v
 function _typeValOf(iss, fieldType) { var c = _cf(iss, fieldType); var v = c && c.value; return (v && v.name) || ''; }
 /* Дисплей-имя системы (был _sysVal ×3: B1/B2/B0); пустое имя поля → ''. */
 function _sysValOf(iss, fieldSystem) { if (!fieldSystem) return ''; var c = _cf(iss, fieldSystem); var v = c && c.value; return v ? (v.localizedName || v.name || '') : ''; }
+/* v3.9.0 — эффективное имя поля «Система» для отчётности: тумблер reportingShowSystem
+   (admin-тир, дефолт ON — семантика !== false) гейтит показ; '' = колонка/группировка скрыты
+   (для B-отчётов это уже реализованный путь «fieldSystem не задан»). */
+function _fieldSystemEff(settings) {
+  if (settings && settings.reportingShowSystem === false) return '';
+  return (settings && typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
+}
+/* v3.9.0 — приклейка системы к готовым rows движка по id из сырого фетча (pure-движки не трогаем). */
+function _attachSystem(rows, arr, fieldSystem) {
+  if (!fieldSystem) return;
+  var by = {};
+  for (var i = 0; i < arr.length; i++) { var iss = arr[i]; if (iss && iss.idReadable) by[iss.idReadable] = _sysValOf(iss, fieldSystem); }
+  for (var j = 0; j < rows.length; j++) rows[j].system = by[rows[j].id] || '';
+}
 
 /* #50 S8a — epoch-ms UTC → 'YYYY-MM-DD' для YT-запроса created-окна (B3). */
 function _ymdISO(ms) {
@@ -471,12 +487,14 @@ function _countIssues(deps, query, shouldAbort) {
 const _loadA7 = makeReportLoader('A7', 'a', function (ctx) {
   var deps = ctx.deps, base = ctx.base, pure = ctx.pure;
   var thresholds = ctx.settings.reportingThresholds || {};
+  var fieldSystem = _fieldSystemEff(ctx.settings);   /* v3.9.0 — колонка «Система» */
   return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(['#Unresolved'])).then(function (f) {   /* активные = нерешённые */
     var m = _mapIssues(f.arr, ctx.fieldState);
     return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
       var built = pure.buildAgingRows(m.issues, prim, prim.incomplete, thresholds, Date.now());
-      ctx.mount({ loading: false, rows: built.rows,
+      _attachSystem(built.rows, f.arr, fieldSystem);
+      ctx.mount({ loading: false, rows: built.rows, hasSystem: !!fieldSystem,
         incompleteCount: built.incomplete.length, limitHit: f.limitHit, limit: LIMIT, diag: prim.diag });
     });
   });
@@ -497,13 +515,15 @@ const _loadA1 = makeReportLoader('A1', 'a', function (ctx) {
   if (!win) return;
   var statusLabels = (settings.reportingStatusLabels && typeof settings.reportingStatusLabels === 'object'
     && !Array.isArray(settings.reportingStatusLabels)) ? settings.reportingStatusLabels : {};
+  var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(
     [ctx.fieldState + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')])).then(function (f) {
     var m = _mapIssues(f.arr, ctx.fieldState);
     return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
       var built = pure.buildProgressRows(m.issues, prim, prim.incomplete, statusLabels, win);
-      ctx.mount({ loading: false, rows: built.rows,
+      _attachSystem(built.rows, f.arr, fieldSystem);     /* v3.9.0 — колонка «Система» */
+      ctx.mount({ loading: false, rows: built.rows, hasSystem: !!fieldSystem,
         incompleteCount: built.incomplete.length, limitHit: f.limitHit, limit: LIMIT, diag: prim.diag });
     });
   });
@@ -704,6 +724,7 @@ const _loadA5 = makeReportLoader('A5', 'a', function (ctx) {
   var roles = Array.isArray(deps.roles) ? deps.roles : [];
   var threshold = (typeof settings.reportingVariancePct === 'number' && isFinite(settings.reportingVariancePct)
     && settings.reportingVariancePct > 0) ? settings.reportingVariancePct : 20;
+  var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   /* QueryAssist AND (D-скоуп аналитика) */
   return ctx.fetchIssues(ISSUE_FIELDS_A5, ctx.queryParts()).then(function (f) {
       var arr = f.arr, limitHit = f.limitHit;
@@ -748,7 +769,8 @@ const _loadA5 = makeReportLoader('A5', 'a', function (ctx) {
             var incomplete = Object.keys(incSet);
             var res = pure.computePlanFact({ issues: popIssues, asOf: esAsOf, workItems: wi.items,
               roleExecutors: built.roleExecutors, roles: rolesEng, incomplete: incomplete, threshold: threshold });
-            ctx.mount({ report: 'a5', loading: false, noAnchors: false, rangePrompt: false,
+            _attachSystem(res.rows, arr, fieldSystem);  /* v3.9.0 — колонка «Система» */
+            ctx.mount({ report: 'a5', loading: false, noAnchors: false, rangePrompt: false, hasSystem: !!fieldSystem,
               rollups: res.rollups, rows: res.rows, threshold: threshold,
               populationCount: res.populationCount, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT });
           });
@@ -772,6 +794,7 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
   var stageField = (typeof settings.reportingA3StageField === 'string' && settings.reportingA3StageField) || '';
   var orgField = (typeof settings.reportingA3OrgField === 'string' && settings.reportingA3OrgField) || '';
   var prioField = (typeof settings.reportingA3PriorityField === 'string' && settings.reportingA3PriorityField) || '';
+  var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   /* QueryAssist AND (D-скоуп аналитика) */
   return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts()).then(function (f) {
     if (!_fresh(base)) return;                           /* устаревший ответ — не монтируем */
@@ -786,9 +809,10 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
       for (var ri = 0; ri < roles.length; ri++) est[roles[ri].key] = _cfMin(iss, roles[ri].estField);
       rows.push({ id: iss.idReadable, summary: iss.summary || '', state: state, mode: mode, est: est,
         stage: stageField ? _cfText(iss, stageField) : '', org: orgField ? _cfText(iss, orgField) : '',
-        priority: prioField ? _cfText(iss, prioField) : '' });
+        priority: prioField ? _cfText(iss, prioField) : '',
+        system: fieldSystem ? _sysValOf(iss, fieldSystem) : '' });
     }
-    ctx.mount({ report: 'a3', loading: false, rows: rows,
+    ctx.mount({ report: 'a3', loading: false, rows: rows, hasSystem: !!fieldSystem,
       wipCount: wipCount, doneCount: doneCount, limitHit: f.limitHit, limit: LIMIT,
       snapRoles: roles.map(function (r) { return { key: r.key, label: r.label }; }),
       snapCols: { stage: !!stageField, org: !!orgField, priority: !!prioField } });
@@ -869,7 +893,7 @@ const _loadA10 = makeReportLoader('A10', 'a', function (ctx) {
       : (order.length >= 2 ? order[1].key : order[0].key);   /* дефолт — спринт С преемником (второй новейший) */
     var out = pure.computeSpillover(history, { roles: roles, doneStates: doneStates, ageBands: ageBands }, sel);
     var roleRows = (out.roleRows || []).filter(function (rr) { return rr.plannedMinutes > 0; });   /* пустые роли — шум */
-    ctx.mount({ report: 'a10', loading: false,
+    ctx.mount({ report: 'a10', loading: false, hasSystem: !!_fieldSystemEff(settings),
       sprints: order.map(function (b) { return { key: b.key, label: b.label }; }), spillSprint: sel,
       roleRows: roleRows, tails: out.tails || [], ages: out.ages || [], hasN1: out.hasN1,
       noDoneCfg: !doneStates.length });
@@ -942,7 +966,7 @@ const _loadB1 = makeReportLoader('B1', 'b', function (ctx) {
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).filter(function (r) { return r && r.estField; })
     .map(function (r) { return { key: r.key, label: r.label || r.key, estField: r.estField }; });
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
-  var fieldSystem = (typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
+  var fieldSystem = _fieldSystemEff(settings);   /* v3.9.0 — тумблер reportingShowSystem гейтит группировку */
   function _hasTag(iss, tag) { var ts = Array.isArray(iss.tags) ? iss.tags : []; for (var i = 0; i < ts.length; i++) { if (ts[i] && ts[i].name === tag) return true; } return false; }
   /* QueryAssist AND */
   return ctx.fetchIssues(ISSUE_FIELDS_B1, ctx.queryParts()).then(function (f) {
@@ -984,7 +1008,7 @@ const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
   if (!win) return;
   var roles = (Array.isArray(deps.roles) ? deps.roles : []).map(function (r) { return { key: r.key, label: r.label || r.key, fieldName: r.fieldName }; });
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
-  var fieldSystem = (typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
+  var fieldSystem = _fieldSystemEff(settings);   /* v3.9.0 — тумблер reportingShowSystem гейтит группировку */
   var doneSet = {};
   (Array.isArray(settings.standupDoneStates) ? settings.standupDoneStates : []).forEach(function (s) { if (s) doneSet[s] = true; });
   var linkSet = {}; linkTypes.forEach(function (n) { linkSet[n] = true; });
@@ -1092,7 +1116,7 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
   var threshold = (typeof settings.reportingVariancePct === 'number' && isFinite(settings.reportingVariancePct)
     && settings.reportingVariancePct > 0) ? settings.reportingVariancePct : 20;
   var roles = Array.isArray(deps.roles) ? deps.roles : [];
-  var fieldSystem = (typeof settings.fieldSystem === 'string' && settings.fieldSystem) ? settings.fieldSystem : '';
+  var fieldSystem = _fieldSystemEff(settings);   /* v3.9.0 — тумблер reportingShowSystem гейтит группировку */
   var typeNames = settings.fieldType ? [settings.fieldType, 'Type', 'Тип'] : ['Type', 'Тип'];
   var capRaw = (settings.reportingRoleMonthlyCapacity && typeof settings.reportingRoleMonthlyCapacity === 'object'
     && !Array.isArray(settings.reportingRoleMonthlyCapacity)) ? settings.reportingRoleMonthlyCapacity : {};
@@ -1210,6 +1234,7 @@ function loadAndRender(deps, contour) {
   }
   var base = {
     contour: 'a', report: report, labels: L, query: userQ, period: period, periodOpts: periodOpts, gen: gen,
+    ytBase: (deps.ytBase ? String(deps.ytBase) : ''),   /* v3.9.0 — кликабельные ID (ссылка как в бэклоге) */
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],
     onRefresh: function (q) { _patch({ reportingQuery: q == null ? '' : String(q) }); },
     onAssist: function (req) { return (typeof deps.searchAssist === 'function') ? deps.searchAssist(deps, req) : Promise.resolve({ query: (req && req.query) || '', caret: 0, suggestions: [] }); },

@@ -492,7 +492,7 @@ function buildBacklogRows(perIssue, roles, monthlyCapHours, normMonths) {
            activeInc:string[] } (activeInc = что считается «закоммичено», по умолчанию INC_PLANNED+INC_UNPLANNED).
    → { roleRows:[{roleKey,label,plannedMinutes,notDoneMinutes,carriedMinutes,droppedMinutes,pct,level}],
        tails:[{issueId,title,roleKey,roleLabel,minutes,type:'carried'|'dropped',system}],  // минуты (estimate_<rk>=value.minutes), дисплей ÷60
-       ages:[{issueId,title,roleKey,roleLabel,age,level:'ok'|'warm'|'hot'}],
+       ages:[{issueId,title,roleKey,roleLabel,age,level:'ok'|'warm'|'hot',system}],
        hasN1:bool } (hasN1=false если базовый спринт последний → carried не определён; всё=incomplete). */
 function computeSpillover(snapshots, opts, baseSprintId) {
   var snaps = Array.isArray(snapshots) ? snapshots.filter(function (s) { return s && s.sprintId && s.status === 'FINISHED'; }) : [];
@@ -592,7 +592,7 @@ function computeSpillover(snapshots, opts, baseSprintId) {
         var prev2 = ageMap[itA.issueId];
         if (!prev2 || age > prev2.age) {
           ageMap[itA.issueId] = { issueId: itA.issueId, title: itA.title || itA.issueId,
-            roleKey: r.key, roleLabel: r.label || r.key, age: age, level: lv };
+            roleKey: r.key, roleLabel: r.label || r.key, age: age, level: lv, system: itA.system || null };
         }
       }
     }

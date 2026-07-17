@@ -211,9 +211,9 @@
     "locBudget": 440
    },
    "react/reporting-view.jsx": {
-    "loc": 1331,
-    "locBudget": 1343,
-    "budgetNote": "R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат."
+    "loc": 1349,
+    "locBudget": 1365,
+    "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат."
    },
    "react/select-mount.jsx": {
     "loc": 141,
@@ -352,13 +352,13 @@
   "domain/excel-export.js": {
    "layer": "domain",
    "domain": "domain/excel-export",
-   "loc": 300,
-   "locBudget": 305,
+   "loc": 319,
+   "locBudget": 335,
    "state": [],
    "publishes": [
     "EXCEL_EXPORT"
    ],
-   "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+   "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
   },
   "domain/gantt-view.js": {
    "layer": "domain",
@@ -933,13 +933,13 @@
   "domain/reporting-view.js": {
    "layer": "domain",
    "domain": "domain/reporting-view",
-   "loc": 1216,
-   "locBudget": 1228,
+   "loc": 1241,
+   "locBudget": 1260,
    "state": [],
    "publishes": [
     "REPORTING_VIEW"
    ],
-   "budgetNote": "R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат."
+   "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат."
   },
   "pure/reporting-pure.js": {
    "layer": "pure",
@@ -1000,8 +1000,8 @@
   "pure/reporting-export-pure.js": {
    "layer": "pure",
    "domain": "pure/reporting-export-pure",
-   "loc": 226,
-   "locBudget": 226,
+   "loc": 264,
+   "locBudget": 280,
    "state": [
     "_WINDOWED",
     "_api"
@@ -1009,7 +1009,7 @@
    "publishes": [
     "REPORTING_EXPORT_PURE"
    ],
-   "budgetNote": "#50 B0-e — осознанный +21 (199→220): проекция b0 «Свод» — ветка report==='b0' в _projectReport (секция на КАЖДУЮ из 5 метрик: строки=месяцы, колонки=[месяц, …системы+агрегат]; значения _round1, null→'') + b0 в _reportTitle. b0 — снимок (свой N-мес свод, не date-окно) → meta период = exportSnapshot. #50 S9-EXP-a — новый leaf-проектор «отчёт → секции» для экспорта (Excel/PDF): reportToSheets(vm) читает ФИНАЛЬНЫЙ vm 13 отчётов + лейблы vm.labels → нейтральную табличную модель {fileStem,title,meta,sections}; XLS-писатель (excel-export.writeReportXlsx) и PDF-писатель (pdfmake, S9-EXP-b) потребляют ОДИН выход — проекция пишется один раз на отчёт. Leaf (pure): только vm + deps(fmtDate,nowTs), без domain/data-мостов."
+   "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: #50 B0-e — осознанный +21 (199→220): проекция b0 «Свод» — ветка report==='b0' в _projectReport (секция на КАЖДУЮ из 5 метрик: строки=месяцы, колонки=[месяц, …системы+агрегат]; значения _round1, null→'') + b0 в _reportTitle. b0 — снимок (свой N-мес свод, не date-окно) → meta период = exportSnapshot. #50 S9-EXP-a — новый leaf-проектор «отчёт → секции» для экспорта (Excel/PDF): reportToSheets(vm) читает ФИНАЛЬНЫЙ vm 13 отчётов + лейблы vm.labels → нейтральную табличную модель {fileStem,title,meta,sections}; XLS-писатель (excel-export.writeReportXlsx) и PDF-писатель (pdfmake, S9-EXP-b) потребляют ОДИН выход — проекция пишется один раз на отчёт. Leaf (pure): только vm + deps(fmtDate,nowTs), без domain/data-мостов."
   },
   "pure/reporting-ttm.js": {
    "layer": "pure",

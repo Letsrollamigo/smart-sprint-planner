@@ -165,3 +165,31 @@ test('без limitHit/incomplete meta не растёт (снимок прежн
   const m = EXP.reportToSheets(vm, DEPS);
   assert.strictEqual(m.meta.length, 4);
 });
+
+
+/* v3.9.0 — тумблер «Система» (hasSystem) + кликабельные ID (ytBase → линк-ячейка {v,link}).
+   Без hasSystem/ytBase форма старых выгрузок не меняется (тесты выше — тот же контракт). */
+test('v3.9.0 a7 — hasSystem: колонка «Система»; ytBase: ID = линк-ячейка {v,link}', () => {
+  const vm = base({ report: 'a7', hasSystem: true, ytBase: 'https://yt.example',
+    rows: [{ id: 'D-1', summary: 'Задача', state: 'Open', days: 5, level: 'over', system: 'ERP' }] });
+  const m = EXP.reportToSheets(vm, DEPS);
+  assert.deepStrictEqual(m.sections[0].columns, ['colId', 'colTask', 'colStatus', 'colDays', 'colFlag', 'colSystem']);
+  assert.deepStrictEqual(m.sections[0].rows[0],
+    [{ v: 'D-1', link: 'https://yt.example/issue/D-1' }, 'Задача', 'Open', 5, 'flagOver', 'ERP']);
+});
+
+test('v3.9.0 a10 — hasSystem гейтит колонку в хвостах и возрасте; ID — линк-ячейки', () => {
+  const mk = (hasSystem) => EXP.reportToSheets(base({ report: 'a10', hasSystem, ytBase: 'https://yt.example',
+    spillSprint: 'sp1', sprints: [{ key: 'sp1', label: 'Май' }], roleRows: [],
+    tails: [{ issueId: 'D-2', title: 'T', roleLabel: 'Анализ', minutes: 60, type: 'carried', system: 'CRM' }],
+    ages: [{ issueId: 'D-2', title: 'T', roleLabel: 'Анализ', age: 2, system: 'CRM' }] }), DEPS);
+  const on = mk(true);
+  assert.deepStrictEqual(on.sections[1].columns, ['colId', 'colTask', 'a4ColRole', 'a10ColHours', 'a10ColType', 'a10ColSystem']);
+  assert.deepStrictEqual(on.sections[1].rows[0],
+    [{ v: 'D-2', link: 'https://yt.example/issue/D-2' }, 'T', 'Анализ', 1, 'a10Carried', 'CRM']);
+  assert.deepStrictEqual(on.sections[2].columns, ['colId', 'colTask', 'a4ColRole', 'a10ColAge', 'a10ColSystem']);
+  assert.deepStrictEqual(on.sections[2].rows[0][4], 'CRM');
+  const off = mk(false);
+  assert.deepStrictEqual(off.sections[1].columns, ['colId', 'colTask', 'a4ColRole', 'a10ColHours', 'a10ColType']);
+  assert.deepStrictEqual(off.sections[2].columns, ['colId', 'colTask', 'a4ColRole', 'a10ColAge']);
+});

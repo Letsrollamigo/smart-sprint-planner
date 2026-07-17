@@ -992,6 +992,9 @@ function ReportingSection(props) {
   return (
     <React.Fragment>
       <RoleCheck on={v.enabled} label={t('repSetEnable')} onToggle={() => patch({ enabled: !v.enabled })} />
+      {/* v3.9.0 — «Система» в отчётах: колонка в A-таблицах + группировка B-отчётов + экспорт. */}
+      <RoleCheck on={v.showSystem !== false} label={t('repSetShowSystem')} onToggle={() => patch({ showSystem: v.showSystem === false })} />
+      <span className="hint" style={hintCls}>{t('repSetShowSystemHint')}</span>
       <div className="card-subtitle" style={subCls}>{t('repSetAccessGroups')}</div>
       <span className="hint" style={hintCls}>{t('repSetAccessNote')}</span>
       {grpRow('groupsA', t('repSetGroupsA'))}
@@ -1466,6 +1469,7 @@ function SettingsForm(props) {
     terminalPolicy: (initial.reportingTerminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close',
     variancePct: (typeof initial.reportingVariancePct === 'number' && isFinite(initial.reportingVariancePct)) ? initial.reportingVariancePct : 20,
     timeoutSec: (typeof initial.reportingTimeoutSec === 'number' && isFinite(initial.reportingTimeoutSec)) ? initial.reportingTimeoutSec : 90,   /* #50 D10 таймаут-бэкстоп */
+    showSystem: initial.reportingShowSystem !== false,   /* v3.9.0 — «Система» в отчётах (дефолт ON) */
     /* #50 S6a — A3 : имена YT-полей бизнес-колонок среза (пусто = колонка скрыта). */
     a3StageField: (typeof initial.reportingA3StageField === 'string') ? initial.reportingA3StageField : '',
     a3OrgField: (typeof initial.reportingA3OrgField === 'string') ? initial.reportingA3OrgField : '',
@@ -1733,6 +1737,7 @@ function SettingsForm(props) {
     data.reportingTerminalPolicy = (reporting.terminalPolicy === 'last-stable-close') ? 'last-stable-close' : 'first-close'; /* #50 v3.2.0 — A2 политика reopen */
     data.reportingVariancePct = (typeof reporting.variancePct === 'number' && isFinite(reporting.variancePct)) ? reporting.variancePct : 20; /* #50 S5b A5 */
     data.reportingTimeoutSec = (typeof reporting.timeoutSec === 'number' && isFinite(reporting.timeoutSec)) ? reporting.timeoutSec : 90; /* #50 D10 таймаут */
+    data.reportingShowSystem = reporting.showSystem !== false; /* v3.9.0 — «Система» в отчётах (bool, дефолт ON) */
     data.reportingPauseMarkers = reporting.pauseMarkers || { states: [], tags: [] };
     /* #50 S6a — A3 срез: имена YT-полей бизнес-колонок (пусто → null = колонка скрыта). */
     data.reportingA3StageField = reporting.a3StageField || null;

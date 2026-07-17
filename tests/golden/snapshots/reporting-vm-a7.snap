@@ -3,6 +3,7 @@
     "contour",
     "diag",
     "gen",
+    "hasSystem",
     "incompleteCount",
     "labels",
     "limit",
@@ -22,16 +23,19 @@
     "report",
     "rows",
     "shouldAbort",
-    "years"
+    "years",
+    "ytBase"
   ],
   "labelKeys": [
     "a10AgeUnit",
     "a10Carried",
+    "a10CarriedShort",
     "a10ColAge",
     "a10ColHours",
     "a10ColSystem",
     "a10ColType",
     "a10Dropped",
+    "a10DroppedShort",
     "a10Empty",
     "a10HoursUnit",
     "a10Menu",
@@ -183,6 +187,7 @@
     "colId",
     "colLabel",
     "colStatus",
+    "colSystem",
     "colTask",
     "colUnitType",
     "contourA",
@@ -282,6 +287,7 @@
       "chunks": 1
     },
     "gen": 1,
+    "hasSystem": true,
     "incompleteCount": 1,
     "limit": 200,
     "limitHit": false,
@@ -305,7 +311,8 @@
         "id": "T-5",
         "level": "none",
         "state": "Open",
-        "summary": "Техдолг ERP"
+        "summary": "Техдолг ERP",
+        "system": "ERP"
       },
       {
         "days": 19,
@@ -313,7 +320,8 @@
         "id": "T-1",
         "level": "over",
         "state": "In Progress",
-        "summary": "Эпик CRM"
+        "summary": "Эпик CRM",
+        "system": "CRM"
       },
       {
         "days": 16,
@@ -321,7 +329,8 @@
         "id": "T-3",
         "level": "none",
         "state": "Open",
-        "summary": "Сольная стори ERP"
+        "summary": "Сольная стори ERP",
+        "system": "ERP"
       },
       {
         "days": 6,
@@ -329,7 +338,8 @@
         "id": "T-7",
         "level": "none",
         "state": "Done",
-        "summary": "Сольная стори Done"
+        "summary": "Сольная стори Done",
+        "system": "ERP"
       },
       {
         "days": 5,
@@ -337,7 +347,8 @@
         "id": "T-2",
         "level": "none",
         "state": "Done",
-        "summary": "Стори под эпиком"
+        "summary": "Стори под эпиком",
+        "system": "CRM"
       },
       {
         "days": 2,
@@ -345,7 +356,8 @@
         "id": "T-4",
         "level": "none",
         "state": "Done",
-        "summary": "Баг по стори"
+        "summary": "Баг по стори",
+        "system": "CRM"
       }
     ],
     "shouldAbort": "[Function]",
@@ -355,6 +367,7 @@
       2024,
       2023,
       2022
-    ]
+    ],
+    "ytBase": ""
   }
 }

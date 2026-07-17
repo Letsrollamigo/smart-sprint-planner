@@ -36,6 +36,14 @@ function RingSelect({ value, options, onChange, size, label, minWidth }) {
 /* Дата перехода: epoch-ms → локальная дата (display-only). */
 function _fmtDate(ms) { return (typeof ms === 'number' && isFinite(ms)) ? new Date(ms).toLocaleDateString() : ''; }
 
+/* v3.9.0 — кликабельный ID задачи (паттерн бэклога: ytBase + '/issue/' + id, новая вкладка).
+   nowrap чинит перенос «DEMO-16» на две строки; без ytBase — просто nowrap-текст. */
+function IssueLink({ id, ytBase }) {
+  if (!ytBase) return <span style={{ whiteSpace: 'nowrap' }}>{id}</span>;
+  return <a className="link" style={{ whiteSpace: 'nowrap' }} href={ytBase + '/issue/' + id}
+    target="_blank" rel="noopener noreferrer">{id}</a>;
+}
+
 /* Минуты → часы, 1 знак (display-only): 90 → «1.5». */
 function _fmtHours(minutes) { return (Math.round(((Number(minutes) || 0) / 60) * 10) / 10).toString(); }
 
@@ -60,14 +68,14 @@ function FlagBadge({ level, L }) {
     none: { t: L.flagNone, bg: 'transparent', c: 'var(--muted,#6b7785)', b: 'var(--border,#dfe3e8)' },
   };
   const m = map[level] || map.none;
-  return <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: '4px', fontSize: '12px',
+  return <span style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '1px 8px', borderRadius: '4px', fontSize: '12px',
     background: m.bg, color: m.c, border: '1px solid ' + m.b }}>{m.t}</span>;
 }
 
-/* Ярлык A1 — нейтральный pill (в сабсете нет Tag). */
+/* Ярлык A1 — нейтральный pill (в сабсете нет Tag). nowrap — строки таблиц однострочные (v3.9.0). */
 function LabelPill({ text }) {
   if (!text) return null;
-  return <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: '4px', fontSize: '12px',
+  return <span style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '1px 8px', borderRadius: '4px', fontSize: '12px',
     background: 'var(--surface2,#eef0f3)', color: 'var(--text,#20303c)', border: '1px solid var(--border,#dfe3e8)' }}>{text}</span>;
 }
 
@@ -193,7 +201,7 @@ function LimitBanners({ vm, L }) {
   );
 }
 
-function A7Table({ rows, L }) {
+function A7Table({ rows, L, vm }) {
   return (
     <div className="ring-table-tableWrapper" style={{ overflowX: 'auto' }}>
       <table className="ring-table-table">
@@ -203,11 +211,12 @@ function A7Table({ rows, L }) {
           <th className="ring-table-headerCell">{L.colStatus}</th>
           <th className="ring-table-headerCell ring-table-cellRight">{L.colDays}</th>
           <th className="ring-table-headerCell" style={{ minWidth: '120px' }}>{L.colFlag}</th>
+          {vm.hasSystem ? <th className="ring-table-headerCell">{L.colSystem}</th> : null}
         </tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr className="ring-table-row" key={r.id}>
-              <td className="ring-table-cell">{r.id}</td>
+              <td className="ring-table-cell"><IssueLink id={r.id} ytBase={vm.ytBase} /></td>
               <td className="ring-table-cell">{r.summary}</td>
               <td className="ring-table-cell">{r.state}</td>
               <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>
@@ -219,6 +228,7 @@ function A7Table({ rows, L }) {
                   <FlagBadge level={r.level} L={L} />
                 </div>
               </td>
+              {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{r.system || '—'}</td> : null}
             </tr>
           ))}
         </tbody>
@@ -227,7 +237,7 @@ function A7Table({ rows, L }) {
   );
 }
 
-function A1Table({ rows, L }) {
+function A1Table({ rows, L, vm }) {
   return (
     <div className="ring-table-tableWrapper" style={{ overflowX: 'auto' }}>
       <table className="ring-table-table">
@@ -237,15 +247,17 @@ function A1Table({ rows, L }) {
           <th className="ring-table-headerCell">{L.colEnteredStatus}</th>
           <th className="ring-table-headerCell">{L.colEnteredDate} ↓</th>
           <th className="ring-table-headerCell">{L.colLabel}</th>
+          {vm.hasSystem ? <th className="ring-table-headerCell">{L.colSystem}</th> : null}
         </tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr className="ring-table-row" key={r.id}>
-              <td className="ring-table-cell">{r.id}</td>
+              <td className="ring-table-cell"><IssueLink id={r.id} ytBase={vm.ytBase} /></td>
               <td className="ring-table-cell">{r.summary}</td>
               <td className="ring-table-cell">{r.state}</td>
               <td className="ring-table-cell" style={{ whiteSpace: 'nowrap' }}>{_fmtDate(r.enteredAt)}</td>
               <td className="ring-table-cell"><LabelPill text={r.label} /></td>
+              {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{r.system || '—'}</td> : null}
             </tr>
           ))}
         </tbody>
@@ -773,7 +785,7 @@ function RoleVarianceTile({ r, L, threshold }) {
 }
 
 /* Таблица задач сверх порога: ID · Задача · Роль · Оценка(as-of) · Факт · Расхожд. (пилюля по уровню). */
-function A5Table({ rows, L }) {
+function A5Table({ rows, L, vm }) {
   return (
     <div className="ring-table-tableWrapper" style={{ overflowX: 'auto', marginTop: '4px' }}>
       <table className="ring-table-table">
@@ -784,20 +796,22 @@ function A5Table({ rows, L }) {
           <th className="ring-table-headerCell ring-table-cellRight">{L.a5ColEst}</th>
           <th className="ring-table-headerCell ring-table-cellRight">{L.a5ColFact}</th>
           <th className="ring-table-headerCell ring-table-cellRight">{L.a5ColVar}</th>
+          {vm.hasSystem ? <th className="ring-table-headerCell">{L.colSystem}</th> : null}
         </tr></thead>
         <tbody>
           {rows.map((r, i) => {
             const color = _lvlColor(r.level);
             return (
               <tr className="ring-table-row" key={r.id + '·' + r.roleKey + '·' + i}>
-                <td className="ring-table-cell">{r.id}</td>
+                <td className="ring-table-cell"><IssueLink id={r.id} ytBase={vm.ytBase} /></td>
                 <td className="ring-table-cell">{r.summary}</td>
                 <td className="ring-table-cell">{r.roleLabel}</td>
                 <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>{_fmtHours(r.asOfMin)} <span style={{ color: 'var(--muted,#6b7785)', fontSize: '11px' }}>{L.a4HoursUnit}</span></td>
                 <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>{_fmtHours(r.factMin)} <span style={{ color: 'var(--muted,#6b7785)', fontSize: '11px' }}>{L.a4HoursUnit}</span></td>
                 <td className="ring-table-cell ring-table-cellRight">
-                  <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, color: color, background: color + '1f' }}>{_fmtPct(r.variancePct)}</span>
+                  <span style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '1px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, color: color, background: color + '1f' }}>{_fmtPct(r.variancePct)}</span>
                 </td>
+                {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{r.system || '—'}</td> : null}
               </tr>
             );
           })}
@@ -823,7 +837,7 @@ function A5View({ vm, L }) {
       {/* #50 v3.2.0 — знаковое ср. расхождение по ролям (цвет = светофор уровня, нулевая ось). */}
       {rollups.length > 1 ? <RepCatBars title={L.a5ChartTitle} horizontal unitLabel="%" valueName={L.a5ChartTitle} L={L}
         items={rollups.map((r) => ({ label: r.label, value: (r.avgVariancePct == null) ? null : Math.round(r.avgVariancePct), color: _lvlColor(r.level) }))} /> : null}
-      {rows.length ? <A5Table rows={rows} L={L} /> : <_Muted>{L.a5Empty}</_Muted>}
+      {rows.length ? <A5Table rows={rows} L={L} vm={vm} /> : <_Muted>{L.a5Empty}</_Muted>}
     </React.Fragment>
   );
 }
@@ -857,11 +871,12 @@ function A3View({ vm, L }) {
               {roles.map((r) => <th key={r.key} className="ring-table-headerCell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>{L.a3EstPrefix} {r.label}</th>)}
               {cols.org ? <th className="ring-table-headerCell">{L.a3ColOrg}</th> : null}
               {cols.priority ? <th className="ring-table-headerCell">{L.a3ColPriority}</th> : null}
+              {vm.hasSystem ? <th className="ring-table-headerCell">{L.colSystem}</th> : null}
             </tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr className="ring-table-row" key={r.id}>
-                  <td className="ring-table-cell">{r.id}</td>
+                  <td className="ring-table-cell"><IssueLink id={r.id} ytBase={vm.ytBase} /></td>
                   <td className="ring-table-cell">{r.summary}</td>
                   {cols.stage ? <td className="ring-table-cell">{r.stage ? <LabelPill text={r.stage} /> : '—'}</td> : null}
                   {roles.map((r2) => (
@@ -871,6 +886,7 @@ function A3View({ vm, L }) {
                   ))}
                   {cols.org ? <td className="ring-table-cell" style={_mutedS}>{r.org || '—'}</td> : null}
                   {cols.priority ? <td className="ring-table-cell">{r.priority ? <LabelPill text={r.priority} /> : '—'}</td> : null}
+                  {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{r.system || '—'}</td> : null}
                 </tr>
               ))}
             </tbody>
@@ -996,22 +1012,23 @@ function A10View({ vm, L }) {
               <th className="ring-table-headerCell">{L.a4ColRole}</th>
               <th className="ring-table-headerCell ring-table-cellRight">{L.a10ColHours}</th>
               <th className="ring-table-headerCell">{L.a10ColType}</th>
-              <th className="ring-table-headerCell">{L.a10ColSystem}</th>
+              {vm.hasSystem ? <th className="ring-table-headerCell">{L.a10ColSystem}</th> : null}
             </tr></thead>
             <tbody>
               {tails.map((t, i) => (
                 <tr className="ring-table-row" key={t.issueId + '·' + t.roleKey + '·' + i}>
-                  <td className="ring-table-cell">{t.issueId}</td>
+                  <td className="ring-table-cell"><IssueLink id={t.issueId} ytBase={vm.ytBase} /></td>
                   <td className="ring-table-cell">{t.title}</td>
                   <td className="ring-table-cell">{t.roleLabel}</td>
                   <td className="ring-table-cell ring-table-cellRight" style={{ whiteSpace: 'nowrap' }}>{_fmtHours(t.minutes)}</td>
                   <td className="ring-table-cell">
-                    <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600,
+                    {/* v3.9.0 — короткий бейдж (полная формулировка — в легенде графика выше) */}
+                    <span style={{ display: 'inline-block', whiteSpace: 'nowrap', padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600,
                       background: t.type === 'carried' ? '#fdf3d9' : '#fdecea', color: t.type === 'carried' ? '#8a6d1a' : '#c23b2b' }}>
-                      {t.type === 'carried' ? L.a10Carried : L.a10Dropped}
+                      {t.type === 'carried' ? L.a10CarriedShort : L.a10DroppedShort}
                     </span>
                   </td>
-                  <td className="ring-table-cell" style={_mutedS}>{t.system || '—'}</td>
+                  {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{t.system || '—'}</td> : null}
                 </tr>
               ))}
             </tbody>
@@ -1029,20 +1046,22 @@ function A10View({ vm, L }) {
               <th className="ring-table-headerCell ring-table-cellUnlimited">{L.colTask}</th>
               <th className="ring-table-headerCell">{L.a4ColRole}</th>
               <th className="ring-table-headerCell">{L.a10ColAge}</th>
+              {vm.hasSystem ? <th className="ring-table-headerCell">{L.a10ColSystem}</th> : null}
             </tr></thead>
             <tbody>
               {ages.map((a, i) => {
                 const b = _ageBadge(a.level);
                 return (
                   <tr className="ring-table-row" key={a.issueId + '·' + i}>
-                    <td className="ring-table-cell">{a.issueId}</td>
+                    <td className="ring-table-cell"><IssueLink id={a.issueId} ytBase={vm.ytBase} /></td>
                     <td className="ring-table-cell">{a.title}</td>
                     <td className="ring-table-cell">{a.roleLabel}</td>
                     <td className="ring-table-cell">
-                      <span style={{ display: 'inline-block', minWidth: '22px', textAlign: 'center', padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, background: b.bg, color: b.fg }}>
+                      <span style={{ display: 'inline-block', whiteSpace: 'nowrap', minWidth: '22px', textAlign: 'center', padding: '1px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 700, background: b.bg, color: b.fg }}>
                         {a.age} {L.a10AgeUnit}
                       </span>
                     </td>
+                    {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{a.system || '—'}</td> : null}
                   </tr>
                 );
               })}
@@ -1307,7 +1326,7 @@ function ReportBody({ vm, L }) {
           { label: L.flagWarn, value: rows.filter((r) => r.level === 'warn').length, color: CHART.amber },
           { label: L.flagOver, value: rows.filter((r) => r.level === 'over').length, color: CHART.red },
         ]} /> : null}
-      {rows.length ? <Table rows={rows} L={L} /> : <_Muted>{L.empty}</_Muted>}
+      {rows.length ? <Table rows={rows} L={L} vm={vm} /> : <_Muted>{L.empty}</_Muted>}
     </React.Fragment>
   );
 }

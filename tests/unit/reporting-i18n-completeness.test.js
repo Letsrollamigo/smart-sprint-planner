@@ -73,7 +73,8 @@ const REPORTING_KEYS = [
   'repSetA10Age', 'repSetA10AgeHint', 'repSetA10AgeWarm', 'repSetA10AgeHot',
   // S7c — A10 Spillover вью: заголовок/пикер спринта/секции/легенда/колонки/бэйджи/баннеры
   'repA10Title', 'repA10Sub', 'repA10Menu', 'repA10SectUnder', 'repA10SectTails', 'repA10SectAge',
-  'repA10Carried', 'repA10Dropped', 'repA10ColHours', 'repA10ColType', 'repA10ColSystem', 'repA10ColAge',
+  'repA10Carried', 'repA10Dropped', 'repA10CarriedShort', 'repA10DroppedShort',   /* v3.9.0 — короткие бейджи хвостов */
+  'repA10ColHours', 'repA10ColType', 'repA10ColSystem', 'repA10ColAge',
   'repA10AgeUnit', 'repA10PickSprint', 'repA10NoN1', 'repA10Empty', 'repA10NoDoneCfg',
   // S8a — B3 «1000 мелочей» (контур B)
   'repB3Title', 'repB3Sub', 'repB3Menu', 'repB3Period', 'repB3Avg', 'repB3Ytd', 'repB3Unit', 'repB3NoTag',
@@ -93,6 +94,7 @@ const REPORTING_KEYS = [
   // D10 — прерывание отчёта: кнопка «Прервать» + баннеры отмены/таймаута + настройка таймаута
   'repCancel', 'repCancelHint', 'repAbortedManual', 'repAbortedTimeout',
   'repSetTimeout', 'repSetTimeoutHint', 'repSetTimeoutSec',
+  'repSetShowSystem', 'repSetShowSystemHint',   /* v3.9.0 — тумблер «Система» в отчётах */
 ];
 
 /* Ключи, чьё не-EN значение легитимно равно EN во ВСЕХ локалях. */

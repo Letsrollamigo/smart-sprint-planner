@@ -239,16 +239,29 @@ function writeReportXlsx(model, deps) {
     });
     return;
   }
-  var aoa = [];
+  var aoa = [], links = [];                              /* v3.9.0 — {r,c,url} линк-ячеек ({v,link} из проектора) */
+  function pushRow(cells) {
+    var out = [], rIdx = aoa.length;
+    for (var ci = 0; ci < cells.length; ci++) {
+      var c = cells[ci];
+      if (c && typeof c === 'object' && c.link) { links.push({ r: rIdx, c: ci, url: c.link }); out.push(c.v); }
+      else out.push(c);
+    }
+    aoa.push(out);
+  }
   if (model.title) aoa.push([model.title]);
   (model.meta || []).forEach(function (m) { aoa.push([m[0], m[1]]); });
   (model.sections || []).forEach(function (sec) {
     aoa.push([]);                                        /* разделитель секций */
     if (sec.title) aoa.push([sec.title]);
     aoa.push(sec.columns || []);
-    (sec.rows || []).forEach(function (r) { aoa.push(r); });
+    (sec.rows || []).forEach(function (r) { pushRow(r); });
   });
   var ws = XLSX.utils.aoa_to_sheet(aoa);
+  links.forEach(function (lk) {                          /* гиперссылка на ID-ячейке (клик открывает задачу) */
+    var addr = XLSX.utils.encode_cell({ r: lk.r, c: lk.c });
+    if (ws[addr]) ws[addr].l = { Target: lk.url };
+  });
   var wb = XLSX.utils.book_new();
   var sheetName = String(model.title || 'Report').replace(/[\\/:*?"[\]]/g, ' ').slice(0, 31) || 'Report';
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
@@ -283,7 +296,13 @@ function writeReportPdf(model, deps) {
     (model.sections || []).forEach(function (sec) {
       if (sec.title) content.push({ text: S(sec.title), style: 'sh' });
       var head = (sec.columns || []).map(function (c) { return { text: S(c), bold: true, fillColor: '#eef0f3' }; });
-      var body = [head].concat((sec.rows || []).map(function (r) { return (r || []).map(function (c) { return S(c); }); }));
+      /* v3.9.0 — линк-ячейка {v,link} из проектора → кликабельный ID (pdfmake link-атрибут). */
+      var body = [head].concat((sec.rows || []).map(function (r) {
+        return (r || []).map(function (c) {
+          if (c && typeof c === 'object' && c.link) return { text: S(c.v), link: c.link, color: '#2b6cb0', decoration: 'underline' };
+          return S(c);
+        });
+      }));
       /* ревью #50: без widths auto-таблица шире страницы РИСУЕТСЯ за правое поле и обрезается
          (pdfmake не сжимает auto ниже длиннейшего слова). Широкие секции (B0 месяц×системы,
          A3 роли) — равные '*' (перенос по словам внутри колонки); узкие ≤4 — auto (компактнее). */
