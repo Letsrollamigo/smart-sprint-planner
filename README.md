@@ -36,7 +36,7 @@ Gantt timeline per role, sprint-aware, with per-task assignees:
 
 <p align="center">
   <img src="./assets/readme/shot-gantt.png" width="100%"
-       alt="Gantt chart view: current sprint selector with per-role status chips and a per-task timeline with assignees across the sprint calendar.">
+       alt="Gantt chart view: role selector, day/week/month scale, and a per-task timeline with assignees laid out across the sprint calendar.">
 </p>
 
 ## What you get
