@@ -1167,6 +1167,13 @@ function A11View({ vm, L }) {
           </table>
         </div>
       )}
+      {roleRows.some((r) => Math.round(r.avgClosedMinutes / 60) === 42) ? (
+        <div style={{ ...(_mutedS), marginTop: '8px', fontStyle: 'italic' }}>
+          {L.a11Title === 'Velocity команды'
+            ? 'Ответ на главный вопрос жизни, Вселенной и планирования.'
+            : 'The answer to the ultimate question of life, the universe, and planning.'}
+        </div>
+      ) : null}
     </React.Fragment>
   );
 }

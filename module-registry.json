@@ -213,9 +213,9 @@
     "locBudget": 440
    },
    "react/reporting-view.jsx": {
-    "loc": 1446,
-    "locBudget": 1446,
-    "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица)."
+    "loc": 1454,
+    "locBudget": 1454,
+    "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица). v3.12.0 — микрополировка A11View (+8)."
    },
    "react/select-mount.jsx": {
     "loc": 141,
@@ -596,12 +596,13 @@
   "domain/rolecomposition-view.js": {
    "layer": "domain",
    "domain": "domain/rolecomposition-view",
-   "loc": 949,
+   "loc": 979,
    "locBudget": 1015,
    "state": [],
    "publishes": [
     "ROLECOMP_VIEW"
-   ]
+   ],
+   "budgetNote": " v3.12.0 — микрополировка статов ролей."
   },
   "domain/settings-controller.js": {
    "layer": "domain",

@@ -83,17 +83,41 @@ function renderRoleAccordion(rk, deps) {
   var _uiExpandedRoles = deps.state.getUiExpandedRoles() || {};
   var expanded = !!_uiExpandedRoles[rk];
   var label = (typeof deps.roleLabel === 'function') ? deps.roleLabel(role) : role.label || rk;
-  var resStr   = deps.formatHoursLight(stats.resource);
-  var allocStr = deps.formatHoursLight(stats.totalAlloc);
+  /* 🦜 разовый рендер-тумблер (взводит ядро кликами по бейджу версии, сюда
+     приходит через deps): часы → попугаи, 1 попугай ≈ 0.8 ч. */
+  var _parrot = (typeof deps.isParrotMode === 'function' && deps.isParrotMode());
+  function _fmtStat(h) {
+    return _parrot ? String(Math.round(h / 0.8 * 10) / 10) : deps.formatHoursLight(h);
+  }
+  var statSuffix = _parrot ? '🦜' : esc(T('planningRoleStatHourSuffix'));
+  var resStr   = _fmtStat(stats.resource);
+  var allocStr = _fmtStat(stats.totalAlloc);
+  /* 🔥🐶 перегруз роли >150% ресурса — «this is fine» рядом с бейджем перелимита. */
+  var _thisIsFine = stats.overlimit && stats.resource > 0 && stats.totalAlloc > stats.resource * 1.5;
+  var DOG_SVG = '<svg width="26" height="18" viewBox="0 0 26 18" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px">'
+    + '<path d="M2 18 Q1 12 4 10 Q6 13 5 18 Z" fill="#e8590c"/>'
+    + '<path d="M22 18 Q25 11 21 9 Q19 12 20 18 Z" fill="#e8590c"/>'
+    + '<path d="M24 18 Q26 14 24.5 12 Q23.5 14 23 18 Z" fill="#fab005"/>'
+    + '<path d="M0.5 18 Q-0.5 14 1.5 11.5 Q3 14 2.5 18 Z" fill="#fab005"/>'
+    + '<path d="M7.5 6 Q6 2 9.5 4 Z" fill="#c98a4b"/>'
+    + '<path d="M18.5 6 Q20 2 16.5 4 Z" fill="#c98a4b"/>'
+    + '<circle cx="13" cy="10" r="6" fill="#f5d199"/>'
+    + '<rect x="10" y="1" width="6" height="3" rx="1" fill="#5c3b1e"/>'
+    + '<circle cx="11" cy="9" r="0.9" fill="#333"/>'
+    + '<circle cx="15" cy="9" r="0.9" fill="#333"/>'
+    + '<circle cx="13" cy="11.2" r="0.8" fill="#7a5230"/>'
+    + '<path d="M11.5 13 Q13 14.3 14.5 13" stroke="#7a5230" stroke-width="0.8" fill="none"/>'
+    + '</svg>';
   var html = ''
     + '<div class="planning-role-card' + (expanded ? ' expanded' : '') + '" data-role-key="' + rk + '">'
     +   '<button class="planning-role-toggle" type="button" data-role-key="' + rk + '">'
     +     '<span class="planning-role-chevron">' + (expanded ? '▼' : '▶') + '</span>'
     +     '<span class="planning-role-name">' + esc(label) + '</span>'
-    +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
-    +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + esc(T('planningRoleStatHourSuffix')) + '</span>'
+    +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + statSuffix + '</span>'
+    +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
     +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
+    +     (_thisIsFine ? '<span class="planning-role-dog" title="this is fine">' + DOG_SVG + '</span>' : '')
     +   '</button>'
     +   '<div class="planning-role-body" data-role-body="' + rk + '">'
     /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.
@@ -112,8 +136,14 @@ function _updateRoleAccordionStats(rk, deps) {
   var card = document.querySelector('.planning-role-card[data-role-key="' + rk + '"]');
   if (!card) return;
   var stats = computeRoleQuickStats(rk, deps);
-  var resStr   = deps.formatHoursLight(stats.resource);
-  var allocStr = deps.formatHoursLight(stats.totalAlloc);
+  /* 🦜 патчер согласован с рендером: в попугай-режиме числа тоже в попугаях,
+     иначе смешанное «часы + 🦜» до авто-отката. */
+  var _parrot = (typeof deps.isParrotMode === 'function' && deps.isParrotMode());
+  function _fmtStat(h) {
+    return _parrot ? String(Math.round(h / 0.8 * 10) / 10) : deps.formatHoursLight(h);
+  }
+  var resStr   = _fmtStat(stats.resource);
+  var allocStr = _fmtStat(stats.totalAlloc);
   var nums = card.querySelectorAll('.planning-role-toggle .planning-role-stat__num');
   if (nums[0]) nums[0].textContent = resStr;
   if (nums[1]) nums[1].textContent = allocStr + ' / ' + resStr;
