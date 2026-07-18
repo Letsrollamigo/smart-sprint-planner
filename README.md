@@ -1,83 +1,112 @@
-# Smart Sprint Planner
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%"
+       alt="Smart Sprint Planner — one sprint across nine functional roles: capacity, assignees, Gantt timelines and reports, inside YouTrack.">
+</p>
 
-> 🇬🇧 English · 🇷🇺 [Читать по-русски](Documentation/README.ru.md)
+<p align="right">🇬🇧 English · 🇷🇺 <a href="Documentation/README.ru.md">Читать по-русски</a></p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub Release](https://img.shields.io/badge/GitHub-v3.12.0-brightgreen.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest)
-[![JetBrains Marketplace](https://img.shields.io/badge/Marketplace-v3.12.0-orange.svg)](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)
-[![YouTrack](https://img.shields.io/badge/YouTrack-2024.3+-purple.svg)](https://www.jetbrains.com/youtrack/)
-[![CI](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg)](https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml)
-[![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
+<p align="center">
+  <a href="https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner"><img src="https://img.shields.io/jetbrains/plugin/v/31727?label=Marketplace&color=FF6A3D" alt="Latest version approved on JetBrains Marketplace"></a>
+  <a href="https://github.com/Letsrollamigo/smart-sprint-planner/releases/latest"><img src="https://img.shields.io/github/v/release/Letsrollamigo/smart-sprint-planner?label=GitHub&color=1B2A4E" alt="Latest GitHub release"></a>
+  <a href="https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner"><img src="https://img.shields.io/jetbrains/plugin/d/31727?label=downloads&color=6E7686" alt="Marketplace downloads"></a>
+  <a href="https://www.jetbrains.com/youtrack/"><img src="https://img.shields.io/badge/YouTrack-2024.3+-1B2A4E.svg" alt="Requires YouTrack 2024.3 or later"></a>
+  <a href="https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml"><img src="https://github.com/Letsrollamigo/smart-sprint-planner/actions/workflows/build.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-6E7686.svg" alt="MIT license"></a>
+</p>
 
-> 🎉 **Smart Sprint Planner is on the [JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner).** Version **3.2.2** is the latest approved release. The marketplace listing is the canonical install path for teams who want vetted, stable releases.
+**Smart Sprint Planner** is a sprint-planning app for [YouTrack](https://www.jetbrains.com/youtrack/) 2024.3+, built for teams where one sprint spans several functional roles — analysis, testing, and seven engineering specializations. Plan each role's composition, track capacity against load, distribute tasks per assignee, and walk the sprint from working draft to confirmed history — all from the YouTrack main menu.
 
-> 💎 **Like this project?** If it helped your team and you'd like to support
-> its development, donations in any amount are welcome on TON:
-> `UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
+## What it looks like
 
-Multi-role sprint planning plugin for **YouTrack 2024.3+**. Plan sprint composition across analysis, testing, and seven engineering roles from the YouTrack main menu — with capacity tracking, working drafts, confirmed history snapshots, per-role Gantt timelines, release management with readiness traffic-lights, differentiated time accounting, parent ← child cascade aggregation, and parent.State ← min(children) state rollup.
+Role composition — capacity vs. load per role, planned/unplanned inclusion, direct editing of YouTrack fields from the sprint table:
 
-## Architecture
+<p align="center">
+  <img src="./assets/readme/shot-role-composition.png" width="100%"
+       alt="Role composition view: planning status, available resources, remainders, and the sprint composition table with allocation and inclusion status per task.">
+</p>
 
-Two widgets over a shared logic core (`backend-core.js`) and shared storage (`Project.extensionProperties`):
+Per-assignee capacity — personal resources with grades, cross-project allocations, and remainders:
 
-- **`ssp-main-global` (MAIN_MENU_ITEM)** — the full planner in the YouTrack main menu: a «rail + pane» dashboard (on a wide screen — a ~210px navigation panel on the left plus the work area; on a narrow screen — a stack), project picker in the rail header, navigation tree (Sprint parameters / Planning / Working with the backlog / Gantt / History). All planning happens here. Planning has two levels — **Shared resource allocation** (accordion role cards with editable composition and capacity entry, manual or calculated) and **Per-assignee distribution** (per-role selector, assignees and dates). The second level is shown **only under the «Light» planning model**; under «Simple» assignees are set on the Gantt chart instead.
-- **`ssp-main` (PROJECT_SETTINGS)** — the project settings page: roles, fields, modes, and the **settings manager group** (setting the group = "connecting" the project, after which it becomes visible in the main-menu planner). No planning happens here.
+<p align="center">
+  <img src="./assets/readme/shot-assignee-capacity.png" width="100%"
+       alt="Per-assignee distribution view: role resource summary, standard hours, and assignee resources with grades, allocations by project, and remainders.">
+</p>
 
-To **connect a project** to the planner, a member of the project settings team sets the **settings manager group** (`settingsManagerGroup`, mirrored into `ssp_acl`) on the project widget. Once the group is set, the project appears in the main-menu planner for everyone with access to the project in YouTrack. Until then the project does not show up in the menu, and its settings stay read-only.
+Gantt timeline per role, sprint-aware, with per-task assignees:
 
-## Release channels
+<p align="center">
+  <img src="./assets/readme/shot-gantt.png" width="100%"
+       alt="Gantt chart view: current sprint selector with per-role status chips and a per-task timeline with assignees across the sprint calendar.">
+</p>
 
-The plugin ships through two parallel channels — pick the one that matches your team's tolerance for change:
+## What you get
 
-| Channel | Current | Cadence | Who it's for |
-|---|---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/search?search=smart%20sprint%20planner)** | **v3.2.2** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. New uploads pass JetBrains marketplace review (1–3 working days) before going live. |
-| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | **v3.11.0** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release here is fully tested in CI (node --test: unit + golden) but ships ahead of marketplace review. |
+**Plan**
 
-GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release. If you spot a feature on this README that isn't in the marketplace version yet, that simply means the next marketplace cycle hasn't finished review.
-
-## Features
-
-- **9 functional roles** — analysis, testing, platform development, backend, frontend, iOS, Android, fullstack, database. Roles can be selectively enabled per project; a generic `devPlatform` role lets teams map any platform stack (1C, SAP, Salesforce, low-code, etc.) to a custom field.
+- **9 functional roles** — analysis, testing, platform development, backend, frontend, iOS, Android, fullstack, database. Roles are enabled selectively per project; the generic `devPlatform` role maps any platform stack (1C, SAP, Salesforce, low-code, etc.) to a custom field.
 - **Per-role composition tables** — assignees with capacity vs. load tracking, overlimit guards, and direct editing of YouTrack fields from the sprint table.
-- **Backlog workspace** — a pre-planning phase before sprint planning: a pool of customer tasks shown **By zones** (state → role) or as an **Epic ▸ Story ▸ Task** tree, query-assist filter, Carryover / Continuation / Needs-estimate / Paused labels, and one-click **«lay into sprint»** that distributes a pooled task into role compositions (auto-suggested roles by zone). Tasks in unmapped states land in an «Other» bucket with a fail-loud warning.
-- **Release management** — group project tasks into **releases** (kind Release / Hotfix × source Internal / Vendor) and walk them through six statuses, with a previewed, mapping-driven sync of native task States. Readiness traffic-light, an **Epic ▸ Story ▸ Task** composition tree, composition freeze, patch notes, .txt export, an irreversible snapshot on close, and auto-archiving of the oldest closed releases. Release-manager / release-engineer permissions are enforced server-side. Off by default — enable in project settings.
-- **Operational reporting** — two report contours gated by access groups: **Operational (A)** — aging with thresholds, progress to target states, WIP/Done slice, time-to-market (lead / team / cycle medians with norms and pause deduction), flow bottleneck & rework, workload by roles, plan vs fact with as-of estimates, backlog capacity, sprint spillover; **Management (B)** — a monthly roll-up of five metrics per system with multi-line charts, tech debt, bug tax, «1000 small things». Any report exports to **XLSX or PDF**; long runs are protected by a configurable timeout with Cancel & rollback. Off by default — enable in project settings.
-- **Auto-forecast of task dates** — a «Forecast dates» button on the per-assignee distribution level computes planned start/end dates for every assigned task from the assignee's sprint capacity (approved business capacity in the Full model, personal resource in Light), the production calendar and absences (incl. partial days), with a useful-hours-per-day cap. Personal task queue with up/down arrows (a swap instantly repacks the forecast); manual date corrections stay until an explicit re-run; over-capacity tasks get an honest «over capacity» badge instead of fake dates. Off by default — enable in Planning modes.
-- **Per-assignee task distribution** with a «System» column (read-only, sortable) and an optional «Allocations by project» column — per-system hours and percentage of the assignee's capacity. Under the **«Simple»** planning model the **Per-assignee distribution** nav item is hidden, role capacity is entered manually on the allocation tab, and assignees are set directly on the Gantt chart — no per-person capacity accounting; the **«Light»** model enables per-assignee capacity.
-- **Capacity management settings** — calculation norms (hour quotas / rate / participation / grade coefficients) and the **«Planning model»** selector (Simple / Light / Full; Light offers auto-by-formula or manual per-assignee resource, Full adds a «Capacity» tab and consumes the approved per-sprint business capacity per role and assignee) are consolidated into an admin-tier section editable only by the settings manager.
-- **Manual per-assignee resource** — opt-in `manualPersonalResource` mode for teams whose capacity is set top-down by the team lead (fixed weekly hours per person) instead of derived from KPE coefficients.
-- **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
+- **Backlog workspace** — a pre-planning pool of customer tasks shown **By zones** (state → role) or as an **Epic ▸ Story ▸ Task** tree, with query-assist filtering, Carryover / Continuation / Needs-estimate / Paused labels, and one-click **«lay into sprint»** that distributes a task into role compositions. Tasks in unmapped states land in an «Other» bucket with a fail-loud warning.
+- **Three planning models** — **Simple** (manual role capacity, assignees set on the Gantt), **Light** (per-assignee capacity, auto-by-formula or manual), **Full** (adds a «Capacity» tab and consumes approved per-sprint business capacity per role and assignee). Calculation norms — hour quotas, rate, participation, grade coefficients — live in an admin-tier section editable only by the settings manager.
+- **Manual per-assignee resource** — opt-in mode for teams whose capacity is set top-down by the team lead as fixed weekly hours per person.
+- **Auto-forecast of task dates** — computes planned start/end dates for every assigned task from the assignee's capacity, the production calendar and absences (incl. partial days), with a useful-hours-per-day cap. Personal task queues with instant repacking on reorder; manual date corrections survive until an explicit re-run; over-capacity tasks get an honest «over capacity» badge instead of fake dates.
+
+**Track**
+
 - **Gantt timeline per role** with sprint-aware filtering.
-- **Excel export** for both planning and history tabs.
-- **15-language UI** — Czech, German, English, Spanish, French, Hungarian, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Russian, Turkish, Chinese (Simplified). Auto-detected from browser, manually switchable, fallback to English.
+- **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
+- **Sprint Goals** — structured goals (title, success metric, owner) attached to each sprint and kept visible on the stand-up overlay.
+- **Stand-up assistant** — full-screen daily overlay with per-role task lists (Done Yesterday / Doing Today / Blocked), live timer, and blocker-highlight mode; runs on the current sprint's data.
 - **Differentiated Time Accounting (DTA)** — work-item type → role mapping, per-role fact aggregation back into custom fields, mandatory work-type validation, optional plan/fact ratio warnings.
-- **Cascade aggregation parent ← child** — plan and fact fields on a container issue are computed as the sum of its direct children, so estimates and actuals roll up automatically. Container issues can be locked from receiving direct work-item logs.
-- **State rollup parent ← min(children)** — container issue State automatically follows the least-progressed child State (min strategy). Configurable state order, resolved-states guard against re-opening closed containers, optional floor state. Disabled by default; reuses cascade hierarchy config.
-- **Sprint Goals** — structured goals attached to each sprint with title, description, success metric, and owner. Shown on the stand-up overlay so goals remain visible during the daily meeting.
-- **Stand-up assistant** — full-screen daily stand-up overlay with per-role task lists (Done Yesterday / Doing Today / Blocked), live timer, and blocker-highlight mode. Operates on the current sprint's data with no separate data source.
-- **Server-side authorization** on every mutating endpoint via project-scoped `ssp_settings`. Deny-by-default until `settingsManagerGroup` is configured.
+- **Cascade aggregation parent ← child** — plan and fact fields on a container issue are the sum of its direct children; container issues can be locked from receiving direct work-item logs.
+- **State rollup parent ← min(children)** — container State follows the least-progressed child, with configurable state order, a resolved-states guard, and an optional floor state. Reuses the cascade hierarchy config; off by default.
+
+**Report**
+
+- **Operational reporting** — two contours gated by access groups. **Operational (A):** aging with thresholds, progress to target states, WIP/Done slice, time-to-market medians with norms and pause deduction, flow bottleneck & rework, workload by roles, plan vs. fact with as-of estimates, backlog capacity, sprint spillover, team velocity. **Management (B):** a monthly roll-up of five metrics per system with multi-line charts, tech debt, bug tax, «1000 small things». Any report exports to **XLSX or PDF**; long runs are protected by a configurable timeout with Cancel & rollback. Off by default.
+- **Excel export** for both planning and history tabs.
+
+**Govern**
+
+- **Release management** — group tasks into releases (kind Release / Hotfix × source Internal / Vendor) and walk them through six statuses with a previewed, mapping-driven sync of native task States. Readiness traffic-light, an Epic ▸ Story ▸ Task composition tree, composition freeze, patch notes, .txt export, an irreversible snapshot on close, and auto-archiving of the oldest closed releases. Release-manager / release-engineer permissions are enforced server-side. Off by default.
+- **Server-side authorization** on every mutating endpoint via project-scoped `ssp_settings`; deny-by-default until the settings manager group is configured.
+- **15-language UI** — Czech, German, English, Spanish, French, Hungarian, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Russian, Turkish, Chinese (Simplified). Auto-detected from the browser, manually switchable, with English fallback.
 
 ## Installation
 
-Pick one of the two channels (see **Release channels** above):
+The plugin ships through two parallel channels — the version badges above always show the current state of each:
 
-### Option A — JetBrains Marketplace (recommended, stable)
+| Channel | Cadence | Who it's for |
+|---|---|---|
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. Uploads pass JetBrains review (1–3 working days) before going live. |
+| **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release is fully tested in CI (`node --test`: unit + golden) but ships ahead of marketplace review. |
+
+GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release.
+
+### Option A — JetBrains Marketplace (recommended)
 
 1. In YouTrack: **Administration → Apps → Marketplace** → search for **«Smart Sprint Planner»** → **Install**.
 2. Open the project you want to plan and add the **Smart Sprint Planner** widget to its settings page. In **Access and roles**, set the **settings manager group** — this connects the project to the planner and makes it visible in the main menu.
-3. Open **Smart Sprint Planner** from the YouTrack main menu, pick the project in the header, and start planning. The first settings save requires a member of `settingsManagerGroup` — until configured, all mutations are denied.
+3. Open **Smart Sprint Planner** from the YouTrack main menu, pick the project in the header, and start planning. Until the settings manager group is configured, all mutations are denied.
 
-YouTrack will auto-update the plugin as new marketplace versions are approved.
+YouTrack auto-updates the plugin as new marketplace versions are approved.
 
-### Option B — GitHub Release (bleeding-edge)
+### Option B — GitHub Release
 
 1. Download the latest `Smart-Sprint-Planner-vX.Y.Z.zip` from the [Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases) page.
 2. In YouTrack: **Project Settings → Apps → Install from file** → upload the zip.
 3. Same widget + settings steps as above.
 
-For detailed configuration, see [USER-GUIDE.md](Documentation/USER-GUIDE.md). For team-lead / Scrum master perspective on how the plugin maps onto Scrum ceremonies and capacity planning, see [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md).
+For detailed configuration, see [USER-GUIDE.md](Documentation/USER-GUIDE.md). For the team-lead / Scrum-master perspective — how the plugin maps onto Scrum ceremonies and capacity planning — see [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md).
+
+## How it's built
+
+<p align="center">
+  <img src="./assets/readme/workflow.svg" width="100%"
+       alt="Two widgets — the main-menu planner and the project settings page — share one logic core, backend-core.js, which persists to Project extension properties under the ssp namespace. Every mutating endpoint is authorized server-side.">
+</p>
+
+- **`ssp-main-global` (MAIN_MENU_ITEM)** — the full planner in the YouTrack main menu: a «rail + pane» dashboard with a project picker and a navigation tree (Sprint parameters / Planning / Backlog / Gantt / History). Planning has two levels — **shared resource allocation** (accordion role cards) and **per-assignee distribution** (shown under the «Light» planning model; under «Simple», assignees are set on the Gantt chart).
+- **`ssp-main` (PROJECT_SETTINGS)** — the project settings page: roles, fields, modes, and the **settings manager group**. Setting the group «connects» the project: it appears in the main-menu planner for everyone with access to the project in YouTrack. Until then, the project stays out of the menu and its settings are read-only.
 
 ## Building from source
 
@@ -89,12 +118,12 @@ npm run build:check    # syntax-validates bundle + workflow files
 npm test               # unit + golden (Node test runner, jsdom — no browser, no YouTrack)
 ```
 
-Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manual** end-to-end verification — see [docs/LOCAL_YT.md](docs/LOCAL_YT.md); the automated suite needs no YouTrack. Contributor guide: [Documentation/CONTRIBUTING.md](Documentation/CONTRIBUTING.md).
+Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manual** end-to-end verification — see [docs/LOCAL_YT.md](docs/LOCAL_YT.md); the automated suite needs no YouTrack. Contributor guide: [CONTRIBUTING.md](Documentation/CONTRIBUTING.md).
 
 ## Documentation
 
-- [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with screenshots and configuration examples.
-- [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.
+- [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with configuration examples.
+- [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum-master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.
 - [SECURITY.md](.github/SECURITY.md) — security model, threat surface, and disclosure process.
 - [CHANGELOG.md](Documentation/CHANGELOG.md) — release history.
 - [CONTRIBUTING.md](Documentation/CONTRIBUTING.md) — how to contribute (DCO sign-off required).
@@ -104,7 +133,15 @@ Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manu
 
 - **YouTrack**: 2024.3 and later (uses the modern app-widget API and `extensionPoint: PROJECT_SETTINGS`).
 - **Browsers**: any evergreen browser supported by YouTrack itself.
-- **Storage**: extension properties under the `ssp_*` namespace; cross-tab synchronization via `localStorage` signal `ssp:wc-touched:*`.
+- **Storage**: extension properties under the `ssp_*` namespace; cross-tab synchronization via the `localStorage` signal `ssp:wc-touched:*`.
+
+## Support the project
+
+If Smart Sprint Planner helped your team and you'd like to support its development, donations in any amount are welcome on TON:
+
+[![Support on TON](https://img.shields.io/badge/Support-TON-0088CC?logo=ton)](ton://transfer/UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij)
+
+`UQAeXVOoOQXx0BR9iFOtS0aCux5hLhfZ664e3FNjW3vgJtij`
 
 ## License
 

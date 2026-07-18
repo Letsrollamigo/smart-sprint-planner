@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="360" viewBox="0 0 1200 360"
+     role="img" aria-labelledby="ssp-hero-t ssp-hero-d">
+  <title id="ssp-hero-t">Smart Sprint Planner</title>
+  <desc id="ssp-hero-d">One sprint across nine functional roles: capacity, assignees, Gantt timelines and reports, inside YouTrack. A sprint card shows role lanes with staggered Gantt bars and hour totals.</desc>
+
+  <rect width="1200" height="360" rx="24" fill="#F2F0EA"/>
+  <rect x="1.5" y="1.5" width="1197" height="357" rx="22.5" fill="none" stroke="#1B2A4E" stroke-width="3"/>
+
+  <g id="title-block" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <text x="64" y="98" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="15" letter-spacing="3" fill="#6E7686">YOUTRACK APP · MULTI-ROLE SPRINT PLANNING</text>
+    <text x="62" y="162" font-size="54" font-weight="700" fill="#1B2A4E">Smart Sprint Planner</text>
+    <rect x="64" y="180" width="120" height="6" rx="3" fill="#FF6A3D"/>
+    <text x="64" y="222" font-size="20" fill="#3A445C">One sprint across nine functional roles — capacity,</text>
+    <text x="64" y="250" font-size="20" fill="#3A445C">assignees, Gantt timelines and reports, inside YouTrack.</text>
+    <text x="64" y="300" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="14" letter-spacing="1" fill="#6E7686">9 ROLES · 15 LANGUAGES · XLSX / PDF EXPORT · MIT</text>
+  </g>
+
+  <g id="project-proof" transform="translate(716 56)">
+    <rect width="420" height="248" rx="14" fill="#FFFFFF"/>
+    <rect x="1" y="1" width="418" height="246" rx="13" fill="none" stroke="#1B2A4E" stroke-width="2"/>
+
+    <text x="24" y="38" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="13" letter-spacing="1.5" fill="#6E7686">SPRINT 24 · 02.06 — 27.06</text>
+
+    <g id="day-grid" stroke="#E5E2D8" stroke-width="1">
+      <line x1="120" y1="56" x2="120" y2="188"/>
+      <line x1="156" y1="56" x2="156" y2="188"/>
+      <line x1="192" y1="56" x2="192" y2="188"/>
+      <line x1="228" y1="56" x2="228" y2="188"/>
+      <line x1="264" y1="56" x2="264" y2="188"/>
+      <line x1="300" y1="56" x2="300" y2="188"/>
+      <line x1="336" y1="56" x2="336" y2="188"/>
+    </g>
+
+    <g id="lanes" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12">
+      <text x="24" y="84" fill="#3A445C">ANALYSIS</text>
+      <rect x="120" y="70" width="150" height="18" rx="9" fill="#1B2A4E"/>
+      <text x="396" y="84" text-anchor="end" fill="#6E7686">160h</text>
+
+      <text x="24" y="122" fill="#3A445C">TESTING</text>
+      <rect x="150" y="108" width="120" height="18" rx="9" fill="#1B2A4E" opacity="0.55"/>
+      <text x="396" y="122" text-anchor="end" fill="#6E7686">80h</text>
+
+      <text x="24" y="160" fill="#3A445C">DEVELOP.</text>
+      <rect x="180" y="146" width="160" height="18" rx="9" fill="#FF6A3D"/>
+      <text x="396" y="160" text-anchor="end" fill="#6E7686">240h</text>
+    </g>
+
+    <line x1="24" y1="196" x2="396" y2="196" stroke="#E5E2D8" stroke-width="1"/>
+    <g id="check" transform="translate(24 214)">
+      <path d="M2 7 L7 12 L16 1" fill="none" stroke="#1B2A4E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="26" y="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+            font-size="12" letter-spacing="1" fill="#3A445C">RESOURCE DISTRIBUTED EXACTLY</text>
+    </g>
+  </g>
+</svg>
