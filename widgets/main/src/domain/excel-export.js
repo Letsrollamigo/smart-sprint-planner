@@ -100,6 +100,7 @@ function exportSprintToExcel(rec, deps) {
   var T = deps.t, toast = deps.toast, diag = deps.diag, loadXLSXLib = deps.loadXLSXLib;
   var ALL_ROLES = deps.allRoles, ACTIVE_INC = deps.activeInc;
   var fmtDate = deps.fmtDate, fmtDT = deps.fmtDT, fmtPeriod = deps.fmtPeriod, fmtHours = deps.fmtHours;
+  var toDateIn = deps.toDateIn;
   var statusLabel = deps.statusLabel, roleLabel = deps.roleLabel, incLabel = deps.incLabel, dispEnum = deps.dispEnum;
   /* Lazy load — если ещё не загружен, грузим, потом рекурсивно вызываем себя */
   if (typeof XLSX === 'undefined') {
@@ -220,7 +221,9 @@ function exportSprintToExcel(rec, deps) {
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, T('excelSprint'));
   var roleSuffix = role ? ('_' + roleLabel(role).replace(/\s+/g, '_').replace(/[\\/:*?"<>|]/g, '')) : '';
-  var fileName = (rec.name ? rec.name.replace(/[\\/:*?"<>|]/g, '_') : T('excelSprint').toLowerCase()) + roleSuffix + '_' + fmtDate(rec.dateStart).replace(/\./g, '-') + '.xlsx';
+  /* Дата в имени файла — локале-независимый YYYY-MM-DD (toDateIn): fmtDate теперь
+     локализован, и для en/zh даёт слэши — path-separator в download-имени. */
+  var fileName = (rec.name ? rec.name.replace(/[\\/:*?"<>|]/g, '_') : T('excelSprint').toLowerCase()) + roleSuffix + '_' + toDateIn(rec.dateStart) + '.xlsx';
   XLSX.writeFile(wb, fileName);
   diag('Excel exported: ' + fileName, 'ok');
 }

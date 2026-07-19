@@ -668,7 +668,7 @@ function _buildRoleCompositionVm(rk, deps) {
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
 
   /* Строки vm: pre-computed derived values + готовые cell-значения
-     (esc-строки и { __html } байт-в-байт как прежние column.getValue). */
+     (plain-строки — React-текст, экранирует table-mount; esc — только в { __html }). */
   var rows = page.map(function(item) {
     var iid  = item.issueId;
     var est  = item['estimate_'+rk];
@@ -689,23 +689,26 @@ function _buildRoleCompositionVm(rk, deps) {
     if (hasExtTicket) {
       cells.externalTicketId = { __html: _renderExternalTicketInnerHtml(item.externalTicketId, deps) };
     }
+    /* Plain-строки ячеек рендерятся table-mount'ом как React-ТЕКСТ (авто-эскейп) —
+       esc() здесь давал двойное экранирование («&» → «&amp;» на экране).
+       esc() остаётся ТОЛЬКО внутри { __html }-веток. */
     if (hasSystem) {
       cells.system = dynCellEnabled
         ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldSystem" style="'+dynStyle+'">'+esc(item.system||'—')+'</span>' }
-        : esc(item.system||'—');
+        : (item.system||'—');
     }
     cells.priority = (dynCellEnabled && _settings && _settings.fieldPriority)
       ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.priority)||'—')+'</span>' }
-      : esc(deps.dispEnum(item.priority)||'—');
+      : (deps.dispEnum(item.priority)||'—');
     if (hasXPriority) {
       cells.xpriority = dynCellEnabled
         ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldXPriority" style="'+dynStyle+'">'+esc(deps.dispEnum(item.xpriority)||'—')+'</span>' }
-        : esc(deps.dispEnum(item.xpriority)||'—');
+        : (deps.dispEnum(item.xpriority)||'—');
     }
     cells.state = (dynCellEnabled && _settings && _settings.fieldState)
       ? { __html: '<span class="dyn-enum-cell" data-iid="'+esc(iid)+'" data-rk="'+rk+'" data-field="fieldState" style="'+dynStyle+'">'+esc(deps.dispEnum(item.state)||'—')+'</span>' }
-      : esc(deps.dispEnum(item.state)||'—');
-    cells.title = esc(item.title||'');
+      : (deps.dispEnum(item.state)||'—');
+    cells.title = item.title||'';
     if (dynEdit) {
       var estDisplay = est !== null && est !== undefined ? deps.fmtPeriod(est) : '';
       /* v2.1.0 E4 — explicit background/color overrides: Ring Table cells

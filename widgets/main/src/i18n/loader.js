@@ -82,6 +82,17 @@ export function getCurrentLang() {
 }
 
 /**
+ * Лёгкий сеттер активного языка (без записи storage/загрузки словаря/notify).
+ * Зовётся i18n-controller'ом при смене языка селектором: getCurrentLang()
+ * мемоизирует _currentLang, и без синка react-мост (getCurrentSspLang → канон
+ * этой цепочки) замирал бы на стартовом языке до перезагрузки iframe.
+ */
+export function setCurrentLang(lang) {
+  var v = String(lang || '').toLowerCase();
+  _currentLang = isSupportedLang(v) ? v : DEFAULT_LANG;
+}
+
+/**
  * Устанавливает project-default язык (из ssp_settings.defaultLang).
  * Вызывается после загрузки settings; не перезаписывает явный пользовательский выбор.
  */

@@ -653,19 +653,20 @@
     return {
       t: T, toast: toast, diag: diag, loadXLSXLib: loadXLSXLib,
       allRoles: ALL_ROLES, activeInc: ACTIVE_INC,
-      fmtDate: fmtDate, fmtDT: fmtDT, fmtPeriod: fmtPeriod, fmtHours: fmtHours,
+      fmtDate: fmtDate, fmtDT: fmtDT, fmtPeriod: fmtPeriod, fmtHours: fmtHours, toDateIn: toDateIn,
       statusLabel: statusLabel, roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
     };
   }
 
   /* Date-хелперы вынесены в widgets/main/src/date-pure.js (window.__SSP_DATE_PURE) —
-     паттерн как PERIOD_PURE. Делегаторы; все чистые (fmtDate/fmtDT — локаль ru-RU).
+     паттерн как PERIOD_PURE. Делегаторы; все чистые (fmtDate/fmtDT — локаль
+     активного языка виджета, _lang; прежний hardcode ru-RU показывал RU-даты EN-юзерам).
      toDateIn — локальное время (прежний UTC-дубль удалён). */
   var DATE_PURE = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || {};
   function toDateIn(ts)  { return DATE_PURE.toDateIn(ts); }
   function fromDateIn(s) { return DATE_PURE.fromDateIn(s); }
-  function fmtDate(ts)   { return DATE_PURE.fmtDate(ts); }
-  function fmtDT(ts)     { return DATE_PURE.fmtDT(ts); }
+  function fmtDate(ts)   { return DATE_PURE.fmtDate(ts, _lang); }
+  function fmtDT(ts)     { return DATE_PURE.fmtDT(ts, _lang); }
 
   /* v1.9.11 / #32 Phase 6c — тост-обвязка (Ring alertService + legacy DOM
      fallback, очередь ≤3, click-anchor позиционирование, ARIA): вынесена в
@@ -716,7 +717,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.12.0';
+  var APP_VERSION = '3.12.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2553,12 +2554,13 @@
 
   /* ═══ ПЛАНИРОВАНИЕ ══════════════════════════════════════════ */
 
-  /* Форматирование заголовка колонки */
+  /* Форматирование заголовка колонки. Без esc: autoBrHeader (table-mount) сплитит
+     по <br> и рендерит части React-ТЕКСТОМ (авто-эскейп) — esc здесь двоил бы «&». */
   function fmtThLabel(label) {
     if (!label) return T('resColLabel');
     var m = label.match(/^(Разработка)\s+(.+)$/);
-    if (m) return T('resColLabel')+'<br>'+esc(m[1])+'<br>' + esc(m[2]);
-    return T('resColLabel')+'<br>' + esc(label);
+    if (m) return T('resColLabel')+'<br>'+m[1]+'<br>' + m[2];
+    return T('resColLabel')+'<br>' + label;
   }
 
   /* ── Рендер подвкладок по ролям ── */
@@ -3433,7 +3435,7 @@
   var HISTORY_CTRL = (typeof window !== 'undefined' && window.__SSP_HISTORY_CTRL) || {};
   function _histCtrlDeps() {
     return {
-      T: T, toast: toast, diag: diag, fmtDate: fmtDate,
+      T: T, toast: toast, diag: diag, fmtDate: fmtDate, toDateIn: toDateIn,
       STATUS: STATUS, ALL_ROLES: ALL_ROLES,
       openModal: openModal, apiPost: apiPost,
       checkValidatorNow: checkValidatorNow,

@@ -1,8 +1,8 @@
 /* widgets/main/src/date-pure.js
    Чистые date-хелперы. Публикует window.__SSP_DATE_PURE ДО исполнения IIFE
    core.js (паттерн как period-pure / enum-locale-pure).
-   Зависимостей от closure-состояния нет; fmtDate/fmtDT используют локаль ru-RU
-   (исторически дата/время всегда в RU-формате — поведение сохранено). */
+   Зависимостей от closure-состояния нет; fmtDate/fmtDT принимают локаль
+   параметром (core передаёт активный язык виджета), дефолт en. */
 
 /* timestamp → 'YYYY-MM-DD' в ЛОКАЛЬНОМ времени (для <input type=date>). */
 function toDateIn(ts) {
@@ -26,11 +26,11 @@ function fromDateIn(s) {
   return new Date(s).getTime();
 }
 
-/* timestamp → 'DD.MM.YYYY' (ru-RU). */
-function fmtDate(ts) { return ts ? new Date(ts).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
+/* timestamp → числовая дата в переданной локали ('18.07.2026' для ru, '07/18/2026' для en). */
+function fmtDate(ts, lang) { return ts ? new Date(ts).toLocaleDateString(lang || 'en', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'; }
 
-/* timestamp → 'DD.MM.YYYY HH:MM' (ru-RU). */
-function fmtDT(ts) { return ts ? new Date(ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
+/* timestamp → числовые дата+время в переданной локали. */
+function fmtDT(ts, lang) { return ts ? new Date(ts).toLocaleString(lang || 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
 
 /* Короткая дата 'DD.MM' из timestamp (бейдж изменения состояния на Ганте, #20). */
 function _fmtGanttDate(ts) {
@@ -47,9 +47,15 @@ function _ganttDaysAgo(ts) {
   return Math.max(0, Math.floor((Date.now() - ts) / 86400000));
 }
 
+var _api = {
+  toDateIn: toDateIn, fromDateIn: fromDateIn, fmtDate: fmtDate, fmtDT: fmtDT,
+  _fmtGanttDate: _fmtGanttDate, _ganttDaysAgo: _ganttDaysAgo,
+};
+
 if (typeof window !== 'undefined') {
-  window.__SSP_DATE_PURE = {
-    toDateIn: toDateIn, fromDateIn: fromDateIn, fmtDate: fmtDate, fmtDT: fmtDT,
-    _fmtGanttDate: _fmtGanttDate, _ganttDaysAgo: _ganttDaysAgo,
-  };
+  window.__SSP_DATE_PURE = _api;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = _api;
 }

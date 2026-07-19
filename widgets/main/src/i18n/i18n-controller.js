@@ -62,7 +62,10 @@
       el.title = T(el.getAttribute('data-i18n-title'));
     });
     document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
-      el.placeholder = T(el.getAttribute('data-i18n-ph'));
+      /* setAttribute, не el.placeholder: для span-хостов Ring Input (data-ssp-input-host)
+         property — expando, а input-mount читает АТРИБУТ (и слушает его MutationObserver'ом).
+         Для нативных input/textarea атрибут отражается в property — эквивалентно. */
+      el.setAttribute('placeholder', T(el.getAttribute('data-i18n-ph')));
     });
     /* v5.1.0 — i18n для tooltip-атрибута (data-tooltip → ::after) */
     document.querySelectorAll('[data-i18n-tooltip]').forEach(function(el) {
@@ -83,6 +86,9 @@
     var prev = st.getLang();
     st.setLang(lang);
     deps.safeLs.set('ssp_lang', lang);
+    /* Синк in-memory языка loader'а: react-мост (getCurrentSspLang) читает его
+       как канон, без синка локаль DatePicker замирала бы на стартовом языке. */
+    if (deps.i18nBridge && typeof deps.i18nBridge.setCurrentLang === 'function') deps.i18nBridge.setCurrentLang(lang);
     /* Обновить индикатор выбранного языка в переключателях (шапка + overlay-копия) */
     var sel = document.getElementById('langSel');
     if (sel) sel.value = lang;
@@ -99,6 +105,7 @@
         /* Не удалось загрузить → откатываемся на предыдущий язык, чтобы UI не остался полу-переведённым. */
         st.setLang(prev);
         deps.safeLs.set('ssp_lang', prev);
+        if (deps.i18nBridge && typeof deps.i18nBridge.setCurrentLang === 'function') deps.i18nBridge.setCurrentLang(prev);
         if (sel) sel.value = prev;
         if (sel2) sel2.value = prev;
       });

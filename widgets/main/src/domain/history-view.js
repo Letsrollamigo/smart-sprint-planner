@@ -73,13 +73,14 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
       cells: {
         id: { __html: '<a href="'+deps.safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a>' },
         externalTicketId: { __html: _renderExternalTicketInner(item.externalTicketId) },
-        title: esc(item.title || ''),
-        priority: esc(deps.dispEnum(item.priority) || '—'),
-        xpriority: esc(deps.dispEnum(item.xpriority) || '—'),
-        state: esc(deps.dispEnum(item.state) || '—'),
-        incStatus: esc(item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—'),
-        alloc: esc((function(){ var a = item['alloc_'+rk]; var v = (a !== null && a !== undefined) ? a : Math.max(0, (est||0)-(fact||0)); return deps.fmtPeriod(v); })()),
-        assignee: esc(_assigneeName(item.issueId)),
+        /* plain-строки → React-текст (table-mount экранирует; esc двоил «&» → «&amp;») */
+        title: item.title || '',
+        priority: deps.dispEnum(item.priority) || '—',
+        xpriority: deps.dispEnum(item.xpriority) || '—',
+        state: deps.dispEnum(item.state) || '—',
+        incStatus: item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—',
+        alloc: (function(){ var a = item['alloc_'+rk]; var v = (a !== null && a !== undefined) ? a : Math.max(0, (est||0)-(fact||0)); return deps.fmtPeriod(v); })(),
+        assignee: _assigneeName(item.issueId),
         delta: { __html: histDelta(delta) },
       },
     };

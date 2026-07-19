@@ -135,7 +135,8 @@
     var sprintRecs = hist.filter(function (h) { return h && String(h.sprintId).split('_')[0] === baseId; });
     var env = deps.buildHistEnvelope(sprintRecs, false);
     var safeName = (rec.name || 'sprint').replace(/[\\/:*?"<>|]/g, '_');
-    var d = rec.dateStart ? deps.fmtDate(rec.dateStart).replace(/\./g, '-') : 'nodate';
+    /* Локале-независимый YYYY-MM-DD: fmtDate локализован и для en/zh даёт слэши в имени файла. */
+    var d = rec.dateStart ? deps.toDateIn(rec.dateStart) : 'nodate';
     deps.triggerJsonDownload(env, deps.histFilePrefix + safeName + '_' + d + '.json');
     deps.toast(deps.T('toastHistExported') || 'Спринт экспортирован', 'success');
   }

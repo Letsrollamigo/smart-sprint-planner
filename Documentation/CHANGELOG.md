@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.12.1] — 2026-07-19
+
+> **Localization and display fixes: dates follow the widget language, single escaping in tables, translated sprint-goal placeholder.**
+
+### Fixed
+
+- **Dates follow the widget language** — `fmtDate`/`fmtDT` no longer hardcode the Russian locale: date/time stamps render in the active widget language (EN users saw «1 июн. 2026»-style dates — in the sandboxed widget the language preference cannot be read back from `localStorage`, and the fallback was `ru`). The Ring DatePicker locale now reads the canonical loader chain and tracks in-session language switches (new lightweight `setCurrentLang` sync); the Chinese widget language maps to the `zh-CN` date-fns locale.
+- **Export file names are locale-independent** — the date stamp in XLSX/JSON export names is `YYYY-MM-DD` (previously built from the localized date, which for non-Russian locales could inject slashes into the file name).
+- **Single escaping in Ring tables** — text cells (task titles, system, priority, state, assignee) containing `&`/`<`/`>` were double-escaped and displayed as `&amp;` in the sprint composition, per-assignee distribution and history tables: plain cells are escaped exactly once by React now. Same for `<br>`-split column headers.
+- **Sprint-goal placeholder is translated** — the hint was stuck in Russian for all 15 locales: the field host carried an unsupported `data-i18n-placeholder` attribute, and `applyI18N` wrote the `placeholder` property instead of the attribute the Ring Input mount reads and observes.
+
 ## [3.12.0] — 2026-07-18
 
 > **"A11 · Team velocity" report (#11) + manual-estimate protection tag + three reliability tails (deferred from v3.2.1).**

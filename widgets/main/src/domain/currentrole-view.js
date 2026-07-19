@@ -171,7 +171,8 @@ function _buildAssigneeTableVm(deps) {
     var _res   = deps.getApprovedCapacityForPerson(login, _ppRk);
     var remain = Math.round((_res - used) * 100) / 100;
     var cells = {};
-    cells.assigneeName = esc(entry.assigneeName || login);
+    /* plain-строка → React-текст (table-mount экранирует сам; esc — только в { __html }) */
+    cells.assigneeName = entry.assigneeName || login;
     var currentGrade = deps.migrateGrade(entry.grade);
     cells.grade = { __html:
       '<select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' +
@@ -439,10 +440,11 @@ function _buildTaskTableVm(deps) {
     var unfitWarn = unfitSet[item.issueId]
       ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('forecastUnfitBadge')) + '</span>' : '';
     cells.title = { __html: esc(item.title || '') + warn + unfitWarn };
-    if (hasState) { cells.state = esc(dispEnum(item.state) || '—'); }   /* #polish — read-only статус (как rolecomposition state-cell read-only ветка) */
-    cells.priority = esc(dispEnum(item.priority) || '—');
+    /* plain-строки → React-текст: без esc (двойной эскейп давал «&amp;» на экране) */
+    if (hasState) { cells.state = dispEnum(item.state) || '—'; }   /* #polish — read-only статус (как rolecomposition state-cell read-only ветка) */
+    cells.priority = dispEnum(item.priority) || '—';
     if (hasXPriority) {
-      cells.xpriority = esc(dispEnum(item.xpriority) || '—');
+      cells.xpriority = dispEnum(item.xpriority) || '—';
     }
     var alloc = item['alloc_' + rk];
     var est = item['estimate_' + rk];
@@ -450,7 +452,7 @@ function _buildTaskTableVm(deps) {
     var allocVal = (alloc !== null && alloc !== undefined) ? alloc : Math.max(0, (est || 0) - (fact || 0));
     cells.allocH = (allocVal / 60).toFixed(2);
     if (hasSystem) {
-      cells.system = esc(item.system || '—');
+      cells.system = item.system || '—';
     }
     cells.assignee = { __html:
       '<select class="currentRole-task-assignee assigner-btn" data-issue="' + esc(item.issueId) + '" style="width:100%;font-size:12px">' +
