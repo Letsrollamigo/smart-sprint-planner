@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.12.2] — 2026-07-21
+
+> **Localization patch from a user bug report: the auto-detected language dictionary actually loads, and role names in settings come from the active locale dictionary.**
+
+### Fixed
+
+- **The start-language dictionary loads at boot** — EN/RU are inlined in the bundle, but the other 13 locales were loaded only on a manual language switch via the selector: for a user on auto-detect (browser de/fr/… — in the sandboxed widget localStorage is unavailable, the choice does not persist, so detection runs on every visit) `T()` silently fell back to EN — the UI stayed English while the app considered itself set to that language. The missing dictionary is now loaded in the init chain before the first render; on a network failure `loadDictionary` resolves with the EN inline — the chain never breaks.
+- **Functional role names in the settings form come from the dictionary** — 7 spots (the role grid, estimate/actual/user-field rows, cost-accounting mapping, backlog zones, reporting A6 capacity) rendered labels via the legacy `uiLang === 'en' ? labelEn : label` binary, bypassing i18n: every locale except English got Cyrillic labels (user report: EN interface + «Анализ», «Разработка Back»…). Now — `t('role.<key>')`, same as the core `roleLabel()`; the `role.*` keys exist in all 15 locales.
+- **Draft timestamps follow the widget locale** — two `toLocaleTimeString`/`toLocaleString` spots were still pinned to the en-US/ru-RU pair (a v3.12.1 tail): third locales saw the Russian format.
+
 ## [3.12.1] — 2026-07-19
 
 > **Localization and display fixes: dates follow the widget language, single escaping in tables, translated sprint-goal placeholder.**

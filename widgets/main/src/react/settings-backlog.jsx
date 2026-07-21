@@ -54,7 +54,7 @@ function BacklogSection(props) {
   const stCounts = {};
   v.zones.forEach((z) => { const s = (z.state || '').trim(); if (s) stCounts[s] = (stCounts[s] || 0) + 1; });
   const stateOpts = bundleStates.map((s) => ({ key: s, label: s }));
-  const roleData = roleOpts.map((r) => ({ key: r.key, label: uiLang === 'en' ? (r.labelEn || r.label) : r.label }));
+  const roleData = roleOpts.map((r) => ({ key: r.key, label: t('role.' + r.key) }));
   const moveBtnCls = 'ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly';
 
   return (

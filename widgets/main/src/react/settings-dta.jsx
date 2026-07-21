@@ -56,7 +56,7 @@ function DtaSection(props) {
                 </td>
                 <td>
                   <RingSelLite
-                    options={roleOpts.map((ro) => ({ key: ro.key, label: uiLang === 'en' ? (ro.labelEn || ro.label) : ro.label }))}
+                    options={roleOpts.map((ro) => ({ key: ro.key, label: t('role.' + ro.key) }))}
                     value={r.role || ''} clearable placeholder={t('phNotSelected')}
                     onChange={(val) => setRow(i, { role: val })}
                   />

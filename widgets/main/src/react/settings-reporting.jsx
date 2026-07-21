@@ -339,7 +339,7 @@ function ReportingSection(props) {
         <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
           {(props.activeRoles || []).map((r) => (
             <div className="field" key={r.key}>
-              <label>{(props.uiLang === 'en' ? (r.labelEn || r.label) : r.label) || r.key}</label>
+              <label>{t('role.' + r.key)}</label>
               <input type="number" min="0" step="1" style={numCell}
                 value={(v.a6Capacity && v.a6Capacity[r.key] != null) ? v.a6Capacity[r.key] : ''}
                 onChange={(e) => {

@@ -538,7 +538,9 @@ function SettingsForm(props) {
         <div className="roles-grid">
           {roles.map((r) => {
             const on = activeRoles.indexOf(r.key) >= 0;
-            const lbl = uiLang === 'en' ? (r.labelEn || r.label) : r.label;
+            /* v3.12.2 — подпись роли через словарь (15 локалей), как roleLabel() ядра;
+               бинарник en/ru отдавал кириллицу любой третьей локали (de/fr/…). */
+            const lbl = t('role.' + r.key);
             return RingCheckbox
               ? <RingCheckbox key={r.key} checked={on} label={lbl} onChange={() => toggleRole(r.key)} />
               : (
@@ -635,7 +637,7 @@ function SettingsForm(props) {
           <div className="form-grid ssp-role-grid">
             {activeRoleList.map((r) => (
               <div className="field" key={r.key}>
-                <label>{uiLang === 'en' ? (r.labelEn || r.label) : r.label}</label>
+                <label>{t('role.' + r.key)}</label>
                 <FieldSelect value={roleFields[r.key] ? roleFields[r.key].user : ''} onChange={(v) => setRoleField(r.key, 'user', v)} names={fieldsByType.user} placeholder={t('phNotSelected')} />
               </div>
             ))}
@@ -650,7 +652,7 @@ function SettingsForm(props) {
           <div className="form-grid ssp-role-grid">
             {activeRoleList.map((r) => (
               <div className="field" key={r.key}>
-                <label>{uiLang === 'en' ? (r.labelEn || r.label) : r.label}</label>
+                <label>{t('role.' + r.key)}</label>
                 <FieldSelect value={roleFields[r.key] ? roleFields[r.key].est : ''} onChange={(v) => setRoleField(r.key, 'est', v)} names={fieldsByType.period} placeholder={t('phNotSelected')} />
               </div>
             ))}
@@ -666,7 +668,7 @@ function SettingsForm(props) {
           <div className="form-grid ssp-role-grid">
             {activeRoleList.map((r) => (
               <div className="field" key={r.key}>
-                <label>{uiLang === 'en' ? (r.labelEn || r.label) : r.label}</label>
+                <label>{t('role.' + r.key)}</label>
                 <FieldSelect value={roleFields[r.key] ? roleFields[r.key].fact : ''} onChange={(v) => setRoleField(r.key, 'fact', v)} names={fieldsByType.period} placeholder={t('phNotSelected')} />
               </div>
             ))}

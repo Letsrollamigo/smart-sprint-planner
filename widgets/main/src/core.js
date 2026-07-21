@@ -717,7 +717,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.12.1';
+  var APP_VERSION = '3.12.2';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1199,7 +1199,7 @@
         badge.classList.remove('hidden');
       } else if (meta) {
         var ts = '';
-        try { ts = new Date(meta.savedAt).toLocaleTimeString(_lang === 'en' ? 'en-US' : 'ru-RU', { hour: '2-digit', minute: '2-digit' }); }
+        try { ts = new Date(meta.savedAt).toLocaleTimeString(_lang, { hour: '2-digit', minute: '2-digit' }); }
         catch(_) { ts = ''; }
         badge.textContent = T('draftSavedAt').replace('{ts}', ts);
         badge.title = T('draftSavedAtTitle');
@@ -1286,7 +1286,7 @@
           return;
         }
         var ts = '';
-        try { ts = new Date(meta.savedAt).toLocaleString(_lang === 'en' ? 'en-US' : 'ru-RU'); } catch(_) { ts = String(meta.savedAt); }
+        try { ts = new Date(meta.savedAt).toLocaleString(_lang); } catch(_) { ts = String(meta.savedAt); }
         var sections = [];
         if (dirty.sprint)    sections.push(T('draftSectionSprint'));
         if (dirty.roleItems) sections.push(T('draftSectionRoleItems'));
@@ -1679,6 +1679,14 @@
     /* #25 Ф1 — loadMe (user-scoped) один раз; данные проекта грузятся ниже по режиму. */
     diag('init: loadMe START', 'info');
     return loadMe();
+  }).then(function() {
+    /* v3.12.2 — словарь стартового языка. EN/RU инлайн в бандле; остальные 13 раньше
+       грузились ТОЛЬКО при ручной смене селектором — авто-детект (de/fr/…) молча
+       фолбэчил T() на EN, а роль-лейблы уходили в RU-ветку. Грузим до первого рендера;
+       loadDictionary при сбое сети сам резолвится EN-инлайном — цепочка не рвётся. */
+    if (!I18N[_lang] && _i18nBridge && typeof _i18nBridge.loadDictionary === 'function') {
+      return _i18nBridge.loadDictionary(_lang).then(function (dict) { I18N[_lang] = dict || {}; });
+    }
   }).then(function() {
     if (_mode === 'global') return _initGlobalProjectSelection();
     return _renderProjectSettingsPage();   // #25 Ф1-A — проект = страница настроек
