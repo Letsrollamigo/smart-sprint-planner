@@ -857,6 +857,7 @@ function A3View({ vm, L }) {
   return (
     <React.Fragment>
       <LimitBanners vm={vm} L={L} />
+      {vm.a3NoDone ? <Banner kind="warn">{L.a3NoDoneCfg}</Banner> : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: '2px', margin: '2px 0 12px' }}>
         {seg('wip', L.a3ModeWip, vm.wipCount || 0)}
         {seg('done', L.a3ModeDone, vm.doneCount || 0)}

@@ -981,13 +981,13 @@
     "domain/reporting-view.js": {
       "layer": "domain",
       "domain": "domain/reporting-view",
-      "loc": 1279,
-      "locBudget": 1279,
+      "loc": 1284,
+      "locBudget": 1284,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"
       ],
-      "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат. v3.12.0 (#11) — +A11 Velocity: labels + _vpure + _loadA11 (расчёт в pure/velocity-pure)."
+      "budgetNote": "#57-5 (эпик 57) — осознанный рост +5: аудит отчётности — _battr (брейс имён полей в YT-запросах A1/A6, паттерн #21 §9) + подсказка A3 без целевых статусов (a3NoDone/a3NoDoneCfg). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат. v3.12.0 (#11) — +A11 Velocity: labels + _vpure + _loadA11 (расчёт в pure/velocity-pure)."
     },
     "pure/reporting-pure.js": {
       "layer": "pure",

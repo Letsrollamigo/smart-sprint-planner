@@ -125,6 +125,7 @@ function _labels(T) {
     a3Title: T('repA3Title'), a3Sub: T('repA3Sub'), a3ColUnit: T('repA3ColUnit'),
     a3ColStage: T('repA3ColStage'), a3ColOrg: T('repA3ColOrg'), a3ColPriority: T('repA3ColPriority'),
     a3EstPrefix: T('repA3EstPrefix'), a3ModeWip: T('repA3ModeWip'), a3ModeDone: T('repA3ModeDone'), a3Empty: T('repA3Empty'),
+    a3NoDoneCfg: T('repA3NoDoneCfg'),   /* #57-5 Н4 — без целевых статусов весь срез уходит в WIP */
     /* #50 S6b — A6 Бэклог в ЧЧ по ролям */
     a6Title: T('repA6Title'), a6Sub: T('repA6Sub'), a6ColTasks: T('repA6ColTasks'), a6ColSum: T('repA6ColSum'),
     a6ColCapacity: T('repA6ColCapacity'), a6ColMonths: T('repA6ColMonths'), a6MonthsUnit: T('repA6MonthsUnit'),
@@ -200,6 +201,9 @@ function _activeProj(deps) {
   var p = deps.ctx && deps.ctx.project;
   return p ? String(p.shortName || p.id || '') : '';
 }
+/* Имя атрибута YT-запроса: брейс при пробеле («Этап работ» → «{Этап работ}») — паттерн
+   backlog-loader (#21 §9); без брейса запрос по полю с пробелом молча ломает отбор. */
+function _battr(name) { return /\s/.test(name) ? '{' + name + '}' : name; }
 /* customField задачи по имени поля (projectCustomField.field.name | cf.name). */
 function _cf(iss, fieldName) {
   var cfs = iss.customFields || [];
@@ -525,7 +529,7 @@ const _loadA1 = makeReportLoader('A1', 'a', function (ctx) {
     && !Array.isArray(settings.reportingStatusLabels)) ? settings.reportingStatusLabels : {};
   var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(
-    [ctx.fieldState + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')])).then(function (f) {
+    [_battr(ctx.fieldState) + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')])).then(function (f) {
     var m = _mapIssues(f.arr, ctx.fieldState);
     return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
@@ -821,6 +825,7 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
         system: fieldSystem ? _sysValOf(iss, fieldSystem) : '' });
     }
     ctx.mount({ report: 'a3', loading: false, rows: rows, hasSystem: !!fieldSystem,
+      a3NoDone: !Object.keys(doneSet).length,   /* #57-5 Н4 — подсказка вместо молчаливого Done=0 */
       wipCount: wipCount, doneCount: doneCount, limitHit: f.limitHit, limit: LIMIT,
       snapRoles: roles.map(function (r) { return { key: r.key, label: r.label }; }),
       snapCols: { stage: !!stageField, org: !!orgField, priority: !!prioField } });
@@ -847,9 +852,9 @@ const _loadA6 = makeReportLoader('A6', 'a', function (ctx) {
   var fieldType = (typeof settings.fieldType === 'string' && settings.fieldType) ? settings.fieldType : 'Type';
   var noBacklogCfg = states.length === 0;
   var extras = [];
-  if (states.length) extras.push(ctx.fieldState + ': ' + states.map(function (s) { return '{' + s + '}'; }).join(', '));
+  if (states.length) extras.push(_battr(ctx.fieldState) + ': ' + states.map(function (s) { return '{' + s + '}'; }).join(', '));
   else extras.push('#Unresolved');                         /* нет конфигурации бэклога → все нерешённые + подсказка */
-  if (types.length) extras.push(fieldType + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
+  if (types.length) extras.push(_battr(fieldType) + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
   /* QueryAssist AND (D-скоуп аналитика) */
   return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(extras)).then(function (f) {
     if (!_fresh(base)) return;                            /* устаревший ответ — не монтируем */

@@ -1,5 +1,6 @@
 {
   "vmKeys": [
+    "a3NoDone",
     "contour",
     "doneCount",
     "gen",
@@ -84,6 +85,7 @@
     "a3Menu",
     "a3ModeDone",
     "a3ModeWip",
+    "a3NoDoneCfg",
     "a3Sub",
     "a3Title",
     "a4ChartTitle",
@@ -280,6 +282,7 @@
   ],
   "primCalls": [],
   "vm": {
+    "a3NoDone": false,
     "contour": "a",
     "doneCount": 3,
     "gen": 1,
