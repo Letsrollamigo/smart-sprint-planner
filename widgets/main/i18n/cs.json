@@ -885,6 +885,7 @@
   "relPvColCurrent": "Aktuální",
   "relPvColTarget": "Cílový",
   "relPvColMark": "Poznámka",
+  "relPvSetAll": "Pro všechny…",
   "relPvWillApply": "✓ bude použito",
   "relPvDesync": "nesynchronizováno — změněno mimo plánovač",
   "relPvUnreachable": "přechod nemožný — takový stav neexistuje",

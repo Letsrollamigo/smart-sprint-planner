@@ -885,6 +885,7 @@
   "relPvColCurrent": "Mevcut",
   "relPvColTarget": "Hedef",
   "relPvColMark": "Not",
+  "relPvSetAll": "Tümüne…",
   "relPvWillApply": "✓ uygulanacak",
   "relPvDesync": "eşitleme dışı — planlayıcı dışında değiştirildi",
   "relPvUnreachable": "geçiş imkânsız — böyle bir durum yok",

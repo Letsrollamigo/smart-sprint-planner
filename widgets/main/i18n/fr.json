@@ -885,6 +885,7 @@
   "relPvColCurrent": "Actuel",
   "relPvColTarget": "Cible",
   "relPvColMark": "Remarque",
+  "relPvSetAll": "Pour toutes…",
   "relPvWillApply": "✓ sera appliqué",
   "relPvDesync": "désynchronisé — modifié hors du planificateur",
   "relPvUnreachable": "transition impossible — état inexistant",

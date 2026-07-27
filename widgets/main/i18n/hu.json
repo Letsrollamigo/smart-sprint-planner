@@ -885,6 +885,7 @@
   "relPvColCurrent": "Jelenlegi",
   "relPvColTarget": "Cél",
   "relPvColMark": "Megjegyzés",
+  "relPvSetAll": "Mindegyikhez…",
   "relPvWillApply": "✓ alkalmazva lesz",
   "relPvDesync": "nincs szinkronban — a tervezőn kívül módosították",
   "relPvUnreachable": "átmenet nem lehetséges — nincs ilyen állapot",

@@ -884,6 +884,7 @@
   "relPvColCurrent": "Current",
   "relPvColTarget": "Target",
   "relPvColMark": "Note",
+  "relPvSetAll": "Set for all…",
   "relPvWillApply": "✓ will apply",
   "relPvDesync": "out of sync — moved outside the planner",
   "relPvUnreachable": "transition impossible — no such state",

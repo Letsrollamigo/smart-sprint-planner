@@ -323,6 +323,13 @@ function buildRolePanel(role, deps) {
   newSprintBtn.id = 'newSprintBtn_'+role.key;
   newSprintBtn.style.display = 'none';
   newSprintBtn.textContent = T('btnNewSprint');
+  /* #57-2 (⚖ владелец) — активный лок создания дизейблит кнопку при рендере (поздний рендер
+     ролей; мгновенный тумблер-эффект по уже отрендеренным — _applySprintLockUi в core). */
+  if ((deps.state.getSettings() || {}).blockSprintCreation === true) {
+    newSprintBtn.disabled = true;
+    newSprintBtn.classList.add('ring-button-disabled');   /* Ring серит классом, не атрибутом */
+    newSprintBtn.title = T('toastSprintCreationLocked');
+  }
 
   var saveHeaderBtn = document.createElement('button');
   saveHeaderBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn';

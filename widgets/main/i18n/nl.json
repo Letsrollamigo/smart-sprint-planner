@@ -885,6 +885,7 @@
   "relPvColCurrent": "Huidig",
   "relPvColTarget": "Doel",
   "relPvColMark": "Opmerking",
+  "relPvSetAll": "Voor alle…",
   "relPvWillApply": "✓ wordt toegepast",
   "relPvDesync": "niet synchroon — buiten de planner gewijzigd",
   "relPvUnreachable": "overgang onmogelijk — status bestaat niet",

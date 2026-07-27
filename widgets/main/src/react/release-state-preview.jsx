@@ -95,6 +95,14 @@ function ReleaseStatePreview(props) {
   const toggleRow = (id) => setRows((prev) => prev.map((r) => (r.id === id && !r.disabled ? Object.assign({}, r, { checked: !r.checked }) : r)));
   const toggleMaster = () => setRows((prev) => prev.map((r) => (r.disabled ? r : Object.assign({}, r, { checked: !masterChecked }))));
   const setTarget = (id, t) => setRows((prev) => prev.map((r) => (r.id === id ? _remark(r, t) : r)));
+  /* #57-3 (⚖ владелец) — массовое назначение ОДНОГО статуса всем задачам сразу: мастер-селект
+     в шапке колонки цели. Оживляет и помеченные строки (как ручной per-row выбор, US-R2-06);
+     «уже в целевом» остаются снятыми. */
+  const setAllTargets = (t) => setRows((prev) => prev.map((r) => {
+    const nr = _remark(r, t);
+    nr.checked = nr.mark !== 'already';
+    return nr;
+  }));
 
   const apply = () => {
     const list = checkedRows.map((r) => ({ id: r.id, target: r.target }));
@@ -124,7 +132,14 @@ function ReleaseStatePreview(props) {
               <th>{L.colTask}</th>
               <th>{L.colCurrent}</th>
               <th style={{ width: '24px' }}></th>
-              <th>{L.colTarget}</th>
+              <th>
+                {L.colTarget}
+                {opts.length ? (
+                  <div className="ssp-relpv-setall">
+                    <RingSelect value={''} options={opts} onChange={setAllTargets} placeholder={L.setAll} />
+                  </div>
+                ) : null}
+              </th>
               <th>{L.colMark}</th>
             </tr>
           </thead>

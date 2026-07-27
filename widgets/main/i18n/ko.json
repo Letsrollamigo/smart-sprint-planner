@@ -885,6 +885,7 @@
   "relPvColCurrent": "현재",
   "relPvColTarget": "대상",
   "relPvColMark": "비고",
+  "relPvSetAll": "전체 설정…",
   "relPvWillApply": "✓ 적용 예정",
   "relPvDesync": "불일치 — 플래너 외부에서 변경됨",
   "relPvUnreachable": "전환 불가 — 해당 상태 없음",

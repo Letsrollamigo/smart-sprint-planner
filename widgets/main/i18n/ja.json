@@ -885,6 +885,7 @@
   "relPvColCurrent": "現在",
   "relPvColTarget": "目標",
   "relPvColMark": "注記",
+  "relPvSetAll": "すべてに設定…",
   "relPvWillApply": "✓ 適用されます",
   "relPvDesync": "不整合 — プランナー外で変更されました",
   "relPvUnreachable": "遷移不可 — 該当する状態がありません",

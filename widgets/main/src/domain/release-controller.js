@@ -615,6 +615,7 @@ function openStatePreview(deps, releaseId) {
           mappingLine: T('relPvMappingLine').replace('{status}', sl[rec.status] || rec.status).replace('{state}', target),
           colTask: T('thTitle'), colCurrent: T('relPvColCurrent'), colTarget: T('relPvColTarget'), colMark: T('relPvColMark'),
           willApply: T('relPvWillApply'), desync: T('relPvDesync'), unreachable: T('relPvUnreachable'), already: T('relPvAlreadyTarget'),
+          setAll: T('relPvSetAll'),   /* #57-3 — массовое назначение одного статуса всем */
           applyBtn: T('relPvApplyBtn'), errDetails: T('relPvErrDetails'), retry: T('relPvRetry'), cancel: T('btnCancel'),
         },
         rows: rows,

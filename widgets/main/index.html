@@ -259,6 +259,7 @@
     body.ssp-global-mode .ssp-rail-card--badges:has(> .widget-header__badge.hidden) { display: none; }
     /* «Новый спринт» — отдельной строкой, во всю ширину, с воздухом по Y */
     body.ssp-global-mode .ssp-rail__context .widget-header__new { margin: 2px 0; width: 100%; }
+    body.ssp-global-mode .ssp-rail__context .widget-header__lock { margin: 4px 0 6px; width: 100%; } /* #57-2 — тумблер своей строкой в рельсе */
     /* статусбар модулей (в utils-зоне под языком): вертикальная стопка пилюль */
     body.ssp-global-mode .ssp-rail .widget-statusbar {
       flex-direction: column; align-items: stretch; gap: 5px;
@@ -1982,7 +1983,7 @@
     body.theme-dark .widget-header__wc, body[data-theme="dark"] .widget-header__wc { color: #ffd680; }
     .widget-header__wc-icon { font-size: 13px; }
     .widget-header__new { margin-left: auto; }
-    .widget-header__lock { display: inline-flex; align-items: center; margin-left: 8px; white-space: nowrap; } /* #57-2 */
+    .widget-header__lock { display: inline-flex; align-items: center; margin-left: 8px; min-width: 0; } /* #57-2 — без nowrap: подпись переносится, рельсу не распирает */
     .widget-header.hidden { display: none; }
 
     /* v1.3.1 — feature-modules status-bar (Inline / Personal / DTA / Cascade).
@@ -2219,6 +2220,7 @@
     .ssp-relpv-scroll { max-height: 48vh; overflow: auto; }
     .ssp-relpv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .ssp-relpv-table th { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--muted); position: sticky; top: 0; background: var(--surface, #fff); }
+    .ssp-relpv-setall { margin-top: 4px; font-weight: 400; } /* #57-3 — мастер-селект «всем задачам…» */
     .ssp-relpv-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .ssp-relpv-id { color: var(--primary, #0f5acd); font-weight: 600; white-space: nowrap; }
     .ssp-relpv-arrow { color: var(--muted); }

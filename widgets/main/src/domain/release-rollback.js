@@ -63,6 +63,7 @@ function openRollbackPreview(deps, releaseId) {
           colTask: T('thTitle'), colCurrent: T('relPvColCurrent'), colTarget: T('relRbColTarget'), colMark: T('relPvColMark'),
           willApply: T('relPvWillApply'), desync: T('relPvDesync'), unreachable: T('relPvUnreachable'), already: T('relPvAlreadyTarget'),
           noHistory: T('relRbNoHist'), histIncomplete: T('relRbIncomplete'),
+          setAll: T('relPvSetAll'),   /* #57-3 — массовое назначение одного статуса всем */
           applyBtn: T('relRbApplyBtn'), errDetails: T('relPvErrDetails'), retry: T('relPvRetry'), cancel: T('btnCancel'),
         },
         rows: rows,

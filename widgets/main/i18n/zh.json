@@ -885,6 +885,7 @@
   "relPvColCurrent": "当前",
   "relPvColTarget": "目标",
   "relPvColMark": "备注",
+  "relPvSetAll": "全部设为…",
   "relPvWillApply": "✓ 将应用",
   "relPvDesync": "不同步 — 在规划器外被更改",
   "relPvUnreachable": "无法转换 — 不存在该状态",

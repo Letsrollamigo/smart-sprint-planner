@@ -884,6 +884,7 @@
   "relPvColCurrent": "Текущее",
   "relPvColTarget": "Целевое",
   "relPvColMark": "Пометка",
+  "relPvSetAll": "Всем задачам…",
   "relPvWillApply": "✓ применится",
   "relPvDesync": "рассинхрон — подвинули вне планера",
   "relPvUnreachable": "переход невозможен — нет такого состояния",

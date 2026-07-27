@@ -1857,6 +1857,9 @@
     if (typeof _loadAppVersion === 'function') {
       try { _loadAppVersion(); } catch(e){ diag('_loadAppVersion err: '+e,'err'); }
     }
+    /* #57-2 — тумблер блокировки спринтов: рендер после резолва проекта (оба режима;
+       в global пикер зовёт _loadAndRenderProject повторно — тумблер обновится). */
+    try { _renderSprintLockToggle(); } catch(e){ diag('_renderSprintLockToggle err: '+e,'err'); }
     diag('Init complete','ok');
   }).catch(function(e) {
     diag('INIT ERROR: '+(e&&e.message?e.message:e),'err');
@@ -3888,35 +3891,60 @@
         }
       });
     }
-    /* #57-2 — тумблер блокировки создания спринтов (React-остров, Ring Toggle).
-       GET sprint-lock → {locked, canToggle}; нет прав → серый (Ring disabled).
-       POST — единственный писатель settings.blockSprintCreation (группа sprintLockGroups). */
-    function _renderSprintLockToggle() {
-      var lockHost = document.getElementById('sprintLockToggleHost');
-      var island = (typeof window !== 'undefined' && window.__SSP_SPRINT_LOCK) || null;
-      if (!lockHost || !island) return;
-      apiGet('sprint-lock').then(function (r) {
-        if (!r || !r.success) return;
-        _settings.blockSprintCreation = !!r.locked;   /* синхрон фронт-гейта doNewSprint */
-        island.mountAt(lockHost, {
-          locked: !!r.locked, canToggle: !!r.canToggle,
-          label: T('sprintLockToggleLabel'), hintNoRights: T('sprintLockNoRights'),
-          onToggle: function (next) {
-            return apiPost('sprint-lock', { locked: !!next }).then(function (pr) {
-              if (pr && pr.success) {
-                _settings.blockSprintCreation = !!pr.locked;
-                toast(T(pr.locked ? 'toastSprintLockOn' : 'toastSprintLockOff'), 'success');
-              } else {
-                toast(T('toastSaveError'), 'err');
-              }
-              _renderSprintLockToggle();
-            }).catch(function () { toast(T('toastSaveError'), 'err'); _renderSprintLockToggle(); });
-          },
-        });
-      }).catch(function () { /* нет ответа — тумблер не рисуем (viewer без прав чтения и т.п.) */ });
-    }
-    _renderSprintLockToggle();
   })();
+
+  /* #57-2 (⚖ владелец) — активный лок ДИЗЕЙБЛИТ кнопки «Новый спринт» (шапка/рельса +
+     per-role), а не только тостит по клику; title объясняет причину. Per-role кнопки,
+     отрендеренные ПОЗЖЕ, получают disabled при своём рендере (rolecomposition-view). */
+  function _applySprintLockUi(locked) {
+    var btns = [document.getElementById('widgetNewSprintBtn')];
+    var roleBtns = document.querySelectorAll('button[id^="newSprintBtn_"]');
+    for (var i = 0; i < roleBtns.length; i++) btns.push(roleBtns[i]);
+    btns.forEach(function (b) {
+      if (!b) return;
+      b.disabled = !!locked;
+      /* Ring серит кнопку классом ring-button-disabled (не атрибутом); у primary-кнопки шапки
+         на время лока снимаем primaryBlock/flat/whiteText — иначе синий фон/белый текст перебивают. */
+      b.classList.toggle('ring-button-disabled', !!locked);
+      if (b.id === 'widgetNewSprintBtn') {
+        ['ring-button-primaryBlock', 'ring-button-flat', 'ring-button-whiteText'].forEach(function (c) {
+          b.classList.toggle(c, !locked);
+        });
+      }
+      if (locked) b.title = T('toastSprintCreationLocked'); else b.removeAttribute('title');
+    });
+  }
+
+  /* #57-2 — тумблер блокировки создания спринтов (React-остров, Ring Toggle).
+     GET sprint-lock → {locked, canToggle}; нет прав → серый (Ring disabled).
+     POST — единственный писатель settings.blockSprintCreation (группа sprintLockGroups).
+     Уровень ядра (не init-IIFE): рендер зовётся из _loadAndRenderProject — в global-режиме
+     проект резолвится ПОСЛЕ бута (пикер), одноразовый бут-вызов тумблер бы не нарисовал. */
+  function _renderSprintLockToggle() {
+    var lockHost = document.getElementById('sprintLockToggleHost');
+    var island = (typeof window !== 'undefined' && window.__SSP_SPRINT_LOCK) || null;
+    if (!lockHost || !island) return;
+    apiGet('sprint-lock').then(function (r) {
+      if (!r || !r.success) return;
+      _settings.blockSprintCreation = !!r.locked;   /* синхрон фронт-гейта doNewSprint */
+      _applySprintLockUi(!!r.locked);               /* ⚖ владелец — disabled, не тост */
+      island.mountAt(lockHost, {
+        locked: !!r.locked, canToggle: !!r.canToggle,
+        label: T('sprintLockToggleLabel'), hintNoRights: T('sprintLockNoRights'),
+        onToggle: function (next) {
+          return apiPost('sprint-lock', { locked: !!next }).then(function (pr) {
+            if (pr && pr.success) {
+              _settings.blockSprintCreation = !!pr.locked;
+              toast(T(pr.locked ? 'toastSprintLockOn' : 'toastSprintLockOff'), 'success');
+            } else {
+              toast(T('toastSaveError'), 'err');
+            }
+            _renderSprintLockToggle();
+          }).catch(function () { toast(T('toastSaveError'), 'err'); _renderSprintLockToggle(); });
+        },
+      });
+    }).catch(function () { /* нет ответа — тумблер не рисуем (viewer без прав чтения и т.п.) */ });
+  }
 
   /* ═══════════════════════════════════════════════════════════
      v4.0.0 — ВКЛАДКА «РАСПРЕДЕЛЕНИЕ ЗАДАЧ»

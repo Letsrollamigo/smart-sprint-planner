@@ -885,6 +885,7 @@
   "relPvColCurrent": "Attuale",
   "relPvColTarget": "Destinazione",
   "relPvColMark": "Nota",
+  "relPvSetAll": "Per tutte…",
   "relPvWillApply": "✓ verrà applicato",
   "relPvDesync": "non sincronizzato — modificato fuori dal planner",
   "relPvUnreachable": "transizione impossibile — stato inesistente",

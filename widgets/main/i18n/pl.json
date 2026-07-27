@@ -885,6 +885,7 @@
   "relPvColCurrent": "Bieżący",
   "relPvColTarget": "Docelowy",
   "relPvColMark": "Uwaga",
+  "relPvSetAll": "Dla wszystkich…",
   "relPvWillApply": "✓ zostanie zastosowane",
   "relPvDesync": "rozsynchronizowane — zmienione poza planerem",
   "relPvUnreachable": "przejście niemożliwe — brak takiego stanu",
