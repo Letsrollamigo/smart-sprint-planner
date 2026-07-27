@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.13.0] — 2026-07-27
+
+> **Feedback epic: sprint-creation lock toggle, release state rollback via history, composition management, Ring-canon report buttons, reporting audit and a date-checker fix.**
+
+### Added
+
+- **Sprint-creation lock toggle in the planner header** — a reversible lock: while it is on, the “New sprint” buttons (header and role levels) are disabled and the backend rejects creation with 403 `sprint_creation_locked` (switching to existing/historical sprints is unaffected). The right to flip the toggle is granted via a group in the new Access-control field; without it the toggle is greyed out. The state is written only by the dedicated `sprint-lock` endpoint — saving settings never overwrites it.
+- **Roll back release issue states via history** — a “Roll back states” button next to “Update issue states”: the preview shows each task's previous state taken from the YouTrack field history (with the transition date) — no snapshots are stored, the history itself is the snapshot. Marks: “no transitions” / “history truncated by limit” / “already back” / “changed after the operation” (unchecked — opt in consciously). Applying uses the same batch with a per-task report; a rejected reverse transition (state machine) raises a standard notification plus the per-task reason in the error panel.
+- **Bulk status assignment** — a “Set for all…” master select in the target column header of both previews (apply and rollback): one status for every row at once; tasks already in the target are unchecked automatically.
+- **Remove an issue from a planned release** — a trash button in every composition-tree row (for RM, while the release is not frozen and not terminal) with a confirm dialog: the issue leaves the composition and the release status tag is removed.
+
+### Fixed
+
+- **Reporting: the selection-limit banner** said “Showing the first 200 tasks” even when fewer rows were visible (aggregate reports and client-side post-filtering) — reworded to data-coverage semantics (“only the first 200 matching tasks were processed”). Also: field names with spaces are now braced in A1/A6 queries; a QueryAssist filter with a top-level `or` no longer escapes the project scope (wrapped in parentheses, `sort by:` respected); A3 without configured target statuses shows a hint instead of a silent “Done: 0”.
+- **The “Excel” / “PDF” / “Abort” report buttons** — aligned with the Ring button canon (bordered block buttons, “Abort” is theme-aware danger instead of an inline color); icons preserved.
+- **The release/freeze date checker fired falsely on equal dates** (hotfix: freeze = release day) — the comparison now uses the calendar day instead of milliseconds.
+
+The snapshot schema is unchanged; the new settings keys are additive — the update is drop-in, no migration.
+
 ## [3.12.3] — 2026-07-27
 
 > **Reporting-settings UX patch from a bug report: field names, issue types and tags are picked from lists instead of free-text input.**
