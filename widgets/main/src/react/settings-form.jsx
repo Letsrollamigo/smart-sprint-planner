@@ -851,6 +851,8 @@ function SettingsForm(props) {
         <ReportingSection
           t={t} value={reporting} onChange={setReporting} activeRoles={activeRoleList} uiLang={uiLang}
           bundleStates={bundleStates} loadTags={props.loadTags}
+          fieldsByType={fieldsByType} /* A3 — пикеры имён полей */
+          fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues} /* B1/B2 — значения Type-поля */
           loadGroups={props.loadGroups} initialGroups={props.initialGroups}
           onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
         />

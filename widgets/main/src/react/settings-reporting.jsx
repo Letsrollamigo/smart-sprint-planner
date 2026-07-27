@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { noop, genZoneUid, _btnCls, RoleCheck, GrpMultiSelect, MultiSelect, RingSelLite } from './settings-shared.jsx';
+import { noop, genZoneUid, _btnCls, FieldSelect, RoleCheck, GrpMultiSelect, MultiSelect, RingSelLite } from './settings-shared.jsx';
 
 function _repThToRows(obj) {
   const o = (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
@@ -46,7 +46,7 @@ function ReportingSection(props) {
   const set = props.onChange;
   const patch = (p) => set(Object.assign({}, v, p));
   const setGrp = (k, val) => patch({ [k]: val });
-  /* #50 S3a — теги инстанса для маркеров-пауз A2 (реюз props.loadTags, как BacklogSection/#55). */
+  /* #50 S3a — теги инстанса: маркеры-пауз A2 + тег-пикеры B1/B3 (реюз props.loadTags, как BacklogSection/#55). */
   const [pauseTagBundle, setPauseTagBundle] = React.useState([]);
   React.useEffect(() => {
     let alive = true;
@@ -56,6 +56,21 @@ function ReportingSection(props) {
     }
     return () => { alive = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  /* Значения Type-поля для B1/B2 (реактивно от живого выбора поля, как BacklogSection). */
+  const [typeBundle, setTypeBundle] = React.useState([]);
+  React.useEffect(() => {
+    let alive = true;
+    if (props.fieldTypeName && props.loadFieldValues) {
+      Promise.resolve(props.loadFieldValues(props.fieldTypeName))
+        .then((vals) => { if (alive && Array.isArray(vals)) setTypeBundle(vals); }).catch(noop);
+    } else { setTypeBundle([]); }
+    return () => { alive = false; };
+  }, [props.fieldTypeName]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* A3 — кандидаты имён полей: state∪system-бакеты (enum/state/owned — всё, что читает _cfText). */
+  const fbt = props.fieldsByType || {};
+  const a3Names = (() => { const seen = {}; const out = [];
+    [].concat(fbt.state || [], fbt.system || []).forEach((n) => { if (n && !seen[n]) { seen[n] = true; out.push(n); } });
+    return out; })();
   const subCls = { fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' };
   const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'block' };
   const grpRow = (key, label) => (
@@ -317,18 +332,18 @@ function ReportingSection(props) {
       <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
         <div className="field">
           <label>{t('repSetA3Stage')}</label>
-          <input type="text" style={txtCell} value={v.a3StageField || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ a3StageField: e.target.value })} />
+          <FieldSelect value={v.a3StageField || ''} names={a3Names}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ a3StageField: val })} />
         </div>
         <div className="field">
           <label>{t('repSetA3Org')}</label>
-          <input type="text" style={txtCell} value={v.a3OrgField || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ a3OrgField: e.target.value })} />
+          <FieldSelect value={v.a3OrgField || ''} names={a3Names}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ a3OrgField: val })} />
         </div>
         <div className="field">
           <label>{t('repSetA3Priority')}</label>
-          <input type="text" style={txtCell} value={v.a3PriorityField || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ a3PriorityField: e.target.value })} />
+          <FieldSelect value={v.a3PriorityField || ''} names={a3Names}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ a3PriorityField: val })} />
         </div>
       </div>
 
@@ -387,13 +402,13 @@ function ReportingSection(props) {
       <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
         <div className="field">
           <label>{t('repSetB1Type')}</label>
-          <input type="text" style={txtCell} value={v.techDebtType || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ techDebtType: e.target.value })} />
+          <FieldSelect value={v.techDebtType || ''} names={typeBundle}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ techDebtType: val })} />
         </div>
         <div className="field">
           <label>{t('repSetB1Tag')}</label>
-          <input type="text" style={txtCell} value={v.techDebtTag || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ techDebtTag: e.target.value })} />
+          <FieldSelect value={v.techDebtTag || ''} names={pauseTagBundle}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ techDebtTag: val })} />
         </div>
       </div>
 
@@ -403,8 +418,8 @@ function ReportingSection(props) {
       <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
         <div className="field">
           <label>{t('repSetB2Type')}</label>
-          <input type="text" style={txtCell} value={v.bugType || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ bugType: e.target.value })} />
+          <FieldSelect value={v.bugType || ''} names={typeBundle}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ bugType: val })} />
         </div>
         <div className="field">
           <label>{t('repSetB2Links')}</label>
@@ -419,8 +434,8 @@ function ReportingSection(props) {
       <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
         <div className="field">
           <label>{t('repSetB3Tag')}</label>
-          <input type="text" style={txtCell} value={v.thousandTag || ''}
-            placeholder={t('phNotSelected')} onChange={(e) => patch({ thousandTag: e.target.value })} />
+          <FieldSelect value={v.thousandTag || ''} names={pauseTagBundle}
+            placeholder={t('phNotSelected')} onChange={(val) => patch({ thousandTag: val })} />
         </div>
       </div>
 

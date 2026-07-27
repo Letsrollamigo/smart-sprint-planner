@@ -222,7 +222,7 @@
         "locBudget": 161
       },
       "react/settings-form.jsx": {
-        "loc": 875,
+        "loc": 883,
         "locBudget": 895,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
@@ -274,9 +274,9 @@
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-reporting.jsx": {
-        "loc": 459,
-        "locBudget": 459,
-        "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow)."
+        "loc": 474,
+        "locBudget": 474,
+        "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow). v3.12.3 — пикеры в отчётности: FieldSelect для A3-полей/типов B1-B2/тегов B1-B3 + Type-бандл."
       }
     }
   },

@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.12.3] — 2026-07-27
+
+> **Reporting-settings UX patch from a bug report: field names, issue types and tags are picked from lists instead of free-text input.**
+
+### Fixed
+
+- **A3 slice: «Business stage» / «Org unit» / «Priority» — project-field pickers** — instead of hand-typing a YT field name, the fields are now a `FieldSelect` over the project's fields (enum/state/owned buckets — everything `_cfText` can read); a previously saved value missing from the list is kept and flagged with `⚠`, same as in «Other fields».
+- **B1 «Tech debt» and B2 «Bug tax»: issue type — a picker over the Type field values** — values load from the configured Type field, reactively tracking its live selection (the backlog-section pattern); until a Type field is chosen the list is empty.
+- **B1 «Tech-debt tag» and B3 «Small-tasks tag» — instance-tag pickers** — the same tag bundle as the A2 pause markers and backlog pauses (`loadTags` bypassing the default response cap).
+
+A typo in a field/tag name no longer silently produces empty report columns. No storage-schema change — drop-in, no migration. The B2 link-types CSV stays free-text (the form has no link-type bundle).
+
 ## [3.12.2] — 2026-07-21
 
 > **Localization patch from a user bug report: the auto-detected language dictionary actually loads, and role names in settings come from the active locale dictionary.**
