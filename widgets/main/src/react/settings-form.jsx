@@ -112,6 +112,7 @@ function SettingsForm(props) {
     val: { ids: (initial.validationGroups || []).slice(), names: (initial.validationGroupNames || []).slice() },
     edit: { ids: (initial.editGroups || []).slice(), names: (initial.editGroupNames || []).slice() },
     histClear: { ids: (initial.historyClearGroups || []).slice(), names: (initial.historyClearGroupNames || []).slice() },
+    sprintLock: { ids: (initial.sprintLockGroups || []).slice(), names: (initial.sprintLockGroupNames || []).slice() },   /* #57-2 */
     assigner: { ids: (initial.assignerGroups || []).slice(), names: (initial.assignerGroupNames || []).slice() },
     /* #22 — планировочный тир (Вариант C). */
     planning: { ids: (initial.planningManagerGroups || []).slice(), names: (initial.planningManagerGroupNames || []).slice() },
@@ -361,6 +362,8 @@ function SettingsForm(props) {
     data.editGroupNames = groups.edit.names.slice();
     data.historyClearGroups = groups.histClear.ids.slice();
     data.historyClearGroupNames = groups.histClear.names.slice();
+    data.sprintLockGroups = groups.sprintLock.ids.slice();          /* #57-2 */
+    data.sprintLockGroupNames = groups.sprintLock.names.slice();
     data.assignerGroups = groups.assigner.ids.slice();
     data.assignerGroupNames = groups.assigner.names.slice();
     /* #22 — планировочный тир (Вариант C). */
@@ -567,6 +570,7 @@ function SettingsForm(props) {
             { key: 'edit', label: t('lblEditGroup') },
             { key: 'histClear', label: t('lblHistClearGroup'), hint: t('hintHistClearGroup') },
             { key: 'assigner', label: t('lblAssignerGroup'), hint: t('hintAssignerGroup') },
+            { key: 'sprintLock', label: t('lblSprintLockGroup'), hint: t('hintSprintLockGroup') },   /* #57-2 */
           ].map((g) => (
             <div className="field" key={g.key} style={{ marginBottom: '12px' }}>
               <label>{g.label}</label>

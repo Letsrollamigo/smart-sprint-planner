@@ -60,6 +60,8 @@ const KEEP_PATTERNS = [
      actions, icon, clear, loader, placeholder, error). Popup подсказок реюзит
      ring-popup и ring-list (уже в KEEP от Ring Select). */
   'ring-query-assist',
+  /* #57-2 — Ring Toggle (тумблер блокировки создания спринтов в шапке планера) */
+  'ring-toggle',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped

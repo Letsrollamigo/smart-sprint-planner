@@ -76,6 +76,7 @@ import './domain/release-view.js';
 import './domain/reporting-view.js';
 import './domain/release-controller.js';
 import './domain/release-rollback.js';
+import './react/sprint-lock-toggle.jsx';   /* #57-2 — тумблер блокировки создания спринтов */
 import './domain/release-pick.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';

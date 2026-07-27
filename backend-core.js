@@ -939,6 +939,12 @@ var ALLOWED_SETTINGS_KEYS = [
      предыдущего статуса снимается, нового — ставится. Теги НЕ создаются автоматически
      (авто-созданный тег приватен владельцу и невидим команде). */
   'releaseTagMapping',
+  /* #57-2 — блокировка создания новых спринтов: тумблер в шапке планера. blockSprintCreation
+     пишется ТОЛЬКО эндпоинтом sprint-lock (backend-sprintlock.js) под группой
+     sprintLockGroups/Names («Управление правами», admin-тир); обычный settings-save
+     preserve'ит хранимое значение (анти-гонка формы с тумблером). */
+  'blockSprintCreation',
+  'sprintLockGroups','sprintLockGroupNames',
   /* #50 — Оперативная отчётность (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
      reportingEnabled — мастер-тумблер модуля (гейтит узлы дерева/секцию, как releaseEnabled).
      reportingGroups{A,B}/*Names — reporting-access группы (US-ACC): контур A (лиды) /
@@ -996,6 +1002,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'validationGroups','validationGroupNames','editGroups','editGroupNames',
   'historyClearGroups','historyClearGroupNames','assignerGroups','assignerGroupNames',
   'planningManagerGroups','planningManagerGroupNames',
+  'sprintLockGroups','sprintLockGroupNames','blockSprintCreation',   /* #57-2 */
   // DTA
   'dtaEnabled','dtaWarningsEnabled','workItemTypeMapping',
   // Каскад + forbid container
@@ -1154,7 +1161,8 @@ function validateSettings(settings) {
       && !isStrArr(settings.historyClearGroupNames, 500, 100)) return false;
   // Булевы флаги
   var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
-    /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled'];
+    /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled',
+    /* #57-2 — блокировка создания спринтов */ 'blockSprintCreation'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
     if (bv !== undefined && bv !== null && typeof bv !== 'boolean') return false;
@@ -1293,13 +1301,15 @@ function validateSettings(settings) {
   if (settings.releaseEnabled !== undefined && settings.releaseEnabled !== null
       && typeof settings.releaseEnabled !== 'boolean') return false;
   var relIdArrKeys = ['releaseCandidateManagerGroups','releaseCandidateEngineerGroups',
-    'releaseManagerGroups','releaseEngineerGroups'];
+    'releaseManagerGroups','releaseEngineerGroups',
+    'sprintLockGroups' /* #57-2 */];
   for (var rg = 0; rg < relIdArrKeys.length; rg++) {
     var rgv = settings[relIdArrKeys[rg]];
     if (rgv !== undefined && rgv !== null && !isStrArr(rgv, 200, 100)) return false;
   }
   var relNameArrKeys = ['releaseCandidateManagerGroupNames','releaseCandidateEngineerGroupNames',
-    'releaseManagerGroupNames','releaseEngineerGroupNames'];
+    'releaseManagerGroupNames','releaseEngineerGroupNames',
+    'sprintLockGroupNames' /* #57-2 */];
   for (var rn = 0; rn < relNameArrKeys.length; rn++) {
     var rnv = settings[relNameArrKeys[rn]];
     if (rnv !== undefined && rnv !== null && !isStrArr(rnv, 500, 100)) return false;
@@ -1956,6 +1966,32 @@ function isReleaseEngineer(ctx) {
 }
 
 /**
+ * #57-2 — право переключать тумблер блокировки создания спринтов (sprintLockGroups,
+ * «Управление правами»). Deny-by-default, канон isReleaseManager. Потребитель —
+ * backend-sprintlock.js (GET/POST sprint-lock).
+ */
+function isSprintLockManager(ctx) {
+  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
+  if (!isSettingsManagerConfigured(ctx)) return false;
+  var s = parseJson(getProp(ctx, 'ssp_settings'), null);
+  var ids   = (s && s.sprintLockGroups)     || [];
+  var names = (s && s.sprintLockGroupNames) || [];
+  if (!ids.length && !names.length) return false;
+  return userInGroups(ctx, ids, names);
+}
+
+/* #57-2 — создание нового спринта: sprintId входящего слота не совпадает с хранимым и
+   отсутствует в истории (переключение на исторический/PLANNING-спринт — НЕ создание). */
+function isNewSprintCreation(incoming, slot, historyArr) {
+  var id = incoming && incoming.sprintId;
+  if (!id) return false;
+  if (slot && slot.sprintId === id) return false;
+  var h = Array.isArray(historyArr) ? historyArr : [];
+  for (var i = 0; i < h.length; i++) { if (h[i] && h[i].sprintId === id) return false; }
+  return true;
+}
+
+/**
  * #50 — reporting-access контур B (руководство). Членство в ssp_settings.reportingGroupsB.
  * Deny-by-default. Потребитель — backend-reporting.js (GET reporting-access) + фронт-гейт
  * узлов дерева/секции отчётности. Данные отчётности чувствительны → доступ не опционален.
@@ -2297,6 +2333,13 @@ var ENDPOINTS = [
             return;
           } else {
           if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+          /* #57-2 — тумблер блокировки создания спринтов: НОВЫЙ sprintId (нет ни в слоте,
+             ни в истории) при включённом blockSprintCreation → 403. Правки существующих
+             спринтов работают как раньше. Фронт-гейт (doNewSprint) — UX; здесь — enforcement. */
+          if (isNewSprintCreation(body.sprint, parseJson(getProp(ctx, 'ssp_sprint'), null), parseJson(getProp(ctx, 'ssp_history'), []))) {
+            var lockSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
+            if (lockSettings && lockSettings.blockSprintCreation === true) { forbidden(ctx, 'sprint_creation_locked'); return; }
+          }
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedSprintKeys).
           body.sprint = stripDeprecatedSprintKeys(body.sprint);
           // v1.6.0 D125 — stamp before validate+persist.
@@ -2371,6 +2414,12 @@ var ENDPOINTS = [
             var storedSettings = parseJson(getProp(ctx, 'ssp_settings'), {});
             settingsToSave = mergeAdminTierFromStored(body.settings, storedSettings);
           }
+          /* #57-2 — blockSprintCreation пишет ТОЛЬКО эндпоинт sprint-lock (группа
+             sprintLockGroups): обычный settings-save всегда preserve'ит хранимое значение
+             (анти-гонка формы настроек с тумблером в шапке). */
+          var storedLock = parseJson(getProp(ctx, 'ssp_settings'), null);
+          if (storedLock && storedLock.blockSprintCreation !== undefined) settingsToSave.blockSprintCreation = storedLock.blockSprintCreation;
+          else delete settingsToSave.blockSprintCreation;
           var stStr = JSON.stringify(settingsToSave);
           if (stStr.length > MAX_PROP_SIZE) {
             badRequest(ctx, 'settings_data_too_large');
@@ -2995,6 +3044,8 @@ exports.validatePluginVersion       = validatePluginVersion;
 exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
 exports.isSettingsManager           = isSettingsManager;
 exports.isInstanceAdmin             = isInstanceAdmin;       // #51 — байпас инстанс-админа
+exports.isSprintLockManager         = isSprintLockManager;   // #57-2 — право тумблера блокировки
+exports.isNewSprintCreation         = isNewSprintCreation;   // #57-2 — pure-детект создания (unit-тест)
 exports.isPlanningManager           = isPlanningManager;
 exports.isReleaseManager            = isReleaseManager;      // #48 R2.4 — релиз-роли (D-C)
 exports.isReleaseEngineer           = isReleaseEngineer;     // #48 R2.4

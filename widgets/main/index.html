@@ -1982,6 +1982,7 @@
     body.theme-dark .widget-header__wc, body[data-theme="dark"] .widget-header__wc { color: #ffd680; }
     .widget-header__wc-icon { font-size: 13px; }
     .widget-header__new { margin-left: auto; }
+    .widget-header__lock { display: inline-flex; align-items: center; margin-left: 8px; white-space: nowrap; } /* #57-2 */
     .widget-header.hidden { display: none; }
 
     /* v1.3.1 — feature-modules status-bar (Inline / Personal / DTA / Cascade).
@@ -2494,6 +2495,8 @@
     <button id="widgetNewSprintBtn"
             class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText widget-header__new editor-btn"
             data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnNewSprintWidget">Новый спринт</button>
+    <!-- #57-2 — тумблер блокировки создания спринтов (React-остров, Ring Toggle; рендер из core по GET sprint-lock) -->
+    <span id="sprintLockToggleHost" class="widget-header__lock"></span>
     <!-- v6.2.1 D98 — globalSortToggle удалён, sort полностью переехал в th таблиц задач. -->
   </div>
 

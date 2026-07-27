@@ -118,6 +118,11 @@
         "loc": 48,
         "locBudget": 55,
         "budgetNote": "#50 S1 — новый модуль «Оперативная отчётность»: GET reporting-access (серверный гейт членства в reporting-группе, US-ACC-04; флаги контуров A/B в ответе, B⊇A) + self-register в core.ENDPOINTS. D8: тяжёлое чтение activities — на фронте под правами юзера, backend не реплеит. Роль-хелперы isReportingViewerA/B — в backend-core. Растёт на S7 (A10 snapshot-diff поверх ssp_history)."
+      },
+      "backend-sprintlock.js": {
+        "loc": 71,
+        "locBudget": 71,
+        "budgetNote": "#57-2 (эпик 57) — новый модуль: тумблер блокировки создания спринтов. GET/POST sprint-lock; authz — sprintLockGroups (канон isReleaseManager, deny-by-default); единственный писатель settings.blockSprintCreation. Enforcement создания — гейт sprint-data в backend-core (isNewSprintCreation)."
       }
     }
   },
@@ -277,6 +282,11 @@
         "loc": 474,
         "locBudget": 474,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow). v3.12.3 — пикеры в отчётности: FieldSelect для A3-полей/типов B1-B2/тегов B1-B3 + Type-бандл."
+      },
+      "react/sprint-lock-toggle.jsx": {
+        "loc": 35,
+        "locBudget": 35,
+        "budgetNote": "#57-2 — React-остров тумблера блокировки создания спринтов (Ring Toggle, mountAt из core по GET sprint-lock)."
       }
     }
   },

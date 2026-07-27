@@ -19,6 +19,8 @@ require('./backend-release.js');
 /* #50 — Оперативная отчётность backend: тело дописывает reporting-endpoints в core.ENDPOINTS
    (тот же читает backend-global.js — gotcha #7). require ДО публикации httpHandler ниже. */
 require('./backend-reporting.js');
+/* #57-2 — Sprint-lock backend: тумблер блокировки создания спринтов; endpoints дописываются в core.ENDPOINTS. */
+require('./backend-sprintlock.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

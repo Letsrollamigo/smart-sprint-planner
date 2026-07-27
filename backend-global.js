@@ -35,6 +35,8 @@ require('./backend-release.js');
 /* #50 — Оперативная отчётность: дописывает reporting-endpoints в общий core.ENDPOINTS ДО
    forEach ниже (иначе global-режим их 404'ит — gotcha #7). Идемпотентно (guard на core). */
 require('./backend-reporting.js');
+/* #57-2 — Sprint-lock backend: тумблер блокировки создания спринтов; endpoints дописываются в core.ENDPOINTS. */
+require('./backend-sprintlock.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.

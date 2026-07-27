@@ -412,6 +412,9 @@
     var st = deps.state;
     var T = deps.T;
     var STATUS = deps.STATUS;
+    /* #57-2 — тумблер блокировки создания спринтов (UX-гейт; enforcement — 403 бэка). */
+    var _sLock = (st.getSettings && st.getSettings()) || {};
+    if (_sLock.blockSprintCreation === true) { deps.toast(T('toastSprintCreationLocked'), 'warn'); return; }
     var draftName = T('newSprintDraftName');
     var _sprint = st.getSprint();
     var isActiveDraft = _sprint &&

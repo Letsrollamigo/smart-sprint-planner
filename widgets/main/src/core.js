@@ -3886,6 +3886,34 @@
         }
       });
     }
+    /* #57-2 — тумблер блокировки создания спринтов (React-остров, Ring Toggle).
+       GET sprint-lock → {locked, canToggle}; нет прав → серый (Ring disabled).
+       POST — единственный писатель settings.blockSprintCreation (группа sprintLockGroups). */
+    function _renderSprintLockToggle() {
+      var lockHost = document.getElementById('sprintLockToggleHost');
+      var island = (typeof window !== 'undefined' && window.__SSP_SPRINT_LOCK) || null;
+      if (!lockHost || !island) return;
+      apiGet('sprint-lock').then(function (r) {
+        if (!r || !r.success) return;
+        _settings.blockSprintCreation = !!r.locked;   /* синхрон фронт-гейта doNewSprint */
+        island.mountAt(lockHost, {
+          locked: !!r.locked, canToggle: !!r.canToggle,
+          label: T('sprintLockToggleLabel'), hintNoRights: T('sprintLockNoRights'),
+          onToggle: function (next) {
+            return apiPost('sprint-lock', { locked: !!next }).then(function (pr) {
+              if (pr && pr.success) {
+                _settings.blockSprintCreation = !!pr.locked;
+                toast(T(pr.locked ? 'toastSprintLockOn' : 'toastSprintLockOff'), 'success');
+              } else {
+                toast(T('toastSaveError'), 'err');
+              }
+              _renderSprintLockToggle();
+            }).catch(function () { toast(T('toastSaveError'), 'err'); _renderSprintLockToggle(); });
+          },
+        });
+      }).catch(function () { /* нет ответа — тумблер не рисуем (viewer без прав чтения и т.п.) */ });
+    }
+    _renderSprintLockToggle();
   })();
 
   /* ═══════════════════════════════════════════════════════════
