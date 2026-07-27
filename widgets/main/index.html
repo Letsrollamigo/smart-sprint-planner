@@ -2183,6 +2183,8 @@
        Отступ яруса — inline paddingLeft (depth*22, глубина не ограничена макетными lvl-1..3). */
     .ssp-release-tree { margin-top: 8px; font-size: 12px; }
     .ssp-release-tree__row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .ssp-release-tree__rm { margin-left: auto; flex: none; color: var(--muted); line-height: 0; } /* #57-1 — корзинка удаления из состава */
+    .ssp-release-tree__rm:hover { color: var(--ring-error-color, #c62828); }
     .ssp-release-tree__row > .ssp-release-tl__dot { flex: none; }
     .ssp-release-tree__row:last-child { border-bottom: 0; }
     .ssp-release-tree__caret { flex: 0 0 14px; width: 14px; padding: 0; border: 0; background: none; font-size: 9px; color: var(--muted); cursor: pointer; }

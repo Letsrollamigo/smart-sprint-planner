@@ -94,7 +94,7 @@ function AggBadge({ agg, L }) {
    прячутся по ancestors), точка зоны у каждого узла, бейдж типа у родителей, свод у
    родителей / State у листьев, orphan-подпись перед хвостом «без родителя в составе».
    Один компонент на live-карточку и frozen-историю (rows готовит VM). */
-function TreeSection({ tree, L }) {
+function TreeSection({ tree, L, onRemove }) {
   const [collapsed, setCollapsed] = React.useState({});
   if (!tree || !tree.rows || !tree.rows.length) return null;
   const toggle = (id) => setCollapsed((c) => ({ ...c, [id]: !c[id] }));
@@ -116,6 +116,18 @@ function TreeSection({ tree, L }) {
               <span className="ssp-release-tree__id">{row.id}</span>
               <span className="ssp-release-tree__sum">{row.summary || '—'}</span>
               {row.agg ? <AggBadge agg={row.agg} L={L} /> : <span className="ssp-release-tree__state">{row.state || '—'}</span>}
+              {/* #57-1 — удаление задачи из состава (только canManage && !фриз && !терминальный).
+                  ⚖ владелец: корзинка-канон (SVG trash из __SSP_ICONS + iconOnly ghost flat — как
+                  history-view/rolecomposition), модалка destructive — в контроллере. */}
+              {onRemove ? (
+                <button type="button"
+                  className="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly ssp-release-tree__rm"
+                  title={L.removeIssue} aria-label={L.removeIssue + ' ' + row.id}
+                  onClick={() => onRemove(row.id)}>
+                  <span aria-hidden="true" style={{ display: 'inline-flex' }}
+                    dangerouslySetInnerHTML={{ __html: ((typeof window !== 'undefined' && window.__SSP_ICONS) || {}).trash || '✕' }} />
+                </button>
+              ) : null}
             </div>
           </React.Fragment>
         );
@@ -126,7 +138,7 @@ function TreeSection({ tree, L }) {
 
 /* Состав релиза: счётчик (клик — раскрытие) → дерево состава (Ring Collapse; R3.2 —
    дерево вместо плоской таблицы). 0 задач → только счётчик. */
-function CompositionSection({ r, L }) {
+function CompositionSection({ r, L, onRemoveIssue }) {
   const V = globalThis.SSP_VENDORED || {};
   const Collapse = V.Collapse, Ctrl = V.CollapseControl, Content = V.CollapseContent;
   const [open, setOpen] = React.useState(false);
@@ -142,7 +154,7 @@ function CompositionSection({ r, L }) {
       <span className="ssp-release-comp__caret">{open ? '▾' : '▸'}</span>{r.compositionLabel}
     </span>
   );
-  const body = <TreeSection tree={r.tree} L={L} />;
+  const body = <TreeSection tree={r.tree} L={L} onRemove={onRemoveIssue ? (id) => onRemoveIssue(r.id, id) : null} />;
   if (!Collapse || !Ctrl || !Content) {
     return <div className="ssp-release-card__composition">{head}{body}</div>;
   }
@@ -158,7 +170,7 @@ function CompositionSection({ r, L }) {
 
 /* R2.4 (US-R2-11/12): canManage (РМ) — правка/удаление/состав/фриз; canAdvance (РМ|РИ) —
    смена статуса + обновление состояний; наблюдатель — карточка без контролов. */
-function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, onStatePreview, onRollbackPreview, onToggleFreeze, onEdit, onDelete, onExport, onShare }) {
+function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, onStatePreview, onRollbackPreview, onToggleFreeze, onEdit, onDelete, onExport, onShare, onRemoveIssue }) {
   return (
     <li className="ssp-release-card">
       <div className="ssp-release-card__head">
@@ -211,7 +223,9 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
         </React.Fragment>
       ) : null}
       <TaskLink url={r.taskUrl} L={L} />
-      <CompositionSection r={r} L={L} />
+      {/* #57-1 — ✕ в составе: РМ, не фриз, не терминальный (терминальные и так в истории) */}
+      <CompositionSection r={r} L={L}
+        onRemoveIssue={canManage && !r.freezeLocked && r.status !== 'released' && r.status !== 'cancelled' ? onRemoveIssue : null} />
       {canAdvance ? (
         <div className="ssp-release-card__actions">
           <button type="button"
@@ -372,7 +386,7 @@ function ReleaseInner({ vm }) {
     <div className="ssp-release-root">
       {vm.canCreate ? <div className="ssp-release-toolbar"><PrimaryBtn label={L.create} onClick={vm.onCreate} /></div> : null}
       <ul className="ssp-release-list">
-        {vm.releases.map((r) => <ReleaseCard key={r.id} r={r} L={L} canManage={vm.canManage} canAdvance={vm.canAdvance} onAddIssues={vm.onAddIssues} onStatusMenu={vm.onStatusMenu} onStatePreview={vm.onStatePreview} onRollbackPreview={vm.onRollbackPreview} onToggleFreeze={vm.onToggleFreeze} onEdit={vm.onEdit} onDelete={vm.onDelete} onExport={vm.onExport} onShare={vm.onShare} />)}
+        {vm.releases.map((r) => <ReleaseCard key={r.id} r={r} L={L} canManage={vm.canManage} canAdvance={vm.canAdvance} onAddIssues={vm.onAddIssues} onStatusMenu={vm.onStatusMenu} onStatePreview={vm.onStatePreview} onRollbackPreview={vm.onRollbackPreview} onToggleFreeze={vm.onToggleFreeze} onEdit={vm.onEdit} onDelete={vm.onDelete} onExport={vm.onExport} onShare={vm.onShare} onRemoveIssue={vm.onRemoveIssue} />)}
       </ul>
     </div>
   );

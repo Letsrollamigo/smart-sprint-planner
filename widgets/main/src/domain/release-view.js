@@ -88,6 +88,7 @@ function _labels(T) {
     create: T('relBtnCreate'), addIssues: T('relCardAddIssues'), edit: T('relActEdit'), delete: T('relActDelete'), statusChange: T('relStatusChange'),
     updateStates: T('relCardUpdateStates'),
     rollbackStates: T('relRbBtn'),   /* #57-3 — откат состояний по истории */
+    removeIssue: T('relRmIssueBtn'), /* #57-1 — удаление задачи из состава */
     freeze: T('relActFreeze'), unfreeze: T('relActUnfreeze'), frozenBadge: T('relFrozenBadge'),
     emptyTitle: T('relEmptyTitle'), emptyHint: T('relEmptyHint'), historyTitle: T('relNodeHistory'),
     planDate: T('relFieldPlanDate'), freezeDate: T('relFieldFreezeDate'), manager: T('relFieldManager'), engineer: T('relFieldEngineer'),
@@ -226,6 +227,7 @@ function _buildVm(deps, mode, list) {
     onStatusMenu: function (releaseId) { if (typeof deps.onStatusMenu === 'function') deps.onStatusMenu(releaseId); },
     onStatePreview: function (releaseId) { if (typeof deps.onStatePreview === 'function') deps.onStatePreview(releaseId); },
     onRollbackPreview: function (releaseId) { if (typeof deps.onRollbackPreview === 'function') deps.onRollbackPreview(releaseId); },   /* #57-3 */
+    onRemoveIssue: function (releaseId, issueId) { if (typeof deps.onRemoveIssue === 'function') deps.onRemoveIssue(releaseId, issueId); },   /* #57-1 */
     onToggleFreeze: function (releaseId) { if (typeof deps.onToggleFreeze === 'function') deps.onToggleFreeze(releaseId); },
     onDelete: function (releaseId) { if (typeof deps.onDelete === 'function') deps.onDelete(releaseId); },
     onExport: function (releaseId) { exportRelease(deps, releaseId); },                     // R4 (US-R4-01)

@@ -561,6 +561,35 @@ function applyTagsForTransfer(deps, releaseId, transferable) {
   _applyTagOps(deps, ops);
 }
 
+/* ─── #57-1 удаление задачи из состава планируемого релиза ─────────────────────
+   Гейты: терминальный/фриз — кнопки нет (UI-гейт в карточке) + guard здесь; права
+   canManage — серверная валидация POST releases (РИ-дифф состава не пройдёт).
+   Confirm → .filter из rec.issues → POST (полная замена состава — состав живёт в
+   ssp_releases, наш бэк); onOk — снятие тега ТЕКУЩЕГО статуса релиза (#55,
+   buildTagOps prev→null; реконсиляция полным массивом tags — DELETE-грабля
+   fetchYouTrack, память feedback_fetchyoutrack_no_delete). */
+function openRemoveIssueDialog(deps, releaseId, issueId) {
+  var rec = (deps.state.release.getReleases() || []).filter(function (r) { return r.id === releaseId; })[0];
+  if (!rec || _TERMINAL_ST[rec.status] || rec.freezeLocked) return;
+  if ((rec.issues || []).indexOf(issueId) < 0) return;
+  var T = deps.T;
+  /* ⚖ владелец: модалка — канон destructive-удаления (образец delHist history-view):
+     btnNo secondary + btnYesDelete danger. */
+  deps.openModal({
+    id: 'release-remove-issue', type: 'destructive', title: T('relRmIssueTitle'),
+    body: { kind: 'text', text: T('relRmIssueConfirm').replace('{id}', issueId).replace('{name}', rec.name || rec.id) },
+    buttons: [
+      { id: 'no', text: T('btnNo'), variant: 'secondary', onClick: function (h) { h.close(); } },
+      { id: 'yes', text: T('btnYesDelete'), variant: 'danger', onClick: function (h) {
+        h.close();
+        var nextIssues = (rec.issues || []).filter(function (x) { return x !== issueId; });
+        _postReleases(deps, _patchRelease(deps, releaseId, { issues: nextIssues }), T('relRmIssueDone'), ['planned'],
+          function () { _applyTagOps(deps, buildTagOps((deps.state.getSettings() || {}).releaseTagMapping, rec.status, null, [issueId])); });
+      } },
+    ],
+  });
+}
+
 function openStatePreview(deps, releaseId) {
   var rec = (deps.state.release.getReleases() || []).filter(function (r) { return r.id === releaseId; })[0];
   if (!rec || _TERMINAL_ST[rec.status]) return;
@@ -599,7 +628,7 @@ function openStatePreview(deps, releaseId) {
 }
 
 /* applyStates — публикуется для отката #57-3 (release-rollback через core-делегат, B1). */
-const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, buildPreviewRows: buildPreviewRows, applyStates: _applyStates, buildTagOps: buildTagOps, applyTagsForIssues: applyTagsForIssues, applyTagsForTransfer: applyTagsForTransfer };
+const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, openRemoveIssueDialog: openRemoveIssueDialog, buildPreviewRows: buildPreviewRows, applyStates: _applyStates, buildTagOps: buildTagOps, applyTagsForIssues: applyTagsForIssues, applyTagsForTransfer: applyTagsForTransfer };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_RELEASE_CTRL = api; } catch (_) { /* sandboxed write may throw */ }

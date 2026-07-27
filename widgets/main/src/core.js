@@ -3381,6 +3381,8 @@
       onStatePreview: function (releaseId) { if (typeof RELEASE_CTRL.openStatePreview === 'function') RELEASE_CTRL.openStatePreview(_releaseDeps(), releaseId); },
       /* #57-3 — откат состояний по истории поля State (release-rollback). */
       onRollbackPreview: function (releaseId) { if (typeof RELEASE_RB.openRollbackPreview === 'function') RELEASE_RB.openRollbackPreview(_releaseDeps(), releaseId); },
+      /* #57-1 — удаление задачи из состава планируемого релиза (release-controller). */
+      onRemoveIssue: function (releaseId, issueId) { if (typeof RELEASE_CTRL.openRemoveIssueDialog === 'function') RELEASE_CTRL.openRemoveIssueDialog(_releaseDeps(), releaseId, issueId); },
       /* #57-3 — новейший State-переход per задача (fromState = oldValue, канон-имена) из reporting-примитива. */
       bulkStateTransitions: function (issueIds) { return (REPORTING_DATA && typeof REPORTING_DATA.bulkStateTransitions === 'function') ? REPORTING_DATA.bulkStateTransitions({ host: _host, diag: diag }, issueIds, { preferCanon: true }) : Promise.resolve(null); },
       /* #57-3 — применение состояний (делегат к release-controller, B1 — rollback чужой мост не зовёт). */

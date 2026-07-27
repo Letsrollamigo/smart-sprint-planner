@@ -44,6 +44,12 @@ test('buildTagOps: догонка (prev=null) → только add тега те
      { issueId: 'A-2', action: 'add', tag: 'релиз-план' }]);
 });
 
+/* #57-1 — удаление задачи из состава: снятие тега текущего статуса (next=null). */
+test('buildTagOps: удаление из релиза (next=null) → только remove тега текущего статуса', () => {
+  assert.deepStrictEqual(buildTagOps(MAP, 'work', null, ['A-1']),
+    [{ issueId: 'A-1', action: 'remove', tag: 'релиз-в-работе' }]);
+});
+
 test('buildTagOps: одинаковый тег prev и next → no-op', () => {
   assert.deepStrictEqual(buildTagOps({ planned: 't', prep: 't' }, 'planned', 'prep', ['A-1']), []);
 });
