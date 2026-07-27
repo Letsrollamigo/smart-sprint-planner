@@ -204,6 +204,15 @@ function _activeProj(deps) {
 /* Имя атрибута YT-запроса: брейс при пробеле («Этап работ» → «{Этап работ}») — паттерн
    backlog-loader (#21 §9); без брейса запрос по полю с пробелом молча ломает отбор. */
 function _battr(name) { return /\s/.test(name) ? '{' + name + '}' : name; }
+/* #57-5 Н3 (⚖ владелец) — юзер-хвост QueryAssist в скобки: верхнеуровневый `or` иначе
+   разрывает project-скоуп (`project: X … A or B` → B со всего инстанса утекает в метрики).
+   `sort by:` в скобках жить не может — суффикс отцепляем и клеим после скобок. */
+function _wrapUserQuery(q) {
+  var m = /\bsort by:/i.exec(q);
+  var filter = m ? q.slice(0, m.index).trim() : q;
+  var sort = m ? q.slice(m.index).trim() : '';
+  return ((filter ? '(' + filter + ')' : '') + ' ' + sort).trim();
+}
 /* customField задачи по имени поля (projectCustomField.field.name | cf.name). */
 function _cf(iss, fieldName) {
   var cfs = iss.customFields || [];
@@ -409,7 +418,7 @@ function makeReportLoader(tag, contour, run) {
       queryParts: function (extras) {
         var parts = ['project: ' + proj];
         if (extras) for (var i = 0; i < extras.length; i++) parts.push(extras[i]);
-        if (base.query.trim()) parts.push(base.query.trim());
+        if (base.query.trim()) parts.push(_wrapUserQuery(base.query.trim()));   /* Н3 — скобки против or-утечки скоупа */
         return parts;
       },
       /* Один issues-фетч с ограничителем D10: $top=LIMIT+1 → {arr≤LIMIT, limitHit}. */

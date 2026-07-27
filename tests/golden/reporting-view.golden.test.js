@@ -363,6 +363,15 @@ B_REPORTS.forEach(function (report) {
   });
 });
 
+/* ── #57-5 Н3: юзер-хвост QueryAssist в скобках, sort by — снаружи ────────────────── */
+test('reporting: юзер-фильтр оборачивается в скобки (or не рвёт project-скоуп), sort by — вне скобок', async function () {
+  const deps = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30',
+    reportingQuery: '#Bug or #Feature sort by: updated' } });
+  await runReport(deps, 'a');
+  assert.strictEqual(deps.__fetchCalls[0].query,
+    'project: DEMO #Unresolved (#Bug or #Feature) sort by: updated');
+});
+
 /* ── ранние выходы «конфиг не задан» ─────────────────────────────────────────────── */
 test('golden: reporting A1 — целевые статусы не заданы → noTargets, ноль фетчей', async function () {
   const settings = baseSettings();
