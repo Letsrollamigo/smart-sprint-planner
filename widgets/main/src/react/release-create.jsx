@@ -97,7 +97,9 @@ function ReleaseCreateForm(props) {
 
   const submit = () => {
     if (!name.trim()) { setErr(L.valNameRequired); return; }
-    if (planDate && freezeDate && freezeDate.getTime() > planDate.getTime()) { setErr(L.valFreezeAfterPlan); return; }
+    /* Сравнение по дню (fmtYmd), не по ms: Ring DatePicker отдаёт выбранный день с текущим
+       временем суток → при равных датах (хотфикс: фриз = релиз) ms-сравнение ложно срабатывало. */
+    if (planDate && freezeDate && fmtYmd(freezeDate) > fmtYmd(planDate)) { setErr(L.valFreezeAfterPlan); return; }
     setErr('');
     onCreate({
       name: name.trim(), planDate: fmtYmd(planDate), freezeDate: fmtYmd(freezeDate),
