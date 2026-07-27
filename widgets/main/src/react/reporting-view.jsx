@@ -174,16 +174,18 @@ function Chrome({ vm, L }) {
             : [{ key: 'a7', label: L.a7Menu }, { key: 'a1', label: L.a1Menu }, { key: 'a3', label: L.a3Menu }, { key: 'a2', label: L.a2Menu }, { key: 'flow', label: L.flowMenu }, { key: 'a4', label: L.a4Menu }, { key: 'a5', label: L.a5Menu }, { key: 'a6', label: L.a6Menu }, { key: 'a10', label: L.a10Menu }, { key: 'a11', label: L.a11Menu }]}
           onChange={(r) => { if (typeof vm.onSwitchReport === 'function') vm.onSwitchReport(r); }} />
         <button type="button" className="ring-button-button ring-button-block ring-button-heightS" onClick={apply}>↻ {L.refresh}</button>
-        {/* #50 S9-EXP — экспорт текущего отчёта (снимок точки во времени): Excel + PDF. */}
-        <button type="button" className="ring-button-button ring-button-heightS" title={L.exportLabel}
+        {/* #50 S9-EXP — экспорт текущего отчёта (снимок точки во времени): Excel + PDF.
+            #57-4 — канон Ring: +ring-button-block (без него кнопка рендерится инлайн-текстом без рамки). */}
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" title={L.exportLabel}
           disabled={!!vm.loading}
           onClick={() => { if (typeof vm.onExport === 'function') vm.onExport('xlsx', vm); }}>⭳ Excel</button>
-        <button type="button" className="ring-button-button ring-button-heightS" title={L.exportLabel}
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" title={L.exportLabel}
           disabled={!!vm.loading}
           onClick={() => { if (typeof vm.onExport === 'function') vm.onExport('pdf', vm); }}>⭳ PDF</button>
-        {/* #50 D10 — «Прервать выполнение отчёта»: видна только при загрузке; останавливает сбор данных + откат. */}
+        {/* #50 D10 — «Прервать выполнение отчёта»: видна только при загрузке; останавливает сбор данных + откат.
+            #57-4 — ring-button-danger вместо inline-цвета (тем-авэр красный канона). */}
         {vm.loading ? (
-          <button type="button" className="ring-button-button ring-button-heightS" style={{ color: '#c62828' }}
+          <button type="button" className="ring-button-button ring-button-block ring-button-heightS ring-button-danger"
             title={L.cancelReportHint}
             onClick={() => { if (typeof vm.onCancel === 'function') vm.onCancel(); }}>⏹ {L.cancelReport}</button>
         ) : null}
