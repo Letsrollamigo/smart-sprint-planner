@@ -32,8 +32,11 @@ function _chip(mark, L) {
   const text = mark === 'desync' ? '⚠ ' + L.desync
     : mark === 'unreachable' ? L.unreachable
     : mark === 'already' ? L.already
+    : mark === 'nohist' ? (L.noHistory || L.unreachable)         /* #57-3 откат: переходов не было */
+    : mark === 'incomplete' ? (L.histIncomplete || L.unreachable) /* #57-3 откат: история обрезана (D7) */
     : L.willApply;
-  return <span className={'ssp-relpv-chip ssp-relpv-chip--' + mark}>{text}</span>;
+  const cls = (mark === 'nohist' || mark === 'incomplete') ? 'unreachable' : mark; /* стиль-группа реюзит unreachable */
+  return <span className={'ssp-relpv-chip ssp-relpv-chip--' + cls}>{text}</span>;
 }
 
 /* Панель деталей ошибок последнего применения — Ring Collapse (канон CompositionSection). */
@@ -127,10 +130,10 @@ function ReleaseStatePreview(props) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className={r.mark === 'desync' ? 'ssp-relpv-row--sync' : (r.mark === 'already' || r.mark === 'unreachable') ? 'ssp-relpv-row--skip' : undefined}>
+              <tr key={r.id} className={r.mark === 'desync' ? 'ssp-relpv-row--sync' : (r.mark === 'already' || r.mark === 'unreachable' || r.mark === 'nohist' || r.mark === 'incomplete') ? 'ssp-relpv-row--skip' : undefined}>
                 <td><input type="checkbox" checked={r.checked} disabled={r.disabled || busy} onChange={() => toggleRow(r.id)} /></td>
                 <td><span className="ssp-relpv-id">{r.id}</span> {r.title || ''}</td>
-                <td>{r.current || '—'}</td>
+                <td>{r.current || '—'}{r.tsLabel ? <span style={{ color: 'var(--muted)', fontSize: '11px' }}> · {r.tsLabel}</span> : null}</td>
                 <td className="ssp-relpv-arrow">→</td>
                 <td className="ssp-relpv-target">
                   {opts.length

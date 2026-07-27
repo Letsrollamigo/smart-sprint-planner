@@ -443,7 +443,7 @@ function _runChunked(items, jobFn) {
 function _applyStates(deps, stateField, list, done) {
   _runChunked(list || [], function (row) {
     return deps.apiPost('update-issue-field', { issueId: row.id, fieldName: stateField, value: row.target, type: 'state' })
-      .then(function (r) { return { id: row.id, ok: !!(r && r.success), error: (r && r.error) || 'write_failed' }; })
+      .then(function (r) { return { id: row.id, ok: !!(r && r.success), error: (r && (r.message || r.error)) || 'write_failed' }; })   /* #57-3 — message бэка (текст отказа state-machine) видимее кода */
       .catch(function (e) { return { id: row.id, ok: false, error: String((e && e.message) || e) }; });
   }).then(function (results) {
     var applied = [], failed = [];
@@ -598,7 +598,8 @@ function openStatePreview(deps, releaseId) {
   }).catch(function (e) { deps.diag('release state preview err: ' + e, 'err'); deps.toast(deps.T('relPickerLoadError'), 'err'); });
 }
 
-const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, buildPreviewRows: buildPreviewRows, buildTagOps: buildTagOps, applyTagsForIssues: applyTagsForIssues, applyTagsForTransfer: applyTagsForTransfer };
+/* applyStates — публикуется для отката #57-3 (release-rollback через core-делегат, B1). */
+const api = { openCreateDialog: openCreateDialog, openEditDialog: openEditDialog, openDeleteDialog: openDeleteDialog, openStatusMenu: openStatusMenu, toggleFreeze: toggleFreeze, openStatePreview: openStatePreview, buildPreviewRows: buildPreviewRows, applyStates: _applyStates, buildTagOps: buildTagOps, applyTagsForIssues: applyTagsForIssues, applyTagsForTransfer: applyTagsForTransfer };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_RELEASE_CTRL = api; } catch (_) { /* sandboxed write may throw */ }

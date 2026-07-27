@@ -68,7 +68,7 @@ function bulkStateTransitions(deps, issueIds, opts) {
       reverse: 'true',
       $top: TOP_LIMIT
     } }).then(function (activities) {
-      var r = pure.parseStateChunk(activities, chunkIds, { fieldId: opts.fieldId || '', topLimit: TOP_LIMIT });
+      var r = pure.parseStateChunk(activities, chunkIds, { fieldId: opts.fieldId || '', topLimit: TOP_LIMIT, preferCanon: !!opts.preferCanon });
       var k, i;
       for (k in r.transitions) out.transitions[k] = r.transitions[k];
       for (i = 0; i < r.incomplete.length; i++) out.incomplete.push(r.incomplete[i]);

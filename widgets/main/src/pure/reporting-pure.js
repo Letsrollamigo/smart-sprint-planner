@@ -25,6 +25,9 @@ function _isStateActivity(act, fieldId) {
 }
 
 function _valName(v) { return v ? (v.localizedName || v.name || '') : ''; }
+/* #57-3 — канон-приоритет (name ⊃ localizedName): для сверки с бандлом field-values и
+   fetchIssueData.state (оба хранят канон v.name); display-приоритет отчётов не трогаем. */
+function _valNameCanon(v) { return v ? (v.name || v.localizedName || '') : ''; }
 
 /* Разбор одного чанка. activities — массив (reverse=true, новейшие первыми). chunkIds —
    idReadable задач чанка. opts: { fieldId, topLimit } (topLimit=$top для детекта обрезки).
@@ -35,6 +38,7 @@ function parseStateChunk(activities, chunkIds, opts) {
   opts = opts || {};
   var fieldId = opts.fieldId || '';
   var topLimit = opts.topLimit || 0;
+  var nameOf = opts.preferCanon ? _valNameCanon : _valName;   /* #57-3 — откат сверяет канон */
   var acts = Array.isArray(activities) ? activities : [];
   var hitTop = topLimit > 0 && acts.length >= topLimit;
   var transitions = {};
@@ -53,8 +57,8 @@ function parseStateChunk(activities, chunkIds, opts) {
     if (!addedArr[0] && !removedArr[0]) continue;
     transitions[issueId] = {
       enteredAt: (typeof act.timestamp === 'number') ? act.timestamp : null,
-      toState:   _valName(addedArr[0]),
-      fromState: _valName(removedArr[0])
+      toState:   nameOf(addedArr[0]),
+      fromState: nameOf(removedArr[0])
     };
   }
   var incomplete = [], noTransition = [], perIssueMax = 0, withTransition = 0, k;

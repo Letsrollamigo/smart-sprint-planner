@@ -75,6 +75,7 @@ import './domain/capacity-store.js';   /* R6 — стор ёмкости (ADR-00
 import './domain/release-view.js';
 import './domain/reporting-view.js';
 import './domain/release-controller.js';
+import './domain/release-rollback.js';
 import './domain/release-pick.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';

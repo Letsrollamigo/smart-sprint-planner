@@ -158,7 +158,7 @@ function CompositionSection({ r, L }) {
 
 /* R2.4 (US-R2-11/12): canManage (РМ) — правка/удаление/состав/фриз; canAdvance (РМ|РИ) —
    смена статуса + обновление состояний; наблюдатель — карточка без контролов. */
-function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, onStatePreview, onToggleFreeze, onEdit, onDelete, onExport, onShare }) {
+function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, onStatePreview, onRollbackPreview, onToggleFreeze, onEdit, onDelete, onExport, onShare }) {
   return (
     <li className="ssp-release-card">
       <div className="ssp-release-card__head">
@@ -221,6 +221,12 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
             <button type="button"
               className="ring-button-button ring-button-block ring-button-heightS ssp-release-card__states"
               onClick={() => onStatePreview(r.id)}>{L.updateStates}</button>
+          ) : null}
+          {/* #57-3 — откат последнего перехода по истории поля State (без снапшота) */}
+          {r.issuesCount > 0 ? (
+            <button type="button"
+              className="ring-button-button ring-button-block ring-button-heightS ssp-release-card__rollback"
+              onClick={() => onRollbackPreview(r.id)}>{L.rollbackStates}</button>
           ) : null}
           {canManage ? (
             <button type="button"
@@ -366,7 +372,7 @@ function ReleaseInner({ vm }) {
     <div className="ssp-release-root">
       {vm.canCreate ? <div className="ssp-release-toolbar"><PrimaryBtn label={L.create} onClick={vm.onCreate} /></div> : null}
       <ul className="ssp-release-list">
-        {vm.releases.map((r) => <ReleaseCard key={r.id} r={r} L={L} canManage={vm.canManage} canAdvance={vm.canAdvance} onAddIssues={vm.onAddIssues} onStatusMenu={vm.onStatusMenu} onStatePreview={vm.onStatePreview} onToggleFreeze={vm.onToggleFreeze} onEdit={vm.onEdit} onDelete={vm.onDelete} onExport={vm.onExport} onShare={vm.onShare} />)}
+        {vm.releases.map((r) => <ReleaseCard key={r.id} r={r} L={L} canManage={vm.canManage} canAdvance={vm.canAdvance} onAddIssues={vm.onAddIssues} onStatusMenu={vm.onStatusMenu} onStatePreview={vm.onStatePreview} onRollbackPreview={vm.onRollbackPreview} onToggleFreeze={vm.onToggleFreeze} onEdit={vm.onEdit} onDelete={vm.onDelete} onExport={vm.onExport} onShare={vm.onShare} />)}
       </ul>
     </div>
   );

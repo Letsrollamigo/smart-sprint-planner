@@ -3357,6 +3357,7 @@
   var RELEASE_STORE = (typeof window !== 'undefined' && window.__SSP_RELEASE_STORE) || {};
   var RELEASE_CTRL  = (typeof window !== 'undefined' && window.__SSP_RELEASE_CTRL)  || {};
   var RELEASE_PICK  = (typeof window !== 'undefined' && window.__SSP_RELEASE_PICK)  || {};
+  var RELEASE_RB    = (typeof window !== 'undefined' && window.__SSP_RELEASE_ROLLBACK) || {};   /* #57-3 */
   function _releaseDeps() {
     return {
       T: T, esc: esc, icon: icon, diag: diag,
@@ -3378,6 +3379,12 @@
       onToggleFreeze: function (releaseId) { if (typeof RELEASE_CTRL.toggleFreeze === 'function') RELEASE_CTRL.toggleFreeze(_releaseDeps(), releaseId); },
       /* #48 R2.3 — предпросмотр/применение маппинга статус→State (release-controller). */
       onStatePreview: function (releaseId) { if (typeof RELEASE_CTRL.openStatePreview === 'function') RELEASE_CTRL.openStatePreview(_releaseDeps(), releaseId); },
+      /* #57-3 — откат состояний по истории поля State (release-rollback). */
+      onRollbackPreview: function (releaseId) { if (typeof RELEASE_RB.openRollbackPreview === 'function') RELEASE_RB.openRollbackPreview(_releaseDeps(), releaseId); },
+      /* #57-3 — новейший State-переход per задача (fromState = oldValue, канон-имена) из reporting-примитива. */
+      bulkStateTransitions: function (issueIds) { return (REPORTING_DATA && typeof REPORTING_DATA.bulkStateTransitions === 'function') ? REPORTING_DATA.bulkStateTransitions({ host: _host, diag: diag }, issueIds, { preferCanon: true }) : Promise.resolve(null); },
+      /* #57-3 — применение состояний (делегат к release-controller, B1 — rollback чужой мост не зовёт). */
+      applyStates: function (stateField, list, done) { if (typeof RELEASE_CTRL.applyStates === 'function') RELEASE_CTRL.applyStates(_releaseDeps(), stateField, list, done); },
       /* #48 R2.3 — батч-данные задач (summary + текущее State) для предпросмотра и слепка (делегат к release-view — B1). */
       fetchIssueData: function (issueIds) { return (RELEASE_VIEW && typeof RELEASE_VIEW.fetchIssueData === 'function') ? RELEASE_VIEW.fetchIssueData(_releaseDeps(), issueIds) : Promise.resolve({}); },
       /* #48 R2.1 — сбор слепка на закрытии (делегат к release-view, чтобы controller не звал чужой мост — B1). */

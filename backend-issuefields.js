@@ -290,7 +290,8 @@ var ISSUEFIELDS_ENDPOINTS = [
           ctx.response.json({ success: true, issueId: issueId, fieldName: fieldName });
         } catch (e) {
           dlog(ctx, 'update-issue-field error: ' + String(e && e.message));
-          ctx.response.json({ success: false, error: 'internal_error' });
+          /* #57-3 — текст исключения (отказ state-machine и т.п.) видимее кода в per-task отчёте */
+          ctx.response.json({ success: false, error: 'internal_error', message: String(e && e.message || '').substring(0, 300) });
         }
       }
     },
