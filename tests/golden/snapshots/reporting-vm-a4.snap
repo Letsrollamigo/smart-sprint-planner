@@ -24,6 +24,7 @@
     "report",
     "roleLabels",
     "shouldAbort",
+    "spillSprint",
     "totalMinutes",
     "workloadRows",
     "years",
@@ -232,12 +233,14 @@
     "flowPopulation",
     "flowSub",
     "flowTitle",
+    "idleHint",
     "incomplete",
     "limitHit",
     "loading",
     "metricCycle",
     "metricLead",
     "metricTeam",
+    "paramsDirty",
     "period.calendarYear",
     "period.currentQuarter",
     "period.custom",
@@ -262,6 +265,7 @@
     "reworkTitle",
     "reworkTotal",
     "riskSuffix",
+    "runReport",
     "tagPausePending",
     "ttmNoData",
     "ttmNoNorm",
@@ -335,6 +339,7 @@
       "dev": "Разработка"
     },
     "shouldAbort": "[Function]",
+    "spillSprint": "",
     "totalMinutes": 1740,
     "workloadRows": [
       {

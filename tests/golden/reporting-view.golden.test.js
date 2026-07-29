@@ -302,7 +302,7 @@ async function settleUntil(pred) {
 async function runReport(deps, contour) {
   _resetHosts();
   mounts = [];
-  VIEW.loadAndRender(deps, contour);
+  VIEW.loadAndRender(deps, contour, true);   /* #58-12 — расчёт только по явному run */
   await settleUntil(function () { return _isFinal(_lastVm(contour)); });
   _clearTimers();
   return _lastVm(contour);
@@ -374,6 +374,32 @@ test('reporting: юзер-фильтр клеится через and (…) — o
     'project: DEMO #Unresolved and (#Bug or #Feature)');
 });
 
+/* ── #58-12: явный запуск — без run расчёт не стартует ──────────────────────────── */
+test('reporting: loadAndRender без run → idle-vm, ноль фетчей', async function () {
+  const deps = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30', reportingQuery: '' } });
+  _resetHosts(); mounts = [];
+  VIEW.loadAndRender(deps, 'a');            /* вход во вкладку/смена параметров */
+  const vm = _lastVm('a');
+  assert.strictEqual(vm.idle, true);
+  assert.strictEqual(deps.__fetchCalls.length, 0, 'ни одного YT-запроса без явного запуска');
+});
+
+test('reporting: после успешного run повторный вход отдаёт кэш-vm без пересчёта; смена периода → paramsDirty', async function () {
+  const deps = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30', reportingQuery: '' } });
+  await runReport(deps, 'a');               /* построили */
+  const fetches = deps.__fetchCalls.length;
+  VIEW.loadAndRender(deps, 'a');            /* повторный вход — те же параметры */
+  let vm = _lastVm('a');
+  assert.strictEqual(vm.idle || false, false, 'кэш-vm, не пустое состояние');
+  assert.strictEqual(vm.paramsDirty, false);
+  assert.strictEqual(deps.__fetchCalls.length, fetches, 'без новых фетчей');
+  deps.draftSet('ui', Object.assign({}, deps.draftGet('ui'), { reportingPeriod: 'last7' }));
+  VIEW.loadAndRender(deps, 'a');            /* смена периода без запуска */
+  vm = _lastVm('a');
+  assert.strictEqual(vm.paramsDirty, true, 'прежний расчёт помечен устаревшим');
+  assert.strictEqual(deps.__fetchCalls.length, fetches);
+});
+
 /* ── #58-5: серверное сужение популяции + сортировка ────────────────────────────────
    Сорт клеится ТОЛЬКО при пустом юзер-фильтре (`sort by` после скобочной группы = 400). */
 test('reporting: A7 без фильтра — sort by updated asc; с фильтром — сорт опущен', async function () {
@@ -427,7 +453,7 @@ test('golden: reporting abort — onCancel монтирует aborted-vm, поз
   };
   _resetHosts();
   mounts = [];
-  VIEW.loadAndRender(deps, 'a');
+  VIEW.loadAndRender(deps, 'a', true);   /* #58-12 — явный запуск */
   const hostA = hostElems['tab-reporting-a'];
   assert.strictEqual(_lastVm('a').loading, true, 'loading-vm смонтирован до ответа');
   assert.strictEqual(typeof hostA.__sspReportingBase.onCancel, 'function', '_armRun вооружил onCancel');

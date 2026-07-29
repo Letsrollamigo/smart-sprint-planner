@@ -26,6 +26,7 @@
     "rollups",
     "rows",
     "shouldAbort",
+    "spillSprint",
     "threshold",
     "years",
     "ytBase"
@@ -233,12 +234,14 @@
     "flowPopulation",
     "flowSub",
     "flowTitle",
+    "idleHint",
     "incomplete",
     "limitHit",
     "loading",
     "metricCycle",
     "metricLead",
     "metricTeam",
+    "paramsDirty",
     "period.calendarYear",
     "period.currentQuarter",
     "period.custom",
@@ -263,6 +266,7 @@
     "reworkTitle",
     "reworkTotal",
     "riskSuffix",
+    "runReport",
     "tagPausePending",
     "ttmNoData",
     "ttmNoNorm",
@@ -392,6 +396,7 @@
       }
     ],
     "shouldAbort": "[Function]",
+    "spillSprint": "",
     "threshold": 20,
     "years": [
       2026,

@@ -98,6 +98,8 @@ function _labels(T) {
     ttmUnit: T('repTtmUnit'), ttmOver: T('repTtmOver'), ttmOk: T('repTtmOk'),
     ttmNoData: T('repTtmNoData'),                       /* #58-9 — median=null: не вердикт, а «нет данных» */
     tagPausePending: T('repTagPausePending'),           /* #58-11 — сноска «*» получает текст */
+    runReport: T('repRunReport'), idleHint: T('repIdleHint'),          /* #58-12 — явный запуск */
+    paramsDirty: T('repParamsDirty'),
     ttmNoNorm: T('repTtmNoNorm'), ttmNormPrefix: T('repTtmNormPrefix'),
     colUnitType: T('repColUnitType'), colCount: T('repColCount'),
     unitEpic: T('repUnitEpic'), unitStory: T('repUnitStory'),
@@ -983,18 +985,18 @@ const _loadA11 = makeReportLoader('A11', 'a', function (ctx) {
 /* #50 S8a — контур B (управленческий): диспетч по ui.reportingReportB (пока только B3).
    Своя ветка стейта (reportingReportB/PeriodB/PeriodOptsB) — ui.reportingReport общий, но под
    контур B он не действует (A монтируется по нему, B — по своему ключу). */
-function _loadContourB(deps, L) {
+function _loadContourB(deps, L, run) {
   var ui = (deps.draftGet && deps.draftGet('ui')) || {};
   var report = (ui.reportingReportB === 'b3') ? 'b3'
     : (ui.reportingReportB === 'b2') ? 'b2'
     : (ui.reportingReportB === 'b0') ? 'b0' : 'b1';   /* дефолт B1 Техдолг (B0 Свод — явным выбором) */
   var period = String(ui.reportingPeriodB || 'last30');
   var periodOpts = (ui.reportingPeriodOptsB && typeof ui.reportingPeriodOptsB === 'object') ? ui.reportingPeriodOptsB : {};
-  function _patchB(p) {
+  function _patchB(p, doRun) {
     var u = (deps.draftGet && deps.draftGet('ui')) || {};
     for (var k in p) u[k] = p[k];
     if (deps.draftSet) deps.draftSet('ui', u);
-    loadAndRender(deps, 'b');
+    loadAndRender(deps, 'b', !!doRun);   /* #58-12 */
   }
   var nowY = new Date(Date.now()).getUTCFullYear();
   var _hostB = document.getElementById(_hostId('b'));
@@ -1012,11 +1014,12 @@ function _loadContourB(deps, L) {
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],
     onSwitchReport: function (r) { _patchB({ reportingReportB: (r === 'b3' || r === 'b2' || r === 'b1' || r === 'b0') ? r : 'b1' }); },
     onSetPeriod: function (preset, opts) { _patchB({ reportingPeriodB: String(preset || 'last30'), reportingPeriodOptsB: opts || {} }); },
-    onRefresh: function () { _patchB({}); },   /* B-отчёты без свободного фильтра — обновление перезапускает */
+    onRefresh: function () { _patchB({}, true); },   /* #58-12 — явный запуск (B без свободного фильтра) */
     onAssist: function (req) { return Promise.resolve({ query: (req && req.query) || '', caret: 0, suggestions: [] }); },
     onExport: function (fmt, vm) { if (typeof deps.exportReport === 'function') deps.exportReport(fmt, vm); },   /* #50 S9-EXP — экспорт текущего отчёта */
   };
   var settings = (deps.state && deps.state.getSettings && deps.state.getSettings()) || deps.settings || {};
+  if (!run) { _mountIdle('b', _hostB, base); return; }   /* #58-12 */
   _armRun(deps, base, _reportTimeoutMs(settings));   /* D10 — токен/таймаут/onCancel ДО loading-монтирования */
   _mountVm('b', Object.assign({}, base, { loading: true }));
   var pure = _pure();
@@ -1310,10 +1313,28 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
     });
 });
 
-/* loadAndRender(deps, contour): контур B → _loadContourB (B3); контур A → диспетч по ui.reportingReport. */
-function loadAndRender(deps, contour) {
+/* #58-12 — idle-монтаж без расчёта: тот же отчёт уже строился → последний good-vm (кэш сессии)
+   поверх свежих params/handlers + paramsDirty при отличии параметров; иначе пустое состояние. */
+function _mountIdle(contour, host, base) {
+  var good = host && host.__sspReportingGood;
+  if (good && good.report === base.report && good.contour === contour) {
+    var dirty = good.period !== base.period ||
+      JSON.stringify(good.periodOpts || {}) !== JSON.stringify(base.periodOpts || {}) ||
+      String(good.query || '') !== String(base.query || '') ||
+      (!!base.spillSprint && String(good.spillSprint || '') !== String(base.spillSprint));   /* пустой ui-параметр = «дефолт», не dirty */
+    _mountVm(contour, Object.assign({}, good, base, { loading: false, idle: false, paramsDirty: dirty }));
+    return;
+  }
+  _mountVm(contour, Object.assign({}, base, { loading: false, idle: true }));
+}
+
+/* loadAndRender(deps, contour, run): контур B → _loadContourB; контур A → диспетч по ui.reportingReport.
+   #58-12 (⚖ владелец) — смена отчёта/периода/спринта и вход во вкладку НЕ считают: run=true только
+   от явной кнопки «Сформировать отчёт» (и Enter в фильтре). Без run — idle-монтаж: последний
+   построенный vm (кэш сессии) + пометка «параметры изменены», либо пустое состояние с подсказкой. */
+function loadAndRender(deps, contour, run) {
   var L = _labels(deps.T);
-  if (contour === 'b') { _loadContourB(deps, L); return; }
+  if (contour === 'b') { _loadContourB(deps, L, run); return; }
 
   var ui = (deps.draftGet && deps.draftGet('ui')) || {};
   var report = (ui.reportingReport === 'a1') ? 'a1' : (ui.reportingReport === 'a2') ? 'a2'
@@ -1325,11 +1346,11 @@ function loadAndRender(deps, contour) {
   var period = String(ui.reportingPeriod || 'last30');
   var periodOpts = (ui.reportingPeriodOpts && typeof ui.reportingPeriodOpts === 'object') ? ui.reportingPeriodOpts : {};
 
-  function _patch(p) {
+  function _patch(p, doRun) {
     var u = (deps.draftGet && deps.draftGet('ui')) || {};
     for (var k in p) u[k] = p[k];
     if (deps.draftSet) deps.draftSet('ui', u);
-    loadAndRender(deps, 'a');
+    loadAndRender(deps, 'a', !!doRun);   /* #58-12 — параметры сами по себе расчёт не запускают */
   }
   var nowY = new Date(Date.now()).getUTCFullYear();
   /* поколение запроса на host-элементе — гейт свежести для async-ответов (см. _fresh). */
@@ -1346,9 +1367,10 @@ function loadAndRender(deps, contour) {
   }
   var base = {
     contour: 'a', report: report, labels: L, query: userQ, period: period, periodOpts: periodOpts, gen: gen,
+    spillSprint: String(ui.reportingSpillSprint || ''),   /* #58-12 — для dirty-сравнения A10 */
     ytBase: (deps.ytBase ? String(deps.ytBase) : ''),   /* v3.9.0 — кликабельные ID (ссылка как в бэклоге) */
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],
-    onRefresh: function (q) { _patch({ reportingQuery: q == null ? '' : String(q) }); },
+    onRefresh: function (q) { _patch({ reportingQuery: q == null ? '' : String(q) }, true); },   /* #58-12 — явный запуск */
     onAssist: function (req) { return (typeof deps.searchAssist === 'function') ? deps.searchAssist(deps, req) : Promise.resolve({ query: (req && req.query) || '', caret: 0, suggestions: [] }); },
     onSwitchReport: function (r) { _patch({ reportingReport: (r === 'a1' || r === 'a2' || r === 'a3' || r === 'a6' || r === 'a10' || r === 'a11' || r === 'flow' || r === 'a4' || r === 'a5') ? r : 'a7' }); },
     onSetPeriod: function (preset, opts) { _patch({ reportingPeriod: String(preset || 'last30'), reportingPeriodOpts: opts || {} }); },
@@ -1357,6 +1379,7 @@ function loadAndRender(deps, contour) {
   };
 
   var settings = (deps.state && deps.state.getSettings && deps.state.getSettings()) || deps.settings || {};
+  if (!run) { _mountIdle('a', _hostA, base); return; }   /* #58-12 — без явного запуска не считаем */
   _armRun(deps, base, _reportTimeoutMs(settings));   /* D10 — токен/таймаут/onCancel ДО loading-монтирования */
   _mountVm('a', Object.assign({}, base, { loading: true }));
 

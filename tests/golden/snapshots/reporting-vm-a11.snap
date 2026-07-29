@@ -20,6 +20,7 @@
     "report",
     "roleRows",
     "shouldAbort",
+    "spillSprint",
     "window",
     "years",
     "ytBase"
@@ -227,12 +228,14 @@
     "flowPopulation",
     "flowSub",
     "flowTitle",
+    "idleHint",
     "incomplete",
     "limitHit",
     "loading",
     "metricCycle",
     "metricLead",
     "metricTeam",
+    "paramsDirty",
     "period.calendarYear",
     "period.currentQuarter",
     "period.custom",
@@ -257,6 +260,7 @@
     "reworkTitle",
     "reworkTotal",
     "riskSuffix",
+    "runReport",
     "tagPausePending",
     "ttmNoData",
     "ttmNoNorm",
@@ -322,6 +326,7 @@
       }
     ],
     "shouldAbort": "[Function]",
+    "spillSprint": "",
     "window": 3,
     "years": [
       2026,

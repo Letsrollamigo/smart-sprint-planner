@@ -174,7 +174,7 @@ function Chrome({ vm, L }) {
             ? [{ key: 'b1', label: L.b1Menu }, { key: 'b2', label: L.b2Menu }, { key: 'b3', label: L.b3Menu }, { key: 'b0', label: L.b0Menu }]   /* #50 S8/B0 — контур B: B1 Техдолг, B2 «Налог на баги», B3 «1000 мелочей», B0 Свод */
             : [{ key: 'a7', label: L.a7Menu }, { key: 'a1', label: L.a1Menu }, { key: 'a3', label: L.a3Menu }, { key: 'a2', label: L.a2Menu }, { key: 'flow', label: L.flowMenu }, { key: 'a4', label: L.a4Menu }, { key: 'a5', label: L.a5Menu }, { key: 'a6', label: L.a6Menu }, { key: 'a10', label: L.a10Menu }, { key: 'a11', label: L.a11Menu }]}
           onChange={(r) => { if (typeof vm.onSwitchReport === 'function') vm.onSwitchReport(r); }} />
-        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" onClick={apply}>↻ {L.refresh}</button>
+        <button type="button" className="ring-button-button ring-button-block ring-button-heightS" onClick={apply}>▶ {L.runReport}</button>
         {/* #50 S9-EXP — экспорт текущего отчёта (снимок точки во времени): Excel + PDF.
             #57-4 — канон Ring: +ring-button-block (без него кнопка рендерится инлайн-текстом без рамки). */}
         <button type="button" className="ring-button-button ring-button-block ring-button-heightS" title={L.exportLabel}
@@ -1404,6 +1404,7 @@ function B0View({ vm, L }) {
 }
 
 function ReportBody({ vm, L }) {
+  if (vm.idle) return <_Muted>{L.idleHint}</_Muted>;   /* #58-12 — не сформирован, ждём явного запуска */
   if (vm.noTargets) return <_Muted>{L.a1NoTargets}</_Muted>;
   if (vm.rangePrompt) return <_Muted>{L.rangePrompt}</_Muted>;
   if (vm.loading) return <_Muted>{L.loading}</_Muted>;
@@ -1460,6 +1461,7 @@ function ReportView({ vm }) {
       </div>
       <Chrome vm={vm} L={L} />
       {vm.aborted ? <Banner kind="warn">{vm.aborted === 'timeout' ? L.abortedTimeout : L.abortedManual}</Banner> : null}
+      {vm.paramsDirty ? <Banner kind="warn">{L.paramsDirty}</Banner> : null}{/* #58-12 — показан прежний расчёт */}
       <ReportBody vm={vm} L={L} />
     </div>
   );
