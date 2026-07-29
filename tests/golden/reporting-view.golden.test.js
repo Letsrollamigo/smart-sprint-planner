@@ -423,6 +423,52 @@ test('reporting: A2 — популяция сужена `updated:` суперс�
   assert.strictEqual(deps.__fetchCalls[0].query, 'project: DEMO updated: 2026-05-03 .. *');
 });
 
+/* ── #58-5 шаг 2 — пагинация срезов (A3/A6/B1/B0) до потолка reportingMaxIssues ──── */
+function pagedIssuesStub(pagesLog, totalOrPager) {
+  return function (endpoint, opts) {
+    const q = (opts && opts.query) || {};
+    const skip = q.$skip || 0, top = q.$top || 200;
+    pagesLog.push({ skip: skip, top: top });
+    const total = typeof totalOrPager === 'function' ? totalOrPager(q) : totalOrPager;
+    const n = Math.max(0, Math.min(total - skip, top));
+    return Promise.resolve(Array.from({ length: n }, function (_, i) {
+      return { idReadable: 'PG-' + (skip + i), summary: 's', fields: [] };
+    }));
+  };
+}
+
+test('reporting: #58-5ш2 срез A3 — страницы по 200 до конца населения; потолок не превышен → без баннера', async function () {
+  const pages = [];
+  const deps = makeDeps({ ui: { reportingReport: 'a3', reportingQuery: '' }, fetchYouTrack: pagedIssuesStub(pages, 350) });
+  const vm = await runReport(deps, 'a');
+  assert.deepStrictEqual(pages, [{ skip: 0, top: 200 }, { skip: 200, top: 200 }], 'полная страница → докрутка, хвост → стоп');
+  assert.strictEqual(vm.limitHit, false);
+  assert.strictEqual(vm.wipCount + vm.doneCount, 350, 'всё население среза в расчёте');
+});
+
+test('reporting: #58-5ш2 срез A3 — потолок reportingMaxIssues превышен → обрезка до потолка + limitHit', async function () {
+  const settings = baseSettings();
+  settings.reportingMaxIssues = 400;
+  const pages = [];
+  const deps = makeDeps({ settings: settings, ui: { reportingReport: 'a3', reportingQuery: '' }, fetchYouTrack: pagedIssuesStub(pages, 5000) });
+  const vm = await runReport(deps, 'a');
+  assert.strictEqual(pages.length, 3, '2 страницы до потолка + страница-детектор превышения');
+  assert.strictEqual(vm.limitHit, true);
+  assert.strictEqual(vm.limit, 400, 'баннер называет фактический потолок');
+  assert.strictEqual(vm.wipCount + vm.doneCount, 400, 'в расчёте ровно потолок');
+});
+
+test('reporting: #58-5ш2 срез A3 — население РОВНО в потолок → probe-страница пуста, баннера нет', async function () {
+  const settings = baseSettings();
+  settings.reportingMaxIssues = 400;
+  const pages = [];
+  const deps = makeDeps({ settings: settings, ui: { reportingReport: 'a3', reportingQuery: '' }, fetchYouTrack: pagedIssuesStub(pages, 400) });
+  const vm = await runReport(deps, 'a');
+  assert.deepStrictEqual(pages.map(function (p) { return p.skip; }), [0, 200, 400], 'probe следующей страницы вместо ложного баннера');
+  assert.strictEqual(vm.limitHit, false);
+  assert.strictEqual(vm.wipCount + vm.doneCount, 400);
+});
+
 /* ── ранние выходы «конфиг не задан» ─────────────────────────────────────────────── */
 test('golden: reporting A1 — целевые статусы не заданы → noTargets, ноль фетчей', async function () {
   const settings = baseSettings();

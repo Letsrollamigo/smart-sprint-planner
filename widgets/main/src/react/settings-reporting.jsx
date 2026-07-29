@@ -170,6 +170,17 @@ function ReportingSection(props) {
     patch({ timeoutSec: val });
     setTimeoutRaw(null);
   };
+  /* #58-5 шаг 2 — потолок задач среза (A3/A6/B1/B0). Дефолт 1000; кламп 200..5000; blur-commit
+     (как timeoutSec: кламп на keystroke — input-trap, значения с первой цифрой 1 недостижимы). */
+  const [maxIssuesRaw, setMaxIssuesRaw] = React.useState(null);
+  const maxIssuesVal = (v.maxIssues != null ? v.maxIssues : 1000);
+  const commitMaxIssues = () => {
+    const s = String(maxIssuesRaw == null ? '' : maxIssuesRaw).trim();
+    let val = 1000;
+    if (s !== '') { const num = Math.round(Number(s)); if (isFinite(num) && num >= 200) val = num > 5000 ? 5000 : num; }
+    patch({ maxIssues: val });
+    setMaxIssuesRaw(null);
+  };
   const pauseMarkers = (v.pauseMarkers && typeof v.pauseMarkers === 'object') ? v.pauseMarkers : { states: [], tags: [] };
   const pauseStates = Array.isArray(pauseMarkers.states) ? pauseMarkers.states : [];
   const pauseTags = Array.isArray(pauseMarkers.tags) ? pauseMarkers.tags : [];
@@ -195,6 +206,18 @@ function ReportingSection(props) {
           <input type="number" min="5" step="5" style={numCell}
             value={timeoutRaw != null ? timeoutRaw : timeoutVal}
             onChange={(e) => setTimeoutRaw(e.target.value)} onBlur={commitTimeoutSec} />
+        </div>
+      </div>
+
+      {/* #58-5 шаг 2 — потолок задач среза A3/A6/B1/B0 (страницы по 200 до потолка). */}
+      <div className="card-subtitle" style={subCls}>{t('repSetMaxIssues')}</div>
+      <span className="hint" style={hintCls}>{t('repSetMaxIssuesHint')}</span>
+      <div className="form-grid form-grid--2" style={{ marginTop: '8px' }}>
+        <div className="field">
+          <label>{t('repSetMaxIssuesLabel')}</label>
+          <input type="number" min="200" max="5000" step="100" style={numCell}
+            value={maxIssuesRaw != null ? maxIssuesRaw : maxIssuesVal}
+            onChange={(e) => setMaxIssuesRaw(e.target.value)} onBlur={commitMaxIssues} />
         </div>
       </div>
 

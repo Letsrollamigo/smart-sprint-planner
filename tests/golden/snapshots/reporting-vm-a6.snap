@@ -276,8 +276,8 @@
   ],
   "fetchCalls": [
     {
-      "$skip": "[undefined]",
-      "$top": 201,
+      "$skip": 0,
+      "$top": 200,
       "endpoint": "issues",
       "fields": "idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes))",
       "query": "project: DEMO State: {Open}, {Ready} sort by: updated desc"
@@ -287,7 +287,7 @@
   "vm": {
     "contour": "a",
     "gen": 1,
-    "limit": 200,
+    "limit": 1000,
     "limitHit": false,
     "loading": false,
     "noBacklogCfg": false,

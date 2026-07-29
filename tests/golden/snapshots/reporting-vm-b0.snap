@@ -276,8 +276,8 @@
   ],
   "fetchCalls": [
     {
-      "$skip": "[undefined]",
-      "$top": 201,
+      "$skip": 0,
+      "$top": 200,
       "endpoint": "issues",
       "fields": "idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(login,name,localizedName,minutes)),links(direction,linkType(name),issues(idReadable,customFields(name,value(name))))",
       "query": "project: DEMO sort by: updated desc"
@@ -338,7 +338,7 @@
     "hasFlow": true,
     "hasSystem": true,
     "incompleteCount": 0,
-    "limit": 200,
+    "limit": 1000,
     "limitHit": false,
     "loading": false,
     "onAssist": "[Function]",

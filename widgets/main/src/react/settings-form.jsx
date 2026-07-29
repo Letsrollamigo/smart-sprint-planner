@@ -203,6 +203,7 @@ function SettingsForm(props) {
     variancePct: (typeof initial.reportingVariancePct === 'number' && isFinite(initial.reportingVariancePct)) ? initial.reportingVariancePct : 20,
     velocityWindow: (typeof initial.reportingVelocityWindow === 'number' && isFinite(initial.reportingVelocityWindow)) ? initial.reportingVelocityWindow : 3,
     timeoutSec: (typeof initial.reportingTimeoutSec === 'number' && isFinite(initial.reportingTimeoutSec)) ? initial.reportingTimeoutSec : 90,   /* #50 D10 таймаут-бэкстоп */
+    maxIssues: (typeof initial.reportingMaxIssues === 'number' && isFinite(initial.reportingMaxIssues)) ? initial.reportingMaxIssues : 1000,   /* #58-5 ш2 — потолок задач среза */
     showSystem: initial.reportingShowSystem !== false,   /* v3.9.0 — «Система» в отчётах (дефолт ON) */
     /* #50 S6a — A3 : имена YT-полей бизнес-колонок среза (пусто = колонка скрыта). */
     a3StageField: (typeof initial.reportingA3StageField === 'string') ? initial.reportingA3StageField : '',
@@ -475,6 +476,7 @@ function SettingsForm(props) {
     data.reportingVariancePct = (typeof reporting.variancePct === 'number' && isFinite(reporting.variancePct)) ? reporting.variancePct : 20; /* #50 S5b A5 */
     data.reportingVelocityWindow = (typeof reporting.velocityWindow === 'number' && isFinite(reporting.velocityWindow)) ? reporting.velocityWindow : 3; /* v3.12.0 #11 A11 */
     data.reportingTimeoutSec = (typeof reporting.timeoutSec === 'number' && isFinite(reporting.timeoutSec)) ? reporting.timeoutSec : 90; /* #50 D10 таймаут */
+    data.reportingMaxIssues = (typeof reporting.maxIssues === 'number' && isFinite(reporting.maxIssues)) ? reporting.maxIssues : 1000; /* #58-5 ш2 — потолок задач среза */
     data.reportingShowSystem = reporting.showSystem !== false; /* v3.9.0 — «Система» в отчётах (bool, дефолт ON) */
     data.reportingPauseMarkers = reporting.pauseMarkers || { states: [], tags: [] };
     /* #50 S6a — A3 срез: имена YT-полей бизнес-колонок (пусто → null = колонка скрыта). */

@@ -280,14 +280,16 @@ test('bulkAnchorTransitions: чанкинг по 25, merge anchors/timelines, co
   assert.deepEqual(r.incomplete, []);
 });
 
-test('bulkAnchorTransitions: hitTop-чанк ⇒ все его задачи incomplete, complete=false', async () => {
+test('bulkAnchorTransitions: hitTop не лечится бисекцией (flood и в single-issue) ⇒ задачи incomplete, complete=false', async () => {
   const deps = mockDeps(function () {
     const flood = [];
     for (let i = 0; i < 300; i++) flood.push(act('P-1', day(9) - i, 'InProgress', 'Open', 'STATE_FIELD'));
-    return Promise.resolve(flood);                             // 300 = TOP_LIMIT → hitTop
+    return Promise.resolve(flood);                             // 300 = TOP_LIMIT → hitTop на любом запросе
   });
   const r = await data.bulkAnchorTransitions(deps, ['P-1', 'P-2'], { fieldId: 'STATE_FIELD', anchorStates: ['InProgress'] });
-  assert.equal(r.diag.hitTopChunks, 1);
+  assert.equal(deps.calls.length, 3);                          // #58-4: чанк → бисекция → 2 single-issue
+  assert.equal(r.diag.bisects, 1);
+  assert.equal(r.diag.hitTopChunks, 2);                        // оба single-issue листа упёрлись
   assert.deepEqual(r.incomplete.slice().sort(), ['P-1', 'P-2']);
   assert.equal(r.complete, false);
 });

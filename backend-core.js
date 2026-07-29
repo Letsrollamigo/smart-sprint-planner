@@ -990,7 +990,9 @@ var ALLOWED_SETTINGS_KEYS = [
      A-отчётов, группировке B-отчётов и экспорте XLSX/PDF (bool, дефолт ON — семантика !== false). */
   'reportingShowSystem',
   /* v3.12.0 (#11) — A11 Velocity: окно скользящего среднего (закрытые спринты, int 1..10|null, дефолт 3). */
-  'reportingVelocityWindow'
+  'reportingVelocityWindow',
+  /* #58-5 шаг 2 — потолок задач среза (A3/A6/B1/B0): пагинация страницами до потолка (int 200..5000|null, дефолт 1000 на фронте). */
+  'reportingMaxIssues'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1057,7 +1059,8 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'reportingTechDebtType','reportingTechDebtTag', /* #50 S8b — B1 отбор техдолга тип/тег (контур B) */
   'reportingBugType','reportingLinkTypes', /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
   'reportingShowSystem', /* v3.9.0 — тумблер «Система» в отчётах */
-  'reportingVelocityWindow' /* v3.12.0 (#11) — A11 Velocity: окно среднего */
+  'reportingVelocityWindow', /* v3.12.0 (#11) — A11 Velocity: окно среднего */
+  'reportingMaxIssues' /* #58-5 шаг 2 — потолок задач среза A3/A6/B1/B0 */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1433,6 +1436,9 @@ function validateSettings(settings) {
   /* v3.12.0 (#11) — reportingVelocityWindow: окно среднего A11 Velocity (закрытые спринты, num 1..10|null). */
   if (settings.reportingVelocityWindow !== undefined && settings.reportingVelocityWindow !== null
       && !isNumInRange(settings.reportingVelocityWindow, 1, 10)) return false;
+  /* #58-5 шаг 2 — reportingMaxIssues: потолок задач среза A3/A6/B1/B0 (num 200..5000|null). */
+  if (settings.reportingMaxIssues !== undefined && settings.reportingMaxIssues !== null
+      && !isNumInRange(settings.reportingMaxIssues, 200, 5000)) return false;
   /* #50 S7a — reportingSpilloverAgeBands: { warm|hot → int 1..1000|null } — пороги «возраста хвоста»
      A10 (подряд спринтов не-done): warm→жёлтый бэйдж, hot→красный. Ключи фиксированы (⊆ [warm,hot]). */
   if (settings.reportingSpilloverAgeBands !== undefined && settings.reportingSpilloverAgeBands !== null) {

@@ -13,6 +13,13 @@
 'use strict';
 
 const LIMIT = 200;
+/* #58-5 шаг 2 — потолок задач среза (A3/A6/B1/B0): страницы по LIMIT до reportingMaxIssues
+   (настройки отчётности, admin-тир; валидатор бэка 200..5000). Дефолт 1000. */
+const MAX_ISSUES_DEFAULT = 1000;
+function _maxIssues(settings) {
+  var v = settings && settings.reportingMaxIssues;
+  return (typeof v === 'number' && v >= LIMIT && v <= 5000) ? Math.floor(v) : MAX_ISSUES_DEFAULT;
+}
 const ISSUE_FIELDS = 'idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(name))';
 /* A2 TTM: базовые поля + вложенный Type связанных задач (для parentIsEpic по links). Тип самой
    задачи уже приходит в customFields ISSUE_FIELDS (селектор без фильтра поля отдаёт все cf). */
@@ -451,6 +458,29 @@ function makeReportLoader(tag, contour, run) {
             return { arr: arr, limitHit: limitHit };
           });
       },
+      /* #58-5 шаг 2 — срезы (A3/A6/B1/B0): страницы по LIMIT до потолка reportingMaxIssues
+         (настройки отчётности, дефолт 1000). limitHit — ТОЛЬКО при реальном превышении
+         потолка (страница полная И собрано ≥ max); {max} — для баннера {n}. */
+      fetchIssuesPaged: function (fields, parts) {
+        var max = _maxIssues(ctx.settings);
+        var q = parts.join(' ');
+        var arr = [];
+        function page(skip) {
+          if (typeof base.shouldAbort === 'function' && base.shouldAbort()) return Promise.reject({ __reportAborted: true });
+          return deps.host.fetchYouTrack('issues', { query: { fields: fields, query: q, $skip: skip, $top: LIMIT } })
+            .then(function (raw) {
+              var pageArr = Array.isArray(raw) ? raw : [];
+              for (var i = 0; i < pageArr.length; i++) arr.push(pageArr[i]);
+              if (pageArr.length < LIMIT) {              /* хвост: населения больше нет */
+                var over = arr.length > max;
+                return { arr: over ? arr.slice(0, max) : arr, limitHit: over, max: max };
+              }
+              if (arr.length > max) return { arr: arr.slice(0, max), limitHit: true, max: max };
+              return page(skip + LIMIT);                 /* ровно max при полной странице → probe следующей */
+            });
+        }
+        return page(0);
+      },
       /* Период-гарды + окно. Патчи per-loader (исторически гетерогенны — {loading:false,…}
          vs {report:'xx',…}; сохраняем формы vm байт-в-байт). null = vm уже смонтирован. */
       window: function (promptPatch, failPatch) {
@@ -847,7 +877,7 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
   var prioField = (typeof settings.reportingA3PriorityField === 'string' && settings.reportingA3PriorityField) || '';
   var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — свежайшие первыми (срез) */
+  return ctx.fetchIssuesPaged(ISSUE_FIELDS_A3, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — свежайшие первыми; ш2 — страницы до потолка */
     if (!_fresh(base)) return;                           /* устаревший ответ — не монтируем */
     var arr = f.arr;
     var rows = [], wipCount = 0, doneCount = 0;
@@ -865,7 +895,7 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
     }
     ctx.mount({ report: 'a3', loading: false, rows: rows, hasSystem: !!fieldSystem,
       a3NoDone: !Object.keys(doneSet).length,   /* #57-5 Н4 — подсказка вместо молчаливого Done=0 */
-      wipCount: wipCount, doneCount: doneCount, limitHit: f.limitHit, limit: LIMIT,
+      wipCount: wipCount, doneCount: doneCount, limitHit: f.limitHit, limit: f.max,
       snapRoles: roles.map(function (r) { return { key: r.key, label: r.label }; }),
       snapCols: { stage: !!stageField, org: !!orgField, priority: !!prioField } });
   });
@@ -895,7 +925,7 @@ const _loadA6 = makeReportLoader('A6', 'a', function (ctx) {
   else extras.push('#Unresolved');                         /* нет конфигурации бэклога → все нерешённые + подсказка */
   if (types.length) extras.push(_battr(fieldType) + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(extras, 'updated desc')).then(function (f) {   /* #58-5 */
+  return ctx.fetchIssuesPaged(ISSUE_FIELDS_A3, ctx.queryParts(extras, 'updated desc')).then(function (f) {   /* #58-5; ш2 — страницы до потолка */
     if (!_fresh(base)) return;                            /* устаревший ответ — не монтируем */
     var arr = f.arr;
     var perIssue = [];
@@ -909,7 +939,7 @@ const _loadA6 = makeReportLoader('A6', 'a', function (ctx) {
     for (var ci = 0; ci < roles.length; ci++) { var cv = capRaw[roles[ci].key]; if (typeof cv === 'number' && isFinite(cv)) capHours[roles[ci].key] = cv; }
     var built = pure.buildBacklogRows(perIssue, roles.map(function (r) { return { key: r.key, label: r.label }; }), capHours, A6_NORM_MONTHS);
     ctx.mount({ report: 'a6', loading: false, rows: built.rows, norm: built.norm,
-      noBacklogCfg: noBacklogCfg, populationCount: perIssue.length, limitHit: f.limitHit, limit: LIMIT });
+      noBacklogCfg: noBacklogCfg, populationCount: perIssue.length, limitHit: f.limitHit, limit: f.max });
   });
 });
 
@@ -1052,7 +1082,7 @@ const _loadB1 = makeReportLoader('B1', 'b', function (ctx) {
   var fieldSystem = _fieldSystemEff(settings);   /* v3.9.0 — тумблер reportingShowSystem гейтит группировку */
   function _hasTag(iss, tag) { var ts = Array.isArray(iss.tags) ? iss.tags : []; for (var i = 0; i < ts.length; i++) { if (ts[i] && ts[i].name === tag) return true; } return false; }
   /* QueryAssist AND */
-  return ctx.fetchIssues(ISSUE_FIELDS_B1, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 */
+  return ctx.fetchIssuesPaged(ISSUE_FIELDS_B1, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5; ш2 — страницы до потолка */
     if (!_fresh(base)) return;
     var arr = f.arr;
     var perIssue = [];
@@ -1067,7 +1097,7 @@ const _loadB1 = makeReportLoader('B1', 'b', function (ctx) {
     ctx.mount({ loading: false,
       groups: built.groups, unestimated: built.unestimated, estimated: built.estimated, debtTasks: built.debtTasks,
       totalDebtMinutes: built.totalDebtMinutes, totalPct: built.totalPct,
-      hasSystem: !!fieldSystem, populationCount: perIssue.length, limitHit: f.limitHit, limit: LIMIT });
+      hasSystem: !!fieldSystem, populationCount: perIssue.length, limitHit: f.limitHit, limit: f.max });
   });
 });
 
@@ -1240,8 +1270,8 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
   var anchorStates = _anchorStateSet(anchors);             /* концы lead/team/cycle (timelines всё равно полные) */
   flowStates.forEach(function (s) { if (anchorStates.indexOf(s) < 0) anchorStates.push(s); });
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_B0, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — B0 as-of метрикам нужна вся история: НЕ сужаем, только порядок */
-      var arr = f.arr, limitHit = f.limitHit;
+  return ctx.fetchIssuesPaged(ISSUE_FIELDS_B0, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — B0 as-of метрикам нужна вся история: НЕ сужаем, только порядок; ш2 — страницы до потолка */
+      var arr = f.arr, limitHit = f.limitHit, maxi = f.max;
       var m = _mapIssuesA2(arr, fieldState, typeNames);    /* type/parentIsEpic для foldChildUnits (TTM) + fieldId состояния */
       var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */
       var fieldIds = [], seenFid = {}, rolesEng = [];      /* estField name→id (ОДИН резолв) → rolesEng {key,label,fieldId} + fieldIds примитива (как A5) */
@@ -1307,7 +1337,7 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
                   ' incomplete=' + incomplete.length, incomplete.length ? 'warn' : 'ok');
                 ctx.mount({ loading: false, b0NoCfg: false, series: series,
                   hasSystem: !!fieldSystem, hasFlow: flowStates.length >= 2,   /* поток осмыслен от 2 статусов (гейт = _loadFlow) */ hasBacklog: Object.keys(backlogStates).length > 0,
-                  populationCount: m.ids.length, incompleteCount: incomplete.length, limitHit: limitHit, limit: LIMIT });
+                  populationCount: m.ids.length, incompleteCount: incomplete.length, limitHit: limitHit, limit: maxi });
           });
         });
     });

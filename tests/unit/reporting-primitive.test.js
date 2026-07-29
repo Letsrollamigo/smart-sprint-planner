@@ -18,7 +18,8 @@ const DAY = 86400000;
    node:test изолирует процесс per-file, утечки в другие файлы нет; parseStateChunk-тесты
    window не используют. */
 global.window = { __SSP_REPORTING_PURE: pure };
-const { bulkStateTransitions, bulkWorkItems, _parseWorkItems, _fmtWorkDate, CHUNK_SIZE, TOP_LIMIT } =
+const { bulkStateTransitions, bulkAnchorTransitions, bulkWorkItems, _parseWorkItems, _fmtWorkDate,
+  CHUNK_SIZE, TOP_LIMIT, MAX_ACT_FETCHES } =
   require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'data', 'reporting-data.js'));
 
 /* Фабрика activity в форме Activities API (см. _fetchGanttStateHistory). */
@@ -237,17 +238,87 @@ test('bulkStateTransitions: чанкинг по 25 — 30 задач → 2 фе�
   assert.deepEqual(r.incomplete, []);
 });
 
-test('bulkStateTransitions: incomplete из чанка → complete=false', async () => {
+test('bulkStateTransitions: обрезка не лечится бисекцией (flood и в single-issue) → incomplete, complete=false', async () => {
   const deps = mockDeps(function () {
-    // упираемся в лимит (300 активностей все по P-1), P-2 не влезает
+    // упираемся в лимит на ЛЮБОМ запросе (и после деления): P-2 так и не влезает
     const flood = [];
     for (let i = 0; i < 300; i++) flood.push(act('P-1', 5000 - i, 'Разработка', 'Анализ', 'STATE_FIELD'));
     return Promise.resolve(flood);
   });
   const r = await bulkStateTransitions(deps, ['P-1', 'P-2'], { fieldId: 'STATE_FIELD' });
-  assert.equal(r.diag.hitTopChunks, 1);
-  assert.deepEqual(r.incomplete, ['P-2']);
+  assert.equal(deps.calls.length, 3);            // #58-4: чанк → бисекция → 2 single-issue
+  assert.equal(r.diag.bisects, 1);
+  assert.equal(r.diag.hitTopChunks, 2);          // оба single-issue листа упёрлись
+  assert.deepEqual(r.incomplete, ['P-2']);       // P-1 найден, P-2 честно неполон
   assert.equal(r.complete, false);               // метрику по P-2 считать нельзя
+});
+
+/* #58-4 — адаптивная бисекция: совокупная история чанка не влезает в $top, но per-issue
+   влезает → деление пополам восстанавливает ПОЛНУЮ метрику (раньше: starvation-задачи чанка
+   уходили в incomplete, у якорей — гас весь чанк). */
+test('bulkStateTransitions: #58-4 бисекция лечит starvation — совокупный flood, per-issue влезает', async () => {
+  const deps = mockDeps(function (q) {
+    const idsInQ = q.replace('issue id: ', '').split(', ');
+    if (idsInQ.length > 1) {                     // совместное окно упёрлось
+      const flood = [];
+      for (let i = 0; i < 300; i++) flood.push(act(idsInQ[0], 5000 - i, 'Разработка', 'Анализ', 'STATE_FIELD'));
+      return Promise.resolve(flood);
+    }                                             // single-issue: влезает
+    return Promise.resolve([act(idsInQ[0], 7000, 'Тех.тест', 'Разработка', 'STATE_FIELD')]);
+  });
+  const r = await bulkStateTransitions(deps, ['P-1', 'P-2'], { fieldId: 'STATE_FIELD' });
+  assert.equal(deps.calls.length, 3);
+  assert.equal(r.diag.bisects, 1);
+  assert.equal(Object.keys(r.transitions).length, 2);   // ОБЕ задачи с метрикой
+  assert.deepEqual(r.incomplete, []);
+  assert.equal(r.complete, true);
+});
+
+test('bulkStateTransitions: #58-4 потолок MAX_ACT_FETCHES — бисекция останавливается, неполнота честная, без зависания', async () => {
+  const ids = [];
+  for (let i = 1; i <= 50; i++) ids.push('P-' + i);     // 2 базовых чанка, всё флудит
+  const deps = mockDeps(function () {
+    const flood = [];
+    for (let i = 0; i < 300; i++) flood.push(act('P-1', 5000 - i, 'Разработка', 'Анализ', 'STATE_FIELD'));
+    return Promise.resolve(flood);
+  });
+  const r = await bulkStateTransitions(deps, ids, { fieldId: 'STATE_FIELD' });
+  assert.ok(deps.calls.length <= MAX_ACT_FETCHES + 2, 'фетчи ограничены потолком (+хвост деления): ' + deps.calls.length);
+  assert.equal(r.complete, false);
+  assert.ok(r.incomplete.length > 0, 'обрезанные за потолком — честно incomplete');
+});
+
+// ─────────────────────── bulkAnchorTransitions (orchestrator, #58-4) ───────────────────────
+
+test('bulkAnchorTransitions: #58-4 бисекция спасает якоря — раньше hitTop гасил весь чанк', async () => {
+  const deps = mockDeps(function (q) {
+    const idsInQ = q.replace('issue id: ', '').split(', ');
+    if (idsInQ.length > 1) {
+      const flood = [];
+      for (let i = 0; i < 300; i++) flood.push(act(idsInQ[0], 5000 + i, 'Разработка', 'Анализ', 'STATE_FIELD'));
+      return Promise.resolve(flood);
+    }
+    return Promise.resolve([act(idsInQ[0], 4000, 'Разработка', 'Анализ', 'STATE_FIELD')]);
+  });
+  const r = await bulkAnchorTransitions(deps, ['P-1', 'P-2'], { fieldId: 'STATE_FIELD', anchorStates: ['Разработка'] });
+  assert.equal(deps.calls.length, 3);
+  assert.equal(r.diag.bisects, 1);
+  assert.equal(r.anchors['P-1']['Разработка'], 4000);   // якорь достоверен по полной истории
+  assert.equal(r.anchors['P-2']['Разработка'], 4000);
+  assert.deepEqual(r.incomplete, []);
+  assert.equal(r.complete, true);
+});
+
+test('bulkAnchorTransitions: #58-4 single-issue упёрся в $top → задача честно incomplete (anchor-aware D7)', async () => {
+  const deps = mockDeps(function () {
+    const flood = [];
+    for (let i = 0; i < 300; i++) flood.push(act('P-1', 5000 + i, 'Разработка', 'Анализ', 'STATE_FIELD'));
+    return Promise.resolve(flood);
+  });
+  const r = await bulkAnchorTransitions(deps, ['P-1'], { fieldId: 'STATE_FIELD', anchorStates: ['Разработка'] });
+  assert.equal(deps.calls.length, 1);                   // одиночную не делим
+  assert.deepEqual(r.incomplete, ['P-1']);
+  assert.equal(r.complete, false);
 });
 
 test('bulkStateTransitions: сетевой сбой чанка → все его задачи incomplete (fail-loud)', async () => {

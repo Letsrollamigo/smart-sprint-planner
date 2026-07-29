@@ -279,8 +279,8 @@
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-reporting.jsx": {
-        "loc": 474,
-        "locBudget": 474,
+        "loc": 496,
+        "locBudget": 500,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow). v3.12.3 — пикеры в отчётности: FieldSelect для A3-полей/типов B1-B2/тегов B1-B3 + Type-бандл."
       },
       "react/sprint-lock-toggle.jsx": {
@@ -979,8 +979,8 @@
     "data/reporting-data.js": {
       "layer": "domain",
       "domain": "data/reporting-data",
-      "loc": 492,
-      "locBudget": 502,
+      "loc": 538,
+      "locBudget": 545,
       "state": [
         "REPORT_ABORTED",
         "_api"
@@ -993,8 +993,8 @@
     "domain/reporting-view.js": {
       "layer": "domain",
       "domain": "domain/reporting-view",
-      "loc": 1293,
-      "locBudget": 1374,
+      "loc": 1404,
+      "locBudget": 1410,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"

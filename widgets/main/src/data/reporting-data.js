@@ -6,9 +6,10 @@
    Разбор + детект обрезки/недобора + starvation (D7) — в pure/reporting-pure.js. Здесь —
    оркестровка: чанкинг + фетч + агрегация transitions/incomplete + сводный диагностический
    ридаут лимитов (§12: chunks/response-size/starvation/ms — фиксируется на прод-пилоте S1c).
-   БЕЗ пагинации: докрутка activities — гипотеза до замера §12.3, НЕ строим; путь D7 =
-   детект+сигнал неполноты. Публикует __SSP_REPORTING_DATA; node-тест инжектит pure-мост
-   через global.window. */
+   #58-4 — адаптивная бисекция вместо пагинации ($skip для activities не верифицирован):
+   чанк, упёршийся в $top, делится пополам и перечитывается до полноты либо до single-issue
+   (тогда честный incomplete); потолок MAX_ACT_FETCHES на вызов. Публикует
+   __SSP_REPORTING_DATA; node-тест инжектит pure-мост через global.window. */
 
 const CHUNK_SIZE = 25;
 const TOP_LIMIT = 300;
@@ -30,6 +31,11 @@ const TAG_ACT_FIELDS = 'timestamp,target(idReadable),added(name),removed(name)';
 const WORKITEM_FIELDS = 'date,duration(minutes),author(login),issue(idReadable)';
 const _WI_DAY_MS = 86400000;
 const MAX_WI_PAGES = 40;   /* guard бесконечной пагинации (40×300=12000 workitems/чанк — недостижимо) */
+/* #58-4 — потолок activities-фетчей НА ВЫЗОВ bulk-примитива при адаптивной бисекции чанков
+   (боевые истории: 25 задач × 30-60 переходов >> $top=300 → без деления весь чанк incomplete).
+   ponytail: за потолком принимаем обрезку с честным баннером; апгрейд-путь — курсорная
+   пагинация activitiesPage, если боевые истории не влезают даже в single-issue окно. */
+const MAX_ACT_FETCHES = 96;
 
 /* #50 D10 — прерывание отчёта. Примитивы проверяют opts.shouldAbort() МЕЖДУ чанками/страницами;
    истинно (свитч вида/период/таймаут/ручная отмена → бамп gen на host) → бросают REPORT_ABORTED,
@@ -56,11 +62,12 @@ function bulkStateTransitions(deps, issueIds, opts) {
   var pure = _pure();
   var ids = Array.isArray(issueIds) ? issueIds.filter(Boolean) : [];
   var out = { transitions: {}, incomplete: [], noTransition: [], complete: true,
-    diag: { chunks: 0, activitiesTotal: 0, hitTopChunks: 0, perIssueMax: 0, issuesIncomplete: 0, ms: 0 } };
+    diag: { chunks: 0, activitiesTotal: 0, hitTopChunks: 0, perIssueMax: 0, issuesIncomplete: 0, fetches: 0, bisects: 0, ms: 0 } };
   if (!ids.length || !deps || !deps.host || !pure) return Promise.resolve(out);
   var started = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
 
   function fetchChunk(chunkIds) {
+    out.diag.fetches++;
     return deps.host.fetchYouTrack('activities', { query: {
       categories: 'CustomFieldCategory',
       issueQuery: 'issue id: ' + chunkIds.join(', '),
@@ -68,7 +75,19 @@ function bulkStateTransitions(deps, issueIds, opts) {
       reverse: 'true',
       $top: TOP_LIMIT
     } }).then(function (activities) {
-      var r = pure.parseStateChunk(activities, chunkIds, { fieldId: opts.fieldId || '', topLimit: TOP_LIMIT, preferCanon: !!opts.preferCanon });
+      var acts = Array.isArray(activities) ? activities : [];
+      /* #58-4 — адаптивная гранулярность: окно $top упёрлось → часть историй срезана.
+         Чанк >1 задачи делим пополам и перечитываем (меньше задач на то же окно = глубже
+         история на задачу); единичная задача с hitTop — честный incomplete (как раньше). */
+      if (acts.length >= TOP_LIMIT && chunkIds.length > 1 && out.diag.fetches < MAX_ACT_FETCHES) {
+        out.diag.bisects++;
+        var mid = Math.ceil(chunkIds.length / 2);
+        return fetchChunk(chunkIds.slice(0, mid)).then(function () {
+          if (_aborted(opts)) throw REPORT_ABORTED;
+          return fetchChunk(chunkIds.slice(mid));
+        });
+      }
+      var r = pure.parseStateChunk(acts, chunkIds, { fieldId: opts.fieldId || '', topLimit: TOP_LIMIT, preferCanon: !!opts.preferCanon });
       var k, i;
       for (k in r.transitions) out.transitions[k] = r.transitions[k];
       for (i = 0; i < r.incomplete.length; i++) out.incomplete.push(r.incomplete[i]);
@@ -78,6 +97,7 @@ function bulkStateTransitions(deps, issueIds, opts) {
       if (r.diag.hitTop) out.diag.hitTopChunks++;
       if (r.diag.perIssueMax > out.diag.perIssueMax) out.diag.perIssueMax = r.diag.perIssueMax;
     }).catch(function (e) {
+      if (e && e.__reportAborted) throw e;   /* #58-4 — прерывание между половинами бисекции пробрасываем */
       /* Сетевой сбой чанка = неполнота по всем его задачам (fail-loud, D7), не молчание. */
       for (var i = 0; i < chunkIds.length; i++) out.incomplete.push(chunkIds[i]);
       if (deps.diag) deps.diag('bulkStateTransitions chunk err: ' + String(e && e.message ? e.message : e), 'warn');
@@ -104,8 +124,9 @@ function bulkStateTransitions(deps, issueIds, opts) {
    собирает per-issue ПЕРВЫЙ (хронологически) вход в КАЖДОЕ якорное состояние (opts.anchorStates)
    + полный хронологический таймлайн переходов (для интервалов пауз-состояний). Фетч байт-в-байт
    идентичен bulkStateTransitions (та же категория/поля/reverse/$top). Разбор + anchor-aware D7
-   (hitTop ⇒ весь чанк incomplete: старт-якорь мог быть срезан хвостом истории) — в
-   pure.parseAnchorsChunk. opts: { fieldId, anchorStates:[имена], estFieldIds:[ID period-полей] }.
+   (hitTop ⇒ чанк incomplete: старт-якорь мог быть срезан хвостом истории; с #58-4 такой чанк
+   сперва бисектится до полноты/single-issue) — в pure.parseAnchorsChunk.
+   opts: { fieldId, anchorStates:[имена], estFieldIds:[ID period-полей] }.
    estFieldIds (ревью #50, O1): тот же ответ дополнительно кормит parseAsOfPeriodChunk (union-
    проекция) → out.estTimelines {id→{fieldId→[…]}} — отдельный bulkAsOfEstimates-фетч не нужен.
    Promise<{ anchors:{id→{state→firstTs}}, timelines:{id→[{ts,to}]}, estTimelines?, incomplete:[id…],
@@ -116,12 +137,13 @@ function bulkAnchorTransitions(deps, issueIds, opts) {
   var ids = Array.isArray(issueIds) ? issueIds.filter(Boolean) : [];
   var estFids = Array.isArray(opts.estFieldIds) ? opts.estFieldIds.filter(Boolean) : [];
   var out = { anchors: {}, timelines: {}, incomplete: [], complete: true,
-    diag: { chunks: 0, activitiesTotal: 0, hitTopChunks: 0, perIssueMax: 0, issuesIncomplete: 0, ms: 0 } };
+    diag: { chunks: 0, activitiesTotal: 0, hitTopChunks: 0, perIssueMax: 0, issuesIncomplete: 0, fetches: 0, bisects: 0, ms: 0 } };
   if (estFids.length) out.estTimelines = {};
   if (!ids.length || !deps || !deps.host || !pure) return Promise.resolve(out);
   var started = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
 
   function fetchChunk(chunkIds) {
+    out.diag.fetches++;
     return deps.host.fetchYouTrack('activities', { query: {
       categories: 'CustomFieldCategory',
       issueQuery: 'issue id: ' + chunkIds.join(', '),
@@ -129,7 +151,19 @@ function bulkAnchorTransitions(deps, issueIds, opts) {
       reverse: 'true',
       $top: TOP_LIMIT
     } }).then(function (activities) {
-      var r = pure.parseAnchorsChunk(activities, chunkIds, {
+      var acts = Array.isArray(activities) ? activities : [];
+      /* #58-4 — адаптивная гранулярность: anchor-aware D7 гасил ВЕСЬ чанк (25 задач) при
+         hitTop → на боевых историях TTM/Поток «нет данных», План-факт/Свод пусто. Чанк >1
+         задачи делим пополам и перечитываем; единичная с hitTop — честный incomplete. */
+      if (acts.length >= TOP_LIMIT && chunkIds.length > 1 && out.diag.fetches < MAX_ACT_FETCHES) {
+        out.diag.bisects++;
+        var mid = Math.ceil(chunkIds.length / 2);
+        return fetchChunk(chunkIds.slice(0, mid)).then(function () {
+          if (_aborted(opts)) throw REPORT_ABORTED;
+          return fetchChunk(chunkIds.slice(mid));
+        });
+      }
+      var r = pure.parseAnchorsChunk(acts, chunkIds, {
         fieldId: opts.fieldId || '', topLimit: TOP_LIMIT, anchorStates: opts.anchorStates || [] });
       var k, i;
       for (k in r.anchors) out.anchors[k] = r.anchors[k];
@@ -140,11 +174,12 @@ function bulkAnchorTransitions(deps, issueIds, opts) {
       if (r.diag.hitTop) out.diag.hitTopChunks++;
       if (r.diag.perIssueMax > out.diag.perIssueMax) out.diag.perIssueMax = r.diag.perIssueMax;
       if (estFids.length) {
-        var r2 = pure.parseAsOfPeriodChunk(activities, chunkIds, { fieldIds: estFids, topLimit: TOP_LIMIT });
+        var r2 = pure.parseAsOfPeriodChunk(acts, chunkIds, { fieldIds: estFids, topLimit: TOP_LIMIT });
         for (k in r2.timelines) out.estTimelines[k] = r2.timelines[k];
         for (i = 0; i < r2.incomplete.length; i++) out.incomplete.push(r2.incomplete[i]);
       }
     }).catch(function (e) {
+      if (e && e.__reportAborted) throw e;   /* #58-4 — прерывание между половинами бисекции пробрасываем */
       /* Сетевой сбой чанка = неполнота по всем его задачам (fail-loud, D7). */
       for (var i = 0; i < chunkIds.length; i++) out.incomplete.push(chunkIds[i]);
       if (deps.diag) deps.diag('bulkAnchorTransitions chunk err: ' + String(e && e.message ? e.message : e), 'warn');
@@ -524,7 +559,8 @@ var _api = { bulkStateTransitions: bulkStateTransitions, bulkAnchorTransitions: 
   combinePauses: combinePauses, _pairTagIntervals: _pairTagIntervals,
   bulkWorkItems: bulkWorkItems, _parseWorkItems: _parseWorkItems, _fmtWorkDate: _fmtWorkDate,
   fetchHistory: fetchHistory,
-  CHUNK_SIZE: CHUNK_SIZE, TOP_LIMIT: TOP_LIMIT, PAUSE_TAG_CATEGORY: PAUSE_TAG_CATEGORY };
+  CHUNK_SIZE: CHUNK_SIZE, TOP_LIMIT: TOP_LIMIT, PAUSE_TAG_CATEGORY: PAUSE_TAG_CATEGORY,
+  MAX_ACT_FETCHES: MAX_ACT_FETCHES };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_REPORTING_DATA = _api; } catch (_) { /* sandboxed write may throw */ }

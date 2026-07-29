@@ -279,8 +279,8 @@
   ],
   "fetchCalls": [
     {
-      "$skip": "[undefined]",
-      "$top": 201,
+      "$skip": 0,
+      "$top": 200,
       "endpoint": "issues",
       "fields": "idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes))",
       "query": "project: DEMO sort by: updated desc"
@@ -293,7 +293,7 @@
     "doneCount": 3,
     "gen": 1,
     "hasSystem": true,
-    "limit": 200,
+    "limit": 1000,
     "limitHit": false,
     "loading": false,
     "onAssist": "[Function]",
