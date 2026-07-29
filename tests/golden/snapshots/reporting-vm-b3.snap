@@ -255,6 +255,7 @@
     "reworkTitle",
     "reworkTotal",
     "riskSuffix",
+    "tagPausePending",
     "ttmNoData",
     "ttmNoNorm",
     "ttmNormPrefix",

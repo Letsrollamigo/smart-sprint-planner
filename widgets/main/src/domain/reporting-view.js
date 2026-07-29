@@ -97,6 +97,7 @@ function _labels(T) {
     metricLead: T('repMetricLead'), metricTeam: T('repMetricTeam'), metricCycle: T('repMetricCycle'),
     ttmUnit: T('repTtmUnit'), ttmOver: T('repTtmOver'), ttmOk: T('repTtmOk'),
     ttmNoData: T('repTtmNoData'),                       /* #58-9 — median=null: не вердикт, а «нет данных» */
+    tagPausePending: T('repTagPausePending'),           /* #58-11 — сноска «*» получает текст */
     ttmNoNorm: T('repTtmNoNorm'), ttmNormPrefix: T('repTtmNormPrefix'),
     colUnitType: T('repColUnitType'), colCount: T('repColCount'),
     unitEpic: T('repUnitEpic'), unitStory: T('repUnitStory'),

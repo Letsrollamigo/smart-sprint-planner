@@ -285,7 +285,14 @@ function writeReportPdf(model, deps) {
      переменная), а pdfMake.vfs остаётся undefined. Поэтому готовность НЕЛЬЗЯ проверять по PM.vfs
      (это давало бесконечную ре-инъекцию → фриз потока). Гейт готовности = резолв memo-промиса
      loadPdfMakeLib (грузит min→vfs один раз); createPdf сам читает внутренний store. */
-  loadPdfMakeLib().then(function () {
+  /* #58-7: на проде загрузка 1.4МБ-либы может зависнуть БЕЗ onload/onerror (прокси/AV-скан) —
+     memo-промис висит вечно, юзер получает тишину. Таймаут превращает её в честную ошибку;
+     memo НЕ сбрасываем: догрузится позже — следующий клик сработает. */
+  var loadOrTimeout = Promise.race([
+    loadPdfMakeLib(),
+    new Promise(function (_, rej) { setTimeout(function () { rej(new Error('pdfmake load timeout (20s)')); }, 20000); }),
+  ]);
+  loadOrTimeout.then(function () {
     var PM = window.pdfMake;
     if (!PM) { if (diag) diag('pdfMake unavailable after load', 'err'); if (toast) toast(T ? T('repExportPdfErr') : 'Ошибка PDF'); return; }
     /* Астральные символы (эмодзи в названиях задач) — вне cmap вшитого Roboto → .notdef-боксы

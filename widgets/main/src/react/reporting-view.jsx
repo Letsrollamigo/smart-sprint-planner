@@ -111,14 +111,15 @@ function Chrome({ vm, L }) {
     <div style={{ margin: '4px 0 10px' }}>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '6px' }}>
         {vm.report === 'a10' ? (
-          /* #50 S7c — A10: пикер закрытого спринта N (сравнение с N+1), период по спринтам — не date-окно */
-          <React.Fragment>
-            <span style={_mutedS}>{L.a10PickSprint}</span>
-            {(vm.sprints || []).length ? (
+          /* #50 S7c — A10: пикер закрытого спринта N (сравнение с N+1), период по спринтам — не date-окно.
+             #58-11 — без спринтов подпись не рисуем (сирота «Спринт N» в empty-state). */
+          (vm.sprints || []).length ? (
+            <React.Fragment>
+              <span style={_mutedS}>{L.a10PickSprint}</span>
               <RingSelect value={vm.spillSprint} options={vm.sprints} size="AUTO" minWidth={240}
                 onChange={(s) => { if (typeof vm.onSetSprintN === 'function') vm.onSetSprintN(s); }} />
-            ) : null}
-          </React.Fragment>
+            </React.Fragment>
+          ) : null
         ) : vm.contour === 'b' ? null : (   /* #50 S8a — контур B (B3): свободного фильтра нет, только период+пикер */
           <React.Fragment>
             <span style={_mutedS}>{L.filterLabel}</span>
@@ -543,7 +544,7 @@ function A2View({ vm, L }) {
         </p>
       ) : null}
       {!vm.pausesActive ? <div style={{ ..._mutedS, margin: '10px 0 0' }}>{L.a2NoPauses}</div> : null}
-      {vm.tagPausePending ? <div style={{ ..._mutedS, margin: '6px 0 0' }} aria-hidden="true">*</div> : null}
+      {vm.tagPausePending ? <div style={{ ..._mutedS, margin: '6px 0 0' }}>{'* ' + L.tagPausePending}</div> : null}
     </React.Fragment>
   );
 }
@@ -686,7 +687,7 @@ function FlowView({ vm, L }) {
       </div>
       <ReworkTable rework={rework} L={L} />
       {!vm.pausesActive ? <div style={{ ..._mutedS, margin: '10px 0 0' }}>{L.a2NoPauses}</div> : null}
-      {vm.tagPausePending ? <div style={{ ..._mutedS, margin: '6px 0 0' }} aria-hidden="true">*</div> : null}
+      {vm.tagPausePending ? <div style={{ ..._mutedS, margin: '6px 0 0' }}>{'* ' + L.tagPausePending}</div> : null}
     </React.Fragment>
   );
 }
