@@ -374,6 +374,29 @@ test('reporting: юзер-фильтр клеится через and (…) — o
     'project: DEMO #Unresolved and (#Bug or #Feature)');
 });
 
+/* ── #58-5: серверное сужение популяции + сортировка ────────────────────────────────
+   Сорт клеится ТОЛЬКО при пустом юзер-фильтре (`sort by` после скобочной группы = 400). */
+test('reporting: A7 без фильтра — sort by updated asc; с фильтром — сорт опущен', async function () {
+  const d1 = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30', reportingQuery: '' } });
+  await runReport(d1, 'a');
+  assert.strictEqual(d1.__fetchCalls[0].query, 'project: DEMO #Unresolved sort by: updated asc');
+  const d2 = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30', reportingQuery: '#Bug' } });
+  await runReport(d2, 'a');
+  assert.strictEqual(d2.__fetchCalls[0].query, 'project: DEMO #Unresolved and (#Bug)');
+});
+
+test('reporting: A4 — популяция сужена `work date:` окна (frozen now 2026-06-01, last30)', async function () {
+  const deps = makeDeps({ ui: { reportingReport: 'a4', reportingPeriod: 'last30', reportingQuery: '' } });
+  await runReport(deps, 'a');
+  assert.strictEqual(deps.__fetchCalls[0].query, 'project: DEMO work date: 2026-05-03 .. 2026-06-01');
+});
+
+test('reporting: A2 — популяция сужена `updated:` суперсетом окна', async function () {
+  const deps = makeDeps({ ui: { reportingReport: 'a2', reportingPeriod: 'last30', reportingQuery: '' } });
+  await runReport(deps, 'a');
+  assert.strictEqual(deps.__fetchCalls[0].query, 'project: DEMO updated: 2026-05-03 .. *');
+});
+
 /* ── ранние выходы «конфиг не задан» ─────────────────────────────────────────────── */
 test('golden: reporting A1 — целевые статусы не заданы → noTargets, ноль фетчей', async function () {
   const settings = baseSettings();

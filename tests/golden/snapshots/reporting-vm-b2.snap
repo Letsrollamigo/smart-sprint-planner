@@ -280,7 +280,7 @@
       "$top": 201,
       "endpoint": "issues",
       "fields": "idReadable,created,customFields(name,projectCustomField(field(name,id)),value(login,name,localizedName)),links(linkType(name),issues(idReadable))",
-      "query": "project: DEMO"
+      "query": "project: DEMO work date: 2026-05-03 .. 2026-06-01"
     }
   ],
   "primCalls": [

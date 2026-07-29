@@ -206,6 +206,13 @@ function _activeProj(deps) {
 /* Имя атрибута YT-запроса: брейс при пробеле («Этап работ» → «{Этап работ}») — паттерн
    backlog-loader (#21 §9); без брейса запрос по полю с пробелом молча ломает отбор. */
 function _battr(name) { return /\s/.test(name) ? '{' + name + '}' : name; }
+/* #58-5 — UTC-день YYYY-MM-DD для серверных клауз окна (`updated:`/`work date:`);
+   UTC — как весь reporting-period (полуоткрытое окно, границы суток по UTC). */
+function _fmtDayUTC(ts) {
+  var d = new Date(ts);
+  var m = d.getUTCMonth() + 1, day = d.getUTCDate();
+  return d.getUTCFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+}
 /* #57-5 Н3 (⚖ владелец) — юзер-хвост QueryAssist в скобки: верхнеуровневый `or` иначе
    разрывает project-скоуп (`project: X … A or B` → B со всего инстанса утекает в метрики).
    #58-1: группа обязана клеиться явным `and` — юкстапозиция `project: X (A)` парсер YT
@@ -418,14 +425,19 @@ function makeReportLoader(tag, contour, run) {
       deps: deps, base: base, settings: settings, fieldState: fieldState, proj: proj, pure: pure,
       /* mount(patch) — vm = base + patch (report в патче избыточен: base уже несёт). */
       mount: function (patch) { _mountVm(contour, Object.assign({}, base, patch)); },
-      /* scope-запрос: project + серверные клаузы отчёта + QueryAssist-хвост юзера (AND). */
-      queryParts: function (extras) {
+      /* scope-запрос: project + серверные клаузы отчёта + QueryAssist-хвост юзера (AND).
+         #58-5 — sort: сортировка популяции ('updated asc'|'updated desc') клеится ПОСЛЕДНЕЙ и
+         ТОЛЬКО при пустом юзер-фильтре: `sort by` после скобочной группы = 400 invalid_query
+         (эмпирика 58-1, обе версии YT). С фильтром население и так сужено — сортировка не критична. */
+      queryParts: function (extras, sort) {
         var parts = ['project: ' + proj];
         if (extras) for (var i = 0; i < extras.length; i++) parts.push(extras[i]);
+        var hasUq = false;
         if (base.query.trim()) {
           var uq = _wrapUserQuery(base.query.trim());                           /* Н3 — скобки против or-утечки скоупа */
-          if (uq) parts.push(uq);                                              /* #58-1 — пустой хвост (одно `sort by:`) не клеим */
+          if (uq) { parts.push(uq); hasUq = true; }                            /* #58-1 — пустой хвост (одно `sort by:`) не клеим */
         }
+        if (sort && !hasUq) parts.push('sort by: ' + sort);
         return parts;
       },
       /* Один issues-фетч с ограничителем D10: $top=LIMIT+1 → {arr≤LIMIT, limitHit}. */
@@ -516,7 +528,7 @@ const _loadA7 = makeReportLoader('A7', 'a', function (ctx) {
   var deps = ctx.deps, base = ctx.base, pure = ctx.pure;
   var thresholds = ctx.settings.reportingThresholds || {};
   var fieldSystem = _fieldSystemEff(ctx.settings);   /* v3.9.0 — колонка «Система» */
-  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(['#Unresolved'])).then(function (f) {   /* активные = нерешённые */
+  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(['#Unresolved'], 'updated asc')).then(function (f) {   /* активные = нерешённые; #58-5 — давно не тронутые первыми (аудитория Aging) */
     var m = _mapIssues(f.arr, ctx.fieldState);
     return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
@@ -545,7 +557,8 @@ const _loadA1 = makeReportLoader('A1', 'a', function (ctx) {
     && !Array.isArray(settings.reportingStatusLabels)) ? settings.reportingStatusLabels : {};
   var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts(
-    [_battr(ctx.fieldState) + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', ')])).then(function (f) {
+    [_battr(ctx.fieldState) + ': ' + targets.map(function (s) { return '{' + s + '}'; }).join(', '),
+     'updated: ' + _fmtDayUTC(win.fromTs) + ' .. *'])).then(function (f) {   /* #58-5 — вход в окне ⇒ update в окне (суперсет) */
     var m = _mapIssues(f.arr, ctx.fieldState);
     return deps.bulkStateTransitions(deps, m.ids, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;                         /* устаревший ответ — не монтируем */
@@ -586,7 +599,8 @@ const _loadA2 = makeReportLoader('A2', 'a', function (ctx) {
   var anchorStates = _anchorStateSet(anchors);
   var pausesActive = (pm.states.length || pm.tags.length) > 0;
   /* QueryAssist AND — Type НЕ форсим (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A2, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_A2, ctx.queryParts(
+    ['updated: ' + _fmtDayUTC(win.fromTs) + ' .. *'])).then(function (f) {   /* #58-5 — вход в якорь в окне ⇒ update в окне */
     var m = _mapIssuesA2(f.arr, ctx.fieldState, typeNames);
     if (deps.diag) deps.diag('reporting A2 map: issues=' + m.issues.length +
       ' typed=' + m.diag.typed + ' parentEpic=' + m.diag.parentResolved, 'ok');
@@ -644,7 +658,12 @@ const _loadFlow = makeReportLoader('Flow', 'a', function (ctx) {
              tags: Array.isArray(pmRaw.tags) ? pmRaw.tags.filter(Boolean) : [] };
   var pausesActive = (pm.states.length || pm.tags.length) > 0;
   /* QueryAssist AND — скоуп аналитика (D-скоуп) */
-  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts()).then(function (f) {
+  /* #58-5 — WIP-срезу нужны текущие задачи потока, откатам — переходы окна; давно ушедшие
+     из потока и не тронутые в окне не тянем (их закрытые dwell-интервалы вне фокуса «сейчас»). */
+  var flowClause = 'and (' + _battr(ctx.fieldState) + ': ' +
+    flowStates.map(function (st) { return '{' + st + '}'; }).join(', ') +
+    ' or updated: ' + _fmtDayUTC(win.fromTs) + ' .. *)';
+  return ctx.fetchIssues(ISSUE_FIELDS, ctx.queryParts([flowClause])).then(function (f) {
     var m = _mapIssues(f.arr, ctx.fieldState);
     var currentStates = {};
     m.issues.forEach(function (u) { if (u.state) currentStates[u.id] = u.state; });   /* текущий статус → WIP */
@@ -712,7 +731,8 @@ const _loadA4 = makeReportLoader('A4', 'a', function (ctx) {
   var roleLabels = {};
   roles.forEach(function (r) { roleLabels[r.key] = r.label || r.key; });
   /* QueryAssist AND — скоуп аналитика (D-скоуп) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A4, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_A4, ctx.queryParts(
+    ['work date: ' + _fmtDayUTC(win.fromTs) + ' .. ' + _fmtDayUTC(win.toTs - 1)])).then(function (f) {   /* #58-5 — только задачи со списаниями в окне */
     var built = _buildRoleExecutors(f.arr, roles);
     if (deps.diag) deps.diag('reporting A4 pop=' + built.ids.length +
       ' withRole=' + Object.keys(built.roleExecutors).length + ' roles=' + roles.length, 'ok');
@@ -754,7 +774,8 @@ const _loadA5 = makeReportLoader('A5', 'a', function (ctx) {
     && settings.reportingVariancePct > 0) ? settings.reportingVariancePct : 20;
   var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A5, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_A5, ctx.queryParts(
+    ['updated: ' + _fmtDayUTC(win.fromTs) + ' .. *'])).then(function (f) {   /* #58-5 — вход в Лид-конец в окне ⇒ update в окне */
       var arr = f.arr, limitHit = f.limitHit;
       var m = _mapIssues(arr, ctx.fieldState);             /* state-field id для якорей + summary */
       var built = _buildRoleExecutors(arr, roles);         /* исполнители ролей (login) */
@@ -824,7 +845,7 @@ const _loadA3 = makeReportLoader('A3', 'a', function (ctx) {
   var prioField = (typeof settings.reportingA3PriorityField === 'string' && settings.reportingA3PriorityField) || '';
   var fieldSystem = _fieldSystemEff(settings);           /* v3.9.0 — колонка «Система» */
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — свежайшие первыми (срез) */
     if (!_fresh(base)) return;                           /* устаревший ответ — не монтируем */
     var arr = f.arr;
     var rows = [], wipCount = 0, doneCount = 0;
@@ -872,7 +893,7 @@ const _loadA6 = makeReportLoader('A6', 'a', function (ctx) {
   else extras.push('#Unresolved');                         /* нет конфигурации бэклога → все нерешённые + подсказка */
   if (types.length) extras.push(_battr(fieldType) + ': ' + types.map(function (s) { return '{' + s + '}'; }).join(', '));
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(extras)).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_A3, ctx.queryParts(extras, 'updated desc')).then(function (f) {   /* #58-5 */
     if (!_fresh(base)) return;                            /* устаревший ответ — не монтируем */
     var arr = f.arr;
     var perIssue = [];
@@ -1028,7 +1049,7 @@ const _loadB1 = makeReportLoader('B1', 'b', function (ctx) {
   var fieldSystem = _fieldSystemEff(settings);   /* v3.9.0 — тумблер reportingShowSystem гейтит группировку */
   function _hasTag(iss, tag) { var ts = Array.isArray(iss.tags) ? iss.tags : []; for (var i = 0; i < ts.length; i++) { if (ts[i] && ts[i].name === tag) return true; } return false; }
   /* QueryAssist AND */
-  return ctx.fetchIssues(ISSUE_FIELDS_B1, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_B1, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 */
     if (!_fresh(base)) return;
     var arr = f.arr;
     var perIssue = [];
@@ -1081,7 +1102,9 @@ const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
     return out;
   }
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_B2, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_B2,
+    ctx.queryParts(['work date: ' + _fmtDayUTC(win.fromTs) + ' .. ' + _fmtDayUTC(win.toTs - 1)])   /* #58-5 — часы окна = только задачи со списаниями в окне */
+  ).then(function (f) {
     if (!_fresh(base)) return;
     var arr = f.arr;
     var m = _mapIssues(arr, ctx.fieldState);             /* fieldId состояния для resolve-переходов */
@@ -1095,6 +1118,34 @@ const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
         created: (typeof iss.created === 'number') ? iss.created : null, resolveTs: null,
         featureIds: isBug ? _linkedIds(iss) : [] });
     }
+    /* #58-5 — сужение могло отсечь фичи без списаний в окне: догружаем связанные точечно по id,
+       иначе их баги осиротеют в корзину. Часы догруженных в окне = 0 по определению сужения —
+       знаменатель честен; нужны только идентичность + система. Сверх лимита — остаются orphan. */
+    var present = {}, missing = [], seenM = {};
+    for (var p1 = 0; p1 < issues.length; p1++) present[issues[p1].id] = true;
+    for (var b1 = 0; b1 < issues.length; b1++) {
+      if (!issues[b1].isBug) continue;
+      var fl = issues[b1].featureIds;
+      for (var q1 = 0; q1 < fl.length; q1++)
+        if (!present[fl[q1]] && !seenM[fl[q1]]) { seenM[fl[q1]] = true; missing.push(fl[q1]); }
+    }
+    var extraP = missing.length
+      ? ctx.fetchIssues(ISSUE_FIELDS_B2, ['issue id: ' + missing.join(', ')]).then(function (fx) {
+          if (!_fresh(base)) return;
+          for (var e1 = 0; e1 < fx.arr.length; e1++) {
+            var ex = fx.arr[e1]; if (!ex || !ex.idReadable) continue;
+            issues.push({ id: ex.idReadable, isBug: _typeValOf(ex, fieldType) === bugType,
+              system: _sysValOf(ex, fieldSystem),
+              created: (typeof ex.created === 'number') ? ex.created : null, resolveTs: null, featureIds: [] });
+          }
+        })
+      : Promise.resolve();
+    return extraP.then(function () {
+      if (!_fresh(base)) return;
+      return doB2(f, arr, m, built, issues, bugIds);
+    });
+  });
+  function doB2(f, arr, m, built, issues, bugIds) {
     return deps.bulkStateTransitions(deps, bugIds, { fieldId: m.fieldId, shouldAbort: base.shouldAbort }).then(function (prim) {
       if (!_fresh(base)) return;
       var trans = prim.transitions || {};
@@ -1117,7 +1168,7 @@ const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
           incompleteCount: (wi.incomplete || []).length, limitHit: f.limitHit, limit: LIMIT });
       });
     });
-  });
+  }
 });
 
 /* #50 S8a — B3 «1000 мелочей»: счётчик задач с тегом (настройка reportingThousandTag) за период
@@ -1186,7 +1237,7 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
   var anchorStates = _anchorStateSet(anchors);             /* концы lead/team/cycle (timelines всё равно полные) */
   flowStates.forEach(function (s) { if (anchorStates.indexOf(s) < 0) anchorStates.push(s); });
   /* QueryAssist AND (D-скоуп аналитика) */
-  return ctx.fetchIssues(ISSUE_FIELDS_B0, ctx.queryParts()).then(function (f) {
+  return ctx.fetchIssues(ISSUE_FIELDS_B0, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — B0 as-of метрикам нужна вся история: НЕ сужаем, только порядок */
       var arr = f.arr, limitHit = f.limitHit;
       var m = _mapIssuesA2(arr, fieldState, typeNames);    /* type/parentIsEpic для foldChildUnits (TTM) + fieldId состояния */
       var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */

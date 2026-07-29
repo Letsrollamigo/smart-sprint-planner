@@ -276,7 +276,7 @@
       "$top": 201,
       "endpoint": "issues",
       "fields": "idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes))",
-      "query": "project: DEMO State: {Open}, {Ready}"
+      "query": "project: DEMO State: {Open}, {Ready} sort by: updated desc"
     }
   ],
   "primCalls": [],

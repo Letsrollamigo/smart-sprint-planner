@@ -992,7 +992,7 @@
       "layer": "domain",
       "domain": "domain/reporting-view",
       "loc": 1293,
-      "locBudget": 1301,
+      "locBudget": 1352,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"

@@ -276,7 +276,7 @@
       "$top": 201,
       "endpoint": "issues",
       "fields": "idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(name))",
-      "query": "project: DEMO State: {Done}, {Closed}"
+      "query": "project: DEMO State: {Done}, {Closed} updated: 2026-05-03 .. *"
     }
   ],
   "primCalls": [
