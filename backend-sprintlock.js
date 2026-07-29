@@ -1,5 +1,5 @@
 /**
- * Smart Sprint Planner — Sprint-lock backend (#57-2, эпик 57).
+ * Smart Sprint Planner — Sprint-lock backend (#57-2, epic 57).
  *
  * Per-feature backend-модуль (§11 «фича бэка = свой модуль»): тумблер блокировки создания
  * новых спринтов в шапке планера. Require-ится в backend-project.js И backend-global.js;

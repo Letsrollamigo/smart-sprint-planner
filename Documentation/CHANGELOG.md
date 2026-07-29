@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.14.0] — 2026-07-30
+
+> **Reporting reliability epic: working filters, honest period windows, full transition histories, paged slices with a configurable cap, explicit report build and project persistence in global mode.**
+
+### Added
+
+- **Explicit report build** — switching report type, period or sprint no longer triggers computation: parameters just change, and the report builds on the new **“Build report”** button (replacing “Refresh”). Entering the tab is a quiet empty state with zero requests; with a built report, changed parameters show a *“parameters changed, report is stale”* hint; returning to the previous parameters serves the session cache instantly.
+- **“Slice size cap” reporting setting** (200–5000, default 1000) — snapshot slice reports (WIP/Done, Backlog hours, Tech debt, Summary) now load their population in pages of 200 up to the cap; the limit banner appears only when the cap is genuinely exceeded and names the actual cap.
+- **Global mode remembers the project** — the project selected in the header picker now survives a full page reload: it is stored per user on the backend (the widget sandbox has no persistent browser storage, and the host navigation API is absent on older YouTrack versions).
+
+### Fixed
+
+- **Report filter broke reports** — the user query group was joined to the project scope without an explicit `and`, producing a 400 on any YouTrack version; `sort by` inside the user filter is dropped as incompatible with a parenthesized group.
+- **Period did not cut work items** — YouTrack matches `work date:` against issues, not work-item records, so a single in-window record pulled the issue's whole history into totals. The window is now also applied client-side: Effort for a period counts exactly that period's records.
+- **Report populations lacked server-side narrowing** — period reports now narrow the fetch with server clauses (`work date:` / `updated:` supersets / flow-state groups), Aging sorts least-recently-updated first; the false “first 200” banner on narrowed populations is gone.
+- **Truncated activity histories blanked transition reports** — a 25-issue batch hitting the API window (300 activities) marked all 25 incomplete: TTM/Flow said “no data”, Plan-Fact/Summary came up empty on busy histories. Batches now adaptively bisect down to completeness or a single issue (honest incomplete only for genuinely oversized histories), with a per-run fetch cap of 96.
+- **Bug-tax aggregates contradiction** — the orphan-bug basket did not count into “Bugs total” (0 h next to a non-empty basket); with no feature base the share shows “—” instead of 0%. Type classification is robust to a custom field replacing the default `Type`.
+- **“Within norm” on an empty TTM metric** — an empty median now reads “no data” instead of a norm verdict.
+- **Silent PDF export no-op** — the pdfmake load gets a 20-second timeout with an honest “PDF error” toast instead of endless silence.
+- **Honesty-banner polish** — declension-free truncation banner wording, a footnote about possibly incomplete tag-pauses, and “Sprint N” hidden in an empty Spillover.
+
+Snapshot schema unchanged; the new settings key (`reportingMaxIssues`) and per-user project memory are additive — the update is drop-in, no migration.
+
 ## [3.13.0] — 2026-07-27
 
 > **Feedback epic: sprint-creation lock toggle, release state rollback via history, composition management, Ring-canon report buttons, reporting audit and a date-checker fix.**
