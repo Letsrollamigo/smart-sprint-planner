@@ -14,7 +14,8 @@
  *       _applyActiveProject — применить ключ к стейту (label/picker/last-used + #36 URL);
  *       _onProjectPicked / _switchToProject / _confirmDiscardAndSwitch — смена проекта
  *         с guard'ом несохранённого черновика (класс visibility/stale-багов B9);
- *       _getLastProjectKey / _setLastProjectKey — safeLs last-used (ключ per-fork);
+ *       _getLastProjectKey / _setLastProjectKey — last-used: safeLs + серверное зеркало
+ *         backend-global/last-project (#58-10, переживает полный reload страницы);
  *       _syncAclFireAndForget — зеркало settingsManagerGroup → ssp_acl.
  *   • project-режим — проектный виджет = страница настроек (планер уехал в меню, Ф1-A):
  *       _loadSettingsOnly / _renderProjectSettingsPage / _mountProjectSettings.
@@ -117,7 +118,29 @@
   }
 
   function _getLastProjectKey(deps) { try { return deps.safeLs.get(deps.lastProjectLsKey) || null; } catch (_) { return null; } }
-  function _setLastProjectKey(deps, k) { try { if (k) deps.safeLs.set(deps.lastProjectLsKey, k); } catch (_) {} }
+
+  /* #58-10 — серверный last-used (backend-global/last-project, User.extensionProperties):
+     в srcdoc-песочнице localStorage мёртв (SecurityError), а host.navigation на YT 2025.3
+     отсутствует целиком → полную перезагрузку страницы переживает ТОЛЬКО бэкенд.
+     safeLs остаётся быстрым первым кандидатом (жив вне песочницы: dev/тест-харнесс). */
+  var _serverLastSynced = null;   // последнее известное серверу значение (гейт лишних POST)
+
+  function _fetchServerLastProject(deps) {
+    return deps.apiGet('last-project').then(function (r) {
+      var k = (r && r.success !== false && r.projectKey) || null;
+      if (k) _serverLastSynced = k;
+      return k;
+    }).catch(function () { return null; });
+  }
+
+  function _setLastProjectKey(deps, k) {
+    try { if (k) deps.safeLs.set(deps.lastProjectLsKey, k); } catch (_) {}
+    /* #58-10 — fire-and-forget зеркало в бэкенд (гейт от повторной записи того же ключа) */
+    if (k && k !== _serverLastSynced) {
+      _serverLastSynced = k;
+      try { deps.apiPost('last-project', { projectKey: k }).then(function () {}, function () {}); } catch (_) {}
+    }
+  }
 
   /* Список проектов для picker'а = видимые юзеру (admin/projects под его токеном) ∩
      «планер прикреплён» + read-gate (backend filter-planner-projects — авторитетный арбитр). */
@@ -202,8 +225,10 @@
     return deps.readShareParams().then(function (share) {
       /* #36 — restore триггерится только при наличии projectKey (ядро ссылки); иначе игнор. */
       deps.state.setPendingShareParams((share && share.projectKey) ? share : null);
-      return _loadGlobalProjectList(deps);
-    }).then(function (projects) {
+      /* #58-10 — серверный last-used тянем параллельно списку проектов */
+      return Promise.all([_loadGlobalProjectList(deps), _fetchServerLastProject(deps)]);
+    }).then(function (res) {
+      var projects = res[0], serverLast = res[1];
       deps.state.setGlobalProjects(projects || []);
       _renderProjectPicker(deps);
       /* issue #28 — в global-режиме статические [data-i18n] шапки/сайдбара (ссылки
@@ -241,6 +266,8 @@
       if (!initKey) {
         var last = _getLastProjectKey(deps);
         if (last && globalProjects.some(function (p) { return p.key === last; })) initKey = last;
+        /* #58-10 — серверный last (единственный канал, переживающий reload в песочнице) */
+        else if (serverLast && globalProjects.some(function (p) { return p.key === serverLast; })) initKey = serverLast;
         else if (globalProjects.length === 1) initKey = globalProjects[0].key;
       }
       if (!initKey) {

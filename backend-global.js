@@ -185,5 +185,32 @@ endpoints.push({
   }
 });
 
+// #58-10 — last-project: per-user память выбора проекта global-режима. Виджет живёт в
+// srcdoc-песочнице (localStorage бросает SecurityError), а host.navigation на YT 2025.3
+// отсутствует целиком → после полной перезагрузки страницы восстановить проект нечем.
+// Хранилище — extensionProperties текущего юзера (декларация в entity-extensions.json).
+// Валидность/доступность ключа арбитрит фронт по списку picker'а — тут только формат.
+endpoints.push({
+  scope: 'global', method: 'GET', path: 'last-project',
+  handle: function (ctx) {
+    if (!ctx.currentUser) { gForbid(ctx, 'auth_required'); return; }
+    var k = null;
+    try { k = ctx.currentUser.extensionProperties.ssp_last_project || null; } catch (e) { k = null; }
+    ctx.response.json({ success: true, projectKey: (typeof k === 'string' && isValidProjectKey(k)) ? k : null });
+  }
+});
+endpoints.push({
+  scope: 'global', method: 'POST', path: 'last-project',
+  handle: function (ctx) {
+    if (!ctx.currentUser) { gForbid(ctx, 'auth_required'); return; }
+    var body = core.getBody(ctx);
+    if (body.__rejected__) { gBad(ctx, body.__reason__ || 'invalid_input'); return; }
+    if (!isValidProjectKey(body.projectKey)) { gBad(ctx, 'invalid_project_key'); return; }
+    try { ctx.currentUser.extensionProperties.ssp_last_project = String(body.projectKey).trim(); }
+    catch (e) { gBad(ctx, 'store_failed'); return; }
+    ctx.response.json({ success: true });
+  }
+});
+
 exports.httpHandler = { endpoints: endpoints };
 exports.isValidProjectKey = isValidProjectKey;  // test-only (unit: project-key-validation)

@@ -309,6 +309,54 @@ test('_initGlobalProjectSelection — last-used valid: apply(last) + load', asyn
   assert.strictEqual(loadLog.length, 1);
 });
 
+/* #58-10 — srcdoc-песочница: localStorage мёртв (SecurityError), host.navigation на
+   YT 2025.3 отсутствует → полный reload страницы переживает только серверный last-used
+   (backend-global/last-project, User.extensionProperties). Порядок: safeLs → сервер. */
+test('_initGlobalProjectSelection — #58-10 server last-project (LS пуст): apply + load', async () => {
+  const { gm } = createHost();
+  const loadLog = primeInit(gm, {
+    adminProjects: [{ shortName: 'SRVA', archived: false }, { shortName: 'SRVB', archived: false }],
+    projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }],
+  });
+  stubApi(gm,
+    { 'last-project': { success: true, projectKey: 'SRVB' } },
+    { 'filter-planner-projects': { projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }] } });
+  const r = await runInit(gm);
+  assert.strictEqual(r.threw, false, 'server-last резолвит проект без prompt');
+  assert.strictEqual(gm.get('_activeProjectKey'), 'SRVB', 'серверный last-project применён');
+  assert.strictEqual(loadLog.length, 1);
+});
+
+test('_initGlobalProjectSelection — #58-10 LS приоритетнее server last-project', async () => {
+  const { gm, window } = createHost();
+  window.localStorage.setItem('ssp_last_project_key', 'SRVA');
+  const loadLog = primeInit(gm, {
+    adminProjects: [{ shortName: 'SRVA', archived: false }, { shortName: 'SRVB', archived: false }],
+    projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }],
+  });
+  stubApi(gm,
+    { 'last-project': { success: true, projectKey: 'SRVB' } },
+    { 'filter-planner-projects': { projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }] } });
+  const r = await runInit(gm);
+  assert.strictEqual(r.threw, false);
+  assert.strictEqual(gm.get('_activeProjectKey'), 'SRVA', 'safeLs-кандидат первым');
+  assert.strictEqual(loadLog.length, 1);
+});
+
+test('_initGlobalProjectSelection — #58-10 server last вне списка: prompt (значение игнорируется)', async () => {
+  const { gm } = createHost();
+  const loadLog = primeInit(gm, {
+    adminProjects: [{ shortName: 'SRVA', archived: false }, { shortName: 'SRVB', archived: false }],
+    projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }],
+  });
+  stubApi(gm,
+    { 'last-project': { success: true, projectKey: 'GONE' } },
+    { 'filter-planner-projects': { projects: [{ key: 'SRVA', name: 'Server A' }, { key: 'SRVB', name: 'Server B' }] } });
+  const r = await runInit(gm);
+  assert.strictEqual(r.sentinel, true, 'недоступный серверный ключ → prompt');
+  assert.strictEqual(loadLog.length, 0);
+});
+
 test('_initGlobalProjectSelection — единственный проект: авто-выбор + load', async () => {
   const { gm } = createHost();
   const loadLog = primeInit(gm, {

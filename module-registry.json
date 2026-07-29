@@ -98,8 +98,8 @@
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
       "backend-global.js": {
-        "loc": 175,
-        "locBudget": 189
+        "loc": 203,
+        "locBudget": 210
       },
       "backend-project.js": {
         "loc": 26,
@@ -500,9 +500,11 @@
     "domain/project-nav.js": {
       "layer": "domain",
       "domain": "domain/project-nav",
-      "loc": 302,
-      "locBudget": 322,
-      "state": [],
+      "loc": 340,
+      "locBudget": 350,
+      "state": [
+        "_serverLastSynced"
+      ],
       "publishes": [
         "PROJECT_NAV"
       ]

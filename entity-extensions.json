@@ -23,6 +23,12 @@
         "ssp_releases_archive": { "type": "string" },
         "ssp_releases_archive_count": { "type": "string" }
       }
+    },
+    {
+      "entityType": "User",
+      "properties": {
+        "ssp_last_project": { "type": "string" }
+      }
     }
   ]
 }
