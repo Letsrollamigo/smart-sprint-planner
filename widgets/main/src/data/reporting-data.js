@@ -393,11 +393,12 @@ function bulkWorkItems(deps, issueIds, opts) {
   var ids = Array.isArray(issueIds) ? issueIds.filter(Boolean) : [];
   var win = opts.window || {};
   var out = { items: [], incomplete: [], complete: true,
-    diag: { chunks: 0, pages: 0, itemsTotal: 0, hitPageCap: 0, ms: 0 } };
+    diag: { chunks: 0, pages: 0, itemsTotal: 0, hitPageCap: 0, outOfWindow: 0, ms: 0 } };
   if (!ids.length || !deps || !deps.host) return Promise.resolve(out);
-  var dateClause = '';
+  var dateClause = '', winFrom = null, winTo = null;
   if (typeof win.fromTs === 'number' && typeof win.toTs === 'number' && win.toTs > win.fromTs) {
-    dateClause = ' work date: ' + _fmtWorkDate(win.fromTs) + ' .. ' + _fmtWorkDate(win.toTs - 1);
+    dateClause = ' and work date: ' + _fmtWorkDate(win.fromTs) + ' .. ' + _fmtWorkDate(win.toTs - 1);
+    winFrom = win.fromTs; winTo = win.toTs;   /* #58-2 — окно режем клиентски (см. ниже) */
   }
   var started = (typeof Date !== 'undefined' && Date.now) ? Date.now() : 0;
 
@@ -413,7 +414,16 @@ function bulkWorkItems(deps, issueIds, opts) {
         out.diag.pages++;
         out.diag.itemsTotal += arr.length;
         var parsed = _parseWorkItems(arr);
-        for (var i = 0; i < parsed.length; i++) out.items.push(parsed[i]);
+        /* #58-2: `work date:` — фильтр ЗАДАЧИ, не записи: если у задачи есть хоть одно
+           списание в окне, YT отдаёт ВСЮ её историю (проверено на стенде 2025.3: 50 из 135
+           записей вне 30-дневного окна). Серверная клауза остаётся дешёвым пре-фильтром,
+           окно режем здесь — полуоткрытым [fromTs, toTs), как весь reporting-period. */
+        for (var i = 0; i < parsed.length; i++) {
+          if (winFrom !== null && !(parsed[i].dateTs >= winFrom && parsed[i].dateTs < winTo)) {
+            out.diag.outOfWindow++; continue;
+          }
+          out.items.push(parsed[i]);
+        }
         if (arr.length >= TOP_LIMIT) {
           if ((skip / TOP_LIMIT) + 1 >= MAX_WI_PAGES) {   /* page-cap → чанк неполон (D7) */
             out.diag.hitPageCap++;

@@ -206,12 +206,14 @@ function _activeProj(deps) {
 function _battr(name) { return /\s/.test(name) ? '{' + name + '}' : name; }
 /* #57-5 Н3 (⚖ владелец) — юзер-хвост QueryAssist в скобки: верхнеуровневый `or` иначе
    разрывает project-скоуп (`project: X … A or B` → B со всего инстанса утекает в метрики).
-   `sort by:` в скобках жить не может — суффикс отцепляем и клеим после скобок. */
+   #58-1: группа обязана клеиться явным `and` — юкстапозиция `project: X (A)` парсер YT
+   отвергает (400 invalid_query, обе версии: 2025.3 и 2026.1). `sort by:` со скобочной
+   группой несовместим в принципе (`… and (A) sort by: x` → 400), а отчёты строят свой
+   порядок строк — суффикс отбрасываем, а не переносим. */
 function _wrapUserQuery(q) {
   var m = /\bsort by:/i.exec(q);
-  var filter = m ? q.slice(0, m.index).trim() : q;
-  var sort = m ? q.slice(m.index).trim() : '';
-  return ((filter ? '(' + filter + ')' : '') + ' ' + sort).trim();
+  var filter = (m ? q.slice(0, m.index) : q).trim();
+  return filter ? 'and (' + filter + ')' : '';
 }
 /* customField задачи по имени поля (projectCustomField.field.name | cf.name). */
 function _cf(iss, fieldName) {
@@ -418,7 +420,10 @@ function makeReportLoader(tag, contour, run) {
       queryParts: function (extras) {
         var parts = ['project: ' + proj];
         if (extras) for (var i = 0; i < extras.length; i++) parts.push(extras[i]);
-        if (base.query.trim()) parts.push(_wrapUserQuery(base.query.trim()));   /* Н3 — скобки против or-утечки скоупа */
+        if (base.query.trim()) {
+          var uq = _wrapUserQuery(base.query.trim());                           /* Н3 — скобки против or-утечки скоупа */
+          if (uq) parts.push(uq);                                              /* #58-1 — пустой хвост (одно `sort by:`) не клеим */
+        }
         return parts;
       },
       /* Один issues-фетч с ограничителем D10: $top=LIMIT+1 → {arr≤LIMIT, limitHit}. */

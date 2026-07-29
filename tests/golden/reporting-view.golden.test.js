@@ -363,13 +363,15 @@ B_REPORTS.forEach(function (report) {
   });
 });
 
-/* ── #57-5 Н3: юзер-хвост QueryAssist в скобках, sort by — снаружи ────────────────── */
-test('reporting: юзер-фильтр оборачивается в скобки (or не рвёт project-скоуп), sort by — вне скобок', async function () {
+/* ── #57-5 Н3 + #58-1: юзер-хвост в скобках, склейка ЯВНЫМ and, sort by отбрасывается ─
+   Юкстапозиция `project: X (A)` отвергается парсером YT (400 invalid_query, 2025.3 и 2026.1),
+   а `sort by:` со скобочной группой несовместим в принципе — отчёты строят свой порядок. */
+test('reporting: юзер-фильтр клеится через and (…) — or не рвёт project-скоуп, sort by отброшен', async function () {
   const deps = makeDeps({ ui: { reportingReport: 'a7', reportingPeriod: 'last30',
     reportingQuery: '#Bug or #Feature sort by: updated' } });
   await runReport(deps, 'a');
   assert.strictEqual(deps.__fetchCalls[0].query,
-    'project: DEMO #Unresolved (#Bug or #Feature) sort by: updated');
+    'project: DEMO #Unresolved and (#Bug or #Feature)');
 });
 
 /* ── ранние выходы «конфиг не задан» ─────────────────────────────────────────────── */

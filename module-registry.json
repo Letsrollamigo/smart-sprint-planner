@@ -978,7 +978,7 @@
       "layer": "domain",
       "domain": "data/reporting-data",
       "loc": 492,
-      "locBudget": 492,
+      "locBudget": 502,
       "state": [
         "REPORT_ABORTED",
         "_api"
@@ -992,7 +992,7 @@
       "layer": "domain",
       "domain": "domain/reporting-view",
       "loc": 1293,
-      "locBudget": 1293,
+      "locBudget": 1298,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"
