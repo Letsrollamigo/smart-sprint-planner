@@ -169,13 +169,16 @@ test('orphan-баг (без фич) → корзина; bug-free фича вне
   assert.strictEqual(out.basket.totalMinutes, 50);
   assert.strictEqual(out.basket.rows[0].minutes, 50);
   assert.strictEqual(out.orphanBugCount, 1);
+  /* #58-6: корзина входит в «Баги всего»; доли без знаменателя нет → null, не 0% */
+  assert.strictEqual(out.totalBugMinutes, 50);
+  assert.strictEqual(out.totalPct, null);
 });
 
 test('пустой вход / нет ролей → пустой результат без краха', () => {
   const out = computeBugTax({});
   assert.deepStrictEqual(out.groups, []);
   assert.strictEqual(out.basket, null);
-  assert.strictEqual(out.totalPct, 0);
+  assert.strictEqual(out.totalPct, null);   /* #58-6 — нет базы: не 0%, а «нет доли» */
   assert.strictEqual(out.bugCount, 0);
 });
 

@@ -1009,6 +1009,7 @@
   "repTtmUnit": "영업일",
   "repTtmOver": "초과",
   "repTtmOk": "기준 이내",
+  "repTtmNoData": "데이터 없음",
   "repTtmNoNorm": "기준 미설정",
   "repTtmNormPrefix": "기준 ≤",
   "repColUnitType": "단위 유형",

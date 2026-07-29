@@ -219,7 +219,7 @@
       },
       "react/reporting-view.jsx": {
         "loc": 1456,
-        "locBudget": 1456,
+        "locBudget": 1459,
         "budgetNote": "#57 (эпик 57) — осознанный рост +2: Н4 баннер A3 без целевых статусов + 57-4 канон Ring кнопок экспорта/прерывания (block/danger, комментарии). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица). v3.12.0 — микрополировка A11View (+8)."
       },
       "react/select-mount.jsx": {
@@ -992,7 +992,7 @@
       "layer": "domain",
       "domain": "domain/reporting-view",
       "loc": 1293,
-      "locBudget": 1298,
+      "locBudget": 1300,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"
@@ -1016,7 +1016,7 @@
       "layer": "pure",
       "domain": "pure/reporting-b-pure",
       "loc": 164,
-      "locBudget": 164,
+      "locBudget": 169,
       "state": [
         "_api"
       ],

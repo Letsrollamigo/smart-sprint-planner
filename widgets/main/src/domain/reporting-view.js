@@ -96,6 +96,7 @@ function _labels(T) {
     a2Title: T('repA2Title'), a2Sub: T('repA2Sub'),
     metricLead: T('repMetricLead'), metricTeam: T('repMetricTeam'), metricCycle: T('repMetricCycle'),
     ttmUnit: T('repTtmUnit'), ttmOver: T('repTtmOver'), ttmOk: T('repTtmOk'),
+    ttmNoData: T('repTtmNoData'),                       /* #58-9 — median=null: не вердикт, а «нет данных» */
     ttmNoNorm: T('repTtmNoNorm'), ttmNormPrefix: T('repTtmNormPrefix'),
     colUnitType: T('repColUnitType'), colCount: T('repColCount'),
     unitEpic: T('repUnitEpic'), unitStory: T('repUnitStory'),
@@ -1106,7 +1107,8 @@ const _loadB2 = makeReportLoader('B2', 'b', function (ctx) {
         var out = bpure.computeBugTax({ issues: issues, workItems: wi.items, roleExecutors: built.roleExecutors,
           roles: roles.map(function (r) { return { key: r.key, label: r.label }; }), windowToTs: win.toTs });
         if (deps.diag) deps.diag('reporting B2 bugs=' + out.bugCount + ' features=' + out.featureCount +
-          ' fallback=' + out.fallbackBugCount + ' orphan=' + out.orphanBugCount + ' pct=' + out.totalPct.toFixed(3), 'ok');
+          ' fallback=' + out.fallbackBugCount + ' orphan=' + out.orphanBugCount +
+          ' pct=' + (out.totalPct == null ? 'n/a' : out.totalPct.toFixed(3)), 'ok');   /* #58-6 — null = нет базы доли */
         ctx.mount({ loading: false,
           groups: out.groups, basket: out.basket, totalBugMinutes: out.totalBugMinutes, totalPct: out.totalPct,
           hasSystem: !!fieldSystem, bugCount: out.bugCount, featureCount: out.featureCount,

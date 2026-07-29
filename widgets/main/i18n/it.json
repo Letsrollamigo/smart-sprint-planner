@@ -1009,6 +1009,7 @@
   "repTtmUnit": "gl",
   "repTtmOver": "superato",
   "repTtmOk": "nella norma",
+  "repTtmNoData": "nessun dato",
   "repTtmNoNorm": "norma non impostata",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Tipo di unità",

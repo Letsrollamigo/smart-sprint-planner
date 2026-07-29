@@ -1009,6 +1009,7 @@
   "repTtmUnit": "prd",
   "repTtmOver": "překročeno",
   "repTtmOk": "v normě",
+  "repTtmNoData": "žádná data",
   "repTtmNoNorm": "norma nenastavena",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Typ jednotky",

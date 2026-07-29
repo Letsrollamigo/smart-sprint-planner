@@ -261,6 +261,7 @@
     "reworkTitle",
     "reworkTotal",
     "riskSuffix",
+    "ttmNoData",
     "ttmNoNorm",
     "ttmNormPrefix",
     "ttmOk",

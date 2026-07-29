@@ -1009,6 +1009,7 @@
   "repTtmUnit": "工作日",
   "repTtmOver": "超标",
   "repTtmOk": "达标",
+  "repTtmNoData": "暂无数据",
   "repTtmNoNorm": "未设定标准",
   "repTtmNormPrefix": "标准 ≤",
   "repColUnitType": "单元类型",

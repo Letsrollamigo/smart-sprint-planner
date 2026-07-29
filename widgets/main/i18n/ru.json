@@ -1008,6 +1008,7 @@
   "repTtmUnit": "раб. дн",
   "repTtmOver": "превышение",
   "repTtmOk": "в норме",
+  "repTtmNoData": "нет данных",
   "repTtmNoNorm": "норматив не задан",
   "repTtmNormPrefix": "норма ≤",
   "repColUnitType": "Тип единицы",

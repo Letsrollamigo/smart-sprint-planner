@@ -1009,6 +1009,7 @@
   "repTtmUnit": "mn",
   "repTtmOver": "túllépés",
   "repTtmOk": "normán belül",
+  "repTtmNoData": "nincs adat",
   "repTtmNoNorm": "nincs megadva norma",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Egységtípus",

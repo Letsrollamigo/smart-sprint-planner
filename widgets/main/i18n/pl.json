@@ -1009,6 +1009,7 @@
   "repTtmUnit": "dr",
   "repTtmOver": "przekroczono",
   "repTtmOk": "w normie",
+  "repTtmNoData": "brak danych",
   "repTtmNoNorm": "norma nieokreślona",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Typ jednostki",

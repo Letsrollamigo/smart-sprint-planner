@@ -1009,6 +1009,7 @@
   "repTtmUnit": "dl",
   "repTtmOver": "excedido",
   "repTtmOk": "dentro de la norma",
+  "repTtmNoData": "sin datos",
   "repTtmNoNorm": "norma no definida",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Tipo de unidad",

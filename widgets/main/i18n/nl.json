@@ -1009,6 +1009,7 @@
   "repTtmUnit": "werkdagen",
   "repTtmOver": "overschreden",
   "repTtmOk": "binnen norm",
+  "repTtmNoData": "geen gegevens",
   "repTtmNoNorm": "norm niet ingesteld",
   "repTtmNormPrefix": "norm ≤",
   "repColUnitType": "Type eenheid",

@@ -164,10 +164,15 @@ function computeBugTax(input) {
     basketRows.push({ roleKey: k, label: roleLabel[k], minutes: m }); basketTotal += m;
   });
 
+  /* #58-6: «Баги всего» = ВСЕ баг-часы (связанные + корзина) — иначе при orphan-only популяции
+     карточка врёт «0 ч» рядом с непустой корзиной. Налог (totalPct) остаётся долей по связанным
+     (bug/all внутри поражённых фич — корзина без знаменателя в долю не входит); без базы — null,
+     НЕ 0%: «0% налога» при списанных баг-часах — ложь, UI рисует «—». */
   return {
     groups: groups,
     basket: basketRows.length ? { rows: basketRows, totalMinutes: basketTotal } : null,
-    totalBugMinutes: totalBug, totalAllMinutes: totalAll, totalPct: totalAll > 0 ? (totalBug / totalAll) : 0,
+    totalBugMinutes: totalBug + basketTotal, totalAllMinutes: totalAll,
+    totalPct: totalAll > 0 ? (totalBug / totalAll) : null,
     bugCount: bugs.length, featureCount: featureIds.length,
     fallbackBugCount: fallbackBugCount, orphanBugCount: orphanBugs.length,
   };

@@ -520,9 +520,11 @@ function A2View({ vm, L }) {
   const leadTile = tiles.filter((t) => t.metric === 'lead')[0] || null;
   const leadLevel = leadTile ? leadTile.level : 'none';
   const labelOf = (m) => (m === 'lead' ? L.metricLead : m === 'team' ? L.metricTeam : L.metricCycle);
+  /* #58-9: level 'none' (median=null — данных нет) НЕ «в норме»: вердикт норматива без метрики — ложь. */
   const normLine = (t) => (t.norm == null
     ? L.ttmNoNorm
-    : L.ttmNormPrefix + ' ' + t.norm + ' · ' + (t.level === 'over' ? L.ttmOver : L.ttmOk));
+    : L.ttmNormPrefix + ' ' + t.norm + ' · ' +
+      (t.level === 'over' ? L.ttmOver : t.level === 'ok' ? L.ttmOk : L.ttmNoData));
   return (
     <React.Fragment>
       <LimitBanners vm={vm} L={L} />
@@ -1247,7 +1249,8 @@ function B2View({ vm, L }) {
     <React.Fragment>
       <LimitBanners vm={vm} L={L} />
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', margin: '4px 0 14px' }}>
-        <MetricChip label={L.b2TotalPct} value={pct(vm.totalPct)} bad={(Number(vm.totalPct) || 0) >= 0.3} />
+        {/* #58-6: без знаменателя (нет связанных фич с часами) доля не существует → «—», не 0% */}
+        <MetricChip label={L.b2TotalPct} value={vm.totalPct == null ? '—' : pct(vm.totalPct)} bad={(Number(vm.totalPct) || 0) >= 0.3} />
         <MetricChip label={L.b2TotalBug} value={_fmtHours(vm.totalBugMinutes) + ' ' + L.b2HoursUnit} />
         {(vm.fallbackBugCount || 0) > 0 ? <MetricChip label={L.b2Fallback} value={vm.fallbackBugCount} /> : null}
       </div>

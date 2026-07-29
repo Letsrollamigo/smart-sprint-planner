@@ -1008,6 +1008,7 @@
   "repTtmUnit": "wd",
   "repTtmOver": "over norm",
   "repTtmOk": "within norm",
+  "repTtmNoData": "no data",
   "repTtmNoNorm": "norm not set",
   "repTtmNormPrefix": "norm ≤",
   "repColUnitType": "Unit type",

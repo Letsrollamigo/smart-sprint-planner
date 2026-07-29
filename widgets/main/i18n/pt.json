@@ -1009,6 +1009,7 @@
   "repTtmUnit": "du",
   "repTtmOver": "excedido",
   "repTtmOk": "dentro da norma",
+  "repTtmNoData": "sem dados",
   "repTtmNoNorm": "norma não definida",
   "repTtmNormPrefix": "norma ≤",
   "repColUnitType": "Tipo de unidade",

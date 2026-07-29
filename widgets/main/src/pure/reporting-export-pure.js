@@ -19,8 +19,8 @@
 
 /* минуты → часы (число, 2 знака) | '' если нет значения */
 function _h(min) { return (min == null || isNaN(min)) ? '' : Math.round(min / 60 * 100) / 100; }
-/* доля [0..1] → целые % */
-function _pf(frac) { return Math.round((Number(frac) || 0) * 100); }
+/* доля [0..1] → целые % ; null (#58-6 — нет базы доли) → '' как у _h/_ps */
+function _pf(frac) { return frac == null ? '' : Math.round((Number(frac) || 0) * 100); }
 /* знаковый % (уже в процентах) → целое | '' */
 function _ps(v) { return (v == null || isNaN(v)) ? '' : Math.round(v); }
 /* уровень светофора → слово-флаг (как бейдж на экране); none → '' */

@@ -1009,6 +1009,7 @@
   "repTtmUnit": "営業日",
   "repTtmOver": "超過",
   "repTtmOk": "基準内",
+  "repTtmNoData": "データなし",
   "repTtmNoNorm": "基準未設定",
   "repTtmNormPrefix": "基準 ≤",
   "repColUnitType": "単位の種類",

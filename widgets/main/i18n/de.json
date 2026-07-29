@@ -1009,6 +1009,7 @@
   "repTtmUnit": "AT",
   "repTtmOver": "Überschreitung",
   "repTtmOk": "in der Norm",
+  "repTtmNoData": "keine Daten",
   "repTtmNoNorm": "Norm nicht festgelegt",
   "repTtmNormPrefix": "Norm ≤",
   "repColUnitType": "Einheitstyp",

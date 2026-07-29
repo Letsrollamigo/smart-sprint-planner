@@ -1009,6 +1009,7 @@
   "repTtmUnit": "ig",
   "repTtmOver": "aşıldı",
   "repTtmOk": "norm içinde",
+  "repTtmNoData": "veri yok",
   "repTtmNoNorm": "norm tanımlı değil",
   "repTtmNormPrefix": "norm ≤",
   "repColUnitType": "Birim türü",
