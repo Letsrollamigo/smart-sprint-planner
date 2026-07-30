@@ -691,7 +691,7 @@
   "ganttStateLoading": "laden…",
   "globalProjectLabel": "Project:",
   "globalProjectPlaceholder": "— selecteer een project —",
-  "globalNoProjects": "Geen beschikbare projecten met de planner ingeschakeld. Open de planner ten minste één keer in de projectinstellingen.",
+  "globalNoProjects": "Geen beschikbare projecten met de planner ingeschakeld. Koppel de app aan een project (Project Settings → Apps), selecteer de instellingenbeheerdersgroep in de app-instellingen (verplicht veld) en open daarna de planner in de projectinstellingen.",
   "globalPickPrompt": "Selecteer een project in de koptekst om te beginnen met plannen.",
   "globalSwitchDiscardTitle": "Niet-opgeslagen concept",
   "globalSwitchDiscardMsg": "Het huidige project heeft niet-opgeslagen en niet-gevalideerde wijzigingen. Bij het wisselen van project wordt het lokale concept gewist. Doorgaan?",

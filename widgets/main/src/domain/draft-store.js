@@ -52,6 +52,13 @@ function draftScheduleFlush(deps) {
 }
 function draftFlushNow(deps) {
   if (!deps.state.getDraftPending()) return;
+  /* #29 — global без выбранного проекта: POST draft уходил с пустым projectKey →
+     400 invalid_project_key + вечный 5с-ретрай (ERR-шум в диаг-логе). Тихо ждём
+     выбора проекта: pending остаётся, следующий draftScheduleFlush дошлёт. */
+  if (typeof deps.state.getMode === 'function' && deps.state.getMode() === 'global'
+      && !(typeof deps.state.getActiveProjectKey === 'function' && deps.state.getActiveProjectKey())) {
+    return;
+  }
   var _draft = deps.state.getDraft();
   var sz = JSON.stringify(_draft || {}).length;
   if (sz > 200 * 1024) {

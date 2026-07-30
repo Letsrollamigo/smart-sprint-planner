@@ -691,7 +691,7 @@
   "ganttStateLoading": "caricamento…",
   "globalProjectLabel": "Progetto:",
   "globalProjectPlaceholder": "— seleziona un progetto —",
-  "globalNoProjects": "Nessun progetto disponibile con il pianificatore abilitato. Apri il pianificatore nelle impostazioni del progetto almeno una volta.",
+  "globalNoProjects": "Nessun progetto disponibile con il pianificatore abilitato. Collega l'app a un progetto (Project Settings → Apps), seleziona il gruppo di gestori delle impostazioni nelle impostazioni dell'app (campo obbligatorio), quindi apri il pianificatore nelle impostazioni del progetto.",
   "globalPickPrompt": "Seleziona un progetto nell’intestazione per iniziare la pianificazione.",
   "globalSwitchDiscardTitle": "Bozza non salvata",
   "globalSwitchDiscardMsg": "Il progetto corrente ha modifiche non salvate e non convalidate. Cambiando progetto la bozza locale verrà cancellata. Continuare?",

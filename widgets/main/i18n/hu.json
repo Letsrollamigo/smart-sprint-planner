@@ -690,7 +690,7 @@
   "ganttStateLoading": "betöltés…",
   "globalProjectLabel": "Projekt:",
   "globalProjectPlaceholder": "— válasszon projektet —",
-  "globalNoProjects": "Nincs elérhető projekt engedélyezett tervezővel. Nyissa meg a tervezőt legalább egyszer a projekt beállításaiban.",
+  "globalNoProjects": "Nincs elérhető projekt engedélyezett tervezővel. Csatolja az alkalmazást egy projekthez (Project Settings → Apps), az alkalmazás beállításaiban válassza ki a beállításkezelő csoportot (kötelező mező), majd nyissa meg a tervezőt a projekt beállításaiban.",
   "globalPickPrompt": "Válasszon projektet a fejlécben a tervezés megkezdéséhez.",
   "globalSwitchDiscardTitle": "Nem mentett piszkozat",
   "globalSwitchDiscardMsg": "A jelenlegi projektben nem mentett és nem validált változások vannak. A projektváltás törli a helyi piszkozatot. Folytatja?",

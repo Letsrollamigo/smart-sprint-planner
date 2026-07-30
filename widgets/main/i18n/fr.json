@@ -691,7 +691,7 @@
   "ganttStateLoading": "chargement…",
   "globalProjectLabel": "Projet :",
   "globalProjectPlaceholder": "— sélectionnez un projet —",
-  "globalNoProjects": "Aucun projet disponible avec le planificateur activé. Ouvrez le planificateur dans les paramètres du projet au moins une fois.",
+  "globalNoProjects": "Aucun projet disponible avec le planificateur activé. Attachez l'application à un projet (Project Settings → Apps), sélectionnez le groupe de gestionnaires des paramètres dans les réglages de l'application (champ obligatoire), puis ouvrez le planificateur dans les paramètres du projet.",
   "globalPickPrompt": "Sélectionnez un projet dans l’en-tête pour commencer la planification.",
   "globalSwitchDiscardTitle": "Brouillon non enregistré",
   "globalSwitchDiscardMsg": "Le projet actuel comporte des modifications non enregistrées et non validées. Le changement de projet effacera le brouillon local. Continuer ?",

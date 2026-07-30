@@ -760,7 +760,7 @@
   "ganttStateLoading": "loading history…",
   "globalProjectLabel": "Project:",
   "globalProjectPlaceholder": "— select a project —",
-  "globalNoProjects": "No available projects with the planner enabled. Open the planner in the project settings at least once.",
+  "globalNoProjects": "No available projects with the planner enabled. Attach the app to a project (Project Settings → Apps), select the settings manager group in the app settings (a required field), then open the planner in the project settings.",
   "globalPickPrompt": "Select a project in the header to start planning.",
   "globalSwitchDiscardTitle": "Unsaved draft",
   "globalSwitchDiscardMsg": "The current project has unsaved and unvalidated changes. Switching projects will clear the local draft. Continue?",

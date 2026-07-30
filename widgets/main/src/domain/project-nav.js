@@ -68,6 +68,14 @@
 
       var banner = document.getElementById('projectSettingsBanner');
       if (banner) { banner.textContent = deps.T('projectMovedToMenu'); banner.classList.remove('hidden'); }
+      /* #29 — онбординг-тупик: без группы управления настройками форма read-only
+         (.ssp-modal-footer скрыт CSS'ом), а объяснение жило только в мёртвом фоллбеке
+         mountInline. Показываем настоящую причину и следующий шаг видимым баннером. */
+      var roBanner = document.getElementById('projectSettingsRoBanner');
+      if (roBanner) {
+        roBanner.textContent = deps.T('settingsNotConfiguredHint');
+        roBanner.classList.toggle('hidden', configured);
+      }
 
       /* header chrome (lang/icons/theme/version) — нужный подмножество init-цепочки */
       try { deps.populateLangSelect(document.getElementById('langSel')); } catch (_) {}

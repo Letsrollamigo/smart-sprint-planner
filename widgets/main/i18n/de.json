@@ -691,7 +691,7 @@
   "ganttStateLoading": "Verlauf wird geladen…",
   "globalProjectLabel": "Projekt:",
   "globalProjectPlaceholder": "— Projekt auswählen —",
-  "globalNoProjects": "Keine verfügbaren Projekte mit aktiviertem Planer. Öffnen Sie den Planer mindestens einmal in den Projekteinstellungen.",
+  "globalNoProjects": "Keine verfügbaren Projekte mit aktiviertem Planer. Verbinden Sie die App mit einem Projekt (Project Settings → Apps), wählen Sie in den App-Einstellungen die Einstellungsverwalter-Gruppe aus (Pflichtfeld) und öffnen Sie dann den Planer in den Projekteinstellungen.",
   "globalPickPrompt": "Wählen Sie oben ein Projekt aus, um mit der Planung zu beginnen.",
   "globalSwitchDiscardTitle": "Nicht gespeicherter Entwurf",
   "globalSwitchDiscardMsg": "Das aktuelle Projekt hat nicht gespeicherte und nicht validierte Änderungen. Beim Projektwechsel wird der lokale Entwurf gelöscht. Fortfahren?",

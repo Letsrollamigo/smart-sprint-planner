@@ -691,7 +691,7 @@
   "ganttStateLoading": "ładowanie…",
   "globalProjectLabel": "Projekt:",
   "globalProjectPlaceholder": "— wybierz projekt —",
-  "globalNoProjects": "Brak dostępnych projektów z włączonym plannerem. Otwórz planner w ustawieniach projektu co najmniej raz.",
+  "globalNoProjects": "Brak dostępnych projektów z włączonym plannerem. Podłącz aplikację do projektu (Project Settings → Apps), w ustawieniach aplikacji wybierz grupę zarządzających ustawieniami (pole wymagane), a następnie otwórz planner w ustawieniach projektu.",
   "globalPickPrompt": "Wybierz projekt w nagłówku, aby rozpocząć planowanie.",
   "globalSwitchDiscardTitle": "Niezapisany szkic",
   "globalSwitchDiscardMsg": "Bieżący projekt ma niezapisane i niezweryfikowane zmiany. Zmiana projektu spowoduje wyczyszczenie lokalnego szkicu. Kontynuować?",

@@ -691,7 +691,7 @@
   "ganttStateLoading": "cargando…",
   "globalProjectLabel": "Proyecto:",
   "globalProjectPlaceholder": "— seleccione un proyecto —",
-  "globalNoProjects": "No hay proyectos disponibles con el planificador habilitado. Abra el planificador en la configuración del proyecto al menos una vez.",
+  "globalNoProjects": "No hay proyectos disponibles con el planificador habilitado. Adjunte la aplicación a un proyecto (Project Settings → Apps), seleccione el grupo de administradores de configuración en los ajustes de la aplicación (campo obligatorio) y luego abra el planificador en la configuración del proyecto.",
   "globalPickPrompt": "Seleccione un proyecto en el encabezado para comenzar a planificar.",
   "globalSwitchDiscardTitle": "Borrador sin guardar",
   "globalSwitchDiscardMsg": "El proyecto actual tiene cambios sin guardar y sin validar. Al cambiar de proyecto se borrará el borrador local. ¿Continuar?",

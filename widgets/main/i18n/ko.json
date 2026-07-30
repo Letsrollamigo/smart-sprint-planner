@@ -691,7 +691,7 @@
   "ganttStateLoading": "로딩 중…",
   "globalProjectLabel": "프로젝트:",
   "globalProjectPlaceholder": "— 프로젝트 선택 —",
-  "globalNoProjects": "플래너가 활성화된 사용 가능한 프로젝트가 없습니다. 프로젝트 설정에서 플래너를 한 번 이상 여세요.",
+  "globalNoProjects": "플래너가 활성화된 사용 가능한 프로젝트가 없습니다. 앱을 프로젝트에 연결하고(Project Settings → Apps), 앱 설정에서 설정 관리자 그룹을 선택한 다음(필수 항목), 프로젝트 설정에서 플래너를 여세요.",
   "globalPickPrompt": "계획을 시작하려면 머리글에서 프로젝트를 선택하세요.",
   "globalSwitchDiscardTitle": "저장되지 않은 초안",
   "globalSwitchDiscardMsg": "현재 프로젝트에 저장되지 않고 검증되지 않은 변경 사항이 있습니다. 프로젝트를 전환하면 로컬 초안이 지워집니다. 계속하시겠습니까?",

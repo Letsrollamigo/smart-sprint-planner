@@ -799,6 +799,9 @@
       state: {
         getDraft: function () { return _draft; },
         setDraft: function (d) { _draft = d; },
+        /* #29 — гейт flush'а в global до выбора проекта */
+        getMode: function () { return _mode; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
         getDraftPending: function () { return _draftPending; },
         setDraftPending: function (b) { _draftPending = b; },
         getDraftRestoreInProgress: function () { return _draftRestoreInProgress; },
