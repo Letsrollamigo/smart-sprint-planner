@@ -63,6 +63,7 @@
   "lblLightAuto": "Automatyczne obliczenie według wzoru",
   "lblLightManual": "Ręczne wprowadzanie na osobę",
   "cardModes": "Tryby planowania",
+  "cardMultirole": "Planowanie wielorolowe",
   "cardMisc": "Pozostałe",
   "cardDta": "Zróżnicowane śledzenie czasu",
   "navDta": "Zróżn. śledzenie",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "ponad pojemność",
   "lblAutoForecast": "Automatyczna prognoza dat",
   "descAutoForecast": "Włącza przycisk „Prognozuj daty” i zarządzanie kolejką zadań na poziomie podziału według wykonawców.",
+  "lblCrossRoleExclude": "Wykluczanie zadania między rolami",
+  "descCrossRoleExclude": "Wykluczenie zadania ze sprintu w jednej roli (zmianą statusu lub koszem) wyklucza je także w pozostałych rolach tego sprintu. Cofnięcie wykluczenia nie kaskaduje — robi się je per rola.",
   "thQueue": "#",
   "queueMoveUp": "W górę kolejki",
   "queueMoveDown": "W dół kolejki"

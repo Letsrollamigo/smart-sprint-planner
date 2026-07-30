@@ -85,6 +85,8 @@ function SettingsForm(props) {
       allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
       /* #40 — авто-прогноз дат (кнопка + очередь на уровне «Люди»); планировочный тир. */
       autoForecastEnabled: !!initial.autoForecastEnabled,
+      /* #59 — кросс-ролевое исключение; дефолт ON (ключа нет у старых установок). */
+      crossRoleExcludeEnabled: initial.crossRoleExcludeEnabled !== false,
     };
   });
   const toggleMode = (k) => setModes((p) => Object.assign({}, p, { [k]: !p[k] }));
@@ -320,6 +322,7 @@ function SettingsForm(props) {
     data.manualPersonalResource = _ppFlags.manualPersonalResource;
     data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
     data.autoForecastEnabled = modes.autoForecastEnabled;   /* #40 */
+    data.crossRoleExcludeEnabled = modes.crossRoleExcludeEnabled;   /* #59 */
     data.showDiagLogUi = showDiagLogUi;   /* #56-5 — hideDiagLogUi больше не пишем (soft-deprecated) */
 
     const num = (v, d) => { const f = parseFloat(v); return isFinite(f) ? f : d; };
@@ -698,6 +701,18 @@ function SettingsForm(props) {
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.autoForecastEnabled} label={t('lblAutoForecast')} hint={t('descAutoForecast')} onToggle={() => toggleMode('autoForecastEnabled')} />
           </div>
+        </React.Fragment>
+      ),
+    },
+    {
+      /* #59/#61 — запросы внешней команды: планирование одной задачи сразу на
+         несколько ролей. Своя секция, а не «Режимы планирования»: тумблеры гейтят
+         сквозную кросс-ролевую механику, а не режим отдельной таблицы. Тир —
+         планировочный (не admin): включает/выключает поведение планирования. */
+      id: 'multirole', title: t('cardMultirole'),
+      node: (
+        <React.Fragment>
+          <RoleCheck on={modes.crossRoleExcludeEnabled} label={t('lblCrossRoleExclude')} hint={t('descCrossRoleExclude')} onToggle={() => toggleMode('crossRoleExcludeEnabled')} />
         </React.Fragment>
       ),
     },

@@ -126,6 +126,7 @@
   "lblLightAuto": "Auto-calc by formula",
   "lblLightManual": "Manual per-assignee input",
   "cardModes": "Planning Modes",
+  "cardMultirole": "Multi-role planning",
   "cardMisc": "Other",
   "lblCapacityMode": "Capacity model mode",
   "optCapacityLight": "Light",
@@ -1242,6 +1243,8 @@
   "forecastUnfitBadge": "over capacity",
   "lblAutoForecast": "Auto-forecast dates",
   "descAutoForecast": "Enables the “Forecast dates” button and the task queue controls on the assignee distribution level.",
+  "lblCrossRoleExclude": "Cross-role exclusion of an issue",
+  "descCrossRoleExclude": "Excluding an issue from the sprint in one role (by status change or by the trash button) also excludes it in the other roles of that sprint. Un-excluding does not cascade — do it per role.",
   "thQueue": "#",
   "queueMoveUp": "Move up in the queue",
   "queueMoveDown": "Move down in the queue"

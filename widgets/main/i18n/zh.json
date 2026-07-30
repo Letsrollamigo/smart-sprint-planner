@@ -63,6 +63,7 @@
   "lblLightAuto": "按公式自动计算",
   "lblLightManual": "按执行人手动输入",
   "cardModes": "规划模式",
+  "cardMultirole": "多角色规划",
   "cardMisc": "其他",
   "cardDta": "差异化时间跟踪",
   "navDta": "差异化跟踪",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "超出容量",
   "lblAutoForecast": "自动预测日期",
   "descAutoForecast": "启用“预测日期”按钮以及按执行人分配层级的任务队列管理。",
+  "lblCrossRoleExclude": "跨角色排除任务",
+  "descCrossRoleExclude": "在某个角色中将任务移出冲刺（更改状态或使用回收站）时，该冲刺其他角色中的同一任务也会被排除。取消排除不会联动，需按角色分别操作。",
   "thQueue": "#",
   "queueMoveUp": "在队列中上移",
   "queueMoveDown": "在队列中下移"

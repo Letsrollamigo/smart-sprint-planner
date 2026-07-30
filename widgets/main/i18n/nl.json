@@ -63,6 +63,7 @@
   "lblLightAuto": "Automatische berekening via formule",
   "lblLightManual": "Handmatige invoer per toegewezene",
   "cardModes": "Planningsmodi",
+  "cardMultirole": "Multi-rolplanning",
   "cardMisc": "Overige",
   "cardDta": "Gedifferentieerde tijdregistratie",
   "navDta": "Diff. registratie",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "boven capaciteit",
   "lblAutoForecast": "Datums automatisch voorspellen",
   "descAutoForecast": "Schakelt de knop 'Datums voorspellen' en het beheer van de taakwachtrij op het niveau van verdeling per uitvoerder in.",
+  "lblCrossRoleExclude": "Rol-overstijgend uitsluiten",
+  "descCrossRoleExclude": "Een taak in één rol uitsluiten van de sprint (via status of prullenbak) sluit haar ook uit in de overige rollen van die sprint. Het ongedaan maken cascadeert niet — dat doe je per rol.",
   "thQueue": "#",
   "queueMoveUp": "Omhoog in de wachtrij",
   "queueMoveDown": "Omlaag in de wachtrij"

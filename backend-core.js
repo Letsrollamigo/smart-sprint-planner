@@ -939,6 +939,10 @@ var ALLOWED_SETTINGS_KEYS = [
      предыдущего статуса снимается, нового — ставится. Теги НЕ создаются автоматически
      (авто-созданный тег приватен владельцу и невидим команде). */
   'releaseTagMapping',
+  /* #59 — кросс-ролевое исключение задачи из спринта: исключение/удаление записи в одной
+     роли каскадится на остальные роли того же спринта. Планировочный тир, дефолт ON
+     (семантика `!== false` на фронте — ключ может отсутствовать у старых установок). */
+  'crossRoleExcludeEnabled',
   /* #57-2 — блокировка создания новых спринтов: тумблер в шапке планера. blockSprintCreation
      пишется ТОЛЬКО эндпоинтом sprint-lock (backend-sprintlock.js) под группой
      sprintLockGroups/Names («Управление правами», admin-тир); обычный settings-save
@@ -1165,7 +1169,8 @@ function validateSettings(settings) {
   // Булевы флаги
   var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled',
-    /* #57-2 — блокировка создания спринтов */ 'blockSprintCreation'];
+    /* #57-2 — блокировка создания спринтов */ 'blockSprintCreation',
+    /* #59 — кросс-ролевое исключение */ 'crossRoleExcludeEnabled'];
   for (var b = 0; b < boolKeys.length; b++) {
     var bv = settings[boolKeys[b]];
     if (bv !== undefined && bv !== null && typeof bv !== 'boolean') return false;

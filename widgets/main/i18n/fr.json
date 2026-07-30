@@ -63,6 +63,7 @@
   "lblLightAuto": "Calcul automatique par formule",
   "lblLightManual": "Saisie manuelle par assigné",
   "cardModes": "Modes de planification",
+  "cardMultirole": "Planification multi-rôles",
   "cardMisc": "Autres",
   "cardDta": "Suivi différencié du temps",
   "navDta": "Suivi diff.",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "hors capacité",
   "lblAutoForecast": "Prévision automatique des dates",
   "descAutoForecast": "Active le bouton « Prévoir les dates » et la gestion de la file de tâches au niveau de la répartition par exécutant.",
+  "lblCrossRoleExclude": "Exclusion d’une tâche entre rôles",
+  "descCrossRoleExclude": "Exclure une tâche du sprint dans un rôle (changement de statut ou corbeille) l’exclut aussi dans les autres rôles de ce sprint. La réintégration ne se propage pas : elle se fait rôle par rôle.",
   "thQueue": "#",
   "queueMoveUp": "Monter dans la file",
   "queueMoveDown": "Descendre dans la file"

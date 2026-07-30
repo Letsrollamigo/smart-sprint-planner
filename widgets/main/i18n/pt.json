@@ -63,6 +63,7 @@
   "lblLightAuto": "Cálculo automático por fórmula",
   "lblLightManual": "Entrada manual por responsável",
   "cardModes": "Modos de planeamento",
+  "cardMultirole": "Planejamento multifunção",
   "cardMisc": "Outros",
   "cardDta": "Rastreamento diferenciado de tempo",
   "navDta": "Rastr. dif.",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "acima da capacidade",
   "lblAutoForecast": "Previsão automática de datas",
   "descAutoForecast": "Ativa o botão «Prever datas» e o controle da fila de tarefas no nível de distribuição por executores.",
+  "lblCrossRoleExclude": "Exclusão de tarefa entre funções",
+  "descCrossRoleExclude": "Excluir uma tarefa do sprint em uma função (por mudança de status ou pela lixeira) também a exclui nas demais funções desse sprint. Reverter a exclusão não se propaga: faça por função.",
   "thQueue": "#",
   "queueMoveUp": "Subir na fila",
   "queueMoveDown": "Descer na fila"

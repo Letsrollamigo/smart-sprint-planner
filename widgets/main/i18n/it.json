@@ -63,6 +63,7 @@
   "lblLightAuto": "Calcolo automatico tramite formula",
   "lblLightManual": "Inserimento manuale per assegnatario",
   "cardModes": "Modalità di pianificazione",
+  "cardMultirole": "Pianificazione multi-ruolo",
   "cardMisc": "Altro",
   "cardDta": "Tracciamento differenziato del tempo",
   "navDta": "Tracc. diff.",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "oltre la capacità",
   "lblAutoForecast": "Previsione automatica delle date",
   "descAutoForecast": "Attiva il pulsante «Prevedi le date» e la gestione della coda delle attività a livello di distribuzione per esecutori.",
+  "lblCrossRoleExclude": "Esclusione dell’attività tra ruoli",
+  "descCrossRoleExclude": "Escludere un’attività dallo sprint in un ruolo (cambio di stato o cestino) la esclude anche negli altri ruoli dello sprint. Il ripristino non si propaga: va fatto ruolo per ruolo.",
   "thQueue": "#",
   "queueMoveUp": "Sposta su nella coda",
   "queueMoveDown": "Sposta giù nella coda"

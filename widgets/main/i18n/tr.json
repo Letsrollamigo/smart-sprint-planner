@@ -63,6 +63,7 @@
   "lblLightAuto": "Formülle otomatik hesaplama",
   "lblLightManual": "Atanan kişi başına manuel giriş",
   "cardModes": "Planlama modları",
+  "cardMultirole": "Çok rollü planlama",
   "cardMisc": "Diğer",
   "cardDta": "Ayrıştırılmış zaman takibi",
   "navDta": "Ayrış. takip",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "kapasite aşımı",
   "lblAutoForecast": "Tarihleri otomatik öngör",
   "descAutoForecast": "\"Tarihleri öngör\" düğmesini ve yürütücülere göre dağıtım düzeyindeki görev kuyruğu yönetimini etkinleştirir.",
+  "lblCrossRoleExclude": "Roller arası iş kaydı hariç tutma",
+  "descCrossRoleExclude": "Bir rolde iş kaydını sprintten hariç tutmak (durum değişikliği veya çöp kutusu ile) onu aynı sprintin diğer rollerinde de hariç tutar. Hariç tutmayı geri alma yayılmaz — rol bazında yapılır.",
   "thQueue": "#",
   "queueMoveUp": "Kuyrukta yukarı",
   "queueMoveDown": "Kuyrukta aşağı"

@@ -63,6 +63,7 @@
   "lblLightAuto": "Automatický výpočet podle vzorce",
   "lblLightManual": "Ruční zadání podle řešitelů",
   "cardModes": "Režimy plánování",
+  "cardMultirole": "Plánování napříč rolemi",
   "cardMisc": "Ostatní",
   "cardDta": "Diferencované sledování času",
   "navDta": "Dif. sledování",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "nad kapacitu",
   "lblAutoForecast": "Automatická prognóza termínů",
   "descAutoForecast": "Zapíná tlačítko „Prognóza termínů“ a správu fronty úkolů na úrovni rozdělení podle řešitelů.",
+  "lblCrossRoleExclude": "Vyloučení úkolu napříč rolemi",
+  "descCrossRoleExclude": "Vyloučení úkolu ze sprintu v jedné roli (změnou stavu nebo košem) jej vyloučí i v ostatních rolích daného sprintu. Zrušení vyloučení se nepřenáší — provádí se po rolích.",
   "thQueue": "#",
   "queueMoveUp": "Výš ve frontě",
   "queueMoveDown": "Níž ve frontě"

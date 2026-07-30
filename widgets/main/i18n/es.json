@@ -63,6 +63,7 @@
   "lblLightAuto": "Cálculo automático por fórmula",
   "lblLightManual": "Entrada manual por asignado",
   "cardModes": "Modos de planificación",
+  "cardMultirole": "Planificación multirol",
   "cardMisc": "Otros",
   "cardDta": "Seguimiento diferenciado del tiempo",
   "navDta": "Seguim. dif.",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "fuera de capacidad",
   "lblAutoForecast": "Pronóstico automático de fechas",
   "descAutoForecast": "Activa el botón «Pronosticar fechas» y la gestión de la cola de tareas en el nivel de distribución por ejecutores.",
+  "lblCrossRoleExclude": "Exclusión de una tarea entre roles",
+  "descCrossRoleExclude": "Excluir una tarea del sprint en un rol (por cambio de estado o con la papelera) también la excluye en los demás roles de ese sprint. Revertir la exclusión no se propaga: se hace rol por rol.",
   "thQueue": "#",
   "queueMoveUp": "Subir en la cola",
   "queueMoveDown": "Bajar en la cola"

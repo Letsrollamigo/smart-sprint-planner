@@ -893,6 +893,11 @@ function renderRoleComposition(rk, deps) {
      + ре-рендер затронутых ролей и тост. Persist не дублируем — caller шлёт _roleItems
      целиком одним POST sprint-data. */
   function _cascadeToOtherRoles(srcRk, iid, mode) {
+    /* #59 — тумблер «Кросс-ролевое исключение» (настройки → Режимы планирования).
+       Дефолт ON: семантика `!== false`, чтобы у существующих установок без ключа
+       фича работала, а выключение было явным (как showSystem в отчётности). */
+    var _s = deps.state.getSettings();
+    if (_s && _s.crossRoleExcludeEnabled === false) return;
     var touched = cascadeExcludeAcrossRoles(deps.state.getRoleItems(), srcRk, iid, mode, deps.INC.EXCLUDED);
     if (!touched.length) return;
     touched.forEach(function(rk) { deps.renderRoleComposition(rk); deps.updateRoleRemaining(rk); });

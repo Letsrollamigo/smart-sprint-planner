@@ -228,7 +228,7 @@
       },
       "react/settings-form.jsx": {
         "loc": 883,
-        "locBudget": 895,
+        "locBudget": 904,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
       "react/standup-view.jsx": {
@@ -609,7 +609,7 @@
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
       "loc": 979,
-      "locBudget": 1028,
+      "locBudget": 1033,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"

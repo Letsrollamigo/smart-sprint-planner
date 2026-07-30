@@ -63,6 +63,7 @@
   "lblLightAuto": "Automatische Berechnung per Formel",
   "lblLightManual": "Manuelle Eingabe je Bearbeiter",
   "cardModes": "Planungsmodi",
+  "cardMultirole": "Rollenübergreifende Planung",
   "cardMisc": "Sonstiges",
   "cardDta": "Differenzierte Zeiterfassung",
   "navDta": "Diff. Erfassung",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "über Kapazität",
   "lblAutoForecast": "Termine automatisch prognostizieren",
   "descAutoForecast": "Aktiviert die Schaltfläche „Termine prognostizieren“ und die Warteschlangen-Steuerung auf der Ebene der Verteilung nach Bearbeitern.",
+  "lblCrossRoleExclude": "Rollenübergreifender Ausschluss",
+  "descCrossRoleExclude": "Wird ein Vorgang in einer Rolle aus dem Sprint ausgeschlossen (per Status oder Papierkorb), wird er auch in den übrigen Rollen dieses Sprints ausgeschlossen. Die Rücknahme wird nicht übertragen — sie erfolgt je Rolle.",
   "thQueue": "#",
   "queueMoveUp": "In der Warteschlange nach oben",
   "queueMoveDown": "In der Warteschlange nach unten"

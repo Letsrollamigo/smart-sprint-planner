@@ -63,6 +63,7 @@
   "lblLightAuto": "数式による自動計算",
   "lblLightManual": "担当者別の手動入力",
   "cardModes": "計画モード",
+  "cardMultirole": "マルチロール計画",
   "cardMisc": "その他",
   "cardDta": "差分時間追跡",
   "navDta": "差分時間追跡",
@@ -1243,6 +1244,8 @@
   "forecastUnfitBadge": "キャパシティ超過",
   "lblAutoForecast": "日付の自動予測",
   "descAutoForecast": "「日付を予測」ボタンと担当者別配分レベルのタスクキュー操作を有効にします。",
+  "lblCrossRoleExclude": "ロール横断の課題除外",
+  "descCrossRoleExclude": "あるロールでスプリントから課題を除外すると（ステータス変更またはゴミ箱）、同じスプリントの他ロールでも除外されます。除外の解除は連動しません — ロールごとに行ってください。",
   "thQueue": "#",
   "queueMoveUp": "キューで上へ",
   "queueMoveDown": "キューで下へ"
