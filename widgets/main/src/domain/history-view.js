@@ -98,6 +98,99 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
   };
 }
 
+/* #60 — история группируется по спринту, а не по ролям: baseId = sprintId записи
+   без role-суффикса (записи истории живут как `<sprintId>_<roleKey>`). Режем по
+   ПОСЛЕДНЕМУ '_' — как reporting-pure (uid дефисный, но легаси-id мог содержать
+   подчёркивание, и тогда split('_')[0] склеил бы разные спринты в одну группу). */
+function _histBaseId(sid) {
+  var s = String(sid || ''), u = s.lastIndexOf('_');
+  return u > 0 ? s.slice(0, u) : s;
+}
+
+/* Группы в порядке первого вхождения: sorted уже упорядочен по confirmedAt desc,
+   значит порядок групп = порядок самой свежей записи спринта. idx сохраняем
+   ИСХОДНЫЙ (позиция в sorted) — editHistorySprint/finishHistorySprint резолвят
+   по нему working copy, контракт buildSpoiler не меняется. */
+function groupHistoryBySprint(sorted) {
+  var order = [], byBase = {};
+  (sorted || []).forEach(function(rec, i) {
+    if (!rec) return;
+    var base = _histBaseId(rec.sprintId);
+    if (!byBase[base]) { byBase[base] = { baseId: base, recs: [] }; order.push(byBase[base]); }
+    byBase[base].recs.push({ rec: rec, idx: i });
+  });
+  return order;
+}
+
+/* Внешний спойлер спринта: шапка-агрегат + ленивое построение ролевых спойлеров.
+   Ролевые строит НЕТРОНУТЫЙ buildSpoiler — вся механика записи (Excel/JSON/правка/
+   завершение/удаление, WC-тоггл, items-таблица) остаётся ровно та же. Тела строятся
+   по ПЕРВОМУ раскрытию: раньше страница истории монтировала HIST_PAGE Ring Table
+   сразу, теперь — ноль до клика. */
+function buildSprintGroupSpoiler(group, deps) {
+  var T = deps.T, esc = deps.esc, fmtDate = deps.fmtDate;
+  var statusLabel = deps.statusLabel, STATUS = deps.STATUS;
+  var head0 = group.recs[0].rec;
+
+  var tasks = group.recs.reduce(function(s, e) { return s + ((e.rec.items && e.rec.items.length) || 0); }, 0);
+  /* Статусы ролей расходятся штатно (одна роль завершена, другая ещё черновик) —
+     показываем ВСЕ фактические бейджи, а не выдуманный «общий статус спринта». */
+  var stOrder = [], stCount = {};
+  group.recs.forEach(function(e) {
+    var st = e.rec.status || '';
+    if (stCount[st] === undefined) { stCount[st] = 0; stOrder.push(st); }
+    stCount[st]++;
+  });
+  var badges = stOrder.map(function(st) {
+    var cls = 's-badge--planning';
+    if (st === STATUS.CONFIRMED) cls = 's-badge--confirmed';
+    if (st === STATUS.ALLOCATED) cls = 's-badge--allocated';
+    if (st === STATUS.FINISHED)  cls = 's-badge--finished';
+    return '<span class="s-badge '+cls+'">'+esc(statusLabel(st))+(stCount[st] > 1 ? ' ×'+stCount[st] : '')+'</span>';
+  }).join(' ');
+
+  var wrap = document.createElement('div'); wrap.className = 'spoiler';
+  var head = document.createElement('div'); head.className = 'spoiler__head';
+  var meta = document.createElement('div'); meta.className = 'spoiler__meta';
+  meta.innerHTML =
+    (head0.name ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerName')+'</span><span class="spoiler__mv" style="font-weight:600">'+esc(head0.name)+'</span></div>' : '')+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDate(head0.dateStart)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDate(head0.dateEnd)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histGroupRoles')+'</span><span class="spoiler__mv">'+group.recs.length+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerTasks')+'</span><span class="spoiler__mv">'+tasks+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv">'+badges+'</span></div>';
+
+  var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶'; arr.setAttribute('aria-hidden', 'true');
+  head.appendChild(meta); head.appendChild(arr);
+  /* B16 (a11y) — как у ролевого спойлера: disclosure-кнопка с клавиатурой. */
+  head.setAttribute('role', 'button');
+  head.setAttribute('tabindex', '0');
+  head.setAttribute('aria-expanded', 'false');
+
+  var body = document.createElement('div'); body.className = 'spoiler__body';
+  var inner = document.createElement('div'); inner.style.cssText = 'padding:10px 12px 2px;';
+  body.appendChild(inner);
+
+  var built = false;
+  function ensureBuilt() {
+    if (built) return;
+    built = true;
+    group.recs.forEach(function(e) { inner.appendChild(buildSpoiler(e.rec, e.idx, deps)); });
+  }
+  function toggleGroup() {
+    var isOpen = wrap.classList.toggle('open');
+    if (isOpen) ensureBuilt();
+    head.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  head.addEventListener('click', toggleGroup);
+  head.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleGroup(); }
+  });
+
+  wrap.appendChild(head); wrap.appendChild(body);
+  return wrap;
+}
+
 function renderHistory(deps) {
   var T = deps.T;
   var container = document.getElementById('historyList');
@@ -117,17 +210,20 @@ function renderHistory(deps) {
     }
   });
   var sorted = _history.slice().sort(function(a,b){ return (b.confirmedAt||0)-(a.confirmedAt||0); });
-  var total = Math.ceil(sorted.length / deps.HIST_PAGE);
+  /* #60 — страница считается в СПРИНТАХ, а не в записях: иначе роли одного спринта
+     рвутся между страницами и группа теряет смысл. */
+  var groups = groupHistoryBySprint(sorted);
+  var total = Math.ceil(groups.length / deps.HIST_PAGE);
   var _histPage = Math.min(deps.state.getHistPage(), total);
   deps.state.setHistPage(_histPage);
   var start = (_histPage - 1) * deps.HIST_PAGE;
-  var page  = sorted.slice(start, start + deps.HIST_PAGE);
+  var page  = groups.slice(start, start + deps.HIST_PAGE);
   /* v2.0.0 D5-D — unmount Ring Radio roots внутри spoiler'ов перед innerHTML replace. */
   if (window.__SSP_RADIO && typeof window.__SSP_RADIO.unmountAllIn === 'function') {
     window.__SSP_RADIO.unmountAllIn(container);
   }
   container.innerHTML = '';
-  page.forEach(function(rec, li) { container.appendChild(buildSpoiler(rec, start + li, deps)); });
+  page.forEach(function(group) { container.appendChild(buildSprintGroupSpoiler(group, deps)); });
   var pag = document.getElementById('histPag');
   if (total > 1) {
     pag.style.display = 'flex';
@@ -523,6 +619,7 @@ function buildSpoiler(rec, idx, deps) {
 const api = {
   renderHistory: renderHistory,
   buildSpoiler: buildSpoiler,
+  groupHistoryBySprint: groupHistoryBySprint,
 };
 
 if (typeof window !== 'undefined') {

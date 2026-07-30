@@ -457,7 +457,7 @@
       "layer": "domain",
       "domain": "domain/history-view",
       "loc": 504,
-      "locBudget": 558,
+      "locBudget": 593,
       "state": [],
       "publishes": [
         "HISTORY_VIEW"
