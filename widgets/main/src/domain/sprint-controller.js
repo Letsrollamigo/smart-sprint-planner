@@ -304,6 +304,13 @@
     return deps.withLoader(btn, function() {
       return deps.apiPost('sprint-data', { sprint: _sprint }).then(function() {
         deps.updateRoleRemaining(rk);
+        /* Смоук #61: сейв меняет ресурс роли, а шапку аккордеона обновлял только
+           markSavedAndCleanup через renderRoleComposition(activeSubtab) — это может
+           быть ДРУГАЯ роль (последняя смонтированная) → статы сохранённой застывали.
+           Класс D109 (saveCurrentRoleState освежает так же). */
+        if (typeof deps.updateRoleAccordionStats === 'function') {
+          try { deps.updateRoleAccordionStats(rk); } catch(_){}
+        }
         deps.renderRoleStatusBadge(rk);
         toast(T('toastSprintSaved'), 'success');
         /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты

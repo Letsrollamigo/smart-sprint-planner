@@ -655,15 +655,15 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 615,
-      "locBudget": 620,
+      "loc": 625,
+      "locBudget": 625,
       "state": [
         "api"
       ],
       "publishes": [
         "SPRINT_CTRL"
       ],
-      "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+      "budgetNote": "#61 смоук-фикс — осознанный +7: updateRoleAccordionStats(rk) в success doSaveRoleHeader (сейв ресурса освежает шапку аккордеона сохранённой роли; класс D109). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
     },
     "domain/sprint-store.js": {
       "layer": "domain",
