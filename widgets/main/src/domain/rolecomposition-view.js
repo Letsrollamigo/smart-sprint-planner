@@ -812,6 +812,10 @@ function renderRoleComposition(rk, deps) {
     });
     var pagElEmpty = document.getElementById('planPag_'+rk);
     if (pagElEmpty) pagElEmpty.style.display = 'none';
+    /* #59-смоук: empty-ветка уходила в return ДО пересчёта шапки аккордеона — при
+       опустошении состава (удаление последней строки, кросс-ролевой каскад) заголовок
+       застывал на прежних «N задач / аллокация». Считаем в обеих ветках. */
+    _updateRoleAccordionStats(rk, deps);
     return;
   }
 
