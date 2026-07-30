@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Przelicz",
   "toastForecastDone": "Daty zaprognozowane",
   "toastForecastUnfit": "Prognoza obliczona; ponad pojemność: {n}",
+  "toastCrossRoleExcluded": "Wykluczono także w innych rolach: {n}",
+  "toastCrossRoleRemoved": "Usunięto także z innych ról: {n}",
   "toastForecastEmpty": "Brak przypisanych zadań z oszacowaniem — nie ma czego prognozować",
   "toastForecastErr": "Nie udało się obliczyć prognozy",
   "toastForecastNoDates": "Sprint nie ma dat — prognoza niemożliwa",

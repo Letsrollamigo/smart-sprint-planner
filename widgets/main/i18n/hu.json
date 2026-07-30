@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Újraszámítás",
   "toastForecastDone": "Dátumok előrejelezve",
   "toastForecastUnfit": "Előrejelzés kész; kapacitáson felül: {n}",
+  "toastCrossRoleExcluded": "Más szerepekben is kizárva: {n}",
+  "toastCrossRoleRemoved": "Más szerepekből is eltávolítva: {n}",
   "toastForecastEmpty": "Nincs becsléssel rendelkező hozzárendelt feladat — nincs mit előrejelezni",
   "toastForecastErr": "Az előrejelzés kiszámítása nem sikerült",
   "toastForecastNoDates": "A sprintnek nincsenek dátumai — az előrejelzés nem lehetséges",

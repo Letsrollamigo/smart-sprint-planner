@@ -15,6 +15,29 @@
    React-мост таблиц — window.__SSP_TABLE, читается с window на каждом вызове. */
 'use strict';
 
+/* #59 — кросс-ролевое исключение (⚖ владелец 2026-07-30). Задача, лежащая в составе
+   нескольких ролей ОДНОГО спринта, исключается/удаляется во всех сразу: правило команды
+   «не влезло хотя бы в одну платформу → не берут все». Матч по issueId (внешний YT id) —
+   у каждой роли своя запись со своим iid. Возврат из исключения НЕ каскадится: правило
+   одностороннее (возврат в одной роли не значит, что задача влезла в остальные).
+   Мутирует переданную карту roleItems на месте, возвращает ключи затронутых ролей
+   (роль, уже исключённая ранее, в список не попадает — тост не должен врать). */
+function cascadeExcludeAcrossRoles(roleItems, srcRk, issueId, mode, excludedCode) {
+  var all = roleItems || {};
+  var touched = [];
+  Object.keys(all).forEach(function(rk) {
+    if (rk === srcRk || !Array.isArray(all[rk])) return;
+    var arr = all[rk], idx = -1;
+    for (var i = 0; i < arr.length; i++) { if (arr[i] && arr[i].issueId === issueId) { idx = i; break; } }
+    if (idx < 0) return;
+    if (mode === 'delete') arr.splice(idx, 1);
+    else if (arr[idx].inclusionStatus === excludedCode) return;
+    else arr[idx].inclusionStatus = excludedCode;
+    touched.push(rk);
+  });
+  return touched;
+}
+
 function computeRoleQuickStats(rk, deps) {
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
   var _sprint = deps.state.getSprint();
@@ -862,6 +885,17 @@ function renderRoleComposition(rk, deps) {
     return -1;
   }
 
+  /* #59 — UI-обвязка кросс-ролевого каскада: мутация состава (cascadeExcludeAcrossRoles)
+     + ре-рендер затронутых ролей и тост. Persist не дублируем — caller шлёт _roleItems
+     целиком одним POST sprint-data. */
+  function _cascadeToOtherRoles(srcRk, iid, mode) {
+    var touched = cascadeExcludeAcrossRoles(deps.state.getRoleItems(), srcRk, iid, mode, deps.INC.EXCLUDED);
+    if (!touched.length) return;
+    touched.forEach(function(rk) { deps.renderRoleComposition(rk); deps.updateRoleRemaining(rk); });
+    deps.toast(T(mode === 'delete' ? 'toastCrossRoleRemoved' : 'toastCrossRoleExcluded')
+      .replace('{n}', String(touched.length)), 'success');
+  }
+
   // Навесить события
   /* Event delegation on host (idempotent). Ring Table does not intercept
      change / focusout events — only clicks. Inputs/selects work via host
@@ -882,6 +916,7 @@ function renderRoleComposition(rk, deps) {
       var idx = _findIdxByIid(rk2, iid);
       if (idx < 0) { deps.diag('inc-sel change: item iid='+iid+' not found in role '+rk2,'warn'); return; }
       deps.getRoleItemsArr(rk2)[idx].inclusionStatus = t.value;
+      if (t.value === deps.INC.EXCLUDED) _cascadeToOtherRoles(rk2, iid, 'exclude');   /* #59 */
       deps.updateRoleRemaining(rk2);
       deps.markDirty('roleItems');
       deps.draftSaveDebounced('roleItems', function(){ return deps.state.getRoleItems(); });
@@ -981,6 +1016,7 @@ function renderRoleComposition(rk, deps) {
         var idx = _findIdxByIid(rk2, iid);
         if (idx < 0) { deps.diag('del-item-btn click: item iid='+iid+' not found in role '+rk2,'warn'); return; }
         deps.getRoleItemsArr(rk2).splice(idx, 1);
+        _cascadeToOtherRoles(rk2, iid, 'delete');   /* #59 */
         deps.renderRoleComposition(rk2);
         deps.updateRoleRemaining(rk2);
         deps.markDirty('roleItems');
@@ -1049,6 +1085,7 @@ const api = {
   updateRoleAccordionStats: _updateRoleAccordionStats,
   renderPlanningRoles: renderPlanningRoles,
   renderRoleComposition: renderRoleComposition,
+  cascadeExcludeAcrossRoles: cascadeExcludeAcrossRoles,
 };
 
 if (typeof window !== 'undefined') {

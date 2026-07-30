@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Herberekenen",
   "toastForecastDone": "Datums voorspeld",
   "toastForecastUnfit": "Prognose berekend; boven capaciteit: {n}",
+  "toastCrossRoleExcluded": "Ook uitgesloten in andere rollen: {n}",
+  "toastCrossRoleRemoved": "Ook verwijderd uit andere rollen: {n}",
   "toastForecastEmpty": "Geen toegewezen taken met schatting — niets te voorspellen",
   "toastForecastErr": "Prognose berekenen mislukt",
   "toastForecastNoDates": "De sprint heeft geen datums — prognose onmogelijk",

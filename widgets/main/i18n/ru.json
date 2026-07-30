@@ -1233,6 +1233,8 @@
   "btnForecastConfirm": "Пересчитать",
   "toastForecastDone": "Даты спрогнозированы",
   "toastForecastUnfit": "Прогноз рассчитан; не помещается в ёмкость: {n}",
+  "toastCrossRoleExcluded": "Исключена также в других ролях: {n}",
+  "toastCrossRoleRemoved": "Удалена из состава также в других ролях: {n}",
   "toastForecastEmpty": "Нет назначенных задач с оценкой — прогнозировать нечего",
   "toastForecastErr": "Не удалось рассчитать прогноз",
   "toastForecastNoDates": "У спринта не заданы даты — прогноз невозможен",

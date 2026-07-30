@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Yeniden hesapla",
   "toastForecastDone": "Tarihler öngörüldü",
   "toastForecastUnfit": "Öngörü hesaplandı; kapasite aşımı: {n}",
+  "toastCrossRoleExcluded": "Diğer rollerde de hariç tutuldu: {n}",
+  "toastCrossRoleRemoved": "Diğer rollerden de kaldırıldı: {n}",
   "toastForecastEmpty": "Tahmini olan atanmış görev yok — öngörülecek bir şey yok",
   "toastForecastErr": "Öngörü hesaplanamadı",
   "toastForecastNoDates": "Sprintin tarihleri yok — öngörü yapılamaz",

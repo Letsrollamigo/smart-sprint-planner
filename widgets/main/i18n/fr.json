@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Recalculer",
   "toastForecastDone": "Dates prévues",
   "toastForecastUnfit": "Prévision calculée ; au-delà de la capacité : {n}",
+  "toastCrossRoleExcluded": "Également exclue dans d’autres rôles : {n}",
+  "toastCrossRoleRemoved": "Également retirée d’autres rôles : {n}",
   "toastForecastEmpty": "Aucune tâche assignée avec estimation — rien à prévoir",
   "toastForecastErr": "Échec du calcul de la prévision",
   "toastForecastNoDates": "Le sprint n'a pas de dates — prévision impossible",

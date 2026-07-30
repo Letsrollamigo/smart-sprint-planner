@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Ricalcola",
   "toastForecastDone": "Date previste",
   "toastForecastUnfit": "Previsione calcolata; oltre la capacità: {n}",
+  "toastCrossRoleExcluded": "Esclusa anche in altri ruoli: {n}",
+  "toastCrossRoleRemoved": "Rimossa anche da altri ruoli: {n}",
   "toastForecastEmpty": "Nessuna attività assegnata con stima — niente da prevedere",
   "toastForecastErr": "Calcolo della previsione non riuscito",
   "toastForecastNoDates": "Lo sprint non ha date — previsione impossibile",

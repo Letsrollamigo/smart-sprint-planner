@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Přepočítat",
   "toastForecastDone": "Termíny prognózovány",
   "toastForecastUnfit": "Prognóza spočtena; nad kapacitu: {n}",
+  "toastCrossRoleExcluded": "Vyloučeno také v jiných rolích: {n}",
+  "toastCrossRoleRemoved": "Odebráno také z jiných rolí: {n}",
   "toastForecastEmpty": "Žádné přiřazené úkoly s odhadem — není co prognózovat",
   "toastForecastErr": "Výpočet prognózy se nezdařil",
   "toastForecastNoDates": "Sprint nemá termíny — prognózu nelze provést",

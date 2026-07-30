@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "再計算",
   "toastForecastDone": "日付を予測しました",
   "toastForecastUnfit": "予測完了。キャパシティ超過: {n}",
+  "toastCrossRoleExcluded": "他のロールでも除外しました: {n}",
+  "toastCrossRoleRemoved": "他のロールからも削除しました: {n}",
   "toastForecastEmpty": "見積りのある割り当て済みタスクがありません — 予測対象なし",
   "toastForecastErr": "予測の計算に失敗しました",
   "toastForecastNoDates": "スプリントに日付が設定されていないため予測できません",

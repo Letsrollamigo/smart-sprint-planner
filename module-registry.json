@@ -609,7 +609,7 @@
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
       "loc": 979,
-      "locBudget": 1015,
+      "locBudget": 1028,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"

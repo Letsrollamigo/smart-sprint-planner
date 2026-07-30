@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Recalcular",
   "toastForecastDone": "Fechas pronosticadas",
   "toastForecastUnfit": "Pronóstico calculado; fuera de capacidad: {n}",
+  "toastCrossRoleExcluded": "También excluida en otros roles: {n}",
+  "toastCrossRoleRemoved": "También eliminada de otros roles: {n}",
   "toastForecastEmpty": "No hay tareas asignadas con estimación — nada que pronosticar",
   "toastForecastErr": "No se pudo calcular el pronóstico",
   "toastForecastNoDates": "El sprint no tiene fechas — pronóstico imposible",

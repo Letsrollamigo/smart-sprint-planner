@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "重新计算",
   "toastForecastDone": "日期已预测",
   "toastForecastUnfit": "预测完成；超出容量：{n}",
+  "toastCrossRoleExcluded": "已在其他角色中一并排除：{n}",
+  "toastCrossRoleRemoved": "已从其他角色中一并移除：{n}",
   "toastForecastEmpty": "没有带估算的已分配任务 — 无可预测内容",
   "toastForecastErr": "预测计算失败",
   "toastForecastNoDates": "冲刺未设置日期 — 无法预测",

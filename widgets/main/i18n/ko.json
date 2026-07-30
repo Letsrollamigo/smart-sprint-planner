@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "다시 계산",
   "toastForecastDone": "날짜가 예측되었습니다",
   "toastForecastUnfit": "예측 완료. 용량 초과: {n}",
+  "toastCrossRoleExcluded": "다른 역할에서도 제외됨: {n}",
+  "toastCrossRoleRemoved": "다른 역할에서도 삭제됨: {n}",
   "toastForecastEmpty": "추정치가 있는 할당된 작업이 없습니다 — 예측할 항목 없음",
   "toastForecastErr": "예측 계산에 실패했습니다",
   "toastForecastNoDates": "스프린트에 날짜가 없어 예측할 수 없습니다",

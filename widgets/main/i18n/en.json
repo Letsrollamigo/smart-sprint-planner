@@ -1233,6 +1233,8 @@
   "btnForecastConfirm": "Recalculate",
   "toastForecastDone": "Dates forecasted",
   "toastForecastUnfit": "Forecast done; over capacity: {n}",
+  "toastCrossRoleExcluded": "Also excluded in other roles: {n}",
+  "toastCrossRoleRemoved": "Also removed from other roles: {n}",
   "toastForecastEmpty": "No assigned tasks with estimates — nothing to forecast",
   "toastForecastErr": "Failed to compute the forecast",
   "toastForecastNoDates": "Sprint has no dates — cannot forecast",

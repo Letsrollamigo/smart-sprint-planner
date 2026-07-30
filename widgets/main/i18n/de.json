@@ -1234,6 +1234,8 @@
   "btnForecastConfirm": "Neu berechnen",
   "toastForecastDone": "Termine prognostiziert",
   "toastForecastUnfit": "Prognose fertig; über Kapazität: {n}",
+  "toastCrossRoleExcluded": "Auch in anderen Rollen ausgeschlossen: {n}",
+  "toastCrossRoleRemoved": "Auch aus anderen Rollen entfernt: {n}",
   "toastForecastEmpty": "Keine zugewiesenen Aufgaben mit Schätzung — nichts zu prognostizieren",
   "toastForecastErr": "Prognoseberechnung fehlgeschlagen",
   "toastForecastNoDates": "Der Sprint hat keine Termine — Prognose nicht möglich",
