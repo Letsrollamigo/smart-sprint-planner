@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Activa el botón «Pronosticar fechas» y la gestión de la cola de tareas en el nivel de distribución por ejecutores.",
   "lblCrossRoleExclude": "Exclusión de una tarea entre roles",
   "descCrossRoleExclude": "Excluir una tarea del sprint en un rol (por cambio de estado o con la papelera) también la excluye en los demás roles de ese sprint. Revertir la exclusión no se propaga: se hace rol por rol.",
+  "allocSummaryTitle": "Resumen entre roles",
+  "allocSummaryLegend": "En rojo — tareas de roles sobre el límite de capacidad. El encabezado de la columna del rol muestra asignación / recurso.",
+  "thEstSum": "Estimación Σ",
+  "lblAllocSummary": "Tabla resumen entre roles",
+  "descAllocSummary": "Resumen de solo lectura sobre los acordeones de roles: todas las tareas del sprint sin duplicados, una estimación por cada rol activo y el total por fila. Las tareas de roles sobre el límite se resaltan en rojo.",
   "thQueue": "#",
   "queueMoveUp": "Subir en la cola",
   "queueMoveDown": "Bajar en la cola"

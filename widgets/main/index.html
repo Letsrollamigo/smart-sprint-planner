@@ -1668,6 +1668,9 @@
     .spoiler__ml { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
     .spoiler__mv { font-size: 13px; font-weight: 600; }
     .spoiler__arrow { font-size: 10px; color: var(--muted); transition: transform .2s; margin-left: 8px; flex-shrink: 0; }
+    /* #61 — сводная мультиролевого планирования: легенда + красные строки ролей с перелимитом */
+    .ssp-allocsum-legend { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+    tr.ssp-allocsum-row--over > td { background: rgba(224,90,106,.10); }
     .spoiler.open .spoiler__arrow { transform: rotate(90deg); }
     .spoiler__body { display: none; }
     .spoiler.open .spoiler__body { display: block; }
@@ -2681,6 +2684,9 @@
         <div class="ssp-empty__desc" data-i18n="planningRolesNoActive">Откройте настройки плагина и выберите хотя бы одну функциональную роль участников.</div>
         <button type="button" id="planningRolesNoActiveCta" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn ssp-empty__cta" data-ssp-cta="open-settings" data-i18n="planningRolesNoActiveCta">Открыть настройки</button>
       </div>
+      <!-- #61 — сводная таблица мультиролевого планирования: спойлер строит
+           allocsummary-view.js (гейт по тумблеру allocSummaryEnabled; выключено → пусто) -->
+      <div id="allocSummaryHost"></div>
       <div id="roleAccordions" class="role-accordions"></div>
     </div>
     <div id="planning-level-people" class="planning-level-pane hidden">

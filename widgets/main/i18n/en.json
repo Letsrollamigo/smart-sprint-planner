@@ -1245,6 +1245,11 @@
   "descAutoForecast": "Enables the “Forecast dates” button and the task queue controls on the assignee distribution level.",
   "lblCrossRoleExclude": "Cross-role exclusion of an issue",
   "descCrossRoleExclude": "Excluding an issue from the sprint in one role (by status change or by the trash button) also excludes it in the other roles of that sprint. Un-excluding does not cascade — do it per role.",
+  "allocSummaryTitle": "Cross-role summary",
+  "allocSummaryLegend": "Red — issues of roles over the capacity limit. The role column header shows allocation / resource.",
+  "thEstSum": "Estimate Σ",
+  "lblAllocSummary": "Cross-role summary table",
+  "descAllocSummary": "Read-only summary above the role accordions: all sprint issues deduplicated, an estimate per active role and a row total. Issues of over-limit roles are highlighted in red.",
   "thQueue": "#",
   "queueMoveUp": "Move up in the queue",
   "queueMoveDown": "Move down in the queue"

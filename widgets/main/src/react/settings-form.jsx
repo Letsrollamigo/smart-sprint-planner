@@ -87,6 +87,8 @@ function SettingsForm(props) {
       autoForecastEnabled: !!initial.autoForecastEnabled,
       /* #59 — кросс-ролевое исключение; дефолт ON (ключа нет у старых установок). */
       crossRoleExcludeEnabled: initial.crossRoleExcludeEnabled !== false,
+      /* #61 — сводная таблица мультиролевого планирования; дефолт ON. */
+      allocSummaryEnabled: initial.allocSummaryEnabled !== false,
     };
   });
   const toggleMode = (k) => setModes((p) => Object.assign({}, p, { [k]: !p[k] }));
@@ -323,6 +325,7 @@ function SettingsForm(props) {
     data.allowOverlimitPlanning = modes.allowOverlimitPlanning;
     data.autoForecastEnabled = modes.autoForecastEnabled;   /* #40 */
     data.crossRoleExcludeEnabled = modes.crossRoleExcludeEnabled;   /* #59 */
+    data.allocSummaryEnabled = modes.allocSummaryEnabled;   /* #61 */
     data.showDiagLogUi = showDiagLogUi;   /* #56-5 — hideDiagLogUi больше не пишем (soft-deprecated) */
 
     const num = (v, d) => { const f = parseFloat(v); return isFinite(f) ? f : d; };
@@ -713,6 +716,9 @@ function SettingsForm(props) {
       node: (
         <React.Fragment>
           <RoleCheck on={modes.crossRoleExcludeEnabled} label={t('lblCrossRoleExclude')} hint={t('descCrossRoleExclude')} onToggle={() => toggleMode('crossRoleExcludeEnabled')} />
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.allocSummaryEnabled} label={t('lblAllocSummary')} hint={t('descAllocSummary')} onToggle={() => toggleMode('allocSummaryEnabled')} />
+          </div>
         </React.Fragment>
       ),
     },

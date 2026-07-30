@@ -1246,6 +1246,11 @@
   "descAutoForecast": "启用“预测日期”按钮以及按执行人分配层级的任务队列管理。",
   "lblCrossRoleExclude": "跨角色排除任务",
   "descCrossRoleExclude": "在某个角色中将任务移出冲刺（更改状态或使用回收站）时，该冲刺其他角色中的同一任务也会被排除。取消排除不会联动，需按角色分别操作。",
+  "allocSummaryTitle": "跨角色汇总",
+  "allocSummaryLegend": "红色 — 超限角色的任务。角色列表头显示分配 / 资源。",
+  "thEstSum": "估算 Σ",
+  "lblAllocSummary": "跨角色汇总表",
+  "descAllocSummary": "位于角色手风琴上方的只读汇总：冲刺的全部任务（去重）、每个启用角色的估算及行合计。超限角色的任务以红色高亮显示。",
   "thQueue": "#",
   "queueMoveUp": "在队列中上移",
   "queueMoveDown": "在队列中下移"

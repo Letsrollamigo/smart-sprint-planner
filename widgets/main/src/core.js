@@ -2624,9 +2624,13 @@
      версию (рендер + updateAllocOverlimitUI) — самовызовы модуля обязаны
      проходить пост-обработку перелимита, как в оригинале. */
   var ROLECOMP_VIEW = (typeof window !== 'undefined' && window.__SSP_ROLECOMP_VIEW) || {};
+  /* #61 — сводная таблица мультиролевого планирования (спойлер над аккордеонами);
+     живёт на тех же deps + computeRoleQuickStats (перелимит-раскраска). */
+  var ALLOCSUMMARY_VIEW = (typeof window !== 'undefined' && window.__SSP_ALLOCSUMMARY_VIEW) || {};
   function _roleCompDeps() {
     return {
       T: T, esc: esc, safeUrl: safeUrl, diag: diag,
+      computeRoleQuickStats: computeRoleQuickStats,   /* #61 — hoisted-делегатор ниже */
       icon: icon, applyIcons: applyIcons,
       roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
       fmtThLabel: fmtThLabel, localizeEnumVal: localizeEnumVal,
@@ -2683,7 +2687,15 @@
   /* Уровень «Роли» (карточки + аккордеон-обвязка) — в rolecomposition-view.js
      (Тир D слайс 3, коммит Б). Делегатор: 5 внешних callers (applyI18N, WC-deps,
      level-switch, renderPlannerRoles, refresh) не трогаются. */
-  function renderPlanningRoles() { return ROLECOMP_VIEW.renderPlanningRoles(_roleCompDeps()); }
+  function renderPlanningRoles() {
+    var r = ROLECOMP_VIEW.renderPlanningRoles(_roleCompDeps());
+    /* #61 — сводная перестраивается вместе с уровнем «Роли» (open-состояние
+       спойлера модуль сохраняет сам по DOM). */
+    if (ALLOCSUMMARY_VIEW.renderAllocSummary) {
+      try { ALLOCSUMMARY_VIEW.renderAllocSummary(_roleCompDeps()); } catch (e) { diag('allocSummary render err: ' + e, 'err'); }
+    }
+    return r;
+  }
 
 
 
@@ -3759,6 +3771,11 @@
   renderRoleComposition = function(rk) {
     _origRenderRoleComposition(rk);
     updateAllocOverlimitUI(rk);
+    /* #61 — любой ре-рендер состава (правка оценки/аллокации, каскад #59, удаление)
+       освежает сводную: шапку-счётчики всегда, таблицу — если спойлер раскрыт. */
+    if (ALLOCSUMMARY_VIEW.renderAllocSummary) {
+      try { ALLOCSUMMARY_VIEW.renderAllocSummary(_roleCompDeps()); } catch (e) { diag('allocSummary refresh err: ' + e, 'err'); }
+    }
   };
 
   /* Document-листенеры зоны (blur alloc-input / change inc-sel → отложенный

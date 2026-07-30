@@ -113,6 +113,9 @@ function SspTable({ host }) {
   const getItemKey = typeof opts.getItemKey === 'function'
     ? opts.getItemKey
     : (item) => (item && (item.id || item.issueId)) || JSON.stringify(item);
+  /* #61 — per-row className (Ring Table поддерживает getItemClassName нативно);
+     сводная мультиролевого планирования красит строки ролей с перелимитом. */
+  const getItemClassName = typeof opts.getItemClassName === 'function' ? opts.getItemClassName : undefined;
 
   /* If column.title contains `<br>` (legacy i18n strings like
      "Сквозной<br>приоритет"), auto-generate a React getHeaderValue with
@@ -176,6 +179,7 @@ function SspTable({ host }) {
     sortOrder: true,
     onSort: handleSort,
     getItemKey,
+    getItemClassName,
     stickyHeader,
     selection,
     selectable: false,
@@ -196,6 +200,7 @@ window.__SSP_TABLE = {
          sortKey: string,      // 'off' or one of SORT_KEYS_CYCLE — for header affordance
          onSort(nextKey),      // IIFE callback; 2-state cycle applied inside
          getItemKey(item),     // unique key — default: item.id || item.issueId
+         getItemClassName(item), // optional per-row className (#61 — перелимит-строки сводной)
          stickyHeader: bool,   // default true
          emptyText: string,    // shown when items.length === 0
        }

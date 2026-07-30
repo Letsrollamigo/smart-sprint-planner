@@ -1246,6 +1246,11 @@
   "descAutoForecast": "\"Tarihleri öngör\" düğmesini ve yürütücülere göre dağıtım düzeyindeki görev kuyruğu yönetimini etkinleştirir.",
   "lblCrossRoleExclude": "Roller arası iş kaydı hariç tutma",
   "descCrossRoleExclude": "Bir rolde iş kaydını sprintten hariç tutmak (durum değişikliği veya çöp kutusu ile) onu aynı sprintin diğer rollerinde de hariç tutar. Hariç tutmayı geri alma yayılmaz — rol bazında yapılır.",
+  "allocSummaryTitle": "Roller arası özet",
+  "allocSummaryLegend": "Kırmızı — kapasite limitini aşan rollerin görevleri. Rol sütun başlığı tahsis / kaynak gösterir.",
+  "thEstSum": "Tahmin Σ",
+  "lblAllocSummary": "Roller arası özet tablosu",
+  "descAllocSummary": "Rol akordeonlarının üzerinde salt okunur özet: sprintin tüm görevleri tekrarsız, her etkin rol için tahmin ve satır toplamı. Limiti aşan rollerin görevleri kırmızıyla vurgulanır.",
   "thQueue": "#",
   "queueMoveUp": "Kuyrukta yukarı",
   "queueMoveDown": "Kuyrukta aşağı"

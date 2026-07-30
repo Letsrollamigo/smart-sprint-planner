@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Active le bouton « Prévoir les dates » et la gestion de la file de tâches au niveau de la répartition par exécutant.",
   "lblCrossRoleExclude": "Exclusion d’une tâche entre rôles",
   "descCrossRoleExclude": "Exclure une tâche du sprint dans un rôle (changement de statut ou corbeille) l’exclut aussi dans les autres rôles de ce sprint. La réintégration ne se propage pas : elle se fait rôle par rôle.",
+  "allocSummaryTitle": "Synthèse inter-rôles",
+  "allocSummaryLegend": "En rouge — tâches des rôles hors limite de capacité. L’en-tête de colonne du rôle affiche allocation / ressource.",
+  "thEstSum": "Estimation Σ",
+  "lblAllocSummary": "Tableau de synthèse inter-rôles",
+  "descAllocSummary": "Synthèse en lecture seule au-dessus des accordéons de rôles : toutes les tâches du sprint sans doublons, une estimation par rôle actif et le total par ligne. Les tâches des rôles hors limite sont surlignées en rouge.",
   "thQueue": "#",
   "queueMoveUp": "Monter dans la file",
   "queueMoveDown": "Descendre dans la file"

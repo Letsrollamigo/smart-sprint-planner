@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Schakelt de knop 'Datums voorspellen' en het beheer van de taakwachtrij op het niveau van verdeling per uitvoerder in.",
   "lblCrossRoleExclude": "Rol-overstijgend uitsluiten",
   "descCrossRoleExclude": "Een taak in één rol uitsluiten van de sprint (via status of prullenbak) sluit haar ook uit in de overige rollen van die sprint. Het ongedaan maken cascadeert niet — dat doe je per rol.",
+  "allocSummaryTitle": "Rol-overstijgend overzicht",
+  "allocSummaryLegend": "Rood — taken van rollen boven de capaciteitslimiet. De kolomkop van de rol toont toewijzing / resource.",
+  "thEstSum": "Schatting Σ",
+  "lblAllocSummary": "Rol-overstijgende overzichtstabel",
+  "descAllocSummary": "Alleen-lezen overzicht boven de rol-accordeons: alle sprinttaken zonder duplicaten, een schatting per actieve rol en het rijtotaal. Taken van rollen boven de limiet worden rood gemarkeerd.",
   "thQueue": "#",
   "queueMoveUp": "Omhoog in de wachtrij",
   "queueMoveDown": "Omlaag in de wachtrij"

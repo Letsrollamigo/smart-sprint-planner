@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Zapíná tlačítko „Prognóza termínů“ a správu fronty úkolů na úrovni rozdělení podle řešitelů.",
   "lblCrossRoleExclude": "Vyloučení úkolu napříč rolemi",
   "descCrossRoleExclude": "Vyloučení úkolu ze sprintu v jedné roli (změnou stavu nebo košem) jej vyloučí i v ostatních rolích daného sprintu. Zrušení vyloučení se nepřenáší — provádí se po rolích.",
+  "allocSummaryTitle": "Souhrn napříč rolemi",
+  "allocSummaryLegend": "Červeně — úkoly rolí s překročeným limitem kapacity. Záhlaví sloupce role zobrazuje alokaci / zdroj.",
+  "thEstSum": "Odhad Σ",
+  "lblAllocSummary": "Souhrnná tabulka napříč rolemi",
+  "descAllocSummary": "Souhrn pouze pro čtení nad akordeony rolí: všechny úkoly sprintu bez duplicit, odhad pro každou aktivní roli a součet řádku. Úkoly rolí s překročeným limitem jsou zvýrazněny červeně.",
   "thQueue": "#",
   "queueMoveUp": "Výš ve frontě",
   "queueMoveDown": "Níž ve frontě"

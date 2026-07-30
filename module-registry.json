@@ -4,7 +4,7 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4387,
+      "loc": 4480,
       "locBudget": 4509,
       "stateBaseline": 72,
       "budgetNote": "#57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
@@ -227,16 +227,16 @@
         "locBudget": 161
       },
       "react/settings-form.jsx": {
-        "loc": 883,
-        "locBudget": 904,
-        "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
+        "loc": 910,
+        "locBudget": 910,
+        "budgetNote": "#61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
       "react/standup-view.jsx": {
         "loc": 112,
         "locBudget": 132
       },
       "react/table-mount.jsx": {
-        "loc": 215,
+        "loc": 220,
         "locBudget": 241
       },
       "react/tabs-mount.jsx": {
@@ -615,6 +615,17 @@
         "ROLECOMP_VIEW"
       ],
       "budgetNote": " v3.12.0 — микрополировка статов ролей."
+    },
+    "domain/allocsummary-view.js": {
+      "layer": "domain",
+      "domain": "domain/allocsummary-view",
+      "loc": 186,
+      "locBudget": 209,
+      "state": [],
+      "publishes": [
+        "ALLOCSUMMARY_VIEW"
+      ],
+      "budgetNote": "#61 — новый модуль: сводная таблица мультиролевого планирования (read-only спойлер над аккордеонами ролей, ленивое тело по паттерну #60)."
     },
     "domain/settings-controller.js": {
       "layer": "domain",
@@ -1113,6 +1124,17 @@
         "VELOCITY_PURE"
       ],
       "budgetNote": "v3.12.0 (#11) — новый модуль: computeRoleVelocity — единый источник velocity (отчёт A11 сейчас, коэффициент #40 v2 позже)."
+    },
+    "pure/allocsummary-pure.js": {
+      "layer": "pure",
+      "domain": "pure/allocsummary-pure",
+      "loc": 62,
+      "locBudget": 82,
+      "state": [],
+      "publishes": [
+        "ALLOCSUMMARY_PURE"
+      ],
+      "budgetNote": "#61 — новый модуль: чистая сборка строк сводной (дедуп по issueId, per-role оценки, перелимит-раскраска)."
     },
     "domain/release-rollback.js": {
       "layer": "domain",

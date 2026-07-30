@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Ativa o botão «Prever datas» e o controle da fila de tarefas no nível de distribuição por executores.",
   "lblCrossRoleExclude": "Exclusão de tarefa entre funções",
   "descCrossRoleExclude": "Excluir uma tarefa do sprint em uma função (por mudança de status ou pela lixeira) também a exclui nas demais funções desse sprint. Reverter a exclusão não se propaga: faça por função.",
+  "allocSummaryTitle": "Resumo entre papéis",
+  "allocSummaryLegend": "Em vermelho — tarefas de papéis acima do limite de capacidade. O cabeçalho da coluna do papel mostra alocação / recurso.",
+  "thEstSum": "Estimativa Σ",
+  "lblAllocSummary": "Tabela resumo entre papéis",
+  "descAllocSummary": "Resumo somente leitura acima dos acordeões de papéis: todas as tarefas do sprint sem duplicatas, uma estimativa por papel ativo e o total por linha. Tarefas de papéis acima do limite são destacadas em vermelho.",
   "thQueue": "#",
   "queueMoveUp": "Subir na fila",
   "queueMoveDown": "Descer na fila"

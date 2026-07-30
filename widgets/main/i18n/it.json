@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Attiva il pulsante «Prevedi le date» e la gestione della coda delle attività a livello di distribuzione per esecutori.",
   "lblCrossRoleExclude": "Esclusione dell’attività tra ruoli",
   "descCrossRoleExclude": "Escludere un’attività dallo sprint in un ruolo (cambio di stato o cestino) la esclude anche negli altri ruoli dello sprint. Il ripristino non si propaga: va fatto ruolo per ruolo.",
+  "allocSummaryTitle": "Riepilogo tra ruoli",
+  "allocSummaryLegend": "In rosso — attività dei ruoli oltre il limite di capacità. L’intestazione della colonna del ruolo mostra allocazione / risorsa.",
+  "thEstSum": "Stima Σ",
+  "lblAllocSummary": "Tabella di riepilogo tra ruoli",
+  "descAllocSummary": "Riepilogo in sola lettura sopra le fisarmoniche dei ruoli: tutte le attività dello sprint senza duplicati, una stima per ogni ruolo attivo e il totale di riga. Le attività dei ruoli oltre il limite sono evidenziate in rosso.",
   "thQueue": "#",
   "queueMoveUp": "Sposta su nella coda",
   "queueMoveDown": "Sposta giù nella coda"

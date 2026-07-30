@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Aktiviert die Schaltfläche „Termine prognostizieren“ und die Warteschlangen-Steuerung auf der Ebene der Verteilung nach Bearbeitern.",
   "lblCrossRoleExclude": "Rollenübergreifender Ausschluss",
   "descCrossRoleExclude": "Wird ein Vorgang in einer Rolle aus dem Sprint ausgeschlossen (per Status oder Papierkorb), wird er auch in den übrigen Rollen dieses Sprints ausgeschlossen. Die Rücknahme wird nicht übertragen — sie erfolgt je Rolle.",
+  "allocSummaryTitle": "Rollenübergreifende Übersicht",
+  "allocSummaryLegend": "Rot — Aufgaben von Rollen über dem Limit. Der Spaltenkopf der Rolle zeigt Zuweisung / Ressource.",
+  "thEstSum": "Schätzung Σ",
+  "lblAllocSummary": "Rollenübergreifende Übersichtstabelle",
+  "descAllocSummary": "Schreibgeschützte Übersicht über den Rollen-Akkordeons: alle Sprint-Aufgaben ohne Duplikate, eine Schätzung je aktiver Rolle und die Zeilensumme. Aufgaben von Rollen über dem Limit werden rot hervorgehoben.",
   "thQueue": "#",
   "queueMoveUp": "In der Warteschlange nach oben",
   "queueMoveDown": "In der Warteschlange nach unten"

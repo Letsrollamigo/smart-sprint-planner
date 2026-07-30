@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Bekapcsolja a „Dátumok előrejelzése” gombot és a feladatsor kezelését a végrehajtók szerinti elosztás szintjén.",
   "lblCrossRoleExclude": "Feladat kizárása szerepek között",
   "descCrossRoleExclude": "Ha egy feladatot az egyik szerepben kizárnak a sprintből (állapotváltással vagy a kukával), a sprint többi szerepében is kizárásra kerül. A visszavonás nem terjed tovább — szerepenként kell elvégezni.",
+  "allocSummaryTitle": "Szerepkörök közötti összesítő",
+  "allocSummaryLegend": "Pirossal — a kapacitáslimitet túllépő szerepkörök feladatai. A szerepkör oszlopfejléce a kiosztást / erőforrást mutatja.",
+  "thEstSum": "Becslés Σ",
+  "lblAllocSummary": "Szerepkörök közötti összesítő táblázat",
+  "descAllocSummary": "Csak olvasható összesítő a szerepkör-harmonikák felett: a sprint összes feladata duplikátumok nélkül, becslés minden aktív szerepkörre és sorösszeg. A limitet túllépő szerepkörök feladatai pirossal kiemelve.",
   "thQueue": "#",
   "queueMoveUp": "Feljebb a sorban",
   "queueMoveDown": "Lejjebb a sorban"

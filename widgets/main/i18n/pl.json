@@ -1246,6 +1246,11 @@
   "descAutoForecast": "Włącza przycisk „Prognozuj daty” i zarządzanie kolejką zadań na poziomie podziału według wykonawców.",
   "lblCrossRoleExclude": "Wykluczanie zadania między rolami",
   "descCrossRoleExclude": "Wykluczenie zadania ze sprintu w jednej roli (zmianą statusu lub koszem) wyklucza je także w pozostałych rolach tego sprintu. Cofnięcie wykluczenia nie kaskaduje — robi się je per rola.",
+  "allocSummaryTitle": "Podsumowanie międzyrolowe",
+  "allocSummaryLegend": "Na czerwono — zadania ról z przekroczonym limitem pojemności. Nagłówek kolumny roli pokazuje alokację / zasób.",
+  "thEstSum": "Szacowanie Σ",
+  "lblAllocSummary": "Tabela podsumowania międzyrolowego",
+  "descAllocSummary": "Podsumowanie tylko do odczytu nad akordeonami ról: wszystkie zadania sprintu bez duplikatów, szacowanie dla każdej aktywnej roli i suma wiersza. Zadania ról z przekroczonym limitem są podświetlone na czerwono.",
   "thQueue": "#",
   "queueMoveUp": "W górę kolejki",
   "queueMoveDown": "W dół kolejki"
