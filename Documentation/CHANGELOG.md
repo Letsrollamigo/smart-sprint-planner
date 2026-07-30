@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.15.0] — 2026-07-30
+
+> **External-team (multi-role planning) request phase: cross-role exclusion, sprint-grouped history, allocation summary table; plus new-project onboarding (GH #29).**
+
+- **#59 Cross-role issue exclusion** — excluding an issue from the sprint (by the "Excluded" status or the trash button) in one role automatically excludes/removes it in the other roles of that sprint, with a toast naming the number of affected roles. Un-excluding does not cascade — the rule is one-way.
+- **#60 Sprint-grouped history** — history records are grouped per sprint: an aggregate header (name · dates · roles · issues · real per-role status badges ×N), role records as lazy sub-spoilers (the history page mounts no tables until expanded), pagination counts sprints.
+- **#61 Allocation summary table** — a read-only spoiler above the role accordions of the total-allocation screen: all sprint issues deduplicated, an estimate per active role plus an "Estimate Σ" column, role column headers show allocation / resource, rows of over-capacity roles are highlighted in red, with a legend.
+- **"Multi-role planning" settings section** — toggles for cross-role exclusion and the summary table (on by default).
+- **Fix** — the role accordion header stats refresh right after "Save parameters" (previously they stayed stale until a level switch).
+- **Fix (GH #29)** — new-project onboarding: the empty project picker message now names the required settings manager group and where to set it; the project page shows a visible read-only reason banner; the noisy `invalid_project_key` draft flush in global mode is gated until a project is picked.
+
+---
+
 ## [3.14.0] — 2026-07-30
 
 > **Reporting reliability epic: working filters, honest period windows, full transition histories, paged slices with a configurable cap, explicit report build and project persistence in global mode.**
