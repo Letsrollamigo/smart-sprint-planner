@@ -7,7 +7,8 @@
         "sprint"
       ],
       "query": {
-        "action": "validate"
+        "action": "validate",
+        "role": "analysis"
       }
     }
   ],

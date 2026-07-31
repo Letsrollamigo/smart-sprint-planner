@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.15.1] — 2026-07-31
+
+> **Patch driven by production feedback: "error and success at once" on validation + "hours from the neighbouring sprint" in the role header.**
+
+### Fixed
+
+- **Role validation no longer warns about other roles** — the server-side over-limit check on "Validate" is scoped to the validated role (`?role=`); previously all roles were checked at once, so validating one role could warn about the over-capacity of another (a role with zero resource and leftover allocations). An old frontend without the parameter keeps the previous behaviour.
+- **"Allow over-limit planning" is honored server-side** — with the toggle on, server over-limit warnings are not computed at all, making the toggle's promise end-to-end. The residual warning (toggle off, out-of-sync state) switched its tone from an error toast to a neutral warning — the sprint is saved and confirmed at that point, and an error next to a success toast read as a contradiction.
+- **"Available resources" when viewing another sprint** — the input is now populated from this role's snapshot of the selected sprint; previously it was filled from the working slot, which does not switch when viewing a CONFIRMED/mixed sprint, so the header kept the previous sprint's resource ("hours from the neighbouring sprint").
+
+---
+
 ## [3.15.0] — 2026-07-30
 
 > **External-team (multi-role planning) request phase: cross-role exclusion, sprint-grouped history, allocation summary table; plus new-project onboarding (GH #29).**

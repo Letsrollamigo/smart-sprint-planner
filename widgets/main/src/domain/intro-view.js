@@ -182,6 +182,18 @@
 
     var resEl = document.getElementById('res_'+rk);
     var role  = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
+    /* v3.15.1 — источник ресурса = снапшот ЭТОЙ роли выбранного спринта, не _sprint:
+       рабочий слот при просмотре CONFIRMED/смешанного спринта не переключается
+       (гейт loadUnfinishedSprintAsWorking), и res_<rk> застревал на ресурсе прежнего
+       спринта (класс D109, ОС прода «часы из спринта Август»). _intro хранит
+       ресурс только своей роли — для чужой rk ищем rk-снапшот <sprintId>_<rk>. */
+    var _resIntro = _intro;
+    if (_intro !== _sprint) {
+      var _csid = deps.state.getCurrentSprintId();
+      var _hist = deps.state.getHistory();
+      var _rkRec = Array.isArray(_hist) ? _hist.find(function(r){ return r && r.sprintId === _csid + '_' + rk; }) : null;
+      _resIntro = _rkRec || _intro;
+    }
     if (resEl && role) {
       if (_settings && _settings.capacityMode === 'full') {
         /* #45 R4 §9.3 — Full: значение = утверждённая ёмкость роли (минуты, адаптер), read-only. */
@@ -198,7 +210,7 @@
         resEl.style.opacity = '0.6';
         resEl.title = T('resManagedByCurrentRole');
       } else {
-        resEl.value = _sprint[role.resKey] ? deps.fmtPeriod(_sprint[role.resKey]) : '';
+        resEl.value = _resIntro[role.resKey] ? deps.fmtPeriod(_resIntro[role.resKey]) : '';
         resEl.readOnly = false;
         resEl.style.opacity = '';
         resEl.title = '';

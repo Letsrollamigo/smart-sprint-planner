@@ -313,7 +313,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.15.0';
+var APP_VERSION = '3.15.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2372,7 +2372,16 @@ var ENDPOINTS = [
 
           // Server-side overlimit warn при action=validate
           if (action === 'validate' && body.roleItems) {
-            ROLE_KEYS.forEach(function (rk) {
+            /* v3.15.1 — обещание allowOverlimitPlanning распространяется и на серверный
+               детектор: warnings не считаем вовсе (тумблер «не смотри на лимит»).
+               Скоуп проверки — только валидируемая роль (?role=): иначе валидация одной
+               роли ругалась на перелимит чужой (ОС прода: роль с ресурсом 0 и
+               хвостом аллокаций). Без параметра (старый фронт) — все роли, как раньше. */
+            var ovSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
+            var ovSkipAll  = !!(ovSettings && ovSettings.allowOverlimitPlanning === true);
+            var ovRole     = (ctx.request.getParameter('role') || '').trim();
+            var ovKeys     = ROLE_KEYS.indexOf(ovRole) >= 0 ? [ovRole] : ROLE_KEYS;
+            if (!ovSkipAll) ovKeys.forEach(function (rk) {
               var resKey = 'resource' + rk.charAt(0).toUpperCase() + rk.slice(1);
               var allocKey = 'alloc_' + rk;
               var resource = body.sprint[resKey];

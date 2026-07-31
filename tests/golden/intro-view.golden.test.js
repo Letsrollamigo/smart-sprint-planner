@@ -174,3 +174,45 @@ test('golden: renderRolePlannerHeader — personalForResource (res readOnly + з
     sprintResDevBack: gm.get('_sprint').resourceDevBack,
   });
 });
+
+/* ═══════════════════ v3.15.1 — res_<rk> при просмотре чужого спринта ═══════════════════ */
+
+/* ОС прода 2026-07-31 «часы из спринта Август»: просмотр CONFIRMED/смешанного
+   спринта не переключает рабочий слот (гейт loadUnfinishedSprintAsWorking), а res_<rk>
+   заполнялся из _sprint → в шапке застревал ресурс прежнего спринта (класс D109).
+   Контракт: источник ресурса = снапшот ЭТОЙ роли выбранного спринта; для рабочего
+   спринта — прежнее поведение (_sprint). */
+test('renderRolePlannerHeader — просмотр чужого спринта: res_<rk> из rk-снапшота (v3.15.1)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  gm.set({
+    bindResInputDraftListener: function () {},
+    bindSprintHeaderDraftListeners: function () {},
+  });
+  const rk = 'analysis';
+  ensureSharedIntroDom(document);
+  ensureRolePlannerDom(document, rk);
+  const work = gm.get('_sprint');
+  work.resourceAnalysis = 6000; /* рабочий слот: 100ч */
+  gm.set({
+    _currentSprintId: 'viewed-1',
+    _history: [
+      /* Первым — снапшот ЧУЖОЙ роли выбранного спринта: generic-резолвер
+         _introSourceForCurrent берёт первую запись по префиксу sprintId,
+         ресурс обязан прийти из rk-снапшота ниже, а не из неё. */
+      { sprintId: 'viewed-1_testing', roleKey: 'testing', name: 'Просмотр', status: 'CONFIRMED',
+        dateStart: 1754000000000, dateEnd: 1755000000000, resourceTesting: 60 },
+      { sprintId: 'viewed-1_analysis', roleKey: 'analysis', name: 'Просмотр', status: 'CONFIRMED',
+        dateStart: 1754000000000, dateEnd: 1755000000000, resourceAnalysis: 12780 },
+    ],
+  });
+  gm.call('renderRolePlannerHeader', rk);
+  assert.strictEqual(document.getElementById('res_' + rk).value, gm.call('fmtPeriod', 12780),
+    'ресурс — из rk-снапшота выбранного спринта, не из рабочего _sprint');
+
+  /* Рабочий спринт выбран → источник прежний, _sprint. */
+  gm.set({ _currentSprintId: work.sprintId });
+  gm.call('renderRolePlannerHeader', rk);
+  assert.strictEqual(document.getElementById('res_' + rk).value, gm.call('fmtPeriod', 6000),
+    'для рабочего спринта источник ресурса не изменился');
+});

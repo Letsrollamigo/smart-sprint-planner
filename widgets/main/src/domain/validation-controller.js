@@ -40,7 +40,8 @@ function doValidateRole(rk, deps) {
       diag('[VALIDATE-COMPOSITION] role='+rk+' set _sprint.status='+s.status+' wcKey='+deps.state.getActiveWorkingDraftKey(), 'info');
       // v5.0 — отправляем с ?action=validate + полный sprint+roleItems,
       // чтобы сервер мог посчитать overlimit и вернуть warnings.
-      return deps.apiPost('sprint-data', { sprint: s, roleItems: deps.state.getRoleItems() }, { action: 'validate' })
+      // v3.15.1 — role=rk скоупит серверную проверку на валидируемую роль.
+      return deps.apiPost('sprint-data', { sprint: s, roleItems: deps.state.getRoleItems() }, { action: 'validate', role: rk })
         .then(function(resp) {
           // Server-side warn: показываем все полученные warnings (например, overlimit:devPlatform)
           if (resp && Array.isArray(resp.warnings) && resp.warnings.length) {
@@ -49,7 +50,9 @@ function doValidateRole(rk, deps) {
                 var rkw = w.split(':')[1] || '';
                 var roleW = deps.ALL_ROLES.find(function(r){ return r.key === rkw; });
                 var label = roleW ? (roleW.label) : rkw;
-                toast(T('overlimitWarnSrv').replace('{role}', label), 'err');
+                /* v3.15.1 — предупреждение, не отказ: спринт сохранён и подтверждён,
+                   err-тост рядом с success читался как противоречие (ОС прода). */
+                toast(T('overlimitWarnSrv').replace('{role}', label), 'warn');
               }
             });
           }
