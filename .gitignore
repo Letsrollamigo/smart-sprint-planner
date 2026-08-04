@@ -14,3 +14,4 @@ playwright/.auth/*.json
 
 # Claude Design internal mirror — не публикуем в public GitHub
 design/
+marketplace-screenshots/
