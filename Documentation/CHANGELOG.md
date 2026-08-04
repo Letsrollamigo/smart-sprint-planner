@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.16.0] — 2026-08-04
+
+> **Cycle release: diagnostic snapshot export for support + test infrastructure against production bug classes (#63).**
+
+### Added
+
+- **Diagnostic panel export → state snapshot** — the "Export TXT" button now saves a diagnostic state snapshot (`ssp-state-snapshot` format v1) instead of the event feed: app version and host environment (YouTrack version, `localStorage`/`host.navigation` availability), effective settings, state slices of every role-header zone (selected sprint/role, per-role snapshots, draft/working-copy meta, slot revision) and the recent errors/warnings tail (≤30). Attach the file to a bug report — no HAR recording skills needed.
+- **Test infrastructure against production bug classes** — an anonymized production-state fixture (`tests/fixtures/prod-snapshots/`) plus scenario tests with a cross-zone consistency invariant "resource input == accordion header == remaining card == validate payload" (the D109 "hours from the neighbouring sprint" class); the release smoke protocol gained a mandatory "mixed sprints, switch back and forth" case.
+
+### Fixed
+
+- **"Remaining" card when viewing another sprint** — it computed the remainder from the working slot's resource; now it reads the selected sprint's per-role snapshot, consistently with the "Available resources" input and the accordion header (the 4th manifestation of the D109 class, caught by the new invariant before release).
+
+Snapshot and settings schema unchanged — a drop-in upgrade, no migration.
+
+---
+
 ## [3.15.1] — 2026-07-31
 
 > **Patch driven by production feedback: "error and success at once" on validation + "hours from the neighbouring sprint" in the role header.**
