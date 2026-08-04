@@ -38,6 +38,7 @@ import './pure/reporting-period.js';
 import './pure/reporting-rollup.js';
 import './pure/reporting-export-pure.js';
 import './infra/modal-specs.js';
+import './infra/diag-snapshot.js';   /* #63 п.4 — экспорт-слепок состояния из диаг-панели */
 import './domain/excel-export.js';
 import './domain/revalidation.js';
 import './domain/history-io.js';

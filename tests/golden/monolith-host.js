@@ -53,6 +53,7 @@ const BRIDGE_SCRIPTS = [
   'backlog-vm-pure.js',
   'capacity-pure.js',
   'modal-specs.js',
+  'diag-snapshot.js',   /* #63 п.4 — экспорт-слепок состояния */
   'excel-export.js',
   'revalidation.js',
   'history-io.js',

@@ -842,7 +842,7 @@ Check the plugin settings, in the **Task fields** section, for the **External ID
 Yes. It's a soft reminder that doesn't block saving. Fill in the Sprint goal field if you want to see it during the daily stand-up and assess the outcome at sprint close. If your team doesn't use sprint goals — just ignore the reminder or fill in any meaningful text.
 
 **Where do I see error logs if something doesn't work?**
-At the bottom of the plugin there's a collapsible **Diagnostics** block — all server calls, errors, and warnings are logged there. The **📥 Export** button downloads the last 100 lines as a text file — attach it to a support request if you run into issues. Since v2.17.0 the block is **hidden by default** — enable it in settings (**Other → Show diagnostic log panel**); events are always recorded and available via export.
+At the bottom of the plugin there's a collapsible **Diagnostics** block — all server calls, errors, and warnings are logged there. The **Export TXT** button downloads a **state snapshot** — a file with the plugin version, YouTrack environment, effective settings, planner state slices (working sprint, selected sprint, role compositions, history snapshots) and the error tail of the log. Attach this file to a support request if you run into issues — it shows the full picture without follow-up questions. Since v2.17.0 the block is **hidden by default** — enable it in settings (**Other → Show diagnostic log panel**).
 
 ---
 
@@ -984,7 +984,7 @@ Settings of the operational reporting module (see [section 13](#13-operational-r
 
 - **Interface language** — language switcher (duplicates the one in the plugin header).
 - **Verbose log.** Enables debug-level logging on the server side. Off by default. Doesn't log user-entered values — only short operation markers.
-- **Show diagnostic log panel.** Shows the **Diagnostics** block at the bottom of the plugin; **hidden by default** since v2.17.0. Events are always recorded and available via the **📥 Export** button once enabled.
+- **Show diagnostic log panel.** Shows the **Diagnostics** block at the bottom of the plugin; **hidden by default** since v2.17.0. Events are always recorded; once enabled, the **Export TXT** button downloads a state snapshot for support.
 
 ---
 

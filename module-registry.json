@@ -608,13 +608,13 @@
     "domain/rolecomposition-view.js": {
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
-      "loc": 979,
-      "locBudget": 1033,
+      "loc": 1063,
+      "locBudget": 1063,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"
       ],
-      "budgetNote": " v3.12.0 — микрополировка статов ролей."
+      "budgetNote": " v3.12.0 — микрополировка статов ролей; #63 (2026-08-03) — перенос updateRoleRemaining из ядра (fitness A2) + историческая ветка остатка (класс D109)."
     },
     "domain/allocsummary-view.js": {
       "layer": "domain",
@@ -1146,6 +1146,22 @@
         "RELEASE_ROLLBACK"
       ],
       "budgetNote": "#57-3 (эпик 57) — новый модуль: откат состояний задач релиза по истории поля State (bulkStateTransitions preferCanon, fromState=oldValue; превью-канон R2.3; применение — делегат release-controller.applyStates через core, B1). Снапшот не хранится (⚖ владелец). +1 (смоук): setAll-лейбл мастер-селекта."
+    },
+    "infra/diag-snapshot.js": {
+      "layer": "infra",
+      "domain": "infra/diag-snapshot",
+      "loc": 103,
+      "locBudget": 130,
+      "state": [
+        "ERR_TAIL_LIMIT",
+        "YT_VERSION_TIMEOUT_MS",
+        "api"
+      ],
+      "stateNote": "константы формата (лимит err-хвоста, таймаут YT-версии) + api-мост; мутируемого стейта нет",
+      "publishes": [
+        "DIAG_SNAPSHOT"
+      ],
+      "budgetNote": " #63 п.4 (2026-08-03) — экспорт-слепок состояния из диаг-панели (формат един с prod-snapshots фикстурами)."
     }
   }
 }

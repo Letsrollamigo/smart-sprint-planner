@@ -1088,10 +1088,41 @@ function renderRoleComposition(rk, deps) {
   _updateRoleAccordionStats(rk, deps);
 }
 
+/* #63 (класс D109) — карточка «Остатки»: при просмотре чужого спринта источник =
+   rk-снапшот выбранного спринта (паттерн computeRoleQuickStats/D115 и res_<rk>
+   v3.15.1); для рабочего спринта — deps.calcRemForRole (канон validate/бэклога,
+   его семантика рабочего слота не тронута). Вынесено из ядра (fitness A2). */
+function updateRoleRemaining(rk, deps) {
+  var rem;
+  var _sprint = deps.state.getSprint();
+  var _currentSprintId = deps.state.getCurrentSprintId();
+  if (_currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId) {
+    var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
+    var _history = deps.state.getHistory();
+    var snap = (Array.isArray(_history) ? _history : []).find(function(h){ return h && h.sprintId === _currentSprintId + '_' + rk; });
+    var res = (role && snap && typeof snap[role.resKey] === 'number') ? snap[role.resKey] : 0;
+    var used = ((snap && snap.items) || []).reduce(function(s, i) {
+      if (!i || deps.ACTIVE_INC.indexOf(i.inclusionStatus) < 0) return s;
+      var alloc = i['alloc_' + rk];
+      if (alloc !== null && alloc !== undefined) return s + Math.max(0, alloc);
+      return s + Math.max(0, (i['estimate_' + rk] || 0) - (i['fact_' + rk] || 0));
+    }, 0);
+    rem = res - used;
+  } else {
+    rem = deps.calcRemForRole(rk);
+  }
+  var card = document.getElementById('rc_'+rk);
+  var val  = document.getElementById('rem_'+rk);
+  if (!card || !val) return;
+  card.classList.toggle('remain-card--over', rem < 0);
+  val.textContent = deps.fmtHours(rem);
+}
+
 const api = {
   computeRoleQuickStats: computeRoleQuickStats,
   renderRoleAccordion: renderRoleAccordion,
   updateRoleAccordionStats: _updateRoleAccordionStats,
+  updateRoleRemaining: updateRoleRemaining,
   renderPlanningRoles: renderPlanningRoles,
   renderRoleComposition: renderRoleComposition,
   cascadeExcludeAcrossRoles: cascadeExcludeAcrossRoles,

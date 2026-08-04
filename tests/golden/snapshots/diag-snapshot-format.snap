@@ -1,0 +1,42 @@
+{
+  "format": "ssp-state-snapshot",
+  "formatVersion": 1,
+  "appVersion": "«APP_VERSION»",
+  "exported": "2026-06-01T12:00:00.000Z",
+  "host": {
+    "ytVersion": "2025.3 (148033)",
+    "lang": "ru",
+    "mode": "project",
+    "projectKey": "GM",
+    "hasLocalStorage": true,
+    "hasHostNavigation": false
+  },
+  "settings": "«128 ключей настроек»",
+  "state": {
+    "sprint": {
+      "sprintId": "sprint-jul",
+      "status": "CONFIRMED"
+    },
+    "roleItems": [
+      "analysis:35",
+      "testing:41",
+      "devPlatform:34"
+    ],
+    "history": "8 rk-снапшотов",
+    "currentSprintId": "sprint-jul",
+    "activeSubtab": "devPlatform",
+    "workingDraftKey": null,
+    "slotRev": 0,
+    "baseRevHash": null
+  },
+  "errTail": [
+    {
+      "msg": "field-values [X] FETCH ERR: boom",
+      "type": "err"
+    },
+    {
+      "msg": "rev conflict: слот обновлён извне",
+      "type": "warn"
+    }
+  ]
+}

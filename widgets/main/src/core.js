@@ -2295,45 +2295,47 @@
         diag('Лог очищен', 'ok');
       });
     }
-    /* v6.3.0 D110 — экспорт диагностического лога в TXT-файл (download через Blob). */
+    /* #63 п.4 (было v6.3.0 D110 — лента событий) — экспорт = слепок состояния;
+       сборка и download — infra/diag-snapshot.js. Пустой лог экспорту не мешает:
+       ценность слепка — состояние, не лента. */
     var de = document.getElementById('diagExportBtn');
     if (de) {
       de.addEventListener('click', function (e) {
         if (e && e.preventDefault) e.preventDefault();
         if (e && e.stopPropagation) e.stopPropagation();
-        if (!_diagLines || !_diagLines.length) {
-          try { toast(T('toastLogEmpty'), 'warn'); } catch(_){}
-          return;
-        }
-        try {
-          var ts = new Date();
-          var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
-          var stamp = ts.getFullYear() + pad(ts.getMonth()+1) + pad(ts.getDate())
-                    + '-' + pad(ts.getHours()) + pad(ts.getMinutes()) + pad(ts.getSeconds());
-          var header = 'Smart Sprint Planner diag log\n'
-                     + 'version: ' + (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '?') + '\n'
-                     + 'exported: ' + ts.toISOString() + '\n'
-                     + 'lines: ' + _diagLines.length + '\n'
-                     + '---\n';
-          var body = _diagLines.map(function(line){
-            return '[' + (line.type || 'info') + '] ' + (line.msg || '');
-          }).join('\n');
-          var blob = new Blob([header + body + '\n'], { type: 'text/plain;charset=utf-8' });
-          var url  = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = 'ssp-diag-' + stamp + '.txt';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-          try { toast(T('toastLogExported'), 'success'); } catch(_){}
-        } catch (err) {
-          diag('diag export err: ' + err, 'err');
-        }
+        DIAG_SNAPSHOT.downloadStateSnapshot(_diagSnapshotDeps());
       });
     }
   })();
+
+  /* #63 п.4 — deps экспорт-слепка (все источники D109-класса рядом). */
+  var DIAG_SNAPSHOT = (typeof window !== 'undefined' && window.__SSP_DIAG_SNAPSHOT) || {};
+  function _diagSnapshotDeps() {
+    return {
+      T: T, toast: toast, diag: diag,
+      APP_VERSION: APP_VERSION,
+      getHost: function () { return _host; },
+      state: {
+        getSettings: function () { return _settings; },
+        getSprint: function () { return _sprint; },
+        getRoleItems: function () { return _roleItems; },
+        getHistory: function () { return _history; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getActiveSubtab: function () { return _activeSubtab; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getSlotRev: function () { return SPRINT_STORE.getSlotRev(); },
+        getBaseRevHash: function () { return SPRINT_STORE.getBaseRevHash(); },
+        getDiagLines: function () { return _diagLines; },
+        getMode: function () { return _mode; },
+        getProjectKey: function () {
+          /* YT 2025.3: у YTApp.entity проектной поверхности нет shortName → id;
+             undefined нельзя (JSON.stringify молча дропает ключ из слепка). */
+          try { return (_mode === 'global' ? _activeProjectKey : (typeof YTApp !== 'undefined' && YTApp && YTApp.entity ? (YTApp.entity.shortName || YTApp.entity.id) : null)) || null; }
+          catch (_) { return null; }
+        },
+      },
+    };
+  }
 
   /* #56-5 — диаг-лог скрыт ПО УМОЛЧАНИЮ; показывается только при showDiagLogUi=true
      (тумблер «Прочее»). Legacy hideDiagLogUi (v6.3.0 D110) soft-deprecated: форма не
@@ -2642,6 +2644,7 @@
       multiKeySort: multiKeySort, getSortKey: getSortKey, setSortKey: setSortKey,
       rerenderAllSortableTables: _rerenderAllSortableTables,
       getRoleItemsArr: getRoleItemsArr,
+      calcRemForRole: calcRemForRole, fmtHours: fmtHours, ACTIVE_INC: ACTIVE_INC, /* #63 — остаток роли (updateRoleRemaining) */
       getApprovedCapacityForRole: getApprovedCapacityForRole, /* #45 R4 §9 — ресурс роли через адаптер */
       markDirty: _markDirty, draftSaveDebounced: _draftSaveDebounced,
       apiPost: apiPost,
@@ -3060,15 +3063,9 @@
 
   function renderRoleStatusBadge(rk) { return INTRO_VIEW.renderRoleStatusBadge(rk, _introDeps()); }
 
-  /* ── Обновить остаток для роли ── */
-  function updateRoleRemaining(rk) {
-    var rem = calcRemForRole(rk);
-    var card = document.getElementById('rc_'+rk);
-    var val  = document.getElementById('rem_'+rk);
-    if (!card || !val) return;
-    card.classList.toggle('remain-card--over', rem < 0);
-    val.textContent = fmtHours(rem);
-  }
+  /* ── Обновить остаток для роли — в rolecomposition-view.js (#63, класс D109):
+     при просмотре чужого спринта источник = rk-снапшот выбранного спринта. ── */
+  function updateRoleRemaining(rk) { return ROLECOMP_VIEW.updateRoleRemaining(rk, _roleCompDeps()); }
 
   /* ── Сохранить параметры спринта для роли ── (вынесен в sprint-controller.js,
      Фаза 5 слайс 6; делегатор — caller rolecomposition-view). */
