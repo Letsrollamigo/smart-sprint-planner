@@ -717,7 +717,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.16.0';
+  var APP_VERSION = '3.16.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4218,6 +4218,10 @@
   /* ── Обновить поле исполнителя в YouTrack ── */
   function updateIssueAssigneeField(issueId, login, rk) {
     if (!issueId || !_settings) return;
+    /* 68-3 — запись в живую задачу YT только под «Быстрой правкой». Гейт ЗДЕСЬ, а не у
+       каллеров: канал «Распределения» (D105) его не имел и перезатирал исполнителя.
+       Локальная мутация personalPlanning не трогается — глушится только side-effect. */
+    if (!_settings.dynEditEnabled) return;
     var roleForUpdate = ALL_ROLES.find(function(r){ return r.key === (rk || ''); });
     if (!roleForUpdate) return;
     var fieldName = _settings[roleForUpdate.userField];

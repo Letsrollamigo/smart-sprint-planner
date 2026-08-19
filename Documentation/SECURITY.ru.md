@@ -51,10 +51,14 @@
 | `settingsManager` | `ctx.settings.settingsManagerGroup` (project-scoped app-settings) | Project admin / Global admin (через Project Settings → Apps) | Обязателен для любых мутаций |
 | `editor` | `ssp_settings.editGroups` / `editGroupNames` | settingsManager | Полный доступ на запись состава спринта |
 | `validator` | `ssp_settings.validationGroups` / `validationGroupNames` | settingsManager | Подтверждение / распределение / финализация спринтов |
-| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` | settingsManager | Требуется для очистки истории |
+| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` | settingsManager | Требуется для очистки истории; **байпаса админа нет (#66)** |
 | `assigner` | `ssp_settings.assignerGroups` / `assignerGroupNames` | settingsManager | Может писать только в `personalPlanning` (assignee + dates) |
 | `viewer` | любой аутентифицированный пользователь проекта | YouTrack project permissions | Read-only |
 | `wcOwner` *(контекстная)* | `editorLogin === ctx.currentUser.login` в `_workingDrafts[key]` | Создаётся автоматически при `POST /working-drafts` | Защита от перехвата чужой WC |
+
+**Байпас глобального администратора проектов** (#51): пользователь с глобальным правом `UPDATE_PROJECT` считается членом любой роли планера во всех проектах, включая проекты без настроенной `settingsManagerGroup`.
+
+> **Исключение — `historyManager` (#66, с v3.16.1).** Полная очистка (`history?action=clear`) и замена истории из файла (`history?action=import-replace`) необратимы, поэтому байпас на эту роль **не распространяется**: нужно явное членство в `historyClearGroups`/`historyClearGroupNames`. Вырез сделан и в `isHistoryManager()`, и в раннем admin-return `authzGuard()` — чтобы кнопка в UI и серверный гейт совпадали. Лок-аута нет: администратор сохраняет `settingsManager` и может назначить группу очистки себе.
 
 **Иерархия**: `editor ⊃ assigner ⊃ viewer`. `editor` имеет все права `assigner` плюс полную мутацию спринта. `assigner` ограничен записью в `personalPlanning` (assignee + start/end-dates) через `action=assignerSync` и записью assignee-полей через `update-issue-field`.
 
@@ -75,7 +79,7 @@
 | GET    | `history` | viewer |
 | POST   | `history` (обычное сохранение / обновление) | validator |
 | POST   | `history?action=assignerSync` | assigner (partial save: только `personalPlanning` в существующих snap'ах) |
-| POST   | `history?action=clear` | historyManager |
+| POST   | `history?action=clear` | historyManager (без байпаса админа, #66) |
 | GET    | `working-drafts` | viewer (возвращает все доступные WC; чтение не ограничено) |
 | POST   | `working-drafts` | validator (`editorLogin` перезаписывается из `ctx.currentUser.login`) |
 | DELETE | `working-drafts/<key>` | wcOwner ИЛИ settingsManager (иначе `{success: false, reason: 'not_owner'}`) |

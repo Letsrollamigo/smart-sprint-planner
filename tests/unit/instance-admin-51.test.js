@@ -77,7 +77,9 @@ test('isInstanceAdmin: кэш на ctx — повторные вызовы не 
 
 /* ── байпас в ролевых хелперах (без единой настроенной группы) ───────────── */
 
-var ROLE_HELPERS = ['isEditor', 'isValidator', 'isAssigner', 'isHistoryManager',
+/* #66 (⚖ владелец 2026-08-19) — isHistoryManager ВЫРЕЗАН из байпаса: деструктивная
+   очистка/замена истории требует явного членства даже у глобального админа. */
+var ROLE_HELPERS = ['isEditor', 'isValidator', 'isAssigner',
   'isSettingsManager', 'isPlanningManager', 'isReleaseManager', 'isReleaseEngineer'];
 
 test('ролевые хелперы: админ = член любой роли без групп и без настройки плагина', function () {
@@ -113,4 +115,45 @@ test('authzGuard: неаутентифицированный админ-ctx вс
   ctx.currentUser = null;
   assert.strictEqual(backend.authzGuard(ctx, 'viewer'), false);
   assert.strictEqual(ctx.response.body.reason, 'auth_required');
+});
+
+/* ── #66 — вырез historyManager из байпаса #51 ────────────────────────────── */
+
+test('#66: админ НЕ historyManager без членства в historyClearGroups', function () {
+  var ctx = makeCtx({ hasPermission: true, settings: { settingsManagerGroup: 'admins' } });
+  assert.strictEqual(backend.isHistoryManager(ctx), false);
+});
+
+test('#66: админ становится historyManager только через членство в группе', function () {
+  var ctx = makeCtx({
+    hasPermission: true,
+    settings: { settingsManagerGroup: 'admins' },
+    groups: [{ id: 'g-hist', name: 'History Cleaners' }],
+    props: { ssp_settings: JSON.stringify({ historyClearGroups: ['g-hist'] }) }
+  });
+  assert.strictEqual(backend.isHistoryManager(ctx), true);
+});
+
+test('#66: authzGuard historyManager — админ без членства получает 403 (UI↔POST парность)', function () {
+  var ctx = makeCtx({ hasPermission: true, settings: { settingsManagerGroup: 'admins' } });
+  assert.strictEqual(backend.authzGuard(ctx, 'historyManager'), false);
+  assert.strictEqual(ctx.response.status, 403);
+  assert.strictEqual(ctx.response.body.reason, 'history_manager_rights_required');
+});
+
+test('#66: authzGuard historyManager — админ-член группы проходит', function () {
+  var ctx = makeCtx({
+    hasPermission: true,
+    settings: { settingsManagerGroup: 'admins' },
+    groups: [{ id: 'g-hist', name: 'History Cleaners' }],
+    props: { ssp_settings: JSON.stringify({ historyClearGroups: ['g-hist'] }) }
+  });
+  assert.strictEqual(backend.authzGuard(ctx, 'historyManager'), true);
+});
+
+test('#66: вырез точечный — остальные роли админ по-прежнему проходит', function () {
+  var ctx = makeCtx({ hasPermission: true, settings: {} });
+  ['viewer', 'editor', 'validator', 'settingsManager', 'assigner'].forEach(function (role) {
+    assert.strictEqual(backend.authzGuard(ctx, role), true, role + ': байпас #51 не должен пострадать');
+  });
 });

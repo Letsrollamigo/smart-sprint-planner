@@ -433,6 +433,7 @@ test('golden: назначение исполнителя в таблице за
   fx.applyPeopleState(gm);
   const st = fx.buildSettings();
   st.userFieldDevBack = 'Backend Dev';
+  st.dynEditEnabled = true; /* 68-3 — синк исполнителя в YT гейтится «Быстрой правкой» */
   const apiPostLog = [];
   const ganttCalls = [];
   gm.set({
@@ -464,4 +465,37 @@ test('golden: назначение исполнителя в таблице за
     apiPostPaths: apiPostLog.map(function (e) { return e.path; }),
     dateOutline: span.style.outline || null,
   });
+});
+
+/* 68-3 — «Распределение по исполнителям» при ВЫКЛЮЧЕННОЙ «Быстрой правке» не должно
+   писать исполнителя в живую задачу YT (канал D105 гейта не имел → перезатирал
+   исполнителя в боевой задаче). Локальное назначение при этом сохраняется. */
+test('68-3: назначение исполнителя при dynEditEnabled=false — ta пишется, update-issue-field НЕ шлётся', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const st = fx.buildSettings();
+  st.userFieldDevBack = 'Backend Dev';
+  st.dynEditEnabled = false;
+  const apiPostLog = [];
+  gm.set({
+    _settings: st,
+    apiPost: function (path, body) { apiPostLog.push({ path: path, body: body || null }); return Promise.resolve({ success: true }); },
+    renderGanttChart: function () {},
+  });
+  gm.call('renderCurrentRoleTaskTable');
+  const host = document.getElementById('currentRoleTaskHost');
+  const sel = document.createElement('select');
+  sel.className = 'currentRole-task-assignee assigner-btn';
+  sel.setAttribute('data-issue', 'GM-11');
+  sel.innerHTML = '<option value=""></option><option value="gm_user_1">U1</option>';
+  host.appendChild(sel);
+  sel.value = 'gm_user_1';
+  sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+  const ta = gm.get('_currentRolePP').taskAssignments['GM-11'];
+  assert.strictEqual(ta && ta.assignee, 'gm_user_1', 'локальное назначение должно сохраниться');
+  assert.strictEqual(
+    apiPostLog.filter(function (e) { return e.path === 'update-issue-field'; }).length, 0,
+    'при выключенной «Быстрой правке» запись исполнителя в YT запрещена');
 });

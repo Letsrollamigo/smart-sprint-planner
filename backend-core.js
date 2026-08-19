@@ -313,7 +313,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.16.0';
+var APP_VERSION = '3.16.1';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -1946,7 +1946,9 @@ function isAssigner(ctx) {
  * Deny-by-default аналогично остальным ролям.
  */
 function isHistoryManager(ctx) {
-  if (isInstanceAdmin(ctx)) return true; /* #51 — инстанс-админ = член любой роли */
+  /* #66 (⚖ владелец 2026-08-19) — единственное исключение из байпаса #51: очистка/замена
+     истории необратима → админ без членства в historyClearGroups не проходит (вырез парный
+     с authzGuard, иначе кнопка скрыта, а POST открыт). */
   if (!isSettingsManagerConfigured(ctx)) return false;
   var savedSettings = parseJson(getProp(ctx, 'ssp_settings'), null);
   var ids   = (savedSettings && savedSettings.historyClearGroups)     || [];
@@ -2096,8 +2098,9 @@ function internalError(ctx, reason) {
 function authzGuard(ctx, role) {
   if (!isAuthenticated(ctx)) { forbidden(ctx, 'auth_required'); return false; }
   /* #51 — инстанс-админ: полный доступ, включая проект без настроенной
-     settingsManagerGroup (байпас ДО plugin_not_configured). */
-  if (isInstanceAdmin(ctx)) return true;
+     settingsManagerGroup (байпас ДО plugin_not_configured).
+     #66 — кроме 'historyManager': деструктив требует явного членства даже у админа. */
+  if (role !== 'historyManager' && isInstanceAdmin(ctx)) return true;
   if (role === 'viewer') return true;
   if (!isSettingsManagerConfigured(ctx)) {
     forbidden(ctx, 'plugin_not_configured');

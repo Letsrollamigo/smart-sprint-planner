@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.16.1] — 2026-08-19
+
+> **Patch from user feedback: unexpected assignee writes into live issues + permissions for destructive history clear.**
+
+### Fixed
+
+- **"Assignee distribution" wrote the assignee into the YouTrack issue while "Quick edit" was off** — picking an assignee in the role task table sent `update-issue-field` regardless of the toggle and overwrote the assignee in the live issue. The write-back to YouTrack is now gated by "Quick edit" across every channel at once (the gate moved inside the single write function; previously only the Gantt reassign and the inline composition edit were gated). In-sprint distribution behaves as before — only the write to the issue is suppressed.
+- **"Clear all history" button was visible outside the clear-history group** — a global project administrator counted as a member of every planner role (#51), including the history-clear one. For irreversible history operations (full clear and file restore) that bypass is removed: explicit membership in the clear-history group is required, identically for the UI button and for the server check. All other roles keep the administrator bypass; an administrator can assign the clear-history group to themselves in the settings.
+
+Snapshot and settings schema unchanged — drop-in upgrade, no migration.
+
+---
+
 ## [3.16.0] — 2026-08-04
 
 > **Cycle release: diagnostic snapshot export for support + test infrastructure against production bug classes (#63).**

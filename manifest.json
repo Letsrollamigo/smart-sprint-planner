@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.16.0",
+  "version": "3.16.1",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>🧰 v3.16.0 — Diagnostic snapshot export + sprint-view fix</b><br><br>📸 <b>Diagnostic snapshot export</b> — the diagnostic panel’s «Export TXT» now saves a state snapshot instead of an event feed: app version, host environment (YouTrack version, storage/navigation availability), effective settings, all header zones of the selected sprint/role and the recent errors tail. Attach the file to a bug report — no HAR recording skills needed.<br><br>🩹 <b>Correct «Remaining» when viewing another sprint</b> — the remaining-hours card was computed from the working sprint’s resource while viewing a different sprint; it now reads the selected sprint’s per-role snapshot, consistent with the «Available resources» input and the accordion header.<br><br>🧪 <b>Internals</b> — an anonymized production-state fixture with cross-zone consistency invariants now guards sprint-switch paths in the test suite.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
+  "changeNotes": "<b>🩹 v3.16.1 — Assignee write-back gate + history-clear permissions</b><br><br>🔒 <b>Assignee sync respects «Quick edit»</b> — picking an assignee in the «Assignee distribution» table used to write the role user-field back to the live YouTrack issue even when «Quick edit» was switched off, silently overwriting the assignee set in the tracker. The write-back is now gated by that toggle across every channel (task table, Gantt reassign); in-sprint planning itself is unchanged.<br><br>🛡 <b>Full history clear needs explicit membership</b> — a global project administrator was treated as a member of every planner role, including the destructive «Clear all history» one. Irreversible history operations (full clear and file restore) now require membership in the configured clear-history group — identically for the button in the UI and for the server check. All other roles keep the administrator bypass.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
   "widgets": [
     {
       "key": "ssp-main",
