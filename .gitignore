@@ -15,3 +15,6 @@ playwright/.auth/*.json
 # Claude Design internal mirror — не публикуем в public GitHub
 design/
 marketplace-screenshots/
+
+# Per-release smoke screenshots — local only, не коммитятся
+tests/screenshots/
