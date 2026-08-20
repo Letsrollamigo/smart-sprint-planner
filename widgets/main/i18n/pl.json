@@ -215,6 +215,7 @@
   "thPriority": "Priorytet",
   "thXpriority": "Priorytet<br>krzyżowy",
   "thState": "Stan",
+  "hideExcludedToggle": "Ukryj zadania wykluczone ze sprintu",
   "thTitle": "Tytuł",
   "thEstimate": "Szacowanie",
   "thFact": "Rzeczywiste",

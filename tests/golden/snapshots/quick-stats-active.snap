@@ -1,9 +1,9 @@
 {
   "analysis": {
     "resource": 40,
-    "totalAlloc": 118,
-    "taskCount": 4,
-    "overlimit": true
+    "totalAlloc": 18,
+    "taskCount": 3,
+    "overlimit": false
   },
   "testing": {
     "resource": 20,

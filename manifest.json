@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.16.1",
+  "version": "3.17.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>🩹 v3.16.1 — Assignee write-back gate + history-clear permissions</b><br><br>🔒 <b>Assignee sync respects «Quick edit»</b> — picking an assignee in the «Assignee distribution» table used to write the role user-field back to the live YouTrack issue even when «Quick edit» was switched off, silently overwriting the assignee set in the tracker. The write-back is now gated by that toggle across every channel (task table, Gantt reassign); in-sprint planning itself is unchanged.<br><br>🛡 <b>Full history clear needs explicit membership</b> — a global project administrator was treated as a member of every planner role, including the destructive «Clear all history» one. Irreversible history operations (full clear and file restore) now require membership in the configured clear-history group — identically for the button in the UI and for the server check. All other roles keep the administrator bypass.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
+  "changeNotes": "<b>🛡 v3.17.0 — Authz-audit fixes + planning UX</b><br><br>🔒 <b>Security hardening (audit #67)</b> — clearing the sprint history now requires the clear-history role no matter how the write is shaped (effect-based gate); a validate request can no longer reset the sprint slot without editor rights; the working copy owner is always stamped server-side; a failed absences load no longer wipes the registry on the next save.<br><br>👁 <b>Hide excluded tasks</b> — a new toggle above the role accordions hides rows excluded from the sprint in every role table and in the multi-role summary.<br><br>📊 <b>Multi-role summary</b> — new sortable «Assignee» column (unique assignees across roles) and state sorting in workflow-bundle order instead of the alphabet.<br><br>📐 <b>Consistent headers</b> — role accordion headers count allocation and tasks over active tasks only, matching the «Remaining» card and validation; excluded tasks no longer cause a false overlimit.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
   "widgets": [
     {
       "key": "ssp-main",

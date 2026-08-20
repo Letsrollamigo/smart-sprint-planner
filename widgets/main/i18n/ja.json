@@ -215,6 +215,7 @@
   "thPriority": "優先度",
   "thXpriority": "クロス<br>優先度",
   "thState": "状態",
+  "hideExcludedToggle": "スプリントから除外されたタスクを非表示",
   "thTitle": "タイトル",
   "thEstimate": "見積もり",
   "thFact": "実績",

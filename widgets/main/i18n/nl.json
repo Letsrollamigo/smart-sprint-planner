@@ -215,6 +215,7 @@
   "thPriority": "Prioriteit",
   "thXpriority": "Cross-<br>prioriteit",
   "thState": "Status",
+  "hideExcludedToggle": "Taken die uit de sprint zijn uitgesloten verbergen",
   "thTitle": "Titel",
   "thEstimate": "Schatting",
   "thFact": "Werkelijk",

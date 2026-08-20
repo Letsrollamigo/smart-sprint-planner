@@ -313,7 +313,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.16.1';
+var APP_VERSION = '3.17.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2310,7 +2310,11 @@ var ENDPOINTS = [
                sprint:null при удалении последней ролевой записи активного спринта.
                Затираем ssp_sprint, иначе спринт остаётся призраком в пикере и
                переживает хард-релоад. ssp_roleitems сбрасывается ниже (фронт шлёт {}). */
-            if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+            /* #67 H2 — байпас `action !== 'validate'` скопирован с соседних веток, где
+               широкая запись под validate осознанна (v3.2.1). Здесь ветка деструктивная:
+               validate-запрос с sprint:null затирал активный слот без прав editor.
+               UI такую комбинацию не порождает — sprint:null уходит без action. */
+            if (!authzGuard(ctx, 'editor')) return;
             setProp(ctx, 'ssp_sprint', '');
             /* v3.2.1 — слот пуст → его rev теперь 0; сообщаем клиенту (иначе вкладка
                держала старый _slotRev и все последующие записи ловили 409 до F5). */
@@ -2600,7 +2604,7 @@ var ENDPOINTS = [
           for (var ai = 0; ai < bodyAS.history.length; ai++) {
             var inc = bodyAS.history[ai];
             if (!inc || typeof inc !== 'object' || !inc.sprintId) continue;
-            if (!(inc.sprintId in byId)) continue;
+            if (!Object.prototype.hasOwnProperty.call(byId, inc.sprintId)) continue;   /* #67 H6 — `in` видит цепочку прототипов: sprintId='__proto__' уводил в член прототипа → TypeError/500 (парный guard — backend-capacity.js) */
             var pp = inc.personalPlanning;
             if (pp !== undefined && pp !== null && typeof pp !== 'object') continue;
             existing[byId[inc.sprintId]].personalPlanning = pp || null;
@@ -2640,6 +2644,17 @@ var ENDPOINTS = [
             badRequest(ctx, 'invalid_history_structure: not_array');
             return;
           }
+          /* #67 H1 — гейт по ЭФФЕКТУ, а не по имени параметра. `?action=clear` требует
+             historyManager, но побайтово тот же результат даёт основная ветка
+             (POST {"history":[]}) — под validator'ом и под инстанс-админом вне группы
+             очистки, то есть замок #66 обходился штатным запросом. Требуем те же права,
+             когда запись сносит записи ПАЧКОЙ. Порог: минус одна запись — штатная корзина
+             (history-view.js: splice + перезапись усечённого массива), она остаётся правом
+             валидатора; минус две и больше за один POST — деструктив, UI такого не шлёт. */
+          var prevHist = parseJson(getProp(ctx, 'ssp_history'), []);
+          var prevLen  = Array.isArray(prevHist) ? prevHist.length : 0;
+          if (prevLen > 0 && body.history.length < prevLen - 1
+              && !authzGuard(ctx, 'historyManager')) return;
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedHistoryKeys).
           body.history = stripDeprecatedHistoryKeys(body.history);
           // v1.6.0 D125 — stamp each record before validate+persist.
@@ -2969,10 +2984,12 @@ var ENDPOINTS = [
                серверная версия побеждает, свою копию молча пропускаем. */
             continue;
           }
-          // Перезаписываем editorLogin на серверное значение если запись новая
-          if (!existingForKey) {
-            d.editorLogin = login;
-          }
+          /* #67 H4 — editorLogin выводится ИЗ ХРАНИЛИЩА, клиентское значение не персистится
+             никогда (SECURITY, митигация №19). Новая запись → пишущий; своя существующая →
+             тот же логин; бесхозная (editorLogin пуст) → пишущий забирает владение; чужая под
+             settingsManager (единственный путь сюда, см. `continue` выше) → владелец сохраняется,
+             иначе bulk-flush админа настроек молча переназначал бы владельцем себя. */
+          d.editorLogin = (existingForKey && existingForKey.editorLogin) ? existingForKey.editorLogin : login;
           // Размер на одну запись
           var oneStr = JSON.stringify(d);
           if (oneStr.length > MAX_WORKDRAFT_PER_KEY) {

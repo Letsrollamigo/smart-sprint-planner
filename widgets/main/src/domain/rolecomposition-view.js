@@ -55,7 +55,11 @@ function computeRoleQuickStats(rk, deps) {
     if (histSnap) {
       var resH = (role && histSnap[role.resKey] != null) ? Number(histSnap[role.resKey]) / 60 : 0;
       if (!isFinite(resH)) resH = 0;
-      var itemsH = Array.isArray(histSnap.items) ? histSnap.items : [];
+      /* #65 — канон шапки: только активные (ACTIVE_INC), как validate и «Остатки».
+         Исключённые из спринта в аллокацию/перелимит/счётчик не входят (⚖ 2026-08-20). */
+      var itemsH = (Array.isArray(histSnap.items) ? histSnap.items : []).filter(function(it){
+        return it && deps.ACTIVE_INC.indexOf(it.inclusionStatus) >= 0;
+      });
       var totH = 0;
       itemsH.forEach(function(it){
         var alloc = it && it['alloc_'+rk];
@@ -81,7 +85,9 @@ function computeRoleQuickStats(rk, deps) {
     resource = Number(_sprint[role.resKey]) / 60;
     if (!isFinite(resource)) resource = 0;
   }
-  var items = (typeof deps.getRoleItemsArr === 'function') ? (deps.getRoleItemsArr(rk) || []) : [];
+  /* #65 — канон шапки: только активные (см. historical-ветку выше). */
+  var items = ((typeof deps.getRoleItemsArr === 'function') ? (deps.getRoleItemsArr(rk) || []) : [])
+    .filter(function(it){ return it && deps.ACTIVE_INC.indexOf(it.inclusionStatus) >= 0; });
   var totalAlloc = 0;
   items.forEach(function(it){
     var alloc = it && it['alloc_'+rk];
@@ -184,10 +190,40 @@ function _updateRoleAccordionStats(rk, deps) {
   }
 }
 
+/* 68-2 — фильтр «скрыть исключённые из спринта»: глобальный Ring Toggle над
+   аккордеонами (⚖ 2026-08-20: эфемерно на сессию — на прод-YT 2025.3 у виджета
+   нет localStorage, честный персист только через бэкенд, для view-тумблера это
+   оверкилл). Источник правды — data-ssp-hide-excluded на #planningFilterBar
+   (переживает innerHTML-перестройки аккордеонов); читают _buildRoleCompositionVm
+   и сводная #61 (isExcludedHidden — window-мост). Дефолт — показывать всё. */
+function isExcludedHidden() {
+  var bar = document.getElementById('planningFilterBar');
+  return !!(bar && bar.dataset && bar.dataset.sspHideExcluded === '1');
+}
+
+function _renderExcludedFilter(deps) {
+  var bar = document.getElementById('planningFilterBar');
+  if (!bar) return;
+  /* Остров — generic Ring Toggle (label + onToggle-Promise, mount-паттерн #57-2);
+     приходит через deps.mountRingToggle (звезда-топология B1: острова монтирует ядро). */
+  if (typeof deps.mountRingToggle !== 'function') { bar.style.display = 'none'; return; }
+  var mounted = deps.mountRingToggle(bar, {
+    locked: isExcludedHidden(), canToggle: true,
+    label: deps.T('hideExcludedToggle'),
+    onToggle: function (next) {
+      bar.dataset.sspHideExcluded = next ? '1' : '0';
+      renderPlanningRoles(deps);
+      if (typeof deps.renderAllocSummary === 'function') { try { deps.renderAllocSummary(); } catch (_) {} }
+    },
+  });
+  bar.style.display = mounted ? '' : 'none';
+}
+
 function renderPlanningRoles(deps) {
   var container = document.getElementById('roleAccordions');
   var noSprintEl = document.getElementById('planningRolesNoSprint');
   var noActiveEl = document.getElementById('planningRolesNoActive');
+  var filterBar = document.getElementById('planningFilterBar');
   if (!container) return;
   var activeRoles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : [];
   if (!activeRoles.length) {
@@ -201,15 +237,18 @@ function renderPlanningRoles(deps) {
       if (ctaEl) ctaEl.style.display = (sBtn && sBtn.style.display !== 'none') ? '' : 'none';
     }
     if (noSprintEl) noSprintEl.classList.add('hidden');
+    if (filterBar) filterBar.style.display = 'none';
     return;
   }
   if (noActiveEl) noActiveEl.classList.add('hidden');
   if (!deps.state.getCurrentSprintId()) {
     container.innerHTML = '';
     if (noSprintEl) noSprintEl.classList.remove('hidden');
+    if (filterBar) filterBar.style.display = 'none';
     return;
   }
   if (noSprintEl) noSprintEl.classList.add('hidden');
+  _renderExcludedFilter(deps);   /* 68-2 */
   var html = activeRoles.map(function(role){ return renderRoleAccordion(role.key, deps); }).join('');
   container.innerHTML = html;
   _bindAccordionHandlers(deps);
@@ -641,6 +680,12 @@ function _buildRoleCompositionVm(rk, deps) {
     items = deps.getRoleItemsArr(rk);
   }
   if (!items.length) return { empty: true, itemCount: 0 };
+
+  /* 68-2 — display-фильтр исключённых (после empty-чека: истинно пустой состав
+     сохраняет CTA-empty-state, отфильтрованный в ноль — таблицу с emptyText). */
+  if (isExcludedHidden()) {
+    items = items.filter(function(it){ return it && it.inclusionStatus !== deps.INC.EXCLUDED; });
+  }
 
   /* Номер страницы держим на стабильном _roleItems[rk] (getRoleItemsArr), а НЕ на items:
      в историческом виде items = histSnap.items.slice() пересоздаётся КАЖДЫЙ рендер, поэтому
@@ -1119,6 +1164,7 @@ function updateRoleRemaining(rk, deps) {
 }
 
 const api = {
+  isExcludedHidden: isExcludedHidden,   /* 68-2 — читает сводная #61 */
   computeRoleQuickStats: computeRoleQuickStats,
   renderRoleAccordion: renderRoleAccordion,
   updateRoleAccordionStats: _updateRoleAccordionStats,

@@ -8,7 +8,7 @@
 
 // Valid sort keys in cycle order (matches SORT_KEYS_CYCLE in core.js).
 const SORT_KEYS_CYCLE = Object.freeze([
-  'off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee'
+  'off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee', 'state'
 ]);
 
 const PRIORITY_RANK_MAP = Object.freeze({
@@ -74,7 +74,10 @@ function isValidSortKey(key) {
 // reads sort state. Faithful port of multiKeySort in core.js: the
 // secondary keys always order by descending priority, and an unrecognised
 // primary falls through to the 'xpriority' default branch.
-function multiKeySort(items, primary, taMap) {
+// stateRank (68-1): optional { [stateName]: index } — порядок бандла YT (field-values
+//   отдаёт значения в bundle-порядке). Незнакомые состояния/отсутствующая карта —
+//   Infinity → в конец, между собой по алфавиту (fallback до загрузки бандла).
+function multiKeySort(items, primary, taMap, stateRank) {
   if (!Array.isArray(items)) return items;
   if (!primary || primary === 'off') return items;
   const arr = items.slice();
@@ -102,6 +105,18 @@ function multiKeySort(items, primary, taMap) {
       const ce = extA < extB ? -1 : (extA > extB ? 1 : 0);
       if (ce !== 0) return ce;
       return idCmp(a.issueId, b.issueId);
+    }
+    if (primary === 'state') {
+      const rk = (v) => (stateRank && Object.prototype.hasOwnProperty.call(stateRank, String(v == null ? '' : v)))
+        ? stateRank[String(v)] : Infinity;
+      const ra = rk(a.state), rb = rk(b.state);
+      if (ra !== rb) return ra - rb;
+      const sa = String(a.state || '').toLowerCase(), sb = String(b.state || '').toLowerCase();
+      const cs = sa < sb ? -1 : (sa > sb ? 1 : 0);
+      if (cs !== 0) return cs;
+      return (xpRank(a.xpriority) - xpRank(b.xpriority))
+          || (prRank(a.priority) - prRank(b.priority))
+          || idCmp(a.issueId, b.issueId);
     }
     if (primary === 'assignee') {
       const asA = String((taMap && taMap[a.issueId] && taMap[a.issueId].assignee) || '').toLowerCase();

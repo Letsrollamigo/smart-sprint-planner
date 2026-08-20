@@ -2,7 +2,11 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Применимо к **v1.0.0** и более новым версиям. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная иерархия ролей.
+Актуально для версии **3.17.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+
+> Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
+>
+> **v3.17.0 — фиксы authz-аудита #67:** гейт по эффекту на очистку истории (укорочение более чем на 1 запись за один POST требует `historyManager`; порог выбран потому, что удаление одной записи корзиной — штатная операция валидатора, а массовое усечение одним POST UI не порождает); `?action=validate` больше не снимает editor-гейт со сброса слота (`sprint:null`); флаг сбоя загрузки реестра отсутствий блокирует сохранение (потеря данных обычным кликом закрыта); `editorLogin` рабочей копии всегда выводится из хранилища; `hasOwnProperty`-guard в `history?action=assignerSync`.
 
 ---
 
@@ -46,56 +50,105 @@
 
 ## Роли (источники правды)
 
-| Роль | Где задаётся | Кто может назначать | Примечание |
-|------|--------------|---------------------|------------|
-| `settingsManager` | `ctx.settings.settingsManagerGroup` (project-scoped app-settings) | Project admin / Global admin (через Project Settings → Apps) | Обязателен для любых мутаций |
-| `editor` | `ssp_settings.editGroups` / `editGroupNames` | settingsManager | Полный доступ на запись состава спринта |
-| `validator` | `ssp_settings.validationGroups` / `validationGroupNames` | settingsManager | Подтверждение / распределение / финализация спринтов |
-| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` | settingsManager | Требуется для очистки истории; **байпаса админа нет (#66)** |
-| `assigner` | `ssp_settings.assignerGroups` / `assignerGroupNames` | settingsManager | Может писать только в `personalPlanning` (assignee + dates) |
-| `viewer` | любой аутентифицированный пользователь проекта | YouTrack project permissions | Read-only |
-| `wcOwner` *(контекстная)* | `editorLogin === ctx.currentUser.login` в `_workingDrafts[key]` | Создаётся автоматически при `POST /working-drafts` | Защита от перехвата чужой WC |
+13 ролей: 12 групповых + 1 контекстная (`wcOwner`). Плюс две псевдороли-объединения, существующие только как аргумент `authzGuard` (см. под таблицей).
+
+| Роль | Где задаётся | Кто может назначать |
+|------|--------------|---------------------|
+| `settingsManager` | `ctx.settings.settingsManagerGroup` (project-scoped app-settings) | Project admin / Global admin (через Project Settings → Apps) |
+| `editor` | `ssp_settings.editGroups` / `editGroupNames` | settingsManager |
+| `validator` | `ssp_settings.validationGroups` / `validationGroupNames` | settingsManager |
+| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` · **байпаса админа нет (#66)** | settingsManager |
+| `assigner` | `ssp_settings.assignerGroups` / `assignerGroupNames` | settingsManager |
+| `planningManager` | `ssp_settings.planningManagerGroups` / `planningManagerGroupNames` | settingsManager |
+| `releaseManager` | `ssp_settings.releaseManagerGroups` / `releaseManagerGroupNames` | settingsManager |
+| `releaseEngineer` | `ssp_settings.releaseEngineerGroups` / `releaseEngineerGroupNames` | settingsManager |
+| `sprintLockManager` | `ssp_settings.sprintLockGroups` / `sprintLockGroupNames` | settingsManager |
+| `reportingViewerA` | `ssp_settings.reportingGroupsA` / `reportingGroupsANames` | settingsManager |
+| `reportingViewerB` | `ssp_settings.reportingGroupsB` / `reportingGroupsBNames` · **B ⊇ A** | settingsManager |
+| `viewer` | любой аутентифицированный пользователь проекта | YouTrack project permissions |
+| `wcOwner` *(контекстная)* | `editorLogin === ctx.currentUser.login` в `_workingDrafts[key]` | автоматически при `POST /working-drafts` |
+
+**Псевдороли `authzGuard` (объединения, не отдельные группы):**
+
+- `assigner` как аргумент гейта — объединение **пяти** ролей: editor ∨ assigner ∨ settingsManager ∨ releaseManager ∨ releaseEngineer (+ байпас инстанс-админа).
+- `settingsOrPlanning` — settingsManager ∨ planningManager. planningManager пишет только планировочный тир настроек: admin-тир ключи (все групп-ключи, sprint-lock, reporting-поля) preserve-merge'атся из хранимого — самоэскалация записью групп невозможна.
 
 **Байпас глобального администратора проектов** (#51): пользователь с глобальным правом `UPDATE_PROJECT` считается членом любой роли планера во всех проектах, включая проекты без настроенной `settingsManagerGroup`.
 
-> **Исключение — `historyManager` (#66, с v3.16.1).** Полная очистка (`history?action=clear`) и замена истории из файла (`history?action=import-replace`) необратимы, поэтому байпас на эту роль **не распространяется**: нужно явное членство в `historyClearGroups`/`historyClearGroupNames`. Вырез сделан и в `isHistoryManager()`, и в раннем admin-return `authzGuard()` — чтобы кнопка в UI и серверный гейт совпадали. Лок-аута нет: администратор сохраняет `settingsManager` и может назначить группу очистки себе.
+> **Исключение — `historyManager` (#66, с v3.16.1).** Полная очистка (`history?action=clear`), замена истории из файла (`history?action=import-replace`) и — с v3.17.0 (#67) — массовое усечение истории основной веткой записи необратимы, поэтому байпас на эту роль **не распространяется**: нужно явное членство в `historyClearGroups`/`historyClearGroupNames`. Вырез сделан и в `isHistoryManager()`, и в раннем admin-return `authzGuard()` — чтобы кнопка в UI и серверный гейт совпадали. Лок-аута нет: администратор сохраняет `settingsManager` и может назначить группу очистки себе.
 
-**Иерархия**: `editor ⊃ assigner ⊃ viewer`. `editor` имеет все права `assigner` плюс полную мутацию спринта. `assigner` ограничен записью в `personalPlanning` (assignee + start/end-dates) через `action=assignerSync` и записью assignee-полей через `update-issue-field`.
+**Роли ортогональны** (уточнение #67): validator не наследует editor и наоборот. Верно узкое включение: validator ⊇ editor **по записям слотов** `ssp_sprint`/`ssp_roleitems` под `?action=validate` (осознанная механика v3.2.1). Единственная задокументированная иерархия — объединение `assigner` (см. псевдороли) поверх viewer.
 
-**`wcOwner`** (working copy owner) — единственная роль, авторизация которой не из `ssp_settings` / `ctx.settings.*`, а из самого `_workingDrafts[key].editorLogin`. Backend перезаписывает `editorLogin` серверным значением на каждом POST (defense-in-depth — клиент не может подменить владельца). Перехват чужой WC возвращает `{success: false, reason: 'not_owner'}` (исключение — `settingsManager` может удалить любую WC).
+**`wcOwner`** (working copy owner) — единственная роль, авторизация которой не из `ssp_settings` / `ctx.settings.*`, а из самого `_workingDrafts[key].editorLogin`. С v3.17.0 (#67) backend выводит `editorLogin` из хранилища на каждом POST — клиентское значение не персистится никогда. Перехват чужой WC невозможен: перезапись чужого ключа со своим логином → `not_owner`; bulk-flush, несущий чужие записи, молча оставляет серверную версию. `settingsManager` может удалить любую WC.
 
 ---
 
 ## Матрица доступа по endpoints
 
+Перегенерирована из кода (#67, 2026-08-19): `core.ENDPOINTS` — 34 project-endpoint'а; global-handler — те же endpoints через `?projectKey=` (кроме `sync-acl` и `app-version`) + 4 собственных. Инвариант «матрица = код» — `tests/unit/security-matrix-invariant.test.js`.
+
+### Project scope (`backend-project.js` → `core.ENDPOINTS`)
+
+`?action=…`-строки — ветки того же endpoint'а с иной ролью; строка без `action` — основная ветка.
+
+<!-- authz-matrix:project:begin -->
 | Method | Path | Минимальная роль |
 |--------|------|------------------|
 | GET    | `project-fields` | viewer |
-| GET    | `sprint-data` | viewer |
-| POST   | `sprint-data` (`body.sprint` / `roleItems` / `items`) | editor |
-| POST   | `sprint-data` (`body.settings`) | settingsManager |
-| POST   | `sprint-data?action=validate` | validator |
-| POST   | `sprint-data?action=assignerSync` | assigner (partial save: только `personalPlanning`) |
+| GET    | `sprint-data` | viewer (ответ включает весь блоб `ssp_settings`, вкл. групп-ключи ролей) |
+| POST   | `sprint-data` (`body.sprint`/`roleItems`/`items`) | editor |
+| POST   | `sprint-data` (`body.settings`) | settingsManager ИЛИ planningManager (admin-тир preserve-merge) |
+| POST   | `sprint-data?action=validate` | validator (пишет `sprint`/`roleItems` без editor — осознанно, v3.2.1; ветка `sprint:null` — editor, #67) |
+| POST   | `sprint-data?action=assignerSync` | assigner-объединение (partial save только `personalPlanning`) |
 | GET    | `history` | viewer |
-| POST   | `history` (обычное сохранение / обновление) | validator |
-| POST   | `history?action=assignerSync` | assigner (partial save: только `personalPlanning` в существующих snap'ах) |
+| POST   | `history` | validator; **укорочение более чем на 1 запись — historyManager (#67, без байпаса админа)** |
+| POST   | `history?action=assignerSync` | assigner-объединение (partial save `personalPlanning` в существующих snap'ах) |
 | POST   | `history?action=clear` | historyManager (без байпаса админа, #66) |
-| GET    | `working-drafts` | viewer (возвращает все доступные WC; чтение не ограничено) |
-| POST   | `working-drafts` | validator (`editorLogin` перезаписывается из `ctx.currentUser.login`) |
-| DELETE | `working-drafts/<key>` | wcOwner ИЛИ settingsManager (иначе `{success: false, reason: 'not_owner'}`) |
+| POST   | `history?action=import-replace` | historyManager (без байпаса админа, #66) |
+| GET    | `working-drafts` | viewer (возвращает рабочие копии ВСЕХ пользователей) |
+| POST   | `working-drafts` | validator (`editorLogin` — из хранилища, #67) |
+| POST   | `working-drafts?action=delete&key=…` | validator + (wcOwner ИЛИ settingsManager), иначе `not_owner` |
+| GET    | `draft` | viewer (только слот currentUser) |
+| POST   | `draft` | viewer (пишет только слот currentUser; `?action=clear` — удаляет свой слот) |
 | GET    | `check-settings-manager` | viewer |
+| GET    | `check-instance-admin` | viewer |
 | GET    | `check-validator` | viewer |
 | GET    | `check-editor` | viewer |
-| GET    | `check-history-manager` | viewer |
 | GET    | `check-assigner` | viewer |
+| GET    | `check-history-manager` | viewer |
+| GET    | `app-version` | viewer |
+| POST   | `sync-acl` | viewer (пишет зеркало `ssp_acl` ТОЛЬКО из `ctx.settings`, тело не читается) |
+| GET    | `capacity` | viewer (грейды, ставки, аллокации ростера) |
+| GET    | `capacity-archive` | viewer |
+| POST   | `capacity` | settingsManager ИЛИ planningManager (`approvedBy` — серверный штамп) |
+| GET    | `calendar` | viewer |
+| POST   | `calendar` | settingsManager |
+| GET    | `absences` | viewer (кто и когда отсутствует) |
+| POST   | `absences` | settingsManager ИЛИ planningManager |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
-| GET    | `app-version` | viewer (read-only, возвращает `{version: '<APP_VERSION>'}`) |
-| POST   | `update-issue-field` | editor ИЛИ assigner (типы поля: `enum` / `string` / `period` / `user`) |
-| POST   | `refresh-assignees` | editor ИЛИ assigner (bulk fetch до 200 issueId) |
-| GET    | `draft` | viewer (возвращает только слот currentUser) |
-| POST   | `draft` | viewer (пишет только в слот currentUser) |
-| POST   | `draft?action=clear` | viewer (удаляет только слот currentUser) |
+| POST   | `update-issue-field` | assigner-объединение (типы: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; изоляция проекта; `fieldName` валидируется на длину/символы) |
+| POST   | `refresh-assignees` | **viewer** (bulk-чтение assignee/state до 200 issueId за запрос) |
+| GET    | `releases` | viewer |
+| GET    | `releases-archive` | viewer |
+| POST   | `releases` | settingsManager ИЛИ releaseManager; releaseEngineer — только advance-дифф (`engineerDiffAllowed`) |
+| GET    | `reporting-access` | viewer (ответ — флаги контуров A/B по членству) |
+| GET    | `sprint-lock` | viewer |
+| POST   | `sprint-lock` | sprintLockManager |
+<!-- authz-matrix:project:end -->
+
+### Global scope (`backend-global.js`)
+
+Все project-endpoints, кроме `sync-acl` и `app-version`, доступны через global-URL с `?projectKey=<KEY>`: адаптер резолвит проект и применяет read-gate (`READ_PROJECT_BASIC`) **до** ролевой логики ядра — ролевые проверки не ослабляются. Собственные endpoints global-handler'а:
+
+<!-- authz-matrix:global:begin -->
+| Method | Path | Минимальная роль |
+|--------|------|------------------|
+| GET    | `app-version` | аутентификация (статика, без read-gate — бейдж версии до выбора проекта) |
+| POST   | `filter-planner-projects` | аутентификация (арбитр picker'а: до 5000 ключей за запрос) |
+| GET    | `last-project` | аутентификация (свой слот) |
+| POST   | `last-project` | аутентификация (пишет только свой слот) |
+<!-- authz-matrix:global:end -->
 
 `viewer` — любой аутентифицированный пользователь проекта. Все остальные роли требуют настроенного `settingsManagerGroup` (deny-by-default иначе). `wcOwner` — контекстная роль (см. таблицу ролей выше).
 
@@ -107,7 +160,7 @@
 |---|--------|-----------|
 | 1 | **Захват настроек на свежей установке (chicken-and-egg)** | `settingsManagerGroup` только в app-settings; deny-by-default; нет endpoint'а для записи `settingsManagerGroup` |
 | 2 | **Подмена ролей через body** | Backend не читает `body.editGroups` / `validationGroups` / `historyClearGroups` / `settingsManagerGroup` для авторизации; только `ctx.currentUser.groups` |
-| 3 | **Случайная или злонамеренная очистка истории** | Отдельная роль `historyManager`; кнопка очистки скрыта в UI; `POST /history?action=clear` deny-by-default |
+| 3 | **Случайная или злонамеренная очистка истории** | Отдельная роль `historyManager` без байпаса админа (#66); кнопка очистки скрыта в UI; с v3.17.0 (#67) гейт стоит **по эффекту**: и `?action=clear`, и основная ветка `POST /history`, укорачивающая историю более чем на 1 запись, требуют `historyManager`. Остаточное право валидатора — удаление по одной записи (штатная корзина UI). |
 | 4 | **Prototype Pollution** | `sanitizeDeep` отвергает `__proto__` / `constructor` / `prototype` на глубине до 10 уровней |
 | 5 | **Запись «мусора» в settings** | Жёсткий whitelist `ALLOWED_SETTINGS_KEYS` + типизация + диапазоны (rate, NKC, kpe) |
 | 6 | **XSS через данные YouTrack** | Все вставки через `esc()` (5 символов); все `href` через `safeUrl()` (https/http only); никакого `eval` / `Function` / `document.write` |
@@ -117,13 +170,13 @@
 | 10 | **Инъекции в `fieldName`** | Валидация запрещает только control chars и `< > "`; имена YouTrack-полей с точками/скобками/амперсандами проходят. Сам YouTrack-API делает корректный lookup поля без SQL/path-конкатенации. |
 | 11 | **Утечка диагностики** | Все ошибки backend возвращают `internal_error` без эха содержимого; детали — только в server log при `enableDebugLog` |
 | 12 | **Подмена/подделка персональных черновиков** | Черновики хранятся в `ssp_drafts`, scoped per-user (ключ слота — `ctx.currentUser.login`, не передаётся клиентом). Поле `data` — opaque blob, сервер его не интерпретирует. Лимиты: 256 КБ на пользователя; 1 МБ суммарно по проекту. |
-| 13 | **Перехват чужой working copy** | `DELETE` / `POST` `/working-drafts` проверяют `editorLogin === ctx.currentUser.login` (исключение для DELETE — `settingsManager`). Backend всегда перезаписывает `editorLogin` серверным значением на POST → клиент не может подделать владельца через тело запроса. |
-| 14 | **Conflict-replay (overwrite чужих изменений в WC)** | На коммите WC backend сравнивает `baseSnapshotHash` (FNV-1a от базового снимка) с актуальным хэшем. При расхождении — клиент получает conflict-ответ, фронтенд открывает модал «Конфликт версий» с явным выбором (Перезаписать / Скачать обе версии / Отменить). Слепой replay невозможен. |
+| 13 | **Перехват чужой working copy** *(уточнено в v3.17.0)* | `POST /working-drafts` (bulk): чужой ключ с подставленным своим логином → `not_owner`; чужой ключ в bulk-flush → серверная версия побеждает молча; `editorLogin` каждой записи выводится из хранилища, клиентское значение не персистится (#67). `?action=delete&key=…`: только wcOwner или `settingsManager`. |
+| 14 | **Conflict-replay (перезапись чужих параллельных правок)** *(переформулировано в v3.17.0 — по коду)* | Сверка `baseSnapshotHash` выполняется **на клиенте** (конфликт-флоу «Конфликт версий»); сервер поле только валидирует как строку. Серверная защита — optimistic lock `baseRev` на слотах `sprint-data`/`history`/`releases`/`absences`: расхождение → `rev_conflict`. Ограничение (по дизайну): клиент без `baseRev` проходит в режиме last-write-wins — lock advisory. |
 | 15 | **Runaway-размер `_workingDrafts`** | Лимиты: 256 КБ на одну WC, 480 КБ суммарно по `ssp_workdrafts`. `validateWorkingDraft` проверяет `revisions.length ≤ 1000`. Lazy-purge на загрузке: WC старше 30 дней или orphan (без базового снимка) автоматически удаляются. |
 | 16 | **Эскалация прав через `assignerSync`** | `action=assignerSync` разрешает запись **только** в `personalPlanning` (assignee + start/end-dates). Backend фильтрует тело до этого подмножества; попытка передать `body.sprint.items` / `body.settings` / прочее — silent strip. assigner не может изменить состав спринта, ёмкость роли, статус или валидацию. |
-| 17 | **DoS через большой батч в `refresh-assignees`** | Жёсткий лимит **200 issueId на запрос** в коде backend. Каждый `issueId` проверяется (`≤100` символов) и матчится regex'ом `[A-Z][A-Z0-9_]+-[0-9]+`. Лимит покрывает реалистичный размер спринта с запасом. |
-| 18 | **Подделка `editorLogin` через body** | На каждом `POST /working-drafts` backend безусловно перезаписывает `body.editorLogin = ctx.currentUser.login` до валидации, игнорируя любое значение из тела. Это же правило применяется к `revisions[].by` (всегда серверный login). |
-| 19 | **Race condition между DELETE и POST `/working-drafts`** | YouTrack extension-properties атомарны на уровне POST/SET; concurrent DELETE + POST разрешается либо в сохранение (POST после DELETE), либо в удаление (DELETE после POST), без частичного состояния. UI справляется через retry + refresh state из `GET /working-drafts`. |
+| 17 | **DoS через большой батч в `refresh-assignees`** *(уточнено в v3.17.0 — по коду)* | Жёсткий лимит **200 issueId на запрос** (`MAX_REFRESH_ASSIGNEES_BATCH`); при превышении — `invalid_issue_ids`. Каждый issueId проверяется regex'ом `^[A-Za-z][A-Za-z0-9_]*-\d+$` (строчные буквы допустимы), `fieldName` — на длину и запрещённые символы. Ограничение: лимита на число запросов нет (rate-limit — бэклог уровня 3 аудита #67). |
+| 18 | **Подделка `editorLogin` через body** *(закрыто в v3.17.0, #67)* | До v3.17.0 серверный штамп ставился только на новые записи — для своей существующей записи клиентское значение уходило в хранилище (чужой логин → персистентная блокировка правки; `null` → бесхозная запись). Теперь `editorLogin` каждой записи выводится из хранилища (существующая — прежний владелец, новая/бесхозная — пишущий). Ограничение: `revisions[].by` и `updatedBy`/`confirmedBy`/`finishedBy` сервером НЕ штампуются (значения клиентские) — серверные аудит-штампы в бэклоге уровня 3 аудита #67. |
+| 19 | **Race condition между удалением и сохранением `/working-drafts`** | YouTrack extension-properties атомарны на уровне POST/SET; concurrent `?action=delete` + POST разрешается либо в сохранение, либо в удаление, без частичного состояния. UI справляется через retry + refresh state из `GET /working-drafts`. |
 
 ---
 

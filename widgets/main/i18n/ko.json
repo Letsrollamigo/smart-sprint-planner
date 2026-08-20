@@ -215,6 +215,7 @@
   "thPriority": "우선순위",
   "thXpriority": "교차<br>우선순위",
   "thState": "상태",
+  "hideExcludedToggle": "스프린트에서 제외된 작업 숨기기",
   "thTitle": "제목",
   "thEstimate": "예상",
   "thFact": "실제",

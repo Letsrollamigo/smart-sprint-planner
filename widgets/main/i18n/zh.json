@@ -215,6 +215,7 @@
   "thPriority": "优先级",
   "thXpriority": "交叉<br>优先级",
   "thState": "状态",
+  "hideExcludedToggle": "隐藏已从冲刺中排除的任务",
   "thTitle": "标题",
   "thEstimate": "估算",
   "thFact": "实际",

@@ -243,6 +243,13 @@ function _persist(deps, sel, action, model) {
 }
 
 function _saveAbsences(deps, fullMap) {
+  /* #67 H3 — сбой GET absences молча ставил пустой реестр, следующее сохранение его
+     персистило: единственная в аудите потеря данных обычным кликом (архива у absences
+     нет, baseRev остаётся синхронным с прошлого успешного GET). Гейт по образцу
+     rosterLoadFailed; CSV-путь (fullMap) блокируем тоже — full-replace поверх
+     незагруженного реестра затирает так же. */
+  var _uiAbs = deps.state.getCapacityUiState ? (deps.state.getCapacityUiState() || {}) : {};
+  if (_uiAbs.absencesLoadFailed) { deps.toast(deps.T('errCapacityLoad'), 'err'); return; }
   var map = fullMap || deps.state.getAbsences() || {};
   /* v3.2.1 — явная обёртка: backend отличает осознанно-пустую карту от битого тела
      (анти-wipe guard absences_empty_body). */
@@ -449,7 +456,8 @@ function loadAndRender(deps) {
       .catch(function () { fieldUsers[fn] = []; rosterFailed = true; });
   });
   jobs.push(deps.apiGet('calendar').then(function (r) { deps.state.setCalendar(r && r.calendar ? r.calendar : null); }).catch(function () {}));
-  jobs.push(deps.apiGet('absences').then(function (r) { deps.state.setAbsences(r && r.absences ? r.absences : {}); }).catch(function () { deps.state.setAbsences({}); }));
+  var absFailed = false;   /* #67 H3 — гейт _saveAbsences */
+  jobs.push(deps.apiGet('absences').then(function (r) { deps.state.setAbsences(r && r.absences ? r.absences : {}); }).catch(function () { deps.state.setAbsences({}); absFailed = true; }));
   /* admin-гейт CSV — резолвим в общем load-батче (не в render → render остаётся sync,
      без host-prop чтения; capacity-view.js остаётся namespace-sed-идентичным форкам). */
   var canCsvP = (typeof deps.checkSettingsManager === 'function') ? deps.checkSettingsManager() : Promise.resolve(false);
@@ -469,7 +477,8 @@ function loadAndRender(deps) {
     deps.state.setCapacity(rec);
     var u = deps.state.getCapacityUiState() || {};
     u.rosterLoadFailed = rosterFailed;   /* v3.2.1 — гейт _persist */
-    if (rosterFailed) { try { deps.toast(deps.T('errCapacityLoad'), 'err'); } catch (_) {} }
+    u.absencesLoadFailed = absFailed;    /* #67 H3 — гейт _saveAbsences; снимается успешной перезагрузкой */
+    if (rosterFailed || absFailed) { try { deps.toast(deps.T('errCapacityLoad'), 'err'); } catch (_) {} }
     u.archivedCount = capRes.archivedCount; u.archiveRows = null; /* #53 — сброс: спойлер перезагрузит по раскрытию */
     if (sel && sel.isActive && !rec) {
       _carryForward(deps, function (carry) { u.carry = carry; deps.state.setCapacityUiState(u); render(deps); });

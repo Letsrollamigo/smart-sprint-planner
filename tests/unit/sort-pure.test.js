@@ -274,4 +274,32 @@ describe('multiKeySort', () => {
     };
     assert.deepStrictEqual(ids(multiKeySort(items, 'assignee', taMap)), ['P-2', 'P-1', 'P-3']);
   });
+
+  /* 68-1 — сортировка по «Состояние»: ранг = порядок бандла YT (stateRank),
+     дискриминирующий кейс — бандл-порядок ПРОТИВОПОЛОЖЕН алфавиту. */
+  it('primary "state": bundle order via stateRank beats alphabetical', () => {
+    const items = [
+      { issueId: 'P-1', state: 'Анализ' },      // алфавитно первый, в бандле последний
+      { issueId: 'P-2', state: 'Разработка' },
+      { issueId: 'P-3', state: 'Тестирование' } // алфавитно последний, в бандле первый
+    ];
+    const rank = { 'Тестирование': 0, 'Разработка': 1, 'Анализ': 2 };
+    assert.deepStrictEqual(ids(multiKeySort(items, 'state', undefined, rank)), ['P-3', 'P-2', 'P-1']);
+  });
+
+  it('primary "state": no stateRank → alphabetical fallback; unknown states go last', () => {
+    const items = [
+      { issueId: 'P-1', state: 'Разработка' },
+      { issueId: 'P-2', state: 'Анализ' },
+      { issueId: 'P-3', state: 'Внедрение' }
+    ];
+    assert.deepStrictEqual(ids(multiKeySort(items, 'state')), ['P-2', 'P-3', 'P-1']);
+    // частичная карта: незнакомое состояние — в конец (Infinity), между собой по алфавиту
+    const rank = { 'Разработка': 0 };
+    assert.deepStrictEqual(ids(multiKeySort(items, 'state', undefined, rank)), ['P-1', 'P-2', 'P-3']);
+  });
+
+  it('SORT_KEYS_CYCLE contains "state" (68-1)', () => {
+    assert.ok(SORT_KEYS_CYCLE.includes('state'));
+  });
 });

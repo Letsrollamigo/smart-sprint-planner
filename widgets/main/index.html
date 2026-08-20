@@ -2060,6 +2060,8 @@
 
     /* v5.5.0 — Этап 3b: accordion-карточки для уровня «Роли» */
     .role-accordions { display: flex; flex-direction: column; gap: 8px; }
+    /* 68-2 — бар фильтра исключённых над аккордеонами */
+    .ssp-planning-filterbar { margin: 6px 0 8px; display: flex; justify-content: flex-end; }
     .planning-role-card {
       border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--surface); overflow: hidden;
@@ -2693,6 +2695,9 @@
       <!-- #61 — сводная таблица мультиролевого планирования: спойлер строит
            allocsummary-view.js (гейт по тумблеру allocSummaryEnabled; выключено → пусто) -->
       <div id="allocSummaryHost"></div>
+      <!-- 68-2 — фильтр «скрыть исключённые из спринта»: Ring Toggle рендерит
+           rolecomposition-view._renderExcludedFilter (эфемерно на сессию) -->
+      <div id="planningFilterBar" class="ssp-planning-filterbar" style="display:none"></div>
       <div id="roleAccordions" class="role-accordions"></div>
     </div>
     <div id="planning-level-people" class="planning-level-pane hidden">

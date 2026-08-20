@@ -215,6 +215,7 @@
   "thPriority": "Öncelik",
   "thXpriority": "Çapraz<br>öncelik",
   "thState": "Durum",
+  "hideExcludedToggle": "Sprintten çıkarılan görevleri gizle",
   "thTitle": "Başlık",
   "thEstimate": "Tahmin",
   "thFact": "Gerçek",

@@ -63,7 +63,7 @@
      в YT iframe — get/setItem молча падают с SecurityError, get возвращает null,
      getSortKey всегда даёт 'off' → визуально «сортировка не работает». Memo
      гарантирует консистентность state в пределах сессии независимо от storage. */
-  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee'];
+  var SORT_KEYS_CYCLE = ['off', 'xpriority', 'priority', 'id', 'system', 'externalTicketId', 'assignee', 'state'];   /* 68-1 — 'state' */
   var _sortKeyMemo = null;
   function getSortKey() {
     if (_sortKeyMemo !== null) return _sortKeyMemo;
@@ -87,8 +87,29 @@
   /* Multi-key task sort — чистые компараторы живут в sort-pure.js (window.__SSP_SORT_PURE),
      юнит-тестируются изолированно. IIFE владеет состоянием сортировки: getSortKey()
      резолвит активный primary-ключ, когда вызывающий его опускает. */
+  /* 68-1 — ранг состояний = порядок бандла YT (field-values отдаёт значения в
+     bundle-порядке). Кэш общий (_fieldValuesCache); miss → ленивый одноразовый
+     подъём бандла с перерисовкой по приходу, до этого сортировка по алфавиту
+     (fallback в sort-pure). */
+  function _stateRankMap() {
+    var fn = _settings && _settings.fieldState;
+    if (!fn) return null;
+    var c = _fieldValuesCache[fn];
+    if (c && Array.isArray(c.values) && c.values.length) {
+      var m = {};
+      c.values.forEach(function (v, i) { m[v] = i; });
+      return m;
+    }
+    if (!_fieldValuesInflight[fn]) {
+      _fieldValuesInflight[fn] = apiGet('field-values?fieldName=' + encodeURIComponent(fn))
+        .then(function (r) { _fieldValuesCache[fn] = r; _rerenderAllSortableTables(); return r; })
+        .catch(function () { delete _fieldValuesInflight[fn]; });
+    }
+    return null;
+  }
   function multiKeySort(items, primary, taMap) {
-    return SORT_PURE.multiKeySort(items, primary || getSortKey(), taMap);
+    var key = primary || getSortKey();
+    return SORT_PURE.multiKeySort(items, key, taMap, key === 'state' ? _stateRankMap() : undefined);
   }
   /* v6.2.1 D98 — sort полностью в th таблиц задач. globalSortToggle в шапке удалён.
      При клике на th[data-sort-key]: toggle между этим ключом и 'off'. */
@@ -717,7 +738,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.16.1';
+  var APP_VERSION = '3.17.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2645,6 +2666,19 @@
       rerenderAllSortableTables: _rerenderAllSortableTables,
       getRoleItemsArr: getRoleItemsArr,
       calcRemForRole: calcRemForRole, fmtHours: fmtHours, ACTIVE_INC: ACTIVE_INC, /* #63 — остаток роли (updateRoleRemaining) */
+      buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon, /* 68-1 — исполнители в сводной #61 */
+      /* 68-2 — фильтр исключённых: флаг читает rolecomposition-view, сводная — через deps (B1);
+         остров Ring Toggle (generic, живёт в sprint-lock-toggle.jsx) монтирует ядро. */
+      isExcludedHidden: function () { return (typeof ROLECOMP_VIEW.isExcludedHidden === 'function') ? ROLECOMP_VIEW.isExcludedHidden() : false; },
+      mountRingToggle: function (host, vm) {
+        var island = (typeof window !== 'undefined' && window.__SSP_SPRINT_LOCK) || null;
+        if (!island || !host) return false;
+        island.mountAt(host, vm);
+        return true;
+      },
+      renderAllocSummary: function () {
+        if (ALLOCSUMMARY_VIEW.renderAllocSummary) { try { ALLOCSUMMARY_VIEW.renderAllocSummary(_roleCompDeps()); } catch (e) { diag('allocSummary render err: ' + e, 'err'); } }
+      },
       getApprovedCapacityForRole: getApprovedCapacityForRole, /* #45 R4 §9 — ресурс роли через адаптер */
       markDirty: _markDirty, draftSaveDebounced: _draftSaveDebounced,
       apiPost: apiPost,
@@ -2674,6 +2708,8 @@
         getUiExpandedRoles: function () { return _uiExpandedRoles; },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         setActiveSubtab: function (rk) { _activeSubtab = rk; },
+        getActiveSubtab: function () { return _activeSubtab; },      /* 68-1 — live-PP текущей роли */
+        getCurrentRolePP: function () { return _currentRolePP; },    /* 68-1 — live-PP текущей роли */
         getIsEditor: function () { return _isEditor; },
         getIsValidator: function () { return _isValidator; },
       },

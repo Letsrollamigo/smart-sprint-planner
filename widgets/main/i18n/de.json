@@ -215,6 +215,7 @@
   "thPriority": "Priorität",
   "thXpriority": "Cross-<br>Priorität",
   "thState": "Status",
+  "hideExcludedToggle": "Aus dem Sprint ausgeschlossene Aufgaben ausblenden",
   "thTitle": "Titel",
   "thEstimate": "Schätzung",
   "thFact": "Ist",

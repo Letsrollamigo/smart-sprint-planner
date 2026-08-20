@@ -28,6 +28,24 @@ function _teardownBody(inner) {
 
 function _cell(row, c) { return row.cells[c.id]; }
 
+/* 68-2 — display-фильтр исключённых: маска входного roleItems по флагу тумблера
+   (deps.isExcludedHidden — источник rolecomposition-view, связь через core deps, B1).
+   Задача, исключённая в одной роли, но активная в другой, остаётся строкой
+   с оценкой только активной роли. */
+function _roleItemsForDisplay(deps) {
+  var all = deps.state.getRoleItems() || {};
+  if (typeof deps.isExcludedHidden !== 'function' || !deps.isExcludedHidden()) return all;
+  var out = {};
+  Object.keys(all).forEach(function (rk) {
+    var arr = all[rk];
+    out[rk] = Array.isArray(arr)
+      ? arr.filter(function (it) { return it && it.inclusionStatus !== deps.INC.EXCLUDED; })
+      : arr;
+  });
+  return out;
+}
+
+
 /* Тело спойлера: легенда + Ring Table. Строится на КАЖДОЕ раскрытие/refresh —
    данные всегда свежие, кэшировать нечего (read-only витрина). */
 function _buildBody(inner, deps) {
@@ -48,8 +66,34 @@ function _buildBody(inner, deps) {
   });
 
   var rows = PURE.markOverlimitRows(
-    PURE.buildAllocSummaryRows(deps.state.getRoleItems(), keys), overByRk);
-  var sorted = deps.multiKeySort(rows);
+    PURE.buildAllocSummaryRows(_roleItemsForDisplay(deps), keys), overByRk);   /* 68-2 */
+
+  /* 68-1 — исполнители: канон = per-role записи истории (buildPPMapFromCanon),
+     live-PP текущей редактируемой роли поверх (несфлашенные правки, паттерн
+     _standupPP). На строку — уникальные имена всех ролей через запятую (⚖ 2026-08-20). */
+  var _sprintPP = deps.state.getSprint();
+  var ppMap = (typeof deps.buildPPMapFromCanon === 'function' && _sprintPP)
+    ? deps.buildPPMapFromCanon(_sprintPP.sprintId, deps.state.getHistory()) : {};
+  var _curRk = (deps.state.getActiveSubtab && deps.state.getActiveSubtab()) || null;
+  var _curPP = (deps.state.getCurrentRolePP && deps.state.getCurrentRolePP()) || null;
+  if (_curRk && _curPP) ppMap[_curRk] = _curPP;
+  function assigneesOf(row) {
+    var names = [], seen = {};
+    (row.inRoles || []).forEach(function (rk) {
+      var ta = ppMap[rk] && ppMap[rk].taskAssignments && ppMap[rk].taskAssignments[row.issueId];
+      var n = ta && (ta.assigneeName || ta.assignee);
+      if (n && !seen[n]) { seen[n] = true; names.push(n); }
+    });
+    return names;
+  }
+  /* taMap для ключа 'assignee' (первое имя строки — как в people-таблицах). */
+  var taMap = {};
+  rows.forEach(function (row) {
+    var names = assigneesOf(row);
+    row.assignees = names;
+    taMap[row.issueId] = { assignee: names[0] || '' };
+  });
+  var sorted = deps.multiKeySort(rows, undefined, taMap);
 
   var legend = document.createElement('div');
   legend.className = 'ssp-allocsum-legend';
@@ -76,6 +120,7 @@ function _buildBody(inner, deps) {
     if (hasXPriority) cells.xpriority = deps.dispEnum(row.xpriority) || '—';
     cells.state = deps.dispEnum(row.state) || '—';
     cells.title = row.title || '';
+    cells.assignee = (row.assignees && row.assignees.length) ? row.assignees.join(', ') : '—';
     keys.forEach(function (rk) {
       var est = row.estByRole[rk];
       cells['est_' + rk] = (est === null || est === undefined) ? '—' : deps.fmtPeriod(est);
@@ -90,8 +135,9 @@ function _buildBody(inner, deps) {
   if (hasSystem)    columns.push({ id: 'system', title: T('thSystem'), sortable: false, getValue: _cell });
   columns.push({ id: 'priority', title: T('thPriority'), sortable: true, getValue: _cell });
   if (hasXPriority) columns.push({ id: 'xpriority', title: T('thXpriority'), sortable: true, getValue: _cell });
-  columns.push({ id: 'state', title: T('thState'), sortable: false, getValue: _cell });
+  columns.push({ id: 'state', title: T('thState'), sortable: true, getValue: _cell });   /* 68-1 — порядок бандла, см. _stateRankMap */
   columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _cell });
+  columns.push({ id: 'assignee', title: T('thAssignee'), sortable: true, getValue: _cell });   /* 68-1 */
   keys.forEach(function (rk) {
     var role = deps.ALL_ROLES.find(function (r) { return r.key === rk; });
     var st = statsByRk[rk];
@@ -156,7 +202,7 @@ function renderAllocSummary(deps) {
   /* Счётчики шапки — по тем же pure-строкам, что и таблица (дёшево: O(n) дедуп). */
   var PURE = (typeof window !== 'undefined' && window.__SSP_ALLOCSUMMARY_PURE) || null;
   var keys = activeRoles.map(function (r) { return r.key; });
-  var rows = PURE ? PURE.buildAllocSummaryRows(deps.state.getRoleItems(), keys) : [];
+  var rows = PURE ? PURE.buildAllocSummaryRows(_roleItemsForDisplay(deps), keys) : [];   /* 68-2 — счётчик шапки консистентен таблице */
   var overRoles = keys.filter(function (rk) { return deps.computeRoleQuickStats(rk).overlimit; });
 
   var T = deps.T, esc = deps.esc;

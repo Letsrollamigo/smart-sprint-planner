@@ -215,6 +215,7 @@
   "thPriority": "Priorita",
   "thXpriority": "Křížová<br>priorita",
   "thState": "Stav",
+  "hideExcludedToggle": "Skrýt úkoly vyloučené ze sprintu",
   "thTitle": "Název",
   "thEstimate": "Odhad",
   "thFact": "Skutečnost",

@@ -215,6 +215,7 @@
   "thPriority": "Prioridad",
   "thXpriority": "Prioridad<br>cruzada",
   "thState": "Estado",
+  "hideExcludedToggle": "Ocultar tareas excluidas del sprint",
   "thTitle": "Título",
   "thEstimate": "Estimación",
   "thFact": "Real",

@@ -284,6 +284,7 @@
   "thPriority": "Приоритет",
   "thXpriority": "Сквозной<br>приоритет",
   "thState": "Состояние",
+  "hideExcludedToggle": "Скрыть исключённые из спринта",
   "thTitle": "Название",
   "thEstimate": "Оценка",
   "thFact": "Факт",

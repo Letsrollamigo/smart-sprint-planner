@@ -215,6 +215,7 @@
   "thPriority": "Prioritás",
   "thXpriority": "Kereszt-<br>prioritás",
   "thState": "Állapot",
+  "hideExcludedToggle": "A sprintből kizárt feladatok elrejtése",
   "thTitle": "Cím",
   "thEstimate": "Becslés",
   "thFact": "Tény",

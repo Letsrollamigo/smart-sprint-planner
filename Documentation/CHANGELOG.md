@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.17.0] — 2026-08-20
+
+> **Adversarial authz-audit fixes (#67) + excluded-tasks filter (68-2) + Assignee column and state sorting in the multi-role summary (68-1) + canonical accordion header semantics (#65).**
+
+### Security (#67)
+
+- **Effect-based gate on history clearing** — a `POST /history` that shortens the stored history by more than one record now requires the `historyManager` role, same as `?action=clear`; the #66 lock (no admin bypass) can no longer be sidestepped via the regular write branch. The one-record threshold keeps the validator's routine trash-icon deletion working while blocking bulk truncation in a single request.
+- **`?action=validate` no longer bypasses the editor gate on the slot-reset branch** — a validate request with `sprint:null` used to wipe the active slot without editor rights; the UI never produces that combination, the hole was reachable only by direct request.
+- **Working copy `editorLogin` is always derived from storage** — the client value is never persisted, for new or existing entries: both the persistent edit-lock via a foreign login and "ownerless" entries via `editorLogin:null` are closed.
+- **A failed absences load no longer leads to wiping the registry** — when `GET absences` fails, saving absences is blocked until a successful reload (a flag mirroring the v3.2.1 roster guard); the audit's only ordinary-click data-loss path is closed.
+- **`hasOwnProperty` guard in `history?action=assignerSync`** — a `sprintId` taken from the prototype chain no longer crashes the request with a 500.
+- **`SECURITY.md` regenerated from code** — the access matrix now covers all 34 project endpoints plus the global contour (was 26 rows), all 13 roles are described (was 7), mitigations #13/14/17/18 restated to match the actual code; a unit invariant "matrix = code" checks the document against the endpoint registry — any drift fails the test gate.
+
+### Added
+
+- **"Hide tasks excluded from sprint" filter (68-2)** — a toggle above the role accordions on the "Roles" level: hides rows with the "Excluded from sprint" status in every role table and in the multi-role summary. The state lives until the widget reloads; data is untouched.
+- **"Assignee" column in the multi-role summary (68-1)** — the row's unique assignees across all roles (from assignee distribution), sortable.
+- **State sorting in the summary (68-1)** — the order comes from the YouTrack state field bundle (workflow order), not the alphabet; until the bundle loads, an alphabetical fallback applies.
+
+### Changed
+
+- **Canonical role accordion header semantics (#65)** — "Allocation" and the task counter now count only active tasks (included planned/unplanned), matching the "Remaining" card and server-side validation; tasks excluded from the sprint no longer produce a false "Overlimit" in the header and summary columns.
+
+Snapshot and settings schema unchanged — drop-in upgrade, no migration.
+
+---
+
 ## [3.16.1] — 2026-08-19
 
 > **Patch from user feedback: unexpected assignee writes into live issues + permissions for destructive history clear.**

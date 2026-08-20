@@ -2,7 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to **v1.0.0** and later. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and explicit role hierarchy.
+Applies to version **3.17.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+
+> The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.17.0 — authz audit #67 fixes:** effect-based gate on history clearing (shortening the stored history by more than 1 record in a single POST now requires `historyManager`; the threshold was chosen because deleting a single record via the trash icon is a routine validator operation, while bulk truncation in one POST is never produced by the UI); `?action=validate` no longer bypasses the editor gate on the slot-reset branch (`sprint:null`); a load-failure flag on the absences registry blocks saving (the one data-loss-by-ordinary-click path is closed); the working copy `editorLogin` is always derived from storage; `hasOwnProperty` guard in `history?action=assignerSync`.
 
 ---
 
@@ -46,54 +50,107 @@ In Smart Sprint Planner v1.0.0:
 
 ## Roles (sources of truth)
 
-| Role | Where defined | Who can assign | Notes |
-|------|---------------|----------------|-------|
-| `settingsManager` | `ctx.settings.settingsManagerGroup` (project-scoped app-settings) | Project admin / Global admin (via Project Settings → Apps) | Mandatory for any mutating action |
-| `editor` | `ssp_settings.editGroups` / `editGroupNames` | settingsManager | Full write access to sprint composition |
-| `validator` | `ssp_settings.validationGroups` / `validationGroupNames` | settingsManager | Confirms / allocates / finalizes sprints |
-| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` | settingsManager | Required to clear sprint history |
-| `assigner` | `ssp_settings.assignerGroups` / `assignerGroupNames` | settingsManager | Limited to `personalPlanning` writes (assignee + dates) |
-| `viewer` | any authenticated project user | YouTrack project permissions | Read-only |
-| `wcOwner` *(contextual)* | `editorLogin === ctx.currentUser.login` in `_workingDrafts[key]` | Assigned automatically on `POST /working-drafts` | Guards working-copy take-over |
+13 roles: 12 group-based + 1 contextual (`wcOwner`). Plus two union pseudo-roles that exist only as `authzGuard` arguments (see below the table).
 
-**Hierarchy**: `editor ⊃ assigner ⊃ viewer`. An `editor` has all `assigner` rights plus full sprint mutation. An `assigner` is restricted to writing `personalPlanning` (assignee + start/end-dates) via `action=assignerSync` and to writing assignee fields on issues via `update-issue-field`.
+| Role | Configured in | Granted by |
+|------|---------------|------------|
+| `settingsManager` | `ctx.settings.settingsManagerGroup` (project-scoped app-settings) | Project admin / Global admin (via Project Settings → Apps) |
+| `editor` | `ssp_settings.editGroups` / `editGroupNames` | settingsManager |
+| `validator` | `ssp_settings.validationGroups` / `validationGroupNames` | settingsManager |
+| `historyManager` | `ssp_settings.historyClearGroups` / `historyClearGroupNames` · **no admin bypass (#66)** | settingsManager |
+| `assigner` | `ssp_settings.assignerGroups` / `assignerGroupNames` | settingsManager |
+| `planningManager` | `ssp_settings.planningManagerGroups` / `planningManagerGroupNames` | settingsManager |
+| `releaseManager` | `ssp_settings.releaseManagerGroups` / `releaseManagerGroupNames` | settingsManager |
+| `releaseEngineer` | `ssp_settings.releaseEngineerGroups` / `releaseEngineerGroupNames` | settingsManager |
+| `sprintLockManager` | `ssp_settings.sprintLockGroups` / `sprintLockGroupNames` | settingsManager |
+| `reportingViewerA` | `ssp_settings.reportingGroupsA` / `reportingGroupsANames` | settingsManager |
+| `reportingViewerB` | `ssp_settings.reportingGroupsB` / `reportingGroupsBNames` · **B ⊇ A** | settingsManager |
+| `viewer` | any authenticated project user | YouTrack project permissions |
+| `wcOwner` *(contextual)* | `editorLogin === ctx.currentUser.login` in `_workingDrafts[key]` | automatic on `POST /working-drafts` |
 
-**`wcOwner`** (working copy owner) — the only role whose authorization is not from `ssp_settings` / `ctx.settings.*`, but from `_workingDrafts[key].editorLogin`. The backend overwrites `editorLogin` with the server-side value on every POST (defense-in-depth — clients cannot forge ownership). Take-over of someone else's WC returns `{success: false, reason: 'not_owner'}` (exception: `settingsManager` may delete any WC).
+**`authzGuard` pseudo-roles (unions, not separate groups):**
+
+- `assigner` as a gate argument is a union of **five** roles: editor ∨ assigner ∨ settingsManager ∨ releaseManager ∨ releaseEngineer (+ the instance-admin bypass).
+- `settingsOrPlanning` — settingsManager ∨ planningManager. planningManager writes only the planning tier of settings: admin-tier keys (all group keys, sprint-lock, reporting fields) are preserve-merged from stored settings — self-escalation by writing group keys is impossible.
+
+**Global project administrator bypass** (#51): a user with the global `UPDATE_PROJECT` permission is treated as a member of every planner role in every project, including projects with no configured `settingsManagerGroup`.
+
+> **Exception — `historyManager` (#66, since v3.16.1).** Full clearing (`history?action=clear`), file import replacement (`history?action=import-replace`) and — since v3.17.0 (#67) — bulk truncation via the main write branch are irreversible, so the bypass does **not** extend to this role: a global admin needs explicit membership in `historyClearGroups`/`historyClearGroupNames`. The carve-out is applied both in `isHistoryManager()` and in the early admin-return of `authzGuard()`, so the UI button and the server gate stay in sync. No lock-out: the admin keeps `settingsManager` and can assign the clearing group to themselves.
+
+**Roles are orthogonal** (clarified by #67): validator does not inherit editor and vice versa. The narrow inclusion that does hold: validator ⊇ editor **for slot writes** to `ssp_sprint`/`ssp_roleitems` under `?action=validate` (a deliberate v3.2.1 mechanic). The only documented hierarchy is the `assigner` union (see pseudo-roles) on top of viewer.
+
+**`wcOwner`** (working copy owner) is the only role whose authorization comes not from `ssp_settings` / `ctx.settings.*` but from `_workingDrafts[key].editorLogin` itself. Since v3.17.0 (#67) the backend derives `editorLogin` from storage on every POST — the client value is never persisted. Taking over someone else's WC is impossible: overwriting a foreign key with your own login → `not_owner`; a bulk flush carrying foreign entries silently keeps the server version. `settingsManager` may delete any WC.
 
 ---
 
 ## Endpoint access matrix
 
-| Method | Path | Minimum role |
+Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpoints; the global handler exposes the same endpoints via `?projectKey=` (except `sync-acl` and `app-version`) plus 4 of its own. The "matrix = code" invariant lives in `tests/unit/security-matrix-invariant.test.js`.
+
+### Project scope (`backend-project.js` → `core.ENDPOINTS`)
+
+`?action=…` rows are branches of the same endpoint with a different role; the row without `action` is the main branch.
+
+<!-- authz-matrix:project:begin -->
+| Method | Path | Minimal role |
 |--------|------|--------------|
 | GET    | `project-fields` | viewer |
-| GET    | `sprint-data` | viewer |
-| POST   | `sprint-data` (`body.sprint` / `roleItems` / `items`) | editor |
-| POST   | `sprint-data` (`body.settings`) | settingsManager |
-| POST   | `sprint-data?action=validate` | validator |
-| POST   | `sprint-data?action=assignerSync` | assigner (partial save: `personalPlanning` only) |
+| GET    | `sprint-data` | viewer (the response includes the entire `ssp_settings` blob, incl. role group keys) |
+| POST   | `sprint-data` (`body.sprint`/`roleItems`/`items`) | editor |
+| POST   | `sprint-data` (`body.settings`) | settingsManager OR planningManager (admin tier preserve-merged) |
+| POST   | `sprint-data?action=validate` | validator (writes `sprint`/`roleItems` without editor — deliberate, v3.2.1; the `sprint:null` branch — editor, #67) |
+| POST   | `sprint-data?action=assignerSync` | assigner union (partial save of `personalPlanning` only) |
 | GET    | `history` | viewer |
-| POST   | `history` (regular save / update) | validator |
-| POST   | `history?action=assignerSync` | assigner (partial save: `personalPlanning` only in existing snapshots) |
-| POST   | `history?action=clear` | historyManager |
-| GET    | `working-drafts` | viewer (returns all accessible WC; reads are not restricted) |
-| POST   | `working-drafts` | validator (`editorLogin` is overwritten with `ctx.currentUser.login`) |
-| DELETE | `working-drafts/<key>` | wcOwner OR settingsManager (otherwise `{success: false, reason: 'not_owner'}`) |
+| POST   | `history` | validator; **shortening by more than 1 record — historyManager (#67, no admin bypass)** |
+| POST   | `history?action=assignerSync` | assigner union (partial save of `personalPlanning` in existing snaps) |
+| POST   | `history?action=clear` | historyManager (no admin bypass, #66) |
+| POST   | `history?action=import-replace` | historyManager (no admin bypass, #66) |
+| GET    | `working-drafts` | viewer (returns working copies of ALL users) |
+| POST   | `working-drafts` | validator (`editorLogin` derived from storage, #67) |
+| POST   | `working-drafts?action=delete&key=…` | validator + (wcOwner OR settingsManager), otherwise `not_owner` |
+| GET    | `draft` | viewer (own slot only) |
+| POST   | `draft` | viewer (writes own slot only; `?action=clear` deletes own slot) |
 | GET    | `check-settings-manager` | viewer |
+| GET    | `check-instance-admin` | viewer |
 | GET    | `check-validator` | viewer |
 | GET    | `check-editor` | viewer |
-| GET    | `check-history-manager` | viewer |
 | GET    | `check-assigner` | viewer |
+| GET    | `check-history-manager` | viewer |
+| GET    | `app-version` | viewer |
+| POST   | `sync-acl` | viewer (writes the `ssp_acl` mirror ONLY from `ctx.settings`; the body is not read) |
+| GET    | `capacity` | viewer (grades, rates, roster allocations) |
+| GET    | `capacity-archive` | viewer |
+| POST   | `capacity` | settingsManager OR planningManager (`approvedBy` is a server stamp) |
+| GET    | `calendar` | viewer |
+| POST   | `calendar` | settingsManager |
+| GET    | `absences` | viewer (who is absent and when) |
+| POST   | `absences` | settingsManager OR planningManager |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
-| GET    | `app-version` | viewer (read-only, returns `{version: '<APP_VERSION>'}`) |
-| POST   | `update-issue-field` | editor OR assigner (field types: `enum` / `string` / `period` / `user`) |
-| POST   | `refresh-assignees` | editor OR assigner (bulk fetch up to 200 issueId) |
-| GET    | `draft` | viewer (returns only the current user's slot) |
-| POST   | `draft` | viewer (writes only into the current user's slot) |
-| POST   | `draft?action=clear` | viewer (deletes only the current user's slot) |
+| POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` validated for length/characters) |
+| POST   | `refresh-assignees` | **viewer** (bulk read of assignee/state, up to 200 issueIds per request) |
+| GET    | `releases` | viewer |
+| GET    | `releases-archive` | viewer |
+| POST   | `releases` | settingsManager OR releaseManager; releaseEngineer — advance-diff only (`engineerDiffAllowed`) |
+| GET    | `reporting-access` | viewer (response carries A/B contour flags by membership) |
+| GET    | `sprint-lock` | viewer |
+| POST   | `sprint-lock` | sprintLockManager |
+<!-- authz-matrix:project:end -->
 
-`viewer` = any authenticated project user. All other roles require a configured `settingsManagerGroup` (deny-by-default otherwise). `wcOwner` is contextual (see role table).
+### Global scope (`backend-global.js`)
+
+Every project endpoint except `sync-acl` and `app-version` is reachable via the global URL with `?projectKey=<KEY>`: the adapter resolves the project and applies the read gate (`READ_PROJECT_BASIC`) **before** the core role logic — role checks are not weakened. The global handler's own endpoints:
+
+<!-- authz-matrix:global:begin -->
+| Method | Path | Minimal role |
+|--------|------|--------------|
+| GET    | `app-version` | authentication (static, no read gate — the version badge before a project is picked) |
+| POST   | `filter-planner-projects` | authentication (picker arbiter: up to 5000 keys per request) |
+| GET    | `last-project` | authentication (own slot) |
+| POST   | `last-project` | authentication (writes own slot only) |
+<!-- authz-matrix:global:end -->
+
+`viewer` — any authenticated project user. All other roles require a configured `settingsManagerGroup` (deny-by-default otherwise). `wcOwner` is a contextual role (see the roles table above).
 
 ---
 
@@ -103,7 +160,7 @@ In Smart Sprint Planner v1.0.0:
 |---|--------|-----------|
 | 1 | **Settings takeover on a fresh install (chicken-and-egg)** | `settingsManagerGroup` lives only in app-settings; deny-by-default; no endpoint can write it |
 | 2 | **Role spoofing via request body** | Backend never reads `body.editGroups` / `validationGroups` / `historyClearGroups` / `settingsManagerGroup` for authorization; only `ctx.currentUser.groups` |
-| 3 | **Accidental or malicious history wipe** | Dedicated `historyManager` role; UI clear button is hidden by default; `POST /history?action=clear` is deny-by-default |
+| 3 | **Accidental or malicious history clearing** | Dedicated `historyManager` role with no admin bypass (#66); the clear button is hidden in the UI; since v3.17.0 (#67) the gate is **effect-based**: both `?action=clear` and the main `POST /history` branch that shortens the history by more than 1 record require `historyManager`. The validator's residual right is single-record deletion (the routine UI trash icon). |
 | 4 | **Prototype Pollution** | `sanitizeDeep` rejects `__proto__` / `constructor` / `prototype` up to 10 levels deep |
 | 5 | **Garbage data written into settings** | Strict `ALLOWED_SETTINGS_KEYS` whitelist + type assertions + numeric ranges |
 | 6 | **XSS via YouTrack data** | All inserts go through `esc()` (5 chars); all `href` through `safeUrl()` (https/http only); no `eval` / `Function` / `document.write` |
@@ -113,13 +170,13 @@ In Smart Sprint Planner v1.0.0:
 | 10 | **Injection via `fieldName`** | Validation forbids only control chars and `< > "`; YouTrack field names with dots / brackets / ampersands pass. The YouTrack API performs lookups without SQL/path concatenation. |
 | 11 | **Diagnostic information leaks** | All backend errors return `internal_error` without echoing request bodies; detailed logs only in server log when `enableDebugLog` is enabled |
 | 12 | **Forging or tampering with personal drafts** | Drafts live in `ssp_drafts`, scoped per-user (slot key = `ctx.currentUser.login`, never passed by the client). The `data` field is an opaque blob the server does not interpret. Per-user limit: 256 KB; project-wide cap: 1 MB. |
-| 13 | **Take-over of someone else's working copy** | `DELETE` / `POST` `/working-drafts` verify `editorLogin === ctx.currentUser.login` (exception for DELETE: `settingsManager`). The backend always overwrites `editorLogin` with the server-side value on POST → clients cannot forge ownership in the body. |
-| 14 | **Conflict replay (overwriting concurrent WC edits)** | On WC commit the backend compares `baseSnapshotHash` (FNV-1a hash of the base snapshot) with the current snapshot hash. On mismatch, the client gets a conflict response and the frontend opens a "Conflict" modal with explicit choices (Overwrite / Download both versions / Cancel). Blind replay is impossible. |
+| 13 | **Working copy take-over** *(clarified in v3.17.0)* | `POST /working-drafts` (bulk): a foreign key with your own login substituted → `not_owner`; a foreign key inside a bulk flush → the server version silently wins; the `editorLogin` of every saved entry is derived from storage, the client value is never persisted (#67). `?action=delete&key=…`: wcOwner or `settingsManager` only. |
+| 14 | **Conflict replay (overwriting concurrent edits)** *(restated in v3.17.0 — per code)* | The `baseSnapshotHash` comparison happens **on the client** (the “Version conflict” flow); the server only validates the field as a string. The server-side protection is the `baseRev` optimistic lock on the `sprint-data`/`history`/`releases`/`absences` slots: a mismatch → `rev_conflict`. Limitation (by design): a client that sends no `baseRev` passes in last-write-wins mode — the lock is advisory. |
 | 15 | **Runaway `_workingDrafts` size** | Limits: 256 KB per WC, 480 KB total across all `ssp_workdrafts`. `validateWorkingDraft` enforces `revisions.length ≤ 1000`. Lazy purge on load: WCs older than 30 days or orphaned (no base snapshot) are removed automatically. |
 | 16 | **Privilege escalation via `assignerSync`** | `action=assignerSync` allows writes **only** into `personalPlanning` (assignee + start/end-dates). The backend filters the body down to that subset; sending `body.sprint.items` / `body.settings` / etc. is silently stripped. An assigner cannot change sprint composition, role capacity, status, or validation. |
-| 17 | **DoS via large `refresh-assignees` batch** | Hard limit of **200 issueId per request** in backend code. Each `issueId` is asserted (`≤100` chars) and matches `[A-Z][A-Z0-9_]+-[0-9]+`. The limit covers a realistic sprint size with margin. |
-| 18 | **Forging `editorLogin` via body** | On every `POST /working-drafts` the backend unconditionally overwrites `body.editorLogin = ctx.currentUser.login` before validation, ignoring any value from the body. The same rule applies to `revisions[].by` (always the server-side login). |
-| 19 | **Race condition between DELETE and POST `/working-drafts`** | YouTrack extension-properties are atomic at the POST/SET level; concurrent DELETE + POST resolves to either a save (POST after DELETE) or a delete (DELETE after POST), never a partial state. The UI handles this via retry + a state refresh from `GET /working-drafts`. |
+| 17 | **DoS via a large `refresh-assignees` batch** *(clarified in v3.17.0 — per code)* | Hard limit of **200 issueIds per request** (`MAX_REFRESH_ASSIGNEES_BATCH`); exceeding it → `invalid_issue_ids`. Every issueId is checked against `^[A-Za-z][A-Za-z0-9_]*-\d+$` (lowercase letters allowed), `fieldName` — for length and forbidden characters. Limitation: there is no limit on the number of requests (rate limiting is level-3 backlog of audit #67). |
+| 18 | **`editorLogin` forgery via body** *(closed in v3.17.0, #67)* | Before v3.17.0 the server stamp was applied only to new entries — for one's own existing entry the client value went to storage (a foreign login → a persistent edit lock; `null` → an ownerless entry). Now the `editorLogin` of every entry is derived from storage (existing — the previous owner, new/ownerless — the writer). Limitation: `revisions[].by` and `updatedBy`/`confirmedBy`/`finishedBy` are NOT server-stamped (client values) — server audit stamps are level-3 backlog of audit #67. |
+| 19 | **Race between delete and save on `/working-drafts`** | YouTrack extension properties are atomic at the POST/SET level; a concurrent `?action=delete` + POST resolves either into a save or a delete, with no partial state. The UI copes via retry + state refresh from `GET /working-drafts`. |
 
 ---
 
