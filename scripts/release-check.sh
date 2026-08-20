@@ -78,22 +78,25 @@ fi
 case "$NAME" in
   smart-sprint-planner)
     echo "— бейджи README (community) —"
-    GH_BADGE=$(grep -oE "GitHub-v${semver}" README.md | grep -oE "v$semver" | head -1)
-    if [ "$GH_BADGE" = "v$PKG_VER" ]; then
-      ok "GitHub-бейдж = $GH_BADGE"
+    # Бейджи динамические (shields.io) — версию подтягивают сами из GitHub/Marketplace,
+    # сверять с $PKG_VER нечего; проверяем только присутствие URL в обоих README.
+    if grep -q "img.shields.io/github/v/release/" README.md; then
+      ok "GitHub-бейдж динамический (shields.io github/v/release) — на месте"
     else
-      warn "GitHub-бейдж $GH_BADGE отстал от v$PKG_VER (бампнуть после GitHub-релиза)"
+      warn "в README.md нет динамического GitHub-бейджа (img.shields.io/github/v/release)"
     fi
     if [ -f Documentation/README.ru.md ]; then
-      RU_BADGE=$(grep -oE "GitHub-v${semver}" Documentation/README.ru.md | grep -oE "v$semver" | head -1)
-      if [ "$RU_BADGE" = "v$PKG_VER" ]; then
-        ok "RU README GitHub-бейдж = $RU_BADGE"
+      if grep -q "img.shields.io/github/v/release/" Documentation/README.ru.md; then
+        ok "RU README: GitHub-бейдж динамический — на месте"
       else
-        warn "RU README (Documentation/README.ru.md) GitHub-бейдж $RU_BADGE отстал от v$PKG_VER — частый пропуск, синхронизировать RU-зеркало"
+        warn "в Documentation/README.ru.md нет динамического GitHub-бейджа — синхронизировать RU-зеркало"
       fi
     fi
-    MP_BADGE=$(grep -oE "Marketplace-v${semver}" README.md | grep -oE "v$semver" | head -1)
-    ok "Marketplace-бейдж = $MP_BADGE (намеренно отслеживает последний апрув, не текущую версию)"
+    if grep -q "img.shields.io/jetbrains/plugin/v/" README.md; then
+      ok "Marketplace-бейдж динамический (jetbrains/plugin/v) — на месте"
+    else
+      warn "в README.md нет динамического Marketplace-бейджа (img.shields.io/jetbrains/plugin/v)"
+    fi
     ;;
   *)
     warn "неизвестное имя форка '$NAME' — проверка бейджей пропущена"
