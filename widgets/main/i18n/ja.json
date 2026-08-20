@@ -342,6 +342,7 @@
   "toastSettingsSaved": "設定を保存しました",
   "toastSettingsErr": "保存エラー",
   "toastSprintSaved": "スプリントパラメータを保存しました",
+  "toastSaveParamsForeignSprint": "別のスプリントが選択されています。パラメータは作業中のスプリントにのみ保存できます",
   "toastSprintCreated": "新しいスプリントを作成しました",
   "toastNoRights": "編集する権限がありません",
   "toastNoRightsShort": "権限不足",

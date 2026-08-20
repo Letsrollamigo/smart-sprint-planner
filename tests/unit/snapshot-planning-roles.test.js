@@ -35,6 +35,7 @@ function makeDeps(over) {
     getActiveRoles: () => ROLES,
     isActiveSprintRecord: () => false,
     renderHistory: () => {},
+    t: (k) => (k === 'newSprintDraftName' ? 'Новый спринт (не сохранён)' : k),
     state: {
       getSprint: () => sprint, getHistory: () => history, getCurrentUser: () => ({ login: 'u' }),
       getSettings: () => ({}), getCurrentSprintRoleRec: () => null, getCurrentRolePP: () => null,
@@ -129,4 +130,49 @@ test('snapshot: PP текущей роли попадает ТОЛЬКО в сн
   // Чужая роль: НЕ заражается текущим PP — сохраняет свою канон-запись.
   assert.strictEqual(dp.personalPlanning.roleKey, 'devPlatform');
   assert.strictEqual(dp.personalPlanning.taskAssignments['A-1'], undefined);
+});
+
+/* #70 — свитч со свежего (несохранённого) черновика «Новый спринт» плодил per-role
+   записи «Новый спринт (не сохранён)» ×N ролей. Гейт: пустые роли черновика не
+   снапшотятся; роль черновика С задачами по-прежнему снимается — история остаётся
+   единственным источником реконструкции состава при возврате на черновик. */
+test('#70: пустой несохранённый черновик → no-op (ни записей истории, ни POST)', async () => {
+  const { deps, history, posts } = makeDeps({
+    sprint: { sprintId: 'DR1', name: 'Новый спринт (не сохранён)', dateStart: null, dateEnd: null, status: 'PLANNING' },
+    roleItems: { analysis: [], devPlatform: [] },
+  });
+  await WC.snapshotPlanningRolesToHistory(deps, 'S2');
+  assert.strictEqual(history.length, 0);
+  assert.strictEqual(posts.length, 0);
+});
+
+test('#70: безымянный спринт (name=null) считается черновиком — пустые роли не снапшотятся', async () => {
+  const { deps, history, posts } = makeDeps({
+    sprint: { sprintId: 'DR2', name: null, dateStart: null, dateEnd: null, status: 'PLANNING' },
+    roleItems: { analysis: [], devPlatform: [] },
+  });
+  await WC.snapshotPlanningRolesToHistory(deps, 'S2');
+  assert.strictEqual(history.length, 0);
+  assert.strictEqual(posts.length, 0);
+});
+
+test('#70: черновик с задачами в одной роли → снимается ТОЛЬКО она (состав не теряется)', async () => {
+  const { deps, history, posts } = makeDeps({
+    sprint: { sprintId: 'DR3', name: 'Новый спринт (не сохранён)', dateStart: null, dateEnd: null, status: 'PLANNING' },
+    roleItems: { analysis: [item('A-1')], devPlatform: [] },
+  });
+  await WC.snapshotPlanningRolesToHistory(deps, 'S2');
+  assert.ok(history.find((h) => h.sprintId === 'DR3_analysis'), 'роль с задачами снята');
+  assert.strictEqual(history.find((h) => h.sprintId === 'DR3_devPlatform'), undefined, 'пустая роль черновика пропущена');
+  assert.strictEqual(posts.length, 1);
+});
+
+test('#70: именованный PLANNING-спринт с пустой ролью снапшотится как раньше (гейт только для черновика)', async () => {
+  const { deps, history, posts } = makeDeps({
+    roleItems: { analysis: [], devPlatform: [item('D-1')] },
+  });
+  await WC.snapshotPlanningRolesToHistory(deps, 'S2');
+  assert.ok(history.find((h) => h.sprintId === 'S1_analysis'), 'пустая роль ИМЕНОВАННОГО спринта снята');
+  assert.ok(history.find((h) => h.sprintId === 'S1_devPlatform'));
+  assert.strictEqual(posts.length, 2);
 });

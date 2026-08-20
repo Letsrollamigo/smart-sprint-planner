@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Einstellungen gespeichert",
   "toastSettingsErr": "Speicherfehler",
   "toastSprintSaved": "Sprint-Parameter gespeichert",
+  "toastSaveParamsForeignSprint": "Ein anderer Sprint ist ausgewählt — Parameter können nur für den Arbeitssprint gespeichert werden",
   "toastSprintCreated": "Neuer Sprint erstellt",
   "toastNoRights": "Unzureichende Bearbeitungsrechte",
   "toastNoRightsShort": "Unzureichende Rechte",

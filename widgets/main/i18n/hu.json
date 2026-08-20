@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Beállítások elmentve",
   "toastSettingsErr": "Mentési hiba",
   "toastSprintSaved": "Sprint paraméterek elmentve",
+  "toastSaveParamsForeignSprint": "Másik sprint van kiválasztva — a paraméterek csak a munkasprinthez menthetők",
   "toastSprintCreated": "Új sprint létrehozva",
   "toastNoRights": "Nincs szerkesztési jog",
   "toastNoRightsShort": "Nincs jog",

@@ -658,15 +658,15 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 625,
-      "locBudget": 625,
+      "loc": 649,
+      "locBudget": 649,
       "state": [
         "api"
       ],
       "publishes": [
         "SPRINT_CTRL"
       ],
-      "budgetNote": "#61 смоук-фикс — осознанный +7: updateRoleAccordionStats(rk) в success doSaveRoleHeader (сейв ресурса освежает шапку аккордеона сохранённой роли; класс D109). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+      "budgetNote": "#70 — осознанный +24: гейт «выбранный спринт ≠ рабочий слот» в doSaveRoleHeader и doSaveSprintIntro (форма Вводных после свитча биндится к выбранному спринту (B9), запись шла в слот → порча идентичности; канон v1.9.9 — JS-гейт в обработчике; байпас при активной рабочей копии — resumeWorkingDraft легитимно расходит слот и селектор). #61 смоук-фикс — осознанный +7: updateRoleAccordionStats(rk) в success doSaveRoleHeader (сейв ресурса освежает шапку аккордеона сохранённой роли; класс D109). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
     },
     "domain/sprint-store.js": {
       "layer": "domain",
@@ -722,13 +722,13 @@
     "domain/working-copy.js": {
       "layer": "domain",
       "domain": "domain/working-copy",
-      "loc": 538,
-      "locBudget": 538,
+      "loc": 546,
+      "locBudget": 546,
       "state": [],
       "publishes": [
         "WORKING_COPY"
       ],
-      "budgetNote": "v3.18.0 (#67 H5) — осознанный рост: history-view — локальный сброс слота только после ака сервера (ordering-фикс спринта-призрака); working-copy — авто-снапшоты через ?action=snapshot (per-role у snapshotPlanningRolesToHistory). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+      "budgetNote": "#70 — осознанный +8: гейт пустых ролей несохранённого черновика в snapshotPlanningRolesToHistory (свитч с черновика плодил записи «Новый спринт (не сохранён)» ×N ролей; роль с задачами по-прежнему снимается — источник реконструкции). v3.18.0 (#67 H5) — осознанный рост: history-view — локальный сброс слота только после ака сервера (ordering-фикс спринта-призрака); working-copy — авто-снапшоты через ?action=snapshot (per-role у snapshotPlanningRolesToHistory). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
     },
     "i18n/i18n-bridge.js": {
       "layer": "i18n",

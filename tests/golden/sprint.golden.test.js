@@ -363,7 +363,10 @@ test('golden: doSaveRoleHeader — happy-флоу (persist + поля _sprint + 
   const api = stubApiPost(gm);
   stubDraft(gm);
   const renders = stubRenders(gm);
-  gm.set({ _currentUser: { login: 'gm_user_1', fullName: 'GM User' }, _currentSprintId: 'stale-id' });
+  /* #70 — было _currentSprintId:'stale-id': расхождение селектора со слотом теперь
+     блокируется гейтом (порча идентичности спринта). null = реальное состояние до
+     выбора — гейт пропускает, а v1.8.1-синк currentSprintId остаётся покрыт. */
+  gm.set({ _currentUser: { login: 'gm_user_1', fullName: 'GM User' }, _currentSprintId: null });
   fillIntro(document);
 
   await gm.call('doSaveRoleHeader', 'analysis');

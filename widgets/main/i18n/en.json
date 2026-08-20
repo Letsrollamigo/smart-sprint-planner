@@ -411,6 +411,7 @@
   "toastSettingsSaved": "Settings saved",
   "toastSettingsErr": "Save error",
   "toastSprintSaved": "Sprint parameters saved",
+  "toastSaveParamsForeignSprint": "A different sprint is selected — parameters can only be saved for the working sprint",
   "toastSprintCreated": "New sprint created",
   "toastNoRights": "Insufficient rights to edit",
   "toastNoRightsShort": "Insufficient rights",

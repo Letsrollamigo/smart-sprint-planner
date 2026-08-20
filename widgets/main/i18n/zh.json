@@ -342,6 +342,7 @@
   "toastSettingsSaved": "设置已保存",
   "toastSettingsErr": "保存错误",
   "toastSprintSaved": "冲刺参数已保存",
+  "toastSaveParamsForeignSprint": "已选择另一个冲刺——参数只能为工作中的冲刺保存",
   "toastSprintCreated": "已创建新冲刺",
   "toastNoRights": "编辑权限不足",
   "toastNoRightsShort": "权限不足",

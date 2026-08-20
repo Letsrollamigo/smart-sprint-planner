@@ -411,6 +411,7 @@
   "toastSettingsSaved": "Настройки сохранены",
   "toastSettingsErr": "Ошибка сохранения",
   "toastSprintSaved": "Параметры спринта сохранены",
+  "toastSaveParamsForeignSprint": "Выбран другой спринт — параметры можно сохранять только для рабочего спринта",
   "toastSprintCreated": "Новый спринт создан",
   "toastNoRights": "Недостаточно прав для редактирования",
   "toastNoRightsShort": "Недостаточно прав",

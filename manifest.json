@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.18.0",
+  "version": "3.18.1",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>\ud83d\udee1 v3.18.0 \u2014 Authorization hardening + server-side task enrichment</b><br><br>\ud83d\udd12 <b>Security hardening (audit #67, final part)</b> \u2014 a validator can now clear the sprint slot when deleting the last history record (one coherent operation, no ghost sprints); auto-snapshots go through a narrow ?action=snapshot branch (single-record upsert) so editors no longer need validator rights; issue field writes are restricted to fields configured in the plugin; audit fields (updatedBy/confirmedBy/finishedBy/revision authors) are stamped server-side.<br><br>\u2699 <b>Server-side enrichment</b> \u2014 tasks added by external integrations with just an issue ID get their title, state, priorities and other fields filled from YouTrack on save (empty fields only, visibility-checked, up to 200 per request).<br><br>\ud83d\udd0d <b>Compatibility</b> \u2014 YouTrack 2024.3+. Drop-in upgrade \u2014 no schema change, no data migration.",
+  "changeNotes": "<b>🛡 v3.18.1 — Sprint identity fix</b><br><br>🐞 <b>Fix</b> — «Save parameters» could rename the working sprint and overwrite its history record when a different sprint was selected in the picker; saving is now blocked with a warning when the form shows a foreign sprint (working-copy editing keeps working as before).<br><br>🧹 <b>History hygiene</b> — empty unsaved draft roles are no longer auto-snapshotted into sprint history.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
   "widgets": [
     {
       "key": "ssp-main",

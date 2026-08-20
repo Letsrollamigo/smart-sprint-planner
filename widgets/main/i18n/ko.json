@@ -342,6 +342,7 @@
   "toastSettingsSaved": "설정이 저장되었습니다",
   "toastSettingsErr": "저장 오류",
   "toastSprintSaved": "스프린트 매개변수가 저장되었습니다",
+  "toastSaveParamsForeignSprint": "다른 스프린트가 선택되어 있습니다. 매개변수는 작업 중인 스프린트에만 저장할 수 있습니다",
   "toastSprintCreated": "새 스프린트가 생성되었습니다",
   "toastNoRights": "편집 권한이 부족합니다",
   "toastNoRightsShort": "권한 부족",

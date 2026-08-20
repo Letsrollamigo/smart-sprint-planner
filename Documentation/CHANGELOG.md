@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.18.1] — 2026-08-20
+
+> **Defect #70 fix: sprint identity corruption via «Save parameters» after switching sprints in the picker.**
+
+### Fixed
+
+- **Foreign-sprint gate in both savers (#70)** — after a picker switch the intro form binds to the *selected* sprint (B9 fix, v2.1.10) while the write went to the *working slot*: `{sprintId: slot, name/dates: form}` renamed the working sprint and overwrote its history record via auto-snapshot. `doSaveRoleHeader` («Save parameters») and `doSaveSprintIntro` now block the save with a warning toast when the selected sprint differs from the working slot (new i18n key `toastSaveParamsForeignSprint`, 15 locales). Bypass when a working copy is active: `resumeWorkingDraft` (incl. editing from the history tab) legitimately swaps the slot's `sprintId` without syncing the picker — the gate stays out of the way there.
+- **Empty unsaved draft roles are no longer auto-snapshotted** — a gate in `working-copy.js`: an unfilled role draft no longer produces a garbage record in sprint history (picks of filled roles are preserved).
+
+### Tests
+
+- +5 units in `tests/unit/sprint-save-foreign-70.test.js` (gate in both savers + working-copy bypass), +4 unsaved-draft cases in `snapshot-planning-roles.test.js`; the `doSaveRoleHeader` golden aligned with the gate; `module-registry.json` budgets updated with budgetNote.
+
+---
+
 ## [3.18.0] — 2026-08-20
 
 > **Authz-audit closure (#67): editor↔validator parity (H5), level-3 defense-in-depth (H7–H11) + server-side sprint composition enrichment for external integrations.**

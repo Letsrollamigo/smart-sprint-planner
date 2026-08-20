@@ -226,6 +226,20 @@
     var st = deps.state;
     var T = deps.T;
     var toast = deps.toast;
+    /* #70 — после свитча селектора форма «Вводных» биндится к ВЫБРАННОМУ спринту (B9-фикс
+       v2.1.10), а запись идёт в рабочий слот: {sprintId: слота, name/dates: формы} рвёт
+       идентичность спринта (переименование слота + затирание его history-записи
+       авто-снапшотом). Канон v1.9.9 — JS-гейт в обработчике, не CSS. Байпас при активной
+       рабочей копии: resumeWorkingDraft (в т.ч. edit из вкладки истории) подменяет
+       slot.sprintId на редактируемый, селектор при этом НЕ синкается — расхождение id
+       там легитимно, слот = скретч рабочей копии. */
+    var _slotSprint70 = st.getSprint();
+    var _selId70 = st.getCurrentSprintId();
+    var _wcActive70 = !!(typeof st.getActiveWorkingDraftKey === 'function' && st.getActiveWorkingDraftKey());
+    if (!_wcActive70 && _selId70 && _slotSprint70 && _slotSprint70.sprintId && _selId70 !== _slotSprint70.sprintId) {
+      toast(T('toastSaveParamsForeignSprint'), 'warn');
+      return;
+    }
     /* v1.8.2 — inline-error helper. Глобальный toast при validation попадает в position:fixed
        которое в YT-iframe иногда уходит за viewport главного окна (особенно при 2+ ролях
        когда контент длинный). Inline-error всегда рядом с проблемным полем + scrollIntoView. */
@@ -333,6 +347,16 @@
     var st = deps.state;
     var T = deps.T;
     var toast = deps.toast;
+    /* #70 — тот же гейт, что в doSaveRoleHeader: форма может показывать выбранный
+       (не рабочий) спринт — запись формы в слот рвала бы его идентичность.
+       Байпас при активной рабочей копии — см. doSaveRoleHeader. */
+    var _slotSprint70 = st.getSprint();
+    var _selId70 = st.getCurrentSprintId();
+    var _wcActive70 = !!(typeof st.getActiveWorkingDraftKey === 'function' && st.getActiveWorkingDraftKey());
+    if (!_wcActive70 && _selId70 && _slotSprint70 && _slotSprint70.sprintId && _selId70 !== _slotSprint70.sprintId) {
+      toast(T('toastSaveParamsForeignSprint'), 'warn');
+      return;
+    }
     function _clearFieldErrors() {
       ['sprintName','dateStart','dateEnd'].forEach(function(id) {
         var el = document.getElementById(id);

@@ -519,11 +519,19 @@ function snapshotPlanningRolesToHistory(deps, newId) {
   if (!sprint || !sprint.sprintId || !Array.isArray(history)) return Promise.resolve();
   if (sprint.sprintId === newId) return Promise.resolve();              // не уходим — тот же спринт
   if (sprint.status !== deps.status.PLANNING) return Promise.resolve(); // только PLANNING (ALLOCATED/CONFIRMED — WC-путь)
+  /* #70 — пустые роли несохранённого черновика «Новый спринт» не снапшотим: свитч со
+     свежего черновика плодил per-role записи «Новый спринт (не сохранён)» ×N ролей.
+     Роль черновика С задачами по-прежнему снимается — история остаётся единственным
+     источником реконструкции состава при возврате (предикат черновика = isActiveDraft
+     из doNewSprint; уточнение спеки #70: слепой гейт терял бы подобранные задачи). */
+  var draftName = (typeof deps.t === 'function') ? deps.t('newSprintDraftName') : null;
+  var isUnsavedDraft = !sprint.name || (draftName != null && sprint.name === draftName);
   var roles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : deps.allRoles;
   var snaps = [];
   roles.forEach(function(r){
     var snap = buildRoleSnap(r.key, undefined, false, deps);
     if (!snap) return;
+    if (isUnsavedDraft && !(snap.items && snap.items.length)) return;
     var idx = history.findIndex(function(h){ return h && h.sprintId === snap.sprintId; });
     if (idx >= 0) history[idx] = snap; else history.unshift(snap);
     snaps.push(snap);

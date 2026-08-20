@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Nastavení uloženo",
   "toastSettingsErr": "Chyba ukládání",
   "toastSprintSaved": "Parametry sprintu uloženy",
+  "toastSaveParamsForeignSprint": "Je vybrán jiný sprint — parametry lze uložit jen pro pracovní sprint",
   "toastSprintCreated": "Nový sprint vytvořen",
   "toastNoRights": "Nedostatečná oprávnění k úpravám",
   "toastNoRightsShort": "Nedostatečná oprávnění",

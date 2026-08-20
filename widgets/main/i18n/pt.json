@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Definições guardadas",
   "toastSettingsErr": "Erro ao guardar",
   "toastSprintSaved": "Parâmetros do sprint guardados",
+  "toastSaveParamsForeignSprint": "Outro sprint está selecionado — os parâmetros só podem ser salvos para o sprint de trabalho",
   "toastSprintCreated": "Novo sprint criado",
   "toastNoRights": "Permissões insuficientes para editar",
   "toastNoRightsShort": "Permissões insuficientes",

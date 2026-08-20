@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Ayarlar kaydedildi",
   "toastSettingsErr": "Kaydetme hatası",
   "toastSprintSaved": "Sprint parametreleri kaydedildi",
+  "toastSaveParamsForeignSprint": "Başka bir sprint seçili — parametreler yalnızca çalışılan sprint için kaydedilebilir",
   "toastSprintCreated": "Yeni sprint oluşturuldu",
   "toastNoRights": "Düzenleme yetkisi yetersiz",
   "toastNoRightsShort": "Yetki yetersiz",

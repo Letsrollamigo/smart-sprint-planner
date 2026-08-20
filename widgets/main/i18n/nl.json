@@ -342,6 +342,7 @@
   "toastSettingsSaved": "Instellingen opgeslagen",
   "toastSettingsErr": "Opslagfout",
   "toastSprintSaved": "Sprint-parameters opgeslagen",
+  "toastSaveParamsForeignSprint": "Er is een andere sprint geselecteerd — parameters kunnen alleen voor de werksprint worden opgeslagen",
   "toastSprintCreated": "Nieuwe sprint gemaakt",
   "toastNoRights": "Onvoldoende bewerkingsrechten",
   "toastNoRightsShort": "Onvoldoende rechten",
