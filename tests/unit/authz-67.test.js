@@ -137,12 +137,15 @@ test('H1: первая запись в пустую историю под valida
 
 /* ── H2: сброс слота под ?action=validate ─────────────────────────────────── */
 
-test('H2: sprint:null под validator без editor — 403, слот цел', () => {
-  const ctx = mkCtx({ groups: [G_VALIDATOR], body: { sprint: null }, params: { action: 'validate' },
+/* v3.18.0 (#67 H5-mirror) — канон сменился: validator НА ветке sprint:null разрешён
+   (editorOrValidator, см. authz-67-remainder.test.js). Инвариант H2 остаётся в силе
+   в исходной формулировке: ?action=validate не даёт сброс слота БЕЗ РОЛИ — гейт
+   требует явной роли, а не «прошёл под validate». */
+test('H2: sprint:null под ?action=validate без единой роли — 403, слот цел', () => {
+  const ctx = mkCtx({ groups: [], body: { sprint: null }, params: { action: 'validate' },
                       props: { ssp_sprint: JSON.stringify({ sprintId: 's-1', name: 'Спринт 1' }) } });
   EP_SPRINT.handle(ctx);
   assert.strictEqual(ctx.response.status, 403);
-  assert.strictEqual(ctx.response.body.reason, 'editor_rights_required');
   assert.notStrictEqual(ctx._props.ssp_sprint, '');
 });
 

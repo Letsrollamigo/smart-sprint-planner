@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.17.0",
+  "version": "3.18.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>🛡 v3.17.0 — Authz-audit fixes + planning UX</b><br><br>🔒 <b>Security hardening (audit #67)</b> — clearing the sprint history now requires the clear-history role no matter how the write is shaped (effect-based gate); a validate request can no longer reset the sprint slot without editor rights; the working copy owner is always stamped server-side; a failed absences load no longer wipes the registry on the next save.<br><br>👁 <b>Hide excluded tasks</b> — a new toggle above the role accordions hides rows excluded from the sprint in every role table and in the multi-role summary.<br><br>📊 <b>Multi-role summary</b> — new sortable «Assignee» column (unique assignees across roles) and state sorting in workflow-bundle order instead of the alphabet.<br><br>📐 <b>Consistent headers</b> — role accordion headers count allocation and tasks over active tasks only, matching the «Remaining» card and validation; excluded tasks no longer cause a false overlimit.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
+  "changeNotes": "<b>\ud83d\udee1 v3.18.0 \u2014 Authorization hardening + server-side task enrichment</b><br><br>\ud83d\udd12 <b>Security hardening (audit #67, final part)</b> \u2014 a validator can now clear the sprint slot when deleting the last history record (one coherent operation, no ghost sprints); auto-snapshots go through a narrow ?action=snapshot branch (single-record upsert) so editors no longer need validator rights; issue field writes are restricted to fields configured in the plugin; audit fields (updatedBy/confirmedBy/finishedBy/revision authors) are stamped server-side.<br><br>\u2699 <b>Server-side enrichment</b> \u2014 tasks added by external integrations with just an issue ID get their title, state, priorities and other fields filled from YouTrack on save (empty fields only, visibility-checked, up to 200 per request).<br><br>\ud83d\udd0d <b>Compatibility</b> \u2014 YouTrack 2024.3+. Drop-in upgrade \u2014 no schema change, no data migration.",
   "widgets": [
     {
       "key": "ssp-main",

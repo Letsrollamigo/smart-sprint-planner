@@ -29,7 +29,7 @@ function makeDeps(over) {
     status: { PLANNING: 'PLANNING', CONFIRMED: 'CONFIRMED', ALLOCATED: 'ALLOCATED' },
     activeInc: ['INCLUDED'],
     deepClone: (x) => (x == null ? x : JSON.parse(JSON.stringify(x))),
-    apiPost: (p, body) => { posts.push({ path: p, body: JSON.parse(JSON.stringify(body)) }); return Promise.resolve(); },
+    apiPost: (p, body, query) => { posts.push({ path: p, body: JSON.parse(JSON.stringify(body)), query: query || null }); return Promise.resolve(); },
     getRoleItemsArr: (rk) => roleItems[rk] || [],
     calcRemForRole: () => 0,
     getActiveRoles: () => ROLES,
@@ -51,8 +51,12 @@ test('snapshot: все активные роли рабочего PLANNING-сп�
   assert.ok(an, 'S1_analysis записан');
   assert.strictEqual(an.items.length, 2);                // ← раньше терялись
   assert.strictEqual(dp.items.length, 1);
-  assert.strictEqual(posts.length, 1);                   // ровно один POST history (батч)
-  assert.strictEqual(posts[0].path, 'history');
+  /* v3.18.0 (#67 H5-editor) — канон сменился: per-role ?action=snapshot (upsert одной
+     записи под editor∨validator) вместо одного full-replace POST под validator. */
+  assert.strictEqual(posts.length, 2);                   // по одному снапшоту на роль
+  assert.ok(posts.every((pp) => pp.path === 'history'
+    && pp.query && pp.query.action === 'snapshot'
+    && Array.isArray(pp.body.history) && pp.body.history.length === 1));
 });
 
 test('snapshot: существующий per-role статус сохраняется (ALLOCATED не сбрасывается в PLANNING)', async () => {

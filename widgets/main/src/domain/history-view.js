@@ -392,21 +392,27 @@ function buildSpoiler(rec, idx, deps) {
                      слоя, что не затёрли. Чистим _sprint + ssp_sprint + черновик, затем
                      переключаемся на следующий спринт (после очистки черновика, иначе новый
                      ui.currentSprintId затёрся бы reset'ом черновика). */
-                  deps.state.setSprint(null);
-                  if (typeof deps.state.setRoleItems === 'function') deps.state.setRoleItems({});
-                  deps.apiPost('sprint-data', { sprint: null, roleItems: {} })
-                    .catch(function (e) { deps.diag('delHist clear active sprint failed: ' + e, 'err'); });
-                  var switchToNextSprint = function () {
-                    var idsA = (typeof deps.getLogicalSprintIds === 'function') ? deps.getLogicalSprintIds() : [];
-                    deps.setCurrentSprintId(idsA.length > 0 ? idsA[0] : null, { confirmed: true });
-                  };
-                  if (typeof deps.clearDraftOnBackend === 'function') {
-                    deps.clearDraftOnBackend().then(switchToNextSprint).catch(function (e) {
-                      deps.diag('delHist clear draft failed: ' + e, 'err'); switchToNextSprint();
-                    });
-                  } else {
-                    switchToNextSprint();
-                  }
+                  /* #67 H5-mirror (ordering) — локальный сброс ТОЛЬКО после ака сервера:
+                     fire-and-forget чистил экран даже при 403/сети → спринт-призрак после
+                     хард-релоада (класс S3). Черновик/переключение — тоже под .then. */
+                  deps.apiPost('sprint-data', { sprint: null, roleItems: {} }).then(function () {
+                    deps.state.setSprint(null);
+                    if (typeof deps.state.setRoleItems === 'function') deps.state.setRoleItems({});
+                    var switchToNextSprint = function () {
+                      var idsA = (typeof deps.getLogicalSprintIds === 'function') ? deps.getLogicalSprintIds() : [];
+                      deps.setCurrentSprintId(idsA.length > 0 ? idsA[0] : null, { confirmed: true });
+                    };
+                    if (typeof deps.clearDraftOnBackend === 'function') {
+                      deps.clearDraftOnBackend().then(switchToNextSprint).catch(function (e) {
+                        deps.diag('delHist clear draft failed: ' + e, 'err'); switchToNextSprint();
+                      });
+                    } else {
+                      switchToNextSprint();
+                    }
+                  }).catch(function (e) {
+                    deps.diag('delHist clear active sprint failed: ' + e, 'err');
+                    deps.toast(T('toastSaveError'), 'err');
+                  });
                 } else if (!stillHas && !isActive) {
                   var ids = (typeof deps.getLogicalSprintIds === 'function') ? deps.getLogicalSprintIds() : [];
                   deps.setCurrentSprintId(ids.length > 0 ? ids[0] : null, { confirmed: true });

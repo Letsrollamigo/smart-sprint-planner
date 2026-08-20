@@ -58,6 +58,11 @@ function isValidProjectKey(k) {
   return !PROJECT_KEY_WS_RE.test(s) && !PROJECT_KEY_DANGER_RE.test(s);
 }
 var MAX_PICKER_KEYS = 5000;                          // лимит батча picker'а (был 500; bump под масштаб)
+/* #67 H11 — cap тела filter-planner-projects (передаётся в core.getBody вторым аргументом):
+   гейт endpoint'а — только факт аутентификации, общий лимит getBody (2 МБ) оставлял дешёвый
+   amplification-вектор. 5000 ключей ≤ ~256 КБ. Лимита на ЧИСЛО запросов нет — зафиксированный
+   остаток (SECURITY). Отказ приходит как reason:'too_large' (конверт getBody). */
+var MAX_PICKER_BODY = 262144;
 
 // ── 4xx-хелперы (форма ответа идентична core.badRequest/forbidden) ───────────
 function gBad(ctx, reason)    { try { ctx.response.status = 400; } catch (e) {} ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input' }); }
@@ -100,8 +105,11 @@ function resolveOrReject(globalCtx) {
   if (!key) { gBad(globalCtx, 'invalid_project_key'); return null; }
   var project = null;
   try { project = entities.Project.findByKey(key); } catch (e) { project = null; }
-  if (!project) { gBad(globalCtx, 'project_not_found'); return null; }
-  if (!userCanReadProject(globalCtx, project)) { gForbid(globalCtx, 'project_access_denied'); return null; }
+  /* #67 H11 — единый ответ «нет проекта» и «нет прав» (project_unavailable):
+     различие кодов позволяло перечислить ключи всех проектов инстанса (оракул
+     существования). Фронт на различие не полагается (сверено грепом при реализации). */
+  if (!project) { gForbid(globalCtx, 'project_unavailable'); return null; }
+  if (!userCanReadProject(globalCtx, project)) { gForbid(globalCtx, 'project_unavailable'); return null; }
   return buildProjectCtx(globalCtx, project);
 }
 
@@ -138,7 +146,9 @@ endpoints.push({
   scope: 'global', method: 'POST', path: 'filter-planner-projects',
   handle: function (ctx) {
     if (!ctx.currentUser) { gForbid(ctx, 'auth_required'); return; }
-    var body = core.getBody(ctx);
+    /* #67 H11 — cap тела через getBody(maxLen): pre-read ctx.request.body здесь НЕЛЬЗЯ —
+       тело в YT-рантайме читается один раз, внешний просмотр опустошал его для парсера. */
+    var body = core.getBody(ctx, MAX_PICKER_BODY);
     if (body.__rejected__) { gBad(ctx, body.__reason__ || 'invalid_input'); return; }
     var keys = body.keys;
     if (!Array.isArray(keys)) { gBad(ctx, 'invalid_keys'); return; }

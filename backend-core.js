@@ -128,12 +128,17 @@ function sanitizeDeep(value, depth) {
   return result;
 }
 
-function getBody(ctx) {
+/* #67 H11 — опциональный maxLen: отдельный (меньший) cap для endpoint'ов с гейтом
+   «только аутентификация» (filter-planner-projects). Проверка живёт ЗДЕСЬ, а не
+   pre-read'ом у вызывателя: ctx.request.body в YT-рантайме читается ОДИН раз —
+   внешний просмотр тела опустошал его для последующего getBody (стендовая эмпирика
+   2026-08-20, YT 2025.3 и 2026.1). */
+function getBody(ctx, maxLen) {
   try {
     var raw = ctx.request.body;
     if (!raw) return {};
     // Лимит размера сырого тела — защита от DoS на парсинг
-    if (typeof raw === 'string' && raw.length > MAX_REQUEST_BODY) {
+    if (typeof raw === 'string' && raw.length > (maxLen || MAX_REQUEST_BODY)) {
       dlog(ctx, 'getBody: rejected, raw size=' + raw.length);
       return { __rejected__: true, __reason__: 'too_large' };
     }
@@ -313,7 +318,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.17.0';
+var APP_VERSION = '3.18.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2122,6 +2127,17 @@ function authzGuard(ctx, role) {
     if (!isHistoryManager(ctx)) { forbidden(ctx, 'history_manager_rights_required'); return false; }
     return true;
   }
+  /* #67 H5 — объединение editor∨validator: ветка сброса слота sprint:null (валидатор
+     дочищает историю вместе со слотом — сброс слабее full-replace, который validator
+     уже штатно делает под ?action=validate, v3.2.1) и ветка POST /history?action=snapshot
+     (авто-снапшот истории у редактора). Оформление объединения — псевдоролью, как
+     'assigner'/'settingsOrPlanning' ниже: один вызов authzGuard (отказ шлёт 403 сам,
+     два вызова подряд дали бы двойной ответ). */
+  if (role === 'editorOrValidator') {
+    if (isEditor(ctx) || isValidator(ctx)) return true;
+    forbidden(ctx, 'editor_rights_required');
+    return false;
+  }
   /* v6.1.0 D82 (F5) — assigner-уровень. Иерархия editor⊃assigner⊃viewer:
      editor / settingsManager автоматически проходят. #48 R2.4 — релиз-роли тоже:
      РМ/РИ применяют маппинг статус→State (update-issue-field) без editor-прав. */
@@ -2140,6 +2156,77 @@ function authzGuard(ctx, role) {
   // Неизвестная роль — fail-closed
   forbidden(ctx, 'unknown_role');
   return false;
+}
+
+/* #67 H8 — серверные аудит-штампы истории (образец: stampAudit, backend-release.js).
+   Клиентским confirmedBy/finishedBy/revisions[].by не доверяем: непустое значение,
+   отличное от хранимого (по sprintId), штампуется автором запроса; совпадающее с
+   хранимым — остаётся (запись не менялась). revisions: entry, чьей тройки (at,level,by)
+   нет среди хранимых этой записи, — новый/подменённый → by от сервера (сопоставление
+   по тройке, не по индексу: front усекает массив slice(-200), индексы могут съехать).
+   Формы как на фронте: confirmedBy/finishedBy — fullName||login (_commitWorkingCopy),
+   revisions[].by — login. Мутирует next in-place (до validate). */
+function stampHistoryAudit(ctx, stored, next) {
+  var cu = (ctx && ctx.currentUser) || {};
+  var meFull  = String(cu.fullName || cu.login || '');
+  var meLogin = String(cu.login || '');
+  var byId = {};
+  for (var i = 0; i < stored.length; i++) {
+    var o0 = stored[i];
+    if (o0 && typeof o0 === 'object' && typeof o0.sprintId === 'string') byId[o0.sprintId] = o0;
+  }
+  for (var j = 0; j < next.length; j++) {
+    var n = next[j];
+    if (!n || typeof n !== 'object' || typeof n.sprintId !== 'string') continue;
+    /* hasOwnProperty — класс H6: sprintId='__proto__' уводил бы в прототип. */
+    var o = Object.prototype.hasOwnProperty.call(byId, n.sprintId) ? byId[n.sprintId] : null;
+    if (n.confirmedBy && n.confirmedBy !== (o ? o.confirmedBy : undefined)) n.confirmedBy = meFull;
+    if (n.finishedBy  && n.finishedBy  !== (o ? o.finishedBy  : undefined)) n.finishedBy  = meFull;
+    if (Array.isArray(n.revisions)) {
+      var seen = {};
+      var orv = (o && Array.isArray(o.revisions)) ? o.revisions : [];
+      for (var oi = 0; oi < orv.length; oi++) {
+        var ov = orv[oi];
+        if (ov && typeof ov === 'object') seen[String(ov.at) + '|' + String(ov.level) + '|' + String(ov.by)] = true;
+      }
+      for (var ri = 0; ri < n.revisions.length; ri++) {
+        var rv = n.revisions[ri];
+        if (!rv || typeof rv !== 'object') continue;
+        if (!seen[String(rv.at) + '|' + String(rv.level) + '|' + String(rv.by)]) rv.by = meLogin;
+      }
+    }
+  }
+}
+
+/* #25 Ф1 / #67 H9 — зеркалирование settingsManagerGroup → ssp_acl (читает global-режим,
+   backend-global.js). Зовётся endpoint'ом sync-acl (init проектного виджета) и после
+   каждого успешного settings-save (H9: досинк сужает окно устаревания зеркала после
+   смены группы в Project Settings → Apps). В global-режиме ctx.settings приходит ИЗ
+   зеркала (адаптер buildProjectCtx) — перезапись идемпотентна. */
+function syncAclMirror(ctx) {
+  // Нормализуем в простой сериализуемый вид: settingsManagerGroup может быть строкой
+  // (legacy text-input) ИЛИ entity-прокси UserGroup (x-entity picker). JSON.stringify
+  // живого прокси теряет id/name (сериализуется в {}) → зеркало пустое. Извлекаем явно.
+  var g = null;
+  try {
+    var raw = (ctx.settings && ctx.settings.settingsManagerGroup);
+    if (typeof raw === 'string') { g = raw.trim() || null; }
+    else if (raw && (raw.name || raw.id)) { g = { id: raw.id ? String(raw.id) : null, name: raw.name ? String(raw.name) : null }; }
+  } catch (e) { g = null; }
+  var cur  = parseJson(getProp(ctx, 'ssp_acl'), null);
+  var curG = (cur && cur.settingsManagerGroup !== undefined) ? cur.settingsManagerGroup : null;
+  var changed = JSON.stringify(curG) !== JSON.stringify(g);
+  if (changed) {
+    var aclStr = JSON.stringify({
+      settingsManagerGroup: g,
+      mirroredAt:      Date.now(),
+      mirroredVersion: APP_VERSION
+    });
+    if (aclStr.length <= MAX_PROP_SIZE) {
+      setProp(ctx, 'ssp_acl', aclStr);
+    }
+  }
+  return changed;
 }
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
@@ -2292,9 +2379,27 @@ var ENDPOINTS = [
            не требуя editor. assignerSync roleItems игнорирует (ранний return ниже). */
         var roleItemsStrPre = null;
         if (body.roleItems !== undefined && action !== 'assignerSync') {
-          if (action !== 'validate' && !authzGuard(ctx, 'editor')) return;
+          /* #67 H5-mirror — сброс слота приходит парой {sprint:null, roleItems:{}}
+             (history-view), и этот гейт срабатывает РАНЬШЕ sprint-ветки: validator-без-
+             editor отбивался бы здесь, не дойдя до editorOrValidator ниже. Расширение
+             ровно на случай body.sprint===null (не эскалация: полный roleItems-write
+             у validator уже есть под ?action=validate, v3.2.1). */
+          var riRole = (body.sprint === null) ? 'editorOrValidator' : 'editor';
+          if (action !== 'validate' && !authzGuard(ctx, riRole)) return;
           if (!validateRoleItems(body.roleItems)) {
             badRequest(ctx, 'invalid_role_items_structure');
+            return;
+          }
+          /* #67 путь 3 — серверное обогащение «пустых» задач (агентские заливки n8n:
+             issueId+оценки без title). Обогатитель регистрируется сателлитом
+             backend-issuefields через __enrichRoleItems (ядро не require'ит сателлит —
+             цикл зависимостей). Триггер — item с issueId БЕЗ title: виджет всегда шлёт
+             title (pick.js, backlog-assign.js) → на виджетном пути ни одного обращения
+             к платформе и ответ побайтово прежний (enriched не добавляется). */
+          var enrichFn = (typeof module !== 'undefined' && module.exports) ? module.exports.__enrichRoleItems : null;
+          var enrichInfo = (typeof enrichFn === 'function') ? enrichFn(ctx, body.roleItems) : null;
+          if (enrichInfo && enrichInfo.count > 0 && !validateRoleItems(body.roleItems)) {
+            badRequest(ctx, 'invalid_role_items_structure');   /* fail-closed на баг обогатителя */
             return;
           }
           roleItemsStrPre = JSON.stringify(body.roleItems);
@@ -2313,8 +2418,11 @@ var ENDPOINTS = [
             /* #67 H2 — байпас `action !== 'validate'` скопирован с соседних веток, где
                широкая запись под validate осознанна (v3.2.1). Здесь ветка деструктивная:
                validate-запрос с sprint:null затирал активный слот без прав editor.
-               UI такую комбинацию не порождает — sprint:null уходит без action. */
-            if (!authzGuard(ctx, 'editor')) return;
+               UI такую комбинацию не порождает — sprint:null уходит без action.
+               #67 H5-mirror — editorOrValidator: валидатор, удаляя последнюю запись
+               истории активного спринта, дочищает и слот одной цельной операцией
+               (сброс слабее full-replace под ?action=validate — v3.2.1). */
+            if (!authzGuard(ctx, 'editorOrValidator')) return;
             setProp(ctx, 'ssp_sprint', '');
             /* v3.2.1 — слот пуст → его rev теперь 0; сообщаем клиенту (иначе вкладка
                держала старый _slotRev и все последующие записи ловили 409 до F5). */
@@ -2366,6 +2474,10 @@ var ENDPOINTS = [
           body.sprint = stripDeprecatedSprintKeys(body.sprint);
           // v1.6.0 D125 — stamp before validate+persist.
           body.sprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+          /* #67 H8 — updatedBy/At спринта штампует сервер (клиентскому не доверяем;
+             форма как на фронте — login, sprint-controller.js:297). */
+          body.sprint.updatedBy = String((ctx.currentUser && ctx.currentUser.login) || '');
+          body.sprint.updatedAt = Date.now();
           if (!validateSprintForWrite(body.sprint)) {
             badRequest(ctx, 'invalid_sprint_structure');
             return;
@@ -2457,6 +2569,9 @@ var ENDPOINTS = [
             return;
           }
           setProp(ctx, 'ssp_settings', stStr);
+          /* #67 H9 — досинк зеркала ssp_acl при каждом settings-save (не только на init
+             виджета): сужает окно устаревания после смены settings-manager-группы. */
+          try { syncAclMirror(ctx); } catch (_) {}
 
           // Подчистка orphan roleItems: удаляем задачи отключённых ролей
           if (Array.isArray(settingsToSave.activeRoles)) {
@@ -2505,6 +2620,7 @@ var ENDPOINTS = [
 
         var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev'; }) };
         if (newSlotRev !== null) resp.rev = newSlotRev;   /* #56-4 — фронт синхронизирует _slotRev */
+        if (enrichInfo) resp.enriched = enrichInfo;       /* #67 путь 3 — {count, skipped} для агента */
         if (warnings.length) resp.warnings = warnings;
         ctx.response.json(resp);
       }
@@ -2548,7 +2664,7 @@ var ENDPOINTS = [
       path: 'history',
       handle: function (ctx) {
         var action = (ctx.request.getParameter('action') || '').trim();
-        if (action && action !== 'clear' && action !== 'assignerSync' && action !== 'import-replace') {
+        if (action && action !== 'clear' && action !== 'assignerSync' && action !== 'import-replace' && action !== 'snapshot') {
           badRequest(ctx, 'invalid_action');
           return;
         }
@@ -2559,6 +2675,54 @@ var ENDPOINTS = [
           setProp(ctx, 'ssp_history', '[]');
           dlog(ctx, 'history cleared by ' + ((ctx.currentUser && ctx.currentUser.login) || '?'));
           ctx.response.json({ success: true, cleared: true, rev: bumpSlotRev(ctx, 'ssp_history_rev') });
+          return;
+        }
+
+        /* #67 H5-editor — узкое право авто-снапшота: upsert РОВНО ОДНОЙ записи по её
+           sprintId под editor∨validator. Редактор (без validator) сохраняет состав —
+           авто-снапшот истории больше не 403-ится молча (youtrack-api.js). Ветка ничего
+           не удаляет: чужие записи не трогаются (границы — Integrations/AUTHZ_HARDENING_67.md).
+           Побочно упраздняет read-modify-full-replace авто-снапшота (класс R6 / P1 #11).
+           Шаблон тела — assignerSync ниже (parse→migrate→strip→upsert→stamp→validate→persist). */
+        if (action === 'snapshot') {
+          if (!authzGuard(ctx, 'editorOrValidator')) return;
+          var bodySN = parseBodyOrReject(ctx, ALLOWED_HISTORY_KEYS);
+          if (bodySN === null) return;
+          if (!Array.isArray(bodySN.history) || bodySN.history.length !== 1
+              || !bodySN.history[0] || typeof bodySN.history[0] !== 'object'
+              || typeof bodySN.history[0].sprintId !== 'string' || !bodySN.history[0].sprintId) {
+            badRequest(ctx, 'invalid_snapshot_body');
+            return;
+          }
+          if (revConflict(ctx, bodySN.baseRev, slotRev(ctx, 'ssp_history_rev'))) return;
+          var existingSN = parseJson(getProp(ctx, 'ssp_history'), []);
+          if (!Array.isArray(existingSN)) existingSN = [];
+          existingSN = migrateHistoryArr(existingSN);
+          existingSN = stripDeprecatedHistoryKeys(existingSN);
+          var storedSN = existingSN.slice();          /* refs ДО upsert'а — опора стампа H8 */
+          var snapSN = stripDeprecatedHistoryKeys([bodySN.history[0]])[0];
+          var snIdx = -1;
+          for (var sni = 0; sni < existingSN.length; sni++) {
+            if (existingSN[sni] && existingSN[sni].sprintId === snapSN.sprintId) { snIdx = sni; break; }
+          }
+          if (snIdx >= 0) existingSN[snIdx] = snapSN;
+          else existingSN.unshift(snapSN);            /* как фронт: новая запись — в голову */
+          stampHistoryAudit(ctx, storedSN, existingSN);   /* #67 H8 */
+          for (var sns = 0; sns < existingSN.length; sns++) {
+            if (existingSN[sns] && typeof existingSN[sns] === 'object') existingSN[sns].pluginVersion = CURRENT_PLUGIN_VERSION;
+          }
+          if (!validateHistoryForWrite(existingSN)) {
+            var snDiag = diagnoseHistoryWrite(existingSN);
+            badRequest(ctx, 'invalid_history_structure: ' + (snDiag.where || 'unknown') + ' (record[' + snDiag.idx + '])');
+            return;
+          }
+          var snStr = JSON.stringify(existingSN);
+          if (snStr.length > MAX_HISTORY_SIZE) {
+            badRequest(ctx, 'history_data_too_large');
+            return;
+          }
+          setProp(ctx, 'ssp_history', snStr);
+          ctx.response.json({ success: true, action: 'snapshot', rev: bumpSlotRev(ctx, 'ssp_history_rev') });
           return;
         }
 
@@ -2655,6 +2819,10 @@ var ENDPOINTS = [
           var prevLen  = Array.isArray(prevHist) ? prevHist.length : 0;
           if (prevLen > 0 && body.history.length < prevLen - 1
               && !authzGuard(ctx, 'historyManager')) return;
+          /* #67 H8 — серверные аудит-штампы confirmedBy/finishedBy/revisions[].by
+             (см. stampHistoryAudit). import-replace НЕ штампуется осознанно:
+             восстановление бэкапа обязано сохранить исходную атрибуцию. */
+          stampHistoryAudit(ctx, Array.isArray(prevHist) ? prevHist : [], body.history);
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedHistoryKeys).
           body.history = stripDeprecatedHistoryKeys(body.history);
           // v1.6.0 D125 — stamp each record before validate+persist.
@@ -3037,28 +3205,8 @@ var ENDPOINTS = [
       path: 'sync-acl',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        // Нормализуем в простой сериализуемый вид: settingsManagerGroup может быть строкой
-        // (legacy text-input) ИЛИ entity-прокси UserGroup (x-entity picker). JSON.stringify
-        // живого прокси теряет id/name (сериализуется в {}) → зеркало пустое. Извлекаем явно.
-        var g = null;
-        try {
-          var raw = (ctx.settings && ctx.settings.settingsManagerGroup);
-          if (typeof raw === 'string') { g = raw.trim() || null; }
-          else if (raw && (raw.name || raw.id)) { g = { id: raw.id ? String(raw.id) : null, name: raw.name ? String(raw.name) : null }; }
-        } catch (e) { g = null; }
-        var cur  = parseJson(getProp(ctx, 'ssp_acl'), null);
-        var curG = (cur && cur.settingsManagerGroup !== undefined) ? cur.settingsManagerGroup : null;
-        var changed = JSON.stringify(curG) !== JSON.stringify(g);
-        if (changed) {
-          var aclStr = JSON.stringify({
-            settingsManagerGroup: g,
-            mirroredAt:      Date.now(),
-            mirroredVersion: APP_VERSION
-          });
-          if (aclStr.length <= MAX_PROP_SIZE) {
-            setProp(ctx, 'ssp_acl', aclStr);
-          }
-        }
+        /* Тело вынесено в syncAclMirror (#67 H9 — переиспользуется settings-save веткой). */
+        var changed = syncAclMirror(ctx);
         ctx.response.json({ success: true, synced: changed });
       }
     }

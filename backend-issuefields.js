@@ -28,6 +28,99 @@ var dlog       = core.dlog;
 var ALLOWED_UPDATE_ISSUE_KEYS      = ['issueId', 'fieldName', 'value', 'type'];
 var ALLOWED_REFRESH_ASSIGNEES_KEYS = ['issueIds', 'fieldName', 'stateFieldName'];
 var MAX_REFRESH_ASSIGNEES_BATCH    = 200;
+/* #67 путь 3 — потолок обогащаемых задач на запрос: то же число и та же причина, что
+   MAX_REFRESH_ASSIGNEES_BATCH (прод-смоук #58: обращение к задаче на боевой БД — единицы
+   секунд). Перелимит — не отказ: хвост сохраняется как пришёл, агенту — счётчик skipped. */
+var MAX_ENRICH_BATCH               = 200;
+/* #67 H7 — ключи настроек, значения которых суть имена YT-полей (27 ролевых field* /
+   userField* + fieldPriority/XPriority/State/System/Sprint/Version/Type/ExternalTicketId).
+   Производная от whitelist'а ядра — новые field*-ключи попадают в allow-list сами. */
+var FIELD_SETTING_KEYS = core.ALLOWED_SETTINGS_KEYS.filter(function (k) { return /^(field|userField)/.test(k); });
+
+/* Чтение значения поля задачи: прямой доступ + обход по projectCustomField.name
+   (двойной путь — вынесен из refresh-assignees для переиспользования обогатителем). */
+function readField(issue, fname) {
+  var raw = null;
+  try { raw = issue.fields[fname]; } catch (_) {}
+  if (raw == null && issue.fields && typeof issue.fields.forEach === 'function') {
+    issue.fields.forEach(function (f) {
+      if (raw == null && f && f.projectCustomField && (f.projectCustomField.name || '') === fname) {
+        raw = f.value;
+      }
+    });
+  }
+  return raw;
+}
+
+/* Имя enum-подобного значения поля (string как есть; entity — name/localizedName). */
+function _enumName(raw) {
+  if (raw == null) return '';
+  if (typeof raw === 'string') return raw;
+  return String(raw.name || raw.localizedName || raw.presentation || '');
+}
+
+/* ── #67 путь 3 — серверное обогащение состава («дополняем только пустое») ──────
+   Агентские заливки (n8n) шлют issueId+оценки; сервер наполняет title/state/priority/
+   xpriority/system/externalTicketId из задачи по настроенным полям ssp_settings.
+   Триггер — item с issueId, но БЕЗ title: виджет всегда ставит title (pick.js,
+   backlog-assign.js) → виджетный путь обогащение не запускает ни разу.
+   🔒 Видимость fail-closed (Q1/Q2 стенда открыты): задача, невидимая автору запроса
+   (Issue.isVisibleTo, SDK entities.js:1774), НЕ обогащается и НЕ отличима в ответе от
+   несуществующей/чужой — иначе счётчик стал бы оракулом существования скрытых задач.
+   skipped считает ТОЛЬКО перелимит. Item mutable in-place; ядро после обогащения
+   перегоняет roleItems через validateRoleItems (fail-closed на баг обогатителя). */
+function enrichRoleItems(ctx, roleItems) {
+  if (!roleItems || typeof roleItems !== 'object') return null;
+  var settings = core.parseJson(core.getProp(ctx, 'ssp_settings'), null) || {};
+  var count = 0, skipped = 0, budget = MAX_ENRICH_BATCH;
+  var rks = Object.keys(roleItems);
+  for (var r = 0; r < rks.length; r++) {
+    var arr = roleItems[rks[r]];
+    if (!Array.isArray(arr)) continue;
+    for (var i = 0; i < arr.length; i++) {
+      var item = arr[i];
+      if (!item || typeof item !== 'object') continue;
+      if (typeof item.issueId !== 'string' || !item.issueId) continue;
+      if (item.title) continue;                     /* самогейт: дополняем только пустое */
+      if (budget <= 0) { skipped++; continue; }     /* перелимит: хвост сохраняется как пришёл */
+      budget--;
+      try {
+        var issue = entities.Issue.findById(item.issueId);
+        if (!issue) continue;
+        /* Изоляция проекта — как в refresh-assignees/update-issue-field (v3.2.1). */
+        if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) continue;
+        var visible = false;
+        try { visible = !!issue.isVisibleTo(ctx.currentUser); } catch (_) { visible = false; }
+        if (!visible) continue;
+        /* Лимиты validateItem: строки ≤1000 — усечение, чтобы длинный summary не 400-ил запись. */
+        item.title = String(issue.summary || item.issueId).slice(0, 1000);
+        if (!item.state && settings.fieldState) {
+          var stRaw = readField(issue, settings.fieldState);
+          if (stRaw && typeof stRaw === 'object' && (stRaw.name || stRaw.localizedName)) {
+            item.state          = String(stRaw.name || '').slice(0, 1000);
+            item.stateLocalized = String(stRaw.localizedName || stRaw.name || '').slice(0, 1000);
+            try {
+              if (stRaw.color && (stRaw.color.background || stRaw.color.foreground)) {
+                item.stateColor = { background: stRaw.color.background || null, foreground: stRaw.color.foreground || null };
+              }
+            } catch (_) {}
+          }
+        }
+        if (!item.priority  && settings.fieldPriority)  item.priority  = _enumName(readField(issue, settings.fieldPriority)).slice(0, 1000);
+        if (!item.xpriority && settings.fieldXPriority) item.xpriority = _enumName(readField(issue, settings.fieldXPriority)).slice(0, 1000);
+        if (!item.system    && settings.fieldSystem)    item.system    = _enumName(readField(issue, settings.fieldSystem)).slice(0, 1000);
+        if (!item.externalTicketId && settings.fieldExternalTicketId) {
+          var ext = readField(issue, settings.fieldExternalTicketId);
+          if (typeof ext === 'string' && ext) item.externalTicketId = ext.slice(0, 1000);
+        }
+        count++;
+      } catch (e) {
+        dlog(ctx, 'enrich(' + item.issueId + ') err: ' + String(e && e.message));
+      }
+    }
+  }
+  return (count || skipped) ? { count: count, skipped: skipped } : null;
+}
 
 /* ─── Endpoint-обработчики (scope:'project') ─────────────────────────────────── */
 
@@ -222,6 +315,25 @@ var ISSUEFIELDS_ENDPOINTS = [
           badRequest(ctx, 'invalid_field_name');
           return;
         }
+        /* #67 H7 — allow-list: пишем ТОЛЬКО в поля, настроенные в плагине (значения
+           field*- и userField*-ключей хранимого ssp_settings) + фолбэк релизного
+           state-поля 'State' (та же формула, что на фронте — release-controller.js:603).
+           Все 4 вызывателя (quick-edit rolecomposition-view, запись исполнителя core.js,
+           reassign-controller, применение состояний release-controller) резолвят
+           fieldName из настроек — сверено при реализации. Закрывает «какие поля»,
+           не «под чьими правами пишет сервер» (Q1): field-level canBeWrittenBy
+           по-прежнему не вызывается — зафиксированный остаток. */
+        var s7 = core.parseJson(core.getProp(ctx, 'ssp_settings'), null) || {};
+        var allowedFields = {};
+        for (var afi = 0; afi < FIELD_SETTING_KEYS.length; afi++) {
+          var afv = s7[FIELD_SETTING_KEYS[afi]];
+          if (typeof afv === 'string' && afv.trim()) allowedFields[afv.trim()] = true;
+        }
+        allowedFields[(typeof s7.fieldState === 'string' && s7.fieldState.trim()) ? s7.fieldState.trim() : 'State'] = true;
+        if (!Object.prototype.hasOwnProperty.call(allowedFields, fieldName)) {
+          badRequest(ctx, 'field_not_whitelisted');
+          return;
+        }
 
         try {
           var issue = entities.Issue.findById(issueId);
@@ -336,19 +448,7 @@ var ISSUEFIELDS_ENDPOINTS = [
           }
         }
 
-        function readField(issue, fname) {
-          var raw = null;
-          try { raw = issue.fields[fname]; } catch (_) {}
-          if (raw == null && issue.fields && typeof issue.fields.forEach === 'function') {
-            issue.fields.forEach(function (f) {
-              if (raw == null && f && f.projectCustomField && (f.projectCustomField.name || '') === fname) {
-                raw = f.value;
-              }
-            });
-          }
-          return raw;
-        }
-
+        /* readField — module-level (переиспользуется обогатителем #67 путь 3). */
         var assignees = {};
         for (var k = 0; k < issueIds.length; k++) {
           var issueId = issueIds[k];
@@ -394,6 +494,10 @@ if (core && core.ENDPOINTS && !core.__issuefieldsEndpointsRegistered) {
   for (var ei = 0; ei < ISSUEFIELDS_ENDPOINTS.length; ei++) core.ENDPOINTS.push(ISSUEFIELDS_ENDPOINTS[ei]);
   core.__issuefieldsEndpointsRegistered = true;
 }
+/* #67 путь 3 — самрегистрация обогатителя на объекте ядра (тот же механизм, что
+   ENDPOINTS-push выше: ядро не require'ит сателлит — цикл; хук зовёт ветка roleItems
+   POST /sprint-data). Свойство на существующем экспорт-объекте, не новая связь. */
+if (core && !core.__enrichRoleItems) core.__enrichRoleItems = enrichRoleItems;
 
 /* Runtime + test-only exports. */
 exports.ISSUEFIELDS_ENDPOINTS = ISSUEFIELDS_ENDPOINTS;

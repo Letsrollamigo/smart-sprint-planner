@@ -2,10 +2,12 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.17.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.18.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
+> **v3.18.0 — authz audit #67 remainder + server-side task enrichment:** new `editorOrValidator` pseudo-role — a validator can clear the sprint slot (`sprint:null`) when deleting the last history record, and an editor takes auto-snapshots via the narrow `POST /history?action=snapshot` branch (single-record upsert by `sprintId`, deletes nothing); the frontend resets the slot locally only after the server acks (ordering fix for the "ghost sprint" class); `update-issue-field` gets a `fieldName` allow-list (only fields configured in the plugin + the `'State'` release fallback); server-side audit stamps for `sprint.updatedBy/At`, `confirmedBy`/`finishedBy` and `revisions[].by` (`import-replace` deliberately unstamped — a backup restore preserves original attribution); the `ssp_acl` mirror re-syncs after every settings save; `filter-planner-projects` gets a 256 KB body cap and the global adapter answers "no such project" and "no access" with a single `project_unavailable` (project-existence oracle closed). Server-side enrichment: a composition item with an `issueId` but no `title` is filled from the issue (title/state/priority/xpriority/system/externalTicketId, empty fields only) — project isolation + fail-closed visibility (`Issue.isVisibleTo`), up to 200 per request, result reported as `enriched: {count, skipped}`. Viewer access to the full settings blob is kept and documented as an accepted limitation (project-member trust model).
+
 > **v3.17.0 — authz audit #67 fixes:** effect-based gate on history clearing (shortening the stored history by more than 1 record in a single POST now requires `historyManager`; the threshold was chosen because deleting a single record via the trash icon is a routine validator operation, while bulk truncation in one POST is never produced by the UI); `?action=validate` no longer bypasses the editor gate on the slot-reset branch (`sprint:null`); a load-failure flag on the absences registry blocks saving (the one data-loss-by-ordinary-click path is closed); the working copy `editorLogin` is always derived from storage; `hasOwnProperty` guard in `history?action=assignerSync`.
 
 ---
@@ -71,13 +73,14 @@ In Smart Sprint Planner v1.0.0:
 **`authzGuard` pseudo-roles (unions, not separate groups):**
 
 - `assigner` as a gate argument is a union of **five** roles: editor ∨ assigner ∨ settingsManager ∨ releaseManager ∨ releaseEngineer (+ the instance-admin bypass).
+- `editorOrValidator` (#67 H5, v3.18.0) — editor ∨ validator. Serves two narrow branches: the `sprint:null` slot reset (a validator finishes cleaning history together with the slot; a reset is weaker than the full replace it already performs under `?action=validate`) and `history?action=snapshot` (an editor's auto-snapshot; single-record upsert, deletes nothing).
 - `settingsOrPlanning` — settingsManager ∨ planningManager. planningManager writes only the planning tier of settings: admin-tier keys (all group keys, sprint-lock, reporting fields) are preserve-merged from stored settings — self-escalation by writing group keys is impossible.
 
 **Global project administrator bypass** (#51): a user with the global `UPDATE_PROJECT` permission is treated as a member of every planner role in every project, including projects with no configured `settingsManagerGroup`.
 
 > **Exception — `historyManager` (#66, since v3.16.1).** Full clearing (`history?action=clear`), file import replacement (`history?action=import-replace`) and — since v3.17.0 (#67) — bulk truncation via the main write branch are irreversible, so the bypass does **not** extend to this role: a global admin needs explicit membership in `historyClearGroups`/`historyClearGroupNames`. The carve-out is applied both in `isHistoryManager()` and in the early admin-return of `authzGuard()`, so the UI button and the server gate stay in sync. No lock-out: the admin keeps `settingsManager` and can assign the clearing group to themselves.
 
-**Roles are orthogonal** (clarified by #67): validator does not inherit editor and vice versa. The narrow inclusion that does hold: validator ⊇ editor **for slot writes** to `ssp_sprint`/`ssp_roleitems` under `?action=validate` (a deliberate v3.2.1 mechanic). The only documented hierarchy is the `assigner` union (see pseudo-roles) on top of viewer.
+**Roles are orthogonal** (clarified by #67): validator does not inherit editor and vice versa. The narrow inclusion that does hold: validator ⊇ editor **for slot writes** to `ssp_sprint`/`ssp_roleitems` under `?action=validate` (a deliberate v3.2.1 mechanic). The documented unions are `assigner` and `editorOrValidator` (see pseudo-roles) on top of viewer: narrow branches, not wholesale role inheritance.
 
 **`wcOwner`** (working copy owner) is the only role whose authorization comes not from `ssp_settings` / `ctx.settings.*` but from `_workingDrafts[key].editorLogin` itself. Since v3.17.0 (#67) the backend derives `editorLogin` from storage on every POST — the client value is never persisted. Taking over someone else's WC is impossible: overwriting a foreign key with your own login → `not_owner`; a bulk flush carrying foreign entries silently keeps the server version. `settingsManager` may delete any WC.
 
@@ -96,12 +99,13 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 |--------|------|--------------|
 | GET    | `project-fields` | viewer |
 | GET    | `sprint-data` | viewer (the response includes the entire `ssp_settings` blob, incl. role group keys) |
-| POST   | `sprint-data` (`body.sprint`/`roleItems`/`items`) | editor |
+| POST   | `sprint-data` (`body.sprint`/`roleItems`/`items`) | editor; **the `sprint:null` branch (slot reset, incl. the paired `roleItems` gate) — editor ∨ validator (#67 H5)**; items without a `title` are enriched server-side from issues — project isolation + `isVisibleTo`, limit 200 |
 | POST   | `sprint-data` (`body.settings`) | settingsManager OR planningManager (admin tier preserve-merged) |
-| POST   | `sprint-data?action=validate` | validator (writes `sprint`/`roleItems` without editor — deliberate, v3.2.1; the `sprint:null` branch — editor, #67) |
+| POST   | `sprint-data?action=validate` | validator (writes `sprint`/`roleItems` without editor — deliberate, v3.2.1; the `sprint:null` branch — editor ∨ validator, #67) |
 | POST   | `sprint-data?action=assignerSync` | assigner union (partial save of `personalPlanning` only) |
 | GET    | `history` | viewer |
-| POST   | `history` | validator; **shortening by more than 1 record — historyManager (#67, no admin bypass)** |
+| POST   | `history` | validator; **shortening by more than 1 record — historyManager (#67, no admin bypass)**; audit fields are server-stamped (#67 H8) |
+| POST   | `history?action=snapshot` | editor ∨ validator (upsert of exactly one record by `sprintId`, deletes nothing — #67 H5; H8 audit stamps) |
 | POST   | `history?action=assignerSync` | assigner union (partial save of `personalPlanning` in existing snaps) |
 | POST   | `history?action=clear` | historyManager (no admin bypass, #66) |
 | POST   | `history?action=import-replace` | historyManager (no admin bypass, #66) |
@@ -127,7 +131,7 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | POST   | `absences` | settingsManager OR planningManager |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
-| POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` validated for length/characters) |
+| POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` — length/characters + **allow-list of configured fields, #67 H7**) |
 | POST   | `refresh-assignees` | **viewer** (bulk read of assignee/state, up to 200 issueIds per request) |
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
@@ -139,13 +143,13 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 
 ### Global scope (`backend-global.js`)
 
-Every project endpoint except `sync-acl` and `app-version` is reachable via the global URL with `?projectKey=<KEY>`: the adapter resolves the project and applies the read gate (`READ_PROJECT_BASIC`) **before** the core role logic — role checks are not weakened. The global handler's own endpoints:
+Every project endpoint except `sync-acl` and `app-version` is reachable via the global URL with `?projectKey=<KEY>`: the adapter resolves the project and applies the read gate (`READ_PROJECT_BASIC`) **before** the core role logic — role checks are not weakened. "No such project" and "no access" are answered with a single `project_unavailable` (#67 H11 — the project-existence oracle is closed). The global handler's own endpoints:
 
 <!-- authz-matrix:global:begin -->
 | Method | Path | Minimal role |
 |--------|------|--------------|
 | GET    | `app-version` | authentication (static, no read gate — the version badge before a project is picked) |
-| POST   | `filter-planner-projects` | authentication (picker arbiter: up to 5000 keys per request) |
+| POST   | `filter-planner-projects` | authentication (picker arbiter: up to 5000 keys per request; 256 KB body cap, #67 H11) |
 | GET    | `last-project` | authentication (own slot) |
 | POST   | `last-project` | authentication (writes own slot only) |
 <!-- authz-matrix:global:end -->
@@ -171,12 +175,16 @@ Every project endpoint except `sync-acl` and `app-version` is reachable via the 
 | 11 | **Diagnostic information leaks** | All backend errors return `internal_error` without echoing request bodies; detailed logs only in server log when `enableDebugLog` is enabled |
 | 12 | **Forging or tampering with personal drafts** | Drafts live in `ssp_drafts`, scoped per-user (slot key = `ctx.currentUser.login`, never passed by the client). The `data` field is an opaque blob the server does not interpret. Per-user limit: 256 KB; project-wide cap: 1 MB. |
 | 13 | **Working copy take-over** *(clarified in v3.17.0)* | `POST /working-drafts` (bulk): a foreign key with your own login substituted → `not_owner`; a foreign key inside a bulk flush → the server version silently wins; the `editorLogin` of every saved entry is derived from storage, the client value is never persisted (#67). `?action=delete&key=…`: wcOwner or `settingsManager` only. |
-| 14 | **Conflict replay (overwriting concurrent edits)** *(restated in v3.17.0 — per code)* | The `baseSnapshotHash` comparison happens **on the client** (the “Version conflict” flow); the server only validates the field as a string. The server-side protection is the `baseRev` optimistic lock on the `sprint-data`/`history`/`releases`/`absences` slots: a mismatch → `rev_conflict`. Limitation (by design): a client that sends no `baseRev` passes in last-write-wins mode — the lock is advisory. |
+| 14 | **Conflict replay (overwriting concurrent edits)** *(restated in v3.17.0 — per code)* | The `baseSnapshotHash` comparison happens **on the client** (the “Version conflict” flow); the server only validates the field as a string. The server-side protection is the `baseRev` optimistic lock on the `sprint-data`/`history`/`releases`/`absences` slots: a mismatch → `rev_conflict`. Limitation (by design): a client that sends no `baseRev` passes in last-write-wins mode — the lock is advisory. External integrations must always send `baseRev` per contract; a server-side mandatory lock was deliberately not introduced (#67 H11). |
 | 15 | **Runaway `_workingDrafts` size** | Limits: 256 KB per WC, 480 KB total across all `ssp_workdrafts`. `validateWorkingDraft` enforces `revisions.length ≤ 1000`. Lazy purge on load: WCs older than 30 days or orphaned (no base snapshot) are removed automatically. |
 | 16 | **Privilege escalation via `assignerSync`** | `action=assignerSync` allows writes **only** into `personalPlanning` (assignee + start/end-dates). The backend filters the body down to that subset; sending `body.sprint.items` / `body.settings` / etc. is silently stripped. An assigner cannot change sprint composition, role capacity, status, or validation. |
-| 17 | **DoS via a large `refresh-assignees` batch** *(clarified in v3.17.0 — per code)* | Hard limit of **200 issueIds per request** (`MAX_REFRESH_ASSIGNEES_BATCH`); exceeding it → `invalid_issue_ids`. Every issueId is checked against `^[A-Za-z][A-Za-z0-9_]*-\d+$` (lowercase letters allowed), `fieldName` — for length and forbidden characters. Limitation: there is no limit on the number of requests (rate limiting is level-3 backlog of audit #67). |
-| 18 | **`editorLogin` forgery via body** *(closed in v3.17.0, #67)* | Before v3.17.0 the server stamp was applied only to new entries — for one's own existing entry the client value went to storage (a foreign login → a persistent edit lock; `null` → an ownerless entry). Now the `editorLogin` of every entry is derived from storage (existing — the previous owner, new/ownerless — the writer). Limitation: `revisions[].by` and `updatedBy`/`confirmedBy`/`finishedBy` are NOT server-stamped (client values) — server audit stamps are level-3 backlog of audit #67. |
+| 17 | **DoS via a large `refresh-assignees` batch** *(clarified in v3.17.0 — per code)* | Hard limit of **200 issueIds per request** (`MAX_REFRESH_ASSIGNEES_BATCH`); exceeding it → `invalid_issue_ids`. Every issueId is checked against `^[A-Za-z][A-Za-z0-9_]*-\d+$` (lowercase letters allowed), `fieldName` — for length and forbidden characters. Limitation (accepted remainder, #67 H11): there is no limit on the number of requests — not cheaply implementable in a stateless handler. |
+| 18 | **`editorLogin` forgery via body** *(closed in v3.17.0, #67)* | Before v3.17.0 the server stamp was applied only to new entries — for one's own existing entry the client value went to storage (a foreign login → a persistent edit lock; `null` → an ownerless entry). Now the `editorLogin` of every entry is derived from storage (existing — the previous owner, new/ownerless — the writer). Since v3.18.0 (#67 H8) server audit stamps cover the remaining fields too: `sprint.updatedBy/At` — always server-side; `confirmedBy`/`finishedBy` — stamped with the request author when they differ from stored; `revisions[].by` — for new entries. `?action=import-replace` is deliberately unstamped (a backup restore preserves attribution). |
 | 19 | **Race between delete and save on `/working-drafts`** | YouTrack extension properties are atomic at the POST/SET level; a concurrent `?action=delete` + POST resolves either into a save or a delete, with no partial state. The UI copes via retry + state refresh from `GET /working-drafts`. |
+| 20 | **`ssp_acl` mirror staleness after a settings-manager group change** *(#67 H9, v3.18.0)* | Group membership is always live from `ctx.currentUser.groups`; only the group itself can go stale in the global-mode mirror. Re-sync: project widget init + every successful settings save (`syncAclMirror`). Accepted limitation: after changing the group, open the project widget or save settings once. |
+| 21 | **Viewer reads the full settings blob / other users' drafts** *(#67 H10, kept)* | Project-member trust model: `GET /sprint-data` returns role group keys and rate settings, `GET /working-drafts` — everyone's working copies. No escalation — authorization never reads settings from the body; trimming the admin tier on GET was rejected (risk of regressing UI gates). |
+| 22 | **Project-existence oracle via the global adapter** *(#67 H11, closed in v3.18.0)* | `project_not_found`/`project_access_denied` collapsed into a single `project_unavailable` — enumerating the instance's project keys by response difference is no longer possible. |
+| 23 | **"Laundering" hidden issue titles via server-side enrichment** *(v3.18.0)* | The enricher reads the issue server-side and writes into `ssp_roleitems`, readable by any viewer → fail-closed: `Issue.isVisibleTo(ctx.currentUser)` before enriching; an invisible issue is indistinguishable in the response from a non-existent one (the `skipped` counter counts only the over-limit tail — not an oracle). Project isolation — same as `refresh-assignees`/`update-issue-field`. |
 
 ---
 

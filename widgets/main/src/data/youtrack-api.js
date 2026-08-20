@@ -155,6 +155,11 @@ function apiPost(path, body, query, deps) {
                (Validate/Save → прямой saveRoleHistorySnapshot/_commitWorkingCopy). */
           var isValidate    = query && query.action === 'validate';
           var hasSprintData = body.sprint !== undefined || body.roleItems !== undefined;
+          /* #67 H5-mirror — сброс слота (sprint:null) НЕ сохранение состава: локальный
+             сброс теперь идёт ПОСЛЕ ака сервера (ordering-фикс history-view), и в момент
+             этого хука _sprint ещё жив — авто-снапшот воскрешал бы только что удалённую
+             запись истории. Раньше это глушилось побочно (setSprint(null) ДО POST'а). */
+          if (body.sprint === null) hasSprintData = false;
           var sprint        = deps.state.getSprint();
           if (hasSprintData && !isValidate
               && sprint && sprint.sprintId

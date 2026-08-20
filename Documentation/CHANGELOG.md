@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.18.0] — 2026-08-20
+
+> **Authz-audit closure (#67): editor↔validator parity (H5), level-3 defense-in-depth (H7–H11) + server-side sprint composition enrichment for external integrations.**
+
+### Security (#67, remainder)
+
+- **A validator can clear the sprint slot (H5-mirror)** — new `editorOrValidator` pseudo-role on the `sprint:null` reset branch (and the paired `roleItems` gate that fires first): deleting the last history record of the active sprint together with its slot is now one coherent single-role operation. Plus an ordering fix for the "ghost sprint" class: the local slot reset happens only after the server acks; a failure (403/network) shows an error instead of a silently cleaned screen. The auto-snapshot is explicitly disabled on a slot reset (`sprint:null`) — it would otherwise resurrect the just-deleted history record (caught by the release smoke).
+- **A narrow auto-snapshot right (H5-editor)** — new `POST /history?action=snapshot` branch: an upsert of exactly one record by its `sprintId` under `editor ∨ validator`, deletes nothing. An editor's auto-snapshot no longer 403s silently; the full history replace stays with the validator. As a side effect the auto-snapshot's read-modify-full-replace is gone (the parallel snapshot-loss class) — frontend auto-paths (`saveRoleHistorySnapshot`, `snapshotPlanningRolesToHistory`) now use the snapshot branch.
+- **Field allow-list in `update-issue-field` (H7)** — writes only to fields configured in the plugin (values of the `field*`/`userField*` keys of stored settings + the release state-field fallback `'State'`); any other project field → `400 field_not_whitelisted`. All four frontend callers verified to resolve field names from settings.
+- **Server-side audit stamps (H8)** — `sprint.updatedBy/At` always server-stamped; history `confirmedBy`/`finishedBy` stamped with the request author when they differ from stored; `revisions[].by` — for new revision entries. `?action=import-replace` is deliberately unstamped: a backup restore preserves original attribution.
+- **`ssp_acl` mirror re-sync (H9)** — the settings-manager group mirror for global mode refreshes not only on project widget init but on every successful settings save (server-side `syncAclMirror` — covers REST clients too).
+- **Viewer access to the full settings blob (H10)** — kept and documented in SECURITY as an accepted limitation (project-member trust model); no escalation exists.
+- **External contour (H11)** — 256 KB body cap on `filter-planner-projects`; the global adapter's "no such project"/"no access" responses collapsed into a single `project_unavailable` (project-enumeration oracle closed). Documented remainders: no request-rate limit; `baseRev` stays advisory (external integrations must always send it).
+
+### Added
+
+- **Server-side composition enrichment** — a composition item with an `issueId` but no `title` (integration payloads) gets filled on save from YouTrack: title, state (with localization and color), priorities, system, external ticket — via the project's configured fields. Empty fields only: whatever the client sent is never overwritten, and the widget path (which always sends `title`) costs zero extra platform calls. Project isolation + fail-closed visibility (`Issue.isVisibleTo`); limit 200 issues per request; the write response gains `enriched: {count, skipped}`.
+
+The snapshot and settings schema is unchanged — a drop-in upgrade with no data migration.
+
+---
+
 ## [3.17.0] — 2026-08-20
 
 > **Adversarial authz-audit fixes (#67) + excluded-tasks filter (68-2) + Assignee column and state sorting in the multi-role summary (68-1) + canonical accordion header semantics (#65).**

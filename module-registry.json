@@ -87,9 +87,9 @@
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
     "core": {
-      "loc": 3017,
-      "locBudget": 3017,
-      "budgetNote": "v3.17.0 (#67) — осознанный +17: фиксы authz-аудита в существующих ветках ядра (H1 гейт по эффекту на очистку истории основной веткой POST /history; H2 снятие validate-байпаса editor-гейта на sprint:null; H4 editorLogin из хранилища; H6 hasOwnProperty-guard). Authz-движок по определению BE2 живёт в ядре. v3.16.1 (#66) — осознанный +3: вырез historyManager из байпаса #51 в isHistoryManager + раннем admin-return authzGuard (комментарии; кода +0 строк, изменены существующие). Authz-движок по определению BE2 живёт в ядре. v3.15.1 — осознанный +5: гейт allowOverlimitPlanning + скоуп ?role= в overlimit-warn validate (правка существующего блока ветки sprint-data ядра, не новый endpoint/домен; ОС прода внешней команды). Прошлое: v3.2.0 APP_VERSION из manifest.json — +6 (шапка показывает фактически установленную версию, вкл. temp-деплои; литерал = fallback). #50 v3.2.0 — осознанный +6 (2983→2992 бюджет): reportingTerminalPolicy в ALLOWED_SETTINGS_KEYS + ADMIN_TIER_SETTINGS_KEYS + enum-валидатор (settings-ключи ведутся в ядре — это не endpoint/домен). Прошлое: #40 settings — осознанный +5: autoForecastEnabled в SETTINGS_WHITELIST (планировочный тир, 3 строки коммента) + boolKeys. #53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
+      "loc": 3162,
+      "locBudget": 3162,
+      "budgetNote": "v3.18.0 (#67 остаток) — осознанный рост: H5 ветка ?action=snapshot (upsert одной записи, ~50 LOC с комментариями) + псевдороль editorOrValidator в authzGuard + H8 stampHistoryAudit (серверные аудит-штампы истории) + H9 syncAclMirror (вынос тела sync-acl в хелпер + вызов из settings-save) + хук обогащения (путь 3, ~12 строк — сам обогатитель в backend-issuefields). Authz-движок и ?action-ветки существующих endpoints по определению BE2 живут в ядре. v3.17.0 (#67) — осознанный +17: фиксы authz-аудита в существующих ветках ядра (H1 гейт по эффекту на очистку истории основной веткой POST /history; H2 снятие validate-байпаса editor-гейта на sprint:null; H4 editorLogin из хранилища; H6 hasOwnProperty-guard). Authz-движок по определению BE2 живёт в ядре. v3.16.1 (#66) — осознанный +3: вырез historyManager из байпаса #51 в isHistoryManager + раннем admin-return authzGuard (комментарии; кода +0 строк, изменены существующие). Authz-движок по определению BE2 живёт в ядре. v3.15.1 — осознанный +5: гейт allowOverlimitPlanning + скоуп ?role= в overlimit-warn validate (правка существующего блока ветки sprint-data ядра, не новый endpoint/домен; ОС прода внешней команды). Прошлое: v3.2.0 APP_VERSION из manifest.json — +6 (шапка показывает фактически установленную версию, вкл. temp-деплои; литерал = fallback). #50 v3.2.0 — осознанный +6 (2983→2992 бюджет): reportingTerminalPolicy в ALLOWED_SETTINGS_KEYS + ADMIN_TIER_SETTINGS_KEYS + enum-валидатор (settings-ключи ведутся в ядре — это не endpoint/домен). Прошлое: #40 settings — осознанный +5: autoForecastEnabled в SETTINGS_WHITELIST (планировочный тир, 3 строки коммента) + boolKeys. #53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
     },
     "modules": {
       "backend-capacity.js": {
@@ -98,16 +98,18 @@
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
       "backend-global.js": {
-        "loc": 203,
-        "locBudget": 210
+        "loc": 213,
+        "locBudget": 213,
+        "budgetNote": "v3.18.0 (#67 H11) — осознанный +8: cap тела filter-planner-projects (256 КБ) + схлоп оракула project_not_found/project_access_denied → project_unavailable. "
       },
       "backend-project.js": {
         "loc": 26,
         "locBudget": 40
       },
       "backend-issuefields.js": {
-        "loc": 381,
-        "locBudget": 416
+        "loc": 484,
+        "locBudget": 484,
+        "budgetNote": "v3.18.0 (#67 остаток) — осознанный +103: обогатитель состава (путь 3, «дополняем только пустое», лимит 200, видимость fail-closed через Issue.isVisibleTo) + H7 allow-list fieldName из настроек + хойст readField на module-level (переиспользование резолвера refresh-assignees, не копия). "
       },
       "backend-release.js": {
         "loc": 279,
@@ -306,13 +308,13 @@
     "data/youtrack-api.js": {
       "layer": "domain",
       "domain": "data/youtrack-api",
-      "loc": 305,
-      "locBudget": 305,
+      "loc": 310,
+      "locBudget": 310,
       "state": [],
       "publishes": [
         "YOUTRACK_API"
       ],
-      "budgetNote": "R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). v3.12.0 — +анти-clobber слотов: stale GET (rev < виденного) не применяется, одиночный refetch (P2-хвост v3.2.1)."
+      "budgetNote": "v3.18.0 (#67 H5-mirror) — осознанный +5: гейт авто-снапшота на сброс слота (sprint:null) — локальный сброс теперь после ака сервера, без гейта хук воскрешал бы удалённую запись истории. R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). v3.12.0 — +анти-clobber слотов: stale GET (rev < виденного) не применяется, одиночный refetch (P2-хвост v3.2.1)."
     },
     "domain/backlog-assign.js": {
       "layer": "domain",
@@ -456,12 +458,13 @@
     "domain/history-view.js": {
       "layer": "domain",
       "domain": "domain/history-view",
-      "loc": 504,
-      "locBudget": 593,
+      "loc": 599,
+      "locBudget": 599,
       "state": [],
       "publishes": [
         "HISTORY_VIEW"
-      ]
+      ],
+      "budgetNote": "v3.18.0 (#67 H5) — осознанный рост: history-view — локальный сброс слота только после ака сервера (ordering-фикс спринта-призрака); working-copy — авто-снапшоты через ?action=snapshot (per-role у snapshotPlanningRolesToHistory). "
     },
     "domain/intro-view.js": {
       "layer": "domain",
@@ -719,13 +722,13 @@
     "domain/working-copy.js": {
       "layer": "domain",
       "domain": "domain/working-copy",
-      "loc": 518,
-      "locBudget": 523,
+      "loc": 538,
+      "locBudget": 538,
       "state": [],
       "publishes": [
         "WORKING_COPY"
       ],
-      "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
+      "budgetNote": "v3.18.0 (#67 H5) — осознанный рост: history-view — локальный сброс слота только после ака сервера (ordering-фикс спринта-призрака); working-copy — авто-снапшоты через ?action=snapshot (per-role у snapshotPlanningRolesToHistory). v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
     },
     "i18n/i18n-bridge.js": {
       "layer": "i18n",

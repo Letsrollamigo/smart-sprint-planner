@@ -498,7 +498,11 @@ function saveRoleHistorySnapshot(rk, overrideIdx, goalFields, wasValidated, deps
     idx = history.findIndex(function(h){ return h.sprintId === snap.sprintId; });
   }
   if (idx >= 0) history[idx] = snap; else history.unshift(snap);
-  return deps.apiPost('history', { history: history }).then(function() {
+  /* #67 H5-editor — узкая ветка ?action=snapshot (upsert одной записи по sprintId,
+     editor∨validator) вместо full-replace POST /history (validator): авто-снапшот у
+     редактора-без-validator больше не 403-ится молча, а серверный upsert атомарнее
+     read-modify-full-replace (класс R6 / P1 #11). Локальный upsert выше — зеркало UI. */
+  return deps.apiPost('history', { history: [snap] }, { action: 'snapshot' }).then(function() {
     deps.renderHistory();
   });
 }
@@ -516,16 +520,27 @@ function snapshotPlanningRolesToHistory(deps, newId) {
   if (sprint.sprintId === newId) return Promise.resolve();              // не уходим — тот же спринт
   if (sprint.status !== deps.status.PLANNING) return Promise.resolve(); // только PLANNING (ALLOCATED/CONFIRMED — WC-путь)
   var roles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : deps.allRoles;
-  var touched = false;
+  var snaps = [];
   roles.forEach(function(r){
     var snap = buildRoleSnap(r.key, undefined, false, deps);
     if (!snap) return;
     var idx = history.findIndex(function(h){ return h && h.sprintId === snap.sprintId; });
     if (idx >= 0) history[idx] = snap; else history.unshift(snap);
-    touched = true;
+    snaps.push(snap);
   });
-  if (!touched) return Promise.resolve();
-  return deps.apiPost('history', { history: history }).then(function(){
+  if (!snaps.length) return Promise.resolve();
+  /* #67 H5-editor — тот же пассивный авто-путь, что saveRoleHistorySnapshot (переключение
+     PLANNING-спринтов — действие редактора): full-replace шёл под validator и молча
+     403-ился у editor-без-validator. Per-role ?action=snapshot, ПОСЛЕДОВАТЕЛЬНО:
+     каждый POST бампает rev слота, параллельные ловили бы 409 друг о друга (baseRev
+     обновляется в сторе из ответа — youtrack-api). */
+  var chain = Promise.resolve();
+  snaps.forEach(function(snap){
+    chain = chain.then(function(){
+      return deps.apiPost('history', { history: [snap] }, { action: 'snapshot' });
+    });
+  });
+  return chain.then(function(){
     if (typeof deps.renderHistory === 'function') { try { deps.renderHistory(); } catch(_){} }
   });
 }
