@@ -22,33 +22,33 @@ test('golden: renderWidgetHeader — селектор спринтов, бейд
   checkJsonSnapshot('widget-header', out);
 });
 
-/* ── Stand-up, ступень 2 (React): оракул = vm-контракт «standup-view.js →
+/* ── Stand-up, 68-7 (вариант А): оракул = vm-контракт «standup-view.js →
    __SSP_STANDUP_MOUNT» (recording-стаб харнесса стэшит vm на
-   #standupViewHost.__sspStandupVm). Снапшоты регенерированы со ступени 1
-   (innerHTML → структурный vm) с ручным ревью паритета: те же бакеты/тексты/
-   каунты/видимость. Статические empty-states (noSprint/emptyRole) — по-прежнему
-   реальный DOM (classList), их контракт не менялся. ── */
+   #standupViewHost.__sspStandupVm). Бакеты done/inflight/notStarted заменены
+   секциями по фактическим состояниям: порядок = бандл state-поля
+   (_fieldValuesCache, прецедент 68-1) → присутствующие-вне-бандла алфавитом
+   (он же полный фолбэк до загрузки бандла) → «Без состояния» последней.
+   Дефолт селектора — «Все роли»: union состава активных ролей с ACTIVE_INC-
+   фильтром, часы = суммы план/факт по ролям, исполнители списком. Статические
+   empty-states (noSprint/emptyRole) — по-прежнему реальный DOM (classList). ── */
 
 function standupVm(document) {
   return document.getElementById('standupViewHost').__sspStandupVm;
 }
 
-test('golden: renderStandupView — бакеты текущей роли (devBack)', () => {
+test('golden: renderStandupView — «Все роли» (дефолт): union + алфавит-фолбэк без бандла', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
-  /* done-состояния заданы явно (копия настроек теста — общая фикстура не мутируется) */
-  const settings = fx.buildSettings();
-  settings.standupDoneStates = ['Fixed'];
-  gm.set({ _settings: settings, _activeSubtab: 'devBack' });
+  /* Бандл не загружен (host-стаб отдаёт {}) → секции Fixed/In Progress/Open по
+     алфавиту; GM-4 (INC_EXCLUDED) отфильтрован; часы/ассайни devBack — из PP. */
   gm.call('renderStandupView');
   const vm = standupVm(document);
-  const out = {
-    buckets: vm.buckets,
+  checkJsonSnapshot('standup-all-roles', {
+    sections: vm.sections,
     goalBannerVisible: vm.goalBannerVisible,
     goalText: vm.goalText,
     emptyRoleHidden: document.getElementById('standupEmptyRole').classList.contains('hidden'),
-  };
-  checkJsonSnapshot('standup-devback', out);
+  });
 });
 
 test('golden: renderStandupView — нет спринта (empty-state)', () => {
@@ -58,75 +58,103 @@ test('golden: renderStandupView — нет спринта (empty-state)', () => 
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-no-sprint', {
     noSprintVisible: !document.getElementById('standupNoSprint').classList.contains('hidden'),
-    bucketsHidden: !standupVm(document).bucketsVisible,
+    sectionsHidden: !standupVm(document).sectionsVisible,
   });
 });
 
-/* ── Добор Тира D слайс 1: ветки classify / empty-role / PP / refresh-контракт.
-   Все тесты идут только через стабильные точки входа (renderStandupView,
-   doStandupRefresh, селектор роли) + gm.set стейта — переживают вынос семейства. ── */
-
-test('golden: renderStandupView — done-состояния из fallback rollup-порядка (без настройки)', () => {
+test('golden: renderStandupView — порядок бандла + пустая секция + чипы + хвост вне бандла', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
-  /* standupDoneStates НЕ задан → доберётся хвост (2) stateRollupOrder:
-     In Progress + Fixed → GM-2 и GM-3 в done (отличается от standup-devback). */
+  /* Бандл предзагружен (кэш 68-1): Open/In Progress/Review в бандл-порядке,
+     Review пустая (rows=[], показывается), Fixed вне бандла → в хвост алфавитом;
+     цвета чипов — из colors бандла, у Fixed цвета нет (нет и в items) → null. */
+  gm.set({
+    _fieldValuesCache: {
+      State: {
+        values: ['Open', 'In Progress', 'Review'],
+        colors: {
+          'Open': { background: '#e7e9eb', foreground: '#454b52' },
+          'In Progress': { background: '#b8dbff', foreground: '#084d84' },
+        },
+      },
+    },
+  });
+  gm.call('renderStandupView');
+  checkJsonSnapshot('standup-bundle-order', {
+    sections: standupVm(document).sections,
+  });
+});
+
+test('golden: renderStandupView — скрытые состояния (секция и её задачи не показываются)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
   const settings = fx.buildSettings();
-  settings.stateRollupOrder = ['Open', 'In Progress', 'Fixed'];
+  settings.standupHiddenStates = ['Open'];
   gm.set({ _settings: settings });
   gm.call('renderStandupView');
-  checkJsonSnapshot('standup-fallback-done', {
-    buckets: standupVm(document).buckets,
-    noDoneHintHidden: !standupVm(document).noDoneHintVisible,
+  checkJsonSnapshot('standup-hidden-states', {
+    sections: standupVm(document).sections,
   });
 });
 
-test('golden: renderStandupView — done-состояния не настроены вовсе (hint + классификация по факту)', () => {
-  const { gm, document } = createHost();
+test('golden: renderStandupView — маппинг «состояние → роли»: per-role фильтр + «Прочие состояния»', () => {
+  const { gm, document, window } = createHost();
   fx.applyBaseState(gm);
-  /* Ни standupDoneStates, ни stateRollupOrder → doneStates пуст: hint виден,
-     GM-3 (fact>0) уезжает в inflight вместо done. */
+  /* analysis замаплен на Open: секция Open остаётся, задачи роли в In Progress/Fixed
+     (GM-2/GM-3) уходят в сводную «Прочие состояния» с подписью состояния в строке.
+     В «Все роли» маппинг не фильтрует — даёт бейдж ролей-владельцев на секции. */
+  const settings = fx.buildSettings();
+  settings.standupStateRoles = [
+    { state: 'Open', roles: ['analysis'] },
+    { state: 'In Progress', roles: ['devBack'] },
+  ];
+  gm.set({ _settings: settings });
+  gm.call('_populateStandupRoleSel');
+  const sel = document.getElementById('standupRoleSel');
   gm.call('renderStandupView');
-  checkJsonSnapshot('standup-no-done-states', {
-    buckets: standupVm(document).buckets,
-    noDoneHintVisible: standupVm(document).noDoneHintVisible,
+  const sectionsAllRoles = standupVm(document).sections.map(function (s) { return { id: s.id, count: s.count, roleLabels: s.roleLabels }; });
+  sel.value = 'analysis';
+  sel.dispatchEvent(new window.Event('change'));
+  checkJsonSnapshot('standup-state-roles-map', {
+    sectionsAllRoles: sectionsAllRoles,
+    sectionsAnalysis: standupVm(document).sections,
   });
 });
 
-test('golden: renderStandupView — пустая роль (empty-state)', () => {
+test('golden: renderStandupView — пустой состав (empty-state)', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
-  /* Активна только роль без задач и без PP → empty-state роли. */
+  /* Активна только роль без задач и без PP → empty-state («Все роли» = union пуст). */
   const settings = fx.buildSettings();
   settings.activeRoles = ['devIos'];
   gm.set({ _settings: settings });
   gm.call('renderStandupView');
   checkJsonSnapshot('standup-empty-role', {
     emptyRoleVisible: !document.getElementById('standupEmptyRole').classList.contains('hidden'),
-    bucketsHidden: !standupVm(document).bucketsVisible,
+    sectionsHidden: !standupVm(document).sectionsVisible,
     noSprintHidden: document.getElementById('standupNoSprint').classList.contains('hidden'),
   });
 });
 
-test('golden: селектор роли Stand-up — populate + PP-обогащение текущей роли + onchange', () => {
+test('golden: селектор роли Stand-up — populate («Все роли» дефолт) + per-role + onchange', () => {
   const { gm, document, window } = createHost();
   fx.applyBaseState(gm);
   fx.applyPeopleState(gm);
-  const settings = fx.buildSettings();
-  settings.standupDoneStates = ['Fixed'];
-  gm.set({ _settings: settings, _activeSubtab: 'devBack' });
+  gm.set({ _activeSubtab: 'devBack' });
   gm.call('_populateStandupRoleSel');
   const sel = document.getElementById('standupRoleSel');
-  gm.call('renderStandupView');
-  const bucketsDevBack = standupVm(document).buckets;
-  /* Смена роли в селекте перерисовывает бакеты (контракт onchange). */
+  const valueAfterPopulate = sel.value;   /* 68-7 — дефолт «Все роли», не активная роль */
+  /* Per-role режим: выбор devBack сужает секции до состава роли (контракт onchange). */
+  sel.value = 'devBack';
+  sel.dispatchEvent(new window.Event('change'));
+  const sectionsDevBack = standupVm(document).sections;
   sel.value = 'analysis';
   sel.dispatchEvent(new window.Event('change'));
   checkJsonSnapshot('standup-rolesel-pp', {
     selOptions: sel.innerHTML,
-    selValueAfterPopulate: 'devBack',
-    bucketsDevBack: bucketsDevBack,
-    bucketsAfterChange: standupVm(document).buckets,
+    valueAfterPopulate: valueAfterPopulate,
+    sectionsDevBack: sectionsDevBack,
+    sectionsAnalysis: standupVm(document).sections,
   });
 });
 
@@ -150,10 +178,9 @@ function setupRefreshHost(gm, document, assignees, withUserField) {
   fx.applyBaseState(gm);
   fx.applyPeopleState(gm);
   const settings = fx.buildSettings();
-  settings.standupDoneStates = ['Fixed'];
   if (withUserField) settings.userFieldDevBack = 'Backend Dev';
   gm.set({ _settings: settings, _activeSubtab: 'devBack' });
-  gm.call('_populateStandupRoleSel');
+  gm.call('_populateStandupRoleSel');   /* 68-7 — селектор остаётся на дефолте «Все роли» */
   const host = buildRefreshHost(assignees);
   const toasts = [];
   gm.set({ _host: host, toast: function (msg, type) { toasts.push([type || 'info', msg]); } });
@@ -203,6 +230,31 @@ test('golden: doStandupRefresh — нет изменений (без перси�
   checkJsonSnapshot('standup-refresh-nochange', {
     hostPaths: ctx.host.log.map(function (e) { return e.path; }),
     taskAssignments: gm.get('_currentRolePP').taskAssignments,
+    toasts: ctx.toasts,
+  });
+});
+
+test('golden: doStandupRefresh — «Все роли»: обход ролей с настроенным полем + один персист', async () => {
+  const { gm, document } = createHost();
+  const ctx = setupRefreshHost(gm, document, {
+    /* Общий стаб на оба запроса: применяется только к задачам состава СВОЕЙ роли
+       (GM-1 ∈ analysis, GM-10 ∈ devBack); assignee — только текущая роль (devBack). */
+    'GM-1':  { login: 'gm_user_4', state: { name: 'Review', localizedName: 'Review', color: { background: '#e9dcfa', foreground: '#6a3fa0' } } },
+    'GM-10': { login: 'gm_user_3', state: { name: 'Fixed', localizedName: 'Fixed', color: null } },
+  }, true);
+  /* Второе настроенное поле роли → ДВА refresh-запроса (analysis, devBack), sprint-data — ОДИН. */
+  const settings = gm.get('_settings');
+  settings.userFieldAnalysis = 'Analyst';
+  gm.set({ _settings: settings });
+  await gm.call('doStandupRefresh');
+  await new Promise(function (r) { setTimeout(r, 0); });
+  checkJsonSnapshot('standup-refresh-all-roles', {
+    hostPaths: ctx.host.log.map(function (e) { return e.path; }),
+    refreshBodies: ctx.host.log
+      .filter(function (e) { return e.path === 'backend-project/refresh-assignees'; })
+      .map(function (e) { return e.body; }),
+    analysisStates: gm.get('_roleItems').analysis.map(function (i) { return { issueId: i.issueId, state: i.state }; }),
+    devBackStates: gm.get('_roleItems').devBack.map(function (i) { return { issueId: i.issueId, state: i.state }; }),
     toasts: ctx.toasts,
   });
 });

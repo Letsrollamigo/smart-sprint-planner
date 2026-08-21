@@ -100,11 +100,35 @@
       c.values.forEach(function (v, i) { m[v] = i; });
       return m;
     }
-    if (!_fieldValuesInflight[fn]) {
-      _fieldValuesInflight[fn] = apiGet('field-values?fieldName=' + encodeURIComponent(fn))
-        .then(function (r) { _fieldValuesCache[fn] = r; _rerenderAllSortableTables(); return r; })
-        .catch(function () { delete _fieldValuesInflight[fn]; });
+    _ensureFieldValuesFetch(fn);
+    return null;
+  }
+  /* Единый стартер ленивого подъёма бандла (68-1 + 68-7): один fetch на поле за сессию
+     (inflight не чистится при успехе — ретрая нет), по приходу — ре-рендер обеих
+     зон-потребителей (sortable-таблицы + стендап). Ошибка → сброс inflight (ретрай
+     следующим рендером). */
+  function _ensureFieldValuesFetch(fn) {
+    if (_fieldValuesInflight[fn]) return;
+    _fieldValuesInflight[fn] = apiGet('field-values?fieldName=' + encodeURIComponent(fn))
+      .then(function (r) {
+        _fieldValuesCache[fn] = r;
+        _rerenderAllSortableTables();
+        try { renderStandupView(); } catch (_) {}
+        return r;
+      })
+      .catch(function () { delete _fieldValuesInflight[fn]; });
+  }
+  /* 68-7 — бандл состояний для секций стендапа: {values, colors} из того же кэша
+     field-values (68-1); miss → тот же ленивый подъём + ре-рендер стендапа по приходу,
+     до этого секции строятся по алфавиту присутствующих состояний (fallback в модуле). */
+  function _standupStateBundle() {
+    var fn = _settings && _settings.fieldState;
+    if (!fn) return null;
+    var c = _fieldValuesCache[fn];
+    if (c && Array.isArray(c.values) && c.values.length) {
+      return { values: c.values, colors: (c.colors && typeof c.colors === 'object') ? c.colors : {} };
     }
+    _ensureFieldValuesFetch(fn);
     return null;
   }
   function multiKeySort(items, primary, taMap) {
@@ -738,7 +762,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.18.1';
+  var APP_VERSION = '3.19.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2212,6 +2236,7 @@
       refreshReportingAccess: refreshReportingAccess,   /* #50 (ревью) — оживление вкладок отчётности post-save */
       refreshClearHistoryBtn: refreshClearHistoryBtn,
       renderPlannerRoles: renderPlannerRoles,
+      renderStandupView: renderStandupView,   /* 68-7 — маппинг/скрытые состояния применяются post-save без перезахода */
       applyDiagLogVisibility: _applyDiagLogVisibility,
       state: {
         getSettings:      function () { return _settings; },
@@ -2542,6 +2567,7 @@
       toast: toast, diag: diag, withLoader: withLoader,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
       getActiveRoles: getActiveRoles,
+      getStateBundle: _standupStateBundle,   /* 68-7 — {values,colors}|null, лениво */
       getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
       saveCurrentRoleState: saveCurrentRoleState,
       markDirty: _markDirty,

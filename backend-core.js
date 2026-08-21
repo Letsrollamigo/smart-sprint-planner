@@ -318,7 +318,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.18.1';
+var APP_VERSION = '3.19.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -908,6 +908,10 @@ var ALLOWED_SETTINGS_KEYS = [
   'stateRollupStrategy',
   /* v1.9.0 D132 — Stand-up assist: admin-configurable list of state names that count as Done. */
   'standupDoneStates',
+  /* 68-7 — состояния бандла, скрытые из секций стендапа, + маппинг «состояние → роли»
+     (per-role фильтр секций). Планировочный тир, как standupDoneStates. */
+  'standupHiddenStates',
+  'standupStateRoles',
   /* v2.8.0 #45 R1 — Capacity Management. capacityMode (light|full) — взаимоисключающий
      режим модели ёмкости; hoursPerDay/usefulHoursPerDay — константы политики (8ч бюджет
      vs ~6ч полезных под #40). Все три — admin-тир (см. ADMIN_TIER_SETTINGS_KEYS). */
@@ -1284,6 +1288,35 @@ function validateSettings(settings) {
     for (var sds = 0; sds < settings.standupDoneStates.length; sds++) {
       if (sdsSeen[settings.standupDoneStates[sds]]) return false;
       sdsSeen[settings.standupDoneStates[sds]] = true;
+    }
+  }
+  /* 68-7 — standupHiddenStates: состояния бандла, скрытые из секций стендапа (вместе
+     с их задачами). Контракт зеркалит standupDoneStates: array<string ≤200>, max 50, unique. */
+  if (settings.standupHiddenStates !== undefined && settings.standupHiddenStates !== null) {
+    if (!isStrArr(settings.standupHiddenStates, 200, 50)) return false;
+    var shsSeen = {};
+    for (var shs = 0; shs < settings.standupHiddenStates.length; shs++) {
+      if (shsSeen[settings.standupHiddenStates[shs]]) return false;
+      shsSeen[settings.standupHiddenStates[shs]] = true;
+    }
+  }
+  /* 68-7 — standupStateRoles: маппинг «состояние → роли» для per-role фильтра секций
+     стендапа. Контракт 1:1 с backlogZones (#21): [{ state:string≤200 (required, unique),
+     roles:array<roleKey ∈ ROLE_KEYS> }], max 50. Порядка не несёт (порядок секций —
+     из бандла state-поля). */
+  if (settings.standupStateRoles !== undefined && settings.standupStateRoles !== null) {
+    if (!Array.isArray(settings.standupStateRoles) || settings.standupStateRoles.length > 50) return false;
+    var srSeen = {};
+    for (var sr = 0; sr < settings.standupStateRoles.length; sr++) {
+      var srRow = settings.standupStateRoles[sr];
+      if (!srRow || typeof srRow !== 'object') return false;
+      if (!assertStr(srRow.state, 200) || !srRow.state) return false;   // state required, non-empty ≤200
+      if (srSeen[srRow.state]) return false;                            // unique state
+      srSeen[srRow.state] = true;
+      if (!Array.isArray(srRow.roles) || srRow.roles.length > ROLE_KEYS.length) return false;
+      for (var srr = 0; srr < srRow.roles.length; srr++) {
+        if (ROLE_KEYS.indexOf(srRow.roles[srr]) < 0) return false;      // each role ∈ ROLE_KEYS
+      }
     }
   }
   /* #21 — модуль «Работа с бэклогом» (additive optional).

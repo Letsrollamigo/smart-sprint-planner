@@ -1,0 +1,108 @@
+{
+  "sections": [
+    {
+      "id": "standupState:Fixed",
+      "state": "Fixed",
+      "label": "Fixed",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-3",
+          "url": "",
+          "title": "Ревью схемы данных",
+          "titleTrunc": "Ревью схемы данных",
+          "hours": "4ч/2ч",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "id": "standupState:In Progress",
+      "state": "In Progress",
+      "label": "In Progress",
+      "count": 2,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-2",
+          "url": "",
+          "title": "Обследование интеграции с 1С",
+          "titleTrunc": "Обследование интеграции с 1С",
+          "hours": "5ч/15ч",
+          "assignees": []
+        },
+        {
+          "issueId": "GM-10",
+          "url": "",
+          "title": "Бэкенд расчёта ёмкости",
+          "titleTrunc": "Бэкенд расчёта ёмкости",
+          "hours": "10ч/20ч",
+          "assignees": [
+            "gm_user_1"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "standupState:Open",
+      "state": "Open",
+      "label": "Open",
+      "count": 5,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-1",
+          "url": "",
+          "title": "Анализ требований платёжного модуля",
+          "titleTrunc": "Анализ требований платёжного модуля",
+          "hours": "0м/10ч",
+          "assignees": []
+        },
+        {
+          "issueId": "GM-5",
+          "url": "",
+          "title": "Регресс смоук-набора",
+          "titleTrunc": "Регресс смоук-набора",
+          "hours": "0м/10ч",
+          "assignees": []
+        },
+        {
+          "issueId": "GM-6",
+          "url": "",
+          "title": "Тест-кейсы перелимита",
+          "titleTrunc": "Тест-кейсы перелимита",
+          "hours": "0м/8ч",
+          "assignees": []
+        },
+        {
+          "issueId": "GM-11",
+          "url": "",
+          "title": "Эндпоинт истории спринтов",
+          "titleTrunc": "Эндпоинт истории спринтов",
+          "hours": "0м/40ч",
+          "assignees": [
+            "gm_user_2"
+          ]
+        },
+        {
+          "issueId": "GM-20",
+          "url": "",
+          "title": "Фронт без ресурса роли",
+          "titleTrunc": "Фронт без ресурса роли",
+          "hours": "0м/5ч",
+          "assignees": []
+        }
+      ]
+    }
+  ],
+  "goalBannerVisible": true,
+  "goalText": "Golden-master характеризация монолита",
+  "emptyRoleHidden": true
+}

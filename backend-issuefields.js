@@ -146,6 +146,9 @@ var ISSUEFIELDS_ENDPOINTS = [
         }
         var values = [];
         var resolved = [];   // #21 §8 — имена resolved-состояний (для schema-warning «незамапленное»)
+        var colors = {};     /* 68-7 — { name: {background,foreground} } для чипов секций стендапа;
+                                bundle-значения могут не нести color на старых YT — тогда карта
+                                частичная/пустая, фронт падает на нейтральный чип */
         var debugInfo = { searched: fieldName, found: false };
         try {
           var pf = null;
@@ -171,6 +174,9 @@ var ISSUEFIELDS_ENDPOINTS = [
                   if (!(v.isArchived || v.archived || false) && v.name) {
                     values.push(v.name);
                     if (v.isResolved) resolved.push(v.name);   // #21 §8 — аддитивно, values не трогаем
+                    if (v.color && (v.color.background || v.color.foreground)) {   /* 68-7 — аддитивно */
+                      colors[v.name] = { background: v.color.background || null, foreground: v.color.foreground || null };
+                    }
                   }
                 } catch (ve) { /* ignore */ }
               });
@@ -181,7 +187,7 @@ var ISSUEFIELDS_ENDPOINTS = [
           ctx.response.json({ success: false, error: 'internal_error', values: [], debug: debugInfo });
           return;
         }
-        ctx.response.json({ success: !!values.length || debugInfo.found, fieldName: fieldName, values: values, resolved: resolved, debug: debugInfo });
+        ctx.response.json({ success: !!values.length || debugInfo.found, fieldName: fieldName, values: values, resolved: resolved, colors: colors, debug: debugInfo });
       }
     },
 

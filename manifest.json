@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.18.1",
+  "version": "3.19.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>🛡 v3.18.1 — Sprint identity fix</b><br><br>🐞 <b>Fix</b> — «Save parameters» could rename the working sprint and overwrite its history record when a different sprint was selected in the picker; saving is now blocked with a warning when the form shows a foreign sprint (working-copy editing keeps working as before).<br><br>🧹 <b>History hygiene</b> — empty unsaved draft roles are no longer auto-snapshotted into sprint history.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — no schema change, no data migration.",
+  "changeNotes": "<b>📊 v3.19.0 — Stand-up by real states</b><br><br>✨ <b>Real state sections</b> — the three summary buckets are replaced by sections for the actual task states; section order and chip colors come from the State field bundle, empty states included.<br><br>👥 <b>«All roles» mode</b> — the default view unions all active role compositions with summed plan/fact hours and assignee lists; single-role view still available.<br><br>🗂 <b>Collapsible sections</b> — every state is a spoiler (collapsed by default) for a compact overview.<br><br>⚙️ <b>New settings</b> — state → roles mapping (per-role section filter with an «Other states» section) and hidden states.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade — additive settings keys, no data migration.",
   "widgets": [
     {
       "key": "ssp-main",

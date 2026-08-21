@@ -72,9 +72,10 @@ test('ADMIN_TIER_SETTINGS_KEYS: содержит параметры расчёт
   });
 });
 test('ADMIN_TIER_SETTINGS_KEYS: НЕ содержит планировочных ключей', () => {
-  /* dynEditEnabled / allowOverlimitPlanning намеренно ОСТАЮТСЯ планировочными (#45 b). */
+  /* dynEditEnabled / allowOverlimitPlanning намеренно ОСТАЮТСЯ планировочными (#45 b);
+     standupHiddenStates / standupStateRoles (68-7) — планировочный тир, как standupDoneStates. */
   ['activeRoles', 'fieldPriority', 'standupDoneStates', 'defaultLang',
-   'dynEditEnabled', 'allowOverlimitPlanning'].forEach((k) => {
+   'dynEditEnabled', 'allowOverlimitPlanning', 'standupHiddenStates', 'standupStateRoles'].forEach((k) => {
     assert.ok(ADMIN_TIER_SETTINGS_KEYS.indexOf(k) < 0, 'планировочный ключ ошибочно в admin-тире: ' + k);
   });
 });

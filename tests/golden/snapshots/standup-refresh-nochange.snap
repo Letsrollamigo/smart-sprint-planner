@@ -1,6 +1,7 @@
 {
   "hostPaths": [
-    "backend-project/refresh-assignees"
+    "backend-project/refresh-assignees",
+    "backend-project/field-values?fieldName=State"
   ],
   "taskAssignments": {
     "GM-10": {

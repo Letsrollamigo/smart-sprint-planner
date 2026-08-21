@@ -156,6 +156,15 @@ function SettingsForm(props) {
   }));
   const [standupDone, setStandupDone] = React.useState(() =>
     Array.isArray(initial.standupDoneStates) ? initial.standupDoneStates.slice() : []);
+  /* 68-7 — состояния, скрытые из секций стендапа (вместе с задачами). */
+  const [standupHidden, setStandupHidden] = React.useState(() =>
+    Array.isArray(initial.standupHiddenStates) ? initial.standupHiddenStates.slice() : []);
+  /* 68-7 — маппинг «состояние → роли» (per-role фильтр секций стендапа); строки
+     с _uid как у зон бэклога. */
+  const [standupStateRoles, setStandupStateRoles] = React.useState(() =>
+    Array.isArray(initial.standupStateRoles)
+      ? initial.standupStateRoles.map((z) => ({ _uid: genZoneUid(), state: (z && z.state) || '', roles: (z && Array.isArray(z.roles)) ? z.roles.slice() : [] }))
+      : []);
   /* #21 — «Работа с бэклогом»: зоны (состояние→роль(и), MANY) + старт-пул + фильтр по типу
      + источник паузы. Дефолты — пустые ([] = «не размечено» → fail-loud во вкладке, §8 спеки). */
   const [backlog, setBacklog] = React.useState(() => ({
@@ -407,8 +416,25 @@ function SettingsForm(props) {
     data.stateRollupFloor = rollup.floor || null;
     data.stateRollupStrategy = 'min';
 
-    /* Стендап (5c): done-состояния. */
+    /* Стендап (5c): done-состояния (канон отчётности) + 68-7 скрытые состояния секций
+       и маппинг «состояние → роли» (нормализация как у backlogZones: пустой state
+       скипается, dedup по state, roles ∩ role keys). */
     data.standupDoneStates = standupDone.slice();
+    data.standupHiddenStates = standupHidden.slice();
+    data.standupStateRoles = (function () {
+      const valid = {}; roles.forEach((r) => { valid[r.key] = true; });
+      const out = []; const seen = {};
+      standupStateRoles.forEach((z) => {
+        let st = String((z && z.state) || '').trim();
+        if (!st || seen[st]) return;
+        if (st.length > 200) st = st.slice(0, 200);
+        seen[st] = true;
+        const rls = []; const seenR = {};
+        ((z && z.roles) || []).forEach((rk) => { if (valid[rk] && !seenR[rk]) { seenR[rk] = true; rls.push(rk); } });
+        out.push({ state: st, roles: rls });
+      });
+      return out;
+    })();
 
     /* #21 — «Работа с бэклогом». Зоны: пустой state скипается, dedup по state,
        roles ∩ role keys (бэкенд: unique state, roles⊆ROLE_KEYS). Остальные — capValues.
@@ -743,7 +769,9 @@ function SettingsForm(props) {
     {
       id: 'standup', title: t('cardStandupSettings'),
       node: (
-        <StandupSection t={t} value={standupDone} onChange={setStandupDone} bundleStates={bundleStates} />
+        <StandupSection t={t} value={standupDone} onChange={setStandupDone} hidden={standupHidden} onHiddenChange={setStandupHidden}
+          stateRoles={standupStateRoles} onStateRolesChange={setStandupStateRoles}
+          activeRoles={activeRoleList} bundleStates={bundleStates} />
       ),
     },
     {

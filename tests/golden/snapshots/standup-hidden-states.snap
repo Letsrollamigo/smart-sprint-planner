@@ -1,0 +1,52 @@
+{
+  "sections": [
+    {
+      "id": "standupState:Fixed",
+      "state": "Fixed",
+      "label": "Fixed",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-3",
+          "url": "",
+          "title": "Ревью схемы данных",
+          "titleTrunc": "Ревью схемы данных",
+          "hours": "4ч/2ч",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "id": "standupState:In Progress",
+      "state": "In Progress",
+      "label": "In Progress",
+      "count": 2,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-2",
+          "url": "",
+          "title": "Обследование интеграции с 1С",
+          "titleTrunc": "Обследование интеграции с 1С",
+          "hours": "5ч/15ч",
+          "assignees": []
+        },
+        {
+          "issueId": "GM-10",
+          "url": "",
+          "title": "Бэкенд расчёта ёмкости",
+          "titleTrunc": "Бэкенд расчёта ёмкости",
+          "hours": "10ч/20ч",
+          "assignees": [
+            "gm_user_1"
+          ]
+        }
+      ]
+    }
+  ]
+}

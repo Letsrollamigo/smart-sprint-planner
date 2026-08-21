@@ -1,0 +1,65 @@
+{
+  "hostPaths": [
+    "backend-project/refresh-assignees",
+    "backend-project/refresh-assignees",
+    "backend-project/sprint-data",
+    "backend-project/history",
+    "backend-project/sprint-data",
+    "backend-project/field-values?fieldName=State",
+    "backend-project/history",
+    "backend-project/history"
+  ],
+  "refreshBodies": [
+    {
+      "issueIds": [
+        "GM-1",
+        "GM-2",
+        "GM-3"
+      ],
+      "fieldName": "Analyst",
+      "stateFieldName": "State"
+    },
+    {
+      "issueIds": [
+        "GM-10",
+        "GM-11"
+      ],
+      "fieldName": "Backend Dev",
+      "stateFieldName": "State"
+    }
+  ],
+  "analysisStates": [
+    {
+      "issueId": "GM-1",
+      "state": "Review"
+    },
+    {
+      "issueId": "GM-2",
+      "state": "In Progress"
+    },
+    {
+      "issueId": "GM-3",
+      "state": "Fixed"
+    },
+    {
+      "issueId": "GM-4",
+      "state": "Open"
+    }
+  ],
+  "devBackStates": [
+    {
+      "issueId": "GM-10",
+      "state": "Fixed"
+    },
+    {
+      "issueId": "GM-11",
+      "state": "Open"
+    }
+  ],
+  "toasts": [
+    [
+      "success",
+      "Stand-up обновлён"
+    ]
+  ]
+}

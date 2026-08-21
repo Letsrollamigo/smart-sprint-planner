@@ -98,6 +98,9 @@
       if (typeof deps.refreshReportingAccess === 'function') deps.refreshReportingAccess();
       deps.refreshClearHistoryBtn();
       deps.renderPlannerRoles();
+      /* 68-7 — стендап читает маппинг «состояние→роли» / скрытые состояния из настроек:
+         без перерисовки правки применялись только после перезахода (пойман смоуком на YT 2025.3). */
+      if (typeof deps.renderStandupView === 'function') { try { deps.renderStandupView(); } catch (_) {} }
       try { deps.applyDiagLogVisibility(); } catch (_) {}
       return { success: true };
     });

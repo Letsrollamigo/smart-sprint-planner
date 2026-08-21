@@ -350,5 +350,92 @@ function TextField(props) {
   );
 }
 
+/* 68-7 — общая таблица «состояние → роль(и)» (вынесена 1:1 из BacklogSection;
+   потребители: зоны пайплайна бэклога #21 и маппинг стендапа 68-7). rows =
+   [{_uid,state,roles[]}], onChange(rows). labels — уже-резолвнутые t()-строки
+   {state, roles, empty, add, remove, up, down, noRoles}; orderable=false прячет
+   ↑↓ (порядок секций стендапа диктует бандл, не маппинг). Подсветка дублей
+   state — внутри; сводная ошибка дублей — за вызывающим (как было). */
+function StateRolesTable(props) {
+  const t = props.t;
+  const rows = props.rows || [];
+  const set = props.onChange || noop;
+  const bundleStates = props.bundleStates || [];
+  const roleOpts = props.roleOpts || [];
+  const orderable = props.orderable !== false;
+  const L = props.labels || {};
+
+  const setRow = (i, p) => set(rows.map((z, idx) => (idx === i ? Object.assign({}, z, p) : z)));
+  const addRow = () => set(rows.concat([{ _uid: genZoneUid(), state: '', roles: [] }]));
+  const delRow = (i) => { const z = rows.slice(); z.splice(i, 1); set(z); };
+  function moveRow(i, dir) {
+    const j = i + dir;
+    if (j < 0 || j >= rows.length) return;
+    const z = rows.slice(); const tmp = z[i]; z[i] = z[j]; z[j] = tmp;
+    set(z);
+  }
+  function toggleRole(i, rk) {
+    const cur = (rows[i] && rows[i].roles) || [];
+    const next = cur.indexOf(rk) >= 0 ? cur.filter((k) => k !== rk) : cur.concat([rk]);
+    setRow(i, { roles: next });
+  }
+
+  const stCounts = {};
+  rows.forEach((z) => { const s = (z.state || '').trim(); if (s) stCounts[s] = (stCounts[s] || 0) + 1; });
+  const stateOpts = bundleStates.map((s) => ({ key: s, label: s }));
+  const roleData = roleOpts.map((r) => ({ key: r.key, label: t('role.' + r.key) }));
+  const moveBtnCls = 'ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly';
+
+  return (
+    <React.Fragment>
+      <table className="ssp-dta-table ssp-backlog-zones" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th scope="col" style={{ width: '30%' }}>{L.state}</th>
+            <th scope="col">{L.roles}</th>
+            <th scope="col" style={{ width: orderable ? '92px' : '48px' }} aria-label={L.remove}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {!rows.length ? (
+            <tr><td colSpan={3} className="empty" style={{ padding: '8px', textAlign: 'center', color: 'var(--muted)' }}>{L.empty}</td></tr>
+          ) : rows.map((z, i) => {
+            const st = (z.state || '').trim();
+            const dup = st && stCounts[st] > 1;
+            return (
+              <tr key={z._uid}>
+                <td style={dup ? { outline: '1px solid var(--error)' } : undefined}>
+                  <RingSelLite options={stateOpts} value={z.state || ''} clearable placeholder={t('phNotSelected')} onChange={(val) => setRow(i, { state: val })} />
+                </td>
+                <td>
+                  {roleData.length ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(128px, 1fr))', gap: '4px 8px', maxWidth: '100%' }}>
+                      {roleData.map((r) => {
+                        const on = (z.roles || []).indexOf(r.key) >= 0;
+                        return (
+                          <label key={r.key} style={{ display: 'inline-flex', alignItems: 'flex-start', gap: '4px', fontSize: '11px', lineHeight: '1.25', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={on} onChange={() => toggleRole(i, r.key)} style={{ marginTop: '1px', flex: '0 0 auto' }} />
+                            <span>{r.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : <span className="hint" style={{ fontSize: '12px', color: 'var(--muted)' }}>{L.noRoles}</span>}
+                </td>
+                <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                  {orderable ? <button type="button" className={moveBtnCls} title={L.up} disabled={i === 0} onClick={() => moveRow(i, -1)}>↑</button> : null}
+                  {orderable ? <button type="button" className={moveBtnCls} title={L.down} disabled={i === rows.length - 1} onClick={() => moveRow(i, 1)}>↓</button> : null}
+                  <button type="button" className={moveBtnCls} title={L.remove} onClick={() => delRow(i)}>×</button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <button type="button" className={_btnCls('secondary')} style={{ marginTop: '10px' }} onClick={addRow}>{L.add}</button>
+    </React.Fragment>
+  );
+}
+
 /* ── Секция: DTA (дифференцированный учёт трудозатрат) ── */
-export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField };
+export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };

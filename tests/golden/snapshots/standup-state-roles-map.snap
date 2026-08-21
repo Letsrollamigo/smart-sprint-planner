@@ -1,0 +1,73 @@
+{
+  "sectionsAllRoles": [
+    {
+      "id": "standupState:Fixed",
+      "count": 1,
+      "roleLabels": []
+    },
+    {
+      "id": "standupState:In Progress",
+      "count": 2,
+      "roleLabels": [
+        "Разработка Back"
+      ]
+    },
+    {
+      "id": "standupState:Open",
+      "count": 5,
+      "roleLabels": [
+        "Анализ"
+      ]
+    }
+  ],
+  "sectionsAnalysis": [
+    {
+      "id": "standupState:Open",
+      "state": "Open",
+      "label": "Open",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-1",
+          "url": "",
+          "title": "Анализ требований платёжного модуля",
+          "titleTrunc": "Анализ требований платёжного модуля",
+          "hours": "0м/10ч",
+          "assignees": []
+        }
+      ]
+    },
+    {
+      "id": "standupStateOther",
+      "state": null,
+      "label": "Прочие состояния",
+      "count": 2,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
+      "rows": [
+        {
+          "issueId": "GM-3",
+          "url": "",
+          "title": "Ревью схемы данных",
+          "titleTrunc": "Ревью схемы данных",
+          "hours": "4ч/2ч",
+          "assignees": [],
+          "stateLabel": "Fixed"
+        },
+        {
+          "issueId": "GM-2",
+          "url": "",
+          "title": "Обследование интеграции с 1С",
+          "titleTrunc": "Обследование интеграции с 1С",
+          "hours": "5ч/15ч",
+          "assignees": [],
+          "stateLabel": "In Progress"
+        }
+      ]
+    }
+  ]
+}

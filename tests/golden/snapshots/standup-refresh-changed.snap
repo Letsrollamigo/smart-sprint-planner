@@ -4,6 +4,7 @@
     "backend-project/sprint-data",
     "backend-project/history",
     "backend-project/sprint-data",
+    "backend-project/field-values?fieldName=State",
     "backend-project/history",
     "backend-project/history"
   ],

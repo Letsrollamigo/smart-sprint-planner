@@ -1,29 +1,36 @@
 {
-  "selOptions": "<option value=\"analysis\">Анализ</option><option value=\"testing\">Тестирование</option><option value=\"devBack\">Разработка Back</option><option value=\"devFront\">Разработка Front</option>",
-  "selValueAfterPopulate": "devBack",
-  "bucketsDevBack": [
+  "selOptions": "<option value=\"__all__\">Все роли</option><option value=\"analysis\">Анализ</option><option value=\"testing\">Тестирование</option><option value=\"devBack\">Разработка Back</option><option value=\"devFront\">Разработка Front</option>",
+  "valueAfterPopulate": "__all__",
+  "sectionsDevBack": [
     {
-      "id": "standupBucketDone",
-      "header": "✅ Done (0)",
-      "rows": []
-    },
-    {
-      "id": "standupBucketInflight",
-      "header": "🔄 В работе (1)",
+      "id": "standupState:In Progress",
+      "state": "In Progress",
+      "label": "In Progress",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
       "rows": [
         {
           "issueId": "GM-10",
           "url": "",
           "title": "Бэкенд расчёта ёмкости",
           "titleTrunc": "Бэкенд расчёта ёмкости",
-          "hours": "0м/20ч",
-          "assignee": "gm_user_1"
+          "hours": "10ч/20ч",
+          "assignees": [
+            "gm_user_1"
+          ]
         }
       ]
     },
     {
-      "id": "standupBucketNotStarted",
-      "header": "📋 Не начато (1)",
+      "id": "standupState:Open",
+      "state": "Open",
+      "label": "Open",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
       "rows": [
         {
           "issueId": "GM-11",
@@ -31,43 +38,60 @@
           "title": "Эндпоинт истории спринтов",
           "titleTrunc": "Эндпоинт истории спринтов",
           "hours": "0м/40ч",
-          "assignee": "gm_user_2"
+          "assignees": [
+            "gm_user_2"
+          ]
         }
       ]
     }
   ],
-  "bucketsAfterChange": [
+  "sectionsAnalysis": [
     {
-      "id": "standupBucketDone",
-      "header": "✅ Done (1)",
+      "id": "standupState:Fixed",
+      "state": "Fixed",
+      "label": "Fixed",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
       "rows": [
         {
           "issueId": "GM-3",
           "url": "",
           "title": "Ревью схемы данных",
           "titleTrunc": "Ревью схемы данных",
-          "hours": "0м/2ч",
-          "assignee": ""
+          "hours": "4ч/2ч",
+          "assignees": []
         }
       ]
     },
     {
-      "id": "standupBucketInflight",
-      "header": "🔄 В работе (1)",
+      "id": "standupState:In Progress",
+      "state": "In Progress",
+      "label": "In Progress",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
       "rows": [
         {
           "issueId": "GM-2",
           "url": "",
           "title": "Обследование интеграции с 1С",
           "titleTrunc": "Обследование интеграции с 1С",
-          "hours": "0м/15ч",
-          "assignee": ""
+          "hours": "5ч/15ч",
+          "assignees": []
         }
       ]
     },
     {
-      "id": "standupBucketNotStarted",
-      "header": "📋 Не начато (2)",
+      "id": "standupState:Open",
+      "state": "Open",
+      "label": "Open",
+      "count": 1,
+      "chipBg": null,
+      "chipFg": null,
+      "roleLabels": [],
       "rows": [
         {
           "issueId": "GM-1",
@@ -75,15 +99,7 @@
           "title": "Анализ требований платёжного модуля",
           "titleTrunc": "Анализ требований платёжного модуля",
           "hours": "0м/10ч",
-          "assignee": ""
-        },
-        {
-          "issueId": "GM-4",
-          "url": "",
-          "title": "Исключённая задача",
-          "titleTrunc": "Исключённая задача",
-          "hours": "0м/100ч",
-          "assignee": ""
+          "assignees": []
         }
       ]
     }

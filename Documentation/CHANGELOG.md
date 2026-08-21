@@ -8,6 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.19.0] — 2026-08-21
+
+> **Stand-up by real states: sections for the actual task states replace the three summary buckets (driven by user feedback).**
+
+### Added
+
+- **Real state sections** — done/inflight/notStarted buckets are replaced by sections for the actual task states. Section order and chip colors come from the State field bundle (lazy fetch through the shared field-values cache; `colors` added to the `GET /field-values` response additively); every bundle state is shown, empty ones included; alphabetical fallback before the bundle loads and for states outside it; «No state» goes last.
+- **«All roles» mode (picker default)** — a union of all active role compositions filtered by ACTIVE_INC (tasks included in the sprint, both modes); hours are summed plan/fact over each role's own suffix (no double counting on overlapping compositions), assignees as a unique list. «Refresh from YouTrack» walks the roles with a configured field sequentially: one `sprint-data` persist, one render, one toast.
+- **State → roles mapping (`standupStateRoles`)** — a per-role section filter: with a single role selected only its states' sections are shown (empty mapped ones included), the role's tasks in other states land in an aggregated «Other states» section with a state label per row; in «All roles» sections carry owner-role badges. The UI reuses the shared `StateRolesTable` (extracted 1:1 from the backlog pipeline zones). Backend contract mirrors `backlogZones`.
+- **Hidden states (`standupHiddenStates`)** — hide sections (together with their tasks) by name; the contract mirrors `standupDoneStates`.
+- **Collapsible sections** — every section is a native Ring Collapse spoiler (the backlog spoiler pattern, `<details>` fallback), collapsed by default: the Stand-up opens as a compact «state (count)» overview instead of an endless sheet.
+
+### Changed
+
+- `standupDoneStates` remains the reporting done-canon (spillover / resolution time) — the Stand-up no longer reads it; the settings hint is rewritten. The Stand-up `stateRollupOrder` fallback chain and the «no Done states» hint are removed together with the bucket classifier.
+- Saving settings re-renders the Stand-up immediately (post-save hook) — mapping/hidden-state edits apply without re-entering the widget.
+- i18n: +10 keys ×15 locales; dead bucket keys and `standupNoDoneStatesHint` removed.
+
+### Tests
+
+- Stand-up goldens reworked to the sections vm contract: done-classifier cases replaced (`standup-bundle-order`, `standup-hidden-states`), added `standup-all-roles`, `standup-state-roles-map`, `standup-refresh-all-roles`; `standup-states-68-7` units; tier-gate negative for the new keys; `tests/fixtures/snapshots/3.18.1/` fixture + compat regression (whitelist change). `module-registry.json` budgets updated with budgetNote.
+
+---
+
 ## [3.18.1] — 2026-08-20
 
 > **Defect #70 fix: sprint identity corruption via «Save parameters» after switching sprints in the picker.**
