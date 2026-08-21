@@ -8,7 +8,7 @@
  *     ([data-i18n] → text/placeholder/innerHTML с сохранением .ssp-icon;
  *     -title/-ph/-tooltip/-label варианты);
  *   • setLang(lang) — смена языка: _lang + localStorage(ssp_lang) + индикаторы
- *     langSel/langSelSettings; если словарь не inline (не EN/RU) — асинхронная
+ *     langSel; если словарь не inline (не EN/RU) — асинхронная
  *     подгрузка через _i18nBridge.loadDictionary → I18N[lang] → _doFullRerender;
  *     rollback на reject; иначе синхронный _doFullRerender;
  *   • _populateLangSelect(el) — заполнение <select> 15 языками из
@@ -89,11 +89,9 @@
     /* Синк in-memory языка loader'а: react-мост (getCurrentSspLang) читает его
        как канон, без синка локаль DatePicker замирала бы на стартовом языке. */
     if (deps.i18nBridge && typeof deps.i18nBridge.setCurrentLang === 'function') deps.i18nBridge.setCurrentLang(lang);
-    /* Обновить индикатор выбранного языка в переключателях (шапка + overlay-копия) */
+    /* Обновить индикатор выбранного языка в переключателе шапки */
     var sel = document.getElementById('langSel');
     if (sel) sel.value = lang;
-    var sel2 = document.getElementById('langSelSettings');
-    if (sel2) sel2.value = lang;
 
     /* Если словарь языка ещё не загружен — поднять его через loader, обновить I18N[lang],
        потом запустить rerender. Для EN/RU словарь уже inline'нут в I18N → rerender сразу. */
@@ -107,7 +105,6 @@
         deps.safeLs.set('ssp_lang', prev);
         if (deps.i18nBridge && typeof deps.i18nBridge.setCurrentLang === 'function') deps.i18nBridge.setCurrentLang(prev);
         if (sel) sel.value = prev;
-        if (sel2) sel2.value = prev;
       });
       return;
     }

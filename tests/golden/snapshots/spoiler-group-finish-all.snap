@@ -1,0 +1,11 @@
+{
+  "mixedHasBtn": true,
+  "doneHasBtn": false,
+  "log": [
+    [
+      "finishGroup",
+      "S9"
+    ]
+  ],
+  "openAfterClick": false
+}

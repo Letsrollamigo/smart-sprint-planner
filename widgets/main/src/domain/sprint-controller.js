@@ -295,8 +295,6 @@
       var resEl = document.getElementById('res_'+rk);
       if (resEl) _sprint[role.resKey] = deps.parsePeriod(resEl.value);
     }
-    var ss = document.getElementById('sprintStatus_'+rk);
-    if (_sprint.status !== deps.STATUS.CONFIRMED && _sprint.status !== deps.STATUS.ALLOCATED && ss) _sprint.status = ss.value;
     // Сохранить поля Спринт / Версия
     var sprintFv = document.getElementById('sprintFieldVal');
     var versionFv = document.getElementById('versionFieldVal');

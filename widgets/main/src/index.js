@@ -11,7 +11,6 @@
 import './infra/click-anchor.js';
 import './icons.generated.js';
 import './i18n/i18n-bridge.js';
-import './domain/ring-class-helpers.js';
 import './pure/toast-pure.js';
 import './infra/toast-ring.js';
 import './infra/datepicker-bridge.js';

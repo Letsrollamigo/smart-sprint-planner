@@ -49,7 +49,19 @@ function formatHoursLight(n) {
   return (rounded === Math.floor(rounded)) ? String(rounded) : rounded.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 }
 
-const api = { esc, safeUrl, uid, deepClone, formatHoursLight };
+/* #69 R1 (строка 26) — ячейка «Внешний ID» (была ×3: состав/люди/история; XSS-чувствительна —
+   esc на каждом пути): пусто → '—', http(s) → ссылка (safeUrl), иначе текст с title. */
+function renderExternalTicketHtml(val) {
+  if (!val) return '<span style="color:var(--muted)">—</span>';
+  const safe = esc(String(val));
+  const style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
+  if (/^https?:\/\//i.test(val)) {
+    return '<span ' + style + ' title="' + safe + '"><a href="' + safeUrl(val) + '" target="_blank" rel="noopener noreferrer" class="link">' + safe + '</a></span>';
+  }
+  return '<span ' + style + ' title="' + safe + '">' + safe + '</span>';
+}
+
+const api = { esc, safeUrl, uid, deepClone, formatHoursLight, renderExternalTicketHtml };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_UTIL_PURE = api; } catch (_) { /* sandboxed write may throw */ }

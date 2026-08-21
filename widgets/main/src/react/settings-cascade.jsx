@@ -33,6 +33,8 @@ function CascadeSection(props) {
         <RoleCheck on={v.forbid} label={t('lblForbidContainer')} hint={t('hintForbidContainer')} onToggle={() => patch({ forbid: !v.forbid })} />
         {dangerous ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('warnCascadeWithoutForbid')}</div> : null}
       </div>
+      {/* #69 R1 (строка 6) — подполя при выключенной агрегации притушены, не скрыты. */}
+      <div className={v.agg ? '' : 'ssp-subfields--dim'}>
       <div className="form-grid form-grid--2" style={{ marginTop: '14px' }}>
         <div className="field">
           <label>{t('lblCascadeKindField')}</label>
@@ -67,9 +69,9 @@ function CascadeSection(props) {
         </div>
       </div>
       <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeManualEstTag')}</div>
+      </div>
     </React.Fragment>
   );
 }
 
-/* ── Секция: state rollup (parent ← min(children)) ── */
 export { CascadeSection };

@@ -8,7 +8,6 @@
       "busyAtCall": [
         true,
         true,
-        true,
         true
       ]
     },
@@ -18,7 +17,6 @@
       "idsInQuery": 20,
       "hasFields": true,
       "busyAtCall": [
-        true,
         true,
         true,
         true
@@ -33,7 +31,6 @@
   ],
   "apiCalls": 0,
   "busyAfter": [
-    false,
     false,
     false,
     false

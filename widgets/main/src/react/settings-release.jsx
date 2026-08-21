@@ -48,6 +48,8 @@ function ReleaseSection(props) {
   return (
     <React.Fragment>
       <RoleCheck on={v.enabled} label={t('relSetEnable')} onToggle={() => patch({ enabled: !v.enabled })} />
+      {/* #69 R1 (строка 6) — подполя при выключенном модуле притушены, не скрыты. */}
+      <div className={v.enabled ? '' : 'ssp-subfields--dim'}>
 
       {/* Пул кандидатов представителей (D-D2 — отдельно от групп прав) */}
       <div className="card-subtitle" style={subCls}>{t('relSetCandGroups')}</div>
@@ -96,15 +98,9 @@ function ReleaseSection(props) {
         <div><b>{t('relSrcLabel')}:</b> {t('relSrcInternal')} · {t('relSrcVendor')}</div>
       </div>
       <span className="hint" style={hintCls}>{t('relSetTypeFixedNote')}</span>
+      </div>
     </React.Fragment>
   );
 }
 
-/* #50 — «Отчётность» (admin-тир). S1: мастер-тумблер + reporting-access группы контуров
-   A (лиды) / B (руководство, B⊇A). Данные чувствительны → доступ по членству, не опционален.
-   Пороги/паузы/сегментация — со своими вью (S1c+), здесь пока нет.
-   value = { enabled, groupsA:{ids,names}, groupsB:{ids,names} }. */
-/* #50 — статусные секции отчётности: конвертеры каноническая-модель ↔ строки-редактора.
-   UI = список строк [{_uid, state, …сателлит}] (пикер из бандла + добавить/удалить, как зоны
-   бэклога #21); хранимая модель прежняя (пороги-объект / цели-массив+ярлыки / поток-массив). */
 export { ReleaseSection };

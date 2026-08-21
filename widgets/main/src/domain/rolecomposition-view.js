@@ -219,11 +219,24 @@ function _renderExcludedFilter(deps) {
   bar.style.display = mounted ? '' : 'none';
 }
 
+/* #69 R1 (строка 1) — одна кнопка «Обновить из задач» над аккордеонами вместо per-role копий
+   (любая из них обновляла ВЕСЬ спринт — ложный per-role смысл и конфликт-модалки чужих ролей).
+   На «Людях» и Ганте — свои кнопки (другие экраны). Бинд идемпотентен (статическая кнопка). */
+function _bindPlanningRefreshBtn(deps) {
+  var btn = document.getElementById('planningRefreshBtn');
+  if (!btn || btn._sspBound) return;
+  btn._sspBound = true;
+  btn.addEventListener('click', function () {
+    if (!deps.state.getIsEditor()) { deps.toast(deps.T('toastNoRightsShort'), 'warn'); return; }
+    deps.refreshFromYouTrack(); /* #35 — единый путь: весь спринт, обе вкладки + Гант */
+  });
+}
+
 function renderPlanningRoles(deps) {
   var container = document.getElementById('roleAccordions');
   var noSprintEl = document.getElementById('planningRolesNoSprint');
   var noActiveEl = document.getElementById('planningRolesNoActive');
-  var filterBar = document.getElementById('planningFilterBar');
+  var filterBar = document.getElementById('planningToolbar');   /* #69 R1 — панель: кнопка «Обновить» + фильтр 68-2 */
   if (!container) return;
   var activeRoles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : [];
   if (!activeRoles.length) {
@@ -248,6 +261,8 @@ function renderPlanningRoles(deps) {
     return;
   }
   if (noSprintEl) noSprintEl.classList.add('hidden');
+  if (filterBar) filterBar.style.display = '';
+  _bindPlanningRefreshBtn(deps);   /* #69 R1 (строка 1) */
   _renderExcludedFilter(deps);   /* 68-2 */
   var html = activeRoles.map(function(role){ return renderRoleAccordion(role.key, deps); }).join('');
   container.innerHTML = html;
@@ -448,14 +463,6 @@ function buildRolePanel(role, deps) {
   pickBtn.id = 'pickBtn_'+role.key;
   pickBtn.textContent = T('btnPickTasks');
 
-  /* S6 #35 — кнопка «Обновить из задачи» теперь в обоих режимах (inline и обычный):
-     единый refreshFromYouTrack тянет полный срез и в inline безопасен (dirty-guard). */
-  var refreshBtn = document.createElement('button');
-  refreshBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
-  refreshBtn.id = 'refreshBtn_'+role.key;
-  refreshBtn.disabled = true;
-  refreshBtn.textContent = T('btnRefreshFromTask');
-
   var recalcBtn = document.createElement('button');
   recalcBtn.className = 'ring-button-button ring-button-block ring-button-heightS editor-btn';
   recalcBtn.id = 'recalcBtn_'+role.key;
@@ -477,7 +484,6 @@ function buildRolePanel(role, deps) {
   validateBtn.textContent = T('btnValidate');
 
   toolbar.appendChild(pickBtn);
-  if (refreshBtn) toolbar.appendChild(refreshBtn);
   toolbar.appendChild(recalcBtn);
   toolbar.appendChild(clearBtn);
   toolbar.appendChild(spacer);
@@ -528,15 +534,6 @@ function wireRolePanel(role, dynEdit, deps) {
     pickBtn.addEventListener('click', function() {
       if (!deps.state.getIsEditor()) { deps.toast(T('toastNoEditRights'), 'warn'); return; }
       deps.openPickModal(rk, role);
-    });
-  }
-
-  /* Кнопка Обновить данные */
-  var refreshBtn = document.getElementById('refreshBtn_'+rk);
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', function() {
-      if (!deps.state.getIsEditor()) { deps.toast(T('toastNoRightsShort'), 'warn'); return; }
-      deps.refreshFromYouTrack(); /* #35 — единый путь: весь спринт, обе вкладки + Гант */
     });
   }
 
@@ -623,24 +620,6 @@ function wireRolePanel(role, dynEdit, deps) {
     _roleItems[rk]._page = page + 1;
     deps.renderRoleComposition(rk);
   });
-}
-
-/* ── v1.8.0 D130 — Etap В.2 — External ticket ID cell renderer (module-level).
-   Used in role composition table (history/assignee tables держат собственные
-   копии в своих кластерах).
-   - empty/undefined → muted '—'
-   - http(s) URL     → clickable <a> (target=_blank, rel=noopener)
-   - plain string    → truncated text with full value in title tooltip
-   esc() is mandatory on every path — this is a user-controlled string from a YT custom field. */
-/* v2.1.0 E4 — inner-only variant for Ring Table cell (without <td> wrapper). */
-function _renderExternalTicketInnerHtml(val, deps) {
-  if (!val) return '<span style="color:var(--muted)">—</span>';
-  var safe = deps.esc(String(val));
-  var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
-  if (/^https?:\/\//i.test(val)) {
-    return '<span '+style+' title="'+safe+'"><a href="'+deps.safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
-  }
-  return '<span '+style+' title="'+safe+'">'+safe+'</span>';
 }
 
 /* v2.1.0 E4 — Hybrid controlled-mode Ring Table for renderRoleComposition.
@@ -762,7 +741,7 @@ function _buildRoleCompositionVm(rk, deps) {
     var cells = {};
     cells.id = { __html: '<a href="'+safeUrl(item.url)+'" target="_blank" class="link">'+esc(iid)+'</a>' };
     if (hasExtTicket) {
-      cells.externalTicketId = { __html: _renderExternalTicketInnerHtml(item.externalTicketId, deps) };
+      cells.externalTicketId = { __html: window.__SSP_UTIL_PURE.renderExternalTicketHtml(item.externalTicketId) };   /* #69 R1 — общий util-pure */
     }
     /* Plain-строки ячеек рендерятся table-mount'ом как React-ТЕКСТ (авто-эскейп) —
        esc() здесь давал двойное экранирование («&» → «&amp;» на экране).
@@ -834,10 +813,8 @@ function renderRoleComposition(rk, deps) {
   diag('renderRoleComposition('+rk+'): items.length='+vm.itemCount+' host=yes has='+has, 'info');
   var clearBtn  = document.getElementById('clearBtn_'+rk);
   var recalcBtn = document.getElementById('recalcBtn_'+rk);
-  var refreshBtn = document.getElementById('refreshBtn_'+rk);
   if (clearBtn)  clearBtn.disabled  = !has;
   if (recalcBtn) recalcBtn.disabled = !has;
-  if (refreshBtn) refreshBtn.disabled = !has;
 
   if (!has) {
     if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch(_){} }

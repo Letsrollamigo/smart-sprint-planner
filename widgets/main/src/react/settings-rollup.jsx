@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { noop, _btnCls, RoleCheck, MultiSelect, RingSelLite, RollupOrderList } from './settings-shared.jsx';
+import { _btnCls, RoleCheck, MultiSelect, RingSelLite, RollupOrderList } from './settings-shared.jsx';
 
 function StateRollupSection(props) {
   const t = props.t;
@@ -46,6 +46,8 @@ function StateRollupSection(props) {
       <RoleCheck on={v.enabled} label={t('lblStateRollupEnabled')} hint={t('hintStateRollup')} onToggle={() => patch({ enabled: !v.enabled })} />
       {noHierarchy ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('hintStateRollupNoHierarchy')}</div> : null}
 
+      {/* #69 R1 (строка 6) — подполя при выключенном rollup притушены, не скрыты. */}
+      <div className={v.enabled ? '' : 'ssp-subfields--dim'}>
       <div className="field" style={{ marginTop: '14px' }}>
         <label>{t('lblStateRollupOrder')}</label>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
@@ -74,6 +76,8 @@ function StateRollupSection(props) {
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupResolved')}</div>
       </div>
 
+      {/* #69 R1 (строка 6) — disabled-селект «Стратегия» (единственное значение «min» и обещание
+          «в будущих релизах») снят; ключ stateRollupStrategy остаётся reserved, форма пишет 'min'. */}
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
         <div className="field">
           <label>{t('lblStateRollupFloor')}</label>
@@ -84,15 +88,10 @@ function StateRollupSection(props) {
           />
           <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupFloor')}</div>
         </div>
-        <div className="field">
-          <label>{t('lblStateRollupStrategy')}</label>
-          <RingSelLite options={[{ key: 'min', label: 'min' }]} value="min" disabled onChange={noop} />
-          <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupStrategy')}</div>
-        </div>
+      </div>
       </div>
     </React.Fragment>
   );
 }
 
-/* ── Секция: Stand-up assist (done-состояния) ── */
 export { StateRollupSection };

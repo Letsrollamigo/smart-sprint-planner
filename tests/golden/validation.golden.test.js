@@ -102,7 +102,6 @@ function ensureValidationDom(document, rk) {
   document.body.insertAdjacentHTML(
     'beforeend',
     '<button id="validateBtn_' + rk + '"></button>' +
-      '<span id="sprintStatus_' + rk + '"></span>' +
       '<button id="newSprintBtn_' + rk + '" style="display: none;"></button>' +
       '<div id="editHistBanner" style="display: block;">edit-banner</div>'
   );
@@ -239,7 +238,6 @@ test('golden: doValidateRole — успешный флоу (CONFIRMED + snapshot
     dom: {
       editBannerDisplay: document.getElementById('editHistBanner').style.display,
       editBannerText: document.getElementById('editHistBanner').textContent,
-      sprintStatusDisplay: document.getElementById('sprintStatus_analysis').style.display,
       newSprintBtnDisplay: document.getElementById('newSprintBtn_analysis').style.display,
     },
     toasts: toasts,

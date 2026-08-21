@@ -39,9 +39,8 @@ const RELEASE_KEYS = [
   'relFieldManager', 'relFieldEngineer', 'relFieldPatchnote', 'relFieldNotes', 'relFieldTaskUrl',
   'relBtnCreate', 'relHintFreezeRule', 'relHintManagerDefault', 'relHintEngineerRequired',
   'relValNameRequired', 'relValFreezeAfterPlan', 'relPickerNoGroups', 'relPickerLoadError',
-  'relBadgeOutOfPool',
   // §7 состав + подбор задач (R1.4)
-  'relCardComposition', 'relCardAddIssues', 'relAddIssuesTitle', 'relPickAlready', 'relPickCollision',
+  'relCardComposition', 'relCardAddIssues', 'relAddIssuesTitle', 'relPickAlready',
   // §8 перенос задач между релизами — D-B (R1.4b)
   'relTransferTitle', 'relTransferPrompt', 'relTransferFrom', 'relTransferFrozenNote',
   'relBtnTransfer', 'relTransferDone', 'relTransferTargetLocked',

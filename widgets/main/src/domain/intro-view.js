@@ -221,15 +221,8 @@
     /* v5.0.3 — на случай первого рендера: bind стабильных инпутов шапки */
     deps.bindSprintHeaderDraftListeners();
 
-    var ss = document.getElementById('sprintStatus_'+rk);
     var newBtn = document.getElementById('newSprintBtn_'+rk);
-    if (_sprint.status === STATUS.CONFIRMED || _sprint.status === STATUS.ALLOCATED) {
-      if (ss) ss.style.display = 'none';
-      if (newBtn) newBtn.style.display = '';
-    } else {
-      if (ss) { ss.style.display = ''; ss.value = _sprint.status || STATUS.PLANNING; }
-      if (newBtn) newBtn.style.display = 'none';
-    }
+    if (newBtn) newBtn.style.display = (_sprint.status === STATUS.CONFIRMED || _sprint.status === STATUS.ALLOCATED) ? '' : 'none';
     renderRoleStatusBadge(rk, deps);
     renderSprintIntroExtras(deps);
   }

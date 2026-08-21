@@ -404,6 +404,36 @@ test('golden: смена грейда в таблице исполнителей
   });
 });
 
+/* #69 R1 (строка 9) — Full + утверждённая ёмкость: грейд на «Людях» read-only (текст + подсказка),
+   смена грейда не пересчитывает ресурс по формуле (ресурс — из ёмкости). */
+test('golden: грейд read-only при утверждённой Full-ёмкости + handler без формулы', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  gm.set({ _settings: Object.assign({}, gm.get('_settings'), { capacityMode: 'full' }) });
+  gm.set({ _approvedRecordForPlanning: function () { return { mode: 'full', status: 'approved', persons: {} }; } });
+  const apiPostLog = [];
+  gm.set({ apiPost: function (path) { apiPostLog.push(path); return Promise.resolve({ success: true }); } });
+  gm.call('renderCurrentRoleAssigneeTable');
+  const host = document.getElementById('currentRoleAssigneeHost');
+  const table = materializeTable(host);
+  const gradeCol = table.columns.filter(function (c) { return c.id === 'grade'; })[0];
+  const gradeCells = gradeCol.cells.map(function (c) { return c && c.html; });
+  const before = gm.get('_currentRolePP').resourcesByAssignee.gm_user_2.resource;
+  const sel = document.createElement('select');
+  sel.className = 'currentRole-grade-sel'; sel.setAttribute('data-login', 'gm_user_2');
+  sel.innerHTML = '<option value="Middle">М</option><option value="Senior">С</option>';
+  host.appendChild(sel); sel.value = 'Senior';
+  sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+  const entry = gm.get('_currentRolePP').resourcesByAssignee.gm_user_2;
+  checkJsonSnapshot('people-grade-locked-full', {
+    gradeCells: gradeCells,
+    hasSelect: gradeCells.some(function (h) { return /currentRole-grade-sel/.test(String(h)); }),
+    gradeAfter: entry.grade, resourceUnchanged: entry.resource === before,
+    apiPostPaths: apiPostLog,
+  });
+});
+
 test('golden: ввод ручного ресурса — manualResource+resource, отрицательное → 0 (host change-делегат)', () => {
   const { gm, document, window } = createHost();
   fx.applyBaseState(gm);

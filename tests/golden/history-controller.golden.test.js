@@ -246,6 +246,44 @@ test('golden: finishHistorySprint — валидатор отменил goal-д�
   checkJsonSnapshot('histctrl-finish-goal-cancelled', { api: api });
 });
 
+/* #69 R1 (строка 5) — групповой финиш + префилл исхода/ретро из FINISHED-сестры */
+test('golden: finishHistoryGroup — только не-FINISHED записи группы, префилл из FINISHED-сестры, один persist', async () => {
+  const host = createHost();
+  fx.applyBaseState(host.gm);
+  const toasts = recordToasts(host.gm);
+  const api = stubApiPost(host.gm);
+  const dialogArgs = [];
+  host.gm.set({
+    _isValidator: true,
+    renderHistory: function () {},
+    _history: [
+      { sprintId: 'S9_analysis', name: 'S9', status: 'FINISHED', sprintGoal: 'Цель S9', goalOutcome: 'partial', goalRetroNote: 'Ретро сестры', items: [] },
+      { sprintId: 'S9_testing',  name: 'S9', status: 'ALLOCATED', sprintGoal: 'Цель S9', items: [] },
+      { sprintId: 'S9_devBack',  name: 'S9', status: 'PLANNING',  sprintGoal: 'Цель S9', items: [] },
+      { sprintId: 'S8_testing',  name: 'S8', status: 'ALLOCATED', items: [] },
+    ],
+    openConfirmGoalDialog: function (goal, outcome, retro) {
+      dialogArgs.push({ goal: goal, outcome: outcome, retro: retro });
+      return Promise.resolve({ goalOutcome: 'achieved', goalRetroNote: undefined });
+    },
+  });
+
+  host.gm.call('finishHistoryGroup', 'S9');
+  const spec = host.modalLog[host.modalLog.length - 1];
+  spec.buttons.filter(function (b) { return b.id === 'confirm'; })[0].onClick({ close: function () {} });
+  await settle();
+
+  checkJsonSnapshot('histctrl-finish-group', {
+    modalId: spec.id,
+    dialogArgs: dialogArgs,
+    records: host.gm.get('_history').map(function (r) {
+      return { sprintId: r.sprintId, status: r.status, goalOutcome: r.goalOutcome || null, goalRetroNote: r.goalRetroNote || null, finished: !!r.finishedAt };
+    }),
+    toasts: toasts,
+    apiCalls: api.length,
+  });
+});
+
 /* ═══════════════════════ exportPerSprintJson ═══════════════════════ */
 
 test('golden: exportPerSprintJson — фильтр по базовому sprintId + имя файла + download', () => {

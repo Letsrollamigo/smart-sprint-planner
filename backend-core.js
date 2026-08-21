@@ -318,7 +318,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.19.0';
+var APP_VERSION = '3.20.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -1149,7 +1149,7 @@ function validateSettings(settings) {
     'fieldDevFullstack','fieldFactDevFullstack','userFieldDevFs',
     'fieldDevDb','fieldFactDevDb','userFieldDevDb',
     'fieldPriority','fieldXPriority','fieldState','fieldSystem',
-    'fieldSprint','fieldVersion',
+    'fieldSprint','fieldVersion','fieldExternalTicketId',   /* #69 R1 — был в whitelist, но без assertStr(200) */
     /* #21 — тип-назначение задачи (фильтр модуля «Работа с бэклогом»). */
     'fieldType'];
   for (var f = 0; f < fieldKeys.length; f++) {

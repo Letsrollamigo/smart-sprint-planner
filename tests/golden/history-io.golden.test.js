@@ -61,7 +61,6 @@ test('golden: _anonymizeHistRecords — вычистка kpe/rate, источн�
       sprintId: 'gm_anon_1_analysis', name: 'Anon S1',
       settings: {
         kpe: 1.1, rate: 2000,
-        rate_analysis: 1500, kpe_testing: 0.9, rate_qa: 1200,
         workdayHours: 8, fieldAnalysis: 'Оценка Анализ',
       },
     },
@@ -70,7 +69,7 @@ test('golden: _anonymizeHistRecords — вычистка kpe/rate, источн�
   const out = gm.call('_anonymizeHistRecords', recs);
   checkJsonSnapshot('hist-anonymize', {
     anonymized: out,
-    sourceUntouched: recs[0].settings.kpe === 1.1 && recs[0].settings.rate_analysis === 1500,
+    sourceUntouched: recs[0].settings.kpe === 1.1 && recs[0].settings.rate === 2000,
   });
 });
 

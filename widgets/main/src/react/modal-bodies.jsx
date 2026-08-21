@@ -55,7 +55,7 @@ function ConfirmGoalForm(props) {
   const Radio = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Radio;
   const Input = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Input;
   const [outcome, setOutcome] = React.useState(props.existingOutcome || '');
-  const [note, setNote] = React.useState('');
+  const [note, setNote] = React.useState(props.existingRetro || '');
   const onConfirm = props.onConfirm || noop;
   const onCancel = props.onCancel || noop;
 

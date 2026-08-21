@@ -26,7 +26,7 @@ const REPORTING_KEYS = [
   'repFilterLabel', 'repFilterPh', 'repRefresh', 'repLoading', 'repEmpty', 'repError',
   'repFlagOver', 'repFlagWarn', 'repFlagOk', 'repFlagNone', 'repIncomplete', 'repLimitHit',
   // S2 — A1 Прогресс: целевые статусы + ярлыки (settings)
-  'repSetA1Targets', 'repSetA1Hint', 'repSetA1ColTarget', 'repSetA1ColLabel',
+  'repSetA1Targets', 'repSetA1Hint', 'repSetA1ColLabel',
   // S2c-b — A1 Прогресс вью: заголовок/колонки + chrome (пикер вида + период)
   'repA1Title', 'repA1Sub', 'repColEnteredStatus', 'repColEnteredDate', 'repColLabel', 'repA1NoTargets',
   'repPickReport', 'repPeriodLabel', 'repYearLabel', 'repRangeFrom', 'repRangeTo', 'repRangePrompt',

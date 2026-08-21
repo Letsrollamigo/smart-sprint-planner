@@ -437,5 +437,4 @@ function StateRolesTable(props) {
   );
 }
 
-/* ── Секция: DTA (дифференцированный учёт трудозатрат) ── */
 export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };

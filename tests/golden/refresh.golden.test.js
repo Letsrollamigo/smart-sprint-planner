@@ -42,13 +42,12 @@ function ensureRefreshButtons(document) {
     'beforeend',
     '<button id="currentRoleSyncFromYtBtn"></button>' +
       '<button id="ganttSyncFromYtBtn"></button>' +
-      '<button id="refreshBtn_analysis"></button>' +
-      '<button id="refreshFromTaskBtn_analysis"></button>'
+      '<button id="planningRefreshBtn"></button>'
   );
 }
 
 function busyStates(document) {
-  return ['currentRoleSyncFromYtBtn', 'ganttSyncFromYtBtn', 'refreshBtn_analysis', 'refreshFromTaskBtn_analysis']
+  return ['currentRoleSyncFromYtBtn', 'ganttSyncFromYtBtn', 'planningRefreshBtn']
     .map(function (id) { return document.getElementById(id).disabled; });
 }
 
@@ -512,7 +511,7 @@ function stubFetchPerIssue(gm, document, byId, rejectIds) {
   gm.set({
     _host: {
       fetchYouTrack: function (p, o) {
-        const btn = document.getElementById('refreshBtn_analysis');
+        const btn = document.getElementById('planningRefreshBtn');
         log.push({
           path: p,
           hasFields: !!(o && o.query && o.query.fields),
@@ -561,7 +560,7 @@ test('golden: refreshRoleEstimates — мутации полей (null-зати�
   gm.call('refreshRoleEstimates', 'analysis');
   await settle(6); /* последовательный чейн: по тику на задачу + персист */
 
-  const btn = document.getElementById('refreshBtn_analysis');
+  const btn = document.getElementById('planningRefreshBtn');
   const items = gm.get('_roleItems').analysis.map(function (i) {
     return {
       issueId: i.issueId, estimate: i.estimate_analysis, fact: i.fact_analysis,
@@ -606,6 +605,6 @@ test('golden: refreshRoleEstimates — пустая роль/неизвестн�
     fetchCalls: fetchLog.length,
     apiCalls: api.length,
     toasts: toasts,
-    btnUntouched: !document.getElementById('refreshBtn_analysis').disabled,
+    btnUntouched: !document.getElementById('planningRefreshBtn').disabled,
   });
 });

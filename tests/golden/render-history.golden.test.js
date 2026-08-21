@@ -262,6 +262,32 @@ test('golden: buildSpoiler — контракт кнопок записи (excel
   });
 });
 
+/* #69 R1 (строка 5) — кнопка «Завершить все роли» в шапке группы: только при незавершённых ролях,
+   клик не раскрывает спойлер, Enter на кнопке не тогглит шапку. */
+test('golden: buildSprintGroupSpoiler — кнопка «Завершить все роли» (наличие, stopPropagation)', () => {
+  const { gm, document, window } = bootWithRights();
+  const log = [];
+  gm.set({ finishHistoryGroup: function (baseId) { log.push(['finishGroup', baseId]); } });
+  const deps = gm.call('_historyDeps');
+  const build = function (g) { return window.__SSP_HISTORY_VIEW.buildSprintGroupSpoiler(g, deps); };
+  const mixed = { baseId: 'S9', recs: [
+    { rec: mkRec({ sprintId: 'S9_analysis', status: 'FINISHED' }), idx: 0 },
+    { rec: mkRec({ sprintId: 'S9_testing', status: 'ALLOCATED' }), idx: 1 },
+  ] };
+  const done = { baseId: 'S8', recs: [{ rec: mkRec({ sprintId: 'S8_analysis', status: 'FINISHED' }), idx: 2 }] };
+  const elMixed = build(mixed);
+  const elDone = build(done);
+  document.body.appendChild(elMixed); document.body.appendChild(elDone);
+  const btn = elMixed.querySelector('.spoiler__head .btn--finish-hist');
+  click(document, btn);
+  checkJsonSnapshot('spoiler-group-finish-all', {
+    mixedHasBtn: !!btn,
+    doneHasBtn: !!elDone.querySelector('.spoiler__head .btn--finish-hist'),
+    log: log,
+    openAfterClick: elMixed.classList.contains('open'),
+  });
+});
+
 test('golden: buildSpoiler — контракт удаления записи (confirm-модалка, переключение спринта)', async () => {
   const host = createHost();
   const { gm, document, modalLog } = host;

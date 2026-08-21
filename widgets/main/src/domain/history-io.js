@@ -21,11 +21,7 @@ function _anonymizeHistRecords(records) {
   return records.map(function(rec) {
     var r = JSON.parse(JSON.stringify(rec));
     if (r.settings) {
-      delete r.settings.kpe; delete r.settings.rate;
-      ['analysis','development','testing','devops','analytics','management','design','qa','support'].forEach(function(rk){
-        if (r.settings['rate_' + rk] !== undefined) delete r.settings['rate_' + rk];
-        if (r.settings['kpe_'  + rk] !== undefined) delete r.settings['kpe_'  + rk];
-      });
+      delete r.settings.kpe; delete r.settings.rate;   /* #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) */
     }
     return r;
   });

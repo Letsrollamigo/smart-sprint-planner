@@ -1,19 +1,10 @@
-/* История спринтов — view вкладки «История»: список-пагинация записей
-   (renderHistory) и спойлер записи (buildSpoiler): шапка-meta со статус-бейджем,
-   кнопки записи (Excel/JSON/правка-WC/завершение/удаление с confirm-модалкой),
-   карточка цели/итога/ретро, тоггл «Снимок ↔ Рабочая копия» (Ring Radio) и
-   items-таблица (Ring Table). Вынесено из core.js (Тир D слайс 4,
-   ступень 1) за мост window.__SSP_HISTORY_VIEW; golden-характеризация —
-   tests/golden/render-history.golden.test.js (через делегаторы монолита).
-
-   Deps приходят АРГУМЕНТОМ на каждый вызов (фабрика _historyDeps() в монолите).
-   state — get-аксессоры монолитного стейта; в event-хендлерах и async-цепочках
-   читаются СТРОГО В МОМЕНТ обращения (урок youtrack-api/standup-view).
-   Самовызов ре-рендера после удаления записи идёт через deps.renderHistory
-   (монолитный делегатор). WC-механика (правка/возобновление/сброс копии) и
-   контроллеры экспорта/завершения остаются в монолите — за deps.
-   React-мосты — window.__SSP_TABLE / window.__SSP_RADIO, читаются с window
-   на каждом вызове. */
+/* История спринтов — view вкладки «История»: список-пагинация (renderHistory), групповой спойлер
+   спринта (#60) и спойлер записи (buildSpoiler: meta+бейдж, кнопки Excel/JSON/правка-WC/завершение/
+   удаление, карточка цели/итога/ретро, тоггл «Снимок ↔ Рабочая копия», items-таблица Ring Table).
+   Мост window.__SSP_HISTORY_VIEW; голдены — tests/golden/render-history.golden.test.js.
+   Deps — аргументом на каждый вызов (_historyDeps() ядра); state-аксессоры читаются В МОМЕНТ
+   обращения; WC-механика и контроллеры экспорта/завершения — в ядре, за deps.
+   React-мосты __SSP_TABLE/__SSP_RADIO читаются с window на каждом вызове. */
 'use strict';
 
 /* Ступень 2 (vm-граница): вся cell-логика items-таблицы записи — в
@@ -34,15 +25,6 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
   var hasExtTicket = !!(_settings && _settings.fieldExternalTicketId);
   var hasXPri      = !!(_settings && _settings.fieldXPriority);
 
-  function _renderExternalTicketInner(val) {
-    if (!val) return '<span style="color:var(--muted)">—</span>';
-    var safe = esc(String(val));
-    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
-    if (/^https?:\/\//i.test(val)) {
-      return '<span '+style+' title="'+safe+'"><a href="'+deps.safeUrl(val)+'" target="_blank" rel="noopener noreferrer" class="link">'+safe+'</a></span>';
-    }
-    return '<span '+style+' title="'+safe+'">'+safe+'</span>';
-  }
   function histDelta(v) {
     if (v === null || v === undefined) return '<span style="color:var(--muted)">—</span>';
     var s = deps.fmtHoursOnly(Math.abs(v));
@@ -72,7 +54,7 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
       iid: item.issueId,
       cells: {
         id: { __html: '<a href="'+deps.safeUrl(item.url)+'" target="_blank" rel="noopener noreferrer" class="link">'+esc(item.issueId)+'</a>' },
-        externalTicketId: { __html: _renderExternalTicketInner(item.externalTicketId) },
+        externalTicketId: { __html: window.__SSP_UTIL_PURE.renderExternalTicketHtml(item.externalTicketId) },
         /* plain-строки → React-текст (table-mount экранирует; esc двоил «&» → «&amp;») */
         title: item.title || '',
         priority: deps.dispEnum(item.priority) || '—',
@@ -161,7 +143,19 @@ function buildSprintGroupSpoiler(group, deps) {
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv">'+badges+'</span></div>';
 
   var arr = document.createElement('span'); arr.className = 'spoiler__arrow'; arr.textContent = '▶'; arr.setAttribute('aria-hidden', 'true');
-  head.appendChild(meta); head.appendChild(arr);
+  head.appendChild(meta);
+  /* #69 R1 (строка 5) — групповой финиш: один диалог исхода на все незавершённые роли спринта;
+     per-role кнопка остаётся (роли штатно расходятся). stopPropagation — шапка = toggle. */
+  if (group.recs.some(function (e) { return e.rec.status !== STATUS.FINISHED; })) {
+    var finAll = document.createElement('button');
+    finAll.type = 'button';
+    finAll.className = 'ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat editor-btn btn--finish-hist';
+    finAll.textContent = T('btnFinishAllRoles');
+    finAll.addEventListener('click', function (e) { e.stopPropagation(); deps.finishHistoryGroup(group.baseId); });
+    finAll.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    head.appendChild(finAll);
+  }
+  head.appendChild(arr);
   /* B16 (a11y) — как у ролевого спойлера: disclosure-кнопка с клавиатурой. */
   head.setAttribute('role', 'button');
   head.setAttribute('tabindex', '0');
@@ -626,6 +620,7 @@ const api = {
   renderHistory: renderHistory,
   buildSpoiler: buildSpoiler,
   groupHistoryBySprint: groupHistoryBySprint,
+  buildSprintGroupSpoiler: buildSprintGroupSpoiler,   /* #69 R1 — голден кнопки «Завершить все роли» */
 };
 
 if (typeof window !== 'undefined') {

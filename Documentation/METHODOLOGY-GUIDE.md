@@ -110,15 +110,73 @@ sprint history. Personal drafts let individuals sketch their own view
 without affecting the shared one — useful for offline preparation before
 the meeting.
 
-### Daily Stand-up — status bar, filters, Gantt per role
+### Daily Stand-up — the Stand-up assist view
 
-The status bar in the widget header shows the live state of feature
-modules at a glance — which integrations are wired up, which are off,
-which are in a warning state. For the daily, switch to the **People**
-view or the per-role **Gantt timeline** and filter by today's sprint.
-Each role's lane shows what's in flight and what's queued, so the
-stand-up question moves from "what did you do yesterday" to "is the
-backend lane backed up by the analyst lane".
+Without a dedicated view the daily would come down to the module status
+bar in the header plus switching to the **People** view or the per-role
+Gantt timeline: it works, but everyone has to compile "what's on me" by
+hand — each assignee walks through their issues from memory.
+
+The plugin has a **separate "🗣 Stand-up" sub-tab** on the Planning tab
+(third level, next to "Allocation" and "Distribution by assignees"). The
+plugin **lays the sprint's issues out itself**, into sections — **by
+their real states** from the project's State field, in the same order
+and colours as on the YouTrack boards. There are no home-grown "buckets":
+a section is a state, empty ones included; issues without a state get
+their own section at the end. Every section is a spoiler, collapsed by
+default: you see a compact "state · N issues" overview and open only what
+is being discussed.
+
+Two view modes:
+
+- **"All roles"** (default) — the combined composition of all active
+  roles; hours are summed across roles, each issue shows a role badge.
+  This is the mode for the team-wide daily.
+- **A single role** — only its issues. If a "state → roles" mapping is
+  configured (it can be copied from the backlog zones with one button),
+  the role sees sections only for its own states, and its issues that
+  sit in other roles' states land in a summary **"Other states"**
+  section — so the analyst doesn't scroll through development sections
+  but still sees that their issue has "moved on". States that are
+  irrelevant for the daily (long-closed ones and the like) are hidden
+  in the settings together with their issues.
+
+**The daily pattern**:
+
+1. Open the **Stand-up sub-tab** before the meeting. The **sprint goal**
+   (a frozen copy from the intro card) sits above the sections.
+2. Walk the sections in state order "from the end to the start": what
+   reached the final states since yesterday → what's in progress → what
+   hasn't been picked up yet. Each assignee talks through their own
+   cards: "yesterday I moved A to Review; today I'm taking B from Open;
+   C is blocked, need frontend".
+3. The **role switcher** lets you go through all 9 roles in five
+   minutes — or, more often, stay in "All roles" and walk the whole
+   sprint at once.
+4. The **"🔄 Refresh"** button pulls fresh assignees and states from
+   YouTrack without manual syncing (in "All roles" — for every role at
+   once).
+
+**Where it helps most**: a distributed team, many roles × 5–10
+assignees, the daily held right inside the YouTrack widget without
+switching tabs.
+
+**Where it does NOT help**: a team of 2–3 roles with 3–4 people in total
+— the Gantt approach works fine there, a separate view is overkill.
+
+**What Stand-up assist does NOT do yet**:
+
+- It doesn't show yesterday's logged work items — only the sprint
+  composition snapshot plus whatever the "Refresh" button pulled in.
+- No "Blocked" section (needs access to YouTrack issue links / a
+  `blockedBy` custom field).
+- No drag-and-drop between sections — the view is read-only. Change a
+  state on the regular YouTrack issue page or via inline edit in
+  "Distribution by assignees".
+
+**Old workflows are not broken**: the module status bar in the header
+and the Gantt timeline stay where they were. Stand-up assist is an
+**addition**, not a replacement.
 
 ### Sprint Review — DTA fact, cascade roll-up as accuracy metric
 
@@ -190,8 +248,9 @@ something.
 > as a single number (a fit for small teams where per-person accounting
 > is excess bookkeeping); **Light** — the full per-person calculation
 > below (KPI × Grade × Availability), with the calculation method set to
-> "auto by formula" or "manual per person"; **Full** — an extended
-> capacity model, still in development. This whole section applies to the
+> "auto by formula" or "manual per person"; **Full** — an approved
+> sprint capacity, calculated in advance on the separate "Capacity" tab
+> (see *The "Full" model* below). This whole section applies to the
 > **Light** model; in Simple you just enter the role's hours and skip
 > the per-person mechanics.
 
@@ -545,7 +604,7 @@ history. History is something *you* create — with an export ritual
 
 ### Reading rhythm: which report at which ritual
 
-Don't try to read all 13 reports every day — each has its own data
+Don't try to read all 14 reports every day — each has its own data
 tempo and its own conversation.
 
 | Rhythm | Reports | Conversation |
@@ -623,7 +682,7 @@ sprint is closed and the first work logs have accumulated.
 
 ### A metric that becomes a target stops being a metric
 
-Goodhart's law applies to every one of the 13 reports. Don't hang KPIs
+Goodhart's law applies to every one of the 14 reports. Don't hang KPIs
 on "median TTM" and don't reward "zero red aging" — you'll get issues
 shuffled through statuses for the report's sake and pauses marked
 after the fact. Reports are raw material for the stand-up and retro
@@ -850,3 +909,7 @@ External:
 If something in this guide is unclear or contradicts your team's
 experience in the field, please open an issue using the **Question**
 template — this document improves with real reports from real teams.
+
+---
+
+**End of guide.** Document version 1.10.0 · 2026-08-21 (in sync with plugin v3.20.0: stand-up by real states, the Full model available, 14 reports).

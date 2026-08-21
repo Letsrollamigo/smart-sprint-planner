@@ -3,7 +3,11 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { MultiSelect, StateRolesTable } from './settings-shared.jsx';
+import { _btnCls, MultiSelect, StateRolesTable } from './settings-shared.jsx';
+
+/* #69 R1 (строка 7) — парная с corp константа (паттерн #64): в community done-пикер ЖИВ — done-канон
+   отчётности (A10/spillover); в corp скрыт (`true`), т.к. отчётность там отключена. DIFF_MAP §10a. */
+const STANDUP_DONE_PICKER_HIDDEN = false;
 
 function StandupSection(props) {
   const t = props.t;
@@ -27,24 +31,23 @@ function StandupSection(props) {
           }}
         />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupStateRoles')}</div>
+        {/* #69 R1 (строка 19) — копия маппинга из зон бэклога (ключи раздельные — разные тиры прав); без зон неактивна. */}
+        <button type="button" className={_btnCls('secondary')} style={{ marginTop: '8px' }} disabled={!props.canCopyFromBacklog} onClick={props.onCopyFromBacklog}>{t('btnStandupCopyFromBacklog')}</button>
       </div>
       <div className="field" style={{ marginTop: '14px' }}>
         <label>{t('lblStandupHiddenStates')}</label>
         <MultiSelect options={props.bundleStates || []} selected={props.hidden || []} placeholder={props.t('phNotSelected')} onChange={props.onHiddenChange} />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupHiddenStates')}</div>
       </div>
-      <div className="field" style={{ marginTop: '14px' }}>
-        <label>{t('lblStandupDoneStates')}</label>
-        <MultiSelect options={props.bundleStates || []} selected={props.value || []} placeholder={props.t('phNotSelected')} onChange={props.onChange} />
-        <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
-      </div>
+      {STANDUP_DONE_PICKER_HIDDEN ? null : (
+        <div className="field" style={{ marginTop: '14px' }}>
+          <label>{t('lblStandupDoneStates')}</label>
+          <MultiSelect options={props.bundleStates || []} selected={props.value || []} placeholder={props.t('phNotSelected')} onChange={props.onChange} />
+          <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStandupDoneStates')}</div>
+        </div>
+      )}
     </React.Fragment>
   );
 }
 
-/* ── Секция: #21 «Работа с бэклогом» ──
-   Зоны пайплайна (состояние→роль(и), MANY, упорядочены) + стартовый пул + фильтр по
-   типу + источник паузы. Контракт — backend-core.js validateSettings (state unique,
-   roles⊆ROLE_KEYS, max 50). Шаблоны: таблица строк = DtaSection; reorder = StateRollupSection;
-   роли per-row = inline-чекбоксы (активных ролей ≤9; MultiSelect не несёт label≠key). */
 export { StandupSection };

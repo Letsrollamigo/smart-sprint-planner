@@ -1248,6 +1248,14 @@
     .ssp-settings-form .ssp-dta-table td:first-child { width: 50%; }
     .ssp-settings-form .ssp-dta-table td { padding: 3px 6px 3px 0; vertical-align: top; }
     .ssp-settings-form .ssp-dta-table td:last-child { padding-right: 0; width: 34px; }
+    /* #69 R1 — per-role таблица «Роли и поля» (строка 4): 4 равноправные колонки без лимита
+       ширины DTA-таблицы; притушенные подполя выключенных мастеров (строка 6) — dim, не hide. */
+    .ssp-settings-form .ssp-role-fields-table { max-width: none; }
+    .ssp-settings-form .ssp-role-fields-table th:first-child,
+    .ssp-settings-form .ssp-role-fields-table td:first-child { width: 22%; }
+    .ssp-settings-form .ssp-role-fields-table td:last-child { width: auto; padding-right: 0; }
+    .ssp-settings-form .ssp-role-fields-table td { padding: 5px 6px 5px 0; vertical-align: middle; }
+    .ssp-settings-form .ssp-subfields--dim { opacity: .55; }
     /* width:100% — для текстовых полей и select'ов (заполняют ячейку).
        Чекбоксы/радио ИСКЛЮЧЕНЫ: иначе галочка растягивается на всю ячейку и
        отталкивает свой лейбл (корень бага «вакханалии» грида ролей зон, v2.16.2). */
@@ -2061,7 +2069,8 @@
     /* v5.5.0 — Этап 3b: accordion-карточки для уровня «Роли» */
     .role-accordions { display: flex; flex-direction: column; gap: 8px; }
     /* 68-2 — бар фильтра исключённых над аккордеонами */
-    .ssp-planning-filterbar { margin: 6px 0 8px; display: flex; justify-content: flex-end; }
+    .ssp-planning-toolbar { margin: 6px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ssp-planning-filterbar { display: flex; justify-content: flex-end; margin-left: auto; }
     .planning-role-card {
       border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--surface); overflow: hidden;
@@ -2604,9 +2613,6 @@
     <div id="bannerPlanner" class="banner hidden" data-i18n="bannerNoSettings" data-i18n-html>
       ⚠️ Настройки плагина не заполнены. Откройте виджет «Smart Sprint Planner: настройки» через кнопку «⚙ Настройки плагина» в шапке (доступна участникам группы управления настройками).
     </div>
-    <div id="bannerNoRoles" class="banner banner--warn hidden" data-i18n="bannerNoRoles" data-i18n-html>
-      ⚠️ Не выбраны функциональные роли участников. Откройте виджет настроек и выберите хотя бы одну роль.
-    </div>
     <!-- v5.7.0 — Этап 5 (D50): orphan-баннер для задач, у которых был только gantt.tasks[id].color
          (legacy v5.6.0-) без записи в personalPlanning[*].taskAssignments. Реверс цвет→ассайни не делается. -->
     <div id="bannerOrphanGanttColors" class="banner banner--warn hidden">
@@ -2695,9 +2701,12 @@
       <!-- #61 — сводная таблица мультиролевого планирования: спойлер строит
            allocsummary-view.js (гейт по тумблеру allocSummaryEnabled; выключено → пусто) -->
       <div id="allocSummaryHost"></div>
-      <!-- 68-2 — фильтр «скрыть исключённые из спринта»: Ring Toggle рендерит
-           rolecomposition-view._renderExcludedFilter (эфемерно на сессию) -->
-      <div id="planningFilterBar" class="ssp-planning-filterbar" style="display:none"></div>
+      <!-- #69 R1 — панель уровня «Роли»: одна кнопка «Обновить из задач» (весь спринт, #35) +
+           68-2 фильтр «скрыть исключённые» (Ring Toggle рендерит rolecomposition-view._renderExcludedFilter) -->
+      <div id="planningToolbar" class="ssp-planning-toolbar" style="display:none">
+        <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-heightS editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
+        <div id="planningFilterBar" class="ssp-planning-filterbar"></div>
+      </div>
       <div id="roleAccordions" class="role-accordions"></div>
     </div>
     <div id="planning-level-people" class="planning-level-pane hidden">

@@ -44,7 +44,7 @@ test('регресс: «&» в тайтле состава роли экрани
     'beforeend',
     '<div id="compHost_analysis"></div><div id="planPag_analysis"></div>' +
       '<button id="clearBtn_analysis"></button><button id="recalcBtn_analysis"></button>' +
-      '<button id="refreshBtn_analysis"></button><button id="pickBtn_analysis"></button>'
+      '<button id="pickBtn_analysis"></button>'
   );
   gm.call('renderRoleComposition', 'analysis');
   const table = materializeTable(document.getElementById('compHost_analysis'));

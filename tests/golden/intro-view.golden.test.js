@@ -62,10 +62,6 @@ function ensureRolePlannerDom(document, rk) {
   document.body.insertAdjacentHTML(
     'beforeend',
     '<input id="res_' + rk + '">' +
-      '<select id="sprintStatus_' + rk + '">' +
-      '<option value="PLANNING">PLANNING</option>' +
-      '<option value="CONFIRMED">CONFIRMED</option>' +
-      '<option value="ALLOCATED">ALLOCATED</option></select>' +
       '<button id="newSprintBtn_' + rk + '"></button>' +
       '<span id="statusBadge_' + rk + '"></span>'
   );
@@ -143,7 +139,6 @@ test('golden: renderRolePlannerHeader — normal-resource (+ badge/extras вжи
     dateEnd: document.getElementById('dateEnd').value,
     goal: document.getElementById('sprintGoal').value,
     res: { value: document.getElementById('res_' + rk).value, readOnly: document.getElementById('res_' + rk).readOnly },
-    statusSel: { display: document.getElementById('sprintStatus_' + rk).style.display, value: document.getElementById('sprintStatus_' + rk).value },
     newBtn: { display: document.getElementById('newSprintBtn_' + rk).style.display },
     badge: document.getElementById('statusBadge_' + rk).outerHTML,
     binds: binds,

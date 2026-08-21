@@ -17,8 +17,7 @@ const EXPECTED_LOCALES = ['en', 'ru', 'cs', 'de', 'es', 'fr', 'hu', 'it', 'ja', 
 /* Полный контракт ключей вкладки ёмкости (R1/R2 + R3). */
 const CAPACITY_KEYS = [
   // R1/R2 (долг — были только en/ru)
-  'cardCapacity', 'navCapacity', 'lblCapacityMode', 'optCapacityLight', 'optCapacityFull',
-  'capacityStatusLight', 'capacityStatusFull', 'descCapacityMode', 'lblHoursPerDay', 'lblUsefulHoursPerDay',
+  'cardCapacity', 'navCapacity', 'descCapacityMode', 'lblHoursPerDay', 'lblUsefulHoursPerDay',
   // R3 — вкладка
   'tabCapacity', 'capacitySprintLabel', 'capacityActiveSprint', 'capacityReadOnly', 'capacityNotApproved',
   'statusDraft', 'statusApproved', 'statusDirty', 'btnApprove', 'btnReapprove',
@@ -42,8 +41,8 @@ const CAPACITY_KEYS = [
   'capacityArchiveNode', 'capacityArchivePeople',
 ];
 
-/* Ключи, чьё не-EN значение легитимно равно EN во ВСЕХ локалях (имена режимов brand-нейтральны). */
-const NON_TRANSLATABLE = new Set(['optCapacityLight', 'optCapacityFull']);
+/* Ключи, чьё не-EN значение легитимно равно EN во ВСЕХ локалях (#69 R1 снял мёртвые optCapacity*). */
+const NON_TRANSLATABLE = new Set([]);
 
 /* Когнаты/заимствования: значение легитимно совпадает с EN в КОНКРЕТНОЙ локали (вручную
    выверено — это настоящие переводы, а не пропущенные EN-копии; «Sprint», «Grade», «Base»,

@@ -14,7 +14,6 @@
 //   capacityLoadAndRender          — #45 R3 (CAPACITY_VIEW замкнут в ядре — B1-топология)
 //   releaseLoadAndRender(mode)     — #48 R1.2b (RELEASE_VIEW замкнут в ядре)
 //   loadReportingView(contour)     — #50 S1c
-//   checkSettingsManager           — гейт вкладки настроек
 // DOM-манипуляции (active-классы, planner-wide, dashnode-класс, подсветка дерева) —
 // зона ответственности роутера, живут здесь.
 
@@ -29,8 +28,8 @@ function init(deps) {
       /* v5.6.0 — Этап 4: planner-wide на всё, что не settings-overlay. */
       document.body.classList.toggle('planner-wide',
         btn.dataset.tab === 'planning' || btn.dataset.tab === 'gantt' ||
-        btn.dataset.tab === 'history'  || btn.dataset.tab === 'settings' ||
-        btn.dataset.tab === 'backlog'  || btn.dataset.tab === 'capacity' ||
+        btn.dataset.tab === 'history'  || btn.dataset.tab === 'backlog'  ||
+        btn.dataset.tab === 'capacity' ||
         btn.dataset.tab === 'release-planned' || btn.dataset.tab === 'release-history' ||
         btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b');
       var ui = deps.draftGet('ui') || {}; ui.activeTab = btn.dataset.tab; deps.draftSet('ui', ui);
@@ -98,14 +97,6 @@ function init(deps) {
       if (btn.dataset.tab === 'reporting-a' || btn.dataset.tab === 'reporting-b') {
         try { deps.loadReportingView(btn.dataset.tab === 'reporting-b' ? 'b' : 'a'); }
         catch(e){ deps.diag('reporting render err: '+e,'err'); }
-      }
-      if (btn.dataset.tab === 'settings') {
-        deps.checkSettingsManager().then(function(canManage) {
-          if (!canManage) {
-            document.getElementById('tab-settings').innerHTML =
-              '<div class="empty" style="color:var(--muted);padding:60px 20px;">'+deps.t('noRightsSettings')+'</div>';
-          }
-        });
       }
     });
   });

@@ -575,7 +575,7 @@ function handlePostCapacity(ctx) {
   var constants = frozenConstants || {
     kpe: (settings.kpe && typeof settings.kpe === 'object' && !Array.isArray(settings.kpe)) ? settings.kpe : DEFAULT_KPE,
     hoursPerDay: numOr(settings.hoursPerDay, 8),
-    usefulHoursPerDay: numOr(settings.usefulHoursPerDay, 6)
+    usefulHoursPerDay: numOr(settings.usefulHoursPerDay, 7)
   };
 
   // persons-примитивы из тела (grade/rate/participation/alloc); base/absencesApplied клиента игнорим.

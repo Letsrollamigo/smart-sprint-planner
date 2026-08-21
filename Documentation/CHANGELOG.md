@@ -8,6 +8,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.20.0] — 2026-08-21
+
+> **The "Simplification" epic, slice R1 "Hygiene" — UI / i18n / docs / build, no data-schema changes.** Driven by a complexity audit of the plugin: fewer hops through the settings, honest "required" markers, one button instead of nine, dead code and stale texts removed.
+
+### Changed — settings form
+
+- **Roles and fields — one table**: the "Functional roles", "Estimate fields", "Actual fields" sections and the "User fields by role" block are merged into a single "Roles and issue fields" section — one row per role: checkbox · estimate field · actual field · assignee field; duplicate checks for period fields are unchanged, settings keys did not change. Cold start — three navigation hops fewer.
+- **Honest "required" markers**: hints on the "Sprint Editing" group (without a group writing is closed for everyone except the instance admin) and "Sprint Validation" group (without a group review/finishing are unavailable); the "Required" sub-heading became "Main" with a note on the by-name Priority/State fallback.
+- **Progressive disclosure**: calculation quotas (monthly hours ×3, rate, participation), grade coefficients and the "Auto-forecast dates" toggle are hidden in the "Simple" model (in "Light" the formula seeds assignee resources even with manual entry, in "Full" it's the fallback until capacity is approved, so they stay there); the disabled "Strategy" select of the state rollup is removed (the `stateRollupStrategy` key stays reserved, the form writes `'min'`); DTA/cascade/rollup/release sub-fields are dimmed while the master toggle is off (not hidden — "configure first, switch on later"); the "plan/fact notifications" switch is visually nested under the aggregation toggle.
+- **Hours per day are back**: `hoursPerDay` (1–24) / `usefulHoursPerDay` (0–24) — two numeric fields in the "Capacity management" admin section for any model other than "Simple" (the keys are read by the DTA/cascade workflows, the forecast and capacity; the controls existed in v2.8.0 and were stubbed out in v2.13.0); the default of the frozen constants in `backend-capacity.js` aligned 6 → 7.
+- **Language**: the duplicate "Interface language" (RU/EN) switch in the "Other" section is removed — the language is switched with the header selector; "Project default language" remains. The dead `#langSelSettings` binding is removed from the core and the i18n controller.
+- **Stand-up**: the "Copy from backlog zones" button copies the "state → roles" mapping into the form state (the keys stay separate — different permission tiers).
+- **Backlog**: a settings hint "the section appears once at least one zone is added".
+
+### Changed — planning and history
+
+- **One "Refresh from task" button above the role cards** — in the "Roles" level panel next to the "hide excluded" filter; the per-role copies in the cards are removed (any of them refreshed the whole sprint anyway — a false per-role meaning and conflict dialogs about other roles' tasks). People and Gantt keep their own buttons as before. The busy indicator of the post-pick hydration (`refreshRoleEstimates`) moved to the shared button.
+- **Sprint finish**: the outcome/retro dialog is prefilled from an already finished role of the same sprint (by the methodology a sprint has one outcome); the history group spoiler header gets a **"Finish all roles"** button: one confirmation → one dialog → only the group's unfinished records are finished (PLANNING auto-snapshots and already FINISHED ones are untouched) → one persist. The per-role button stays. `exportPerSprintJson` splits baseId at the last `_` (like the sprint grouping; splitting at the first one glued legacy ids with underscores).
+- **Grade on People**: with an approved capacity record (the "Full" model) it's read-only with a "set on the Capacity tab" hint; along the way a defect in the grade-change handler is fixed — in Full it recalculated the resource by the Light formula and persisted it. The Capacity tab takes a person's grade from the distribution on first open instead of "Middle".
+- **The "Backlog" node only with configured zones** — a single `_hasBacklogZones` predicate gates the rail node, the tab, the restore/share node (falls back to "Roles") and the tree rebuild on settings change (like "Capacity"/"Releases"); without zones the section was a dead end with a banner.
+- **Diagnostic feed**: the `#diagLog` DOM is capped at 100 lines (like the `_diagLines` buffer) — nodes no longer pile up for the whole session.
+
+### Removed / fixed (no schema changes)
+
+- Stale texts ×15 locales: `bannerNoSettings` (pointed to a non-existent "Settings tab" — now to the "⚙ Plugin settings" button in the header), `descDynEdit` (promised to hide the refresh button — nobody did); the toast on adding tasks is a separate `toastPickTasksDone` key ("Tasks added", was "Assignees picked from bundle"); the `optInheritFromUser` placeholder is translated (was hard-coded EN in every locale).
+- Dead: the `domain/ring-class-helpers.js` module (136 lines shipped in the bundle without a single call) + its unit test + registry entries; the `'settings'` tab branch in `tab-router` and the `noRightsSettings` key; the `#bannerNoRoles` DOM banner (nobody showed it); `bannerCfg` in post-save; reads of the non-existent `#sprintStatus_<rk>` ×3 (`sprint-controller`/`validation-controller`/`intro-view`); the `rate_<rk>`/`kpe_<rk>` loop in history export anonymisation (the keys aren't in the schema); 20 dead i18n keys ×15 (`cardFieldEst`, `cardFieldFact`, `navFieldFact`, `cardUserFields`, `lblLang`, `lblStateRollupStrategy`, `hintStateRollupStrategy`, `bannerNoRoles`, `noRightsSettings`, `ganttRefresh`, `btnExportSprintJson`, `lblCapacityMode`, `optCapacityLight/Full`, `capacityStatusLight/Full`, `toastLogEmpty`, `relBadgeOutOfPool`, `relPickCollision`, `repSetA1ColTarget`); orphan trailing comments left after the `settings-*.jsx` decomposition.
+- Validator: `fieldExternalTicketId` added to the `fieldKeys` of `validateSettings` (assertStr ≤200) — it was in the whitelist without a check.
+- Tech debt "on touch": the "External ID" cell ×3 → `UTIL_PURE.renderExternalTicketHtml` (XSS-sensitive, escaped on every path) with a unit test; `populatePlanningRoleSel`/`populateGanttRoleSel` → a shared `_populateRoleSel(id)` in the core.
+
+### Build
+
+- `npm run zip:marketplace` — an **allowlist of runtime paths** instead of a long list of `-x` exclusions: `manifest.json`/`settings.json`/`entity-extensions.json`, logos, `LICENSE`/`NOTICE.md`/`README.md`, `backend-*.js`, `workflow-*.js`, `widgets/main/{index.html,main.js,vendored-react.chunk.js,ring-subset.css,gantt-task.css,i18n/,lib/}`; `en.json`/`ru.json` are excluded from `i18n/` (inlined in `main.js`). Service files — `tools/`, `module-registry.json`, `schema/`, `.gitignore`, documentation and `.vscode` — no longer end up in the artifact.
+
+### Documentation
+
+- USER-GUIDE (RU + EN) updated for v3.20.0: §3 cold start (the settings group lives in Project Settings → Apps; the editing group is required; "Roles and fields" as one section), §14 — 11 permission groups + 2 candidate pools, groups matched by name (a rename in YouTrack breaks access), 14 reports, stand-up by real states, the backlog filter = the "Type" field, the "Backlog" section gate, "Save parameters" on People = saving the distribution, the new R1 controls. METHODOLOGY-GUIDE (RU + EN): stand-up by states, the "Full" model available.
+
+### Tests
+
+- Goldens: `rolepanel-*`/`refresh-*` (one button), `histctrl-finish-group` + `spoiler-group-finish-all` (group finish), `people-grade-locked-full`, `dash-tree-structure` + a "Backlog node only with zones" guard, `modal-spec-confirm-goal` (`existingRetro`), `settings-formProps` (without `onUiLangChange`), `pick-add-selected`; units `util-pure` (renderExternalTicketHtml), `settings-validation` (fieldExternalTicketId); i18n completeness lists cleaned of dead keys; `tests/fixtures/snapshots/3.19.0/` fixture + compat regression (validator change). `module-registry.json` budgets carry a budgetNote; `settings-form.jsx` and `core.js` got lighter.
+
+---
+
 ## [3.19.0] — 2026-08-21
 
 > **Stand-up by real states: sections for the actual task states replace the three summary buckets (driven by user feedback).**

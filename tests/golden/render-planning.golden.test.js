@@ -21,7 +21,7 @@ function ensureCompHost(document, rk) {
     'beforeend',
     '<div id="compHost_' + rk + '"></div><div id="planPag_' + rk + '"></div>' +
       '<button id="clearBtn_' + rk + '"></button><button id="recalcBtn_' + rk + '"></button>' +
-      '<button id="refreshBtn_' + rk + '"></button><button id="pickBtn_' + rk + '"></button>'
+      '<button id="pickBtn_' + rk + '"></button>'
   );
   return document.getElementById('compHost_' + rk);
 }
@@ -576,6 +576,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   document.getElementById('recalcBtn_analysis').disabled = false;
   document.getElementById('recalcBtn_analysis').click();
   document.getElementById('validateBtn_analysis').click();
+  document.getElementById('planningRefreshBtn').click();   /* #69 R1 — одна кнопка уровня «Роли» */
   const noRights = { toasts: toastLog.slice(), ctlCalls: ctlCalls.slice(), remainCalls: remainCalls.slice() };
 
   /* с правами — действия и контроллеры */
@@ -586,8 +587,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   document.getElementById('validateBtn_analysis').click();
   document.getElementById('newSprintBtn_analysis').click();
   document.getElementById('saveHeaderBtn_analysis').click();
-  document.getElementById('refreshBtn_analysis').disabled = false;
-  document.getElementById('refreshBtn_analysis').click();
+  document.getElementById('planningRefreshBtn').click();
   const withRights = { toasts: toastLog.slice(), ctlCalls: ctlCalls.slice(), remainCalls: remainCalls.slice() };
 
   /* clear: confirm-модалка → подтверждение очищает роль и персистит */

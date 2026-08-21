@@ -1,0 +1,13 @@
+{
+  "gradeCells": [
+    "Синьор <span class=\"hint\" title=\"задаётся на вкладке «Ёмкость»\" style=\"color:var(--muted);font-size:11px\">ⓘ</span>",
+    "Мидл <span class=\"hint\" title=\"задаётся на вкладке «Ёмкость»\" style=\"color:var(--muted);font-size:11px\">ⓘ</span>"
+  ],
+  "hasSelect": false,
+  "gradeAfter": "Senior",
+  "resourceUnchanged": true,
+  "apiPostPaths": [
+    "history",
+    "sprint-data"
+  ]
+}

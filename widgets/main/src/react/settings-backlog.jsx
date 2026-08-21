@@ -54,6 +54,7 @@ function BacklogSection(props) {
           }}
         />
         {props.hasDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('backlogErrDupState')}</div> : null}
+        <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px' }}>{t('hintBacklogZonesGate')}</div>{/* #69 R1 строка 10 — гейт узла по зонам */}
       </div>
 
       {/* Стартовый пул заказчика */}
@@ -83,9 +84,4 @@ function BacklogSection(props) {
   );
 }
 
-/* #48 R1 — раздел настроек «Релиз-менеджмент» (admin-тир, нейтральная терминология).
-   value = { enabled, candMgr/candEng/rightsMgr/rightsEng:{ids,names}, mapping:{status→state} }.
-   Светофор R3 настроек НЕ имеет (ревизия владельца 2026-07-01): зоны — автоматом по State
-   задачи + маппингу (mapping.planned = стартовый якорь красной зоны). Тип релиза —
-   фиксированная таксономия 2×2, только инфо. */
 export { BacklogSection };

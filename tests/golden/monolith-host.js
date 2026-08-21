@@ -6,7 +6,7 @@
  *   - Файл монолита НЕ модифицируется: хук доступа инжектируется в копию
  *     исходника в памяти перед eval (перед закрывающей `})();` IIFE).
  *   - DOM = настоящий widgets/main/index.html (все контейнеры существуют).
- *   - Bridge-модули (`*-pure.js`, icons, click-anchor, ring-class-helpers) —
+ *   - Bridge-модули (`*-pure.js`, icons, click-anchor) —
  *     настоящие исходники (plain side-effect скрипты, исполняются как есть).
  *   - i18n: словари en/ru читаются напрямую из widgets/main/i18n/*.json
  *     (i18n-bridge.js — ESM, в песочнице заменён минимальным стабом loader-API).
@@ -37,7 +37,6 @@ const FIXED_NOW = 1780315200000;
 const BRIDGE_SCRIPTS = [
   'click-anchor.js',
   'icons.generated.js',
-  'ring-class-helpers.js',
   'toast-pure.js',
   'toast-ring.js',
   'datepicker-bridge.js',

@@ -76,8 +76,6 @@
       deps.state.setSettings(data);
       deps.syncProjectDefaultLang();
       deps.refreshFeatureStatusBar();
-      var bc = document.getElementById('bannerCfg');
-      if (bc) bc.classList.add('hidden');
       deps.toast(T('toastSettingsSaved'), 'success');
       var missingRequired = [];
       if (!data.fieldPriority) missingRequired.push(T('fldPriority'));
@@ -140,7 +138,6 @@
           return (r && r.values) || [];
         }).catch(function () { return []; });
       },
-      onUiLangChange:     function (lang) { deps.setLang(lang); },
       onSave:             function (data) { return _saveSettingsData(data, deps); },
       /* #22 — admin-тир (workflow + доступ/права) рендерится только при true. */
       canEditWorkflow:    !!(opts && opts.canEditWorkflow),

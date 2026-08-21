@@ -94,7 +94,7 @@ function showCloseWorkingCopyModal(cb, deps) {
   });
 }
 
-function openConfirmGoalDialog(sprintGoalText, existingOutcome, deps) {
+function openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro, deps) {
   var t = deps.t, openModal = deps.openModal;
   return new Promise(function(resolve) {
     /* Phase 2 #32 — мигрировано на openModal() (bespoke confirmGoalForm, настоящий React).
@@ -117,6 +117,7 @@ function openConfirmGoalDialog(sprintGoalText, existingOutcome, deps) {
           { value: 'missed',   label: t('optGoalMissed')   || '❌ Не достигнута' },
         ],
         existingOutcome: existingOutcome || '',
+        existingRetro: existingRetro || '',   /* #69 R1 — префилл ретро из FINISHED-сестры */
         retroLabel: t('lblGoalRetroNote'),
         retroPlaceholder: t('phGoalRetroNote'),
         cancelText: t('btnCancelGoal'),

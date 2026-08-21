@@ -23,7 +23,10 @@ function DtaSection(props) {
   return (
     <React.Fragment>
       <RoleCheck on={v.enabled} label={t('lblDtaEnabled')} hint={t('hintDta')} onToggle={() => patch({ enabled: !v.enabled })} />
-      <div style={{ marginTop: '12px' }}>
+      {/* #69 R1 (строка 6) — подполя при выключенном мастере притушены, НЕ скрыты («настроить,
+          потом включить»); уведомления визуально вложены под агрегацию: без неё не работают. */}
+      <div className={v.enabled ? '' : 'ssp-subfields--dim'}>
+      <div style={{ marginTop: '12px', marginLeft: '24px' }}>
         <RoleCheck on={v.warnings} label={t('lblDtaWarnings')} hint={t('hintDtaWarnings')} onToggle={() => patch({ warnings: !v.warnings })} />
       </div>
       <table className="ssp-dta-table" style={{ marginTop: '14px', width: '100%', borderCollapse: 'collapse' }}>
@@ -75,9 +78,9 @@ function DtaSection(props) {
       </table>
       <button type="button" className={_btnCls('secondary')} style={{ marginTop: '10px' }} onClick={addRow}>{t('btnDtaAddRow')}</button>
       {props.hasDup ? <div id="sspDtaDupErr" role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('dtaErrDuplicate')}</div> : null}
+      </div>
     </React.Fragment>
   );
 }
 
-/* ── Секция: каскадная агрегация ── */
 export { DtaSection };

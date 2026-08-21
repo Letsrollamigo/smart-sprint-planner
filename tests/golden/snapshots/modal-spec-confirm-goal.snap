@@ -26,6 +26,7 @@
           }
         ],
         "existingOutcome": "partial",
+        "existingRetro": "",
         "retroLabel": "Заметка ретроспективы (опционально)",
         "retroPlaceholder": "Что сработало / не сработало для достижения цели",
         "cancelText": "Отмена",

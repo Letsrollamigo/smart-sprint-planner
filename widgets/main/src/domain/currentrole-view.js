@@ -163,6 +163,7 @@ function _buildAssigneeTableVm(deps) {
   }
 
   var _ppRk = _currentRolePP.roleKey;
+  var gradeLocked = fullMode && typeof deps.hasApprovedCapacity === 'function' && deps.hasApprovedCapacity();
   /* Строки vm — pre-computed derived values + готовые cell-значения. */
   var rows = Object.keys(_currentRolePP.resourcesByAssignee).map(function (login) {
     var entry  = _currentRolePP.resourcesByAssignee[login];
@@ -174,7 +175,11 @@ function _buildAssigneeTableVm(deps) {
     /* plain-строка → React-текст (table-mount экранирует сам; esc — только в { __html }) */
     cells.assigneeName = entry.assigneeName || login;
     var currentGrade = deps.migrateGrade(entry.grade);
-    cells.grade = { __html:
+    /* #69 R1 (строка 9) — при утверждённой Full-записи грейд на «Людях» ни на что не влияет
+       (ресурс = base×alloc из ёмкости) → read-only с подсказкой, где он задаётся. */
+    cells.grade = gradeLocked
+      ? { __html: esc(T('grade' + currentGrade)) + ' <span class="hint" title="' + esc(T('hintGradeFromCapacity')) + '" style="color:var(--muted);font-size:11px">ⓘ</span>' }
+      : { __html:
       '<select class="currentRole-grade-sel" data-login="' + esc(login) + '" style="width:100%;font-size:12px">' +
         GRADES_LOCAL.map(function (g) {
           return '<option value="' + g + '"' + (currentGrade === g ? ' selected' : '') + '>' + esc(T('grade' + g)) + '</option>';
@@ -279,7 +284,8 @@ function renderCurrentRoleAssigneeTable(deps) {
         var login = t.getAttribute('data-login');
         if (!_currentRolePP || !_currentRolePP.resourcesByAssignee[login]) return;
         _currentRolePP.resourcesByAssignee[login].grade = t.value;
-        var mm = !!(_settings && _settings.manualPersonalResource);
+        /* #69 R1 — в Full ресурс деривируется из ёмкости: формулу не применяем (vm-билдер уже так считал). */
+        var mm = !!(_settings && (_settings.manualPersonalResource || _settings.capacityMode === 'full'));
         if (!mm && _settings) {   /* v3.2.1 — _settings=null ронял _settings.kpe ниже */
           var nkc2 = getCurrentRoleNkcHours(deps);
           var kpeMap = deps.migrateKpeObject(_settings.kpe || {});
@@ -391,16 +397,6 @@ function _buildTaskTableVm(deps) {
   var sprintStartDate = sprintStart ? toDateIn(sprintStart) : '';
   var sprintEndDate   = sprintEnd   ? toDateIn(sprintEnd)   : '';
 
-  function _renderExternalTicketInner(val) {
-    if (!val) return '<span style="color:var(--muted)">—</span>';
-    var safe = esc(String(val));
-    var style = 'style="max-width:12em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block"';
-    if (/^https?:\/\//i.test(val)) {
-      return '<span ' + style + ' title="' + safe + '"><a href="' + safeUrl(val) + '" target="_blank" rel="noopener noreferrer" class="link">' + safe + '</a></span>';
-    }
-    return '<span ' + style + ' title="' + safe + '">' + safe + '</span>';
-  }
-
   var hasExternalTicket = !!(_settings && _settings.fieldExternalTicketId);
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
   var hasSystem = !!(_settings && _settings.fieldSystem);
@@ -430,7 +426,7 @@ function _buildTaskTableVm(deps) {
     var cells = {};
     cells.id = { __html: '<a href="' + safeUrl(item.url || '') + '" target="_blank" class="link">' + esc(item.issueId) + '</a>' };
     if (hasExternalTicket) {
-      cells.externalTicketId = { __html: _renderExternalTicketInner(item.externalTicketId) };
+      cells.externalTicketId = { __html: window.__SSP_UTIL_PURE.renderExternalTicketHtml(item.externalTicketId) };
     }
     var ts = taEntry.dateStart || null;
     var te = taEntry.dateEnd   || null;

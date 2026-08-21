@@ -95,17 +95,13 @@ Everything you do in the plugin is **saved automatically** — nothing is lost e
 
 This section is needed **only once** — when the project is connected to the planner. After settings are in place, regular users don't need to go here — they work in the main-menu planner.
 
-Connecting is done **in project settings** (not in the main menu). Open your project → **Project Settings** (gear icon) → find the **Smart Sprint Planner** block. Right after installation this block is read-only — the editing buttons are hidden, so a random person can't rewrite settings on a freshly installed project.
+Connecting starts **in project settings** (not in the main menu). Right after installation the plugin runs on the project in read-only mode — the editing buttons are hidden, so a random person can't rewrite settings on a freshly installed project.
 
 To make the project operational and **make it appear in the main-menu planner**, the project admin needs to do **four things**:
 
-1. **Open settings.** In the plugin block, click the **Plugin Settings** gear — a dialog opens with several sections (navigation list on the left — two-pane layout).
+1. **Set the settings manager group — this is the "connection".** This is done **not in the plugin dialog** but in the settings of the app itself: open your project → **Project Settings** (gear icon) → **Apps** → **Smart Sprint Planner** → the **Plugin settings manager group** field. Pick the YouTrack group whose members can change this project's settings. As soon as the group is set, **the project becomes visible in the main-menu planner** — anyone with access to the project in YouTrack can open it, and group members get the **⚙ Plugin Settings** button in the planner header. Until the group is set, the project won't appear in the menu and everything stays read-only.
 
-2. **Set the settings manager group — this is the "connection".** In the **Access and roles** section, in the **Settings manager group** field, pick the YouTrack group whose members can change this project's settings. As soon as the group is set, **the project becomes visible in the main-menu planner** — anyone with access to the project in YouTrack can open it. Until the group is set, the project won't appear in the menu, and its settings stay read-only.
-
-3. **Choose active roles.** In the same **Access and roles** section there's a list of nine checkboxes — these are the functional roles (Analysis, Testing, Backend, Frontend, iOS, Android, Fullstack, Database, Platform development). Tick only the roles that actually work in your project. Each active role gets its own "lane" in the planning view.
-
-4. **Map YouTrack fields to roles.** In the **Task fields** section, for each active role, specify three YouTrack fields:
+2. **Choose roles and map YouTrack fields to them.** Open the planner (from the main menu or from the plugin block in project settings) and click **⚙ Plugin Settings** in its header — a dialog opens with several sections (navigation list on the left, the active section on the right). The **Roles and issue fields** section is a table of nine rows, one per functional role (Analysis, Testing, Backend, Frontend, iOS, Android, Fullstack, Database, Platform development). Tick only the roles that actually work in your project — each active role gets its own "lane" in the planning view. For every ticked role, in the same row, specify three YouTrack fields:
 
    - **Estimate field** — for example, *Estimation* (how many hours are planned).
    - **Actual field** — for example, *Spent time* (how many hours were actually spent).
@@ -113,9 +109,13 @@ To make the project operational and **make it appear in the main-menu planner**,
 
    If your project uses standard YouTrack fields, you usually just pick them once from the dropdowns.
 
-After saving these four settings, the plugin becomes functional: you can create sprints, pick tasks, and distribute them among people.
+3. **Set the sprint editing group.** In the **Manage permissions** section, fill in the **Sprint Editing** field — the group (or groups) whose members can save sprint composition and parameters. This step is **required**: while the group is empty, writing is closed for everyone except the YouTrack instance administrator — the plugin follows the "everything not explicitly allowed is denied" rule. If your sprints will go through review and get finished (see [section 10](#10-sprint-stages-review-commit-complete)), fill in **Sprint Validation** here as well — without it nobody can confirm or finish a sprint. Every field in the form has a hint underneath saying what the group grants.
 
-**What else can be configured** (not required for launch): groups that can confirm sprints; groups that can only change assignees; monthly hour quotas; cascading effort aggregation; automatic state roll-up from child tasks to parent containers; "external ID" field for integration with another system; daily stand-up settings. The full list is in [Appendix A](#appendix-a-full-reference-of-project-settings).
+4. **Check "Other Fields".** In the **Other Fields** section, under the **Main** heading, there are the **Priority** and **State** fields. If you leave them empty, the plugin uses the project fields named *Priority* and *State*; saving isn't blocked, but a "Required fields are not set" warning is shown. If your project names these fields differently — pick them explicitly.
+
+After saving these settings, the plugin becomes functional: you can create sprints, pick tasks, and distribute them among people.
+
+**What else can be configured** (not required for launch): groups that can only change assignees; monthly hour quotas; cascading effort aggregation; automatic state roll-up from child tasks to parent containers; "external ID" field for integration with another system; daily stand-up settings. The full list is in [Appendix A](#appendix-a-full-reference-of-project-settings).
 
 > 💡 If you need to give someone the ability to **only** reassign tasks and change dates without touching composition or hours — that's a separate group, see [section 14](#14-who-can-do-what-group-permissions).
 
@@ -160,7 +160,7 @@ Before filling a sprint with tasks by hand (section 6), it's convenient to first
 
 This is a **pre-planning phase**: you look at the pool, understand which tasks are at which stage and who will work on them, and lay the right ones straight into the sprint composition by role.
 
-> The section appears in the navigation tree only if the admin has configured the backlog (the pool's start states and the "state → role" zones) — see [Appendix A](#appendix-a-full-reference-of-project-settings). If it isn't configured, the section won't be there.
+> The section appears in the navigation tree only after the admin has added **at least one "state → role" zone** in the backlog settings — see [Appendix A](#appendix-a-full-reference-of-project-settings). While there are no zones, the section won't be there.
 
 ### What's on the page
 
@@ -272,7 +272,7 @@ This is the table of tasks that are in the sprint for this role. It's empty for 
 
 **To remove a task from the sprint:** the trash icon at the right end of the row.
 
-**To refresh data from YouTrack** (if someone changed an estimate or state in parallel): the **Refresh task data** button at the top — the plugin pulls fresh values.
+**To refresh data from YouTrack** (if someone changed an estimate or state in parallel): one shared **Refresh from task** button above the list of role cards (next to the **Hide tasks excluded from sprint** switch). It refreshes the tasks of the whole sprint across all roles at once — the role cards have no buttons of their own. The **By assignees** page and the chart keep their own refresh buttons.
 
 ### Working with multiple roles
 
@@ -303,7 +303,7 @@ With the "Full" model, role capacity is neither entered manually nor calculated 
 What's on the tab:
 
 - **Sprint selector.** The calculation targets a specific sprint (its dates are required). Historical sprints open with a "Read-only (historical sprint)" note.
-- **"By roles" / "By persons" view switch.** "By roles" — the aggregated capacity of each role; "By persons" — the per-person breakdown (added in v2.18.0).
+- **"By roles" / "By persons" view switch.** "By roles" — the aggregated capacity of each role; "By persons" — the per-person breakdown (added in v2.18.0). When a sprint's capacity record is opened for the first time, each person's grade is taken from the per-assignee distribution (if it's already set there) rather than defaulting to "Mid".
 - **The "Calendar & absences" block.**
   - The **production calendar** is uploaded as a CSV file: **Download template** → fill it in → **Upload CSV** (the button is visible to members of the settings manager group). If there's no calendar for the required year, the plugin warns ("No production calendar for: …") and falls back to "weekends = Saturday and Sunday".
   - **Upload to all projects** — the same CSV pushed to every project connected to the planner in one go. The button is visible only in the main-menu planner and only to global instance administrators; on completion you get a summary "Calendar updated in X of N projects" (added in v2.18.0).
@@ -352,12 +352,12 @@ This lets you see whether the sum across people is consistent with the declared 
 List of assignees participating in the role. For each:
 
 - **Full name.**
-- **Grade** — Intern / Junior / Mid / Senior. Affects capacity calculation through a coefficient.
+- **Grade** — Intern / Junior / Mid / Senior. Affects capacity calculation through a coefficient. With the "Full" model and an **approved** sprint capacity, the grade here is read-only (with a "set on the Capacity tab" hint next to it) — the resource comes from the approved record; until capacity is approved, the grade is editable as usual.
 - **Resource (h)** — how many hours this person is committing to the sprint. Editable inline.
 - **Allocations by project** — a small list of "task · hours · percent" with tasks assigned to this person.
 - **Remainder** — how many hours the person still has unallocated.
 
-Buttons above the table: **+ Pick assignees**, **Clear** (remove all), **Refresh task data** (pull fresh assignees from YouTrack).
+Buttons above the table: **+ Pick assignees**, **Clear** (remove all), **Refresh from task** (pull fresh assignees from YouTrack).
 
 #### "Task distribution" table
 
@@ -399,13 +399,13 @@ In the task-distribution table every task has a number in its assignee's queue a
 ### Buttons at the top of the page
 
 - **Calculate resource** — recalculates resources for all assignees by the hour quota and grade (useful if quota settings or roster changed).
-- **Save parameters** — commits the shared role parameters (same action as in the first mode).
+- **Save parameters** — force-saves the **per-person distribution** (assignees, dates, people's resources) and updates the sprint's history record without waiting for the background autosave. This is not the same action as the button of the same name in the role card: that one saves the sprint's name, dates and Sprint/Version fields.
 - **Confirm distribution** — moves the sprint from the *reviewed* stage to *committed*. When to click — see [section 10](#10-sprint-stages-review-commit-complete).
 
 ### Good to know
 
 - **Change an assignee in one table → it updates everywhere.** Change an assignee via the dropdown here — the corresponding bar on the Gantt chart (see [section 8](#8-calendar-timeline)) immediately recolors. No two-way drift between views.
-- **If someone changed an assignee directly in YouTrack** — click **Refresh task data**: the plugin pulls fresh values for all sprint tasks (up to 200 at a time).
+- **If someone changed an assignee directly in YouTrack** — click **Refresh from task**: the plugin pulls fresh values for all sprint tasks (up to 200 at a time).
 - **Switching roles with unsaved changes** — the plugin asks for confirmation so you don't accidentally lose your distribution.
 - **If an old completed sprint is selected** — all fields are greyed out (read-only). To change the distribution, open the sprint for editing from history (see [section 11](#11-sprint-history-and-re-editing)).
 
@@ -430,13 +430,13 @@ The **Gantt chart** tab shows the tasks of the active sprint on a timeline — w
 
 A bar can be **dragged as a whole** (both dates shift) or **stretched by its left/right edge** (only Start or Finish changes). The new dates are immediately written into the same Start / Finish fields as in **By assignees** mode — the section 7 table, exports and history see them as regular dates. This is the fastest way to manually adjust the [auto-forecast](#7-distributing-tasks-among-assignees) result.
 
-> ⚠ Dragging requires date-editing permissions (the **Editors** or **Assignee-and-date-only** groups) and an editable sprint. An old sprint without an edit draft is view-only: bars don't move.
+> ⚠ Dragging requires date-editing permissions (the **Sprint Editing** or **Assignee-and-date-only** groups) and an editable sprint. An old sprint without an edit draft is view-only: bars don't move.
 
 #### Double click on a bar → reassign
 
 A small dialog opens with the list of all picked assignees for the role plus **— Unassigned —**. Pick the person and click **Apply** — the assignee is **written back to the YouTrack task**. A single click doesn't change the assignee: it selects the bar and starts a drag.
 
-> ⚠ This works only if **Inline field editing** is enabled in settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)) and you have edit permissions. If disabled, the plugin won't write changes back to YouTrack — and reassign is blocked, so you don't end up with "I changed it locally, but the YouTrack task still has the old assignee".
+> ⚠ This works only if **Direct editing of YouTrack issue fields** is enabled in settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)) and you have edit permissions. If disabled, the plugin won't write changes back to YouTrack — and reassign is blocked, so you don't end up with "I changed it locally, but the YouTrack task still has the old assignee".
 
 ### If the chart is empty
 
@@ -450,34 +450,35 @@ Possible reasons:
 
 ## 9. Daily stand-up view
 
-There's a third mode on the **Planning** tab — **Stand-up**. It's made for short daily team meetings: open the mode, walk through three columns, close the meeting in 5 minutes.
+There's a third mode on the **Planning** tab — **Stand-up**. It's made for short daily team meetings: open the mode, walk through the task states, close the meeting in 5 minutes.
 
 ### What it shows
 
-All tasks of the active role in the active sprint, split into three columns:
+The sprint's tasks, grouped into **sections by their real states** — the same values that sit in the State field of the YouTrack issues. Section order and chip colours come from the field's value set in the project, so the picture matches the YouTrack boards. Every state of the set is shown, empty ones included; tasks without a state are collected into a "No state" section at the end.
 
-| Column | What goes there |
-|---|---|
-| **✅ Done** | Tasks in states "Done" / "Closed" / "Verified" — those considered completed (the exact list is configurable). |
-| **🔄 In progress** | Tasks with logged time or marked as started. |
-| **📋 Not started** | Tasks with no actual hours yet. |
+Each section is a **spoiler**, collapsed by default: at the top you see a compact "state · task count" overview and expand only what you're discussing. A task card shows: task ID, title, assignee, actual/planned hours.
 
-Each card inside a column shows: task ID, title, assignee, actual/planned hours.
+The selector at the top switches whose tasks you're looking at:
+
+- **All roles** (default) — the combined composition of all active roles in the sprint: hours are summed plan/actual across roles, assignees are listed, each task shows a role badge.
+- **A specific role** — only its tasks. If a **state → roles mapping** is configured in the stand-up settings, the role sees sections only for its own states, and its tasks that ended up in other roles' states land in a summary **Other states** section with the actual state as a label. Without a mapping, every state is shown.
+
+States that aren't needed at the meeting (long-closed ones, for example) can be **hidden** by the admin — the section disappears together with its tasks.
 
 ### How to use
 
 1. Open the **Planning** tab.
 2. Switch to **Stand-up** mode.
-3. Pick a role in the selector at the top (shared with the other modes).
+3. Keep **All roles** or pick a role in the selector at the top.
 4. If a sprint goal is set, it's shown as a large banner on top.
-5. The team walks through the columns: what closed yesterday → what's in progress → what's waiting.
-6. To refresh — click **🔄 Refresh**, which re-reads YouTrack data.
+5. The team walks through the sections in state order: expand a section, talk through its tasks, collapse it.
+6. To refresh — click **🔄 Refresh**, which re-reads YouTrack data (in **All roles** — for every role at once).
 
 ### Important to know
 
-- **This is read-only.** You can't drag tasks between columns or change assignees here — just look. Any edits go in the other modes of the Planning tab.
-- **If the "Done" column is empty even though tasks are closed** — check settings. Which YouTrack states count as *Done* is configured in plugin settings (see [Appendix A](#appendix-a-full-reference-of-project-settings)). By default it's the last two states from the auto state roll-up setting.
-- **No "Blocked" column.** Task blocking info isn't shown by the plugin yet — this may appear in future versions.
+- **This is read-only.** You can't drag tasks between sections or change assignees here — just look. Any edits go in the other modes of the Planning tab or in the YouTrack issue itself.
+- **If a section you expect is missing** — either the state is hidden in the stand-up settings, or it isn't in the selected role's state → roles mapping (then look for the tasks under **Other states**). The settings are described in [Appendix A](#appendix-a-full-reference-of-project-settings).
+- **No "Blocked" section.** Task blocking info isn't shown by the plugin yet — this may appear in future versions.
 - **Sprint goal.** If the field was filled in when the sprint was created, it's shown on top as a reminder to the team about the main outcome they're working toward. If not — there's a soft suggestion to add it.
 
 ---
@@ -555,6 +556,8 @@ Clicking **✓ Finish sprint** opens an outcome dialog:
 
 After **Confirm**, the sprint moves to *finished* and its history card gets a green outcome badge.
 
+**If the sprint has several roles**, you don't have to finish each one separately: the header of the sprint's group card in History has a **Finish all roles** button — one outcome dialog and one confirmation for all the sprint's roles that aren't finished yet. The per-role **✓ Finish Sprint** button stays — for the cases where roles close at different times. If one of the sprint's roles is already finished, the outcome dialog is **prefilled** with its outcome and retrospective note — a sprint has one outcome, no need to write it again.
+
 > 💡 The outcome dialog can't be bypassed with a stray click — even if you try to finish without picking an outcome, **Confirm** stays disabled. This is intentional, so every finished sprint has an explicit assessment.
 
 ### What if you "miss the stage"
@@ -579,7 +582,7 @@ Each sprint is a collapsible card with metadata:
 - Sprint goal and outcome — if set.
 - Task count and resource remainder.
 
-Click the card — it expands and shows the full task table with assignees and hours.
+Click the card — it expands and shows the full task table with assignees and hours. The roles of one sprint are grouped under a shared sprint header; while at least one role is unfinished, the header has a **Finish all roles** button (see [section 10](#10-sprint-stages-review-commit-complete)).
 
 ### What buttons are on the card
 
@@ -694,7 +697,7 @@ History records are spoilers with the at-close snapshot (traffic-light, composit
 
 ### What it is
 
-A showcase of **13 reports** about what is actually happening to the project's issues: where they get stuck, how fast they reach the finish line, where the hours go, how accurate the estimates turn out. If the planner answers "what did we agree on", reporting answers "what is really happening".
+A showcase of **14 reports** about what is actually happening to the project's issues: where they get stuck, how fast they reach the finish line, where the hours go, how accurate the estimates turn out. If the planner answers "what did we agree on", reporting answers "what is really happening".
 
 Reports are computed **from live YouTrack data** (state-transition history, logged work, sprint snapshots) at the moment you build them — the plugin stores nothing and runs no nightly jobs. Open a report → the plugin reads YouTrack → shows the result. A report is therefore always current "as of now", and for capturing history there's Excel/PDF export (see below).
 
@@ -702,7 +705,7 @@ Reports are computed **from live YouTrack data** (state-transition history, logg
 
 The reports are split into two contours with separate access via YouTrack groups:
 
-- **"Operational (A)"** — 9 reports for leads and Scrum masters: the daily and weekly work with the task flow.
+- **"Operational (A)"** — 10 reports for leads and Scrum masters: the daily and weekly work with the task flow.
 - **"Management (B)"** — 4 reports for management: monthly trends, technical debt, the "bug tax".
 
 Access groups are set in plugin settings, in the **Reporting** section — these are separate groups, not reusing planning or release permissions. Membership in a contour-B group automatically grants contour A as well. Membership is also checked on the server — a hidden button is not the only line of defence.
@@ -734,7 +737,8 @@ If there's a lot of data and the report takes long to build, a **"⏹ Cancel"** 
 | **Effort** | Hours by person and role for the period + a "no hours logged" list. |
 | **Plan vs fact** | Estimate accuracy: average variance per role and the issues whose fact-vs-estimate variance exceeded the threshold. The estimate is taken "as it was" when the issue entered work — it can't be rewritten in hindsight. |
 | **Backlog in hours** | How many "months of work" have piled up in the backlog per role: the sum of estimates divided by the role's monthly capacity. |
-| **Spillover** | A closed-sprint debrief: underfulfilment by role, tails — carried into or dropped from the next sprint — and "zombie issues": how many consecutive sprints an issue keeps rolling over not-done. "Done-ness" is determined by the "Done" states from the Stand-up settings. |
+| **Spillover** | A closed-sprint debrief: underfulfilment by role, tails — carried into or dropped from the next sprint — and "zombie issues": how many consecutive sprints an issue keeps rolling over not-done. "Done-ness" is determined by the "Done" states list (the **Done states for Stand-up** setting in the Stand-up assist section; if the list is empty — the last two states of the state roll-up order). |
+| **Team velocity** | Velocity by role from the snapshots of closed sprints: hours closed per sprint and the plan-completion percentage, with a rolling average over a window of recent sprints (the window size is a setting). |
 
 ### Reports of the "Management (B)" contour
 
@@ -745,7 +749,7 @@ If there's a lot of data and the report takes long to build, a **"⏹ Cancel"** 
 | **Bug tax** | The share of engineering hours spent on bugs rather than features — by system and role. A bug is linked to its feature via the configured link types. |
 | **Thousand small tasks** | The flow of small tagged tasks in the period versus the monthly pace year-to-date. |
 
-The "system" in the reports is the value of the issue's **subsystem field** (the "Task fields" → "Subsystem field" setting).
+The "system" in the reports is the value of the issue's **subsystem field** (the "Other Fields" → "System" setting).
 
 ### Charts in reports
 
@@ -763,17 +767,19 @@ Access to different actions in the plugin is regulated through **YouTrack groups
 
 Groups are **additive**: one person can be in multiple groups and gets the sum of their permissions.
 
-### Nine permission groups
+### Eleven permission groups
 
 | Group | What they can do |
 |---|---|
-| **Plugin configurators** | Open the plugin settings dialog and change configuration (YouTrack fields, active roles, quotas, the other group memberships). This is the "root" group — without it, all other settings are useless. |
-| **Editors** | Full sprint editing: pick tasks, change hours, capacities, assignees, dates. Access to **Composition by roles** and **By assignees** both ways. |
-| **Confirmers** | Everything editors can, plus the ability to click **Confirm composition** and **Confirm distribution**, plus open sprints for editing from history and apply drafts. |
+| **Settings manager group** | Open the plugin settings dialog and change the whole configuration (YouTrack fields, active roles, quotas, permissions, modules). This is the "root" group — without it the project isn't connected to the planner and everything is read-only. The only group that is set **not in the plugin dialog** but in the app settings: Project Settings → Apps → Smart Sprint Planner (see [section 3](#3-first-time-setup-what-the-project-admin-configures)). |
+| **Planning settings managers** | Can open the settings dialog and edit only the planning sections (roles and fields, other fields, planning modes, multi-role planning, stand-up, other). The administration sections (permissions, capacity, time tracking, cascades, backlog, releases, reporting) are not shown to them. |
+| **Sprint Editing** | Full sprint editing: pick tasks, change hours, capacities, assignees, dates. Access to **Composition by roles** and **By assignees** both ways. A **required** group: while it's empty, nobody but the YouTrack instance administrator can save sprints. |
+| **Sprint Validation** | Everything editors can, plus the ability to click **Confirm composition** and **Confirm distribution**, finish a sprint, open sprints for editing from history and apply drafts. Without this group, review and finishing are unavailable to everyone. |
+| **Sprint creation lock** | Can flip the "sprint creation lock" toggle in the planner header. While the lock is on, existing sprints keep working but new ones can't be created. |
 | **Assignee-and-date-only** | Limited permissions: can change **only** assignees and Start / Finish dates in **By assignees** and on the Gantt chart. Composition, capacities, status — not allowed. Useful for team leads who shuffle assignees inside a fixed sprint but shouldn't change "what was agreed". |
 | **Release managers** | Full release management (when the «Releases» module is enabled, see [section 12](#12-releases-release-management)): create and edit, pick tasks, any status changes, cancellation, composition freeze. |
 | **Release engineers** | Advance a release's status to the next step in the chain (Planned → Preparation → In progress → Released). Composition and release fields are read-only. |
-| **Reporting: contour A** | See the "Reporting" group and the "Operational (A)" section — 9 operational reports (with the module enabled, see [section 13](#13-operational-reporting)). Grants no sprint-editing permissions. |
+| **Reporting: contour A** | See the "Reporting" group and the "Operational (A)" section — 10 operational reports (with the module enabled, see [section 13](#13-operational-reporting)). Grants no sprint-editing permissions. |
 | **Reporting: contour B** | Everything contour A sees, plus the "Management (B)" section — 4 management reports. Contour-B membership automatically includes contour A. |
 | **History cleaners** | See and can click **🗑 Clear all history** above the History list. A strong, irreversible action — usually given to 1–2 responsible people. |
 
@@ -781,7 +787,11 @@ Groups are **additive**: one person can be in multiple groups and gets the sum o
 
 ### How groups are configured
 
-Groups are picked in the plugin settings dialog (gear in the header) in the **Access and roles** section. Group names come from YouTrack — the same groups your project uses for other permissions.
+The settings manager group is set in the app settings (Project Settings → Apps → Smart Sprint Planner). All the other groups are picked in the **⚙ Plugin Settings** dialog: planning and history groups in the **Manage permissions** section, release groups in the Release management section, reporting groups in the Reporting section. Group names come from YouTrack — the same groups your project uses for other permissions.
+
+The Release management section also has two **candidate pools** for release representatives (managers and engineers) — these aren't permissions but lists of people the responsible persons for a specific release are picked from.
+
+> ⚠ **Groups are matched by name.** The plugin remembers the group's name, not its internal identifier. If you **rename** a group in YouTrack, its members lose access — open the settings and pick the group again under its new name. Nested groups are honoured: a member of a child group gets the parent group's permissions.
 
 For details about which settings come by default and how they're named in the dialog — see [Appendix A](#appendix-a-full-reference-of-project-settings).
 
@@ -827,16 +837,16 @@ Someone changed the original sprint in parallel while you were editing the draft
 - **Cancel** — the draft is preserved as-is; you can discuss with your colleague first and decide.
 
 **I'm in "Assignee-and-date-only" but I can't change sprint composition.**
-Correct behavior. This group is deliberately limited: you can change **only** the assignee and Start / Finish dates. Changing task composition, role capacity, status — requires Editor or Confirmer permissions. If you need full permissions, ask the configurator to add you to the Editors group.
+Correct behavior. This group is deliberately limited: you can change **only** the assignee and Start / Finish dates. Changing task composition, role capacity, status — requires the **Sprint Editing** or **Sprint Validation** group. If you need full permissions, ask the configurator to add you to the Sprint Editing group.
 
-**The "Done" column in Stand-up is empty even though tasks are closed in YouTrack.**
-Check the plugin settings (gear → **Stand-up**) for the **"Done" states** field. If empty — the plugin doesn't know which YouTrack states count as completed. Pick the relevant states (typically *Done*, *Closed*, *Verified*) and save — the stand-up stops being empty.
+**Stand-up has no section for the state I need, even though there are tasks in it.**
+Stand-up groups tasks by the real states of the project's State field, so there's no need to "explain" to it what counts as done. If a section isn't there, check two things in the plugin settings (**⚙ Plugin Settings → Stand-up assist**): whether the state is listed under **Hidden states in Stand-up**, and whether the selection for this role is narrowed by the **State → roles mapping** (then the role's tasks in that state are shown under **Other states**). Switching to **All roles** removes the role filter.
 
 **I can't reassign a task by clicking a bar on the Gantt chart.**
-Since v3.2.0 reassign is a **double click** on the bar: a single click selects the bar and starts a date drag. Besides that, reassign only works when **Inline field editing** is enabled in settings. This is intentional: if the plugin can't write the change back to the task, the reassign would only be "local" and the YouTrack task would still show the old assignee — a source of confusion. To enable, ask the plugin configurator (or do it yourself if you have rights) to turn on the corresponding option in settings.
+Since v3.2.0 reassign is a **double click** on the bar: a single click selects the bar and starts a date drag. Besides that, reassign only works when **Direct editing of YouTrack issue fields from sprint table** is enabled in settings (the Planning Modes section). This is intentional: if the plugin can't write the change back to the task, the reassign would only be "local" and the YouTrack task would still show the old assignee — a source of confusion. To enable, ask the plugin configurator (or do it yourself if you have rights) to turn on the corresponding option in settings.
 
 **The "External ID" column doesn't appear in tables.**
-Check the plugin settings, in the **Task fields** section, for the **External ID field** option. If empty — the column is hidden. If filled with a YouTrack field name — the column appears, but only for tasks that have a value in that field (rows without an external ID just skip the cell).
+Check the plugin settings, in the **Other Fields** section, for the **External ticket ID** field. If empty — the column is hidden. If filled with a YouTrack field name — the column appears, but only for tasks that have a value in that field (rows without an external ID just skip the cell).
 
 **A reminder "Sprint goal not set" appeared. Can I ignore it?**
 Yes. It's a soft reminder that doesn't block saving. Fill in the Sprint goal field if you want to see it during the daily stand-up and assess the outcome at sprint close. If your team doesn't use sprint goals — just ignore the reminder or fill in any meaningful text.
@@ -848,39 +858,62 @@ At the bottom of the plugin there's a collapsible **Diagnostics** block — all 
 
 ## Appendix A. Full reference of project settings
 
-This is the complete list of settings the project admin configures in the **Plugin Settings** dialog (gear in the header). The dialog uses a two-pane layout: a navigation list of sections on the left, the active section on the right.
+This is the complete list of settings the project admin configures in the **⚙ Plugin Settings** dialog (the button in the planner header). The dialog uses a two-pane layout: a navigation list of sections on the left, the active section on the right. The administration sections (marked with a lock) are visible only to members of the settings manager group; a planning settings manager sees just the planning sections.
 
 > Most users don't need to go here. This section is for the project configurator.
 
-### "Access and roles" section
+### App settings (Project Settings → Apps → Smart Sprint Planner)
 
-- **Settings manager group** — who can open this dialog and change configuration. Without it, the plugin only works in read-only mode.
-- **Active roles** — list of 9 functional roles (Analysis, Testing, Platform development, Backend, Frontend, iOS, Android, Fullstack, Database). Roles ticked here get their lanes in planning.
-- **Editor groups** — who can edit composition, capacities, assignees.
-- **Confirmer groups** — who can click **Confirm composition** and **Confirm distribution**.
-- **Assignee-and-date-only groups** — who gets limited permissions (only assignees and Start / Finish dates).
-- **History clearing groups** — who sees the **Clear all history** button.
+Two parameters live **outside the plugin dialog** — in the app's card in the YouTrack project settings:
 
-### "Task fields" section
+- **Plugin settings manager group** — who can open the settings dialog and change configuration. Until it's set, the project doesn't appear in the planner and everything is read-only. It can't be set from inside the plugin — deliberately, so a fresh project can't be "taken over" from within.
+- **Verbose logging** — writes debug messages to the YouTrack server log. Off by default; enable only while investigating an incident.
 
-Mapping of YouTrack fields to plugin concepts. For **each active role**:
+### "Roles and issue fields" section
+
+One table: a row per functional role (9 rows: Analysis, Testing, Platform development, Backend, Frontend, iOS, Android, Fullstack, Database), columns — the active checkbox and three YouTrack fields. Ticked roles get their lanes in planning; fields are picked only for active roles:
 
 - **Estimate field** — where planned hours are stored (e.g. *Estimation*).
 - **Actual field** — where actual spent hours are stored (e.g. *Spent time*).
 - **Assignee field** — who's responsible for the task in this role (e.g. *Assignee*, *Developer*, *Tester*).
 
-Shared fields (for all roles):
+The same estimate (or actual) field can't be assigned to two roles — the form highlights the duplicate.
 
-- **Priority field**, **Cross-priority field**, **State field**, **Subsystem field**, **Sprint field**, **Fix version field**.
-- **External ticket ID field** — if your tasks come from an external system (Service Desk, 1C, SAP, legacy JIRA) and the YouTrack task has a text field with the ID from that system. If set — an **External ID** column appears in tables as the second column after the YouTrack ID.
+### "Manage permissions" section (administration)
 
-Options:
+- **Planning settings manager** — who can edit the planning sections of this dialog without touching permissions and automation rules.
+- **Sprint Validation** — who can confirm (**Confirm composition**, **Confirm distribution**) and finish a sprint. **Required for review**: without a group, validation is unavailable to everyone.
+- **Sprint Editing** — who can save composition, capacities, assignees and sprint parameters. **Required**: without a group, writing is closed for everyone except the instance administrator.
+- **Full Sprint History Clearing** — who sees the **Clear all history** button.
+- **Assignee & Dates Edit (Assigner)** — limited permissions: only assignees and Start / Finish dates.
+- **Sprint creation lock** — who can flip the "sprint creation lock" toggle in the planner header.
 
-- **Inline field editing.** If enabled, the plugin can write assignee / state / priority changes back to the YouTrack task directly from sprint tables. Without this mode, all changes stay local to the plugin.
+Every field has a hint underneath saying exactly what the group grants. How groups are matched and why renaming a group in YouTrack breaks access — see [section 14](#14-who-can-do-what-group-permissions).
+
+### "Other Fields" section
+
+Shared fields for all roles.
+
+**Main:**
+
+- **Priority**, **State**. If not selected — the project field named *Priority* / *State* is used; saving isn't blocked, but a "Required fields are not set" warning is shown.
+
+**Optional:**
+
+- **Cross Priority**, **System** (subsystem), **Sprint Field**, **Version**.
+- **External ticket ID** — if your tasks come from an external system (Service Desk, 1C, SAP, legacy JIRA) and the YouTrack task has a text field with the ID from that system. If set — an **External ID** column appears in tables as the second column after the YouTrack ID.
+- **Type** — the issue type field (Feature / Bug / Spike…) whose values drive the type filter in the **Working with the backlog** module. Changing the field resets the backlog filter.
 
 ### "Capacity management" section (administration)
 
-An admin section: only the project settings manager (a member of the settings manager group) can edit it; for a planning manager the fields are shown, but changes are not saved (the previously saved value is kept). It gathers everything that affects role and per-person capacity calculation.
+An admin section: visible and editable only by the project settings manager (a member of the settings manager group); a planning settings manager doesn't see the administration sections. It gathers everything that affects role and per-person capacity calculation.
+
+The section opens with the **Planning model** dropdown (described below) — it decides what's shown further down. With the **Light** and **Full** models, these unfold under it:
+
+- **Working hours per day** and **Useful hours per day** — the length of the working day and the share of it that can actually go to tasks. These numbers are read by the capacity calculation, the date auto-forecast and the time-tracking rules.
+- The calculation quotas and grade coefficients (below).
+
+With the **Simple** model these blocks aren't there — role capacity is entered as a single number and the quotas aren't used.
 
 **Calculation quotas** — used by the **Calculate resource** button:
 
@@ -906,7 +939,10 @@ Formula: `month_quota × rate × participation_percent × grade_coefficient`.
 Automatic split of task-logged time across different roles' actual fields.
 
 - **Enable differentiated effort tracking.** If enabled, when hours are logged on a task the plugin looks at the **work item type** (Development / Testing / Analysis etc.) and puts the hours into the corresponding role's actual field.
+- **Enable plan/fact ratio control notifications** — a switch nested under the master toggle: without effort tracking the notifications don't work.
 - **Type → role map** — a table of mappings: e.g. `Development → Frontend`, `Testing → Testing`. One type → one role. Inactive roles in the map are ignored with a warning.
+
+While the master toggle is off, the sub-fields are shown dimmed but stay editable — you can set everything up in advance and switch it on with one click. The "Cascade aggregation", "State rollup" and "Releases" sections work the same way.
 
 ### "Cascade aggregation" section
 
@@ -921,9 +957,9 @@ Automatic roll-up of estimates and actuals from child tasks to parent containers
 
 > ⚠ If cascade aggregation is enabled but the "forbid container logging" is off, the plugin shows a warning in settings. This is a "dangerous combination" — recommended to enable both together.
 
-### "Automatic state roll-up" section
+### "State rollup parent ← children" section
 
-Automatic recalculation of parent (Story / Epic) state from children states.
+Automatic recalculation of parent (Story / Epic) state from children states. The parent gets the **least-progressed** state among its children — there is no other strategy to choose from.
 
 - **Enable state roll-up.**
 - **State order** — ordered list of states from "least progressed" to "most progressed". E.g. `Open → In progress → Ready for review → Done`.
@@ -932,22 +968,28 @@ Automatic recalculation of parent (Story / Epic) state from children states.
 
 After setting the state order, a **🔄 State roll-up: on/off** chip appears at the bottom of the plugin.
 
-### "Stand-up" section
+### "Stand-up assist" section
 
-- **"Done" states** — which YouTrack states count as completed for the **✅ Done** column in Stand-up mode. Multiple states can be selected. If left empty — the plugin takes the last two states from the state roll-up order. If both are empty — the Done column stays empty and a hint appears.
+Stand-up groups tasks by every state of the project's State field (see [section 9](#9-daily-stand-up-view)); here you configure what of it to show.
 
-### "Planning modes" section
+- **State → roles mapping** — a "state — roles" table. In a single-role view only the sections of that role's states are shown; the role's tasks in other states go to the **Other states** section. Empty — every state is shown. Row order doesn't matter — section order is dictated by the field's value set.
+- **Copy from backlog zones** — copies the mapping from the pipeline zones of the **Working with the backlog** module, so you don't enter the same thing twice. Disabled while there are no zones.
+- **Hidden states in Stand-up** — sections of these states (together with their tasks) aren't shown in Stand-up.
+- **Done states for Stand-up** — which states count as "done". Stand-up itself doesn't read this list (it groups by every state of the set); it's used by reporting — Spillover, Team velocity and the bug resolution time in Bug tax (see [section 13](#13-operational-reporting)). If the list is empty, the last two states of the state roll-up order are taken.
 
+### "Planning Modes" section
+
+- **Direct editing of YouTrack issue fields from sprint table.** If enabled, the plugin can write assignee / state / priority changes back to the YouTrack task directly from sprint tables (with a confirmation). Without this mode, all changes stay local to the plugin.
 - **Allow planning over the limits** — when enabled, a role's resource overlimit **does not block** the "Validate" button and doesn't trigger a warning dialog. A negative remainder is still highlighted in red as an indicator, and a mode chip is shown in the plugin header. Off by default (overlimit blocks validation).
-- **Auto-forecast dates** (v3.1.0) — enables the **Forecast dates** button and the "#" queue column on the **By assignees** level (see [section 7](#7-distributing-tasks-among-assignees)). Off by default.
+- **Auto-forecast dates** (v3.1.0) — enables the **Forecast dates** button and the "#" queue column on the **By assignees** level (see [section 7](#7-distributing-tasks-among-assignees)). Off by default. With the "Simple" planning model the toggle isn't shown — there's no per-person level in it.
 
 ### "Backlog" section
 
-Configures the **Working with the backlog** module (see [section 5](#5-working-with-the-backlog)). If the section is left empty, the "Working with the backlog" item won't appear in the navigation tree.
+Configures the **Working with the backlog** module (see [section 5](#5-working-with-the-backlog)). The "Working with the backlog" item appears in the navigation tree only after at least one zone has been added.
 
 - **Start states (customer pool)** — the states in which a task counts as "new", not yet taken into work. They form the top "Customer pool" bucket.
 - **Pipeline zones (state → role)** — a table of stages: each zone is mapped to a state and one or more roles working at that stage. The zone order = pipeline order (changeable with arrows). A single state cannot be mapped twice. These zones drive the "By zones" view and the role auto-suggestion when laying a task into a sprint.
-- **Type filter** — which task types to show in the pool (values of the type field). The task-type field is taken from the "Cascade aggregation" → "Type field" setting.
+- **Type filter** — which task types to show in the pool (values of the type field). The type field is taken from the "Other Fields" section → **Type**; changing that field resets the filter.
 - **Pause states** / **Pause tags** — states (or comma-separated YouTrack tags) by which a task in the pool is marked with the "Paused" label.
 
 ### The «Releases» section
@@ -982,10 +1024,9 @@ Settings of the operational reporting module (see [section 13](#13-operational-r
 
 ### "Other" section
 
-- **Interface language** — language switcher (duplicates the one in the plugin header).
-- **Verbose log.** Enables debug-level logging on the server side. Off by default. Doesn't log user-entered values — only short operation markers.
+- **Project default language** — the planner's interface language for those who haven't switched it themselves; empty — follows the user's browser language. Everyone switches their own language with the selector in the planner header — there's no separate switcher in settings.
 - **Show diagnostic log panel.** Shows the **Diagnostics** block at the bottom of the plugin; **hidden by default** since v2.17.0. Events are always recorded; once enabled, the **Export TXT** button downloads a state snapshot for support.
 
 ---
 
-_Updated 2026-07-11, plugin v3.0.0._
+_Updated 2026-08-21, plugin v3.20.0._

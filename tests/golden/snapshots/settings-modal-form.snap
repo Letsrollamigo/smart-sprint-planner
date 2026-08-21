@@ -22,7 +22,6 @@
         "loadTags",
         "onClose",
         "onSave",
-        "onUiLangChange",
         "roles",
         "stateFieldName",
         "t",

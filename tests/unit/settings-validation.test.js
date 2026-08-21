@@ -225,3 +225,11 @@ test('reporting A2: реджектит не-массив states/tags марке�
   assert.strictEqual(validateSettings({ reportingPauseMarkers: { tags: { a: 1 } } }), false);
   assert.strictEqual(validateSettings({ reportingPauseMarkers: ['x'] }), false);
 });
+
+/* #69 R1 — fieldExternalTicketId был в whitelist, но не в fieldKeys → не проходил assertStr(200). */
+test('fieldExternalTicketId: строка ≤200 принимается, не-строка и >200 отклоняются', function() {
+  assert.strictEqual(validateSettings({ fieldExternalTicketId: 'External ID' }), true);
+  assert.strictEqual(validateSettings({ fieldExternalTicketId: null }), true);
+  assert.strictEqual(validateSettings({ fieldExternalTicketId: 42 }), false);
+  assert.strictEqual(validateSettings({ fieldExternalTicketId: 'x'.repeat(201) }), false);
+});

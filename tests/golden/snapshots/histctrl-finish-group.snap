@@ -1,0 +1,47 @@
+{
+  "modalId": "finishHistGroup",
+  "dialogArgs": [
+    {
+      "goal": "Цель S9",
+      "outcome": "partial",
+      "retro": "Ретро сестры"
+    }
+  ],
+  "records": [
+    {
+      "sprintId": "S9_analysis",
+      "status": "FINISHED",
+      "goalOutcome": "partial",
+      "goalRetroNote": "Ретро сестры",
+      "finished": false
+    },
+    {
+      "sprintId": "S9_testing",
+      "status": "FINISHED",
+      "goalOutcome": "achieved",
+      "goalRetroNote": null,
+      "finished": true
+    },
+    {
+      "sprintId": "S9_devBack",
+      "status": "FINISHED",
+      "goalOutcome": "achieved",
+      "goalRetroNote": null,
+      "finished": true
+    },
+    {
+      "sprintId": "S8_testing",
+      "status": "ALLOCATED",
+      "goalOutcome": null,
+      "goalRetroNote": null,
+      "finished": false
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Спринт переведён в статус «Закрыт»",
+      "type": "success"
+    }
+  ],
+  "apiCalls": 1
+}

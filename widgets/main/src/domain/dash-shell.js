@@ -72,8 +72,9 @@
     }
 
     /* 1b. Работа с бэклогом (#21 — funnel «что делать» перед планированием).
-       Иконка 'folder' (пул/коллекция), не 'task' — чтобы не дублировать группу «Планирование». */
-    tree.appendChild(mkItem('backlog', 'tabBacklog', 'folder'));
+       Иконка 'folder' (пул/коллекция), не 'task' — чтобы не дублировать группу «Планирование».
+       #69 R1 (строка 10) — только при настроенных зонах (как Ёмкость/Релизы): без зон узел был тупиком. */
+    if (_capS && Array.isArray(_capS.backlogZones) && _capS.backlogZones.length) tree.appendChild(mkItem('backlog', 'tabBacklog', 'folder'));
 
     /* 2. Планирование (раскрывающаяся группа с детьми Роли/Люди/Stand-up) */
     var grp = document.createElement('details'); grp.className = 'ssp-tree__group'; grp.open = true;

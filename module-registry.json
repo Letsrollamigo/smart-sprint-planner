@@ -4,7 +4,7 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4545,
+      "loc": 4528,
       "locBudget": 4551,
       "stateBaseline": 72,
       "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
@@ -93,7 +93,7 @@
     },
     "modules": {
       "backend-capacity.js": {
-        "loc": 738,
+        "loc": 742,
         "locBudget": 745,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
@@ -103,7 +103,7 @@
         "budgetNote": "v3.18.0 (#67 H11) — осознанный +8: cap тела filter-planner-projects (256 КБ) + схлоп оракула project_not_found/project_access_denied → project_unavailable. "
       },
       "backend-project.js": {
-        "loc": 26,
+        "loc": 28,
         "locBudget": 40
       },
       "backend-issuefields.js": {
@@ -112,7 +112,7 @@
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +6: colors в ответе GET /field-values (карта имя→{background,foreground} значений бандла) — цвета чипов секций стендапа, включая ПУСТЫЕ секции, где нет ни одной задачи с stateColor. Аддитивно: values/resolved не тронуты (их читают 68-1 и пикеры настроек). v3.18.0 (#67 остаток) — осознанный +103: обогатитель состава (путь 3, «дополняем только пустое», лимит 200, видимость fail-closed через Issue.isVisibleTo) + H7 allow-list fieldName из настроек + хойст readField на module-level (переиспользование резолвера refresh-assignees, не копия). "
       },
       "backend-release.js": {
-        "loc": 279,
+        "loc": 283,
         "locBudget": 285,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #48 R4 архив (US-R4-02): +58 — splitForArchive (pure in-memory разрез активный/архив: терминальные-старейшие по snapshot.closedAt, trigger 300КБ → target 250КБ, дедуп против split-brain недописи, стоп на лимите архива — без молчаливой потери) + readArchive + GET releases-archive + archivedCount в GET / archived в POST; первая реализация паттерна #53. R2.4 authz: +73 — releasePerms (D-C; perms в GET) + engineerDiffAllowed (серверная валидация диффа РИ) + stampAudit (серверный стамп аудита) + ужесточение POST. Роль-хелперы is* — в backend-core."
       },
@@ -180,7 +180,7 @@
         "locBudget": 285
       },
       "react/i18n-bridge.jsx": {
-        "loc": 29,
+        "loc": 37,
         "locBudget": 49
       },
       "react/input-mount.jsx": {
@@ -208,19 +208,19 @@
         "locBudget": 114
       },
       "react/release-create.jsx": {
-        "loc": 173,
+        "loc": 175,
         "locBudget": 194
       },
       "react/release-state-preview.jsx": {
-        "loc": 147,
+        "loc": 165,
         "locBudget": 167
       },
       "react/release-view.jsx": {
-        "loc": 392,
+        "loc": 412,
         "locBudget": 440
       },
       "react/reporting-view.jsx": {
-        "loc": 1456,
+        "loc": 1462,
         "locBudget": 1462,
         "budgetNote": "#57 (эпик 57) — осознанный рост +2: Н4 баннер A3 без целевых статусов + 57-4 канон Ring кнопок экспорта/прерывания (block/danger, комментарии). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица). v3.12.0 — микрополировка A11View (+8)."
       },
@@ -229,7 +229,7 @@
         "locBudget": 161
       },
       "react/settings-form.jsx": {
-        "loc": 938,
+        "loc": 928,
         "locBudget": 944,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +28: стейт standupHidden/standupStateRoles + save-нормализация маппинга (dedup по state, roles ∩ role keys — 1:1 с backlogZones) + пропсы StandupSection. Форма — композиционный корень настроек: секция в settings-standup.jsx, таблица в settings-shared.jsx. #61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
@@ -247,37 +247,37 @@
         "locBudget": 94
       },
       "react/settings-shared.jsx": {
-        "loc": 414,
+        "loc": 413,
         "locBudget": 420,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +83: StateRolesTable — таблица «состояние → роль(и)» вынесена 1:1 из BacklogSection (переиспользование в маппинге стендапа по требованию владельца). Донор ужался симметрично (settings-backlog.jsx 134→81), суммарно по jsx-слою рост ~+6. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-dta.jsx": {
-        "loc": 77,
+        "loc": 80,
         "locBudget": 92,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-cascade.jsx": {
-        "loc": 62,
+        "loc": 71,
         "locBudget": 77,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-rollup.jsx": {
-        "loc": 89,
+        "loc": 88,
         "locBudget": 104,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-standup.jsx": {
-        "loc": 47,
+        "loc": 49,
         "locBudget": 53,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +26: секция получила маппинг «состояние → роли» (общий StateRolesTable) и пикер скрытых состояний; done-пикер остался каноном отчётности. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-backlog.jsx": {
-        "loc": 81,
+        "loc": 77,
         "locBudget": 81,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-release.jsx": {
-        "loc": 100,
+        "loc": 96,
         "locBudget": 115,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
@@ -358,18 +358,18 @@
     "domain/capacity-view.js": {
       "layer": "domain",
       "domain": "domain/capacity-view",
-      "loc": 463,
-      "locBudget": 463,
+      "loc": 467,
+      "locBudget": 467,
       "state": [],
       "publishes": [
         "CAPACITY_VIEW"
       ],
-      "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 +35: авто-архив ёмкости + частичный день отсутствия (лейблы/спойлер архива, часы частичного дня). #52 (G3) +14: mainView/personsView (группировка person top-level в буилдере) + onMainViewChange + 4 лейбла. #51 +30: _uploadCsvGlobal (фан-аут глобального пуша календаря) + гейт canGlobalCsv. Прошлое:"
+      "budgetNote": "#69 R1 (строка 9) — осознанный +4: сид грейда человека из PP-канона распределения (buildPPMapFromCanon через deps) вместо хардкода «Middle». Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 +35: авто-архив ёмкости + частичный день отсутствия (лейблы/спойлер архива, часы частичного дня). #52 (G3) +14: mainView/personsView (группировка person top-level в буилдере) + onMainViewChange + 4 лейбла. #51 +30: _uploadCsvGlobal (фан-аут глобального пуша календаря) + гейт canGlobalCsv. Прошлое:"
     },
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
-      "loc": 1045,
+      "loc": 1044,
       "locBudget": 1049,
       "state": [
         "GRADES_LOCAL",
@@ -385,17 +385,18 @@
     "domain/dash-shell.js": {
       "layer": "domain",
       "domain": "domain/dash-shell",
-      "loc": 253,
-      "locBudget": 253,
+      "loc": 254,
+      "locBudget": 254,
       "state": [],
       "publishes": [
         "DASH_SHELL"
-      ]
+      ],
+      "budgetNote": "#69 R1 (строка 10) — осознанный +1: гейт узла «Бэклог» по непустым backlogZones (как Ёмкость/Релизы)."
     },
     "domain/draft-store.js": {
       "layer": "domain",
       "domain": "domain/draft-store",
-      "loc": 357,
+      "loc": 364,
       "locBudget": 378,
       "state": [
         "_draftFlushTimer",
@@ -409,7 +410,7 @@
     "domain/excel-export.js": {
       "layer": "domain",
       "domain": "domain/excel-export",
-      "loc": 319,
+      "loc": 329,
       "locBudget": 335,
       "state": [],
       "publishes": [
@@ -443,15 +444,16 @@
     "domain/history-controller.js": {
       "layer": "domain",
       "domain": "domain/history-controller",
-      "loc": 193,
-      "locBudget": 212,
+      "loc": 218,
+      "locBudget": 218,
       "state": [],
-      "publishes": []
+      "publishes": [],
+      "budgetNote": "#69 R1 (строка 5, ⚖ владелец) — осознанный +6: «Завершить все роли» (finishHistoryGroup: не-FINISHED записи группы, один диалог/персист) + общий хвост _finishRecords с префиллом исхода/ретро из FINISHED-сестры; confirm-модалка вынесена в _confirmFinish (per-role путь переиспользует)."
     },
     "domain/history-io.js": {
       "layer": "domain",
       "domain": "domain/history-io",
-      "loc": 173,
+      "loc": 169,
       "locBudget": 194,
       "state": [],
       "publishes": []
@@ -459,7 +461,7 @@
     "domain/history-view.js": {
       "layer": "domain",
       "domain": "domain/history-view",
-      "loc": 599,
+      "loc": 595,
       "locBudget": 599,
       "state": [],
       "publishes": [
@@ -470,7 +472,7 @@
     "domain/intro-view.js": {
       "layer": "domain",
       "domain": "domain/intro-view",
-      "loc": 247,
+      "loc": 252,
       "locBudget": 260,
       "state": [
         "api"
@@ -504,7 +506,7 @@
     "domain/project-nav.js": {
       "layer": "domain",
       "domain": "domain/project-nav",
-      "loc": 340,
+      "loc": 348,
       "locBudget": 350,
       "state": [
         "_serverLastSynced"
@@ -601,18 +603,10 @@
         "REVALIDATION"
       ]
     },
-    "domain/ring-class-helpers.js": {
-      "layer": "domain",
-      "domain": "domain/ring-class-helpers",
-      "loc": 136,
-      "locBudget": 156,
-      "state": [],
-      "publishes": []
-    },
     "domain/rolecomposition-view.js": {
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
-      "loc": 1106,
+      "loc": 1085,
       "locBudget": 1106,
       "state": [],
       "publishes": [
@@ -659,7 +653,7 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 649,
+      "loc": 647,
       "locBudget": 649,
       "state": [
         "api"
@@ -691,7 +685,7 @@
     "domain/tab-router.js": {
       "layer": "domain",
       "domain": "tab-router",
-      "loc": 116,
+      "loc": 107,
       "locBudget": 136,
       "state": [
         "api"
@@ -716,7 +710,7 @@
     "domain/validation-controller.js": {
       "layer": "domain",
       "domain": "domain/validation-controller",
-      "loc": 255,
+      "loc": 256,
       "locBudget": 286,
       "state": [],
       "publishes": [
@@ -749,7 +743,7 @@
     "i18n/i18n-controller.js": {
       "layer": "i18n",
       "domain": "i18n-i18n-controller",
-      "loc": 144,
+      "loc": 148,
       "locBudget": 164,
       "state": [
         "api"
@@ -769,7 +763,7 @@
     "i18n/loader.js": {
       "layer": "i18n",
       "domain": "i18n-loader",
-      "loc": 166,
+      "loc": 176,
       "locBudget": 183,
       "state": [
         "_cache",
@@ -806,7 +800,7 @@
     "infra/modal-specs.js": {
       "layer": "infra",
       "domain": "infra/modal-specs",
-      "loc": 193,
+      "loc": 194,
       "locBudget": 217,
       "state": [],
       "publishes": [
@@ -886,7 +880,7 @@
     "pure/hash-pure.js": {
       "layer": "pure",
       "domain": "pure/hash-pure",
-      "loc": 83,
+      "loc": 99,
       "locBudget": 103,
       "state": [],
       "publishes": [
@@ -989,7 +983,7 @@
     "pure/util-pure.js": {
       "layer": "pure",
       "domain": "pure/util-pure",
-      "loc": 50,
+      "loc": 61,
       "locBudget": 70,
       "state": [],
       "publishes": []
@@ -1035,7 +1029,7 @@
     "pure/reporting-b-pure.js": {
       "layer": "pure",
       "domain": "pure/reporting-b-pure",
-      "loc": 164,
+      "loc": 169,
       "locBudget": 169,
       "state": [
         "_api"
@@ -1078,7 +1072,7 @@
     "pure/reporting-export-pure.js": {
       "layer": "pure",
       "domain": "pure/reporting-export-pure",
-      "loc": 264,
+      "loc": 279,
       "locBudget": 280,
       "state": [
         "_WINDOWED",

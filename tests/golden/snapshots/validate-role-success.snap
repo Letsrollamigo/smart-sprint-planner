@@ -33,7 +33,6 @@
   "dom": {
     "editBannerDisplay": "none",
     "editBannerText": "",
-    "sprintStatusDisplay": "none",
     "newSprintBtnDisplay": ""
   },
   "toasts": [

@@ -32,7 +32,6 @@ function SettingsForm(props) {
   const fieldsByType = props.fieldsByType || {};
   const onSave = props.onSave || (() => Promise.resolve({ success: true }));
   const onClose = props.onClose || noop;
-  const onUiLangChange = props.onUiLangChange || noop;
   /* #22 — admin-тир (workflow-правила + доступ/права) рендерится только при true. */
   const canEditWorkflow = !!props.canEditWorkflow;
 
@@ -107,6 +106,9 @@ function SettingsForm(props) {
       kpeJun: kpe.Junior != null ? kpe.Junior : 0.5,
       kpeMid: kpe.Middle != null ? kpe.Middle : 0.65,
       kpeSenior: kpe.Senior != null ? kpe.Senior : 0.75,
+      /* #69 R1 (строка 8) — часы в дне: читают воркфлоу DTA/каскада, прогноз, ёмкость (контролы были в v2.8.0, сняты v2.13.0). */
+      hoursPerDay: initial.hoursPerDay != null ? initial.hoursPerDay : 8,
+      usefulHoursPerDay: initial.usefulHoursPerDay != null ? initial.usefulHoursPerDay : 7,
     };
   });
   const setNum = (k, v) => setNums((p) => Object.assign({}, p, { [k]: v }));
@@ -127,7 +129,8 @@ function SettingsForm(props) {
   /* #56-5 — showDiagLogUi заменил инверсный hideDiagLogUi (лог скрыт по умолчанию). */
   const [showDiagLogUi, setShowDiagLogUi] = React.useState(initial.showDiagLogUi === true);
   const [defaultLang, setDefaultLang] = React.useState(initial.defaultLang || '');
-  const [uiLang, setUiLang] = React.useState(props.uiLang || 'ru');
+  /* #69 R1 (строка 11) — язык формы = язык виджета (шапочный langSel); дубль-селектор из «Прочего» снят. */
+  const uiLang = props.uiLang || 'ru';
 
   /* ── 5c: DTA / каскад / state-rollup / стендап ── */
   const [dta, setDta] = React.useState(() => {
@@ -352,13 +355,17 @@ function SettingsForm(props) {
 
     /* #45 R4 — capacityMode деривируется из planningModel: 'full' → модуль ёмкости вкл
        (вкладка Capacity + остаток планирования из утверждённой ёмкости), иначе 'light'.
-       hoursPerDay/usefulHoursPerDay — константы Full-расчёта: passthrough из stored, дефолты
-       (8/7) при первом включении Full. Все — admin-тир (preserve-merge для не-админа). */
+       hoursPerDay/usefulHoursPerDay — #69 R1 (строка 8): при модели ≠ simple пишутся из формы
+       (клампы = бэкенд-валидаторы 1–24 / 0–24); при simple — passthrough из stored как раньше.
+       Все — admin-тир (preserve-merge для не-админа). */
     data.capacityMode = (modes.planningModel === 'full') ? 'full' : 'light';
-    if (initial.hoursPerDay != null) data.hoursPerDay = initial.hoursPerDay;
-    else if (data.capacityMode === 'full') data.hoursPerDay = 8;
-    if (initial.usefulHoursPerDay != null) data.usefulHoursPerDay = initial.usefulHoursPerDay;
-    else if (data.capacityMode === 'full') data.usefulHoursPerDay = 7;
+    if (modes.planningModel !== 'simple') {
+      data.hoursPerDay = Math.min(24, Math.max(1, num(nums.hoursPerDay, 8)));
+      data.usefulHoursPerDay = Math.min(24, Math.max(0, num(nums.usefulHoursPerDay, 7)));
+    } else {
+      if (initial.hoursPerDay != null) data.hoursPerDay = initial.hoursPerDay;
+      if (initial.usefulHoursPerDay != null) data.usefulHoursPerDay = initial.usefulHoursPerDay;
+    }
 
     data.fieldPriority = fields.fieldPriority || null;
     data.fieldXPriority = fields.fieldXPriority || null;
@@ -555,13 +562,14 @@ function SettingsForm(props) {
     });
   }
 
-  function changeUiLang(lang) {
-    setUiLang(lang);
-    onUiLangChange(lang); // легаси меняет глобальный _lang + applyI18N остального UI; t() ниже читает новый язык
+  /* #69 R1 (строка 19) — стендап «взять из зон»: копия маппинга в стейт формы (ключи раздельные, ⚖ 68-7). */
+  function copyStateRolesFromBacklog() {
+    setStandupStateRoles(backlog.zones.map((z) => ({ _uid: genZoneUid(), state: z.state || '', roles: (z.roles || []).slice() })));
   }
-
-  /* #43 W1 (C-1, Path B) — вендорный Ring Checkbox для сетки выбора ролей. */
-  const RingCheckbox = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Checkbox;
+  /* #69 R1 (строка 6) — нормы/КПЕ/прогноз мертвы только в simple (light — формула и сид при manual; full — фолбэк до утверждения). */
+  const modelNotSimple = modes.planningModel !== 'simple';
+  const subTitleCls = { fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '8px' };
+  const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '4px', display: 'block' };
 
   /* ── Конфиг секций (two-pane): id → title → node. Контент идентичен прежним
      Card-блокам; меняется только обёртка (nav-список слева + активная секция справа).
@@ -570,28 +578,42 @@ function SettingsForm(props) {
      полное название остаётся в pane__title. Без nav — в списке title. ── */
   const SECTIONS = [
     {
-      id: 'roles', title: t('cardRoles'), nav: t('navRoles'),
+      /* #69 R1 (строка 4) — одна per-role таблица «✓ · Оценка · Факт · Исполнитель» вместо 4 секций
+         (roles / «Поля исполнителей» / est / fact); ключи и дубль-проверки те же; поля — только у активной роли. */
+      id: 'roles', title: t('cardRoles'), nav: t('navRoles'), error: hasEstDup || hasFactDup,
       node: (
-        <div className="roles-grid">
-          {roles.map((r) => {
-            const on = activeRoles.indexOf(r.key) >= 0;
-            /* v3.12.2 — подпись роли через словарь (15 локалей), как roleLabel() ядра;
-               бинарник en/ru отдавал кириллицу любой третьей локали (de/fr/…). */
-            const lbl = t('role.' + r.key);
-            return RingCheckbox
-              ? <RingCheckbox key={r.key} checked={on} label={lbl} onChange={() => toggleRole(r.key)} />
-              : (
-                <div
-                  key={r.key}
-                  className={'role-check' + (on ? ' active' : '')}
-                  onClick={() => toggleRole(r.key)}
-                >
-                  <span className="role-check__cb"></span>
-                  <span className="role-check__label">{lbl}</span>
-                </div>
-              );
-          })}
-        </div>
+        <React.Fragment>
+          <table className="ssp-dta-table ssp-role-fields-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th scope="col">{t('dtaColRole')}</th>
+                <th scope="col">{t('thRoleFieldEst')}</th>
+                <th scope="col">{t('thRoleFieldFact')}</th>
+                <th scope="col">{t('thRoleFieldUser')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roles.map((r) => {
+                const on = activeRoles.indexOf(r.key) >= 0;
+                const lbl = t('role.' + r.key);   /* v3.12.2 — подпись через словарь (15 локалей) */
+                const rf = roleFields[r.key] || {};
+                const cell = (slot, names) => (on
+                  ? <FieldSelect value={rf[slot] || ''} onChange={(v) => setRoleField(r.key, slot, v)} names={names} placeholder={t('phNotSelected')} />
+                  : <span className="hint" style={{ color: 'var(--muted)' }}>—</span>);
+                return (
+                  <tr key={r.key}>
+                    <td><RoleCheck on={on} label={lbl} onToggle={() => toggleRole(r.key)} /></td>
+                    <td>{cell('est', fieldsByType.period)}</td>
+                    <td>{cell('fact', fieldsByType.period)}</td>
+                    <td>{cell('user', fieldsByType.user)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {hasEstDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateEstField')}</div> : null}
+          {hasFactDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateFactField')}</div> : null}
+        </React.Fragment>
       ),
     },
     {
@@ -600,8 +622,9 @@ function SettingsForm(props) {
         <React.Fragment>
           {[
             { key: 'planning', label: t('lblPlanningManagerGroup'), hint: t('hintPlanningManagerGroup') },
-            { key: 'val', label: t('lblValGroup') },
-            { key: 'edit', label: t('lblEditGroup') },
+            /* #69 R1 (строка 3) — маркеры обязательности (deny-by-default editGroups / validationGroups). */
+            { key: 'val', label: t('lblValGroup'), hint: t('hintValGroup') },
+            { key: 'edit', label: t('lblEditGroup'), hint: t('hintEditGroup') },
             { key: 'histClear', label: t('lblHistClearGroup'), hint: t('hintHistClearGroup') },
             { key: 'assigner', label: t('lblAssignerGroup'), hint: t('hintAssignerGroup') },
             { key: 'sprintLock', label: t('lblSprintLockGroup'), hint: t('hintSprintLockGroup') },   /* #57-2 */
@@ -626,9 +649,11 @@ function SettingsForm(props) {
       id: 'fields', title: t('cardOtherFields'),
       node: (
         <React.Fragment>
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '8px' }}>
+          <div className="card-subtitle" style={subTitleCls}>
             {t('cardOtherFieldsRequired')}
           </div>
+          {/* #69 R1 (строка 3) — «Основные»: у Priority/State фолбэк по имени, сейв не блокируется (warn-тост). */}
+          <span className="hint" style={Object.assign({}, hintCls, { marginTop: 0, marginBottom: '8px' })}>{t('hintOtherFieldsRequired')}</span>
           <div className="form-grid form-grid--2">
             <div className="field">
               <label>{t('fldPriority')}</label>
@@ -669,49 +694,6 @@ function SettingsForm(props) {
               <FieldSelect value={fields.fieldType} onChange={(v) => { if (v !== fields.fieldType) setBacklog((b) => Object.assign({}, b, { typeFilter: [] })); setField('fieldType', v); }} names={fieldsByType.enumFields} placeholder={t('phNotSelected')} />
             </div>
           </div>
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
-            {t('cardUserFields')}
-          </div>
-          <div className="form-grid ssp-role-grid">
-            {activeRoleList.map((r) => (
-              <div className="field" key={r.key}>
-                <label>{t('role.' + r.key)}</label>
-                <FieldSelect value={roleFields[r.key] ? roleFields[r.key].user : ''} onChange={(v) => setRoleField(r.key, 'user', v)} names={fieldsByType.user} placeholder={t('phNotSelected')} />
-              </div>
-            ))}
-          </div>
-        </React.Fragment>
-      ),
-    },
-    {
-      id: 'est', title: t('cardFieldEst'), error: hasEstDup,
-      node: (
-        <React.Fragment>
-          <div className="form-grid ssp-role-grid">
-            {activeRoleList.map((r) => (
-              <div className="field" key={r.key}>
-                <label>{t('role.' + r.key)}</label>
-                <FieldSelect value={roleFields[r.key] ? roleFields[r.key].est : ''} onChange={(v) => setRoleField(r.key, 'est', v)} names={fieldsByType.period} placeholder={t('phNotSelected')} />
-              </div>
-            ))}
-          </div>
-          {hasEstDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateEstField')}</div> : null}
-        </React.Fragment>
-      ),
-    },
-    {
-      id: 'fact', title: t('cardFieldFact'), nav: t('navFieldFact'), error: hasFactDup,
-      node: (
-        <React.Fragment>
-          <div className="form-grid ssp-role-grid">
-            {activeRoleList.map((r) => (
-              <div className="field" key={r.key}>
-                <label>{t('role.' + r.key)}</label>
-                <FieldSelect value={roleFields[r.key] ? roleFields[r.key].fact : ''} onChange={(v) => setRoleField(r.key, 'fact', v)} names={fieldsByType.period} placeholder={t('phNotSelected')} />
-              </div>
-            ))}
-          </div>
-          {hasFactDup ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateFactField')}</div> : null}
         </React.Fragment>
       ),
     },
@@ -727,9 +709,12 @@ function SettingsForm(props) {
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.allowOverlimitPlanning} label={t('lblAllowOverlimit')} hint={t('descAllowOverlimit')} onToggle={() => toggleMode('allowOverlimitPlanning')} />
           </div>
-          <div style={{ marginTop: '12px' }}>
-            <RoleCheck on={modes.autoForecastEnabled} label={t('lblAutoForecast')} hint={t('descAutoForecast')} onToggle={() => toggleMode('autoForecastEnabled')} />
-          </div>
+          {/* #69 R1 (строка 6) — прогноз работает на уровне «Люди» (PP), в simple его нет. */}
+          {modelNotSimple ? (
+            <div style={{ marginTop: '12px' }}>
+              <RoleCheck on={modes.autoForecastEnabled} label={t('lblAutoForecast')} hint={t('descAutoForecast')} onToggle={() => toggleMode('autoForecastEnabled')} />
+            </div>
+          ) : null}
         </React.Fragment>
       ),
     },
@@ -771,6 +756,7 @@ function SettingsForm(props) {
       node: (
         <StandupSection t={t} value={standupDone} onChange={setStandupDone} hidden={standupHidden} onHiddenChange={setStandupHidden}
           stateRoles={standupStateRoles} onStateRolesChange={setStandupStateRoles}
+          canCopyFromBacklog={backlog.zones.length > 0} onCopyFromBacklog={copyStateRolesFromBacklog}
           activeRoles={activeRoleList} bundleStates={bundleStates} />
       ),
     },
@@ -795,34 +781,12 @@ function SettingsForm(props) {
       id: 'capacity', title: t('cardCapacity'), nav: t('navCapacity'),
       node: (
         <React.Fragment>
-          {/* Нормы расчёта ёмкости (бывшая секция «Учёт ёмкости»). */}
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: '8px' }}>
-            {t('cardWorkloadSettings')}
-          </div>
-          <div className="form-grid form-grid--3">
-            <NumField id="s_nkc_january" label={t('lblNkcJanuary')} value={nums.nkcJanuary} onChange={(v) => setNum('nkcJanuary', v)} min={0} step={0.5} />
-            <NumField id="s_nkc_may" label={t('lblNkcMay')} value={nums.nkcMay} onChange={(v) => setNum('nkcMay', v)} min={0} step={0.5} />
-            <NumField id="s_nkc_other" label={t('lblNkcOther')} value={nums.nkcOther} onChange={(v) => setNum('nkcOther', v)} min={0} step={0.5} />
-            <NumField id="s_rate" label={t('lblRate')} value={nums.rate} onChange={(v) => setNum('rate', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_participation" label={t('lblParticipation')} value={nums.participation} onChange={(v) => setNum('participation', v)} min={0} max={1} step={0.01} />
-          </div>
-
-          {/* КПЕ по грейдам. */}
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
-            {t('cardKpe')}
-          </div>
-          <div className="form-grid form-grid--3">
-            <NumField id="s_kpe_intern" label={t('lblKpeIntern')} value={nums.kpeIntern} onChange={(v) => setNum('kpeIntern', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_jun" label={t('lblKpeJun')} value={nums.kpeJun} onChange={(v) => setNum('kpeJun', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_mid" label={t('lblKpeMid')} value={nums.kpeMid} onChange={(v) => setNum('kpeMid', v)} min={0} max={2} step={0.01} />
-            <NumField id="s_kpe_senior" label={t('lblKpeSenior')} value={nums.kpeSenior} onChange={(v) => setNum('kpeSenior', v)} min={0} max={2} step={0.01} />
-          </div>
-
           {/* v2.14.0 — «Модель планирования»: один dropdown (simple|light|full) заменяет
               тройку тогглов (PLANNING_MODEL_DROPDOWN_SPEC). Full (#45 R4) — модуль ёмкости:
               ресурс ролей из утверждённой ёмкости спринта, capacityMode='full' деривируется в collect.
-              При light — radio способа расчёта ресурса (авто по формуле / ручной ввод). */}
-          <div className="card-subtitle" style={{ fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' }}>
+              При light — radio способа расчёта ресурса (авто по формуле / ручной ввод).
+              #69 R1 (строка 6) — модель первой: нормы/КПЕ ниже раскрываются по ней. */}
+          <div className="card-subtitle" style={subTitleCls}>
             {t('capGroupResource')}
           </div>
           <div className="field">
@@ -855,6 +819,38 @@ function SettingsForm(props) {
               </label>
             </div>
           ) : null}
+          {modelNotSimple ? (
+            <React.Fragment>
+              {/* #69 R1 (строка 8) — часы в дне (читают воркфлоу DTA/каскада, прогноз, ёмкость). */}
+              <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
+                <NumField id="s_hours_per_day" label={t('lblHoursPerDay')} value={nums.hoursPerDay} onChange={(v) => setNum('hoursPerDay', v)} min={1} max={24} step={0.5} />
+                <NumField id="s_useful_hours_per_day" label={t('lblUsefulHoursPerDay')} value={nums.usefulHoursPerDay} onChange={(v) => setNum('usefulHoursPerDay', v)} min={0} max={24} step={0.5} />
+              </div>
+
+              {/* Нормы расчёта ёмкости (бывшая секция «Учёт ёмкости»). */}
+              <div className="card-subtitle" style={Object.assign({}, subTitleCls, { marginTop: '16px' })}>
+                {t('cardWorkloadSettings')}
+              </div>
+              <div className="form-grid form-grid--3">
+                <NumField id="s_nkc_january" label={t('lblNkcJanuary')} value={nums.nkcJanuary} onChange={(v) => setNum('nkcJanuary', v)} min={0} step={0.5} />
+                <NumField id="s_nkc_may" label={t('lblNkcMay')} value={nums.nkcMay} onChange={(v) => setNum('nkcMay', v)} min={0} step={0.5} />
+                <NumField id="s_nkc_other" label={t('lblNkcOther')} value={nums.nkcOther} onChange={(v) => setNum('nkcOther', v)} min={0} step={0.5} />
+                <NumField id="s_rate" label={t('lblRate')} value={nums.rate} onChange={(v) => setNum('rate', v)} min={0} max={2} step={0.01} />
+                <NumField id="s_participation" label={t('lblParticipation')} value={nums.participation} onChange={(v) => setNum('participation', v)} min={0} max={1} step={0.01} />
+              </div>
+
+              {/* КПЕ по грейдам. */}
+              <div className="card-subtitle" style={Object.assign({}, subTitleCls, { marginTop: '16px' })}>
+                {t('cardKpe')}
+              </div>
+              <div className="form-grid form-grid--3">
+                <NumField id="s_kpe_intern" label={t('lblKpeIntern')} value={nums.kpeIntern} onChange={(v) => setNum('kpeIntern', v)} min={0} max={2} step={0.01} />
+                <NumField id="s_kpe_jun" label={t('lblKpeJun')} value={nums.kpeJun} onChange={(v) => setNum('kpeJun', v)} min={0} max={2} step={0.01} />
+                <NumField id="s_kpe_mid" label={t('lblKpeMid')} value={nums.kpeMid} onChange={(v) => setNum('kpeMid', v)} min={0} max={2} step={0.01} />
+                <NumField id="s_kpe_senior" label={t('lblKpeSenior')} value={nums.kpeSenior} onChange={(v) => setNum('kpeSenior', v)} min={0} max={2} step={0.01} />
+              </div>
+            </React.Fragment>
+          ) : null}
         </React.Fragment>
       ),
     },
@@ -864,18 +860,11 @@ function SettingsForm(props) {
         <React.Fragment>
           <div className="form-grid form-grid--2">
             <div className="field">
-              <label>{t('lblLang')}</label>
-              <RingSelLite
-                options={[{ key: 'ru', label: '🇷🇺 RU' }, { key: 'en', label: '🇬🇧 EN' }]}
-                value={uiLang} onChange={changeUiLang}
-              />
-            </div>
-            <div className="field">
               <label>{t('lblDefaultLang')}</label>
               <RingSelLite
                 options={(props.defaultLangOptions || [{ value: 'ru', label: 'RU' }, { value: 'en', label: 'EN' }]).map((o) => ({ key: o.value, label: o.label }))}
                 value={defaultLang} clearable
-                placeholder={t('optInheritFromUser') !== 'optInheritFromUser' ? t('optInheritFromUser') : '— inherit from user —'}
+                placeholder={t('optInheritFromUser')}
                 onChange={setDefaultLang}
               />
             </div>

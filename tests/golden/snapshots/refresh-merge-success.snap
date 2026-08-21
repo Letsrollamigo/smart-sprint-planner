@@ -8,7 +8,6 @@
       "busyAtCall": [
         true,
         true,
-        true,
         true
       ]
     }
@@ -99,7 +98,6 @@
     }
   ],
   "busyAfter": [
-    false,
     false,
     false,
     false

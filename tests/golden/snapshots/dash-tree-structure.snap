@@ -8,13 +8,6 @@
       "text": "Параметры спринта"
     },
     {
-      "node": "backlog",
-      "tag": "BUTTON",
-      "cls": "ssp-tree__item",
-      "i18n": "tabBacklog",
-      "text": "Работа с бэклогом"
-    },
-    {
       "node": "planning-roles",
       "tag": "BUTTON",
       "cls": "ssp-tree__child",

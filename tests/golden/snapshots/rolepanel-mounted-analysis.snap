@@ -26,7 +26,6 @@
 <div class="card-title">Состав спринта — Анализ</div>
 <div class="toolbar" style="margin-bottom: 14px;">
 <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn btn--disabled-rights" id="pickBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">+ Подобрать задачи</button>
-<button class="ring-button-button ring-button-block ring-button-heightS editor-btn btn--disabled-rights" id="refreshBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Обновить из задачи</button>
 <button class="ring-button-button ring-button-block ring-button-heightS editor-btn btn--disabled-rights" id="recalcBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">∑ Пересчитать остаток</button>
 <button class="ring-button-button ring-button-block ring-button-heightS ring-button-danger editor-btn btn--disabled-rights" id="clearBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Очистить</button>
 <div style="flex: 1 1 0%;">

@@ -254,7 +254,7 @@ function _pickAddSelected(rk, selectedIds, deps) {
   deps.apiPost('sprint-data', { sprint: deps.sprint, roleItems: deps.roleItems }).then(function() {
     deps.renderRoleComposition(rk);
     deps.updateRoleRemaining(rk);
-    toast(T('toastPickDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
+    toast(T('toastPickTasksDone')+': '+newIds.length+(skipped ? ' ('+T('toastDuplicates')+': '+skipped+')' : ''), 'success');
     if (newIds.length) deps.refreshRoleEstimates(rk);
   }).catch(function(e) {
     /* v3.2.1 — отказ persist'а был unhandled rejection: задачи уже в _roleItems/draft,

@@ -41,7 +41,7 @@ function _applyRefreshAssignee(issueId, value, deps) {
 }
 function _setRefreshBtnsBusy(busy) {
   try {
-    var sel = '#currentRoleSyncFromYtBtn, #ganttSyncFromYtBtn, [id^="refreshBtn_"], [id^="refreshFromTaskBtn_"]';
+    var sel = '#currentRoleSyncFromYtBtn, #ganttSyncFromYtBtn, #planningRefreshBtn';
     document.querySelectorAll(sel).forEach(function (btn) { btn.disabled = !!busy; });
   } catch (_) {}
 }
@@ -429,7 +429,7 @@ function refreshRoleEstimates(rk, deps) {
   if (!items.length) return;
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
   if (!role) return;
-  var btn = document.getElementById('refreshBtn_'+rk);
+  var btn = document.getElementById('planningRefreshBtn');   /* #69 R1 — busy на общей кнопке «Роли» */
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> '+T('btnRefreshLoading'); }
   var p = Promise.resolve();
   items.forEach(function(item) {
@@ -491,7 +491,7 @@ function refreshRoleEstimates(rk, deps) {
      deps.toast(T('toastEstUpdated'), 'success');
    })
    .finally(function(){
-     if (btn) { btn.disabled = items.length === 0; btn.textContent = T('btnRefreshFromTask'); } /* S6 #35 — единый label */
+     if (btn) { btn.disabled = false; btn.textContent = T('btnRefreshFromTask'); } /* S6 #35 — единый label */
    });
 }
 

@@ -66,17 +66,20 @@ function _constants(deps) {
 
 function _copyAlloc(a) { var o = {}; if (a) Object.keys(a).forEach(function (k) { o[k] = a[k]; }); return o; }
 
-/* Редактируемая модель login→{grade,rate,participation,alloc} из ростера + записи/carry. */
-function _buildModel(deps, roster, rec, carry) {
+/* Редактируемая модель login→{grade,rate,participation,alloc} из ростера + записи/carry.
+   #69 R1 (строка 9) — без записи/carry грейд сидируется из PP-канона (первая роль человека), не хардкодом «Middle». */
+function _buildModel(deps, roster, rec, carry, ppMap) {
   var model = {};
   (deps.getActiveRoles ? deps.getActiveRoles() : []).forEach(function (role) {
     (roster[role.key] || []).forEach(function (p) {
       var login = p.login;
       if (!model[login]) {
         var src = (rec && rec.persons && rec.persons[login]) || (carry && carry[login]) || null;
+        var ppRba = ppMap && ppMap[role.key] && ppMap[role.key].resourcesByAssignee;
+        var ppGrade = ppRba && ppRba[login] && ppRba[login].grade;
         model[login] = src
           ? { grade: src.grade || 'Middle', rate: _num(src.rate, 1), participation: _num(src.participation, 1), alloc: _copyAlloc(src.alloc) }
-          : { grade: 'Middle', rate: 1, participation: 1, alloc: {} };
+          : { grade: (typeof deps.CAPACITY_PURE.DEFAULT_KPE[ppGrade] === 'number') ? ppGrade : 'Middle', rate: 1, participation: 1, alloc: {} };
         if (rec && rec.persons && rec.persons[login] && typeof rec.persons[login].base === 'number') model[login].base = rec.persons[login].base;
       }
       if (model[login].alloc[role.key] === undefined) {
@@ -354,7 +357,8 @@ function _buildVm(deps, sprints, sel, ui) {
   var roster = deps.state.getRoster() || {};
   var absMap = deps.state.getAbsences() || {};
   var readOnly = !sel.isActive;
-  var model = _buildModel(deps, roster, rec, ui.carry || null);
+  var ppMap = (typeof deps.buildPPMapFromCanon === 'function') ? deps.buildPPMapFromCanon(sel.id, deps.state.getHistory(), null) : null;
+  var model = _buildModel(deps, roster, rec, ui.carry || null, ppMap);
   var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, model, absMap);
   var roles = (deps.getActiveRoles ? deps.getActiveRoles() : []).map(function (role) {
     return { key: role.key, label: deps.roleLabel(role), people: (roster[role.key] || []).map(function (p) { return { login: p.login, name: p.name || p.login }; }) };

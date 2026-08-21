@@ -762,7 +762,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.19.0';
+  var APP_VERSION = '3.20.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1577,6 +1577,7 @@
     line.className='diag-line diag-line--'+(type||'info');
     line.textContent=new Date().toLocaleTimeString('ru-RU')+' '+msg;
     log.appendChild(line);
+    while (log.childNodes.length > 100) log.removeChild(log.firstChild);   /* #69 R1 — DOM-лента = буфер (100), иначе узлы копятся всю сессию */
     log.scrollTop=log.scrollHeight;
   }
 
@@ -1823,6 +1824,7 @@
       /* #45 R3 — стейл/share-узел 'capacity' при Light → fallback (узла нет в Light;
          иначе _setDashNode('capacity') откроет осиротевший таб без подсветки в дереве). */
       if (_node === 'capacity' && (!_settings || _settings.capacityMode !== 'full')) _node = _deriveDashNodeFromTabLevel();
+      if (_node === 'backlog' && !_hasBacklogZones()) _node = 'planning-roles';   /* #69 R1 — узла нет без зон (derive мог вернуть стейл 'backlog') */
       /* #45 super-light — planning-people недоступен при выключенном перс.планировании
          (deep-link/сохранённый dashNode → fallback на planning-roles). */
       if (_node === 'planning-people' && !(_settings && _settings.personalPlanningEnabled)) _node = 'planning-roles';
@@ -1848,7 +1850,6 @@
        EN → RU → остальные по ISO-коду. Если bridge недоступен (offline-bundle test),
        fallback на исходные RU/EN опции из HTML. */
     _populateLangSelect(document.getElementById('langSel'));
-    _populateLangSelect(document.getElementById('langSelSettings'));
 
     var langSelEl = document.getElementById('langSel');
     if (langSelEl) {
@@ -1859,15 +1860,6 @@
       if (!langSelEl._sspBound) {
         langSelEl.addEventListener('change', function () { setLang(langSelEl.value); });
         langSelEl._sspBound = true;
-      }
-    }
-    /* v5.1.0 — копия переключателя языка в settings overlay (секция «Прочее»). */
-    var langSelSettingsEl = document.getElementById('langSelSettings');
-    if (langSelSettingsEl) {
-      langSelSettingsEl.value = _lang;
-      if (!langSelSettingsEl._sspBound) {
-        langSelSettingsEl.addEventListener('change', function () { setLang(langSelSettingsEl.value); });
-        langSelSettingsEl._sspBound = true;
       }
     }
     applyI18N();
@@ -2134,6 +2126,8 @@
      capacityMode. Зовётся из _mountTabsAndSync → покрывает ВСЕ триггеры: смену проекта,
      save настроек (_applyCapacityModeVisibility), смену языка (_doFullRerender). Подсветку
      активного узла сохраняем напрямую (без _setDashNode → без навигации/таймингов). */
+  /* #69 R1 (строка 10) — единый предикат гейта «Бэклога» (узел рельса, вкладка, фолбэк, роутер). */
+  function _hasBacklogZones() { return !!(_settings && Array.isArray(_settings.backlogZones) && _settings.backlogZones.length); }
   function _syncGlobalDashTree() {
     if (_mode !== 'global') return;
     try {
@@ -2153,7 +2147,8 @@
          reporting-access; refreshReportingAccess зовёт этот sync по приходу ответа). */
       var hasRep = !!navTree.querySelector('[data-node="reporting-a"]') || !!navTree.querySelector('[data-node="reporting-b"]');
       var wantRep = !!(_settings && _settings.reportingEnabled && _reportingAccess && (_reportingAccess.a || _reportingAccess.b));
-      if (hasCap === wantCap && hasRel === wantRel && hasRep === wantRep) return;
+      var hasBl = !!navTree.querySelector('[data-node="backlog"]'), wantBl = _hasBacklogZones();   /* #69 R1 */
+      if (hasCap === wantCap && hasRel === wantRel && hasRep === wantRep && hasBl === wantBl) return;
       var act = navTree.querySelector('[data-node].active');
       var activeNode = act ? act.dataset.node : null;
       var fresh = _buildDashTree();
@@ -2224,7 +2219,6 @@
       fieldValuesCache: _fieldValuesCache,
       loadProjectGroups: loadProjectGroups,
       loadProjectTags: loadProjectTags,
-      setLang: setLang,
       invalidateFieldValuesCache: invalidateFieldValuesCache,
       syncProjectDefaultLang: _syncProjectDefaultLang,
       refreshFeatureStatusBar: _refreshFeatureStatusBar,
@@ -2400,10 +2394,9 @@
   function _mountTabsAndSync() {
     var host = document.getElementById('sspTabsHost');
     if (!host) return;
-    var _tabs = [
-      { id: 'backlog',  title: T('tabBacklog')  || 'Работа с бэклогом' },
-      { id: 'planning', title: T('tabPlanning') || 'Планирование' }
-    ];
+    var _tabs = [];
+    if (_hasBacklogZones()) _tabs.push({ id: 'backlog', title: T('tabBacklog') || 'Работа с бэклогом' });   /* #69 R1 — как capacity */
+    _tabs.push({ id: 'planning', title: T('tabPlanning') || 'Планирование' });
     /* #45 R3 — «Ёмкость» сразу после «Планирования» (условно, при capacityMode==='full'). */
     if (_settings && _settings.capacityMode === 'full') {
       _tabs.push({ id: 'capacity', title: T('tabCapacity') || 'Ёмкость' });
@@ -2467,7 +2460,7 @@
                || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
         if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
       },
-      hasBacklogZones: function(){ return !!(_settings && Array.isArray(_settings.backlogZones) && _settings.backlogZones.length); },
+      hasBacklogZones: _hasBacklogZones,
       renderBacklog: function(){ renderBacklog(); },
       loadBacklogPool: function(){ return loadBacklogPool(); },
       loadBacklogSchemaWarn: function(){ return loadBacklogSchemaWarn(); },
@@ -2639,7 +2632,7 @@
        холодном init независимо от наличия content-драфта. renderRolePlannerHeader
        читает _sprint/_history (не draft), но на init не вызывался (карточки ролей не
        раскрыты, currentSprintId ещё не восстановлен). Здесь per-role элементы (res_/
-       sprintStatus_/statusBadge_) ещё не отрендерены → renderRolePlannerHeader заполнит
+       statusBadge_) ещё не отрендерены → renderRolePlannerHeader заполнит
        только статические поля #sprintIntroCard. Идемпотентно (повтор просто переустановит
        .value). !_sprint → чистит поля и выходит (residual-фикс 2026-07-03), поэтому вызов безусловный (rk=null безопасен: res_null не найдётся) — гейт по ролям оставлял residual при свитче на ненастроенный проект. */
     if (typeof renderRolePlannerHeader === 'function' && typeof getActiveRoles === 'function') {
@@ -2770,24 +2763,27 @@
   /* ═══ v5.5.0 — Этап 3c: уровень «Люди» ═══
      Селектор роли + empty-state + summary card. Editable работа с _currentRolePP остаётся
      через старую вкладку tab-distrib до подэтапа 3e. */
-  function populatePlanningRoleSel() {
-    var sel = document.getElementById('planningRoleSel');
+  /* #69 R1 (строка 26) — один заполнитель для обоих селекторов роли («Люди» #planningRoleSel,
+     Гант #ganttRoleSel): активные роли + выбор prev → ssp_lastActiveRole → первая. */
+  function _populateRoleSel(id) {
+    var sel = document.getElementById(id);
     if (!sel) return;
     var prev = sel.value;
     sel.innerHTML = '';
-    var activeRoles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-    activeRoles.forEach(function(role){
+    var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
+    roles.forEach(function(role){
       var opt = document.createElement('option');
       opt.value = role.key;
       opt.textContent = (typeof roleLabel === 'function') ? roleLabel(role) : (role.label || role.key);
       sel.appendChild(opt);
     });
-    var lastRole = safeLs.get('ssp_lastActiveRole') || '';
-    var pick = (prev && activeRoles.some(function(r){return r.key===prev;})) ? prev
-             : (lastRole && activeRoles.some(function(r){return r.key===lastRole;})) ? lastRole
-             : (activeRoles[0] && activeRoles[0].key) || '';
+    var last = safeLs.get('ssp_lastActiveRole') || '';
+    var pick = (prev && roles.some(function(r){return r.key===prev;})) ? prev
+            : (last && roles.some(function(r){return r.key===last;})) ? last
+            : ((roles[0] || {}).key || '');
     if (pick) sel.value = pick;
   }
+  function populatePlanningRoleSel() { _populateRoleSel('planningRoleSel'); }
 
   function _findHistRecForCurrent(rk) {
     if (!_currentSprintId || !rk) return null;
@@ -2942,24 +2938,7 @@
      Per-role timeline; селектор #ganttRoleSel синхронизирован с localStorage.ssp_lastActiveRole
      (общий с уровнем «Люди» через D42). В 4a — заглушка-каркас; полный рендер активируется
      в 4d вместе с rewire renderGanttChart на чтение per-role контекста. */
-  function populateGanttRoleSel() {
-    var sel = document.getElementById('ganttRoleSel');
-    if (!sel) return;
-    var prev = sel.value;
-    sel.innerHTML = '';
-    var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-    roles.forEach(function(role){
-      var opt = document.createElement('option');
-      opt.value = role.key;
-      opt.textContent = (typeof roleLabel === 'function') ? roleLabel(role) : (role.label || role.key);
-      sel.appendChild(opt);
-    });
-    var last = safeLs.get('ssp_lastActiveRole') || '';
-    var pick = (prev && roles.some(function(r){return r.key===prev;})) ? prev
-            : (last && roles.some(function(r){return r.key===last;})) ? last
-            : ((roles[0] || {}).key || '');
-    if (pick) sel.value = pick;
-  }
+  function populateGanttRoleSel() { _populateRoleSel('ganttRoleSel'); }
   /* v5.6.0 — Этап 4 (4d): full Gantt render на верхнем уровне (#tab-gantt).
      Per-role timeline. Устанавливаем _currentSprintRoleRec/_currentRolePP/_currentRoleGantt из
      записи истории по ключу <_currentSprintId>_<roleKey>, затем вызываем
@@ -3148,8 +3127,8 @@
   /* Phase 2 #32 — мигрировано на openModal(); Тир B — тело в modal-specs.js.
      Promise-контракт сохранён: resolve({goalOutcome, goalRetroNote}) на confirm,
      resolve(null) на cancel/Escape. Defensive-fallback если Ring недоступен. */
-  function openConfirmGoalDialog(sprintGoalText, existingOutcome) {
-    return MODAL_SPECS.openConfirmGoalDialog(sprintGoalText, existingOutcome, { t: T, openModal: openModal });
+  function openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro) {
+    return MODAL_SPECS.openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro, { t: T, openModal: openModal });
   }
 
   /* v1.9.0 D132 — bind Stand-up refresh button. */
@@ -3355,6 +3334,7 @@
       toast: toast, openModal: openModal, apiPost: apiPost,
       exportSprintToExcel: exportSprintToExcel, exportPerSprintJson: exportPerSprintJson,
       editHistorySprint: editHistorySprint, finishHistorySprint: finishHistorySprint,
+      finishHistoryGroup: finishHistoryGroup,
       discardWorkingDraft: discardWorkingDraft,
       getLogicalSprintIds: getLogicalSprintIds, setCurrentSprintId: setCurrentSprintId,
       clearDraftOnBackend: _draftClearOnBackend,
@@ -3397,6 +3377,7 @@
       checkSettingsManager: checkSettingsManager,
       checkInstanceAdmin: checkInstanceAdmin, /* #51 — гейт глобального пуша календаря */
       CAPACITY_PURE: CAPACITY_PURE,
+      buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon, /* #69 R1 — сид грейда из PP */
       /* v3.2.1 — сброс кэша утверждённой ёмкости планирования после save/approve
          на вкладке «Ёмкость» (иначе Full-остатки живут по устаревшей записи до F5). */
       invalidatePlanCap: function (sid) { CAPACITY_STORE.invalidatePlanCap(sid); },
@@ -3557,8 +3538,9 @@
   /* ── v5.3.0 — Открыть на правку (working copies, immutable snapshots, D3/b) ── */
   function editHistorySprint(rec, idx) { return HISTORY_CTRL.editHistorySprint(rec, idx, _histCtrlDeps()); }
 
-  /* ── Завершить спринт ── */
+  /* ── Завершить спринт (per-role / #69 R1 все роли группы) ── */
   function finishHistorySprint(rec, idx) { return HISTORY_CTRL.finishHistorySprint(rec, idx, _histCtrlDeps()); }
+  function finishHistoryGroup(baseId) { return HISTORY_CTRL.finishHistoryGroup(baseId, _histCtrlDeps()); }
 
   /* overlimitOverlay migrated to openModal() — button bindings removed (Phase 1 #32). */
 
@@ -4261,6 +4243,7 @@
       refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
       /* #45 R4 §9.2 — ёмкость человека в роли (Full+approved → base×alloc; иначе PP.resource). */
       getApprovedCapacityForPerson: getApprovedCapacityForPerson,
+      hasApprovedCapacity: function () { return !!_approvedRecordForPlanning(); }, /* #69 R1 — грейд read-only */
       state: {
         getSettings: function () { return _settings; },
         getSprint: function () { return _sprint; },

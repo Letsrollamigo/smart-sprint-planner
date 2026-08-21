@@ -78,8 +78,6 @@ function doValidateRole(rk, deps) {
           if (editBanner) { editBanner.style.display = 'none'; editBanner.textContent = ''; }
           deps.renderRoleStatusBadge(rk);
           if (typeof deps.renderWidgetHeader === 'function') { try { deps.renderWidgetHeader(); } catch(_){} }
-          var ss = document.getElementById('sprintStatus_'+rk);
-          if (ss) ss.style.display = 'none';
           var newBtn = document.getElementById('newSprintBtn_'+rk);
           if (newBtn) newBtn.style.display = '';
           toast(T('toastSprintConfirmed').replace('{role}', deps.roleLabel(role)), 'success');

@@ -88,38 +88,23 @@
     });
   }
 
+  /* #60 — baseId записи = sprintId без role-суффикса (режем по ПОСЛЕДНЕМУ '_', как history-view). */
+  function _histBaseId(sid) { var s = String(sid || ''), u = s.lastIndexOf('_'); return u > 0 ? s.slice(0, u) : s; }
+
   /* ── Завершить спринт ── */
-  function finishHistorySprint(rec, idx, deps) {
-    var st = deps.state;
+  function _confirmFinish(id, title, text, onYes, deps) {
     var T = deps.T;
     deps.openModal({
-      id: 'finishHist',
+      id: id,
       type: 'confirm',
-      title: T('confirmFinishSprint'),
-      body: { kind: 'text', text: T('confirmFinishSprint') },
+      title: title,
+      body: { kind: 'text', text: text },
       buttons: [
         { id: 'cancel', text: T('btnNo'), variant: 'secondary', onClick: function (h) { h.close(); } },
         { id: 'confirm', text: T('btnYesFinish'), variant: 'primary', onClick: function (h) {
           h.close();
-          if (!st.getIsValidator()) { deps.toast(T('toastNoValidRights'), 'warn'); return; }
-          var hist = st.getHistory();
-          /* v3.2.1 — idx из ОТСОРТИРОВАННОГО display-списка (renderHistory), порядок
-             живого массива с ним расходится → FINISHED штамповался на чужую запись.
-             Резолв по sprintId переданной записи. */
-          var liveIdx = hist.findIndex(function (h) { return h && h.sprintId === rec.sprintId; });
-          if (liveIdx < 0) return;
-          var histRec = hist[liveIdx];
-          deps.openConfirmGoalDialog(histRec.sprintGoal, histRec.goalOutcome).then(function (goalFields) {
-            if (!goalFields) return;
-            histRec.status = deps.STATUS.FINISHED;
-            histRec.finishedAt = Date.now();
-            if (goalFields.goalOutcome)   histRec.goalOutcome   = goalFields.goalOutcome;
-            if (goalFields.goalRetroNote) histRec.goalRetroNote = goalFields.goalRetroNote;
-            deps.apiPost('history', { history: hist }).then(function () {
-              deps.renderHistory();
-              deps.toast(T('toastSprintFinished'), 'success');
-            });
-          });
+          if (!deps.state.getIsValidator()) { deps.toast(T('toastNoValidRights'), 'warn'); return; }
+          onYes(deps.state.getHistory());
         } },
       ],
       dismissOnBackdrop: false,
@@ -128,11 +113,53 @@
     });
   }
 
+  /* #69 R1 (строка 5) — общий хвост финиша: префилл исхода/ретро из FINISHED-сестры (исход один на спринт),
+     один диалог → штамп на все записи → один персист. */
+  function _finishRecords(recs, hist, deps) {
+    var T = deps.T, base = _histBaseId(recs[0].sprintId);
+    var sib = hist.find(function (h) { return h && h.status === deps.STATUS.FINISHED && h.goalOutcome && _histBaseId(h.sprintId) === base; });
+    var outcome = recs[0].goalOutcome || (sib && sib.goalOutcome) || '';
+    var retro = recs[0].goalRetroNote || (sib && sib.goalRetroNote) || '';
+    deps.openConfirmGoalDialog(recs[0].sprintGoal, outcome, retro).then(function (goalFields) {
+      if (!goalFields) return;
+      recs.forEach(function (r) {
+        r.status = deps.STATUS.FINISHED;
+        r.finishedAt = Date.now();
+        if (goalFields.goalOutcome)   r.goalOutcome   = goalFields.goalOutcome;
+        if (goalFields.goalRetroNote) r.goalRetroNote = goalFields.goalRetroNote;
+      });
+      deps.apiPost('history', { history: hist }).then(function () {
+        deps.renderHistory();
+        deps.toast(T('toastSprintFinished'), 'success');
+      });
+    });
+  }
+
+  function finishHistorySprint(rec, idx, deps) {
+    var T = deps.T;
+    _confirmFinish('finishHist', T('confirmFinishSprint'), T('confirmFinishSprint'), function (hist) {
+      /* v3.2.1 — idx из ОТСОРТИРОВАННОГО display-списка (renderHistory), порядок живого массива
+         с ним расходится → FINISHED штамповался на чужую запись. Резолв по sprintId записи. */
+      var histRec = hist.find(function (h) { return h && h.sprintId === rec.sprintId; });
+      if (histRec) _finishRecords([histRec], hist, deps);
+    }, deps);
+  }
+
+  /* #69 R1 (строка 5, ⚖ владелец) — «Завершить все роли»: только не-FINISHED записи группы (в ней штатно
+     PLANNING-автоснапшоты и уже завершённые роли). */
+  function finishHistoryGroup(baseId, deps) {
+    var T = deps.T;
+    _confirmFinish('finishHistGroup', T('btnFinishAllRoles'), T('confirmFinishAllRoles'), function (hist) {
+      var recs = hist.filter(function (h) { return h && h.status !== deps.STATUS.FINISHED && _histBaseId(h.sprintId) === baseId; });
+      if (recs.length) _finishRecords(recs, hist, deps);
+    }, deps);
+  }
+
   /* Экспорт одного спринта (все роли) по базовому sprintId */
   function exportPerSprintJson(rec, deps) {
     var hist = deps.state.getHistory();
-    var baseId = String(rec.sprintId).split('_')[0];
-    var sprintRecs = hist.filter(function (h) { return h && String(h.sprintId).split('_')[0] === baseId; });
+    var baseId = _histBaseId(rec.sprintId);   /* #69 R1 — тот же срез, что у группировки #60 */
+    var sprintRecs = hist.filter(function (h) { return h && _histBaseId(h.sprintId) === baseId; });
     var env = deps.buildHistEnvelope(sprintRecs, false);
     var safeName = (rec.name || 'sprint').replace(/[\\/:*?"<>|]/g, '_');
     /* Локале-независимый YYYY-MM-DD: fmtDate локализован и для en/zh даёт слэши в имени файла. */
@@ -192,6 +219,7 @@
   var api = {
     editHistorySprint: editHistorySprint,
     finishHistorySprint: finishHistorySprint,
+    finishHistoryGroup: finishHistoryGroup,
     exportPerSprintJson: exportPerSprintJson,
     submitHistImport: submitHistImport,
     doImportReplaceAll: doImportReplaceAll,

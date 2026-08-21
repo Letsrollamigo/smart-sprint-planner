@@ -87,6 +87,21 @@ test('golden: _buildDashTree — узел «Ёмкость» только при
   assert.strictEqual(nodesFull[1], 'capacity', 'Ёмкость — сразу после «Параметры спринта»');
 });
 
+/* #69 R1 (строка 10) — узел «Бэклог» только при настроенных зонах (как Ёмкость/Релизы). */
+test('golden: _buildDashTree — узел «Бэклог» только при непустых backlogZones', () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+
+  gm.set({ _settings: { backlogZones: [] } });
+  const hasEmpty = !!gm.call('_buildDashTree').querySelector('[data-node="backlog"]');
+
+  gm.set({ _settings: { backlogZones: [{ state: 'Open', roles: ['analysis'] }] } });
+  const nodes = Array.prototype.map.call(gm.call('_buildDashTree').querySelectorAll('[data-node]'), function (b) { return b.dataset.node; });
+
+  assert.strictEqual(hasEmpty, false, 'без зон узла «Бэклог» быть не должно');
+  assert.strictEqual(nodes[1], 'backlog', 'с зонами — сразу после «Параметры спринта»');
+});
+
 test('golden: _deriveDashNodeFromTabLevel — маппинг activeTab/planningLevel → dashNode', () => {
   const { gm } = createHost();
   fx.applyBaseState(gm);

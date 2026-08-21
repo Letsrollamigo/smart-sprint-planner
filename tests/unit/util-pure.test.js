@@ -90,3 +90,12 @@ describe('formatHoursLight', () => {
     assert.strictEqual(formatHoursLight(undefined), '0');
   });
 });
+
+/* #69 R1 (строка 26) — общая ячейка «Внешний ID» (была ×3 в domain-вью; XSS-чувствительна). */
+it('renderExternalTicketHtml: пусто → «—», URL → ссылка через safeUrl, текст экранируется, javascript: не ссылка', () => {
+  const r = require('../../widgets/main/src/pure/util-pure.js').renderExternalTicketHtml;
+  assert.match(r(''), /—/);
+  assert.match(r('https://ex.am/1'), /<a href="https:\/\/ex.am\/1" target="_blank" rel="noopener noreferrer"/);
+  assert.ok(r('<b>x</b>').indexOf('<b>') < 0 && r('<b>x</b>').indexOf('&lt;b&gt;') >= 0);
+  assert.ok(r('javascript:alert(1)').indexOf('<a ') < 0);
+});
