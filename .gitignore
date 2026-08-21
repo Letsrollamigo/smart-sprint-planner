@@ -18,3 +18,6 @@ marketplace-screenshots/
 
 # Per-release smoke screenshots — local only, не коммитятся
 tests/screenshots/
+
+# Internal session prompts — не публикуем в public GitHub
+Prompts/
