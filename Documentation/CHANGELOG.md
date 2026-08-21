@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.20.1] — 2026-08-21
+
+> **"Simplification" epic, patch — row 2 of the audit list: the three "Save parameters" buttons are now distinct.** Shipped as a separate patch because it touches the sprint write path (the #70/D109 class). No data-schema changes.
+
+### Changed — planning
+
+- **"Save role resource"** (was "Save parameters" in the expanded role card) — `doSaveRoleHeader` now writes **only** that role's resource (`res_<rk>` → `_sprint[role.resKey]`, `updatedAt/updatedBy`) and still refreshes the remaining hours, accordion stats and the status badge. Writing the shared sprint fields (name/dates/goal/Sprint/Version) from the Sprint-inputs form — and their D126 validation — is removed: in global mode that form is CSS-hidden, and the role button used to validate and focus invisible fields. The only *saver* that owns the shared fields is "Save sprint parameters" in the Sprint inputs card (`doSaveSprintIntro`, unchanged). ⚠ Values already typed into the header fields (name/dates/Sprint/Version) still live in the slot via the v5.0.3 draft live-binding (`bindSprintHeaderDraftListeners`) and travel with **any** slot persist — pick/validate/resource save (audit U-8); that is the autosave contract and is unchanged. Only the sprint goal (`sprintGoal`, no live-binding) is truly isolated. The `currentSprintId`/header sync after a per-role save is dropped as redundant (name/dates no longer change; a new sprint is synced by `doNewSprint`). The "selected sprint ≠ working slot" gate (#70) **stays** in both savers — it is cheap and protects even a single-field write into a foreign slot. Toast — "Role resource saved" (new key `toastRoleResourceSaved`).
+- **"Save distribution"** (was "Save parameters" on the People tab) — logic unchanged (flush the distribution + update the history record); the label and `title` now go through i18n (`btnSaveCurrentRoleParams` reworded, new `titleSaveCurrentRoleParams`). The `btnSaveParams` key is replaced by `btnSaveRoleResource` (15 locales).
+- **One Ring look for buttons**: "Refresh from issues" above the role cards (R1) gets the Ring block-button frame (it only had the base class and rendered as bare text); "Show diff" in the working-copy banner, "Reset" in the settings group picker and the assignee queue arrows on People move from ad-hoc CSS to the Ring contract (`block` / `inline ghost flat iconOnly`); the backlog search button and the reporting mode toggles follow the same contract (`ring-button-active` instead of the non-existent `ring-button-primary`). Structural controls (navigation tree, spoilers, accordion headers, calendar cells, "×") are out of scope.
+
+### Documentation
+
+- User guide §2/§6/§7/§11/§15: button labels and what each one saves; the "commit a draft edit" table has separate rows for shared parameters and the role resource. Settings-widget description in the manifest — "roles and issue fields" (R1 leftover).
+- Tests: the per-role save goldens are rewritten for the new contract (#70 gate + a trap "the saver does not read the Sprint-inputs form"); the #70 unit tests assert gate pass-through by the outgoing POST and the untouched slot identity.
+
+---
+
 ## [3.20.0] — 2026-08-21
 
 > **The "Simplification" epic, slice R1 "Hygiene" — UI / i18n / docs / build, no data-schema changes.** Driven by a complexity audit of the plugin: fewer hops through the settings, honest "required" markers, one button instead of nine, dead code and stale texts removed.

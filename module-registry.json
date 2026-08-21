@@ -653,7 +653,7 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 647,
+      "loc": 581,
       "locBudget": 649,
       "state": [
         "api"

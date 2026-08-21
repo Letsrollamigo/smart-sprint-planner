@@ -4,7 +4,7 @@
 <div class="status-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
 <span id="statusBadge_analysis" class="s-badge s-badge--planning">Черновик</span>
 <button class="ring-button-button ring-button-block ring-button-heightS new-sprint-btn btn--disabled-rights" id="newSprintBtn_analysis" style="" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Новый спринт</button>
-<button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn btn--disabled-rights" id="saveHeaderBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Сохранить параметры</button>
+<button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn btn--disabled-rights" id="saveHeaderBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Сохранить ресурс роли</button>
 </div>
 </div>
 <div class="card" style="margin-bottom: 0px;">

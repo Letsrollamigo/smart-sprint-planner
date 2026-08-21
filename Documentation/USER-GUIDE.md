@@ -87,7 +87,7 @@ The button is active when a sprint is open. Share the link **after saving the sp
 
 If the recipient opens a link to a project they don't have access to (or the planner isn't connected to that project), they'll see a message and can pick an accessible project instead.
 
-Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save parameters** and **Confirm** buttons are for fixing sprint stages (see [section 10](#10-sprint-stages-review-commit-complete)), not for saving data itself.
+Everything you do in the plugin is **saved automatically** — nothing is lost even if you close the browser tab or lose your internet connection. The **Save sprint parameters**, **Save role resource** and **Confirm** buttons are for fixing sprint inputs and stages (see [section 10](#10-sprint-stages-review-commit-complete)), not for saving data itself.
 
 ---
 
@@ -229,7 +229,7 @@ Inside — three blocks:
 
 #### Role status
 
-Top left — role status badge (*planning* / *reviewed* / *committed*) and a **Save parameters** button. Parameters here are sprint name, dates, Sprint/Version fields (shared across all roles). When you change them in the **Sprint inputs** card, this button lets you commit those changes without going through full sprint review.
+Top left — role status badge (*planning* / *reviewed* / *committed*) and a **Save role resource** button. It writes **only this role's resource** (the "Role resource" field below) without going through full sprint review. The shared parameters — name, dates, goal, Sprint/Version fields — are committed with the **Save sprint parameters** button in the **Sprint inputs** card (since v3.20.1 the role button neither validates nor writes them; values typed into the header are still picked up by autosave, as before).
 
 #### Available resources
 
@@ -399,7 +399,7 @@ In the task-distribution table every task has a number in its assignee's queue a
 ### Buttons at the top of the page
 
 - **Calculate resource** — recalculates resources for all assignees by the hour quota and grade (useful if quota settings or roster changed).
-- **Save parameters** — force-saves the **per-person distribution** (assignees, dates, people's resources) and updates the sprint's history record without waiting for the background autosave. This is not the same action as the button of the same name in the role card: that one saves the sprint's name, dates and Sprint/Version fields.
+- **Save distribution** — force-saves the **per-person distribution** (assignees, dates, people's resources) and updates the sprint's history record without waiting for the background autosave (called "Save parameters" before v3.20.1). The role resource is saved by **Save role resource** in the role card; the shared sprint parameters — by **Save sprint parameters** in the Sprint inputs card.
 - **Confirm distribution** — moves the sprint from the *reviewed* stage to *committed*. When to click — see [section 10](#10-sprint-stages-review-commit-complete).
 
 ### Good to know
@@ -628,7 +628,8 @@ When edits are done, you need to "apply" them. It depends on what exactly you ch
 
 | What you changed | What to click |
 |---|---|
-| Name / dates / Sprint / Version only | **Save parameters** in the expanded role card. |
+| Name / dates / goal / Sprint / Version only | **Save sprint parameters** in the Sprint inputs card. |
+| Role resource only | **Save role resource** in the expanded role card. |
 | Task composition, hours, capacity | **Confirm composition** — go through the review stage again. |
 | Assignees or Start / Finish dates | **Confirm distribution** — go through the commit stage again. |
 
@@ -813,7 +814,7 @@ If you see a button hidden or a field greyed out — it's probably permissions. 
 Concurrent-editing protection (added in v2.17.0). Someone saved this sprint after you loaded it — your save was rejected so it wouldn't silently wipe their work. Reload the page (your view picks up their changes) and re-apply your edit.
 
 **I changed something but I'm afraid to close the tab — will it really be saved?**
-Yes. The plugin saves your changes to the server automatically in the background. If you close the tab, get a coffee, and come back an hour later — you'll see everything exactly as you left it. The **Save parameters** and **Confirm** buttons are not for saving data, but for fixing sprint stages.
+Yes. The plugin saves your changes to the server automatically in the background. If you close the tab, get a coffee, and come back an hour later — you'll see everything exactly as you left it. The **Save sprint parameters**, **Save role resource** and **Confirm** buttons are not for saving data, but for fixing sprint inputs and stages.
 
 **I opened a sprint for editing from history but decided not to change anything. How do I go back?**
 The banner *✏ Edit draft…* appeared in the plugin header. Click **✕ Collapse** on it — the plugin returns to normal mode, the draft is preserved (you can return to it later). If you want to delete it entirely — in the sprint's history card, click **Discard edit**. Two-step confirmation → the original isn't affected.
@@ -1029,4 +1030,4 @@ Settings of the operational reporting module (see [section 13](#13-operational-r
 
 ---
 
-_Updated 2026-08-21, plugin v3.20.0._
+_Updated 2026-08-21, plugin v3.20.1._

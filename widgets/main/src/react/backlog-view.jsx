@@ -154,7 +154,7 @@ function FilterField({ initial, placeholder, onAssist, onApply }) {
              value={q} placeholder={placeholder} aria-label={placeholder}
              onChange={(e) => setQ(e.target.value)}
              onKeyDown={(e) => { if (e.key === 'Enter') onApply(q); }} />
-      <button type="button" className="ring-button-button ring-button-heightS"
+      <button type="button" className="ring-button-button ring-button-block ring-button-heightS"
               aria-label={placeholder} title={placeholder} onClick={() => onApply(q)}>🔎</button>
     </div>
   );

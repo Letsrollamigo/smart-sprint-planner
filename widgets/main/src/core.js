@@ -762,7 +762,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.20.0';
+  var APP_VERSION = '3.20.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -3115,8 +3115,8 @@
   /* v1.8.5 D130 — Сохранить общие поля «Вводных данных по спринту» без role-resource части.
      Отдельная кнопка #saveSprintIntroBtn в карточке card-sprint-intro: общие поля живут наверху,
      раньше save-кнопка находилась только внутри per-role аккордеона (#saveHeaderBtn_<rk>), что
-     противоречило principle of least surprise. Per-role кнопка продолжает сохранять и общие поля,
-     и role-specific resource — изменений в doSaveRoleHeader нет. */
+     противоречило principle of least surprise. С v3.20.1 (#69) это ЕДИНСТВЕННЫЙ владелец общих
+     полей: per-role кнопка (doSaveRoleHeader) пишет только ресурс своей роли. */
   function doSaveSprintIntro() { return SPRINT_CTRL.doSaveSprintIntro(_sprintDeps()); }
 
   /* v1.9.1 D133 — Диалог подтверждения результата спринта при завершении (Finish sprint).
@@ -4150,8 +4150,8 @@
     doRecalcResource();
   });
 
-  /* v5.0.3 — кнопка «💾 Сохранить параметры» на вкладке распределения.
-     Аналог saveHeaderBtn на planner-вкладке: принудительный flush PP/Gantt
+  /* v5.0.3 — кнопка «Сохранить распределение» на вкладке «Люди» (до v3.20.1 — «Сохранить
+     параметры», одноимённая с per-role кнопкой ролей): принудительный flush PP/Gantt
      в backend (история + при необходимости _sprint), без debounce-задержки. */
   (function bindCurrentRoleSaveParamsBtn() {
     var btn = document.getElementById('currentRoleSaveParamsBtn');

@@ -10,19 +10,26 @@
   ],
   "toasts": [
     {
-      "msg": "Параметры спринта сохранены",
+      "msg": "Ресурс роли сохранён",
       "type": "success"
     }
   ],
-  "sprintName": "GM Updated Sprint",
-  "sprintFieldVal": "GM Sprint",
-  "versionFieldVal": "v2026.06",
+  "resourceWritten": 4620,
+  "sharedFieldsUntouched": {
+    "name": true,
+    "dateStart": true,
+    "dateEnd": true,
+    "sprintGoal": true,
+    "sprintFieldVal": true,
+    "versionFieldVal": true
+  },
+  "updatedBy": "gm_user_1",
   "roleRemaining": [
     "analysis"
   ],
   "statusBadge": [
     "analysis"
   ],
-  "widgetHeader": 1,
-  "currentSprintIdSynced": "gm-sprint-2026-06"
+  "widgetHeader": 0,
+  "currentSprintIdSynced": null
 }

@@ -856,7 +856,7 @@ function A3View({ vm, L }) {
   const cols = vm.snapCols || {};
   const seg = (m, label, n) => (
     <button type="button" onClick={() => setMode(m)}
-      className={'ring-button-button ring-button-heightS' + (mode === m ? ' ring-button-primary' : '')}
+      className={'ring-button-button ring-button-block ring-button-heightS' + (mode === m ? ' ring-button-active' : '')}
       style={{ marginRight: '6px' }}>{label} <span style={{ opacity: 0.65 }}>{n}</span></button>
   );
   return (

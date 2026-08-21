@@ -465,8 +465,8 @@ function _buildTaskTableVm(deps) {
       var qn = queueLen[item.issueId] || 0;
       cells.queue = { __html: qp
         ? '<span style="display:inline-flex;align-items:center;gap:2px;white-space:nowrap">' + qp +
-          '<button type="button" class="currentRole-queue-move" data-issue="' + esc(item.issueId) + '" data-dir="up" title="' + esc(T('queueMoveUp')) + '"' + (qp === 1 ? ' disabled' : '') + '>&#9650;</button>' +
-          '<button type="button" class="currentRole-queue-move" data-issue="' + esc(item.issueId) + '" data-dir="down" title="' + esc(T('queueMoveDown')) + '"' + (qp === qn ? ' disabled' : '') + '>&#9660;</button></span>'
+          '<button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-queue-move" data-issue="' + esc(item.issueId) + '" data-dir="up" title="' + esc(T('queueMoveUp')) + '"' + (qp === 1 ? ' disabled' : '') + '>&#9650;</button>' +
+          '<button type="button" class="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly currentRole-queue-move" data-issue="' + esc(item.issueId) + '" data-dir="down" title="' + esc(T('queueMoveDown')) + '"' + (qp === qn ? ' disabled' : '') + '>&#9660;</button></span>'
         : '<span style="color:var(--muted)">—</span>' };
     }
     /* __type: 'datepicker' marker → SspDatePickerCell preserves DatePicker

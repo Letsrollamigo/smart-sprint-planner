@@ -217,7 +217,7 @@ function GrpMultiSelect(props) {
                 );
               }))}
         </div>
-        <button type="button" className="grp-ms__reset" onClick={(e) => { e.stopPropagation(); reset(); }}>{t('btnResetGroup')}</button>
+        <button type="button" className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat grp-ms__reset" onClick={(e) => { e.stopPropagation(); reset(); }}>{t('btnResetGroup')}</button>
       </div>
     </div>
   );

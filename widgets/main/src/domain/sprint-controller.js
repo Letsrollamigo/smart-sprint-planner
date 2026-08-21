@@ -9,7 +9,7 @@
  *     всего проекта: currentrole-view ×7, standup-view, refresh-controller late-binding);
  *   • refreshPlanningPeopleForCurrentSprint — context-loader вкладки «Люди» (отложен из
  *     слайса 5; ПИШЕТ _currentSprintRoleRec/_currentRolePP/_currentRoleGantt/_activeSubtab);
- *   • doSaveRoleHeader / doSaveSprintIntro — сохранение вводных данных спринта;
+ *   • doSaveRoleHeader — сохранение ресурса роли; doSaveSprintIntro — общих вводных спринта;
  *   • doNewSprint — создание/переиспользование черновика нового спринта;
  *   • setCurrentSprintId — D28-флоу смены спринта (WC-protection + каскад ре-рендера).
  *
@@ -19,7 +19,7 @@
  * монолита за get/set-аксессорами deps.state — его трогают gm-хук голденов, другие
  * контроллеры и ресет per-project. Делегаторы выживают у всех 7 (внешние callers +
  * golden-входы). Внутренние хелперы _clearFieldErrors/_showFieldError приватны
- * соответствующим функциям (нативная вложенность сохранена — точная семантика).
+ * doSaveSprintIntro (нативная вложенность сохранена — точная семантика).
  *
  * Контракты — sprint.golden.test.js (идут через делегаторы монолита).
  */
@@ -221,16 +221,17 @@
     }
   }
 
-  /* ── doSaveRoleHeader — сохранить параметры спринта для роли ── */
+  /* ── doSaveRoleHeader — сохранить ресурс роли (res_<rk> → _sprint[role.resKey]) ──
+     v3.20.1 (#69 строка 2): до этого per-role кнопка заодно переписывала общие
+     name/dates/goal/Sprint/Version из формы «Вводных» (в global-режиме — CSS-скрытой,
+     с валидацией и фокусом невидимых полей). Общие поля пишет только doSaveSprintIntro. */
   function doSaveRoleHeader(rk, deps) {
     var st = deps.state;
     var T = deps.T;
     var toast = deps.toast;
-    /* #70 — после свитча селектора форма «Вводных» биндится к ВЫБРАННОМУ спринту (B9-фикс
-       v2.1.10), а запись идёт в рабочий слот: {sprintId: слота, name/dates: формы} рвёт
-       идентичность спринта (переименование слота + затирание его history-записи
-       авто-снапшотом). Канон v1.9.9 — JS-гейт в обработчике, не CSS. Байпас при активной
-       рабочей копии: resumeWorkingDraft (в т.ч. edit из вкладки истории) подменяет
+    /* #70 — после свитча селектора рабочий слот ≠ выбранный спринт; запись даже одного
+       поля ушла бы в чужой слот. Канон v1.9.9 — JS-гейт в обработчике, не CSS. Байпас при
+       активной рабочей копии: resumeWorkingDraft (в т.ч. edit из вкладки истории) подменяет
        slot.sprintId на редактируемый, селектор при этом НЕ синкается — расхождение id
        там легитимно, слот = скретч рабочей копии. */
     var _slotSprint70 = st.getSprint();
@@ -240,70 +241,12 @@
       toast(T('toastSaveParamsForeignSprint'), 'warn');
       return;
     }
-    /* v1.8.2 — inline-error helper. Глобальный toast при validation попадает в position:fixed
-       которое в YT-iframe иногда уходит за viewport главного окна (особенно при 2+ ролях
-       когда контент длинный). Inline-error всегда рядом с проблемным полем + scrollIntoView. */
-    function _clearFieldErrors() {
-      ['sprintName','dateStart','dateEnd'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('field-err-input');
-      });
-      var en = document.getElementById('errName'); if (en) en.textContent = '';
-      var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
-    }
-    function _showFieldError(fieldId, errSpanId, msgKey) {
-      var fld = document.getElementById(fieldId);
-      var err = document.getElementById(errSpanId);
-      if (err) err.textContent = T(msgKey);
-      if (fld) {
-        fld.classList.add('field-err-input');
-        try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
-        try { fld.focus(); } catch(_){}
-      }
-      /* Toast оставляем как дублирующий сигнал — но основной visual cue теперь inline. */
-      toast(T(msgKey), 'warn');
-    }
-    _clearFieldErrors();
-    var s = document.getElementById('dateStart').value;
-    var e = document.getElementById('dateEnd').value;
-    /* v1.6.2 D126 — обязательные поля: название + даты начала/окончания. */
-    var nameVal = (document.getElementById('sprintName').value || '').trim();
-    var draftName = T('newSprintDraftName');
-    if (!nameVal || nameVal === draftName) {
-      _showFieldError('sprintName', 'errName', 'toastSprintNameRequired');
-      return;
-    }
-    if (!s) {
-      _showFieldError('dateStart', 'errDate', 'toastSprintDateStartRequired');
-      return;
-    }
-    if (!e) {
-      _showFieldError('dateEnd', 'errDate', 'toastSprintDateEndRequired');
-      return;
-    }
-    if (s && e && deps.fromDateIn(e) < deps.fromDateIn(s)) {
-      _showFieldError('dateEnd', 'errDate', 'toastDateError');
-      return;
-    }
-    _clearFieldErrors();
     var _sprint = st.getSprint();
-    _sprint.name      = nameVal.substring(0,60);
-    _sprint.dateStart = deps.fromDateIn(s);
-    _sprint.dateEnd   = deps.fromDateIn(e);
     var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
     if (role) {
       var resEl = document.getElementById('res_'+rk);
       if (resEl) _sprint[role.resKey] = deps.parsePeriod(resEl.value);
     }
-    // Сохранить поля Спринт / Версия
-    var sprintFv = document.getElementById('sprintFieldVal');
-    var versionFv = document.getElementById('versionFieldVal');
-    if (sprintFv) _sprint.sprintFieldVal = sprintFv.value || null;
-    if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
-    /* v1.9.0 D132 — Сохранить sprint goal (shared field, same for all roles). */
-    var _goalEl = document.getElementById('sprintGoal');
-    var _goalVal = _goalEl ? (_goalEl.value || '').trim() : '';
-    _sprint.sprintGoal = _goalVal || undefined;
     _sprint.updatedAt = Date.now();
     var _currentUser = st.getCurrentUser();
     _sprint.updatedBy = _currentUser ? _currentUser.login : null;
@@ -324,16 +267,7 @@
           try { deps.updateRoleAccordionStats(rk); } catch(_){}
         }
         deps.renderRoleStatusBadge(rk);
-        toast(T('toastSprintSaved'), 'success');
-        /* v1.8.1 — селектор шапки виджета и бейдж статуса должны отразить новое имя/даты
-           сразу после сохранения параметров. Раньше изменения подхватывались только после
-           перезахода на вкладку. Дополнительно: убеждаемся что _currentSprintId указывает
-           на _sprint.sprintId (для свежесозданного спринта). */
-        if (_sprint && _sprint.sprintId && st.getCurrentSprintId() !== _sprint.sprintId) {
-          st.setCurrentSprintId(_sprint.sprintId);
-          var _uiNew = deps.draftGet('ui') || {}; _uiNew.currentSprintId = _sprint.sprintId; deps.draftSet('ui', _uiNew);
-        }
-        if (typeof deps.renderWidgetHeader === 'function') { try { deps.renderWidgetHeader(); } catch(_){} }
+        toast(T('toastRoleResourceSaved'), 'success');
       }).catch(function(e) {
         toast(T('toastSaveError')+': '+(e&&e.message?e.message:e));
       });

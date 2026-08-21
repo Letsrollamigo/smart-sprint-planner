@@ -6,6 +6,8 @@
  * JS-гейт в обработчике): сейв вводных блокируется, когда выбранный спринт ≠ рабочий слот.
  * WC-путь жив: resumeWorkingDraft подменяет slot.sprintId на редактируемый → id совпадают.
  * doValidateRole гейта не требует — форму не читает, работает только со слотом.
+ * v3.20.1 (#69): doSaveRoleHeader пишет только ресурс роли (форму «Вводных» не читает) —
+ * прохождение гейта проверяется по ушедшему POST и нетронутой идентичности слота.
  */
 const test   = require('node:test');
 const assert = require('node:assert');
@@ -67,12 +69,14 @@ test('#70 doSaveSprintIntro: выбран чужой спринт → тот ж�
   assert.strictEqual(sprint.name, 'Рабочий');
 });
 
-test('#70 гейт пропускает при выбранный === слот (доходит до валидации формы)', () => {
-  const { deps, toasts, posts } = makeDeps({ selectedId: 'SLOT' });
+test('#70 гейт пропускает при выбранный === слот (POST уходит, общие поля слота нетронуты)', () => {
+  const { deps, toasts, posts, sprint } = makeDeps({ selectedId: 'SLOT' });
   CTRL.doSaveRoleHeader('analysis', deps);
-  // Пустая форма → валидационный тост (НЕ гейт-тост) — гейт пройден.
-  assert.strictEqual(toasts[0].msg, 'toastSprintNameRequired');
-  assert.strictEqual(posts.length, 0);
+  assert.strictEqual(toasts.length, 0);                 // гейт-тоста нет
+  assert.strictEqual(posts.length, 1);
+  assert.strictEqual(posts[0].path, 'sprint-data');
+  assert.strictEqual(sprint.name, 'Рабочий');           // v3.20.1: форма «Вводных» не читается
+  assert.strictEqual(sprint.sprintId, 'SLOT');
 });
 
 test('#70 гейт пропускает при неинициализированном селекторе (currentSprintId=null)', () => {
@@ -84,7 +88,8 @@ test('#70 гейт пропускает при неинициализирова�
 test('#70 байпас при активной рабочей копии: слот = скретч WC, расхождение id легитимно', () => {
   // resumeWorkingDraft (в т.ч. edit из вкладки истории) подменяет slot.sprintId,
   // селектор не синкается — гейт НЕ должен блокировать сейв в live-WC.
-  const { deps, toasts } = makeDeps({ selectedId: 'OTHER', wcKey: 'SLOT_analysis' });
+  const { deps, toasts, posts } = makeDeps({ selectedId: 'OTHER', wcKey: 'SLOT_analysis' });
   CTRL.doSaveRoleHeader('analysis', deps);
-  assert.strictEqual(toasts[0].msg, 'toastSprintNameRequired'); // дошли до валидации формы
+  assert.strictEqual(toasts.length, 0);                 // гейт не сработал
+  assert.strictEqual(posts.length, 1);                  // сейв ресурса ушёл в live-WC
 });

@@ -411,7 +411,7 @@ function buildRolePanel(role, deps) {
   var saveHeaderBtn = document.createElement('button');
   saveHeaderBtn.className = 'ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn';
   saveHeaderBtn.id = 'saveHeaderBtn_'+role.key;
-  saveHeaderBtn.textContent = T('btnSaveParams');
+  saveHeaderBtn.textContent = T('btnSaveRoleResource');
 
   statusRow.appendChild(statusBadge);
   statusRow.appendChild(newSprintBtn);
@@ -594,7 +594,7 @@ function wireRolePanel(role, dynEdit, deps) {
     });
   }
 
-  /* Кнопка Сохранить параметры */
+  /* Кнопка «Сохранить ресурс роли» (v3.20.1 — только res_<rk>, общие поля — «Вводные») */
   var saveHeaderBtn = document.getElementById('saveHeaderBtn_'+rk);
   if (saveHeaderBtn) {
     saveHeaderBtn.addEventListener('click', function() {

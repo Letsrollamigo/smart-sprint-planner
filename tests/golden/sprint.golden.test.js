@@ -9,7 +9,8 @@
  *   • refreshPlanningPeopleForCurrentSprint — 3 ветки: нет спринта / нет PP (empty) /
  *     полный рендер; state-сеттеры _currentSprintRoleRec/_currentRolePP/_currentRoleGantt/
  *     _activeSubtab;
- *   • doSaveRoleHeader / doSaveSprintIntro — гарды (name/start/end/order) + happy-флоу
+ *   • doSaveRoleHeader — гейт #70 + happy-флоу (только ресурс роли, v3.20.1);
+ *     doSaveSprintIntro — гарды (name/start/end/order) + happy-флоу
  *     (persist sprint-data, поля _sprint, sync _currentSprintId, soft-warn цели);
  *   • doNewSprint — создание нового спринта и переиспользование активного черновика;
  *   • setCurrentSprintId — same-id guard, D28-каскад (planning), WC-модалка (cancel/confirm)
@@ -133,7 +134,8 @@ async function flush(n) {
   for (let i = 0; i < (n || 6); i++) await Promise.resolve();
 }
 
-/** Заполнить intro-поля карточки спринта (общие для doSaveRoleHeader/doSaveSprintIntro). */
+/** Заполнить intro-поля карточки спринта (пишет их только doSaveSprintIntro; doSaveRoleHeader
+ *  с v3.20.1 форму не читает — happy-тест ниже заполняет её «чужими» значениями как ловушку). */
 function fillIntro(document, vals) {
   vals = vals || {};
   function setv(id, v) {
@@ -154,7 +156,7 @@ function fillIntro(document, vals) {
   setv('versionFieldVal', 'versionFv' in vals ? vals.versionFv : 'v2026.06');
 }
 
-/** Per-role DOM doSaveRoleHeader: res_<rk> + sprintStatus_<rk> + saveHeaderBtn_<rk>. */
+/** Per-role DOM doSaveRoleHeader: res_<rk> + saveHeaderBtn_<rk> (+ legacy sprintStatus_<rk>, не читается). */
 function ensureRoleHeaderDom(document, rk) {
   document.body.insertAdjacentHTML(
     'beforeend',
@@ -329,7 +331,7 @@ test('golden: refreshPlanningPeople — полный рендер (PP есть �
 
 /* ═══════════════════ doSaveRoleHeader ═══════════════════ */
 
-test('golden: doSaveRoleHeader — гарды (name/start/end/order → toast, без POST)', async () => {
+test('golden: doSaveRoleHeader — гейт #70 (выбран чужой спринт → warn-toast, без POST; пустая форма не мешает)', async () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   ensureRoleHeaderDom(document, 'analysis');
@@ -338,24 +340,27 @@ test('golden: doSaveRoleHeader — гарды (name/start/end/order → toast, �
   stubDraft(gm);
   stubRenders(gm);
   gm.set({ _currentUser: { login: 'gm_user_1', fullName: 'GM User' } });
+  const before = JSON.stringify(gm.get('_sprint'));
 
-  /* пустое имя */
-  fillIntro(document, { name: '' });
+  /* чужой спринт в селекторе → гейт: ни POST, ни записи в слот */
+  gm.set({ _currentSprintId: 'foreign-sprint-id' });
+  fillIntro(document);
   await gm.call('doSaveRoleHeader', 'analysis');
-  /* нет даты старта */
-  fillIntro(document, { start: '' });
+  const slotUntouchedByGate = JSON.stringify(gm.get('_sprint')) === before;
+  /* v3.20.1: пустые общие поля формы гейта/валидации НЕ дают — форма не читается */
+  gm.set({ _currentSprintId: null });
+  fillIntro(document, { name: '', start: '', end: '' });
   await gm.call('doSaveRoleHeader', 'analysis');
-  /* нет даты конца */
-  fillIntro(document, { end: '' });
-  await gm.call('doSaveRoleHeader', 'analysis');
-  /* конец < начала */
-  fillIntro(document, { start: '2026-06-30', end: '2026-06-01' });
-  await gm.call('doSaveRoleHeader', 'analysis');
+  await flush();
 
-  checkJsonSnapshot('save-role-header-guards', { toasts: toasts, apiCalls: api.length });
+  checkJsonSnapshot('save-role-header-guards', {
+    toasts: toasts,
+    apiCalls: api.length,
+    slotUntouchedByGate: slotUntouchedByGate,
+  });
 });
 
-test('golden: doSaveRoleHeader — happy-флоу (persist + поля _sprint + sync currentSprintId)', async () => {
+test('golden: doSaveRoleHeader — happy-флоу (persist только ресурса роли; общие поля формы не читаются)', async () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);
   ensureRoleHeaderDom(document, 'analysis');
@@ -363,11 +368,13 @@ test('golden: doSaveRoleHeader — happy-флоу (persist + поля _sprint + 
   const api = stubApiPost(gm);
   stubDraft(gm);
   const renders = stubRenders(gm);
-  /* #70 — было _currentSprintId:'stale-id': расхождение селектора со слотом теперь
-     блокируется гейтом (порча идентичности спринта). null = реальное состояние до
-     выбора — гейт пропускает, а v1.8.1-синк currentSprintId остаётся покрыт. */
   gm.set({ _currentUser: { login: 'gm_user_1', fullName: 'GM User' }, _currentSprintId: null });
-  fillIntro(document);
+  const fixture = JSON.parse(JSON.stringify(gm.get('_sprint')));
+  /* ловушка: форма «Вводных» заполнена значениями, ОТЛИЧНЫМИ от фикстуры —
+     регресс «per-role сейв снова пишет общие поля» сломает снап */
+  fillIntro(document, { name: 'TRAP name', start: '2031-01-01', end: '2031-01-31',
+    goal: 'TRAP goal', sprintFv: 'TRAP sprint', versionFv: 'TRAP version' });
+  document.getElementById('res_analysis').value = '77ч';
 
   await gm.call('doSaveRoleHeader', 'analysis');
   await flush();
@@ -376,10 +383,16 @@ test('golden: doSaveRoleHeader — happy-флоу (persist + поля _sprint + 
   checkJsonSnapshot('save-role-header-happy', {
     apiLog: api,
     toasts: toasts,
-    sprintName: sp.name,
-    sprintFieldVal: sp.sprintFieldVal,
-    versionFieldVal: sp.versionFieldVal,
-    sprintGoal: sp.sprintGoal,
+    resourceWritten: sp.resourceAnalysis,
+    sharedFieldsUntouched: {
+      name: sp.name === fixture.name,
+      dateStart: sp.dateStart === fixture.dateStart,
+      dateEnd: sp.dateEnd === fixture.dateEnd,
+      sprintGoal: sp.sprintGoal === fixture.sprintGoal,
+      sprintFieldVal: sp.sprintFieldVal === fixture.sprintFieldVal,
+      versionFieldVal: sp.versionFieldVal === fixture.versionFieldVal,
+    },
+    updatedBy: sp.updatedBy,
     roleRemaining: renders.roleRemaining,
     statusBadge: renders.statusBadge,
     widgetHeader: renders.widgetHeader,

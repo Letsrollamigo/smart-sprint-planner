@@ -1612,13 +1612,10 @@
     .grp-ms__item-icon { width: 16px; height: 16px; opacity: .55; flex-shrink: 0; }
     .grp-ms__item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
     .grp-ms__empty { padding: 12px; font-size: 12px; color: var(--muted); font-style: italic; text-align: center; }
-    .grp-ms__reset {
+    .grp-ms__reset {   /* v3.20.1 — Ring inline/ghost-кнопка; здесь только раскладка футера списка */
       display: block; width: 100%;
-      padding: 8px 12px;
-      background: none; border: none; border-top: 1px solid var(--border);
-      color: var(--muted); font-size: 12px;
-      cursor: pointer; text-align: left;
-      transition: color .1s;
+      padding: 8px 12px; border-top: 1px solid var(--border);
+      font-size: 12px; text-align: left;
     }
     .grp-ms__reset:hover { color: var(--error); }
 
@@ -1790,12 +1787,7 @@
     body.theme-dark .wc-banner__pill--meta,      body[data-theme="dark"] .wc-banner__pill--meta      { color: #a8c8ff; }
     body.theme-dark .wc-banner__pill--allocated, body[data-theme="dark"] .wc-banner__pill--allocated { color: #ffc58a; }
     body.theme-dark .wc-banner__pill--confirmed, body[data-theme="dark"] .wc-banner__pill--confirmed { color: #ff9aa8; }
-    .wc-banner__action {
-      background: transparent; border: 1px solid currentColor;
-      padding: 3px 10px; border-radius: 4px; cursor: pointer;
-      font-size: 12px; flex-shrink: 0;
-    }
-    .wc-banner__action:hover { background: rgba(0,0,0,.05); }
+    .wc-banner__action { flex-shrink: 0; }   /* v3.20.1 — Ring block-кнопка, ad-hoc рамка снята */
     .wc-banner__close {
       background: transparent; border: none; cursor: pointer;
       font-size: 16px; line-height: 1; padding: 0 6px; color: inherit; flex-shrink: 0;
@@ -2286,7 +2278,7 @@
     .planning-people-summary__value { font-size: 18px; font-weight: 600; margin-top: 2px; }
     .planning-people-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     /* #40 — стрелки очереди исполнителя в колонке «№» */
-    .currentRole-queue-move { border: none; background: transparent; cursor: pointer; font-size: 10px; line-height: 1; padding: 2px 3px; color: var(--muted); border-radius: 3px; }
+    .currentRole-queue-move { font-size: 10px; line-height: 1; padding: 2px 3px; }   /* v3.20.1 — Ring inline/ghost/iconOnly-кнопка */
     .currentRole-queue-move:hover:not(:disabled) { color: var(--primary); }
     .currentRole-queue-move:disabled { opacity: .3; cursor: default; }
     .resource-indicator { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 12px; }
@@ -2607,7 +2599,7 @@
         <span id="wcBannerText">—</span>
       </span>
       <span id="wcBannerLevelPill" class="wc-banner__pill wc-banner__pill--meta" title="">—</span>
-      <button id="wcBannerDiffBtn"  type="button" class="wc-banner__action" data-i18n="wcShowDiff">Показать различия</button>
+      <button id="wcBannerDiffBtn"  type="button" class="ring-button-button ring-button-block ring-button-heightS wc-banner__action" data-i18n="wcShowDiff">Показать различия</button>
       <button id="wcBannerCloseBtn" type="button" class="wc-banner__close" data-i18n-title="wcCloseHide" title="Свернуть" data-icon="close" data-aria-label-key="aria.btnClose"></button>
     </div>
     <div id="bannerPlanner" class="banner hidden" data-i18n="bannerNoSettings" data-i18n-html>
@@ -2669,9 +2661,9 @@
         <span class="field-err" id="errSprintGoal" style="display:none"></span>
         <small class="hint" data-i18n="hintSprintGoal" style="color:var(--muted,#888);font-size:11px">Одна-две строки. Не «список задач», а outcome.</small>
       </div>
-      <!-- v1.8.5 D130 — отдельная кнопка «Сохранить параметры спринта» для общих полей.
-           Дублирует часть doSaveRoleHeader, отвечающую только за _sprint.name/dateStart/dateEnd/sprintFieldVal/versionFieldVal,
-           без записи в _sprint[role.resKey]. Per-role кнопка «Сохранить параметры» внутри ролей остаётся как было. -->
+      <!-- v1.8.5 D130 — кнопка «Сохранить параметры спринта» для общих полей
+           (_sprint.name/dateStart/dateEnd/sprintGoal/sprintFieldVal/versionFieldVal). С v3.20.1 (#69) —
+           единственный владелец общих полей; per-role кнопка «Сохранить ресурс роли» пишет только _sprint[role.resKey]. -->
       <div class="sprint-intro-actions" style="margin-top:14px">
         <button id="saveSprintIntroBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnSaveSprintIntro" aria-label="">Сохранить параметры спринта</button>
         <span class="field-err" id="errSprintIntro"></span>
@@ -2704,7 +2696,7 @@
       <!-- #69 R1 — панель уровня «Роли»: одна кнопка «Обновить из задач» (весь спринт, #35) +
            68-2 фильтр «скрыть исключённые» (Ring Toggle рендерит rolecomposition-view._renderExcludedFilter) -->
       <div id="planningToolbar" class="ssp-planning-toolbar" style="display:none">
-        <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-heightS editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
+        <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
         <div id="planningFilterBar" class="ssp-planning-filterbar"></div>
       </div>
       <div id="roleAccordions" class="role-accordions"></div>
@@ -2754,7 +2746,7 @@
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
               <button class="ring-button-button ring-button-block ring-button-heightM editor-btn" id="currentRoleCalcBtn" data-i18n="btnCalcResource" data-icon="update">Рассчитать ресурс</button>
-              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" title="Принудительно сохранить параметры распределения и обновить запись в истории">Сохранить параметры</button>
+              <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleSaveParamsBtn" data-i18n="btnSaveCurrentRoleParams" data-i18n-title="titleSaveCurrentRoleParams" title="Принудительно сохранить распределение задач по людям и обновить запись в истории">Сохранить распределение</button>
               <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRoleValidateBtn" data-i18n="btnValidateCurrentRole" data-icon="checkmark" data-aria-label-key="aria.btnValidate">Валидировать распределение</button>
             </div>
           </div>
