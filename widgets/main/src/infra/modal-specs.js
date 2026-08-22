@@ -112,9 +112,9 @@ function openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro, d
         goalNotSetText: t('histGoalNotSet'),
         outcomeLabel: t('lblGoalOutcome'),
         options: [
-          { value: 'achieved', label: t('optGoalAchieved') || '✅ Достигнута' },
-          { value: 'partial',  label: t('optGoalPartial')  || '⚖ Частично' },
-          { value: 'missed',   label: t('optGoalMissed')   || '❌ Не достигнута' },
+          { value: 'achieved', label: t('optGoalAchieved') || 'Достигнута' },
+          { value: 'partial',  label: t('optGoalPartial')  || 'Частично' },
+          { value: 'missed',   label: t('optGoalMissed')   || 'Не достигнута' },
         ],
         existingOutcome: existingOutcome || '',
         existingRetro: existingRetro || '',   /* #69 R1 — префилл ретро из FINISHED-сестры */

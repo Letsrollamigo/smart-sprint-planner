@@ -328,20 +328,26 @@ function _cfType(iss, typeNames) {
   return '';
 }
 
-/* R3.2 — родители задачи из links: linkType Subtask, direction INWARD (issue = target,
-   «subtask of» → issues = родители; сверено REST стенда 2026-07-02). Массив: у задачи
-   может быть НЕСКОЛЬКО родителей — какой в составе, решает tree-билдер. */
-function _linkParents(iss) {
+/* R3.2 — родители задачи из links. v3.24.0 (#69 строка 28, ⚖ владелец): не захардкоженный
+   linkType Subtask, а НАСТРОЙКА cascadeParentLinkInward — фраза связи со стороны ЭТОЙ задачи
+   (OUTWARD→sourceToTarget, INWARD→targetToSource), дефолт «subtask of» = прежнее поведение.
+   Тот же матчер, что backlog-loader._parentRaw (парити-тест в release-state-preview.test).
+   Массив: у задачи может быть НЕСКОЛЬКО родителей — какой в составе, решает tree-билдер. */
+function _linkParents(iss, s) {
+  var inward = (s && s.cascadeParentLinkInward && String(s.cascadeParentLinkInward)) || 'subtask of';
   var out = [];
   (iss.links || []).forEach(function (l) {
-    if (!l || l.direction !== 'INWARD' || !l.linkType || l.linkType.name !== 'Subtask') return;
+    if (!l || !l.linkType) return;
+    var phrase = (l.direction === 'OUTWARD') ? l.linkType.sourceToTarget
+      : (l.direction === 'INWARD') ? l.linkType.targetToSource : null;
+    if (phrase !== inward) return;
     (l.issues || []).forEach(function (p) { if (p && p.idReadable) out.push(p.idReadable); });
   });
   return out;
 }
 
 /* R2.3/R3.1/R3.2 — батч-фетч данных задач (summary + ТЕКУЩЕЕ State + isResolved + тип +
-   Subtask-родители) → {id: {summary, state, resolved, type, parents}}. Чанки по 50,
+   родители по cascadeParentLinkInward) → {id: {summary, state, resolved, type, parents}}. Чанки по 50,
    query 'issue id: X, Y' (канон refresh-controller); ошибка чанка → пропуск (частичные
    данные, риск §10). Потребители: карточка планируемого (титулы+светофор+дерево R3.2),
    предпросмотр состояний, buildSnapshot. */
@@ -354,7 +360,7 @@ function fetchIssueData(deps, issueIds) {
   (issueIds || []).forEach(function (id) { if (id && !seen[id]) { seen[id] = 1; list.push(id); } });
   if (!host || !list.length) return Promise.resolve({});
   var chunks = []; for (var i = 0; i < list.length; i += 50) chunks.push(list.slice(i, i + 50));
-  var fields = 'idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,isResolved)),links(direction,linkType(name),issues(idReadable))';
+  var fields = 'idReadable,summary,customFields(name,projectCustomField(field(name)),value(name,localizedName,presentation,isResolved)),links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
   var map = {};
   return Promise.all(chunks.map(function (chunk) {
     return host.fetchYouTrack('issues', { query: { fields: fields, query: 'issue id: ' + chunk.join(', '), $top: chunk.length } })
@@ -364,7 +370,7 @@ function fetchIssueData(deps, issueIds) {
           var st = _cfState(it, stateNames);
           map[it.idReadable] = {
             summary: (it.summary || '').trim(), state: (st && st.state) || '', resolved: !!(st && st.resolved),
-            type: _cfType(it, typeNames), parents: _linkParents(it),
+            type: _cfType(it, typeNames), parents: _linkParents(it, s),
           };
         });
       })

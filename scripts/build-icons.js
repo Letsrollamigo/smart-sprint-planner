@@ -25,6 +25,12 @@ const out = [
   '  window.__SSP_ICONS = {',
   entries,
   '  };',
+  '  /* v3.24.0 (#69 строка 18) — строковый хелпер для HTML-string рендереров (history-view,',
+  '     currentrole-view): инлайн-иконка вместо эмодзи. cls — модификаторы (.ssp-icon--inline). */',
+  '  window.__SSP_ICON_HTML = function (name, cls) {',
+  '    var s = window.__SSP_ICONS[name];',
+  '    return s ? \'<span class="ssp-icon\' + (cls ? \' \' + cls : \'\') + \'" aria-hidden="true">\' + s + \'</span>\' : \'\';',
+  '  };',
   '}',
   '',
 ].join('\n');

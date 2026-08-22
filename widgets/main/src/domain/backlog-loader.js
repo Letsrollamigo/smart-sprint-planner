@@ -403,6 +403,7 @@ var _api = {
   _backlogAssist: _backlogAssist,
   computeUnmappedStates: computeUnmappedStates,
   _mapPoolIssue: _mapPoolIssue,
+  _parentIdOf: _parentIdOf,               /* test-only — парити матчера родителя с release-view (#69 строка 28) */
   loadBacklogPool: loadBacklogPool,
 };
 

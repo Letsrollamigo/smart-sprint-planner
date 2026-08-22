@@ -16,7 +16,7 @@
 
 import * as React from 'react';
 /* R6 (аудит §7 п.13) — декомпозиция: общие контролы и 7 Section'ов вынесены по файлам. */
-import { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, GrpMultiSelect, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
+import { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, RingIcon, GrpMultiSelect, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
 import { DtaSection } from './settings-dta.jsx';
 import { CascadeSection } from './settings-cascade.jsx';
 import { StateRollupSection } from './settings-rollup.jsx';
@@ -611,8 +611,8 @@ function SettingsForm(props) {
               })}
             </tbody>
           </table>
-          {hasEstDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateEstField')}</div> : null}
-          {hasFactDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}>{t('errDuplicateFactField')}</div> : null}
+          {hasEstDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}><RingIcon name="warning" />{t('errDuplicateEstField')}</div> : null}
+          {hasFactDup ? <div role="alert" className="hint" style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px', fontWeight: 500 }}><RingIcon name="warning" />{t('errDuplicateFactField')}</div> : null}
         </React.Fragment>
       ),
     },

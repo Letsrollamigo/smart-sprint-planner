@@ -156,8 +156,8 @@ test('фильтр (QueryAssist) попадает в meta, иначе «—»', 
 test('limitHit/incompleteCount → строки-предупреждения в meta (после exportGenerated)', () => {
   const vm = base({ report: 'a7', rows: [], limitHit: true, limit: 200, incompleteCount: 3 });
   const m = EXP.reportToSheets(vm, DEPS);
-  assert.deepStrictEqual(m.meta[4], ['⚠', 'limitHit']);      // identity-Proxy: '{n}' отсутствует в ключе → без замены
-  assert.deepStrictEqual(m.meta[5], ['⚠', 'incomplete']);
+  assert.deepStrictEqual(m.meta[4], ['(!)', 'limitHit']);      // identity-Proxy: '{n}' отсутствует в ключе → без замены
+  assert.deepStrictEqual(m.meta[5], ['(!)', 'incomplete']);
 });
 
 test('без limitHit/incomplete meta не растёт (снимок прежнего формата)', () => {

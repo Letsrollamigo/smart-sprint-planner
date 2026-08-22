@@ -157,25 +157,51 @@ test('fetchIssueData: value.isResolved → resolved:true', async () => {
   assert.deepStrictEqual(data, { 'DEMO-5': { summary: 'Готовая задача', state: 'Done', resolved: true, type: '', parents: [] } });
 });
 
-/* R3.2 — тип (fieldType, канон v.name) и Subtask-родители (direction INWARD) добираются
- * тем же батчем; OUTWARD (дети) и не-Subtask линки игнорируются. */
-test('fetchIssueData: type из customFields + parents из links (только Subtask INWARD)', async () => {
-  const view = require('../../widgets/main/src/domain/release-view.js');
-  const deps = { state: {
-    getSettings: () => ({ fieldState: 'State', fieldType: 'Type' }),
+/* R3.2 — тип (fieldType, канон v.name) и родители добираются тем же батчем.
+ * v3.24.0 (#69 строка 28): родитель = связь, чья фраза со стороны задачи равна настройке
+ * cascadeParentLinkInward (дефолт «subtask of»); OUTWARD-дети и прочие связи игнорируются. */
+const SUBTASK = { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' };
+const EPIC    = { name: 'Epic',    sourceToTarget: 'epic of',    targetToSource: 'part of epic' };
+const LINKS6 = [
+  { direction: 'INWARD',  linkType: SUBTASK, issues: [{ idReadable: 'DEMO-2' }] },
+  { direction: 'OUTWARD', linkType: SUBTASK, issues: [{ idReadable: 'DEMO-9' }] },
+  { direction: 'INWARD',  linkType: { name: 'Depend', sourceToTarget: 'is required for', targetToSource: 'depends on' }, issues: [{ idReadable: 'DEMO-7' }] },
+  { direction: 'INWARD',  linkType: EPIC,    issues: [{ idReadable: 'DEMO-1' }] },
+];
+function mkDeps6(settings) {
+  return { state: {
+    getSettings: () => Object.assign({ fieldState: 'State', fieldType: 'Type' }, settings || {}),
     getHost: () => ({ fetchYouTrack: () => Promise.resolve([{
       idReadable: 'DEMO-6', summary: 'Стори',
       customFields: [
         { name: 'State', projectCustomField: { field: { name: 'State' } }, value: { name: 'In Progress' } },
         { name: 'Type', projectCustomField: { field: { name: 'Type' } }, value: { name: 'User Story', localizedName: 'История' } },
       ],
-      links: [
-        { direction: 'INWARD',  linkType: { name: 'Subtask' }, issues: [{ idReadable: 'DEMO-2' }] },
-        { direction: 'OUTWARD', linkType: { name: 'Subtask' }, issues: [{ idReadable: 'DEMO-9' }] },
-        { direction: 'INWARD',  linkType: { name: 'Depend' },  issues: [{ idReadable: 'DEMO-7' }] },
-      ],
+      links: LINKS6,
     }]) }),
   } };
-  const data = await view.fetchIssueData(deps, ['DEMO-6']);
+}
+test('fetchIssueData: type из customFields + parents по дефолтной фразе «subtask of» (INWARD Subtask)', async () => {
+  const view = require('../../widgets/main/src/domain/release-view.js');
+  const data = await view.fetchIssueData(mkDeps6(), ['DEMO-6']);
   assert.deepStrictEqual(data, { 'DEMO-6': { summary: 'Стори', state: 'In Progress', resolved: false, type: 'User Story', parents: ['DEMO-2'] } });
+});
+
+test('fetchIssueData: cascadeParentLinkInward = «part of epic» → родитель по настройке, Subtask игнорируется', async () => {
+  const view = require('../../widgets/main/src/domain/release-view.js');
+  const data = await view.fetchIssueData(mkDeps6({ cascadeParentLinkInward: 'part of epic' }), ['DEMO-6']);
+  assert.deepStrictEqual(data['DEMO-6'].parents, ['DEMO-1']);
+});
+
+/* Парити матчера: release-view._linkParents и backlog-loader._parentRaw обязаны выбирать
+ * одного и того же родителя для одних и тех же links при любой фразе. */
+test('парити: родитель релиза == родитель бэклога для одних links', async () => {
+  const view = require('../../widgets/main/src/domain/release-view.js');
+  const loader = require('../../widgets/main/src/domain/backlog-loader.js');
+  for (const phrase of [undefined, 'subtask of', 'part of epic', 'nope']) {
+    const s = phrase === undefined ? {} : { cascadeParentLinkInward: phrase };
+    const rel = (await view.fetchIssueData(mkDeps6(s), ['DEMO-6']))['DEMO-6'].parents;
+    const bl = loader._parentIdOf({ idReadable: 'DEMO-6', links: LINKS6 }, s);
+    assert.strictEqual(rel[0] || null, bl, 'phrase=' + phrase);
+  }
 });

@@ -22,6 +22,7 @@
 
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { RingIcon } from './settings-shared.jsx';
 
 const _mounted = new WeakMap();
 
@@ -144,7 +145,7 @@ function StandupView({ host }) {
     <React.Fragment>
       {vm.goalBannerVisible ? (
         <div id="standupGoalBanner" className="card" style={ST.goalBanner}>
-          <span style={ST.goalLabel} data-i18n="standupGoalLabel">{vm.goalLabel}</span>
+          <span style={ST.goalLabel} data-i18n="standupGoalLabel"><RingIcon name="flag" />{vm.goalLabel}</span>
           <span id="standupGoalText" style={ST.goalText}>{vm.goalText}</span>
         </div>
       ) : null}

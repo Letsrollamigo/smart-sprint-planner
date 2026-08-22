@@ -32,7 +32,7 @@ function _btnCls(variant) {
 }
 
 /* Один селект поля проекта: placeholder + список доступных имён по типу +
-   (если сохранённое значение отсутствует в списке) `⚠`-элемент, как fillFieldSelect.
+   (если сохранённое значение отсутствует в списке) элемент с маркером «(!)», как fillFieldSelect.
    #43 W3 — Ring Select (вендорный, как RingCheckbox в W1); пустой выбор — крестик
    clear + placeholder; поиск при длинных списках. Фоллбек — прежний нативный. */
 function FieldSelect({ value, onChange, names, placeholder }) {
@@ -45,12 +45,12 @@ function FieldSelect({ value, onChange, names, placeholder }) {
       <select className="app-select" value={value || ''} onChange={(e) => onChange(e.target.value)}>
         <option value="">{placeholder}</option>
         {list.map((n) => <option key={n} value={n}>{n}</option>)}
-        {missing ? <option value={value}>{value + ' ⚠'}</option> : null}
+        {missing ? <option value={value}>{value + ' (!)'}</option> : null}
       </select>
     );
   }
   const data = list.map((n) => ({ key: n, label: n }));
-  if (missing) data.push({ key: value, label: value + ' ⚠' });
+  if (missing) data.push({ key: value, label: value + ' (!)' });
   const selected = data.find((d) => d.key === value) || null;
   return (
     <Select
@@ -110,6 +110,13 @@ function RoleCheck({ on, disabled, label, onToggle, tooltip, hint }) {
 }
 
 const GRP_ICON_PATH = 'M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z';
+/* v3.24.0 (#69 строка 18) — инлайн Ring-иконка из __SSP_ICONS вместо эмодзи в React-рендерах
+   (хинты настроек, стендап, бэклог, предпросмотр релиза). cls — модификаторы (.ssp-icon--inline). */
+function RingIcon({ name, cls }) {
+  const svg = ((typeof window !== 'undefined' && window.__SSP_ICONS) || {})[name] || '';
+  return <span className={'ssp-icon ssp-icon--inline' + (cls ? ' ' + cls : '')} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />;
+}
+
 function GrpIcon() {
   return (
     <svg className="grp-ms__item-icon" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -437,4 +444,4 @@ function StateRolesTable(props) {
   );
 }
 
-export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };
+export { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, GrpIcon, LockIcon, RingIcon, GrpMultiSelect, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };

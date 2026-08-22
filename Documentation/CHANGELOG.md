@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.24.0] — 2026-08-22
+
+> **"Simplification" epic, slice R4 "Forks" — rows 18, 20, 22, 28 of the audit list (owner decisions 2026-08-22).** UI-only slice; data schema and permissions unchanged.
+
+### Changed
+
+- **Emoji → icons** (row 18, owner: "all, per the table"): ⚠ → `warning`, ✅ → `success` (green), ❌ → `cancel` (red), 🎯 → `flag`, ✏ → `pencil`, ✓ → `checkmark`; "Partial", "Retro" and "Draft saved" are plain text; the missing-value marker in field selects is `(!)`; the `⚠` service marker in XLSX report exports is `(!)`. Native `<option>`s (goal outcome in the finish dialog) are text only — icons are technically impossible there; in the history the outcome is marked with an icon. 26 keys ×15 locales cleaned of emoji; +4 SVGs from `@jetbrains/icons` (`flag`/`success`/`cancel`/`pencil`, listed in `LICENSE-icons.md`); string bridge `__SSP_ICON_HTML` in `icons.generated.js` (HTML renderers history-view/currentrole-view) and the React `RingIcon` component (settings hints, backlog, stand-up, release preview); banners / goal label / working-copy indicator via `data-icon` in `index.html` (`applyI18N` keeps the icon); CSS `.ssp-icon--inline/--ok/--err`. Country flags in the language select stay (see row 20); the typographic glyphs `✓`/`✕` in CSS `.save-ok/.save-err::before` and the arrows `→ ← ↑ ↓` in texts are not emoji and were left alone.
+- **Language select in the header** (row 20): stays a native `<select>` — recorded as an explicit exception in `CLAUDE_SHARED §3` + a comment next to `#langSel`.
+- **Locales** (row 22): leftover English keys in the 13 non-EN/RU locales translated (`toastMaxGroupsReached`, `cardStandupSettings`, `role.devBack/devFront/devIos/devAndroid/devFs/devDb`, plus `repA10PickSprint`/`repChartTopN`/`lblBase`/`lblKpe*`/`btnExportLog`/`thAllocH`/`lblContribution`/`relField*`/`ssbCascade` where applicable; 106 values). Deliberately English: `appTitle`, link phrases `phCascadeLink*`, TTM/Lead/Team/Cycle/ITBP terms, "Stand-up", `#`.
+- **Release composition tree follows the setting** (row 28, behaviour change): parents are resolved by the `cascadeParentLinkInward` link (phrase from the issue's side; default "subtask of" = the previous `Subtask`), with the same matcher as the backlog (`backlog-loader._parentRaw`; parity test); `fetchIssueData` requests `linkType(name,sourceToTarget,targetToSource)`. Teams using a different link will see a different release tree.
+- Registry: budgets `currentrole-view` 1049→1051, `history-view` 599→607, `release-view` 436→443 (deliberate, icon helpers / matcher); `ICON_HTML` registered as an infra bridge. USER-GUIDE ×3 (goal outcome, release tree by setting).
+
+---
+
 ## [3.23.0] — 2026-08-22
 
 > **"Simplification" epic, slice R3 "Ladders", step 2 — row 27 of the audit list (hard removal).** Second rung of the deprecation ladder after the v3.22.0 soft-deprecation. No user-visible behaviour change; the data schema narrows and the v5.2 compatibility code goes away.

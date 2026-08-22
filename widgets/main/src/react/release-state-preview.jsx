@@ -8,6 +8,7 @@
 
 import * as React from 'react';
 import { RingSelect } from './release-create.jsx';
+import { RingIcon } from './settings-shared.jsx';
 
 const noop = () => {};
 
@@ -29,14 +30,15 @@ function _remark(row, newTarget) {
 }
 
 function _chip(mark, L) {
-  const text = mark === 'desync' ? '⚠ ' + L.desync
+  const text = mark === 'desync' ? L.desync
     : mark === 'unreachable' ? L.unreachable
     : mark === 'already' ? L.already
     : mark === 'nohist' ? (L.noHistory || L.unreachable)         /* #57-3 откат: переходов не было */
     : mark === 'incomplete' ? (L.histIncomplete || L.unreachable) /* #57-3 откат: история обрезана (D7) */
     : L.willApply;
   const cls = (mark === 'nohist' || mark === 'incomplete') ? 'unreachable' : mark; /* стиль-группа реюзит unreachable */
-  return <span className={'ssp-relpv-chip ssp-relpv-chip--' + cls}>{text}</span>;
+  const icon = mark === 'desync' ? <RingIcon name="warning" /> : mark === 'ok' ? <RingIcon name="checkmark" /> : null;
+  return <span className={'ssp-relpv-chip ssp-relpv-chip--' + cls}>{icon}{text}</span>;
 }
 
 /* Панель деталей ошибок последнего применения — Ring Collapse (канон CompositionSection). */

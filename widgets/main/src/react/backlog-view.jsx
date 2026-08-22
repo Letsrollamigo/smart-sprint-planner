@@ -16,6 +16,7 @@
 
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { RingIcon } from './settings-shared.jsx';
 
 const _mounted = new WeakMap();
 const AMBER = '#E56D17'; /* warning-токен палитры зеркала (§15 спеки) */
@@ -460,9 +461,9 @@ function BacklogView({ host }) {
       {/* §8 fail-loud: schema-level (незамапленные состояния бандла, в т.ч. с нулём задач —
           приоритет, перечисляем имена) → fallback на data-level (счётчик задач в «Прочих»). */}
       {vm.unmappedStates && vm.unmappedStates.length ? (
-        <div style={ST.warn}>⚠ {i18n.unmappedSchema}: {vm.unmappedStates.join(', ')}</div>
+        <div style={ST.warn}><RingIcon name="warning" />{i18n.unmappedSchema}: {vm.unmappedStates.join(', ')}</div>
       ) : (vm.counts && vm.counts.other > 0 ? (
-        <div style={ST.warn}>⚠ {vm.counts.other} · {i18n.unmappedWarn}</div>
+        <div style={ST.warn}><RingIcon name="warning" />{vm.counts.other} · {i18n.unmappedWarn}</div>
       ) : null)}
 
       {vm.viewMode === 'tree' ? (

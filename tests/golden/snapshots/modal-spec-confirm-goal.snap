@@ -8,21 +8,21 @@
       "name": "confirmGoalForm",
       "props": {
         "goalText": "Цель спринта GM",
-        "goalLabel": "🎯 Цель",
+        "goalLabel": "Цель",
         "goalNotSetText": "Цель спринта не была задана",
         "outcomeLabel": "Результат по цели",
         "options": [
           {
             "value": "achieved",
-            "label": "✅ Достигнута"
+            "label": "Достигнута"
           },
           {
             "value": "partial",
-            "label": "⚖ Частично"
+            "label": "Частично"
           },
           {
             "value": "missed",
-            "label": "❌ Не достигнута"
+            "label": "Не достигнута"
           }
         ],
         "existingOutcome": "partial",

@@ -763,7 +763,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.23.0';
+  var APP_VERSION = '3.24.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1206,7 +1206,7 @@
   function computeRevHash(sprint, roleItems) { return HASH_PURE.computeRevHash(sprint, roleItems); }
   /* v5.0.3 — Multi-state индикатор черновика:
      - "●  Несохранённые изменения" (оранжевый) — при dirty=true
-     - "💾 Черновик сохранён HH:MM"     (серый) — при наличии меты, но dirty=false
+     - "Черновик сохранён HH:MM"     (серый) — при наличии меты, но dirty=false
      - скрыт                              — когда меты нет вовсе
      Кнопка «🧹 Очистить черновик» видна, когда есть мета (любое состояние).
   */
@@ -1635,7 +1635,7 @@
             b.classList.remove('hidden');
             b.style.background = 'rgba(224,90,106,.18)';
             b.style.color = '#b13e4d';
-            b.textContent = '⚠ Не удалось зарегистрировать виджет в YouTrack. Перезагрузите страницу (F5). Если ошибка повторяется — обратитесь к администратору.';
+            setButtonText(b, 'Не удалось зарегистрировать виджет в YouTrack. Перезагрузите страницу (F5). Если ошибка повторяется — обратитесь к администратору.');
           }
         } catch(_){}
         throw err;

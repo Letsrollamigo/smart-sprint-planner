@@ -23,6 +23,13 @@ var KPE_DEFAULTS_LOCAL = { Intern: 0, Junior: 0.5, Middle: 0.65, Senior: 0.75 };
 
 /* Округление до 2 знаков как строка. ⚠ Дважды жертва dead-code аудитов
    (v2.4.11/v2.4.14 — ReferenceError в проде): живых вызовов 6, не сносить. */
+/* v3.24.0 (#69 строка 18) — инлайн Ring-иконка вместо эмодзи в HTML-строках (мост
+   __SSP_ICON_HTML из icons.generated.js; нет моста — пустая строка). */
+function _ic(name, cls) {
+  var f = (typeof window !== 'undefined') && window.__SSP_ICON_HTML;
+  return (typeof f === 'function') ? f(name, 'ssp-icon--inline' + (cls ? ' ' + cls : '')) : '';
+}
+
 function round2(v) { return (Math.round((v || 0) * 100) / 100).toFixed(2); }
 
 /* ── Получить НКЧ в часах из настроек ── */
@@ -211,7 +218,7 @@ function _buildAssigneeTableVm(deps) {
           var cls = 'alloc-by-sys-row' +
                     (over ? ' alloc-by-sys-row--over' : '') +
                     (r.system === '__none__' ? ' alloc-by-sys-row--nosys' : '');
-          return '<div class="' + cls + '">' + esc(sysLabel) + ' · ' + round2(r.hours) + hSuf + pctStr + (over ? ' ⚠' : '') + '</div>';
+          return '<div class="' + cls + '">' + esc(sysLabel) + ' · ' + round2(r.hours) + hSuf + pctStr + (over ? ' ' + _ic('warning') : '') + '</div>';
         }).join('') };
       }
     }
@@ -431,10 +438,10 @@ function _buildTaskTableVm(deps) {
     var ts = taEntry.dateStart || null;
     var te = taEntry.dateEnd   || null;
     var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
-    var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
+    var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">' + _ic('warning') + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
     /* #40 — transient-бейдж «не помещается в ёмкость» последнего прогноза (сессионный). */
     var unfitWarn = unfitSet[item.issueId]
-      ? '<span style="color:var(--error);font-size:11px;margin-left:4px">⚠ ' + esc(T('forecastUnfitBadge')) + '</span>' : '';
+      ? '<span style="color:var(--error);font-size:11px;margin-left:4px">' + _ic('warning') + esc(T('forecastUnfitBadge')) + '</span>' : '';
     cells.title = { __html: esc(item.title || '') + warn + unfitWarn };
     /* plain-строки → React-текст: без esc (двойной эскейп давал «&amp;» на экране) */
     if (hasState) { cells.state = dispEnum(item.state) || '—'; }   /* #polish — read-only статус (как rolecomposition state-cell read-only ветка) */

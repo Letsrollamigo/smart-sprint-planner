@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { noop, FieldSelect, RoleCheck, MultiSelect, TextField } from './settings-shared.jsx';
+import { noop, FieldSelect, RoleCheck, MultiSelect, TextField, RingIcon } from './settings-shared.jsx';
 
 function CascadeSection(props) {
   const t = props.t;
@@ -31,7 +31,7 @@ function CascadeSection(props) {
       <RoleCheck on={v.agg} label={t('lblCascadeEnabled')} hint={t('hintCascade')} onToggle={() => patch({ agg: !v.agg })} />
       <div style={{ marginTop: '12px' }}>
         <RoleCheck on={v.forbid} label={t('lblForbidContainer')} hint={t('hintForbidContainer')} onToggle={() => patch({ forbid: !v.forbid })} />
-        {dangerous ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('warnCascadeWithoutForbid')}</div> : null}
+        {dangerous ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}><RingIcon name="warning" />{t('warnCascadeWithoutForbid')}</div> : null}
       </div>
       {/* #69 R1 (строка 6) — подполя при выключенной агрегации притушены, не скрыты. */}
       <div className={v.agg ? '' : 'ssp-subfields--dim'}>
@@ -49,7 +49,7 @@ function CascadeSection(props) {
         <label>{t('lblCascadeLevel3')}</label>
         <MultiSelect options={bundle} selected={v.level3} placeholder={t('phNotSelected')} onChange={(vals) => patch({ level3: vals })} />
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
-        {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnCascadeLevelsOverlap')}</div> : null}
+        {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}><RingIcon name="warning" />{t('warnCascadeLevelsOverlap')}</div> : null}
       </div>
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
         <div className="field">

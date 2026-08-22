@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { _btnCls, RoleCheck, MultiSelect, RingSelLite, RollupOrderList } from './settings-shared.jsx';
+import { _btnCls, RoleCheck, MultiSelect, RingSelLite, RollupOrderList, RingIcon } from './settings-shared.jsx';
 
 function StateRollupSection(props) {
   const t = props.t;
@@ -44,7 +44,7 @@ function StateRollupSection(props) {
   return (
     <React.Fragment>
       <RoleCheck on={v.enabled} label={t('lblStateRollupEnabled')} hint={t('hintStateRollup')} onToggle={() => patch({ enabled: !v.enabled })} />
-      {noHierarchy ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}>{t('hintStateRollupNoHierarchy')}</div> : null}
+      {noHierarchy ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '6px' }}><RingIcon name="warning" />{t('hintStateRollupNoHierarchy')}</div> : null}
 
       {/* #69 R1 (строка 6) — подполя при выключенном rollup притушены, не скрыты. */}
       <div className={v.enabled ? '' : 'ssp-subfields--dim'}>
@@ -67,7 +67,7 @@ function StateRollupSection(props) {
           </div>
         </div>
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintStateRollupOrder')}</div>
-        {orderShort ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}>{t('warnStateRollupOrderShort')}</div> : null}
+        {orderShort ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}><RingIcon name="warning" />{t('warnStateRollupOrderShort')}</div> : null}
       </div>
 
       <div className="field" style={{ marginTop: '12px' }}>

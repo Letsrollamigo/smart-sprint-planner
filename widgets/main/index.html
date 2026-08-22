@@ -104,6 +104,13 @@
     }
     .ssp-icon--12 { width: 12px; height: 12px; }
     .ssp-icon--20 { width: 20px; height: 20px; }
+    /* v3.24.0 (#69 строка 18) — инлайн-иконка в тексте (хинты, пилюли, лейблы, баннеры) вместо эмодзи. */
+    .ssp-icon--inline { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+    .ssp-icon--ok  { color: var(--success); }
+    .ssp-icon--err { color: var(--error); }
+    .ssp-icon.btn-icon { margin-right: 6px; vertical-align: -3px; }   /* data-icon вне кнопок (лейблы, WC-индикатор) */
+    .banner > .ssp-icon { margin-right: 0; margin-top: 1px; }
+    label > .ssp-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
     .ssp-icon--missing { background: rgba(224,90,106,.3); border: 1px dashed var(--error); }
     /* v2.0.0 D7 r4 — center SVG icons vertically inside Ring buttons.
        `vertical-align: middle` aligns to font middle, which for Ring's
@@ -2479,6 +2486,7 @@
         <span data-i18n="linkFeedback">Обратная связь</span>
       </a>
       <!-- Переключатель языка -->
+      <!-- ⚖ владелец 2026-08-22 (#69 строка 20): единственное осознанное исключение из мандата Ring UI — нативный select языка с флагами (CLAUDE_SHARED §3). -->
       <select id="langSel" class="btn btn--sm" style="cursor:pointer;padding:5px 8px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);appearance:none;-webkit-appearance:none;" title="Language / Язык">
         <option value="ru">🇷🇺 RU</option>
         <option value="en">🇬🇧 EN</option>
@@ -2503,7 +2511,7 @@
           role="button" tabindex="0"
           data-i18n-title="hintWcIndicator"
           title="Есть рабочая копия — кликните, чтобы перейти к редактированию">
-      <span class="widget-header__wc-icon">✏</span>
+      <span class="widget-header__wc-icon" data-icon="pencil"></span>
       <span class="widget-header__wc-label" data-i18n="lblHasWorkingCopy">Рабочая копия</span>
     </span>
     <button id="widgetNewSprintBtn"
@@ -2579,8 +2587,8 @@
   <div id="projectSettingsRoBanner" class="hidden"></div>
   <div id="projectSettingsHost"></div>
 
-  <div id="bannerNotConfigured" class="banner banner--warn hidden" data-i18n="bannerNotConfigured">
-    ⚠️ Плагин не настроен. Администратор проекта должен задать группу управления настройками в Project Settings → Apps → Sprint Planner.
+  <div id="bannerNotConfigured" class="banner banner--warn hidden" data-i18n="bannerNotConfigured" data-icon="warning">
+    Плагин не настроен. Администратор проекта должен задать группу управления настройками в Project Settings → Apps → Sprint Planner.
   </div>
 
   <!-- ВКЛАДКА: НАСТРОЙКИ удалена в v5.0 — настройки вынесены в отдельный виджет ssp-settings.
@@ -2595,20 +2603,21 @@
     <!-- v5.3.0 — Working copy banner (immutable snapshots, D3/b) -->
     <div id="wcBanner" class="wc-banner hidden">
       <span class="wc-banner__title">
-        <span class="wc-banner__icon">✏</span>
+        <span class="wc-banner__icon" data-icon="pencil"></span>
         <span id="wcBannerText">—</span>
       </span>
       <span id="wcBannerLevelPill" class="wc-banner__pill wc-banner__pill--meta" title="">—</span>
       <button id="wcBannerDiffBtn"  type="button" class="ring-button-button ring-button-block ring-button-heightS wc-banner__action" data-i18n="wcShowDiff">Показать различия</button>
       <button id="wcBannerCloseBtn" type="button" class="wc-banner__close" data-i18n-title="wcCloseHide" title="Свернуть" data-icon="close" data-aria-label-key="aria.btnClose"></button>
     </div>
-    <div id="bannerPlanner" class="banner hidden" data-i18n="bannerNoSettings" data-i18n-html>
-      ⚠️ Настройки плагина не заполнены. Откройте виджет «Smart Sprint Planner: настройки» через кнопку «⚙ Настройки плагина» в шапке (доступна участникам группы управления настройками).
+    <div id="bannerPlanner" class="banner hidden"><span data-icon="warning"></span><span data-i18n="bannerNoSettings" data-i18n-html>
+      Настройки плагина не заполнены. Откройте виджет «Smart Sprint Planner: настройки» через кнопку «Настройки плагина» в шапке (доступна участникам группы управления настройками).
+    </span>
     </div>
     <!-- v5.7.0 — Этап 5 (D50): orphan-баннер для задач, у которых был только gantt.tasks[id].color
          (legacy v5.6.0-) без записи в personalPlanning[*].taskAssignments. Реверс цвет→ассайни не делается. -->
     <div id="bannerOrphanGanttColors" class="banner banner--warn hidden">
-      <span data-i18n="bannerOrphanGanttColorsText">⚠ Найдены назначения только в Ганте:</span>
+      <span data-icon="warning"></span><span data-i18n="bannerOrphanGanttColorsText">Найдены назначения только в Ганте:</span>
       <span id="bannerOrphanGanttList"></span>.
       <span data-i18n="bannerOrphanGanttColorsHint">Назначьте их вручную в режиме «Люди».</span>
       <button id="bannerOrphanGanttDismissBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-ghost ring-button-flat" type="button" data-i18n="btnDismiss" style="margin-left:8px">Скрыть</button>
@@ -2649,7 +2658,7 @@
            При confirm роли — фиксируется в history snapshot (frozen copy).
            Одна-две строки. Не «список задач», а outcome — что команда хочет достичь. -->
       <div class="field" style="margin-top:14px">
-        <label for="sprintGoal" data-i18n="lblSprintGoal">🎯 Цель спринта</label>
+        <label for="sprintGoal" data-i18n="lblSprintGoal" data-icon="flag">Цель спринта</label>
         <!-- v2.1.0 F1 — Ring Input mount-point. Inner native <textarea>
              receives id="sprintGoal" (data-input-id) so getElementById('sprintGoal').value
              keeps working for legacy save/load callsites. -->
@@ -2870,7 +2879,7 @@
   <div id="diagWrap" style="margin-top:24px;">
     <details>
       <summary style="cursor:pointer;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:6px 0;">
-        🔍 <span data-i18n="diagPanelTitle">Диагностический лог (для разбора инцидентов)</span>
+        <span data-i18n="diagPanelTitle">Диагностический лог (для разбора инцидентов)</span>
         <button id="diagClearBtn" type="button" class="ring-button-button ring-button-block ring-button-heightS" style="margin-left:8px;font-size:10px;padding:2px 6px;" data-i18n="btnClear">Очистить</button>
         <button id="diagExportBtn" type="button" class="ring-button-button ring-button-block ring-button-heightS" style="margin-left:4px;font-size:10px;padding:2px 6px;" data-i18n="btnExportLog">Экспорт TXT</button>
       </summary>

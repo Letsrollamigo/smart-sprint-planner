@@ -2,10 +2,16 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.23.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.24.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
 >
+> **v3.24.0 — #69 R4 «Развилки» (строки 18, 20, 22, 28; ⚖ владелец 2026-08-22).** UI-срез: модель прав, endpoints, whitelist'ы и схема данных не менялись; матрица доступа без изменений.
+> - **18** — эмодзи в интерфейсе заменены иконками из набора `@jetbrains/icons` (Apache-2.0, уже вендорен в `widgets/main/src/icons/`; +4 SVG: flag/success/cancel/pencil). Новый строковый мост `window.__SSP_ICON_HTML` (генерится `build-icons.js`, слой infra в реестре) и React-компонент `RingIcon` — оба рендерят только статические SVG из бандла (`dangerouslySetInnerHTML` / `innerHTML` с фиксированным словарём, пользовательский ввод не участвует).
+> - **20** — нативный `<select>` языка в шапке зафиксирован явным исключением из мандата Ring UI (`CLAUDE_SHARED §3`), кода не касается.
+> - **22** — дотранслированы ≈8–9 ключей ×13 локалей (словари).
+> - **28** — дерево состава релиза (`release-view.fetchIssueData` → `_linkParents`) читает родителей по настройке `cascadeParentLinkInward` (фраза связи со стороны задачи; дефолт «subtask of» = прежнее поведение) вместо захардкоженного `linkType.name === 'Subtask'`; тот же REST-запрос `issues?fields=…links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))` под правами пользователя, что и у бэклога. Изменение поведения только у команд с другой связью.
+
 > **v3.23.0 — #69 R3 «Лестницы», шаг 2 (строка 27, hard-removal).** Вторая ступень лестницы ≥2 minor после soft-deprecation v3.22.0 — схема сужается, новых endpoints и прав нет.
 > - **Whitelist'ы сужены:** `editingFromHistory`/`historyIdx` сняты с `ALLOWED_SPRINT_KEYS` (`schema/whitelists.json` → sync), `migratedTo` — с `ALLOWED_SETTINGS_KEYS` (+ валидатор); `items` снят с верхнеуровневого списка тела `POST sprint-data` (`ALLOWED_SPRINT_DATA_KEYS`) — ключ молча отбрасывается `filterKeys`, warning шага 1 больше не выдаётся. Schema-маркер `CURRENT_PLUGIN_VERSION` → `3.23.0`; новая запись `SCHEMA_MIGRATIONS` `3.6.0 → 3.23.0` (`delete` legacy-ключей спринта; `migratedTo` чистит `migrateSettingsObj` шаг 3 — и в `history[].settings` через `migrateHistoryArr`), `SCHEMA_BUMP` пишется в `migrationLog` при первом чтении каждого снимка.
 > - **Silent strip на WRITE** (класс `gantt` v6.1.0): миграция применяется только на READ и не персистится, а `assignerSync`, bulk-POST `working-drafts` (вложенный `sprint` старых/чужих драфтов) и сохранение настроек/confirm со stale-вкладки несут legacy-ключи на WRITE мимо миграции — `stripDeprecatedSprintKeys` расширен (`editingFromHistory`/`historyIdx`), новый `stripDeprecatedSettingsKeys` (`migratedTo`) применяется к `body.settings` и к `history[].settings` внутри `stripDeprecatedHistoryKeys`. Прямой strict-валидатор без strip отвергает ключи как неизвестные. Прав и границ доверия это не меняет — только форма принимаемых блобов.

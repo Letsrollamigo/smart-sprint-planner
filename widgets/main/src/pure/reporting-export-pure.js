@@ -272,8 +272,8 @@ function reportToSheets(vm, deps) {
   meta.push([L.exportGenerated, fmtDate(nowTs)]);
   /* D7 в файле (ревью #50): усечение LIMIT'ом и неполнота данных обязаны попасть в выгрузку —
      на экране это баннеры, а файл живёт отдельной жизнью (BI-мост, US-EXP-03). Реюз ключей баннеров. */
-  if (vm.limitHit) meta.push(['⚠', String(L.limitHit || '').replace('{n}', String(vm.limit != null ? vm.limit : ''))]);
-  if (vm.incompleteCount > 0) meta.push(['⚠', String(L.incomplete || '').replace('{n}', String(vm.incompleteCount))]);
+  if (vm.limitHit) meta.push(['(!)', String(L.limitHit || '').replace('{n}', String(vm.limit != null ? vm.limit : ''))]);
+  if (vm.incompleteCount > 0) meta.push(['(!)', String(L.incomplete || '').replace('{n}', String(vm.incompleteCount))]);
 
   var proj = _projectReport(vm, L, deps);
   if (proj.extraMeta) meta = meta.concat(proj.extraMeta);

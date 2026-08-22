@@ -549,7 +549,7 @@ Clicking **✓ Finish sprint** opens an outcome dialog:
 | What's in the dialog | What you do |
 |---|---|
 | **Sprint goal** | Shown as a reminder (read-only). |
-| **Outcome** | Pick: ✅ **Achieved**, ⚖ **Partial**, ❌ **Not achieved**. Required field — **Confirm** is disabled without it. |
+| **Outcome** | Pick: **Achieved**, **Partial**, **Not achieved** (in the history the outcome is marked with an icon: check — achieved, cross — missed). Required field — **Confirm** is disabled without it. |
 | **Retro note** | Optional: 1–2 sentences about what worked or didn't. Visible in history. |
 | **Cancel** | The sprint **doesn't finish** and stays in the *committed* stage. |
 | **Confirm sprint** | Final close. |
@@ -680,7 +680,7 @@ Once enabled, **«Planned releases»** (cards of open releases) and **«Release 
 - **«Create release»** — name, kind (**Release / Hotfix**), source (**Internal / Vendor**), planned date, composition-freeze date, the release's RM/RE, patch note, notes, **release task link** (an optional URL — shown as a clickable link on the card, in history and in the .txt export; added in v2.19.0). Since v2.19.0 the notes are shown right on the planned card, not only in the edit form and history.
 - **«+ Tasks»** — pick project tasks into the release. A task can be moved from another release — the plugin shows the collision and asks for confirmation.
 - **Readiness traffic-light** — a composition summary: done / in progress / not started / no state. Zones derive automatically from the State field and the mapping anchor; an overdue planned date adds an **«Overdue»** badge.
-- **Composition tree** — epic ▸ story ▸ task (from Subtask links), readiness rolled up from the subtree leaves; tasks without a parent are listed separately.
+- **Composition tree** — epic ▸ story ▸ task by the same parent ← child link configured for cascade aggregation (built-in *Subtask* by default; before v3.24.0 the link was hard-coded), readiness rolled up from the subtree leaves; tasks without a parent are listed separately.
 - **«Change status ▾»** — Planned → Preparation → In progress → **Released** / **Cancelled**. Closing is irreversible: the composition is frozen as a snapshot and the release moves to «Release history». If **task tags** are configured in the mapping (see below), entering a new release status removes the previous status's tag from the composition's tasks and adds the new one (added in v2.18.0).
 - **«Update task states»** — a mapping preview (which task gets which State, with «already there», «diverged», «unreachable» marks) and bulk or per-task application to YouTrack tasks.
 - **«❄ Freeze composition»** — blocks composition edits until explicitly unfrozen.

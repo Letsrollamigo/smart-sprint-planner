@@ -12,6 +12,20 @@
    колонок, заголовок дельта-колонки, summary); колонки __SSP_TABLE — тупой
    маппинг row.cells[col.id] (_vmCell). Значения ячеек байт-в-байт прежние —
    оракул materializeTable сохранён (как слайсы 2–3). */
+/* v3.24.0 (#69 строка 18) — инлайн Ring-иконка вместо эмодзи в HTML-строках (мост
+   __SSP_ICON_HTML из icons.generated.js; нет моста — пустая строка). */
+function _ic(name, cls) {
+  var f = (typeof window !== 'undefined') && window.__SSP_ICON_HTML;
+  return (typeof f === 'function') ? f(name, 'ssp-icon--inline' + (cls ? ' ' + cls : '')) : '';
+}
+/* Исход цели (#69 строка 18, ⚖ владелец): достигнута — success (зелёным), не достигнута —
+   cancel (красным), частично — только текст (точной иконки в наборе нет). */
+function _outcomeHtml(outcome, T, esc) {
+  var map = { achieved: T('optGoalAchieved'), partial: T('optGoalPartial'), missed: T('optGoalMissed') };
+  var ic = outcome === 'achieved' ? _ic('success', 'ssp-icon--ok') : outcome === 'missed' ? _ic('cancel', 'ssp-icon--err') : '';
+  return ic + esc(map[outcome] || outcome);
+}
+
 function _vmCell(row, c) { return row.cells[c.id]; }
 
 function _buildHistoryItemsVm(items, rk, rec, deps) {
@@ -263,7 +277,7 @@ function buildSpoiler(rec, idx, deps) {
     var pillTitle = T('wcEditedBy')
       .replace('{who}', d.editorLogin || '?')
       .replace('{when}', fmtDT(d.updatedAt));
-    wcPill = '<span class="wc-has-copy-pill" title="'+esc(pillTitle)+'">'+esc(T('wcHasCopyPill'))+'</span>';
+    wcPill = '<span class="wc-has-copy-pill" title="'+esc(pillTitle)+'">'+_ic('pencil')+esc(T('wcHasCopyPill'))+'</span>';
   }
   /* v1.8.1 — название спринта и роль теперь видны в свёрнутом виде (первые поля).
      Раньше rec.name был только в body (раскрытый вид), что затрудняло идентификацию. */
@@ -276,13 +290,12 @@ function buildSpoiler(rec, idx, deps) {
   /* v1.9.0 D132 — Goal outcome badge + truncated goal in collapsed spoiler header. */
   var outcomeInline = '';
   if (rec.goalOutcome) {
-    var _outMap = { achieved: T('optGoalAchieved'), partial: T('optGoalPartial'), missed: T('optGoalMissed') };
-    outcomeInline = '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histOutcomeLabel')+'</span><span class="spoiler__mv">'+esc(_outMap[rec.goalOutcome]||rec.goalOutcome)+'</span></div>';
+    outcomeInline = '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histOutcomeLabel')+'</span><span class="spoiler__mv">'+_outcomeHtml(rec.goalOutcome, T, esc)+'</span></div>';
   }
   var goalHeadInline = '';
   if (rec.sprintGoal) {
     var _truncGoal = rec.sprintGoal.length > 80 ? rec.sprintGoal.substring(0,77)+'…' : rec.sprintGoal;
-    goalHeadInline = '<div class="spoiler__mi" title="'+esc(rec.sprintGoal)+'"><span class="spoiler__ml">'+T('histGoalLabel')+'</span><span class="spoiler__mv" style="font-style:italic">'+esc(_truncGoal)+'</span></div>';
+    goalHeadInline = '<div class="spoiler__mi" title="'+esc(rec.sprintGoal)+'"><span class="spoiler__ml">'+_ic('flag')+T('histGoalLabel')+'</span><span class="spoiler__mv" style="font-style:italic">'+esc(_truncGoal)+'</span></div>';
   }
   meta.innerHTML =
     sprintNameInline +
@@ -291,7 +304,7 @@ function buildSpoiler(rec, idx, deps) {
     goalHeadInline +
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateStart)+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateEnd)+'</span></div>'+
-    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv"><span class="s-badge '+badgeClass+'"'+(badgeTitle?' title="'+esc(badgeTitle)+'"':'')+'>'+esc(statusLabel(rec.status))+'</span>'+(rec.isOverLimit?'<span class="overlimit-tag">'+T('overlimitTag')+'</span>':'')+wcPill+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv"><span class="s-badge '+badgeClass+'"'+(badgeTitle?' title="'+esc(badgeTitle)+'"':'')+'>'+esc(statusLabel(rec.status))+'</span>'+(rec.isOverLimit?'<span class="overlimit-tag">'+_ic('warning')+T('overlimitTag')+'</span>':'')+wcPill+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerTasks')+'</span><span class="spoiler__mv">'+(rec.items?rec.items.length:0)+'</span></div>'+
     (remVal !== undefined && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerRem')+'</span><span class="spoiler__mv" style="color:'+(remVal<0?'var(--error)':'var(--success)')+'">'+fmtHours(remVal)+'</span></div>' : '');
 
@@ -466,11 +479,10 @@ function buildSpoiler(rec, idx, deps) {
     _goalCard.style.cssText = 'margin:10px 16px 0;padding:10px 12px;background:var(--surface-light,#f5f5f5);border-radius:6px;font-size:12px;line-height:1.5;';
     var _goalCardHtml = '';
     if (rec.sprintGoal) {
-      _goalCardHtml += '<div style="margin-bottom:'+(rec.goalOutcome?'8px':'0')+'"><span style="color:var(--muted,#888);font-size:11px;display:block">'+esc(T('histGoalLabel'))+'</span><span style="font-weight:500">'+esc(rec.sprintGoal)+'</span></div>';
+      _goalCardHtml += '<div style="margin-bottom:'+(rec.goalOutcome?'8px':'0')+'"><span style="color:var(--muted,#888);font-size:11px;display:block">'+_ic('flag')+esc(T('histGoalLabel'))+'</span><span style="font-weight:500">'+esc(rec.sprintGoal)+'</span></div>';
     }
     if (rec.goalOutcome) {
-      var _outMapB = { achieved: T('optGoalAchieved'), partial: T('optGoalPartial'), missed: T('optGoalMissed') };
-      _goalCardHtml += '<div style="margin-bottom:'+(rec.goalRetroNote?'8px':'0')+'"><span style="color:var(--muted,#888);font-size:11px;display:block">'+esc(T('histOutcomeLabel'))+'</span>'+esc(_outMapB[rec.goalOutcome]||rec.goalOutcome)+'</div>';
+      _goalCardHtml += '<div style="margin-bottom:'+(rec.goalRetroNote?'8px':'0')+'"><span style="color:var(--muted,#888);font-size:11px;display:block">'+esc(T('histOutcomeLabel'))+'</span>'+_outcomeHtml(rec.goalOutcome, T, esc)+'</div>';
     }
     if (rec.goalRetroNote) {
       _goalCardHtml += '<div><span style="color:var(--muted,#888);font-size:11px;display:block">'+esc(T('histRetroLabel'))+'</span><span style="font-style:italic">'+esc(rec.goalRetroNote)+'</span></div>';
