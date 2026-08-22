@@ -53,6 +53,7 @@ const BRIDGE_SCRIPTS = [
   'capacity-pure.js',
   'modal-specs.js',
   'diag-snapshot.js',   /* #63 п.4 — экспорт-слепок состояния */
+  'user-prefs.js',      /* #69 строка 21 — localStorage ⊃ серверное зеркало предпочтений */
   'excel-export.js',
   'revalidation.js',
   'history-io.js',

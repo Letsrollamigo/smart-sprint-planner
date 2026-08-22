@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.22.0] — 2026-08-22
+
+> **"Simplification" epic, slice R3 "Ladders", step 1 — rows 21 and 27 of the audit list.** A schema slice on the deprecation ladder (soft-deprecation now → hard removal not before v3.23.0).
+
+### Added
+
+- **Preferences survive a page reload.** On YouTrack builds whose widget sandbox lacks `allow-same-origin` (e.g. 2025.3) `localStorage` throws `SecurityError` and `host.navigation` is absent — UI language, last active role, table sort order, collapsed rail and other local keys were reset by every reload. They now live in a single per-user blob `User.extensionProperties.ssp_user_prefs` (new declaration in `entity-extensions.json`; same pattern as last-project): a new global-only backend module `backend-userprefs.js` with `GET/POST user-prefs` (allow-list of 7 keys + value/blob caps, own slot only) and a frontend store `infra/user-prefs.js` — `safeLs` reads `localStorage ⊃ server cache`, writes both, and changed keys go out in one debounced POST (a "same value" gate keeps repeated start-ups silent). The blob is loaded right after `YTApp.register`, before the first render — the language applies without flicker; works in both the main-menu and project-settings widgets. SECURITY matrix rows, matrix invariant, unit tests for the store and endpoints.
+
+### Fixed
+
+- **«Share» was left visible-but-dead on servers without app deep links** — rebuilding the navigation tree (`_syncGlobalDashTree` when capacity/releases/reporting/backlog nodes arrive) recreated the button in its default state and the hide path of `_updateShareBtnState` (no `host.navigation` → `display:none`) was not re-applied. It is now — hidden where deep links are unsupported, correct state/tooltip right away elsewhere.
+
+### Deprecated (soft-deprecation, ladder step 1 — row 27)
+
+- **`ssp_items`** — the write path in `POST sprint-data` is closed (no callers since v5.x): a body with `items` is accepted but not stored (`warnings: deprecated:items_ignored`, key absent from `saved`); the READ fallback stays until step 2.
+- **`editingFromHistory` / `historyIdx`** (sprint) and **`migratedTo`** (settings) — the frontend no longer writes them (`migrateEditingFromHistoryV52` only strips them from loaded blobs; `validation-controller` deletes instead of writing `false`); the server still accepts them on WRITE but records `SCHEMA_DEPRECATION_WARN` in `migrationLog`. Whitelists and `CURRENT_PLUGIN_VERSION` (`3.6.0`) unchanged. Step 2 (migration `delete` incl. `history[].settings`, whitelist removal, `SCHEMA_BUMP`) is a separate release ≥ v3.23.0.
+- Fixtures `tests/fixtures/snapshots/3.21.0/` (carrying the legacy keys — the regression target for step 2) and `3.22.0/`; compat regression green.
+
+---
+
 ## [3.21.0] — 2026-08-22
 
 > **"Simplification" epic, slice R2 "Build" — rows 13–14 of the audit list.** Build-only: no behaviour, data or UI change; fork-identical.

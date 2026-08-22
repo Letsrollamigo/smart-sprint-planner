@@ -27,7 +27,8 @@
     {
       "entityType": "User",
       "properties": {
-        "ssp_last_project": { "type": "string" }
+        "ssp_last_project": { "type": "string" },
+        "ssp_user_prefs":   { "type": "string" }
       }
     }
   ]

@@ -71,7 +71,7 @@ The planner has two parts:
 - **"+ New sprint" button** (see [section 4](#4-creating-a-new-sprint)).
 - **Navigation tree** — switch between sections: "Sprint parameters", "Capacity" (with the "Full" planning model — see [section 6](#6-picking-tasks-and-setting-role-capacity)), "Planning" (with sub-items "Shared resource allocation" / "Per-assignee distribution" / "Stand-up"), "Working with the backlog" (if configured — see [section 5](#5-working-with-the-backlog)), "Gantt chart", "Sprint history". When the corresponding modules are enabled, the release items (see [section 12](#12-releases-release-management)) and the "Reporting" group (see [section 13](#13-operational-reporting)) appear as well.
 - **«Share» button** (at the bottom of the navigation tree) — copies a link to the current view (see below).
-- **Service links at the bottom:** the user guide, feedback, language switcher.
+- **Service links at the bottom:** the user guide, feedback, language switcher. The chosen language, last role, table sort order and rail state are remembered **per user on the server** — they survive page reloads and browser switches.
 
 **2. Work area on the right** — the content of the selected section.
 
@@ -81,7 +81,7 @@ The planner has two parts:
 
 The page address in main-menu mode **automatically reflects what you're looking at**: the selected project, sprint, and navigation tree section. To give a colleague exactly this view, click **«Share»** at the bottom of the navigation tree — the link is copied to the clipboard (a "Link copied" tooltip confirms it). Send it any way you like; when the recipient opens it, they land directly on the same project, sprint and section.
 
-The button is active when a sprint is open. Share the link **after saving the sprint** — the recipient sees the last saved state, not your unfinished draft.
+The button is active when a sprint is open; on YouTrack servers without deep-link support for apps (older builds) the button is hidden and appears by itself after a server upgrade. Share the link **after saving the sprint** — the recipient sees the last saved state, not your unfinished draft.
 
 **Handoff.** This is the primary use case: an analysis lead prepares sprint composition and sends the link to the dev lead. The dev lead opens it, sees the sprint view, and — if they have assignee-editing rights — clicks «Open for editing» and distributes tasks. The link **only navigates** to the view; what the recipient can do (view or edit) is determined by their project access in YouTrack and the working-draft mode — the link grants no extra permissions.
 

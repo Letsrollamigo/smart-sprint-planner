@@ -46,13 +46,14 @@
   function migrateInc(v)    { return MIGRATE_PURE.migrateInc(v); }
 
   /* v6.1.0 D70 — safe localStorage wrapper для production iframe без allow-same-origin.
-     В sandboxed iframe `localStorage` exists как объект (typeof === 'object'), но любой
-     доступ к свойствам выбрасывает SecurityError — typeof-guard НЕ помогает. Все access
-     должны быть через try/catch. Этот wrapper унифицирует все 20 callsite'ов. */
+     #69 строка 21 — тело в infra/user-prefs.js: localStorage ⊃ серверное зеркало
+     (User.extensionProperties.ssp_user_prefs) — на YT 2025.3 localStorage мёртв. */
+  var USER_PREFS = (typeof window !== 'undefined' && window.__SSP_USER_PREFS) || {};
+  function _prefsDeps() { return { getHost: function () { return _host; }, diag: diag }; }
   var safeLs = {
-    get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
-    set: function (k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
-    del: function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+    get: function (k) { return USER_PREFS.get(k); },
+    set: function (k, v) { return USER_PREFS.set(k, v, _prefsDeps()); },
+    del: function (k) { USER_PREFS.del(k, _prefsDeps()); }
   };
 
   /* v6.1.0 D81 (F4) — multi-key sort: XPriority desc → Priority desc → ID asc.
@@ -762,7 +763,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.21.0';
+  var APP_VERSION = '3.22.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1195,11 +1196,15 @@
     }
   }
 
-  /* v5.2 → v5.3 миграция: однократный commit-as-PLANNING для in-flight правки. */
+  /* v5.2 → v5.3 миграция: однократный commit-as-PLANNING для in-flight правки.
+     #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): маркер settings.migratedTo больше не
+     пишем (читать — можно до шага 2); legacy-ключи editingFromHistory/historyIdx/migratedTo
+     стрипаем из загруженных блобов безусловно — иначе они вечно уезжали бы эхом в POST
+     (блобы шлются целиком). Шаг 2 (≥ v3.23.0): серверная миграция delete + снятие из
+     whitelist'ов — тогда эта функция уходит целиком. */
   function migrateEditingFromHistoryV52() {
     if (!_settings) return;
-    if (_settings.migratedTo === '5.3') return;
-    if (_sprint && _sprint.editingFromHistory === true && _sprint.historyIdx != null) {
+    if (_settings.migratedTo !== '5.3' && _sprint && _sprint.editingFromHistory === true && _sprint.historyIdx != null) {
       var idx = _sprint.historyIdx;
       var existingSnap = _history[idx];
       if (existingSnap && existingSnap.roleKey) {
@@ -1215,8 +1220,8 @@
       apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }).catch(function(){});
       setTimeout(function(){ try { toast(T('wcMigrationNotice'), 'info'); } catch(_){} }, 500);
     }
-    _settings.migratedTo = '5.3';
-    apiPost('sprint-data', { settings: _settings }).catch(function(){});
+    if (_sprint) { delete _sprint.editingFromHistory; delete _sprint.historyIdx; }
+    delete _settings.migratedTo;
   }
 
   /* Debounce-персист, dirty-механика и WC-sync — в draft-store.js
@@ -1671,8 +1676,18 @@
     });
   }
   _ytAppRegisterWithRetry().then(function(h) {
-    diag('YTApp.register OK ('+(Date.now()-_ytRegT0)+'ms)', 'ok');
+    /* #69 строка 21 — серверные предпочтения ДО первого рендера: язык применяется без мигания. */
     _host = h;
+    return USER_PREFS.load(_prefsDeps()).then(function (p) {
+      var l = p && p.ssp_lang;
+      if (l && l !== _lang && (window.__SSP_I18N_LANGS__ || []).some(function (x) { return x.code === l; })) {
+        _lang = l;
+        if (_i18nBridge && typeof _i18nBridge.setCurrentLang === 'function') _i18nBridge.setCurrentLang(l);
+      }
+      return h;
+    });
+  }).then(function(h) {
+    diag('YTApp.register OK ('+(Date.now()-_ytRegT0)+'ms)', 'ok');
     _ctx  = h.context;
     if (!_ytBase) {
       try {
@@ -2157,6 +2172,9 @@
         var el = fresh.querySelector('[data-node="' + activeNode + '"]');
         if (el) el.classList.add('active');
       }
+      /* #69 строка 21 — свежий узел «Поделиться» рождается в дефолтном состоянии (--disabled, видим):
+         без этого вызова на YT 2025.3 (нет host.navigation) кнопка висела мёртвой вместо display:none. */
+      try { _updateShareBtnState(); } catch(_){}
     } catch(_){}
   }
 

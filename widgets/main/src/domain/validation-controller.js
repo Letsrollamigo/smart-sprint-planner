@@ -69,7 +69,7 @@ function doValidateRole(rk, deps) {
           /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
              Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
           if (s2) {
-            s2.editingFromHistory = false;
+            delete s2.editingFromHistory;   /* #69 строка 27 шаг 1: не писать `false` — ключ deprecated */
             delete s2.historyIdx;
           }
           deps.state.setActiveWorkingDraftKey(null);

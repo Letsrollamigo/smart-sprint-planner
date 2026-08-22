@@ -222,5 +222,8 @@ endpoints.push({
   }
 });
 
+// #69 строка 21 — GET/POST user-prefs: свой global-only модуль (§11), projectKey не нужен — данные пользователя.
+require('./backend-userprefs.js').endpoints.forEach(function (e) { endpoints.push(e); });
+
 exports.httpHandler = { endpoints: endpoints };
 exports.isValidProjectKey = isValidProjectKey;  // test-only (unit: project-key-validation)

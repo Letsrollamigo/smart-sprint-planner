@@ -44,7 +44,9 @@
   /* Лёгкая загрузка только настроек (без планера). */
   function _loadSettingsOnly(deps) {
     return deps.apiGet('sprint-data').then(function (r) {
-      deps.state.setSettings((r && r.settings) || null);
+      var s = (r && r.settings) || null;
+      if (s) delete s.migratedTo;   /* #69 строка 27 шаг 1 — deprecated-маркер не эхо-писать (форма collect() = {...initial}) */
+      deps.state.setSettings(s);
     }).catch(function () { /* оставляем _settings как есть */ });
   }
 

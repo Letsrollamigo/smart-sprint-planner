@@ -2,10 +2,14 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.21.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.22.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
 >
+> **v3.22.0 — #69 R3 «Лестницы», шаг 1 (строки 21 и 27).**
+> - **Строка 21 — `GET/POST user-prefs` (global-only, `backend-userprefs.js`)**: единый блоб предпочтений пользователя `User.extensionProperties.ssp_user_prefs` (новое объявление в `entity-extensions.json`). Фронт зеркалит в него localStorage-ключи (язык, роль, сортировка, рельс, хинт, кэш версии, последний проект) — на сборках YouTrack, где песочница виджета без `allow-same-origin` (например 2025.3), `localStorage` бросает SecurityError и предпочтения не переживали перезагрузку. Доступ — любой аутентифицированный пользователь, **только свой слот** (`ctx.currentUser`, projectKey не принимается); сервер — allowlist 7 ключей + cap длины значения (строка; `null` = удалить) + cap блоба 2 КБ; reason-коды без эха значений. Новых прав и внешних запросов нет.
+> - **Строка 27, шаг 1 — soft-deprecation legacy-ключей** (лестница ≥2 minor): путь записи `ssp_items` в `POST sprint-data` закрыт — тело с `items` принимается, но не пишется (`warnings: deprecated:items_ignored`, ключа нет в `saved`); READ-fallback остаётся. Ключи спринта `editingFromHistory`/`historyIdx` и настроек `migratedTo` фронт больше не пишет и стрипает из загруженных блобов; на WRITE сервер их принимает (whitelist не менялся), помечая в `migrationLog` записью `SCHEMA_DEPRECATION_WARN`. Hard-removal (миграция `delete`, снятие из whitelist, `SCHEMA_BUMP`) — шаг 2, не раньше v3.23.0. Фикстура `tests/fixtures/snapshots/3.21.0/` + compat-регресс.
+
 > **v3.21.0 — #69 R2 «Сборка».** Только сборка: Recharts вынесен из `vendored-react.chunk.js` в ленивый `recharts.chunk.js` (грузится relative-script'ом по паттерну pdfmake/XLSX при монтировании панели отчётности; React/ReactDOM — через шимы из `SSP_VENDORED`, второй инстанс React не бандлится), esbuild `--charset=utf8`. Новых эндпоинтов, прав и внешних запросов нет; allowlist marketplace-зипа расширен на чанк, `release-check.sh` проверяет его наличие.
 
 > **v3.20.1 — #69 строка 2 (кнопки сохранения).** `doSaveRoleHeader` («Сохранить ресурс роли») сужен до записи `_sprint[role.resKey]` — общие поля спринта (name/dates/goal/Sprint/Version) из формы «Вводных» больше не переписываются per-role кнопкой; гейт «выбранный спринт ≠ рабочий слот» (#70) сохранён в обоих сейверах. Модель доступа и серверные валидаторы не менялись.
@@ -156,6 +160,8 @@
 | POST   | `filter-planner-projects` | аутентификация (арбитр picker'а: до 5000 ключей за запрос; cap тела 256 КБ, #67 H11) |
 | GET    | `last-project` | аутентификация (свой слот) |
 | POST   | `last-project` | аутентификация (пишет только свой слот) |
+| GET    | `user-prefs` | аутентификация (свой слот; blob предпочтений `ssp_user_prefs`, строка 21) |
+| POST   | `user-prefs` | аутентификация (пишет только свой слот; allowlist 7 ключей + cap 2 КБ) |
 <!-- authz-matrix:global:end -->
 
 `viewer` — любой аутентифицированный пользователь проекта. Все остальные роли требуют настроенного `settingsManagerGroup` (deny-by-default иначе). `wcOwner` — контекстная роль (см. таблицу ролей выше).

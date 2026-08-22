@@ -22,7 +22,6 @@
   ],
   "isValidator": true,
   "status": "CONFIRMED",
-  "editingFromHistory": false,
   "historyIdxPresent": false,
   "activeWorkingDraftKey": null,
   "hideWcBanner": 1,

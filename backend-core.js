@@ -318,7 +318,7 @@ var CURRENT_PLUGIN_VERSION = '3.6.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.21.0';
+var APP_VERSION = '3.22.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -492,6 +492,7 @@ function stripDeprecatedHistoryKeys(h) {
   return h;
 }
 var DEPRECATED_SPRINT_KEYS = DEPRECATED_HISTORY_SNAP_KEYS;   /* v3.2.1 — тот же набор, см. коммент выше */
+var DEPRECATED_SPRINT_WRITE_KEYS = ['editingFromHistory', 'historyIdx'];   /* #69 строка 27 шаг 1 — soft-deprecation, см. _validateSprintBody */
 function stripDeprecatedSprintKeys(s) {
   if (!s || typeof s !== 'object') return s;
   for (var j = 0; j < DEPRECATED_SPRINT_KEYS.length; j++) {
@@ -697,6 +698,15 @@ function _validateSprintBody(sprint, strict) {
   if (sprint.historyIdx !== undefined && sprint.historyIdx !== null && !assertNum(sprint.historyIdx)) return false;
   if (sprint.editingFromHistory !== undefined && sprint.editingFromHistory !== null
       && typeof sprint.editingFromHistory !== 'boolean') return false;
+  /* #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): editingFromHistory/historyIdx — legacy
+     v5.2 (фронт их больше не пишет и стрипает на загрузке); на WRITE принимаем, но помечаем
+     в migrationLog. Шаг 2 (≥ v3.23.0): миграция delete + снятие из whitelist + SCHEMA_BUMP. */
+  if (strict) {
+    DEPRECATED_SPRINT_WRITE_KEYS.forEach(function (dk) {
+      if (sprint[dk] !== undefined) _appendMigrationLog(sprint, { at: Date.now(), level: 'SCHEMA_DEPRECATION_WARN',
+        fromVersion: sprint.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: dk });
+    });
+  }
   for (var j = 0; j < keys.length; j++) {
     var sk = keys[j];
     if (/^(resource|remain)[A-Za-z0-9_]*$/.test(sk)) {
@@ -2630,28 +2640,14 @@ var ENDPOINTS = [
         }
 
         if (body.items !== undefined) {
-          // Legacy ключ — оставляем для обратной совместимости READ-fallback.
-          // На запись требуется editor.
-          if (!authzGuard(ctx, 'editor')) return;
-          if (!Array.isArray(body.items) || body.items.length > 1000) {
-            badRequest(ctx, 'invalid_items_structure');
-            return;
-          }
-          for (var li = 0; li < body.items.length; li++) {
-            if (!validateItem(body.items[li])) {
-              badRequest(ctx, 'invalid_items_structure');
-              return;
-            }
-          }
-          var legacyStr = JSON.stringify(body.items);
-          if (legacyStr.length > MAX_PROP_SIZE) {
-            badRequest(ctx, 'items_data_too_large');
-            return;
-          }
-          setProp(ctx, 'ssp_items', legacyStr);
+          /* #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): путь записи legacy ssp_items
+             закрыт — вызывающих у него не осталось (фронт шлёт roleItems с v5.x). Тело
+             принимаем (совместимость старых REST-клиентов), но не пишем; READ-fallback в
+             GET sprint-data остаётся до шага 2 (≥ v3.23.0: снятие ключа из entity-extensions). */
+          warnings.push('deprecated:items_ignored');
         }
 
-        var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev'; }) };
+        var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev' && k !== 'items'; }) };
         if (newSlotRev !== null) resp.rev = newSlotRev;   /* #56-4 — фронт синхронизирует _slotRev */
         if (enrichInfo) resp.enriched = enrichInfo;       /* #67 путь 3 — {count, skipped} для агента */
         if (warnings.length) resp.warnings = warnings;

@@ -2,10 +2,14 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.21.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.22.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
+> **v3.22.0 — Simplification slice R3 "Ladders", step 1 (rows 21 and 27).**
+> - **Row 21 — `GET/POST user-prefs` (global-only, `backend-userprefs.js`)**: a single per-user preferences blob `User.extensionProperties.ssp_user_prefs` (new declaration in `entity-extensions.json`). The frontend mirrors its localStorage keys (language, last role, sort key, collapsed rail, hint flag, version cache, last project) into it — on YouTrack builds where the widget sandbox has no `allow-same-origin` (e.g. 2025.3) `localStorage` throws SecurityError and preferences did not survive a reload. Access: any authenticated user, **own slot only** (`ctx.currentUser`; no projectKey accepted); server-side allow-list of 7 keys + per-value length caps (strings; `null` = delete) + 2 KB blob cap; reason codes never echo values. No new permissions or outbound requests.
+> - **Row 27, step 1 — soft-deprecation of legacy keys** (≥2-minor ladder): the `ssp_items` write path in `POST sprint-data` is closed — a body with `items` is accepted but not stored (`warnings: deprecated:items_ignored`, key absent from `saved`); the READ fallback stays. Sprint keys `editingFromHistory`/`historyIdx` and settings key `migratedTo` are no longer written by the frontend (stripped from loaded blobs); the server still accepts them on WRITE (whitelists unchanged) and records `SCHEMA_DEPRECATION_WARN` in `migrationLog`. Hard removal (migration `delete`, whitelist removal, `SCHEMA_BUMP`) is step 2, not before v3.23.0. Fixture `tests/fixtures/snapshots/3.21.0/` + compat regression.
+
 > **v3.21.0 — build slice R2:** build-only change. Recharts moved out of `vendored-react.chunk.js` into a lazy `recharts.chunk.js` (loaded by a relative script tag when the reporting panel mounts — same pattern as pdfmake/XLSX; React/ReactDOM come through shims from `SSP_VENDORED`, no second React instance is bundled); esbuild `--charset=utf8`. No new endpoints, permissions or outbound requests; the marketplace zip allow-list includes the chunk and `release-check.sh` asserts its presence.
 
 > **v3.20.1 — save buttons split (#69 row 2):** `doSaveRoleHeader` («Save role resource») now writes only `_sprint[role.resKey]` — the per-role button no longer rewrites the shared sprint fields (name/dates/goal/Sprint/Version) read from the Sprint-inputs form; the «selected sprint ≠ working slot» gate (#70) stays in both savers. Access model and server validators unchanged.
@@ -156,6 +160,8 @@ Every project endpoint except `sync-acl` and `app-version` is reachable via the 
 | POST   | `filter-planner-projects` | authentication (picker arbiter: up to 5000 keys per request; 256 KB body cap, #67 H11) |
 | GET    | `last-project` | authentication (own slot) |
 | POST   | `last-project` | authentication (writes own slot only) |
+| GET    | `user-prefs` | authentication (own slot; preferences blob `ssp_user_prefs`, row 21) |
+| POST   | `user-prefs` | authentication (writes own slot only; allow-list of 7 keys + 2 KB cap) |
 <!-- authz-matrix:global:end -->
 
 `viewer` — any authenticated project user. All other roles require a configured `settingsManagerGroup` (deny-by-default otherwise). `wcOwner` is a contextual role (see the roles table above).
