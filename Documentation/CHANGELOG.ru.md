@@ -8,6 +8,19 @@
 
 ---
 
+## 3.23.0 — 2026-08-22
+
+> **Эпик «Упрощение», срез R3 «Лестницы», шаг 2 — строка 27 листа корректировок (hard-removal).** Вторая ступень лестницы после soft-deprecation v3.22.0. Поведение для пользователя не меняется; сужается схема данных и уходит мёртвый код совместимости v5.2.
+
+### Удалено
+
+- **`editingFromHistory` / `historyIdx`** (снимок спринта) и **`migratedTo`** (настройки, в т.ч. встроенные в записи истории) — сняты с whitelist'ов (`schema/whitelists.json` → `ALLOWED_SPRINT_KEYS`; `ALLOWED_SETTINGS_KEYS` + валидатор). Schema-маркер `CURRENT_PLUGIN_VERSION` → `3.23.0`, запись `SCHEMA_MIGRATIONS` `3.6.0 → 3.23.0` (`delete` ключей спринта; `migratedTo` вычищает `migrateSettingsObj` — и в `history[].settings` через `migrateHistoryArr`), `SCHEMA_BUMP` в `migrationLog` при первом чтении каждого снимка. На WRITE ключи молча вычищаются (прецедент `gantt` v6.1.0): миграция не персистится, а `assignerSync`, bulk-POST `working-drafts` и сохранение настроек/confirm со stale-вкладки несут их мимо миграции — `stripDeprecatedSprintKeys` расширен, добавлен `stripDeprecatedSettingsKeys` (тело настроек + `history[].settings` внутри `stripDeprecatedHistoryKeys`).
+- **`ssp_items`** — объявление снято из `entity-extensions.json`, READ-fallback в `GET sprint-data` и фронтовая ветка `r.items` удалены; `items` снят с верхнеуровневого списка тела `POST sprint-data` (молча отбрасывается, warning шага 1 больше не выдаётся). Проверено на стендах обоих форков: проект с ранее записанным значением снятого extension-property читается штатно.
+- Фронт: `migrateEditingFromHistoryV52` (core.js) с вызовом из `loadAllData`, toast `wcMigrationNotice` (×15 локалей), strip `migratedTo` в `_loadSettingsOnly`, защитные `delete` legacy-ключей в `validation-controller`/`working-copy`; `core.js` 4546 → 4518 LOC, `backend-core.js` 3191 → 3182.
+- Фикстура `tests/fixtures/snapshots/3.23.0/`; compat-регресс на `3.21.0` (фикстура с legacy-ключами) и D109-гейт на прод-фикстуре (`migratedTo` ×9 в embedded settings) зелёные; тесты шага 1 переписаны под шаг 2 (`tests/unit/simplify-69-r3.test.js`), голдены `validate-role-success`/`working-copy-resume` без legacy-полей.
+
+---
+
 ## 3.22.0 — 2026-08-22
 
 > **Эпик «Упрощение», срез R3 «Лестницы», шаг 1 — строки 21 и 27 листа корректировок.** Schema-срез по лестнице устаревания (soft-deprecation сейчас → hard-removal не раньше v3.23.0).

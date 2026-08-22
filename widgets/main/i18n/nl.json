@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Alleen-lezen openen",
   "wcGcDiscarded": "Oude werkkopieën verwijderd: {n}",
   "wcRevalidatedToast": "Snapshot bijgewerkt · {level} · status: {status}",
-  "wcMigrationNotice": "Onvoltooide v5.2-bewerking is vastgelegd als concept. In v5.3 vernietigen bewerkingen geen gevalideerde snapshots meer — gebruik «Openen om te bewerken» om een werkkopie te maken.",
   "wcStorageQuotaExceeded": "Werkkopie-opslagquota bereikt. Gooi oude onvoltooide bewerkingen weg.",
   "cannotEditFinished": "Gesloten sprints kunnen niet worden bewerkt.",
   "unnamedSprint": "(naamloze sprint)",

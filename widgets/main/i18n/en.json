@@ -611,7 +611,6 @@
   "wcMultiTabReadonly": "Open read-only",
   "wcGcDiscarded": "Old working copies removed: {n}",
   "wcRevalidatedToast": "Snapshot updated · {level} · status: {status}",
-  "wcMigrationNotice": "Unfinished v5.2 edit was committed as a draft. In v5.3, edits no longer destroy validated snapshots — use «Open for editing» to create a working copy.",
   "wcStorageQuotaExceeded": "Working-copies storage quota reached. Discard old unfinished edits.",
   "cannotEditFinished": "Closed sprints cannot be edited.",
   "unnamedSprint": "(unnamed sprint)",

@@ -201,7 +201,6 @@ test('golden: resumeWorkingDraft — загрузка WC в активный с�
     sprint: {
       sprintId: sprint.sprintId, name: sprint.name, status: sprint.status,
       resourceAnalysis: sprint.resourceAnalysis,
-      legacyFlagsGone: sprint.editingFromHistory === undefined && sprint.historyIdx === undefined,
     },
     analysisItems: roleItems.analysis,
     testingFromHistSnap: roleItems.testing.map(function (i) { return i.issueId; }),

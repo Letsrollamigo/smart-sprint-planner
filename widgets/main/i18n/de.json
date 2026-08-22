@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Schreibgeschützt öffnen",
   "wcGcDiscarded": "Alte Arbeitskopien entfernt: {n}",
   "wcRevalidatedToast": "Snapshot aktualisiert · {level} · Status: {status}",
-  "wcMigrationNotice": "Unfertige v5.2-Bearbeitung wurde als Entwurf festgeschrieben. In v5.3 zerstören Bearbeitungen keine validierten Snapshots mehr — verwenden Sie «Zur Bearbeitung öffnen», um eine Arbeitskopie zu erstellen.",
   "wcStorageQuotaExceeded": "Speicherkontingent für Arbeitskopien erreicht. Verwerfen Sie alte unfertige Bearbeitungen.",
   "cannotEditFinished": "Geschlossene Sprints können nicht bearbeitet werden.",
   "unnamedSprint": "(unbenannter Sprint)",

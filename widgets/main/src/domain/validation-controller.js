@@ -66,12 +66,7 @@ function doValidateRole(rk, deps) {
           /* Диаг после snapshot: что в _history для этой роли? */
           var _diagSnap = deps.state.getHistory().find(function(h){ return h && h.sprintId === s2.sprintId + '_' + rk; });
           diag('[VALIDATE-COMPOSITION] role='+rk+' after snap: _history.status='+(_diagSnap?_diagSnap.status:'NOT_FOUND')+' _sprint.status='+s2.status, 'info');
-          /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy.
-             Здесь — общая очистка legacy-полей (на случай миграции из v5.2.0). */
-          if (s2) {
-            delete s2.editingFromHistory;   /* #69 строка 27 шаг 1: не писать `false` — ключ deprecated */
-            delete s2.historyIdx;
-          }
+          /* v5.3.0: working copy commit очищает _activeWorkingDraftKey внутри _commitWorkingCopy. */
           deps.state.setActiveWorkingDraftKey(null);
           if (typeof deps.hideWorkingCopyBanner === 'function') deps.hideWorkingCopyBanner();
           var editBanner = document.getElementById('editHistBanner');

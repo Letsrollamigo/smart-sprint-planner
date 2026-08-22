@@ -546,7 +546,6 @@
   "wcMultiTabReadonly": "Salt okunur olarak aç",
   "wcGcDiscarded": "Eski çalışma kopyaları kaldırıldı: {n}",
   "wcRevalidatedToast": "Anlık görüntü güncellendi · {level} · durum: {status}",
-  "wcMigrationNotice": "Bitmemiş v5.2 düzenlemesi taslak olarak kaydedildi. v5.3'te düzenlemeler artık doğrulanmış anlık görüntüleri yok etmiyor — çalışma kopyası oluşturmak için «Düzenleme için aç»ı kullanın.",
   "wcStorageQuotaExceeded": "Çalışma kopyası depolama kotası dolu. Eski bitmemiş düzenlemeleri atın.",
   "cannotEditFinished": "Kapalı sprintler düzenlenemez.",
   "unnamedSprint": "(adsız sprint)",

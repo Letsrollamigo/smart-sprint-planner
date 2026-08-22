@@ -109,10 +109,6 @@ function resumeWorkingDraft(key, idx, deps) {
   deps.allRoles.forEach(function(r){
     if (draft.sprint[r.resKey] != null) sprint[r.resKey] = draft.sprint[r.resKey];
   });
-  /* Legacy флаги стираем — больше не нужны */
-  delete sprint.editingFromHistory;
-  delete sprint.historyIdx;
-
   var roleItems = deps.state.getRoleItems();
   roleItems[rk] = (draft.items || []).map(function(it){
     var copy = {};

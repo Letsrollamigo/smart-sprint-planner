@@ -763,7 +763,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.22.0';
+  var APP_VERSION = '3.23.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1194,34 +1194,6 @@
       diag('exportConflictToExcel failed: '+(e&&e.message?e.message:e), 'err');
       try { toast(T('toastXlsxErr')); } catch(_){}
     }
-  }
-
-  /* v5.2 → v5.3 миграция: однократный commit-as-PLANNING для in-flight правки.
-     #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): маркер settings.migratedTo больше не
-     пишем (читать — можно до шага 2); legacy-ключи editingFromHistory/historyIdx/migratedTo
-     стрипаем из загруженных блобов безусловно — иначе они вечно уезжали бы эхом в POST
-     (блобы шлются целиком). Шаг 2 (≥ v3.23.0): серверная миграция delete + снятие из
-     whitelist'ов — тогда эта функция уходит целиком. */
-  function migrateEditingFromHistoryV52() {
-    if (!_settings) return;
-    if (_settings.migratedTo !== '5.3' && _sprint && _sprint.editingFromHistory === true && _sprint.historyIdx != null) {
-      var idx = _sprint.historyIdx;
-      var existingSnap = _history[idx];
-      if (existingSnap && existingSnap.roleKey) {
-        diag('v5.2→v5.3 migration: committing in-flight edit as PLANNING for '+existingSnap.sprintId, 'info');
-        try { saveRoleHistorySnapshot(existingSnap.roleKey, idx); } catch(e){
-          diag('migration save failed: '+(e&&e.message?e.message:e), 'err');
-        }
-      } else {
-        diag('v5.2→v5.3 migration: stale historyIdx='+idx+', no snap found, skipping commit', 'warn');
-      }
-      delete _sprint.editingFromHistory;
-      delete _sprint.historyIdx;
-      apiPost('sprint-data', { sprint: _sprint, roleItems: _roleItems }).catch(function(){});
-      setTimeout(function(){ try { toast(T('wcMigrationNotice'), 'info'); } catch(_){} }, 500);
-    }
-    if (_sprint) { delete _sprint.editingFromHistory; delete _sprint.historyIdx; }
-    delete _settings.migratedTo;
   }
 
   /* Debounce-персист, dirty-механика и WC-sync — в draft-store.js
@@ -2292,7 +2264,6 @@
       workingDraftsLoadFromBackend: _workingDraftsLoadFromBackend,
       reconcileHasWorkingCopyFlag: reconcileHasWorkingCopyFlag,
       gcWorkingDrafts: gcWorkingDrafts,
-      migrateEditingFromHistoryV52: migrateEditingFromHistoryV52,
       state: {
         getHost:               function () { return _host; },
         getYtBase:             function () { return _ytBase; },

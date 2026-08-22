@@ -172,7 +172,7 @@ function parseBodyOrReject(ctx, whitelist) {
 }
 
 // Белые списки ключей верхнего уровня
-var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'items', 'baseRev']; /* #56-4 — optimistic lock */
+var ALLOWED_SPRINT_DATA_KEYS = ['sprint', 'roleItems', 'settings', 'baseRev']; /* #56-4 — optimistic lock; `items` снят в v3.23.0 (#69 строка 27 шаг 2) */
 var ALLOWED_HISTORY_KEYS     = ['history', 'baseRev']; /* R6 — optimistic lock */
 // v5.0.3 — серверный draft (черновик в backend, поскольку YouTrack iframe
 // sandboxed без allow-same-origin, localStorage недоступен).
@@ -193,8 +193,6 @@ var ALLOWED_SPRINT_KEYS = [
   'dateEnd',
   'updatedBy',
   'updatedAt',
-  'editingFromHistory',
-  'historyIdx',
   'sprintFieldVal',
   'versionFieldVal',
   'personalPlanning',
@@ -313,12 +311,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.6.0';
+var CURRENT_PLUGIN_VERSION = '3.23.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.22.0';
+var APP_VERSION = '3.23.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -434,6 +432,8 @@ function migrateSettingsObj(settings) {
   }
   // (3) defensive: снести любой ключ вне whitelist (будущие неизвестные сироты не
   //     должны бриковать save). ПОСЛЕ (1), чтобы значения уже спаслись в canonical.
+  //     v3.23.0 (#69 строка 27 шаг 2): так же уходит `migratedTo` (снят с whitelist) —
+  //     и из основного блоба, и из history[].settings (migrateHistoryArr зовёт сюда).
   var allKeys = Object.keys(settings);
   for (i = 0; i < allKeys.length; i++) {
     if (ALLOWED_SETTINGS_KEYS.indexOf(allKeys[i]) < 0) delete settings[allKeys[i]];
@@ -478,7 +478,20 @@ function migrateHistoryArr(h) {
    на _sprint/_history[i] при чтении), НИКОГДА не легитимен в сторадже. Без стрипа
    legacy-проект с orphan-gantt данными брикал ВСЕ сейвы: strict-whitelist отвергал
    ключ → запись не проходила → gantt не вычищался → детект срабатывал вечно. */
+/* v3.23.0 (#69 строка 27, шаг 2 — hard-removal): editingFromHistory/historyIdx (спринт) и
+   migratedTo (settings, в т.ч. встроенные в history-запись) сняты с whitelist'ов. Миграция
+   чистит их на READ, но хранимые блобы переписываются только при следующем сейве клиента,
+   а assignerSync / bulk-POST working-drafts / confirm со stale-вкладки несут их на WRITE
+   мимо миграции — silent strip здесь (тот же класс, что gantt v6.1.0). */
 var DEPRECATED_HISTORY_SNAP_KEYS = ['gantt', '_orphanGanttIssues'];
+var DEPRECATED_SETTINGS_KEYS     = ['migratedTo'];
+function stripDeprecatedSettingsKeys(s) {
+  if (!s || typeof s !== 'object') return s;
+  for (var j = 0; j < DEPRECATED_SETTINGS_KEYS.length; j++) {
+    if (Object.prototype.hasOwnProperty.call(s, DEPRECATED_SETTINGS_KEYS[j])) delete s[DEPRECATED_SETTINGS_KEYS[j]];
+  }
+  return s;
+}
 function stripDeprecatedHistoryKeys(h) {
   if (!Array.isArray(h)) return h;
   for (var i = 0; i < h.length; i++) {
@@ -488,11 +501,11 @@ function stripDeprecatedHistoryKeys(h) {
       var dk = DEPRECATED_HISTORY_SNAP_KEYS[j];
       if (Object.prototype.hasOwnProperty.call(rec, dk)) delete rec[dk];
     }
+    stripDeprecatedSettingsKeys(rec.settings);
   }
   return h;
 }
-var DEPRECATED_SPRINT_KEYS = DEPRECATED_HISTORY_SNAP_KEYS;   /* v3.2.1 — тот же набор, см. коммент выше */
-var DEPRECATED_SPRINT_WRITE_KEYS = ['editingFromHistory', 'historyIdx'];   /* #69 строка 27 шаг 1 — soft-deprecation, см. _validateSprintBody */
+var DEPRECATED_SPRINT_KEYS = DEPRECATED_HISTORY_SNAP_KEYS.concat(['editingFromHistory', 'historyIdx']);   /* v3.2.1 gantt-набор + v3.23.0 legacy v5.2 */
 function stripDeprecatedSprintKeys(s) {
   if (!s || typeof s !== 'object') return s;
   for (var j = 0; j < DEPRECATED_SPRINT_KEYS.length; j++) {
@@ -522,6 +535,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '1.4.2', to: '3.6.0',
     migrate: function (snap) { /* no-op: свёрнутая no-op-цепочка; снапшоты shape не меняли */ },
     note: 'v3.6.0: collapsed no-op chain 1.6.0→2.14.0 (14 steps) + settings hideDiagLogUi hard-removal; snapshot shape unchanged'
+  },
+  /* v3.23.0 — #69 строка 27, шаг 2 (hard-removal по лестнице после soft-deprecation v3.22.0):
+     editingFromHistory/historyIdx (legacy v5.2 «правка из истории», заменены working copy
+     v5.3) удаляются из снимков спринта; migratedTo уходит с settings-whitelist'а (чистит
+     migrateSettingsObj шаг 3 — и в history[].settings через migrateHistoryArr). */
+  { from: '3.6.0', to: '3.23.0',
+    migrate: function (snap) { delete snap.editingFromHistory; delete snap.historyIdx; },
+    note: 'v3.23.0: hard-removal editingFromHistory/historyIdx (sprint) + settings migratedTo'
   }
 ];
 
@@ -695,18 +716,6 @@ function _validateSprintBody(sprint, strict) {
   if (!assertNum(sprint.dateStart))  return false;
   if (!assertNum(sprint.dateEnd))    return false;
   if (!assertNum(sprint.updatedAt))  return false;
-  if (sprint.historyIdx !== undefined && sprint.historyIdx !== null && !assertNum(sprint.historyIdx)) return false;
-  if (sprint.editingFromHistory !== undefined && sprint.editingFromHistory !== null
-      && typeof sprint.editingFromHistory !== 'boolean') return false;
-  /* #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): editingFromHistory/historyIdx — legacy
-     v5.2 (фронт их больше не пишет и стрипает на загрузке); на WRITE принимаем, но помечаем
-     в migrationLog. Шаг 2 (≥ v3.23.0): миграция delete + снятие из whitelist + SCHEMA_BUMP. */
-  if (strict) {
-    DEPRECATED_SPRINT_WRITE_KEYS.forEach(function (dk) {
-      if (sprint[dk] !== undefined) _appendMigrationLog(sprint, { at: Date.now(), level: 'SCHEMA_DEPRECATION_WARN',
-        fromVersion: sprint.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: dk });
-    });
-  }
   for (var j = 0; j < keys.length; j++) {
     var sk = keys[j];
     if (/^(resource|remain)[A-Za-z0-9_]*$/.test(sk)) {
@@ -901,8 +910,6 @@ var ALLOWED_SETTINGS_KEYS = [
   'cascadeManualEstTag',
   // Метаданные
   'savedAt',
-  // v5.3.0 — миграционный флаг (commit-as-PLANNING для in-flight v5.2.0 правок)
-  'migratedTo',
   /* v1.7.0 D128 — State Rollup: parent.State ← min(children.State).
      stateRollupEnabled       — master toggle, default false.
      stateRollupOrder         — ordered array of state names (least → most progressed).
@@ -1265,9 +1272,6 @@ function validateSettings(settings) {
       && !isStrArr(settings.cascadeLevel2Values, 200, 50)) return false;
   if (settings.cascadeLevel3Values !== undefined && settings.cascadeLevel3Values !== null
       && !isStrArr(settings.cascadeLevel3Values, 200, 50)) return false;
-  // v5.3.0 — migratedTo: строка-маркер версии миграции (например '5.3')
-  if (settings.migratedTo !== undefined && settings.migratedTo !== null
-      && (typeof settings.migratedTo !== 'string' || settings.migratedTo.length > 20)) return false;
   /* v1.7.0 D128 — State Rollup validation. */
   // stateRollupOrder: array<string ≤200>, max 50, all unique
   if (settings.stateRollupOrder !== undefined && settings.stateRollupOrder !== null) {
@@ -2316,17 +2320,7 @@ var ENDPOINTS = [
         var roleItems = parseJson(getProp(ctx, 'ssp_roleitems'), null);
         var settings  = parseJson(getProp(ctx, 'ssp_settings'),  null);
 
-        // Обратная совместимость: если roleItems нет, читаем старый ssp_items
-        if (!roleItems) {
-          var oldItems = parseJson(getProp(ctx, 'ssp_items'), []);
-          if (oldItems && oldItems.length > 0) {
-            var firstRole = (settings && settings.activeRoles && settings.activeRoles[0]) || 'devPlatform';
-            roleItems = {};
-            roleItems[firstRole] = oldItems;
-          } else {
-            roleItems = {};
-          }
-        }
+        if (!roleItems) roleItems = {};   /* v3.23.0 — READ-fallback legacy ssp_items снят (#69 строка 27 шаг 2) */
 
         // Миграция legacy русских строк → латинские enum-коды (read-time normalization).
         // Storage может содержать данные от v4.5.x — клиент должен получать только латинские.
@@ -2359,7 +2353,7 @@ var ENDPOINTS = [
     },
 
     // ── POST /sprint-data ────────────────────────────────────────────────────
-    // editor: sprint / roleItems / items
+    // editor: sprint / roleItems
     // settingsManager: settings
     // validator: ?action=validate
     {
@@ -2590,6 +2584,7 @@ var ENDPOINTS = [
           // #22 — settings: settings-менеджер (полностью) ИЛИ планировочный менеджер
           // (планировочный тир; admin-тир ключи preserve-merge'атся из stored).
           if (!authzGuard(ctx, 'settingsOrPlanning')) return;
+          stripDeprecatedSettingsKeys(body.settings);   /* v3.23.0 — stale-вкладка до F5 несёт migratedTo */
           if (!validateSettings(body.settings)) {
             badRequest(ctx, 'invalid_settings_structure');
             return;
@@ -2639,15 +2634,7 @@ var ENDPOINTS = [
           }
         }
 
-        if (body.items !== undefined) {
-          /* #69 строка 27, шаг 1 (v3.22.0, soft-deprecation): путь записи legacy ssp_items
-             закрыт — вызывающих у него не осталось (фронт шлёт roleItems с v5.x). Тело
-             принимаем (совместимость старых REST-клиентов), но не пишем; READ-fallback в
-             GET sprint-data остаётся до шага 2 (≥ v3.23.0: снятие ключа из entity-extensions). */
-          warnings.push('deprecated:items_ignored');
-        }
-
-        var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev' && k !== 'items'; }) };
+        var resp = { success: true, saved: Object.keys(body).filter(function (k) { return k !== 'baseRev'; }) };
         if (newSlotRev !== null) resp.rev = newSlotRev;   /* #56-4 — фронт синхронизирует _slotRev */
         if (enrichInfo) resp.enriched = enrichInfo;       /* #67 путь 3 — {count, skipped} для агента */
         if (warnings.length) resp.warnings = warnings;
@@ -3155,7 +3142,10 @@ var ENDPOINTS = [
           // v1.6.0 D125 — stamp before validate+persist (defense-in-depth: nested sprint too).
           if (d && typeof d === 'object') {
             d.pluginVersion = CURRENT_PLUGIN_VERSION;
-            if (d.sprint && typeof d.sprint === 'object') d.sprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+            if (d.sprint && typeof d.sprint === 'object') {
+              stripDeprecatedSprintKeys(d.sprint);   /* v3.23.0 — bulk-flush несёт и старые/чужие драфты с legacy-ключами */
+              d.sprint.pluginVersion = CURRENT_PLUGIN_VERSION;
+            }
           }
           if (!validateWorkingDraftForWrite(d)) {
             badRequest(ctx, 'invalid_working_draft:' + k);

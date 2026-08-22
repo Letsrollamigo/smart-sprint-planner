@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Otwórz tylko do odczytu",
   "wcGcDiscarded": "Stare kopie robocze usunięte: {n}",
   "wcRevalidatedToast": "Migawka zaktualizowana · {level} · status: {status}",
-  "wcMigrationNotice": "Niezakończona edycja v5.2 zatwierdzona jako szkic. W v5.3 edycje już nie niszczą zwalidowanych migawek — użyj „Otwórz do edycji”, aby utworzyć kopię roboczą.",
   "wcStorageQuotaExceeded": "Osiągnięto kwotę magazynu kopii roboczych. Odrzuć stare niezakończone edycje.",
   "cannotEditFinished": "Zamknięte sprinty nie mogą być edytowane.",
   "unnamedSprint": "(sprint bez nazwy)",

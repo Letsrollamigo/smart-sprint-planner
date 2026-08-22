@@ -215,10 +215,7 @@ test('golden: doValidateRole — успешный флоу (CONFIRMED + snapshot
   const api = stubApiPost(gm);
   const hooks = stubValidateHooks(gm);
 
-  /* legacy-поля редактирования истории + активная WC — успех обязан их зачистить */
-  const sprint = gm.get('_sprint');
-  sprint.editingFromHistory = true;
-  sprint.historyIdx = 2;
+  /* активная WC — успех обязан её сбросить (legacy-поля v5.2 сняты сервером в v3.23.0) */
   gm.set({ _activeWorkingDraftKey: 'gm-wc-key' });
 
   await gm.call('doValidateRole', 'analysis');
@@ -229,8 +226,6 @@ test('golden: doValidateRole — успешный флоу (CONFIRMED + snapshot
     snapshotArgs: hooks.snapshotArgs,
     isValidator: gm.get('_isValidator'),
     status: after.status,
-    editingFromHistory: after.editingFromHistory,
-    historyIdxPresent: 'historyIdx' in after,
     activeWorkingDraftKey: gm.get('_activeWorkingDraftKey'),
     hideWcBanner: hooks.hideWcBanner,
     renderHeader: hooks.renderHeader,

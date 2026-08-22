@@ -12,9 +12,9 @@
  *   • loadAllData — apiGet('sprint-data') → _settings/_sprint/_roleItems/
  *     _enableDebugLog с defensive-миграцией (migrateStatus/migrateInc),
  *     url-репэйр (/null/ → _ytBase), strip item.sprintId, синтез пустого
- *     _sprint (uid), legacy items[] → _roleItems.analysis, orphanGanttIssues;
+ *     _sprint (uid), orphanGanttIssues;
  *     затем apiGet('history') → _history (миграция + orphanGanttBySprintId);
- *     затем _workingDraftsLoadFromBackend + reconcile/gc/migrateEditing-хвост;
+ *     затем _workingDraftsLoadFromBackend + reconcile/gc-хвост;
  *   • _refreshFeatureStatusBar — 6 chip'ов #widgetStatusBar по флагам _settings.
  *
  * Контракты — через выживающие entry-points (loadMe/loadProjectFields/
@@ -76,7 +76,6 @@ function stubTailHooks(gm) {
     _workingDraftsLoadFromBackend: rec('wdLoad'),
     reconcileHasWorkingCopyFlag: rec('reconcile'),
     gcWorkingDrafts: rec('gc'),
-    migrateEditingFromHistoryV52: rec('migrateEditing'),
   });
   return calls;
 }
@@ -249,28 +248,6 @@ test('loadAllData — пустой sprint синтезируется (uid + PLAN
     dateStart: sprint.dateStart,
     dateEnd: sprint.dateEnd,
     status: sprint.status,
-  });
-});
-
-test('loadAllData — legacy items[] → _roleItems.analysis', async () => {
-  const { gm } = createHost();
-  stubTailHooks(gm);
-  gm.set({ _ytBase: 'http://yt.local' });
-  stubApiGet(gm, {
-    'sprint-data': {
-      success: true,
-      settings: {},
-      sprint: { sprintId: 'gm-legacy', status: 'ALLOCATED' },
-      items: [
-        { issueId: 'L-1', title: 'legacy', inclusionStatus: 'INC_PLANNED', url: 'http://yt.local/issue/L-1' },
-      ],
-    },
-    'history': { success: true, history: [] },
-  });
-  await gm.call('loadAllData');
-  await settle(6);
-  checkJsonSnapshot('data-loaders-loadAllData-legacyItems', {
-    roleItems: gm.get('_roleItems'),
   });
 });
 

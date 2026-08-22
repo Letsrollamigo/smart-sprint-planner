@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.23.0] — 2026-08-22
+
+> **"Simplification" epic, slice R3 "Ladders", step 2 — row 27 of the audit list (hard removal).** Second rung of the deprecation ladder after the v3.22.0 soft-deprecation. No user-visible behaviour change; the data schema narrows and the v5.2 compatibility code goes away.
+
+### Removed
+
+- **`editingFromHistory` / `historyIdx`** (sprint snapshot) and **`migratedTo`** (settings, incl. the copies embedded in history records) — removed from the whitelists (`schema/whitelists.json` → `ALLOWED_SPRINT_KEYS`; `ALLOWED_SETTINGS_KEYS` + validator). Schema marker `CURRENT_PLUGIN_VERSION` → `3.23.0`, `SCHEMA_MIGRATIONS` entry `3.6.0 → 3.23.0` (`delete` of the sprint keys; `migratedTo` is cleaned by `migrateSettingsObj` — also inside `history[].settings` via `migrateHistoryArr`), `SCHEMA_BUMP` in `migrationLog` on the first read of every snapshot. On WRITE the keys are silently stripped (the `gantt` precedent from v6.1.0): the migration is not persisted, and `assignerSync`, the bulk `working-drafts` POST and settings-save/confirm from a stale tab carry them past it — `stripDeprecatedSprintKeys` extended, `stripDeprecatedSettingsKeys` added (settings body + `history[].settings` inside `stripDeprecatedHistoryKeys`).
+- **`ssp_items`** — declaration removed from `entity-extensions.json`, the READ fallback in `GET sprint-data` and the frontend `r.items` branch deleted; `items` removed from the top-level body list of `POST sprint-data` (silently dropped; the step-1 warning is gone). Verified on both test stands: a project with a previously stored value of the removed extension property reads normally.
+- Frontend: `migrateEditingFromHistoryV52` (core.js) with its `loadAllData` call, the `wcMigrationNotice` toast (×15 locales), the `migratedTo` strip in `_loadSettingsOnly`, the defensive legacy-key `delete`s in `validation-controller`/`working-copy`; `core.js` 4546 → 4518 LOC, `backend-core.js` 3191 → 3182.
+- Fixture `tests/fixtures/snapshots/3.23.0/`; compat regression on `3.21.0` (the fixture carrying legacy keys) and the D109 gate on the production fixture (`migratedTo` ×9 in embedded settings) green; the step-1 tests rewritten for step 2 (`tests/unit/simplify-69-r3.test.js`), goldens `validate-role-success`/`working-copy-resume` without legacy fields.
+
+---
+
 ## [3.22.0] — 2026-08-22
 
 > **"Simplification" epic, slice R3 "Ladders", step 1 — rows 21 and 27 of the audit list.** A schema slice on the deprecation ladder (soft-deprecation now → hard removal not before v3.23.0).

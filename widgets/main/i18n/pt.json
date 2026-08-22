@@ -546,7 +546,6 @@
   "wcMultiTabReadonly": "Abrir apenas para leitura",
   "wcGcDiscarded": "Cópias de trabalho antigas removidas: {n}",
   "wcRevalidatedToast": "Instantâneo atualizado · {level} · estado: {status}",
-  "wcMigrationNotice": "Edição v5.2 não terminada confirmada como rascunho. Em v5.3, as edições já não destroem instantâneos validados — use «Abrir para editar» para criar uma cópia de trabalho.",
   "wcStorageQuotaExceeded": "Quota de armazenamento de cópias de trabalho atingida. Descarte edições antigas não terminadas.",
   "cannotEditFinished": "Sprints encerrados não podem ser editados.",
   "unnamedSprint": "(sprint sem nome)",

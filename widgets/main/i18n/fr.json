@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Ouvrir en lecture seule",
   "wcGcDiscarded": "Anciennes copies de travail supprimées : {n}",
   "wcRevalidatedToast": "Instantané mis à jour · {level} · statut : {status}",
-  "wcMigrationNotice": "Modification v5.2 non terminée validée comme brouillon. En v5.3, les modifications ne détruisent plus les instantanés validés — utilisez « Ouvrir pour modifier » pour créer une copie de travail.",
   "wcStorageQuotaExceeded": "Quota de stockage des copies de travail atteint. Abandonnez les anciennes modifications non terminées.",
   "cannotEditFinished": "Les sprints clôturés ne peuvent pas être modifiés.",
   "unnamedSprint": "(sprint sans nom)",

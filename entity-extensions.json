@@ -6,7 +6,6 @@
         "ssp_settings":   { "type": "string" },
         "ssp_sprint":     { "type": "string" },
         "ssp_roleitems":  { "type": "string" },
-        "ssp_items":      { "type": "string" },
         "ssp_history":    { "type": "string" },
         "ssp_history_rev":  { "type": "string" },
         "ssp_releases_rev": { "type": "string" },

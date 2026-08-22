@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Otevřít pouze pro čtení",
   "wcGcDiscarded": "Odstraněno starých pracovních kopií: {n}",
   "wcRevalidatedToast": "Snímek aktualizován · {level} · stav: {status}",
-  "wcMigrationNotice": "Nedokončená úprava v5.2 byla potvrzena jako koncept. V5.3 úpravy již neničí validované snímky — použijte «Otevřít k úpravě» k vytvoření pracovní kopie.",
   "wcStorageQuotaExceeded": "Dosažena kvóta úložiště pracovních kopií. Zahoďte staré nedokončené úpravy.",
   "cannotEditFinished": "Uzavřené sprinty nelze upravovat.",
   "unnamedSprint": "(sprint bez názvu)",

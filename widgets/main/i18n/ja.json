@@ -546,7 +546,6 @@
   "wcMultiTabReadonly": "読み取り専用で開く",
   "wcGcDiscarded": "古い作業コピーを削除: {n}",
   "wcRevalidatedToast": "スナップショット更新済 · {level} · ステータス: {status}",
-  "wcMigrationNotice": "未完了のv5.2編集はドラフトとしてコミットされました。v5.3では、編集が検証済みスナップショットを破壊しなくなりました — 「編集用に開く」を使用して作業コピーを作成してください。",
   "wcStorageQuotaExceeded": "作業コピーストレージのクォータに達しました。古い未完了の編集を破棄してください。",
   "cannotEditFinished": "クローズされたスプリントは編集できません。",
   "unnamedSprint": "(名前のないスプリント)",

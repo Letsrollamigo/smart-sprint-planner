@@ -4,8 +4,8 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4598,
-      "locBudget": 4551,
+      "loc": 4518,
+      "locBudget": 4520,
       "stateBaseline": 72,
       "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
@@ -87,8 +87,8 @@
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
     "core": {
-      "loc": 3195,
-      "locBudget": 3234,
+      "loc": 3182,
+      "locBudget": 3188,
       "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +33: два аддитивных settings-ключа — standupHiddenStates (зеркало контракта standupDoneStates) и standupStateRoles (контракт 1:1 с backlogZones) в SETTINGS_WHITELIST + validateSettings. Schema-движок настроек по определению BE2 живёт в ядре. v3.18.0 (#67 остаток) — осознанный рост: H5 ветка ?action=snapshot (upsert одной записи, ~50 LOC с комментариями) + псевдороль editorOrValidator в authzGuard + H8 stampHistoryAudit (серверные аудит-штампы истории) + H9 syncAclMirror (вынос тела sync-acl в хелпер + вызов из settings-save) + хук обогащения (путь 3, ~12 строк — сам обогатитель в backend-issuefields). Authz-движок и ?action-ветки существующих endpoints по определению BE2 живут в ядре. v3.17.0 (#67) — осознанный +17: фиксы authz-аудита в существующих ветках ядра (H1 гейт по эффекту на очистку истории основной веткой POST /history; H2 снятие validate-байпаса editor-гейта на sprint:null; H4 editorLogin из хранилища; H6 hasOwnProperty-guard). Authz-движок по определению BE2 живёт в ядре. v3.16.1 (#66) — осознанный +3: вырез historyManager из байпаса #51 в isHistoryManager + раннем admin-return authzGuard (комментарии; кода +0 строк, изменены существующие). Authz-движок по определению BE2 живёт в ядре. v3.15.1 — осознанный +5: гейт allowOverlimitPlanning + скоуп ?role= в overlimit-warn validate (правка существующего блока ветки sprint-data ядра, не новый endpoint/домен; ОС прода внешней команды). Прошлое: v3.2.0 APP_VERSION из manifest.json — +6 (шапка показывает фактически установленную версию, вкл. temp-деплои; литерал = fallback). #50 v3.2.0 — осознанный +6 (2983→2992 бюджет): reportingTerminalPolicy в ALLOWED_SETTINGS_KEYS + ADMIN_TIER_SETTINGS_KEYS + enum-валидатор (settings-ключи ведутся в ядре — это не endpoint/домен). Прошлое: #40 settings — осознанный +5: autoForecastEnabled в SETTINGS_WHITELIST (планировочный тир, 3 строки коммента) + boolKeys. #53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
     },
     "modules": {
@@ -302,7 +302,7 @@
     "data/data-loaders.js": {
       "layer": "domain",
       "domain": "data/data-loaders",
-      "loc": 245,
+      "loc": 236,
       "locBudget": 254,
       "state": [
         "api"
@@ -511,7 +511,7 @@
     "domain/project-nav.js": {
       "layer": "domain",
       "domain": "domain/project-nav",
-      "loc": 350,
+      "loc": 348,
       "locBudget": 350,
       "state": [
         "_serverLastSynced"
@@ -715,7 +715,7 @@
     "domain/validation-controller.js": {
       "layer": "domain",
       "domain": "domain/validation-controller",
-      "loc": 256,
+      "loc": 251,
       "locBudget": 286,
       "state": [],
       "publishes": [
@@ -725,7 +725,7 @@
     "domain/working-copy.js": {
       "layer": "domain",
       "domain": "domain/working-copy",
-      "loc": 546,
+      "loc": 543,
       "locBudget": 546,
       "state": [],
       "publishes": [

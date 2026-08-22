@@ -73,7 +73,6 @@
     "diagVis",
     "wdLoad",
     "reconcile",
-    "gc",
-    "migrateEditing"
+    "gc"
   ]
 }

@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "읽기 전용으로 열기",
   "wcGcDiscarded": "이전 작업 사본 제거: {n}",
   "wcRevalidatedToast": "스냅샷 업데이트됨 · {level} · 상태: {status}",
-  "wcMigrationNotice": "미완료 v5.2 편집이 초안으로 커밋되었습니다. v5.3에서는 편집이 더 이상 검증된 스냅샷을 파괴하지 않습니다 — 「편집을 위해 열기」를 사용하여 작업 사본을 만드세요.",
   "wcStorageQuotaExceeded": "작업 사본 저장소 할당량에 도달했습니다. 이전 미완료 편집을 폐기하세요.",
   "cannotEditFinished": "종료된 스프린트는 편집할 수 없습니다.",
   "unnamedSprint": "(이름 없는 스프린트)",

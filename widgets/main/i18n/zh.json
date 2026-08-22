@@ -546,7 +546,6 @@
   "wcMultiTabReadonly": "以只读方式打开",
   "wcGcDiscarded": "已删除旧工作副本: {n}",
   "wcRevalidatedToast": "快照已更新 · {level} · 状态: {status}",
-  "wcMigrationNotice": "未完成的 v5.2 编辑已作为草稿提交。在 v5.3 中,编辑不再破坏已验证的快照 — 使用「打开以编辑」创建工作副本。",
   "wcStorageQuotaExceeded": "已达到工作副本存储配额。丢弃旧的未完成编辑。",
   "cannotEditFinished": "已关闭的冲刺无法编辑。",
   "unnamedSprint": "(未命名冲刺)",

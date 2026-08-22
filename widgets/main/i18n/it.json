@@ -547,7 +547,6 @@
   "wcMultiTabReadonly": "Apri in sola lettura",
   "wcGcDiscarded": "Vecchie copie di lavoro rimosse: {n}",
   "wcRevalidatedToast": "Istantanea aggiornata · {level} · stato: {status}",
-  "wcMigrationNotice": "Modifica v5.2 non terminata confermata come bozza. In v5.3, le modifiche non distruggono più le istantanee convalidate — usare «Apri per modificare» per creare una copia di lavoro.",
   "wcStorageQuotaExceeded": "Quota di archiviazione delle copie di lavoro raggiunta. Scartare le vecchie modifiche non terminate.",
   "cannotEditFinished": "Gli sprint chiusi non possono essere modificati.",
   "unnamedSprint": "(sprint senza nome)",

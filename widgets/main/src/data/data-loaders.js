@@ -143,15 +143,7 @@
         /* v1.3.1 — обновить status-bar активных модулей сразу после load. */
         deps.refreshFeatureStatusBar();
         st.setSprint(r.sprint || null);
-        // roleItems хранится в r.roleItems (новый формат)
-        if (r.roleItems) {
-          st.setRoleItems(r.roleItems);
-        } else if (r.items && Array.isArray(r.items)) {
-          // Обратная совместимость: все items попадают в 'analysis' (первая роль)
-          st.setRoleItems({ analysis: r.items });
-        } else {
-          st.setRoleItems({});
-        }
+        st.setRoleItems(r.roleItems || {});   /* v3.23.0 — legacy `items` (ssp_items) снят, #69 строка 27 шаг 2 */
         /* v5.0.3 диагностика — структура _roleItems после load */
         try {
           var ri = st.getRoleItems();
@@ -231,10 +223,9 @@
       /* v5.3.0 — параллельно с историей: working copies (immutable snapshots model). */
       return deps.workingDraftsLoadFromBackend().then(function () {
         /* После загрузки и _history, и _workingDrafts — выровнять флаги hasWorkingCopy
-           и удалить orphan/stale (>30 дней) drafts. Идёт ДО миграции v5.2→v5.3. */
+           и удалить orphan/stale (>30 дней) drafts. */
         try { deps.reconcileHasWorkingCopyFlag(); } catch (e) { deps.diag('reconcile failed: ' + e, 'err'); }
         try { deps.gcWorkingDrafts(); }            catch (e) { deps.diag('gc failed: ' + e, 'err'); }
-        try { deps.migrateEditingFromHistoryV52(); } catch (e) { deps.diag('v5.2 migration failed: ' + e, 'err'); }
       });
     }).catch(function (e) { deps.diag('loadAllData ERR: ' + e, 'err'); });
   }

@@ -4,8 +4,7 @@
     "sprintId": "gm-hist-2026-05",
     "name": "WC renamed",
     "status": "PLANNING",
-    "resourceAnalysis": 1800,
-    "legacyFlagsGone": true
+    "resourceAnalysis": 1800
   },
   "analysisItems": [
     {

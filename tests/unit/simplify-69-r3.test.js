@@ -1,14 +1,15 @@
 'use strict';
 
-/* #69 R3 «Лестницы» (v3.22.0) — регресс-покрытие двух строк листа корректировок.
+/* #69 R3 «Лестницы» (v3.22.0 шаг 1 → v3.23.0 шаг 2) — регресс-покрытие двух строк листа корректировок.
  *
  *   Строка 21 — user-prefs (backend-userprefs.js, global-only): единый блоб предпочтений
  *               пользователя User.extensionProperties.ssp_user_prefs — allowlist ключей,
  *               cap значения/блоба, null = удалить, чужой слот недостижим (только currentUser).
- *   Строка 27, шаг 1 — soft-deprecation legacy-ключей: POST sprint-data с `items` принимается,
- *               но ssp_items НЕ пишется (warning + исключение из saved); editingFromHistory/
- *               historyIdx на WRITE принимаются с SCHEMA_DEPRECATION_WARN в migrationLog,
- *               на READ — без отметки.
+ *   Строка 27, шаг 2 (v3.23.0, hard-removal после soft-deprecation v3.22.0): `items` вне
+ *               ALLOWED_SPRINT_DATA_KEYS (молча отброшен), READ-fallback ssp_items снят;
+ *               editingFromHistory/historyIdx и settings.migratedTo сняты с whitelist'ов —
+ *               миграция 3.6.0→3.23.0 чистит на READ, silent strip кроет WRITE-пути мимо
+ *               миграции (assignerSync, bulk-POST working-drafts, stale-вкладка settings/history).
  *
  * Запуск: node --test 'tests/unit/simplify-69-r3.test.js'. */
 
@@ -105,7 +106,7 @@ test('user-prefs: allowlist покрывает все safeLs-ключи фрон
   assert.strictEqual(up.mergeUserPrefs({}, { ssp_lang: 'en', nope: 'x' }), null);
 });
 
-/* ── строка 27, шаг 1: soft-deprecation legacy-ключей ───────────────────── */
+/* ── строка 27, шаг 2: hard-removal legacy-ключей ────────────────────────── */
 
 const EP_SPRINT = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'sprint-data');
 const G_EDITOR  = { id: 'g-e', name: 'Editors' };
@@ -130,33 +131,90 @@ function sprintBody(over) {
   }, over || {});
 }
 
-test('шаг 1: POST sprint-data с legacy `items` — принимается, ssp_items НЕ пишется, warning + нет в saved', () => {
+test('шаг 2: POST sprint-data с legacy `items` — ключ молча отброшен (вне ALLOWED_SPRINT_DATA_KEYS), ssp_items не пишется', () => {
   const ctx = mkProjectCtx({ items: [{ issueId: 'SCBT-1' }], sprint: sprintBody() });
   EP_SPRINT.handle(ctx);
   assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
   assert.strictEqual(ctx._props.ssp_items, undefined, 'ssp_items не записан');
-  assert.ok(ctx.response.body.warnings.indexOf('deprecated:items_ignored') >= 0);
+  assert.strictEqual(ctx.response.body.warnings, undefined, 'предупреждения шага 1 больше нет');
   assert.deepStrictEqual(ctx.response.body.saved, ['sprint']);
   assert.ok(ctx._props.ssp_sprint, 'sprint записан как обычно');
 });
 
-test('шаг 1: editingFromHistory/historyIdx на WRITE принимаются, но помечаются SCHEMA_DEPRECATION_WARN', () => {
+test('шаг 2: GET sprint-data без roleItems → {} (READ-fallback ssp_items снят)', () => {
+  const EP_GET = core.ENDPOINTS.find((e) => e.method === 'GET' && e.path === 'sprint-data');
+  const ctx = mkProjectCtx({}, { ssp_items: JSON.stringify([{ issueId: 'SCBT-1' }]), ssp_settings: JSON.stringify({ viewGroups: [G_EDITOR.id], activeRoles: ['analysis'] }) });
+  EP_GET.handle(ctx);
+  assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
+  assert.deepStrictEqual(ctx.response.body.roleItems, {});
+});
+
+test('шаг 2: editingFromHistory/historyIdx на WRITE молча стрипаются (прецедент gantt v6.1.0), без WARN, whitelist их не знает', () => {
+  assert.ok(core.ALLOWED_SPRINT_KEYS.indexOf('editingFromHistory') < 0 && core.ALLOWED_SPRINT_KEYS.indexOf('historyIdx') < 0);
   const ctx = mkProjectCtx({ sprint: sprintBody({ editingFromHistory: false, historyIdx: 2 }) });
   EP_SPRINT.handle(ctx);
   assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
   const stored = JSON.parse(ctx._props.ssp_sprint);
-  const warns = (stored.migrationLog || []).filter((e) => e.level === 'SCHEMA_DEPRECATION_WARN').map((e) => e.key).sort();
-  assert.deepStrictEqual(warns, ['editingFromHistory', 'historyIdx']);
-  assert.strictEqual(stored.editingFromHistory, false, 'шаг 1: ключ ещё хранится (delete — шаг 2)');
+  assert.ok(!('editingFromHistory' in stored) && !('historyIdx' in stored), 'ключей в сторадже нет');
+  assert.ok(!(stored.migrationLog || []).some((e) => e.level === 'SCHEMA_DEPRECATION_WARN'));
+  assert.strictEqual(stored.pluginVersion, '3.23.0');
+  /* прямой strict-валидатор без strip — отвергает как неизвестный ключ */
+  assert.strictEqual(core.validateSprintForWrite(sprintBody({ historyIdx: 1 })), false);
 });
 
-test('шаг 1: validateSprintForRead не помечает deprecated-ключи (только strict/WRITE)', () => {
-  const s = sprintBody({ editingFromHistory: true, historyIdx: 1 });
-  assert.strictEqual(core.validateSprintForRead(s), true);
-  assert.ok(!(s.migrationLog || []).some((e) => e.level === 'SCHEMA_DEPRECATION_WARN'));
-  const w = sprintBody();
-  assert.strictEqual(core.validateSprintForWrite(w), true);
-  assert.ok(!(w.migrationLog || []).length, 'без legacy-ключей записей нет');
+test('шаг 2: assignerSync поверх хранимого спринта ≤v3.21 (editingFromHistory:false в сторадже) — проходит, ключ вычищен', () => {
+  const stored = Object.assign(sprintBody({ editingFromHistory: false, historyIdx: 1 }), { pluginVersion: '3.6.0' });
+  const ctx = mkProjectCtx({ sprint: { personalPlanning: { 'SCBT-1': { assignee: 'user1' } } } }, { ssp_sprint: JSON.stringify(stored) });
+  ctx.request.getParameter = (k) => (k === 'action' ? 'assignerSync' : '');
+  EP_SPRINT.handle(ctx);
+  assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
+  const after = JSON.parse(ctx._props.ssp_sprint);
+  assert.ok(!('editingFromHistory' in after) && !('historyIdx' in after));
+  assert.deepStrictEqual(after.personalPlanning, { 'SCBT-1': { assignee: 'user1' } });
+});
+
+test('шаг 2: миграция на READ — sprint 3.6.0 с legacy-ключами → ключей нет, SCHEMA_BUMP 3.6.0→3.23.0', () => {
+  const s = core.migrateSprintObj(Object.assign(sprintBody({ editingFromHistory: true, historyIdx: 1 }), { pluginVersion: '3.6.0' }));
+  assert.ok(!('editingFromHistory' in s) && !('historyIdx' in s));
+  assert.strictEqual(s.pluginVersion, '3.23.0');
+  assert.deepStrictEqual(s.migrationLog.filter((e) => e.level === 'SCHEMA_BUMP').map((e) => e.fromVersion + '→' + e.toVersion), ['3.6.0→3.23.0']);
+  assert.strictEqual(core.validateSprintForWrite(s), true, 'после миграции проходит strict');
+});
+
+test('шаг 2: migratedTo снят с settings-whitelist — чистится на READ (основной блоб и history[].settings) и на WRITE', () => {
+  assert.ok(core.ALLOWED_SETTINGS_KEYS.indexOf('migratedTo') < 0);
+  const st = core.migrateSettingsObj({ activeRoles: ['analysis'], migratedTo: '5.3' });
+  assert.ok(!('migratedTo' in st));
+  const h = core.migrateHistoryArr([{ sprintId: 'S-1_analysis', roleKey: 'analysis', items: [], pluginVersion: '3.6.0',
+    settings: { activeRoles: ['analysis'], migratedTo: '5.3' } }]);
+  assert.ok(!('migratedTo' in h[0].settings), 'history[].settings вычищен (урок v3.6.0)');
+  assert.strictEqual(core.validateHistoryForWrite(h), true);
+  /* WRITE со stale-вкладки: settings с migratedTo → принимается, ключ не сохранён */
+  const ctx = mkProjectCtx({ settings: { editGroups: [G_EDITOR.id], activeRoles: ['analysis'], migratedTo: '5.3' } });
+  ctx.currentUser.groups = [{ id: 'g-admin', name: 'Admins' }];
+  EP_SPRINT.handle(ctx);
+  assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
+  assert.ok(!('migratedTo' in JSON.parse(ctx._props.ssp_settings)));
+  /* history WRITE (confirm со stale-вкладки замораживает settings с migratedTo) */
+  const EP_HISTORY = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'history');
+  const hctx = mkProjectCtx({ history: [{ sprintId: 'S-1_analysis', name: 'Спринт', roleLabel: 'Аналитика', items: [],
+    settings: { activeRoles: ['analysis'], migratedTo: '5.3' } }] });
+  hctx.currentUser.groups = [G_EDITOR];
+  hctx.request.getParameter = (k) => (k === 'action' ? 'snapshot' : '');
+  EP_HISTORY.handle(hctx);
+  assert.strictEqual(hctx.response.body.success, true, JSON.stringify(hctx.response.body));
+  assert.ok(!('migratedTo' in JSON.parse(hctx._props.ssp_history)[0].settings));
+});
+
+test('шаг 2: bulk-POST working-drafts с legacy-ключами во вложенном sprint (старый/чужой драфт) — принимается, ключи вычищены', () => {
+  const EP_WD = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'working-drafts');
+  const draft = { key: 'S-1_analysis', createdAt: 1, updatedAt: 2, editorLogin: 'user1', editorTabToken: 't', baseSnapshotHash: 'h',
+    sprint: sprintBody({ editingFromHistory: false, historyIdx: 0 }), items: [] };
+  const ctx = mkProjectCtx({ data: { 'S-1_analysis': draft } }, { ssp_settings: JSON.stringify({ validationGroups: [G_EDITOR.id] }) });
+  EP_WD.handle(ctx);
+  assert.strictEqual(ctx.response.body.ok, true, JSON.stringify(ctx.response.body));
+  const saved = JSON.parse(ctx._props.ssp_workdrafts)['S-1_analysis'].sprint;
+  assert.ok(!('editingFromHistory' in saved) && !('historyIdx' in saved));
 });
 
 /* ── строка 21: фронтовый стор infra/user-prefs.js (без localStorage = прод YT 2025.3) ── */

@@ -546,7 +546,6 @@
   "wcMultiTabReadonly": "Megnyitás csak olvasásra",
   "wcGcDiscarded": "Régi munkapéldányok eltávolítva: {n}",
   "wcRevalidatedToast": "Pillanatkép frissítve · {level} · állapot: {status}",
-  "wcMigrationNotice": "Befejezetlen v5.2 szerkesztés vázlatként rögzítve. v5.3-ban a szerkesztések többé nem rombolják az érvényesített pillanatképeket — használja a «Megnyitás szerkesztésre» lehetőséget munkapéldány létrehozásához.",
   "wcStorageQuotaExceeded": "Munkapéldány-tároló kvóta elérve. Vesse el a régi befejezetlen szerkesztéseket.",
   "cannotEditFinished": "Lezárt sprintek nem szerkeszthetők.",
   "unnamedSprint": "(névtelen sprint)",
