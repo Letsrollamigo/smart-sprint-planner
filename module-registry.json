@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "note": "Architecture baseline. LOC-бюджеты ratchet-only-down; state-baseline и layer = контракт. Перегенерация — node scripts/gen-arch-registry.js. Подробно — Spec/ARCH_FITNESS_FUNCTIONS_SPEC.md.",
+    "note": "Architecture baseline. Агрегатные LOC-бюджеты (_meta.budgets, ratchet-only-down по Σ секции; per-module loc — информационный замер); state-baseline и layer = контракт. Перегенерация — node scripts/gen-arch-registry.js (решения переносятся; --reset-budgets пересчитывает бюджеты/baseline). Подробно — Spec/ARCH_FITNESS_FUNCTIONS_SPEC.md.",
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
@@ -9,8 +9,28 @@
       "stateBaseline": 72,
       "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
+    "budgets": {
+      "modules": {
+        "loc": 19309,
+        "locBudget": 21240,
+        "budgetNote": "#69 строка 23 (2026-08-22): 73 per-module бюджета заменены одним агрегатом Σloc секции с полосой 10 % (ratchet only-down по сумме). Поверх: A2 ядро не растёт, A3 fat-count ≤ baseline, D1/D2 полнота реестра."
+      },
+      "jsx": {
+        "loc": 7784,
+        "locBudget": 8563
+      },
+      "backend": {
+        "loc": 1961,
+        "locBudget": 2158
+      },
+      "workflow": {
+        "loc": 1539,
+        "locBudget": 1693
+      }
+    },
     "fatThreshold": 600,
-    "fatCountBaseline": 5,
+    "_fatCountNote": "#69 строка 23 (2026-08-22): fat-count считает modules + react/*.jsx (до этого — только modules); baseline 5→7 = reporting-view.jsx 1486 и settings-form.jsx 928 уже были жирными. v3.2.1 — domain/sprint-controller.js пересёк 600 (615): доснап уходящего PLANNING в doNewSprint (дыра фикса v2.16.6) + .catch persist. Осознанно: багфикс-код по месту жительства. fatCountBaseline 4→5. Прошлое: #50 S8b — pure/reporting-pure.js пересёк 600 (595→640) на движке B1 buildTechDebtRows → 4-й «жирный» (reporting-view domain уже 3-й). Осознанно: reporting-pure легитимно владеет ВСЕМИ pure-движками отчётности (10 функций A1–A10+B1+B3); декомпозиция (вынос B-движков в reporting-b-pure) — отдельный техдолг, если продолжит расти. fatCountBaseline 3→4.",
+    "fatCountBaseline": 7,
     "leafLayers": [
       "infra",
       "pure",
@@ -18,15 +38,17 @@
     ],
     "bridgeLayers": {
       "DATA_LOADERS": "domain",
+      "REPORTING_DATA": "domain",
       "YOUTRACK_API": "domain",
+      "ALLOCSUMMARY_VIEW": "domain",
       "BACKLOG_ASSIGN": "domain",
       "BACKLOG_LOADER": "domain",
       "BACKLOG_VIEW": "domain",
+      "CAPACITY_STORE": "domain",
       "CAPACITY_VIEW": "domain",
       "CURRENTROLE_VIEW": "domain",
       "DASH_SHELL": "domain",
       "DRAFT_STORE": "domain",
-      "EXCEL_EXPORT": "domain",
       "GANTT_VIEW": "domain",
       "HEADER_VIEW": "domain",
       "HISTORY_VIEW": "domain",
@@ -38,8 +60,9 @@
       "REFRESH_CTRL": "domain",
       "RELEASE_CTRL": "domain",
       "RELEASE_PICK": "domain",
+      "RELEASE_ROLLBACK": "domain",
       "RELEASE_STORE": "domain",
-      "RELEASE_VIEW": "domain",
+      "REPORTING_VIEW": "domain",
       "REVALIDATION": "domain",
       "ROLECOMP_VIEW": "domain",
       "SETTINGS_CTRL": "domain",
@@ -47,42 +70,49 @@
       "SPRINT_CTRL": "domain",
       "SPRINT_STORE": "domain",
       "STANDUP_VIEW": "domain",
+      "TAB_ROUTER": "domain",
       "VALIDATION_CTRL": "domain",
       "WORKING_COPY": "domain",
       "I18N__": "i18n",
       "I18N_DICTS__": "i18n",
       "I18N_LANGS__": "i18n",
-      "I18N_PLURAL__": "i18n",
       "I18N_CTRL": "i18n",
       "MODAL_ANCHOR": "infra",
-      "RELEASE_MOUNT": "infra",
       "DP_BRIDGE": "infra",
+      "DIAG_SNAPSHOT": "infra",
       "MODAL_SPECS": "infra",
       "TOAST": "infra",
       "TOAST_RING": "infra",
-      "ICON_HTML": "infra", "BACKLOG_VM_PURE": "pure",
+      "USER_PREFS": "infra",
+      "ALLOCSUMMARY_PURE": "pure",
+      "BACKLOG_VM_PURE": "pure",
       "CAPACITY_PURE": "pure",
       "DATE_PURE": "pure",
       "ENUM_PURE": "pure",
+      "FORECAST_PURE": "pure",
       "HASH_PURE": "pure",
       "MIGRATE_PURE": "pure",
       "PERIOD_PURE": "pure",
       "PLANNING_MODEL_PURE": "pure",
       "REFRESH_MERGE_PURE": "pure",
+      "RELEASE_TREE_PURE": "pure",
+      "REPORTING_B_PURE": "pure",
+      "REPORTING_EXPORT_PURE": "pure",
+      "REPORTING_PERIOD": "pure",
+      "REPORTING_PURE": "pure",
+      "REPORTING_ROLLUP": "pure",
+      "REPORTING_TTM": "pure",
       "SHARE_URL_PURE": "pure",
       "SORT_PURE": "pure",
       "TOAST_PURE": "pure",
-      "REPORTING_VIEW": "domain",
-      "REPORTING_DATA": "domain",
-      "REPORTING_PURE": "pure",
-      "REPORTING_TTM": "pure",
-      "REPORTING_PERIOD": "pure",
-      "REPORTING_ROLLUP": "pure",
-      "REPORTING_EXPORT_PURE": "pure",
-      "REPORTING_MOUNT": "infra",
-      "FORECAST_PURE": "pure"
-    },
-    "_fatCountNote": "v3.2.1 — domain/sprint-controller.js пересёк 600 (615): доснап уходящего PLANNING в doNewSprint (дыра фикса v2.16.6) + .catch persist. Осознанно: багфикс-код по месту жительства. fatCountBaseline 4→5. Прошлое: #50 S8b — pure/reporting-pure.js пересёк 600 (595→640) на движке B1 buildTechDebtRows → 4-й «жирный» (reporting-view domain уже 3-й). Осознанно: reporting-pure легитимно владеет ВСЕМИ pure-движками отчётности (10 функций A1–A10+B1+B3); декомпозиция (вынос B-движков в reporting-b-pure) — отдельный техдолг, если продолжит расти. fatCountBaseline 3→4."
+      "VELOCITY_PURE": "pure",
+      "EXCEL_EXPORT": "domain",
+      "RELEASE_VIEW": "domain",
+      "I18N_PLURAL__": "i18n",
+      "RELEASE_MOUNT": "infra",
+      "ICON_HTML": "infra",
+      "REPORTING_MOUNT": "infra"
+    }
   },
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
@@ -94,41 +124,33 @@
     "modules": {
       "backend-capacity.js": {
         "loc": 742,
-        "locBudget": 745,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #53 — осознанный +~87: авто-архив ёмкости (splitCapacityForArchive/readCapacityArchive/_capDateEndOf pure-разрез map активный/архив: старейшие по dateEnd кроме текущего спринта, trigger 300КБ→target 250КБ, дедуп by-key, стоп на лимите архива; GET capacity-archive + archivedCount в GET / archived в POST + dateEnd в записи — паттерн backend-release.js #48 R4) + частичный день отсутствия (hoursDelta в absenceHours max-по-диапазонам capped рабочими часами + валидатор 0.5..24 + перенос в absencesInWindow)."
       },
       "backend-global.js": {
         "loc": 215,
-        "locBudget": 215,
         "budgetNote": "#69 строка 21 (v3.22.0) — осознанный +2: require backend-userprefs.js (GET/POST user-prefs — свой global-only модуль). v3.18.0 (#67 H11) — осознанный +8: cap тела filter-planner-projects (256 КБ) + схлоп оракула project_not_found/project_access_denied → project_unavailable. "
       },
       "backend-userprefs.js": {
         "loc": 84,
-        "locBudget": 84,
         "budgetNote": "#69 строка 21 (v3.22.0) — новый global-only модуль: GET/POST user-prefs — единый блоб предпочтений пользователя User.extensionProperties.ssp_user_prefs (allowlist 7 safeLs-ключей + cap значений/блоба); на YouTrack 2025.3 localStorage в srcdoc-песочнице мёртв. Require-ится ТОЛЬКО из backend-global.js (не в core.ENDPOINTS: projectKey-адаптер не нужен)."
       },
       "backend-project.js": {
-        "loc": 28,
-        "locBudget": 40
+        "loc": 28
       },
       "backend-issuefields.js": {
         "loc": 490,
-        "locBudget": 496,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +6: colors в ответе GET /field-values (карта имя→{background,foreground} значений бандла) — цвета чипов секций стендапа, включая ПУСТЫЕ секции, где нет ни одной задачи с stateColor. Аддитивно: values/resolved не тронуты (их читают 68-1 и пикеры настроек). v3.18.0 (#67 остаток) — осознанный +103: обогатитель состава (путь 3, «дополняем только пустое», лимит 200, видимость fail-closed через Issue.isVisibleTo) + H7 allow-list fieldName из настроек + хойст readField на module-level (переиспользование резолвера refresh-assignees, не копия). "
       },
       "backend-release.js": {
         "loc": 283,
-        "locBudget": 285,
         "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #48 R4 архив (US-R4-02): +58 — splitForArchive (pure in-memory разрез активный/архив: терминальные-старейшие по snapshot.closedAt, trigger 300КБ → target 250КБ, дедуп против split-brain недописи, стоп на лимите архива — без молчаливой потери) + readArchive + GET releases-archive + archivedCount в GET / archived в POST; первая реализация паттерна #53. R2.4 authz: +73 — releasePerms (D-C; perms в GET) + engineerDiffAllowed (серверная валидация диффа РИ) + stampAudit (серверный стамп аудита) + ужесточение POST. Роль-хелперы is* — в backend-core."
       },
       "backend-reporting.js": {
         "loc": 48,
-        "locBudget": 55,
         "budgetNote": "#50 S1 — новый модуль «Оперативная отчётность»: GET reporting-access (серверный гейт членства в reporting-группе, US-ACC-04; флаги контуров A/B в ответе, B⊇A) + self-register в core.ENDPOINTS. D8: тяжёлое чтение activities — на фронте под правами юзера, backend не реплеит. Роль-хелперы isReportingViewerA/B — в backend-core. Растёт на S7 (A10 snapshot-diff поверх ssp_history)."
       },
       "backend-sprintlock.js": {
         "loc": 71,
-        "locBudget": 71,
         "budgetNote": "#57-2 (эпик 57) — новый модуль: тумблер блокировки создания спринтов. GET/POST sprint-lock; authz — sprintLockGroups (канон isReleaseManager, deny-by-default); единственный писатель settings.blockSprintCreation. Enforcement создания — гейт sprint-data в backend-core (isNewSprintCreation)."
       }
     }
@@ -138,163 +160,128 @@
     "modules": {
       "workflow-common.js": {
         "loc": 688,
-        "locBudget": 700,
         "budgetNote": "R3c — новый общий модуль WF-инфраструктуры: слитый WF_I18N (30 ключей × 15 локалей, дизъюнктны) + pickLocale/tWf/readSettings/stash+take/setHoursPerDay/getMinutes/formatMinutes/FIELD_*_KEY_BY_ROLE/kindName/firstLink/collectChildren/collNotEmpty. Держит основную массу — правила стали тонкими."
       },
       "workflow-dta-aggregation.js": {
-        "loc": 368,
-        "locBudget": 380
+        "loc": 368
       },
       "workflow-cascade-aggregation.js": {
         "loc": 220,
-        "locBudget": 220,
         "budgetNote": "R6 — осознанный рост: intra-run дедуп целей агрегации (P-4/P-5 безопасное ядро — двойной идемпотентный проход по одному узлу устранён; семантика полной пересуммы и бутстрап-контракт сохранены). v3.12.0 — +тег-маркер защиты ручных оценок (cascadeManualEstTag): _hasProtectTag-гейт в aggregateToParent (⚖ владелец 2026-07-18)."
       },
       "workflow-forbid-container.js": {
-        "loc": 63,
-        "locBudget": 72
+        "loc": 63
       },
       "workflow-state-rollup.js": {
         "loc": 200,
-        "locBudget": 212,
         "budgetNote": "R6 — осознанный рост: intra-run дедуп целей агрегации (P-4/P-5 безопасное ядро — двойной идемпотентный проход по одному узлу устранён; семантика полной пересуммы и бутстрап-контракт сохранены)."
       }
     }
   },
   "jsx": {
-    "_note": "react/*.jsx — только LOC-ратчет (J1/J2); топология и стейт JSX не анализируются.",
+    "_note": "react/*.jsx — агрегатный LOC-ратчет (J1 по _meta.budgets.jsx, #69 строка 23) + полнота реестра (J2); топология и стейт JSX не анализируются. Fat-count A3 с #69/23 считает и react/*.jsx.",
     "modules": {
       "react/backlog-assign.jsx": {
-        "loc": 77,
-        "locBudget": 97
+        "loc": 77
       },
       "react/backlog-view.jsx": {
-        "loc": 490,
-        "locBudget": 549
+        "loc": 491
       },
       "react/capacity-view.jsx": {
-        "loc": 531,
-        "locBudget": 595
+        "loc": 531
       },
       "react/datepicker-mount.jsx": {
-        "loc": 110,
-        "locBudget": 130
+        "loc": 110
       },
       "react/gantt-view.jsx": {
-        "loc": 254,
-        "locBudget": 285
+        "loc": 254
       },
       "react/i18n-bridge.jsx": {
-        "loc": 37,
-        "locBudget": 49
+        "loc": 37
       },
       "react/input-mount.jsx": {
-        "loc": 137,
-        "locBudget": 157
+        "loc": 137
       },
       "react/loader-mount.jsx": {
-        "loc": 58,
-        "locBudget": 78
+        "loc": 58
       },
       "react/modal-bodies.jsx": {
-        "loc": 503,
-        "locBudget": 564
+        "loc": 503
       },
       "react/modal-mount.jsx": {
-        "loc": 263,
-        "locBudget": 295
+        "loc": 263
       },
       "react/portal.jsx": {
-        "loc": 40,
-        "locBudget": 60
+        "loc": 40
       },
       "react/radio-mount.jsx": {
-        "loc": 94,
-        "locBudget": 114
+        "loc": 94
       },
       "react/release-create.jsx": {
-        "loc": 175,
-        "locBudget": 194
+        "loc": 175
       },
       "react/release-state-preview.jsx": {
-        "loc": 165,
-        "locBudget": 167
+        "loc": 167
       },
       "react/release-view.jsx": {
-        "loc": 412,
-        "locBudget": 440
+        "loc": 412
       },
       "react/reporting-view.jsx": {
         "loc": 1486,
-        "locBudget": 1486,
         "budgetNote": "v3.21.0 (#69 R2) — осознанный рост +24: loadRecharts (ленивый recharts.chunk.js, паттерн pdfmake) + useEffect-гейт в ReportingPanel; Recharts вынесен из вендор-чанка. Прошлое: #57 (эпик 57) — осознанный рост +2: Н4 баннер A3 без целевых статусов + 57-4 канон Ring кнопок экспорта/прерывания (block/danger, комментарии). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица). v3.12.0 — микрополировка A11View (+8)."
       },
       "react/select-mount.jsx": {
-        "loc": 141,
-        "locBudget": 161
+        "loc": 141
       },
-      "react/settings-form.jsx": {
-        "loc": 928,
-        "locBudget": 944,
-        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +28: стейт standupHidden/standupStateRoles + save-нормализация маппинга (dedup по state, roles ∩ role keys — 1:1 с backlogZones) + пропсы StandupSection. Форма — композиционный корень настроек: секция в settings-standup.jsx, таблица в settings-shared.jsx. #61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
-      },
-      "react/standup-view.jsx": {
-        "loc": 174,
-        "locBudget": 180,
-        "budgetNote": "68-7 спойлеры (⚖ владелец 2026-08-21): секции = Ring Collapse-спойлеры, дефолт свёрнуто (компактный обзор «состояние (счётчик)» вместо простыни), паттерн Spoiler бэклога #21 с3, фолбэк <details>; стейт сворачивания живёт в Ring (uncontrolled), vm не тронут. 68-7 — рендер секций по состояниям: чип с рамкой (YT-дефолтный бандл красит все значения в '#fff' — без рамки чип сливается), бейдж ролей в заголовке, подпись состояния в строках «Прочих». "
-      },
-      "react/table-mount.jsx": {
-        "loc": 220,
-        "locBudget": 241
-      },
-      "react/tabs-mount.jsx": {
-        "loc": 74,
-        "locBudget": 94
-      },
-      "react/settings-shared.jsx": {
-        "loc": 413,
-        "locBudget": 420,
-        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +83: StateRolesTable — таблица «состояние → роль(и)» вынесена 1:1 из BacklogSection (переиспользование в маппинге стендапа по требованию владельца). Донор ужался симметрично (settings-backlog.jsx 134→81), суммарно по jsx-слою рост ~+6. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
-      },
-      "react/settings-dta.jsx": {
-        "loc": 80,
-        "locBudget": 92,
+      "react/settings-backlog.jsx": {
+        "loc": 77,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-cascade.jsx": {
         "loc": 71,
-        "locBudget": 77,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
-      "react/settings-rollup.jsx": {
-        "loc": 88,
-        "locBudget": 104,
+      "react/settings-dta.jsx": {
+        "loc": 80,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
-      "react/settings-standup.jsx": {
-        "loc": 49,
-        "locBudget": 53,
-        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +26: секция получила маппинг «состояние → роли» (общий StateRolesTable) и пикер скрытых состояний; done-пикер остался каноном отчётности. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
-      },
-      "react/settings-backlog.jsx": {
-        "loc": 77,
-        "locBudget": 81,
-        "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+      "react/settings-form.jsx": {
+        "loc": 928,
+        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +28: стейт standupHidden/standupStateRoles + save-нормализация маппинга (dedup по state, roles ∩ role keys — 1:1 с backlogZones) + пропсы StandupSection. Форма — композиционный корень настроек: секция в settings-standup.jsx, таблица в settings-shared.jsx. #61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
       "react/settings-release.jsx": {
         "loc": 96,
-        "locBudget": 115,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-reporting.jsx": {
         "loc": 496,
-        "locBudget": 500,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow). v3.12.3 — пикеры в отчётности: FieldSelect для A3-полей/типов B1-B2/тегов B1-B3 + Type-бандл."
+      },
+      "react/settings-rollup.jsx": {
+        "loc": 88,
+        "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+      },
+      "react/settings-shared.jsx": {
+        "loc": 419,
+        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +83: StateRolesTable — таблица «состояние → роль(и)» вынесена 1:1 из BacklogSection (переиспользование в маппинге стендапа по требованию владельца). Донор ужался симметрично (settings-backlog.jsx 134→81), суммарно по jsx-слою рост ~+6. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
+      },
+      "react/settings-standup.jsx": {
+        "loc": 49,
+        "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +26: секция получила маппинг «состояние → роли» (общий StateRolesTable) и пикер скрытых состояний; done-пикер остался каноном отчётности. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/sprint-lock-toggle.jsx": {
         "loc": 35,
-        "locBudget": 35,
         "budgetNote": "#57-2 — React-остров тумблера блокировки создания спринтов (Ring Toggle, mountAt из core по GET sprint-lock)."
+      },
+      "react/standup-view.jsx": {
+        "loc": 175,
+        "budgetNote": "68-7 спойлеры (⚖ владелец 2026-08-21): секции = Ring Collapse-спойлеры, дефолт свёрнуто (компактный обзор «состояние (счётчик)» вместо простыни), паттерн Spoiler бэклога #21 с3, фолбэк <details>; стейт сворачивания живёт в Ring (uncontrolled), vm не тронут. 68-7 — рендер секций по состояниям: чип с рамкой (YT-дефолтный бандл красит все значения в '#fff' — без рамки чип сливается), бейдж ролей в заголовке, подпись состояния в строках «Прочих». "
+      },
+      "react/table-mount.jsx": {
+        "loc": 220
+      },
+      "react/tabs-mount.jsx": {
+        "loc": 74
       }
     }
   },
@@ -303,7 +290,6 @@
       "layer": "domain",
       "domain": "data/data-loaders",
       "loc": 236,
-      "locBudget": 254,
       "state": [
         "api"
       ],
@@ -311,22 +297,43 @@
         "DATA_LOADERS"
       ]
     },
+    "data/reporting-data.js": {
+      "layer": "domain",
+      "domain": "data/reporting-data",
+      "loc": 538,
+      "state": [
+        "REPORT_ABORTED",
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_DATA"
+      ],
+      "budgetNote": "#50 B0 — +1: bulkAsOfEstimates выставляет out.timelines (сырые per-field хронологии оценок) для помесячной as-of реконструкции свода (константный фетч вместо N×). #50 D10 SAFE-a — +10 (451→461): прерывание отчёта — REPORT_ABORTED маркер + _aborted(opts) хелпер; межчанковый abort-чек в 5 чанк-примитивах (bulkStateTransitions/bulkAnchorTransitions/bulkAsOfEstimates/bulkPauseTagIntervals/bulkWorkItems) + внутристраничный в bulkWorkItems (page) с re-throw в chunk-catch. Останавливает поток запросов (≤1 в полёте; host.fetchYouTrack без AbortSignal — реальный HTTP не отменить). Аддитивно: без opts.shouldAbort работают как раньше. #50 S7b fetchHistory — осознанный +21 (вкл. S7c-фикс +4: global-роутинг backend-global+projectKey вместо backend-project scope:true — отчётность в global-дашборде, project-scope не резолвился, промис висел «Загрузка…», пойман смоуком S7c): A10 Spillover — планер-нативный отчёт из ssp_history (снимки соседних FINISHED-спринтов, реплей activities НЕ нужен) — свежий GET backend-project/history через deps.host.fetchApp (тот же безопасный endpoint, что и планер: viewer authzGuard + migrateHistoryArr + orphan-детект в backend-core.js:2444). fail-soft: сетевая ошибка → {history:[]}, диагностика в deps.diag. Инъекция в _reportingDeps (core.js) — net-0 к потолку 4412 (компактифицирована в одну строку с combinePauses/searchAssist). B1: планерный _history (scope-planer) НЕ трогаем; получаем свежий срез бэкенда напрямую. Прошлое #50 QueryAssist отбора — осознанный +25: searchAssist (data-source RingUI QueryAssist для «Отбор задач» ВСЕХ отчётов; POST /api/search/assist с folders project-scope [$type:'Project' обязателен] в теле, fail-soft пустые suggestions) + ASSIST_FIELDS. ⚠ ponytail: 3-я копия ассиста (pick/_backlogAssist/этот) — общий экстракт отдельным техдолгом. Прошлое #50 S5b-i — осознанный +70: bulkAsOfEstimates (as-of значение period-полей оценки на момент старт-якоря lead.start — D12 net-new; фетч как bulkAnchorTransitions [та же категория/reverse/$top=300/чанки 25], проекция period .minutes + фильтр по field.id; разбор+anchor-aware D7 в pure.parseAsOfPeriodChunk, реконструкция назад-от-текущего в pure.asOfPeriodMinutes; ОТДЕЛЬНЫЙ фетч — свой $top-бюджет, фолд в anchors усилил бы starvation; ⚠ живая форма period added/removed — под смоук S5b) + PERIOD_ACT_FIELDS. Для A5 План-факт. Прошлое #50 S5a — осознанный +85: bulkWorkItems (НОВЫЙ data-path D12 — нативные workItems часы/автор/дата по задачам отбора за окно; чанки по 25 + СЕРВЕРНЫЙ фильтр `work date:` [окно date-granular, toTs-1] + ПАГИНАЦИЯ-до-полноты $skip [для workItems поддержан — D7 без гипотез, guard MAX_WI_PAGES] + fail-loud incomplete) + _parseWorkItems (валидные {issueId,author,dateTs,minutes}) + _fmtWorkDate (UTC YYYY-MM-DD). Роль-атрибуция — в движке A4. Empirically verified API на стенде (basic-auth): issue id:+work date: комбо + $skip. Прошлое #50 S3b — осознанный +173: A2 TTM data-layer — bulkAnchorTransitions (первый вход в якоря + таймлайн, фетч байт-в-байт как bulkStateTransitions, anchor-aware D7 в pure) + pauseIntervalsFromTimeline (интервалы пауз-СТАТУСОВ без доп. фетча) + bulkPauseTagIntervals/_pairTagIntervals (паузы-ТЕГИ, ОТДЕЛЬНАЯ категория TagsCategory — ⚠ живая форма под смоук S3d, паринг add→remove на unit-тесте) + combinePauses. Прошлое #50 S1b — примитив bulkStateTransitions: фронтовое чтение переходов состояний из Activities API чанками по 25 (host.fetchYouTrack, D8) + агрегация + сводный диагностический ридаут §12 (chunks/starvation/ms). Разбор/детект обрезки — в pure/reporting-pure.js. Растёт на S5 (bulkWorkItems) — тогда пересмотреть."
+    },
     "data/youtrack-api.js": {
       "layer": "domain",
       "domain": "data/youtrack-api",
       "loc": 310,
-      "locBudget": 310,
       "state": [],
       "publishes": [
         "YOUTRACK_API"
       ],
       "budgetNote": "v3.18.0 (#67 H5-mirror) — осознанный +5: гейт авто-снапшота на сброс слота (sprint:null) — локальный сброс теперь после ака сервера, без гейта хук воскрешал бы удалённую запись истории. R6 (v3.11.0) — осознанный рост: optimistic lock слотов history/releases/absences (REV_SLOT_PATHS: GET-синк rev, POST-baseRev, синк после write; обобщение #56-4). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). v3.12.0 — +анти-clobber слотов: stale GET (rev < виденного) не применяется, одиночный refetch (P2-хвост v3.2.1)."
     },
+    "domain/allocsummary-view.js": {
+      "layer": "domain",
+      "domain": "domain/allocsummary-view",
+      "loc": 229,
+      "state": [],
+      "publishes": [
+        "ALLOCSUMMARY_VIEW"
+      ],
+      "budgetNote": "v3.17.0 (68-1/68-2) — осознанный +20: колонка «Исполнитель» (union per-role PP через buildPPMapFromCanon + live-PP текущей роли, taMap для сортировки) + сортируемое «Состояние» + _roleItemsForDisplay (фильтр исключённых по deps.isExcludedHidden). #61 — новый модуль: сводная таблица мультиролевого планирования (read-only спойлер над аккордеонами ролей, ленивое тело по паттерну #60)."
+    },
     "domain/backlog-assign.js": {
       "layer": "domain",
       "domain": "domain/backlog-assign",
       "loc": 138,
-      "locBudget": 158,
       "state": [
         "api"
       ],
@@ -337,8 +344,7 @@
     "domain/backlog-loader.js": {
       "layer": "domain",
       "domain": "domain/backlog-loader",
-      "loc": 397,
-      "locBudget": 415,
+      "loc": 398,
       "state": [
         "BACKLOG_ISSUE_FIELDS",
         "_api"
@@ -352,7 +358,6 @@
       "layer": "domain",
       "domain": "domain/backlog-view",
       "loc": 145,
-      "locBudget": 157,
       "state": [
         "api"
       ],
@@ -360,11 +365,28 @@
         "BACKLOG_VIEW"
       ]
     },
+    "domain/capacity-store.js": {
+      "layer": "domain",
+      "domain": "domain/capacity-store",
+      "loc": 60,
+      "state": [
+        "_absences",
+        "_calendar",
+        "_capacity",
+        "_capacityRoster",
+        "_capacityUiState",
+        "_planCap",
+        "_planCapLoading"
+      ],
+      "publishes": [
+        "CAPACITY_STORE"
+      ],
+      "stateNote": "ADR-001 третье применение (R6, аудит §7 п.14) — доменный стор ёмкости #45: стейт вкладки (запись/календарь/отсутствия/ростер/UI) + кэш утверждённой ёмкости планируемого спринта (planCap R4). Вынесен из стейт-ядра core.js (C3-счётчик −7); семантика сеттеров и сброса (только planCap на смене проекта, v3.2.1) — 1:1."
+    },
     "domain/capacity-view.js": {
       "layer": "domain",
       "domain": "domain/capacity-view",
       "loc": 467,
-      "locBudget": 467,
       "state": [],
       "publishes": [
         "CAPACITY_VIEW"
@@ -375,7 +397,6 @@
       "layer": "domain",
       "domain": "domain/currentrole-view",
       "loc": 1050,
-      "locBudget": 1051,
       "state": [
         "GRADES_LOCAL",
         "KPE_DEFAULTS_LOCAL",
@@ -391,7 +412,6 @@
       "layer": "domain",
       "domain": "domain/dash-shell",
       "loc": 254,
-      "locBudget": 254,
       "state": [],
       "publishes": [
         "DASH_SHELL"
@@ -402,7 +422,6 @@
       "layer": "domain",
       "domain": "domain/draft-store",
       "loc": 364,
-      "locBudget": 378,
       "state": [
         "_draftFlushTimer",
         "_draftSaveTimers",
@@ -416,18 +435,14 @@
       "layer": "domain",
       "domain": "domain/excel-export",
       "loc": 329,
-      "locBudget": 335,
       "state": [],
-      "publishes": [
-        "EXCEL_EXPORT"
-      ],
+      "publishes": [],
       "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич)."
     },
     "domain/gantt-view.js": {
       "layer": "domain",
       "domain": "domain/gantt-view",
       "loc": 275,
-      "locBudget": 278,
       "state": [],
       "publishes": [
         "GANTT_VIEW"
@@ -438,7 +453,6 @@
       "layer": "domain",
       "domain": "domain/header-view",
       "loc": 370,
-      "locBudget": 408,
       "state": [
         "STATUS_RANK"
       ],
@@ -450,7 +464,6 @@
       "layer": "domain",
       "domain": "domain/history-controller",
       "loc": 218,
-      "locBudget": 218,
       "state": [],
       "publishes": [],
       "budgetNote": "#69 R1 (строка 5, ⚖ владелец) — осознанный +6: «Завершить все роли» (finishHistoryGroup: не-FINISHED записи группы, один диалог/персист) + общий хвост _finishRecords с префиллом исхода/ретро из FINISHED-сестры; confirm-модалка вынесена в _confirmFinish (per-role путь переиспользует)."
@@ -459,7 +472,6 @@
       "layer": "domain",
       "domain": "domain/history-io",
       "loc": 169,
-      "locBudget": 194,
       "state": [],
       "publishes": []
     },
@@ -467,7 +479,6 @@
       "layer": "domain",
       "domain": "domain/history-view",
       "loc": 606,
-      "locBudget": 607,
       "state": [],
       "publishes": [
         "HISTORY_VIEW"
@@ -478,7 +489,6 @@
       "layer": "domain",
       "domain": "domain/intro-view",
       "loc": 252,
-      "locBudget": 260,
       "state": [
         "api"
       ],
@@ -490,7 +500,6 @@
       "layer": "domain",
       "domain": "domain/permissions",
       "loc": 213,
-      "locBudget": 229,
       "state": [],
       "publishes": [
         "PERMISSIONS"
@@ -500,7 +509,6 @@
       "layer": "domain",
       "domain": "domain/pick",
       "loc": 317,
-      "locBudget": 342,
       "state": [
         "ASSIST_FIELDS"
       ],
@@ -512,7 +520,6 @@
       "layer": "domain",
       "domain": "domain/project-nav",
       "loc": 348,
-      "locBudget": 350,
       "state": [
         "_serverLastSynced"
       ],
@@ -524,7 +531,6 @@
       "layer": "domain",
       "domain": "domain/reassign-controller",
       "loc": 181,
-      "locBudget": 203,
       "state": [
         "api"
       ],
@@ -536,7 +542,6 @@
       "layer": "domain",
       "domain": "domain/refresh-controller",
       "loc": 481,
-      "locBudget": 492,
       "state": [],
       "publishes": [
         "REFRESH_CTRL"
@@ -546,30 +551,36 @@
       "layer": "domain",
       "domain": "domain/release-controller",
       "loc": 597,
-      "locBudget": 597,
-      "budgetNote": "#57-1 — +28 (⚖ корзинка-канон + destructive-модалка): openRemoveIssueDialog (удаление задачи из состава планируемого релиза: confirm → filter issues → POST; снятие тега текущего статуса buildTagOps prev→null). #57-3 — +1: экспорт applyStates для отката (release-rollback, B1-делегат). #55 авто-теги: +103 — buildTagOps (pure план remove/add) + _applyTagOps (fanout официальным REST от имени юзера; снятие = per-issue реконсиляция полного массива tags POST issues/{id} — DELETE через host.fetchYouTrack молча не выполняется, эмпирика стенда 2026-07-04) + _applyTags/applyTagsForIssues/applyTagsForTransfer + хуки onOk. Прошлое: #48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29. v3.12.0 — +чанкинг массовых операций (_runChunked, APPLY_CHUNK=25): _applyStates/_applyTagOps без unbounded фанаута (P2-хвост v3.2.1).",
       "state": [],
       "publishes": [
         "RELEASE_CTRL"
-      ]
+      ],
+      "budgetNote": "#57-1 — +28 (⚖ корзинка-канон + destructive-модалка): openRemoveIssueDialog (удаление задачи из состава планируемого релиза: confirm → filter issues → POST; снятие тега текущего статуса buildTagOps prev→null). #57-3 — +1: экспорт applyStates для отката (release-rollback, B1-делегат). #55 авто-теги: +103 — buildTagOps (pure план remove/add) + _applyTagOps (fanout официальным REST от имени юзера; снятие = per-issue реконсиляция полного массива tags POST issues/{id} — DELETE через host.fetchYouTrack молча не выполняется, эмпирика стенда 2026-07-04) + _applyTags/applyTagsForIssues/applyTagsForTransfer + хуки onOk. Прошлое: #48 R4: +9 — _noteArchived (тост авто-архива US-R4-02 по archived>0 из ответа POST) во всех write-колбэках. R2.4 authz: +2 — «Отменить релиз» только при perms.canManage (D-C: РИ отмену не ставит). R2.3 «Маппинг статус→State»: +87 — buildPreviewRows (pure, пометки ok/desync/already/unreachable, гард D-F) + openStatePreview (US-R2-04) + _applyStates (bulk US-R2-05/06/07) + _statusLabels. R2.2 база = 342 (+32 toggleFreeze). Прошлое: R2.1 +81, R1.5a +72, R1.3b +29. v3.12.0 — +чанкинг массовых операций (_runChunked, APPLY_CHUNK=25): _applyStates/_applyTagOps без unbounded фанаута (P2-хвост v3.2.1)."
     },
     "domain/release-pick.js": {
       "layer": "domain",
       "domain": "domain/release-pick",
       "loc": 257,
-      "locBudget": 262,
-      "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #55: +9 — хуки deps.onIssuesAdded (догонка тега текущего статуса) и deps.onIssuesTransferred (пере-тегирование при переносе). Прошлое: #48 R1.4b «Перенос» (D-B): +90 осознанно — модалка коллизий (lines-confirm) + _doTransfer (вынуть из владельца A + влить в B, один POST) + _partition/_ownerIndex{id,name,frozen}/_commit/_merge. Логика переноса вся здесь (star-topology), ядро не тронуто. R1.4a база = 156.",
       "state": [],
       "publishes": [
         "RELEASE_PICK"
-      ]
+      ],
+      "budgetNote": "v3.2.1 аудит-фиксы стабильности — осознанный рост (P0/P1 багфиксы, без новых фич). #55: +9 — хуки deps.onIssuesAdded (догонка тега текущего статуса) и deps.onIssuesTransferred (пере-тегирование при переносе). Прошлое: #48 R1.4b «Перенос» (D-B): +90 осознанно — модалка коллизий (lines-confirm) + _doTransfer (вынуть из владельца A + влить в B, один POST) + _partition/_ownerIndex{id,name,frozen}/_commit/_merge. Логика переноса вся здесь (star-topology), ядро не тронуто. R1.4a база = 156."
+    },
+    "domain/release-rollback.js": {
+      "layer": "domain",
+      "domain": "domain/release-rollback",
+      "loc": 86,
+      "state": [],
+      "publishes": [
+        "RELEASE_ROLLBACK"
+      ],
+      "budgetNote": "#57-3 (эпик 57) — новый модуль: откат состояний задач релиза по истории поля State (bulkStateTransitions preferCanon, fromState=oldValue; превью-канон R2.3; применение — делегат release-controller.applyStates через core, B1). Снапшот не хранится (⚖ владелец). +1 (смоук): setAll-лейбл мастер-селекта."
     },
     "domain/release-store.js": {
       "layer": "domain",
       "domain": "domain/release-store",
       "loc": 84,
-      "locBudget": 84,
-      "budgetNote": "#48 R4 архив истории (US-R4-02): +10 — _archive (null = lazy не загружен) + _archivedCount, get/set, reset; в serialize НЕ входит (refetch по раскрытию спойлера).",
       "state": [
         "_archive",
         "_archivedCount",
@@ -585,24 +596,31 @@
       "publishes": [
         "RELEASE_STORE"
       ],
+      "budgetNote": "#48 R4 архив истории (US-R4-02): +10 — _archive (null = lazy не загружен) + _archivedCount, get/set, reset; в serialize НЕ входит (refetch по раскрытию спойлера).",
       "stateNote": "ADR-001 #48 — доменный стор-пилот 'state out of core'; стейт RM инкапсулирован здесь, не в ядре (A2). Осознанное исключение ratchet C1 (single-домен; общий контракт reset/serialize/hydrate оркеструет ядро)."
     },
     "domain/release-view.js": {
       "layer": "domain",
       "domain": "domain/release-view",
       "loc": 442,
-      "locBudget": 443,
-      "budgetNote": "v3.24.0 (#69 строка 28, ⚖ владелец) — осознанный +6: родители состава релиза по настройке cascadeParentLinkInward (фразовый матчер, парити с backlog-loader._parentRaw). #57-1 — +2: прокидка onRemoveIssue + лейбл removeIssue. #57-3 — +2: прокидка onRollbackPreview + лейбл rollbackStates. #48 R4-ревью владельца: +1 — patchNote в live-VM (патчноут виден и на планируемой карточке). R4: +92 — экспорт .txt (US-R4-01: buildExportText pure-golden + _downloadTxt Blob-канон диаг-лога + exportRelease/_findRelease по активным+архиву) + архив (US-R4-02: _loadArchive lazy-GET, archive-срез в history-VM, archivedCount из GET) + share-гейт (US-R4-03: canShareRelease × _RELEASE_EXT_SHARE=false до YT 2026.1 — host.navigation НЕ признак, он есть в 2025.x) + _histRow извлечён (общая строка история/архив; + patchNote/notes полировка). R3.2 дерево: +61 — fetchIssueData links(Subtask INWARD)+_cfType; _treeRows → RELEASE_TREE_PURE; tree в обоих VM; слепок замораживает parentId+type (additive). R3.1 светофор: +26 нетто — computeZone/_anchorState/_countZones + readiness live+слепок; −14 снос _fetchTitles. R2.4: +4 — VM гейтит контролы серверными правами. R2.3: +42 — fetchIssueData (КАНОНИЧЕСКОЕ v.name — localizedName давал ложный рассинхрон). R2.2 база = 204. R2.1: +1. R1.5b/c: +80. R1.5 база = 121.",
+      "state": [],
+      "publishes": [],
+      "budgetNote": "v3.24.0 (#69 строка 28, ⚖ владелец) — осознанный +6: родители состава релиза по настройке cascadeParentLinkInward (фразовый матчер, парити с backlog-loader._parentRaw). #57-1 — +2: прокидка onRemoveIssue + лейбл removeIssue. #57-3 — +2: прокидка onRollbackPreview + лейбл rollbackStates. #48 R4-ревью владельца: +1 — patchNote в live-VM (патчноут виден и на планируемой карточке). R4: +92 — экспорт .txt (US-R4-01: buildExportText pure-golden + _downloadTxt Blob-канон диаг-лога + exportRelease/_findRelease по активным+архиву) + архив (US-R4-02: _loadArchive lazy-GET, archive-срез в history-VM, archivedCount из GET) + share-гейт (US-R4-03: canShareRelease × _RELEASE_EXT_SHARE=false до YT 2026.1 — host.navigation НЕ признак, он есть в 2025.x) + _histRow извлечён (общая строка история/архив; + patchNote/notes полировка). R3.2 дерево: +61 — fetchIssueData links(Subtask INWARD)+_cfType; _treeRows → RELEASE_TREE_PURE; tree в обоих VM; слепок замораживает parentId+type (additive). R3.1 светофор: +26 нетто — computeZone/_anchorState/_countZones + readiness live+слепок; −14 снос _fetchTitles. R2.4: +4 — VM гейтит контролы серверными правами. R2.3: +42 — fetchIssueData (КАНОНИЧЕСКОЕ v.name — localizedName давал ложный рассинхрон). R2.2 база = 204. R2.1: +1. R1.5b/c: +80. R1.5 база = 121."
+    },
+    "domain/reporting-view.js": {
+      "layer": "domain",
+      "domain": "domain/reporting-view",
+      "loc": 1404,
       "state": [],
       "publishes": [
-        "RELEASE_VIEW"
-      ]
+        "REPORTING_VIEW"
+      ],
+      "budgetNote": "#57-5 (эпик 57) — осознанный рост +14: аудит отчётности — _battr (брейс имён полей в YT-запросах A1/A6, паттерн #21 §9) + подсказка A3 без целевых статусов (a3NoDone/a3NoDoneCfg) + Н3 _wrapUserQuery (юзер-хвост в скобки против or-утечки project-скоупа, sort by — снаружи). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат. v3.12.0 (#11) — +A11 Velocity: labels + _vpure + _loadA11 (расчёт в pure/velocity-pure)."
     },
     "domain/revalidation.js": {
       "layer": "domain",
       "domain": "domain/revalidation",
       "loc": 118,
-      "locBudget": 138,
       "state": [],
       "publishes": [
         "REVALIDATION"
@@ -612,29 +630,16 @@
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
       "loc": 1085,
-      "locBudget": 1106,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"
       ],
       "budgetNote": "v3.17.0 — осознанный +43: 68-2 фильтр «скрыть исключённые» (isExcludedHidden + _renderExcludedFilter + display-фильтр в VM; остров через deps.mountRingToggle) + #65 канон шапки active-only (фильтр ACTIVE_INC в обеих ветках computeRoleQuickStats).  v3.12.0 — микрополировка статов ролей; #63 (2026-08-03) — перенос updateRoleRemaining из ядра (fitness A2) + историческая ветка остатка (класс D109)."
     },
-    "domain/allocsummary-view.js": {
-      "layer": "domain",
-      "domain": "domain/allocsummary-view",
-      "loc": 229,
-      "locBudget": 229,
-      "state": [],
-      "publishes": [
-        "ALLOCSUMMARY_VIEW"
-      ],
-      "budgetNote": "v3.17.0 (68-1/68-2) — осознанный +20: колонка «Исполнитель» (union per-role PP через buildPPMapFromCanon + live-PP текущей роли, taMap для сортировки) + сортируемое «Состояние» + _roleItemsForDisplay (фильтр исключённых по deps.isExcludedHidden). #61 — новый модуль: сводная таблица мультиролевого планирования (read-only спойлер над аккордеонами ролей, ленивое тело по паттерну #60)."
-    },
     "domain/settings-controller.js": {
       "layer": "domain",
       "domain": "domain/settings-controller",
       "loc": 202,
-      "locBudget": 216,
       "state": [
         "api"
       ],
@@ -646,7 +651,6 @@
       "layer": "domain",
       "domain": "domain/share-controller",
       "loc": 150,
-      "locBudget": 170,
       "state": [
         "SHARE_URL_PURE",
         "_SHARE_APP_PATH"
@@ -659,7 +663,6 @@
       "layer": "domain",
       "domain": "domain/sprint-controller",
       "loc": 581,
-      "locBudget": 649,
       "state": [
         "api"
       ],
@@ -672,7 +675,6 @@
       "layer": "domain",
       "domain": "domain/sprint-store",
       "loc": 65,
-      "locBudget": 75,
       "state": [
         "_baseRevHash",
         "_serverSnapshotCurrentRoleGantt",
@@ -687,23 +689,10 @@
       ],
       "stateNote": "ADR-001 r2 (2026-07-03) — доменный стор конфликт-канона спринта (второе применение после release-store): серверные снапшоты + rev-канон optimistic lock (#56-4). Осознанное исключение ratchet C1; reset per-project (resetProjectSlice) оркеструет ядро из _resetProjectStateCaches; с 2026-07-03 (⚖ владелец, TechDEBT+Sanitary) резет чистит ВЕСЬ срез, включая PP/Gantt-снимки и slotRev — residual slotRev чужого проекта мог случайно совпасть с rev нового слота и молча обойти rev-lock #56-4 (loc 53→58). R6 (v3.11.0) — +_slotRevs: map slot→rev для optimistic lock history/releases/absences (обобщение _slotRev #56-4 в том же ADR-001-сторе; сброс в resetProjectSlice — residual rev чужого проекта давал бы ложный байпас/409)."
     },
-    "domain/tab-router.js": {
-      "layer": "domain",
-      "domain": "tab-router",
-      "loc": 107,
-      "locBudget": 136,
-      "state": [
-        "api"
-      ],
-      "publishes": [
-        "TAB_ROUTER"
-      ]
-    },
     "domain/standup-view.js": {
       "layer": "domain",
       "domain": "domain/standup-view",
       "loc": 377,
-      "locBudget": 383,
       "state": [
         "STANDUP_ALL_ROLES"
       ],
@@ -712,11 +701,21 @@
       ],
       "budgetNote": "68-7 довоз (ревью): подпись состояния в строках «Прочих состояний» (иначе секция воспроизводила бы «свалку» — ровно жалобу 68-7) + бейдж ролей-владельцев секций в «Все роли» (вторая половина принятой владельцем опции). 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный рост до 366: ядро фичи — три сводных бакета заменены секциями по фактическим состояниям (_buildStandupSections: порядок бандла + алфавит-фолбэк + пустые секции + чипы), union-сбор состава по ролям с ACTIVE_INC-фильтром (_collectStandupEntries — режим «Все роли»), per-role фильтр по маппингу состояние→роли (_statesOfRole + секция «Прочие состояния»), последовательный обход ролей в doStandupRefresh с одним персистом. Взамен удалены _classifyStandupBuckets и _stateRollupFallbackDone. STANDUP_ALL_ROLES в stateBaseline — module-level КОНСТАНТА (sentinel опции «Все роли»), не изменяемое состояние. Дальнейшая декомпозиция (секции в pure) — кандидат при следующем росте."
     },
+    "domain/tab-router.js": {
+      "layer": "domain",
+      "domain": "domain/tab-router",
+      "loc": 107,
+      "state": [
+        "api"
+      ],
+      "publishes": [
+        "TAB_ROUTER"
+      ]
+    },
     "domain/validation-controller.js": {
       "layer": "domain",
       "domain": "domain/validation-controller",
       "loc": 251,
-      "locBudget": 286,
       "state": [],
       "publishes": [
         "VALIDATION_CTRL"
@@ -726,7 +725,6 @@
       "layer": "domain",
       "domain": "domain/working-copy",
       "loc": 543,
-      "locBudget": 546,
       "state": [],
       "publishes": [
         "WORKING_COPY"
@@ -737,7 +735,6 @@
       "layer": "i18n",
       "domain": "i18n-i18n-bridge",
       "loc": 14,
-      "locBudget": 36,
       "state": [],
       "publishes": [
         "I18N__",
@@ -749,7 +746,6 @@
       "layer": "i18n",
       "domain": "i18n-i18n-controller",
       "loc": 148,
-      "locBudget": 164,
       "state": [
         "api"
       ],
@@ -761,7 +757,6 @@
       "layer": "i18n",
       "domain": "i18n-languages",
       "loc": 37,
-      "locBudget": 57,
       "state": [],
       "publishes": []
     },
@@ -769,7 +764,6 @@
       "layer": "i18n",
       "domain": "i18n-loader",
       "loc": 176,
-      "locBudget": 183,
       "state": [
         "_cache",
         "_currentLang",
@@ -782,7 +776,6 @@
       "layer": "infra",
       "domain": "infra/click-anchor",
       "loc": 84,
-      "locBudget": 104,
       "state": [
         "lastT",
         "lastX",
@@ -796,17 +789,30 @@
       "layer": "infra",
       "domain": "infra/datepicker-bridge",
       "loc": 179,
-      "locBudget": 201,
       "state": [],
       "publishes": [
         "DP_BRIDGE"
       ]
     },
+    "infra/diag-snapshot.js": {
+      "layer": "infra",
+      "domain": "infra/diag-snapshot",
+      "loc": 103,
+      "state": [
+        "ERR_TAIL_LIMIT",
+        "YT_VERSION_TIMEOUT_MS",
+        "api"
+      ],
+      "publishes": [
+        "DIAG_SNAPSHOT"
+      ],
+      "budgetNote": " #63 п.4 (2026-08-03) — экспорт-слепок состояния из диаг-панели (формат един с prod-snapshots фикстурами).",
+      "stateNote": "константы формата (лимит err-хвоста, таймаут YT-версии) + api-мост; мутируемого стейта нет"
+    },
     "infra/modal-specs.js": {
       "layer": "infra",
       "domain": "infra/modal-specs",
       "loc": 194,
-      "locBudget": 217,
       "state": [],
       "publishes": [
         "MODAL_SPECS"
@@ -816,18 +822,43 @@
       "layer": "infra",
       "domain": "infra/toast-ring",
       "loc": 364,
-      "locBudget": 405,
       "state": [],
       "publishes": [
         "TOAST",
         "TOAST_RING"
       ]
     },
+    "infra/user-prefs.js": {
+      "layer": "infra",
+      "domain": "infra/user-prefs",
+      "loc": 82,
+      "state": [
+        "FLUSH_MS",
+        "_cache",
+        "_dirty",
+        "_timer",
+        "api"
+      ],
+      "publishes": [
+        "USER_PREFS"
+      ],
+      "budgetNote": "#69 строка 21 (2026-08-22) — localStorage ⊃ серверное зеркало предпочтений пользователя (User.extensionProperties.ssp_user_prefs, backend-global user-prefs): на YouTrack 2025.3 localStorage в srcdoc-песочнице мёртв.",
+      "stateNote": "модуль-приватный стор зеркала: серверный кэш + очередь dirty-ключей + debounce-таймер (как таймеры draft-store); константа debounce + api-мост"
+    },
+    "pure/allocsummary-pure.js": {
+      "layer": "pure",
+      "domain": "pure/allocsummary-pure",
+      "loc": 62,
+      "state": [],
+      "publishes": [
+        "ALLOCSUMMARY_PURE"
+      ],
+      "budgetNote": "#61 — новый модуль: чистая сборка строк сводной (дедуп по issueId, per-role оценки, перелимит-раскраска)."
+    },
     "pure/backlog-vm-pure.js": {
       "layer": "pure",
       "domain": "pure/backlog-vm-pure",
       "loc": 249,
-      "locBudget": 254,
       "state": [
         "_api"
       ],
@@ -840,7 +871,6 @@
       "layer": "pure",
       "domain": "pure/capacity-pure",
       "loc": 306,
-      "locBudget": 343,
       "state": [],
       "publishes": [
         "CAPACITY_PURE"
@@ -851,7 +881,6 @@
       "layer": "pure",
       "domain": "pure/date-pure",
       "loc": 52,
-      "locBudget": 58,
       "state": [
         "_api"
       ],
@@ -863,7 +892,6 @@
       "layer": "pure",
       "domain": "pure/enum-locale-pure",
       "loc": 23,
-      "locBudget": 43,
       "state": [
         "_enumLocaleMap",
         "_enumLocaleMapInverse"
@@ -876,7 +904,6 @@
       "layer": "pure",
       "domain": "pure/forecast-pure",
       "loc": 123,
-      "locBudget": 136,
       "state": [],
       "publishes": [
         "FORECAST_PURE"
@@ -886,7 +913,6 @@
       "layer": "pure",
       "domain": "pure/hash-pure",
       "loc": 99,
-      "locBudget": 103,
       "state": [],
       "publishes": [
         "HASH_PURE"
@@ -896,7 +922,6 @@
       "layer": "pure",
       "domain": "pure/migrate-pure",
       "loc": 120,
-      "locBudget": 140,
       "state": [],
       "publishes": [
         "MIGRATE_PURE"
@@ -906,7 +931,6 @@
       "layer": "pure",
       "domain": "pure/period-pure",
       "loc": 83,
-      "locBudget": 94,
       "state": [
         "_api"
       ],
@@ -918,7 +942,6 @@
       "layer": "pure",
       "domain": "pure/planning-model-pure",
       "loc": 73,
-      "locBudget": 86,
       "state": [
         "PLANNING_MODELS",
         "_api"
@@ -931,7 +954,6 @@
       "layer": "pure",
       "domain": "pure/refresh-merge-pure",
       "loc": 81,
-      "locBudget": 101,
       "state": [
         "_api"
       ],
@@ -943,18 +965,93 @@
       "layer": "pure",
       "domain": "pure/release-tree-pure",
       "loc": 81,
-      "locBudget": 101,
       "state": [],
       "publishes": [
         "RELEASE_TREE_PURE"
       ],
       "budgetNote": "#48 R3.2 дерево состава (US-R3-04): flatten-DFS билдер эпик→стори→таска из parent-ссылок состава + orphan-хвост + разрыв циклов + свод зон по листьям поддерева. Зоны считает вызывающий (leaf-слой доменные мосты не тянет, B2)."
     },
+    "pure/reporting-b-pure.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-b-pure",
+      "loc": 169,
+      "state": [
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_B_PURE"
+      ],
+      "budgetNote": "#50 S8c computeBugTax — новый leaf-модуль (reporting-pure.js на потолке 640, уже «жирный» >600 — большой B2-движок вынесен, а не бloat'ит фат-файл; владелец предвидел «взвесить reporting-b-pure.js»). Движок B2 «Налог на баги» (ОКОННЫЙ, контур B): на систему×роль tax=Σwi(баг)/[Σwi(фича)+Σwi(баг)]. «Фича» = НЕ-баг задача популяции, слинкованная с багом (bug.featureIds); фичи без багов ВНЕ охвата (узкий скоуп владельца). Пул-на-систему = Σбаг/Σвсё ПО ТОТАЛАМ (не среднее долей). Роль workitem'а = первый исполнитель роли задачи == author (реюз правила A4). Fallback (в баг часы не списаны): часы фичи, пока связанный баг был ОТКРЫТ [created,resolve|windowToTs], переклассифицируются в баг-числитель (знаменатель не трогаем — те же фича-часы); union открытых окон вместо взвешенного дележа (для агрегата система×роль делёж-по-окну МОТ — resolve нужен лишь как верхняя граница; per-bug раскладка — апгрейд при выводе по багам). Баг на N фич (списанные часы) → делёж пропорц. собственным ЧЧ фич (равно если все 0). Orphan-баги (без фич) → «корзина» (числитель-only). БЕЗ I/O, null/NaN-safe. 12 unit. Адверс-6-линз workflow (11 агентов) → 3 REAL_BUG пофикшены+залочены регрессом: (1) HIGH — fallback гейтился по АТРИБУТ. сумме, не raw → баг со списанным-но-неатрибут. трудом (author≠исполнитель роли ИЛИ роль не замаплена) переклассифицировал 100% фича-часов в баг; гейт raw≤0. (2) created=NaN не ловился `==null` → -Infinity → вся история; isFinite-гейт. (3) дубль фичи в featureIds (2 типа связи) → кривой N-делёж; дедуп fids. Растёт при S9 (если roll-up B0 понадобит B-агрегаты)."
+    },
+    "pure/reporting-export-pure.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-export-pure",
+      "loc": 279,
+      "state": [
+        "_WINDOWED",
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_EXPORT_PURE"
+      ],
+      "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: #50 B0-e — осознанный +21 (199→220): проекция b0 «Свод» — ветка report==='b0' в _projectReport (секция на КАЖДУЮ из 5 метрик: строки=месяцы, колонки=[месяц, …системы+агрегат]; значения _round1, null→'') + b0 в _reportTitle. b0 — снимок (свой N-мес свод, не date-окно) → meta период = exportSnapshot. #50 S9-EXP-a — новый leaf-проектор «отчёт → секции» для экспорта (Excel/PDF): reportToSheets(vm) читает ФИНАЛЬНЫЙ vm 13 отчётов + лейблы vm.labels → нейтральную табличную модель {fileStem,title,meta,sections}; XLS-писатель (excel-export.writeReportXlsx) и PDF-писатель (pdfmake, S9-EXP-b) потребляют ОДИН выход — проекция пишется один раз на отчёт. Leaf (pure): только vm + deps(fmtDate,nowTs), без domain/data-мостов."
+    },
+    "pure/reporting-period.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-period",
+      "loc": 116,
+      "state": [
+        "MAX_MONTHS",
+        "PERIOD_PRESETS",
+        "_DAY_MS",
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_PERIOD"
+      ],
+      "budgetNote": "#50 B0 — осознанный +24 (92→116): monthlyWindows(N, nowTs) — N полуоткрытых UTC-месячных окон [начало месяца, начало следующего), старый→новый, текущий (возможно неполный) последним; для свода B0 каждый месяц прогоняет соответствующий A-движок (оконные метрики фильтруют популяцию / снимки — as-of конец окна). Date.UTC нормализует mo<0 → границы года без спец-веток; UTC ⇒ нет DST. N кламп [1,60]. #50 S2 — модель периодов D9: computeWindow (пресеты today/yesterday/last7/last30/lastMonth/lastQuarter/currentQuarter/ytd/calendarYear/custom → полуоткрытое окно [from,to) в UTC; Date.UTC нормализует границы месяца/квартала/года) + PERIOD_PRESETS каталог. Общий для ВСЕХ оконных отчётов (A1 первый). БЕЗ I/O."
+    },
+    "pure/reporting-pure.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-pure",
+      "loc": 656,
+      "state": [
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_PURE"
+      ],
+      "budgetNote": "#57-3 — +4: _valNameCanon + preferCanon в parseStateChunk (канон-сверка отката; display-приоритет отчётов не тронут). #50 B0 (адверс-фикс Bug 2) — +2 (643→645): parseAnchorsChunk эмитит ОЧИСТКУ State ({to:null}) вместо дропа (D7 — as-of реконструкция вернёт null, не сталое состояние; консьюмеры idx[to]/name-матч null-safe). #50 B0 — осознанный +3 (640→643): parseAnchorsChunk эмитит .from (прежнее состояние из act.removed, канон name приоритетно; null=впервые установлено) — additive для A2/A5/flow (читают .to/.ts), нужно as-of реконструкции состояния свода B0 (stateAsOf). #50 S8b buildTechDebtRows — осознанный +45: движок B1 Техдолг (СНИМОК оценок, контур B) — per-система×роль Σ оценок техдолга + Σ ВСЕХ оценок роли (знаменатель) + % по ЧЧ (debt÷all) + сигнал «неоценённый долг» (задачи техдолга без единой валидной оценки: estimated/unestimated) + тоталы. Оценки, не время → дисплей ÷60. null-proto мапы, роль без данных в системе пропускается. 4 unit. Прошлое #50 S8a computeThousand — осознанный +15: движок B3 «1000 мелочей» (контур B) — из двух YT-подсчётов (за период + YTD) → {countPeriod,countYtd,avgPerMonth}; avgPerMonth = countYtd ÷ прошедших месяцев года (месяц 0..11 + дробь по дню, кламп ≥1 против делёжа на ~0 в январе); nowTs инжектится (тестируемо, без Date.now внутри — консистентно с прочими pure-движками). Счётчик, не время → не ÷60. 5 unit. Прошлое #50 S7b computeSpillover — осознанный +115: движок A10 Spillover (планер-нативный из ssp_history, retro-only). Дифф соседних FINISHED-снимков ПО РОЛИ (запись = <baseSprintId>_<roleKey>): группировка snapshots by roleKey → sort by dateStart → для baseSprintId находим idxN и recN+1 (**СТРОГО ПОЗЖЕ по dateStart + иной base id** — адверс-фикс sorting-ordering: без строгого предиката sibling с tie-dateStart или null-dateStart крал N+1 и carried молча становился dropped). Классификация items в recN [активные = INC_PLANNED/INC_UNPLANNED opts.activeInc]: done по opts.doneStates (реюз standupDoneStates), CARRIED = не-done ∧ есть в recN+1 **∧ isActive в recN+1** (адверс-фикс inclusion-symmetry: INC_EXCLUDED в N+1 = «исключено из плана» = dropped, а не carried; симметрия с age-цепью, где prevIt тоже требует isActive), DROPPED = не-done ∧ нет; % недовыполнения роли = notDoneHours ÷ plannedHours; level ok(<20%)/warn/over(≥50%); tails-список отсортирован по hours ↓; hasN1=false если это последний снимок цепочки → carried не определён, всё в dropped. ВОЗРАСТ ХВОСТА (зомби): цепочка подряд-переносов задачи назад по chain (recN → recN-1 → …), сброс при done в предке или отсутствии; per-issue максимум по ролям; level ok/warm(≥opts.ageBands.warm)/hot(≥opts.ageBands.hot), сорт по возрасту ↓; done-items исключены. Null-safe/пустые аргументы OK. 16 unit (13 golden+edge + 3 адверс-регресс: tie-dateStart sibling, null-dateStart N+1, INC_EXCLUDED в N+1). 6-линз workflow адверс-верификация: 4 SOUND (off-by-one/group-by-role/money-math/multi-role) + 2 BUG_FOUND → пофикшены и залочены регресс-тестами. Чисто. Прошлое #50 S6b buildBacklogRows — осознанный +33: агрегатор A6 Бэклог в ЧЧ по ролям (СНИМОК) — per-role Σ текущих оценок (мин→ч) + счётчик задач [отсев null/0/невалид] + «месяцев бэклога» = Σч ÷ месячная ёмкость роли (ч/мес; нет ёмкости → months=null, гейдж «—») + бэнды уровня none/ok/warn[у порога ≥0.85×норма]/over[≥норма]; строка на КАЖДУЮ активную роль [нулевой бэклог = прозрачно 0]; norm-дефолт 6, null-safe входы. 5 unit. Чисто. Прошлое #50 S5b-ii — осознанный +65: computePlanFact (движок A5 План-факт «точность оценки = скорость роли»: per-role ЗНАКОВОЕ ср. расхождение (fact−asOf)/asOf×100 по валидным задачам роли [owner-locked знак = направление недо/переоценки] + overCount |откл|>threshold + noEstimate ÷0-guard; факт атрибутируется ПЕРВОЙ роли автора — как buildWorkloadRows, без двойного счёта дуальной роли; светофор agingLevel бэнды порог/2·порог для плитки / порог·2×порог для строк; строки только сверх порога, сорт ↓|var|; incomplete D7 вне; null-proto/NaN-safe; ЕДИНЫЙ источник «скорости роли» — #40 переиспользует). Чисто. Прошлое #50 S5b-i — осознанный +74: as-of реплей period-поля оценки (A5 План-факт) — parseAsOfPeriodChunk (per-issue-per-field хронология изменений period-значения [{ts,from,to}] минуты из CustomFieldCategory; поле по field.id, .minutes скаляр — локализации нет; anchor-aware D7: as-of=старт-якорь ⇒ реконструкция назад-от-текущего, hitTop⇒чанк incomplete) + asOfPeriodMinutes (значение на asOfTs = from самого раннего перехода с ts>asOfTs; нет→текущее; строгое >) + _periodMin. Чисто. Прошлое #50 S5a buildWorkloadRows — осознанный +50: движок A4 Трудозатраты — агрегация нативных workItems по (человек, роль) через per-task исполнителей (roleExecutors из userField*: роль workitem'а = роль, чей исполнитель задачи == автор, ПЕРВОЕ совпадение; нет → null) + «кто не списал» (исполнители отобранных задач без записей) + distinct-дни; incomplete D7 исключены; null-proto мапы. Чисто. Прошлое #50 S3b parseAnchorsChunk — осознанный +68: разбор входов в ЯКОРНЫЕ состояния (A2 TTM) — parseAnchorsChunk (инверсия parseStateChunk: min-по-времени ⇒ ПЕРВЫЙ/старейший вход в каждый якорь = reopen-safe И не зависит от порядка обхода fetch; матч якоря по name ИЛИ localizedName — иначе на локализованном инстансе YT (added={name:Done,localizedName:Готово}) тихий population=0, пойман смоуком S3d; + полный хронологический таймлайн переходов для интервалов пауз-состояний; anchor-aware D7 — hitTop ⇒ весь чанк incomplete, старт-якорь режется хвостом истории). Чисто. Прошлое #50 S2 — осознанный +35: buildProgressRows (A1 Прогресс — строки «перешло в целевой статус за период»: enteredAt из примитива/created, фильтр по окну [from,to) D9, ярлык statusLabels-fallback, incomplete D7 исключены, сорт по дате ↓). Чисто. Прошлое #50 S1c — осознанный +60: расчёт A7 Aging — workdaysBetween (рабочие дни = будни, UTC; праздники ssp_calendar = refinement) + agingLevel (флаг yellow/red по порогу) + buildAgingRows (сборка строк из активных задач + вывода примитива + порогов, incomplete исключаются — D7). Прошлое #50 S1b: parseStateChunk (разбор Activities API + детект обрезки/starvation) + диагностика. БЕЗ I/O. Растёт на S3 (TTM: паузы, first/last вход, окна)."
+    },
+    "pure/reporting-rollup.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-rollup",
+      "loc": 238,
+      "state": [
+        "ALL_SYS",
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_ROLLUP"
+      ],
+      "budgetNote": "#50 v3.2.0 — +16 (222→238): проброс t.timelines в computeTtm ТОЛЬКО при last-stable-close (под first-close lite-реплей не читается — не гоняем месяцы×системы вхолостую). Прошлое: #50 B0-c адверс-фиксы (+16, 206→222): _asOfMs (текущий неполный месяц → now, не будущий конец — баг B раздутия) + оценка asOf-1 (согласование <= с < stateAsOf — баг A утечки на ms-границе) + _incSet нормализует ES6 Set (баг C тихой порчи D7) + _inSys строгое сравнение без ||null (баг D фантом-раздел falsy-системы). Адверс-workflow B0-c: 6 REAL_BUG→4 разных, все пофикшены+залочены регрессом; 2 отклонены. #50 B0-c — +142 (64→206): computeRollupSeries — помесячный свод 4 метрик × система/агрегат для Recharts LineChart. Реконструкция из КОНСТАНТНО-фетченных сырых данных (окна месяцев фильтруют популяцию / as-of конец месяца снимков); движки инъектируются (pure→pure запрещён). Per (месяц×система): ttm=медиана Lead (computeTtm окно по lead.end) · planfact=task-weighted ср.знак.% (computePlanFact, популяция lead.end∈месяц) · bottleneck=max медиана dwell (computeBottleneck as-of, обрезка таймлайна) · backlog=Σч И max месяцев по ролям (buildBacklogRows, as-of open-set stateAsOf + as-of оценки asOfPeriodMinutes). Система __all__=агрегат. Светофор реюз нормативов. incomplete D7 искл. Мок-движки в юнитах изолируют loop/фильтр/редукцию (движки тестятся отдельно). #50 B0 — новый leaf-модуль свода (контур B roll-up). reporting-pure на потолке 640/«жирный», reporting-ttm — своя тема. Пока as-of примитивы: truncateTimelineAsOf (переходы < конца месяца → Bottleneck as-of, dwell клипается computeBottleneck) + stateAsOf (состояние задачи на конец месяца из таймлайна [{ts,from,to}]+created+current: последний переход до asOfTs → .to; все позже → .from первого [начальное]; нет переходов → current; created>asOfTs → null — для Бэклог as-of open-set). Граница создания createdTs>=asOfTs→null (симметрия с ts<asOfTs, адверс-фикс Bug 1). БЕЗ I/O, null/NaN-safe. Растёт на B0-c (computeRollupSeries — помесячная агрегация 4 метрик × систем с инъекцией движков)."
+    },
+    "pure/reporting-ttm.js": {
+      "layer": "pure",
+      "domain": "pure/reporting-ttm",
+      "loc": 412,
+      "state": [
+        "_api"
+      ],
+      "publishes": [
+        "REPORTING_TTM"
+      ],
+      "budgetNote": "#50 v3.2.0 — осознанный +72 (340→412): терминальная политика US-A2-02 (timelines-реплей: lastEntry по состояниям + endTsOf по политике в dur/inPopulation) + точная эпизодная модель Cycle (Σ закрытых dev-эпизодов, first-close=1-й эпизод ≡ прежний span на нормальных траекториях; без timelines — деградация к первым входам). Прошлое: #50 S4b — потоковые движки A8/A9 на timelines (+120, предвещено S3b-нотой; вкл. +12 харднинг адверс-верификации: _sanitizeTimeline isFinite-ts+непустой-to = чинит null/NaN-ts double-count/фантом-сэмпл, null-proto мапы = защита от прототипных имён статусов, leave<enter = 0-визит консистентен same-day): _flowIndex (позиция статуса в reportingFlowStates) + computeBottleneck (A8: медиана dwell раб.дн нетто-пауз на КАЖДЫЙ визит статуса + WIP по currentStates/last-to; открытый последний интервал → dwell до now; incomplete D7 вне агрегатов; deps={workdaysBetween,agingLevel}) + computeRework (A9: обратные переходы idx(to)<idx(from) в окне [from,to) по ts; byTransition↓ с issueIds для сегментации вью-слоя; терминал ловит reopen только если в flowStates). Реюз median/mergeIntervals/pauseWorkdays в файле (без pure→pure связи). БЕЗ I/O. Прошлое: #50 S3b — новый чистый движок A2 TTM (Lead/Team/Cycle): median (odd/even/пусто→null) + bucketize (края 40/120 → le40/mid/gt120) + mergeIntervals (перекрытия пауз) + pauseWorkdays (клампинг к [start,end], открытая пауза→endTs) + foldChildUnits (эпик + одиночная стори; стори-дети эпика свёрнуты) + computeTtm (плитки/строки/бакеты/риск; популяция фильтрует ТОЛЬКО по входу в конец-якорь в окне — старт может быть за месяцы до; incomplete D7 вне медиан; end<start→null; deps={workdaysBetween,agingLevel} инжектятся — leaf НЕ тянет чужой мост B2). БЕЗ I/O. Растёт на S4 (A8/A9)."
+    },
     "pure/share-url-pure.js": {
       "layer": "pure",
       "domain": "pure/share-url-pure",
       "loc": 92,
-      "locBudget": 111,
       "state": [
         "FOCUS_RE",
         "NODE_INTERNAL_TO_URL",
@@ -969,7 +1066,6 @@
       "layer": "pure",
       "domain": "pure/sort-pure",
       "loc": 144,
-      "locBudget": 149,
       "state": [],
       "publishes": [
         "SORT_PURE"
@@ -979,7 +1075,6 @@
       "layer": "pure",
       "domain": "pure/toast-pure",
       "loc": 45,
-      "locBudget": 65,
       "state": [],
       "publishes": [
         "TOAST_PURE"
@@ -989,203 +1084,18 @@
       "layer": "pure",
       "domain": "pure/util-pure",
       "loc": 61,
-      "locBudget": 70,
       "state": [],
       "publishes": []
-    },
-    "data/reporting-data.js": {
-      "layer": "domain",
-      "domain": "data/reporting-data",
-      "loc": 538,
-      "locBudget": 545,
-      "state": [
-        "REPORT_ABORTED",
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_DATA"
-      ],
-      "budgetNote": "#50 B0 — +1: bulkAsOfEstimates выставляет out.timelines (сырые per-field хронологии оценок) для помесячной as-of реконструкции свода (константный фетч вместо N×). #50 D10 SAFE-a — +10 (451→461): прерывание отчёта — REPORT_ABORTED маркер + _aborted(opts) хелпер; межчанковый abort-чек в 5 чанк-примитивах (bulkStateTransitions/bulkAnchorTransitions/bulkAsOfEstimates/bulkPauseTagIntervals/bulkWorkItems) + внутристраничный в bulkWorkItems (page) с re-throw в chunk-catch. Останавливает поток запросов (≤1 в полёте; host.fetchYouTrack без AbortSignal — реальный HTTP не отменить). Аддитивно: без opts.shouldAbort работают как раньше. #50 S7b fetchHistory — осознанный +21 (вкл. S7c-фикс +4: global-роутинг backend-global+projectKey вместо backend-project scope:true — отчётность в global-дашборде, project-scope не резолвился, промис висел «Загрузка…», пойман смоуком S7c): A10 Spillover — планер-нативный отчёт из ssp_history (снимки соседних FINISHED-спринтов, реплей activities НЕ нужен) — свежий GET backend-project/history через deps.host.fetchApp (тот же безопасный endpoint, что и планер: viewer authzGuard + migrateHistoryArr + orphan-детект в backend-core.js:2444). fail-soft: сетевая ошибка → {history:[]}, диагностика в deps.diag. Инъекция в _reportingDeps (core.js) — net-0 к потолку 4412 (компактифицирована в одну строку с combinePauses/searchAssist). B1: планерный _history (scope-planer) НЕ трогаем; получаем свежий срез бэкенда напрямую. Прошлое #50 QueryAssist отбора — осознанный +25: searchAssist (data-source RingUI QueryAssist для «Отбор задач» ВСЕХ отчётов; POST /api/search/assist с folders project-scope [$type:'Project' обязателен] в теле, fail-soft пустые suggestions) + ASSIST_FIELDS. ⚠ ponytail: 3-я копия ассиста (pick/_backlogAssist/этот) — общий экстракт отдельным техдолгом. Прошлое #50 S5b-i — осознанный +70: bulkAsOfEstimates (as-of значение period-полей оценки на момент старт-якоря lead.start — D12 net-new; фетч как bulkAnchorTransitions [та же категория/reverse/$top=300/чанки 25], проекция period .minutes + фильтр по field.id; разбор+anchor-aware D7 в pure.parseAsOfPeriodChunk, реконструкция назад-от-текущего в pure.asOfPeriodMinutes; ОТДЕЛЬНЫЙ фетч — свой $top-бюджет, фолд в anchors усилил бы starvation; ⚠ живая форма period added/removed — под смоук S5b) + PERIOD_ACT_FIELDS. Для A5 План-факт. Прошлое #50 S5a — осознанный +85: bulkWorkItems (НОВЫЙ data-path D12 — нативные workItems часы/автор/дата по задачам отбора за окно; чанки по 25 + СЕРВЕРНЫЙ фильтр `work date:` [окно date-granular, toTs-1] + ПАГИНАЦИЯ-до-полноты $skip [для workItems поддержан — D7 без гипотез, guard MAX_WI_PAGES] + fail-loud incomplete) + _parseWorkItems (валидные {issueId,author,dateTs,minutes}) + _fmtWorkDate (UTC YYYY-MM-DD). Роль-атрибуция — в движке A4. Empirically verified API на стенде (basic-auth): issue id:+work date: комбо + $skip. Прошлое #50 S3b — осознанный +173: A2 TTM data-layer — bulkAnchorTransitions (первый вход в якоря + таймлайн, фетч байт-в-байт как bulkStateTransitions, anchor-aware D7 в pure) + pauseIntervalsFromTimeline (интервалы пауз-СТАТУСОВ без доп. фетча) + bulkPauseTagIntervals/_pairTagIntervals (паузы-ТЕГИ, ОТДЕЛЬНАЯ категория TagsCategory — ⚠ живая форма под смоук S3d, паринг add→remove на unit-тесте) + combinePauses. Прошлое #50 S1b — примитив bulkStateTransitions: фронтовое чтение переходов состояний из Activities API чанками по 25 (host.fetchYouTrack, D8) + агрегация + сводный диагностический ридаут §12 (chunks/starvation/ms). Разбор/детект обрезки — в pure/reporting-pure.js. Растёт на S5 (bulkWorkItems) — тогда пересмотреть."
-    },
-    "domain/reporting-view.js": {
-      "layer": "domain",
-      "domain": "domain/reporting-view",
-      "loc": 1404,
-      "locBudget": 1410,
-      "state": [],
-      "publishes": [
-        "REPORTING_VIEW"
-      ],
-      "budgetNote": "#57-5 (эпик 57) — осознанный рост +14: аудит отчётности — _battr (брейс имён полей в YT-запросах A1/A6, паттерн #21 §9) + подсказка A3 без целевых статусов (a3NoDone/a3NoDoneCfg) + Н3 _wrapUserQuery (юзер-хвост в скобки против or-утечки project-скоупа, sort by — снаружи). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D4) — makeReportLoader: конверт 13 лоадеров (единый catch/fetch+LIMIT/период-гарды/queryParts) + подъём _cfMin/_cfText/_typeValOf/_sysValOf; -66 LOC, ратчет ужат. v3.12.0 (#11) — +A11 Velocity: labels + _vpure + _loadA11 (расчёт в pure/velocity-pure)."
-    },
-    "pure/reporting-pure.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-pure",
-      "loc": 656,
-      "locBudget": 656,
-      "state": [
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_PURE"
-      ],
-      "budgetNote": "#57-3 — +4: _valNameCanon + preferCanon в parseStateChunk (канон-сверка отката; display-приоритет отчётов не тронут). #50 B0 (адверс-фикс Bug 2) — +2 (643→645): parseAnchorsChunk эмитит ОЧИСТКУ State ({to:null}) вместо дропа (D7 — as-of реконструкция вернёт null, не сталое состояние; консьюмеры idx[to]/name-матч null-safe). #50 B0 — осознанный +3 (640→643): parseAnchorsChunk эмитит .from (прежнее состояние из act.removed, канон name приоритетно; null=впервые установлено) — additive для A2/A5/flow (читают .to/.ts), нужно as-of реконструкции состояния свода B0 (stateAsOf). #50 S8b buildTechDebtRows — осознанный +45: движок B1 Техдолг (СНИМОК оценок, контур B) — per-система×роль Σ оценок техдолга + Σ ВСЕХ оценок роли (знаменатель) + % по ЧЧ (debt÷all) + сигнал «неоценённый долг» (задачи техдолга без единой валидной оценки: estimated/unestimated) + тоталы. Оценки, не время → дисплей ÷60. null-proto мапы, роль без данных в системе пропускается. 4 unit. Прошлое #50 S8a computeThousand — осознанный +15: движок B3 «1000 мелочей» (контур B) — из двух YT-подсчётов (за период + YTD) → {countPeriod,countYtd,avgPerMonth}; avgPerMonth = countYtd ÷ прошедших месяцев года (месяц 0..11 + дробь по дню, кламп ≥1 против делёжа на ~0 в январе); nowTs инжектится (тестируемо, без Date.now внутри — консистентно с прочими pure-движками). Счётчик, не время → не ÷60. 5 unit. Прошлое #50 S7b computeSpillover — осознанный +115: движок A10 Spillover (планер-нативный из ssp_history, retro-only). Дифф соседних FINISHED-снимков ПО РОЛИ (запись = <baseSprintId>_<roleKey>): группировка snapshots by roleKey → sort by dateStart → для baseSprintId находим idxN и recN+1 (**СТРОГО ПОЗЖЕ по dateStart + иной base id** — адверс-фикс sorting-ordering: без строгого предиката sibling с tie-dateStart или null-dateStart крал N+1 и carried молча становился dropped). Классификация items в recN [активные = INC_PLANNED/INC_UNPLANNED opts.activeInc]: done по opts.doneStates (реюз standupDoneStates), CARRIED = не-done ∧ есть в recN+1 **∧ isActive в recN+1** (адверс-фикс inclusion-symmetry: INC_EXCLUDED в N+1 = «исключено из плана» = dropped, а не carried; симметрия с age-цепью, где prevIt тоже требует isActive), DROPPED = не-done ∧ нет; % недовыполнения роли = notDoneHours ÷ plannedHours; level ok(<20%)/warn/over(≥50%); tails-список отсортирован по hours ↓; hasN1=false если это последний снимок цепочки → carried не определён, всё в dropped. ВОЗРАСТ ХВОСТА (зомби): цепочка подряд-переносов задачи назад по chain (recN → recN-1 → …), сброс при done в предке или отсутствии; per-issue максимум по ролям; level ok/warm(≥opts.ageBands.warm)/hot(≥opts.ageBands.hot), сорт по возрасту ↓; done-items исключены. Null-safe/пустые аргументы OK. 16 unit (13 golden+edge + 3 адверс-регресс: tie-dateStart sibling, null-dateStart N+1, INC_EXCLUDED в N+1). 6-линз workflow адверс-верификация: 4 SOUND (off-by-one/group-by-role/money-math/multi-role) + 2 BUG_FOUND → пофикшены и залочены регресс-тестами. Чисто. Прошлое #50 S6b buildBacklogRows — осознанный +33: агрегатор A6 Бэклог в ЧЧ по ролям (СНИМОК) — per-role Σ текущих оценок (мин→ч) + счётчик задач [отсев null/0/невалид] + «месяцев бэклога» = Σч ÷ месячная ёмкость роли (ч/мес; нет ёмкости → months=null, гейдж «—») + бэнды уровня none/ok/warn[у порога ≥0.85×норма]/over[≥норма]; строка на КАЖДУЮ активную роль [нулевой бэклог = прозрачно 0]; norm-дефолт 6, null-safe входы. 5 unit. Чисто. Прошлое #50 S5b-ii — осознанный +65: computePlanFact (движок A5 План-факт «точность оценки = скорость роли»: per-role ЗНАКОВОЕ ср. расхождение (fact−asOf)/asOf×100 по валидным задачам роли [owner-locked знак = направление недо/переоценки] + overCount |откл|>threshold + noEstimate ÷0-guard; факт атрибутируется ПЕРВОЙ роли автора — как buildWorkloadRows, без двойного счёта дуальной роли; светофор agingLevel бэнды порог/2·порог для плитки / порог·2×порог для строк; строки только сверх порога, сорт ↓|var|; incomplete D7 вне; null-proto/NaN-safe; ЕДИНЫЙ источник «скорости роли» — #40 переиспользует). Чисто. Прошлое #50 S5b-i — осознанный +74: as-of реплей period-поля оценки (A5 План-факт) — parseAsOfPeriodChunk (per-issue-per-field хронология изменений period-значения [{ts,from,to}] минуты из CustomFieldCategory; поле по field.id, .minutes скаляр — локализации нет; anchor-aware D7: as-of=старт-якорь ⇒ реконструкция назад-от-текущего, hitTop⇒чанк incomplete) + asOfPeriodMinutes (значение на asOfTs = from самого раннего перехода с ts>asOfTs; нет→текущее; строгое >) + _periodMin. Чисто. Прошлое #50 S5a buildWorkloadRows — осознанный +50: движок A4 Трудозатраты — агрегация нативных workItems по (человек, роль) через per-task исполнителей (roleExecutors из userField*: роль workitem'а = роль, чей исполнитель задачи == автор, ПЕРВОЕ совпадение; нет → null) + «кто не списал» (исполнители отобранных задач без записей) + distinct-дни; incomplete D7 исключены; null-proto мапы. Чисто. Прошлое #50 S3b parseAnchorsChunk — осознанный +68: разбор входов в ЯКОРНЫЕ состояния (A2 TTM) — parseAnchorsChunk (инверсия parseStateChunk: min-по-времени ⇒ ПЕРВЫЙ/старейший вход в каждый якорь = reopen-safe И не зависит от порядка обхода fetch; матч якоря по name ИЛИ localizedName — иначе на локализованном инстансе YT (added={name:Done,localizedName:Готово}) тихий population=0, пойман смоуком S3d; + полный хронологический таймлайн переходов для интервалов пауз-состояний; anchor-aware D7 — hitTop ⇒ весь чанк incomplete, старт-якорь режется хвостом истории). Чисто. Прошлое #50 S2 — осознанный +35: buildProgressRows (A1 Прогресс — строки «перешло в целевой статус за период»: enteredAt из примитива/created, фильтр по окну [from,to) D9, ярлык statusLabels-fallback, incomplete D7 исключены, сорт по дате ↓). Чисто. Прошлое #50 S1c — осознанный +60: расчёт A7 Aging — workdaysBetween (рабочие дни = будни, UTC; праздники ssp_calendar = refinement) + agingLevel (флаг yellow/red по порогу) + buildAgingRows (сборка строк из активных задач + вывода примитива + порогов, incomplete исключаются — D7). Прошлое #50 S1b: parseStateChunk (разбор Activities API + детект обрезки/starvation) + диагностика. БЕЗ I/O. Растёт на S3 (TTM: паузы, first/last вход, окна)."
-    },
-    "pure/reporting-b-pure.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-b-pure",
-      "loc": 169,
-      "locBudget": 169,
-      "state": [
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_B_PURE"
-      ],
-      "budgetNote": "#50 S8c computeBugTax — новый leaf-модуль (reporting-pure.js на потолке 640, уже «жирный» >600 — большой B2-движок вынесен, а не бloat'ит фат-файл; владелец предвидел «взвесить reporting-b-pure.js»). Движок B2 «Налог на баги» (ОКОННЫЙ, контур B): на систему×роль tax=Σwi(баг)/[Σwi(фича)+Σwi(баг)]. «Фича» = НЕ-баг задача популяции, слинкованная с багом (bug.featureIds); фичи без багов ВНЕ охвата (узкий скоуп владельца). Пул-на-систему = Σбаг/Σвсё ПО ТОТАЛАМ (не среднее долей). Роль workitem'а = первый исполнитель роли задачи == author (реюз правила A4). Fallback (в баг часы не списаны): часы фичи, пока связанный баг был ОТКРЫТ [created,resolve|windowToTs], переклассифицируются в баг-числитель (знаменатель не трогаем — те же фича-часы); union открытых окон вместо взвешенного дележа (для агрегата система×роль делёж-по-окну МОТ — resolve нужен лишь как верхняя граница; per-bug раскладка — апгрейд при выводе по багам). Баг на N фич (списанные часы) → делёж пропорц. собственным ЧЧ фич (равно если все 0). Orphan-баги (без фич) → «корзина» (числитель-only). БЕЗ I/O, null/NaN-safe. 12 unit. Адверс-6-линз workflow (11 агентов) → 3 REAL_BUG пофикшены+залочены регрессом: (1) HIGH — fallback гейтился по АТРИБУТ. сумме, не raw → баг со списанным-но-неатрибут. трудом (author≠исполнитель роли ИЛИ роль не замаплена) переклассифицировал 100% фича-часов в баг; гейт raw≤0. (2) created=NaN не ловился `==null` → -Infinity → вся история; isFinite-гейт. (3) дубль фичи в featureIds (2 типа связи) → кривой N-делёж; дедуп fids. Растёт при S9 (если roll-up B0 понадобит B-агрегаты)."
-    },
-    "pure/reporting-period.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-period",
-      "loc": 116,
-      "locBudget": 116,
-      "state": [
-        "PERIOD_PRESETS",
-        "_DAY_MS",
-        "MAX_MONTHS",
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_PERIOD"
-      ],
-      "budgetNote": "#50 B0 — осознанный +24 (92→116): monthlyWindows(N, nowTs) — N полуоткрытых UTC-месячных окон [начало месяца, начало следующего), старый→новый, текущий (возможно неполный) последним; для свода B0 каждый месяц прогоняет соответствующий A-движок (оконные метрики фильтруют популяцию / снимки — as-of конец окна). Date.UTC нормализует mo<0 → границы года без спец-веток; UTC ⇒ нет DST. N кламп [1,60]. #50 S2 — модель периодов D9: computeWindow (пресеты today/yesterday/last7/last30/lastMonth/lastQuarter/currentQuarter/ytd/calendarYear/custom → полуоткрытое окно [from,to) в UTC; Date.UTC нормализует границы месяца/квартала/года) + PERIOD_PRESETS каталог. Общий для ВСЕХ оконных отчётов (A1 первый). БЕЗ I/O."
-    },
-    "pure/reporting-rollup.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-rollup",
-      "loc": 238,
-      "locBudget": 245,
-      "state": [
-        "ALL_SYS",
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_ROLLUP"
-      ],
-      "budgetNote": "#50 v3.2.0 — +16 (222→238): проброс t.timelines в computeTtm ТОЛЬКО при last-stable-close (под first-close lite-реплей не читается — не гоняем месяцы×системы вхолостую). Прошлое: #50 B0-c адверс-фиксы (+16, 206→222): _asOfMs (текущий неполный месяц → now, не будущий конец — баг B раздутия) + оценка asOf-1 (согласование <= с < stateAsOf — баг A утечки на ms-границе) + _incSet нормализует ES6 Set (баг C тихой порчи D7) + _inSys строгое сравнение без ||null (баг D фантом-раздел falsy-системы). Адверс-workflow B0-c: 6 REAL_BUG→4 разных, все пофикшены+залочены регрессом; 2 отклонены. #50 B0-c — +142 (64→206): computeRollupSeries — помесячный свод 4 метрик × система/агрегат для Recharts LineChart. Реконструкция из КОНСТАНТНО-фетченных сырых данных (окна месяцев фильтруют популяцию / as-of конец месяца снимков); движки инъектируются (pure→pure запрещён). Per (месяц×система): ttm=медиана Lead (computeTtm окно по lead.end) · planfact=task-weighted ср.знак.% (computePlanFact, популяция lead.end∈месяц) · bottleneck=max медиана dwell (computeBottleneck as-of, обрезка таймлайна) · backlog=Σч И max месяцев по ролям (buildBacklogRows, as-of open-set stateAsOf + as-of оценки asOfPeriodMinutes). Система __all__=агрегат. Светофор реюз нормативов. incomplete D7 искл. Мок-движки в юнитах изолируют loop/фильтр/редукцию (движки тестятся отдельно). #50 B0 — новый leaf-модуль свода (контур B roll-up). reporting-pure на потолке 640/«жирный», reporting-ttm — своя тема. Пока as-of примитивы: truncateTimelineAsOf (переходы < конца месяца → Bottleneck as-of, dwell клипается computeBottleneck) + stateAsOf (состояние задачи на конец месяца из таймлайна [{ts,from,to}]+created+current: последний переход до asOfTs → .to; все позже → .from первого [начальное]; нет переходов → current; created>asOfTs → null — для Бэклог as-of open-set). Граница создания createdTs>=asOfTs→null (симметрия с ts<asOfTs, адверс-фикс Bug 1). БЕЗ I/O, null/NaN-safe. Растёт на B0-c (computeRollupSeries — помесячная агрегация 4 метрик × систем с инъекцией движков)."
-    },
-    "pure/reporting-export-pure.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-export-pure",
-      "loc": 279,
-      "locBudget": 280,
-      "state": [
-        "_WINDOWED",
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_EXPORT_PURE"
-      ],
-      "budgetNote": "v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: #50 B0-e — осознанный +21 (199→220): проекция b0 «Свод» — ветка report==='b0' в _projectReport (секция на КАЖДУЮ из 5 метрик: строки=месяцы, колонки=[месяц, …системы+агрегат]; значения _round1, null→'') + b0 в _reportTitle. b0 — снимок (свой N-мес свод, не date-окно) → meta период = exportSnapshot. #50 S9-EXP-a — новый leaf-проектор «отчёт → секции» для экспорта (Excel/PDF): reportToSheets(vm) читает ФИНАЛЬНЫЙ vm 13 отчётов + лейблы vm.labels → нейтральную табличную модель {fileStem,title,meta,sections}; XLS-писатель (excel-export.writeReportXlsx) и PDF-писатель (pdfmake, S9-EXP-b) потребляют ОДИН выход — проекция пишется один раз на отчёт. Leaf (pure): только vm + deps(fmtDate,nowTs), без domain/data-мостов."
-    },
-    "pure/reporting-ttm.js": {
-      "layer": "pure",
-      "domain": "pure/reporting-ttm",
-      "loc": 412,
-      "locBudget": 420,
-      "state": [
-        "_api"
-      ],
-      "publishes": [
-        "REPORTING_TTM"
-      ],
-      "budgetNote": "#50 v3.2.0 — осознанный +72 (340→412): терминальная политика US-A2-02 (timelines-реплей: lastEntry по состояниям + endTsOf по политике в dur/inPopulation) + точная эпизодная модель Cycle (Σ закрытых dev-эпизодов, first-close=1-й эпизод ≡ прежний span на нормальных траекториях; без timelines — деградация к первым входам). Прошлое: #50 S4b — потоковые движки A8/A9 на timelines (+120, предвещено S3b-нотой; вкл. +12 харднинг адверс-верификации: _sanitizeTimeline isFinite-ts+непустой-to = чинит null/NaN-ts double-count/фантом-сэмпл, null-proto мапы = защита от прототипных имён статусов, leave<enter = 0-визит консистентен same-day): _flowIndex (позиция статуса в reportingFlowStates) + computeBottleneck (A8: медиана dwell раб.дн нетто-пауз на КАЖДЫЙ визит статуса + WIP по currentStates/last-to; открытый последний интервал → dwell до now; incomplete D7 вне агрегатов; deps={workdaysBetween,agingLevel}) + computeRework (A9: обратные переходы idx(to)<idx(from) в окне [from,to) по ts; byTransition↓ с issueIds для сегментации вью-слоя; терминал ловит reopen только если в flowStates). Реюз median/mergeIntervals/pauseWorkdays в файле (без pure→pure связи). БЕЗ I/O. Прошлое: #50 S3b — новый чистый движок A2 TTM (Lead/Team/Cycle): median (odd/even/пусто→null) + bucketize (края 40/120 → le40/mid/gt120) + mergeIntervals (перекрытия пауз) + pauseWorkdays (клампинг к [start,end], открытая пауза→endTs) + foldChildUnits (эпик + одиночная стори; стори-дети эпика свёрнуты) + computeTtm (плитки/строки/бакеты/риск; популяция фильтрует ТОЛЬКО по входу в конец-якорь в окне — старт может быть за месяцы до; incomplete D7 вне медиан; end<start→null; deps={workdaysBetween,agingLevel} инжектятся — leaf НЕ тянет чужой мост B2). БЕЗ I/O. Растёт на S4 (A8/A9)."
-    },
-    "domain/capacity-store.js": {
-      "layer": "domain",
-      "domain": "domain/capacity-store",
-      "loc": 60,
-      "locBudget": 72,
-      "state": [
-        "_absences",
-        "_calendar",
-        "_capacity",
-        "_capacityRoster",
-        "_capacityUiState",
-        "_planCap",
-        "_planCapLoading"
-      ],
-      "publishes": [
-        "CAPACITY_STORE"
-      ],
-      "stateNote": "ADR-001 третье применение (R6, аудит §7 п.14) — доменный стор ёмкости #45: стейт вкладки (запись/календарь/отсутствия/ростер/UI) + кэш утверждённой ёмкости планируемого спринта (planCap R4). Вынесен из стейт-ядра core.js (C3-счётчик −7); семантика сеттеров и сброса (только planCap на смене проекта, v3.2.1) — 1:1."
     },
     "pure/velocity-pure.js": {
       "layer": "pure",
       "domain": "pure/velocity-pure",
       "loc": 67,
-      "locBudget": 77,
       "state": [],
       "publishes": [
         "VELOCITY_PURE"
       ],
       "budgetNote": "v3.12.0 (#11) — новый модуль: computeRoleVelocity — единый источник velocity (отчёт A11 сейчас, коэффициент #40 v2 позже)."
-    },
-    "pure/allocsummary-pure.js": {
-      "layer": "pure",
-      "domain": "pure/allocsummary-pure",
-      "loc": 62,
-      "locBudget": 82,
-      "state": [],
-      "publishes": [
-        "ALLOCSUMMARY_PURE"
-      ],
-      "budgetNote": "#61 — новый модуль: чистая сборка строк сводной (дедуп по issueId, per-role оценки, перелимит-раскраска)."
-    },
-    "domain/release-rollback.js": {
-      "layer": "domain",
-      "domain": "domain/release-rollback",
-      "loc": 86,
-      "locBudget": 86,
-      "state": [],
-      "publishes": [
-        "RELEASE_ROLLBACK"
-      ],
-      "budgetNote": "#57-3 (эпик 57) — новый модуль: откат состояний задач релиза по истории поля State (bulkStateTransitions preferCanon, fromState=oldValue; превью-канон R2.3; применение — делегат release-controller.applyStates через core, B1). Снапшот не хранится (⚖ владелец). +1 (смоук): setAll-лейбл мастер-селекта."
-    },
-    "infra/diag-snapshot.js": {
-      "layer": "infra",
-      "domain": "infra/diag-snapshot",
-      "loc": 103,
-      "locBudget": 130,
-      "state": [
-        "ERR_TAIL_LIMIT",
-        "YT_VERSION_TIMEOUT_MS",
-        "api"
-      ],
-      "stateNote": "константы формата (лимит err-хвоста, таймаут YT-версии) + api-мост; мутируемого стейта нет",
-      "publishes": [
-        "DIAG_SNAPSHOT"
-      ],
-      "budgetNote": " #63 п.4 (2026-08-03) — экспорт-слепок состояния из диаг-панели (формат един с prod-snapshots фикстурами)."
-    },
-    "infra/user-prefs.js": {
-      "layer": "infra",
-      "domain": "infra/user-prefs",
-      "loc": 82,
-      "locBudget": 100,
-      "state": [
-        "FLUSH_MS",
-        "_cache",
-        "_dirty",
-        "_timer",
-        "api"
-      ],
-      "publishes": [
-        "USER_PREFS"
-      ],
-      "budgetNote": "#69 строка 21 (2026-08-22) — localStorage ⊃ серверное зеркало предпочтений пользователя (User.extensionProperties.ssp_user_prefs, backend-global user-prefs): на YouTrack 2025.3 localStorage в srcdoc-песочнице мёртв.",
-      "stateNote": "модуль-приватный стор зеркала: серверный кэш + очередь dirty-ключей + debounce-таймер (как таймеры draft-store); константа debounce + api-мост"
     }
   }
 }

@@ -20,7 +20,7 @@ test('D1 — каждый модуль зарегистрирован (новы�
   const missing = [...onDisk].filter((f) => !registered.has(f));
   assert.deepStrictEqual(missing, [],
     'Новые модули без записи в module-registry.json. Добавь запись {layer, domain, ' +
-    'locBudget, state, publishes} — это и есть «куда приземлилась фича»:\n  ' + missing.join('\n  '));
+    'state, publishes} — это и есть «куда приземлилась фича»:\n  ' + missing.join('\n  '));
 });
 
 test('D2 — нет осиротевших записей (удалённый модуль убран из реестра)', () => {

@@ -4,16 +4,17 @@
  * CommonJS-модули в корне репо (backend-*.js), require'ят общее ядро backend-core.js
  * и дописывают свои endpoints в core.ENDPOINTS (паттерн backend-capacity.js /
  * backend-issuefields.js). Этот гейт переносит на них ту же дисциплину: ядро ужимается
- * (BE2), каждый модуль ≤ бюджета (BE1), новый backend-<feature>.js обязан получить
- * запись (BE3). Так фича не дописывается в god-object, а едет в свой модуль.
+ * (BE2), Σ модулей ≤ агрегатного бюджета _meta.budgets.backend (BE1; #69 строка 23 —
+ * per-file потолки сняты), новый backend-<feature>.js обязан получить запись (BE3). Так фича не дописывается в god-object, а едет в свой модуль.
  *
  * Что НЕ переносим (осознанно): топология слоёв (B/C) и state-baseline — они построены
  * на window.__-мостах; бэкенд использует require, мостов нет → сигнал был бы пустым.
- * Числа в registry.backend — per-fork (форки дрейфят), правятся вручную в каждом форке.
+ * Числа в registry.backend/_meta.budgets.backend — per-fork (форки дрейфят), правятся вручную в каждом форке.
  *
  * WF1/WF2 (R3c, v3.7.0): та же дисциплина на workflow-*.js. Общая инфраструктура вынесена
  * в workflow-common.js (sibling-require), правила require'ят её — ратчет фиксирует ужатие
- * и ловит регресс «правило снова обросло локальной копией». registry.workflow — per-fork.
+ * и ловит регресс «правило снова обросло локальной копией». registry.workflow и
+ * _meta.budgets.workflow — per-fork; WF1 с #69/23 — агрегат Σ.
  */
 'use strict';
 const { test } = require('node:test');
@@ -37,19 +38,19 @@ function locOf(f) {
   return lib.nonEmptyLOC(fs.readFileSync(path.join(ROOT, f), 'utf8'));
 }
 
-test('BE1 — каждый backend-модуль не превышает свой LOC-бюджет (ratchet only down)', () => {
-  const be = reg.backend;
-  assert.ok(be && be.modules, 'module-registry.json: отсутствует секция backend.modules');
-  const over = [];
-  for (const f of listBackendModules()) {
-    const entry = be.modules[f];
-    if (!entry) continue; // ловит BE3
-    const loc = locOf(f);
-    if (loc > entry.locBudget) over.push(`${f}: ${loc} > бюджет ${entry.locBudget}`);
-  }
-  assert.deepStrictEqual(over, [],
-    'Backend-модули переросли бюджет. Вынеси в новый backend-<feature>.js ИЛИ, если рост ' +
-    'оправдан, осознанно подними locBudget в module-registry.json (backend.modules):\n  ' + over.join('\n  '));
+/** Агрегатный гейт секции: Σ LOC файлов ≤ _meta.budgets[key].locBudget. */
+function assertAggregate(key, files, hint) {
+  const budget = reg._meta.budgets && reg._meta.budgets[key];
+  assert.ok(budget && typeof budget.locBudget === 'number', `module-registry.json: отсутствует _meta.budgets.${key}`);
+  const sum = files.reduce((a, f) => a + locOf(f), 0);
+  assert.ok(sum <= budget.locBudget,
+    `Σ LOC ${key} = ${sum} > агрегатный бюджет ${budget.locBudget} (замер в реестре ${budget.loc}). ` +
+    hint + ` ИЛИ, если рост оправдан, осознанно подними _meta.budgets.${key}.locBudget в module-registry.json с budgetNote.`);
+}
+
+test('BE1 — Σ LOC backend-модулей не превышает агрегатный бюджет (ratchet only down)', () => {
+  assertAggregate('backend', listBackendModules(),
+    'Backend перерос: вынеси в новый backend-<feature>.js / упрости');
 });
 
 test('BE2 — backend-core.js ужимается, не пухнет (новая фича = свой модуль, не дописка в ядро)', () => {
@@ -69,10 +70,11 @@ test('BE3 — реестр полон: каждый backend-*.js имеет за
   const missing = onDisk.filter((f) => !be.modules[f]);
   const orphan = inReg.filter((f) => !fs.existsSync(path.join(ROOT, f)));
   assert.deepStrictEqual(missing, [],
-    'Новый backend-*.js без записи в registry.backend.modules (добавь loc/locBudget): ' + missing.join(', '));
+    'Новый backend-*.js без записи в registry.backend.modules (добавь loc): ' + missing.join(', '));
   assert.deepStrictEqual(orphan, [],
     'Осиротевшие записи в registry.backend.modules (файла нет на диске): ' + orphan.join(', '));
 });
+
 /** Все workflow-*.js в корне репо. */
 function listWorkflowModules() {
   return fs.readdirSync(ROOT)
@@ -80,20 +82,9 @@ function listWorkflowModules() {
     .sort();
 }
 
-test('WF1 — каждый workflow-модуль не превышает свой LOC-бюджет (ratchet only down)', () => {
-  const wf = reg.workflow;
-  assert.ok(wf && wf.modules, 'module-registry.json: отсутствует секция workflow.modules');
-  const over = [];
-  for (const f of listWorkflowModules()) {
-    const entry = wf.modules[f];
-    if (!entry) continue; // ловит WF2
-    const loc = locOf(f);
-    if (loc > entry.locBudget) over.push(`${f}: ${loc} > бюджет ${entry.locBudget}`);
-  }
-  assert.deepStrictEqual(over, [],
-    'Workflow-модули переросли бюджет. Общая инфраструктура едет в workflow-common.js ' +
-    '(не копия в правиле!) ИЛИ, если рост оправдан, осознанно подними locBudget в ' +
-    'module-registry.json (workflow.modules):\n  ' + over.join('\n  '));
+test('WF1 — Σ LOC workflow-модулей не превышает агрегатный бюджет (ratchet only down)', () => {
+  assertAggregate('workflow', listWorkflowModules(),
+    'Workflow перерос: общая инфраструктура едет в workflow-common.js (не копия в правиле!)');
 });
 
 test('WF2 — реестр полон: каждый workflow-*.js имеет запись, нет осиротевших', () => {
@@ -103,7 +94,7 @@ test('WF2 — реестр полон: каждый workflow-*.js имеет з�
   const missing = onDisk.filter((f) => !wf.modules[f]);
   const orphan = inReg.filter((f) => !fs.existsSync(path.join(ROOT, f)));
   assert.deepStrictEqual(missing, [],
-    'Новый workflow-*.js без записи в registry.workflow.modules (добавь loc/locBudget): ' + missing.join(', '));
+    'Новый workflow-*.js без записи в registry.workflow.modules (добавь loc): ' + missing.join(', '));
   assert.deepStrictEqual(orphan, [],
     'Осиротевшие записи в registry.workflow.modules (файла нет на диске): ' + orphan.join(', '));
 });
