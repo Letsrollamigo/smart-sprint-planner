@@ -1486,8 +1486,33 @@ function ReportingInner({ vm }) {
 /* Хост-биндинг: перерендер по bump'у data-vm-key. Key = contour+проект → локальный стейт chrome
    (query-input + custom-диапазон) переживает смену вида/обновление данных, но СБРАСЫВАЕТСЯ при
    смене проекта (иначе показанный фильтр ≠ применённый: draft per-project, локальный стейт — нет). */
+/* v3.21.0 (#69 R2, строка 13) — Recharts живёт в отдельном ленивом recharts.chunk.js (вынесен из
+   вендор-чанка: 38 % его объёма парсились при каждом старте ради отчётности). Паттерн pdfmake/XLSX:
+   memo-промис = гейт, relative-script, сброс на onerror. До загрузки все чарты рисуют свои
+   SVG/табличные фолбэки (RC-гейт по SSP_VENDORED.Recharts), после — ре-рендер по bump'у. */
+let _rcPromise = null;
+function loadRecharts() {
+  const V = globalThis.SSP_VENDORED;
+  if (V && V.Recharts) return Promise.resolve();
+  if (_rcPromise) return _rcPromise;
+  _rcPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'recharts.chunk.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _rcPromise = null; reject(new Error('recharts chunk load failed')); };
+    document.head.appendChild(s);
+  });
+  return _rcPromise;
+}
+
 function ReportingPanel({ host }) {
   const [, force] = React.useReducer((x) => x + 1, 0);
+  React.useEffect(() => {
+    if (globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Recharts) return undefined;
+    let alive = true;
+    loadRecharts().then(() => { if (alive) force(); }, () => { /* фолбэки остаются */ });
+    return () => { alive = false; };
+  }, []);
   React.useEffect(() => {
     const obs = new MutationObserver(() => force());
     obs.observe(host, { attributes: true, attributeFilter: ['data-vm-key'] });

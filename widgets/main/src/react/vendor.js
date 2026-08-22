@@ -1,7 +1,8 @@
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import * as ReactDOM from 'react-dom';   /* v3.21.0 (#69 R2) — createPortal для ленивого recharts-чанка (shims/react-dom.js) */
 import * as jsxRuntime from 'react/jsx-runtime';
-import * as Recharts from 'recharts';   /* #50 S9-VIZ — чарт-либа (MIT, React+SVG), доступ как SSP_VENDORED.Recharts */
+/* v3.21.0 (#69 R2) — Recharts (#50 S9-VIZ, MIT) переехал в ленивый recharts.chunk.js (vendor-recharts.js); доступ прежний — SSP_VENDORED.Recharts после загрузки. */
 import * as GanttTaskReact from 'gantt-task-react';   /* #20-v2 (v3.2.0) — Гант-либа (MIT, React+SVG): drag дат, зум Day/Week/Month; CSS — widgets/main/gantt-task.css (vendored копия dist/index.css + тем-оверрайды) */
 import Dialog from '@jetbrains/ring-ui-built/components/dialog/dialog';
 import LoaderInline from '@jetbrains/ring-ui-built/components/loader-inline/loader-inline';
@@ -49,4 +50,4 @@ import { pt } from 'date-fns/locale/pt';
 import { hu } from 'date-fns/locale/hu';
 import { es } from 'date-fns/locale/es';
 const DateFnsLocales = { en: enUS, ru, fr, de, 'zh-CN': zhCN, it, pl, tr, ja, ko, cs, nl, pt, hu, es };
-globalThis.SSP_VENDORED = { React, ReactDOMClient, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, Toggle, DateFnsLocales, Recharts, GanttTaskReact };
+globalThis.SSP_VENDORED = { React, ReactDOMClient, ReactDOM, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, Toggle, DateFnsLocales, GanttTaskReact };

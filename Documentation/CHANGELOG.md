@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.21.0] — 2026-08-22
+
+> **"Simplification" epic, slice R2 "Build" — rows 13–14 of the audit list.** Build-only: no behaviour, data or UI change; fork-identical.
+
+### Changed — build
+
+- **Recharts — lazy chunk**: the charting library (≈38 % of the vendor chunk) was parsed on every widget start-up just for reporting. `recharts` is now built as a separate `widgets/main/recharts.chunk.js` (`build:recharts`; React/ReactDOM come through shims from `SSP_VENDORED` so no second React instance is bundled; new `shims/react-dom.js` for `createPortal`, `ReactDOM` added to the vendor export) and is loaded by a relative script tag the first time the reporting panel mounts (`reporting-view.jsx loadRecharts`, same pattern as pdfmake/XLSX: memoised promise, reset on `onerror`, re-render on load). Until it arrives the charts render their existing SVG/table fallbacks.
+- **`--charset=utf8`** for `build`, `build:vendor`, `build:recharts`: Cyrillic in the inline ru/en dictionaries and UI strings is no longer escaped to `\u04xx` (21 174 sequences in `main.js` before). YouTrack serves the static files with `<meta charset="UTF-8">` — verified on YouTrack 2025.3 and 2026.1.
+- **Sizes (measured):** `main.js` 1 081 946 → 948 479 B (−12.3 %); `vendored-react.chunk.js` 1 542 343 → 940 653 B (−39 %); new `recharts.chunk.js` 567 946 B (only when a report is opened). Start-up script payload 2 624 289 → 1 889 132 B (−28 %).
+- **Zip guard:** the chunk is in the `zip:marketplace` allow-list; `release-check.sh` fails if `recharts.chunk.js` is missing from the zip (every chart has a fallback — without the chunk reporting would degrade silently). `module-registry`: `reporting-view.jsx` +24 LOC (budget 1486, deliberate).
+
+---
+
 ## [3.20.1] — 2026-08-21
 
 > **"Simplification" epic, patch — row 2 of the audit list: the three "Save parameters" buttons are now distinct.** Shipped as a separate patch because it touches the sprint write path (the #70/D109 class). No data-schema changes.

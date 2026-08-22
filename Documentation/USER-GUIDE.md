@@ -1030,4 +1030,4 @@ Settings of the operational reporting module (see [section 13](#13-operational-r
 
 ---
 
-_Updated 2026-08-21, plugin v3.20.1._
+_Updated 2026-08-21, plugin v3.21.0._

@@ -103,6 +103,15 @@ case "$NAME" in
     ;;
 esac
 
+# ── v3.21.0 (#69 R2) — ленивый recharts-чанк в marketplace-зипе ─────────────────
+# У всех чартов есть фолбэк: без чанка в зипе отчётность молча деградирует навсегда — единственный страж здесь.
+MP_ZIP="../Realises SSP/MPJB/Smart-Sprint-Planner-v$PKG_VER-marketplace.zip"
+if [ -f "$MP_ZIP" ]; then
+  unzip -Z1 "$MP_ZIP" | grep 'widgets/main/recharts\.chunk\.js$' >/dev/null && ok "recharts.chunk.js в marketplace-зипе (ленивый чанк отчётности)" || fail "recharts.chunk.js ОТСУТСТВУЕТ в marketplace-зипе — чарты отчётности молча уйдут в фолбэк"
+else
+  warn "marketplace-зип v$PKG_VER не собран — проверка recharts.chunk.js пропущена (npm run zip:marketplace)"
+fi
+
 # ── полнота i18n вкладки ёмкости (#45 R3 — все capacity-ключи × 15 локалей) ───
 echo "— i18n полнота (capacity) —"
 if TZ=UTC node --test tests/unit/capacity-i18n-completeness.test.js >/dev/null 2>&1; then
