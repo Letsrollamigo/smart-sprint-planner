@@ -1,6 +1,6 @@
 {
   "name": "smart-sprint-planner",
-  "version": "3.24.1",
+  "version": "3.25.0",
   "private": true,
   "scripts": {
     "build:whitelists": "node scripts/sync-backend-whitelists.js",
@@ -19,7 +19,7 @@
     "gate:fast": "TZ=UTC node --test tests/arch/*.test.js tests/unit/*.test.js",
     "gate": "TZ=UTC node --test tests/arch/*.test.js tests/unit/*.test.js tests/golden/*.test.js",
     "release-check": "bash scripts/release-check.sh",
-    "zip:marketplace": "npm run build && npm run build:check && rm -f '../Realises SSP/MPJB/Smart-Sprint-Planner-v3.24.1-marketplace.zip' && zip -r '../Realises SSP/MPJB/Smart-Sprint-Planner-v3.24.1-marketplace.zip' manifest.json settings.json entity-extensions.json app-logo.svg app-logo-dark.svg LICENSE NOTICE.md README.md backend-*.js workflow-*.js widgets/main/index.html widgets/main/main.js widgets/main/vendored-react.chunk.js widgets/main/recharts.chunk.js widgets/main/ring-subset.css widgets/main/gantt-task.css widgets/main/i18n widgets/main/lib -x '*.DS_Store' '*/i18n/en.json' '*/i18n/ru.json'"
+    "zip:marketplace": "npm run build && npm run build:check && rm -f '../Realises SSP/MPJB/Smart-Sprint-Planner-v3.25.0-marketplace.zip' && zip -r '../Realises SSP/MPJB/Smart-Sprint-Planner-v3.25.0-marketplace.zip' manifest.json settings.json entity-extensions.json app-logo.svg app-logo-dark.svg LICENSE NOTICE.md README.md backend-*.js workflow-*.js widgets/main/index.html widgets/main/main.js widgets/main/vendored-react.chunk.js widgets/main/recharts.chunk.js widgets/main/ring-subset.css widgets/main/gantt-task.css widgets/main/i18n widgets/main/lib -x '*.DS_Store' '*/i18n/en.json' '*/i18n/ru.json'"
   },
   "devDependencies": {
     "@jetbrains/icons": "^5.22.0",

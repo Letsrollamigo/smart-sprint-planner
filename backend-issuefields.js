@@ -59,6 +59,19 @@ function _enumName(raw) {
   return String(raw.name || raw.localizedName || raw.presentation || '');
 }
 
+/* #67 Q1/Q2 (стенд YT 2025.3, 2026-08-23): платформа НЕ проверяет внутри
+   обработчика ни видимость задачи, ни право пользователя на запись поля —
+   entities.* исполняется с делегированными правами (Issue Reader без UPDATE_ISSUE
+   менял State и исполнителя, в том числе у задачи с Visible to, которую не видит
+   даже через REST). ⚖ Владелец: «плагин не даёт больше, чем YouTrack» → обе
+   проверки делаем сами, fail-closed на исключение SDK. */
+function issueVisibleTo(issue, ctx) {
+  try { return !!issue.isVisibleTo(ctx.currentUser); } catch (_) { return false; }
+}
+function fieldWritableBy(issue, fieldName, ctx) {
+  try { return !!issue.canBeWrittenBy(fieldName, ctx.currentUser); } catch (_) { return false; }
+}
+
 /* ── #67 путь 3 — серверное обогащение состава («дополняем только пустое») ──────
    Агентские заливки (n8n) шлют issueId+оценки; сервер наполняет title/state/priority/
    xpriority/system/externalTicketId из задачи по настроенным полям ssp_settings.
@@ -89,9 +102,7 @@ function enrichRoleItems(ctx, roleItems) {
         if (!issue) continue;
         /* Изоляция проекта — как в refresh-assignees/update-issue-field (v3.2.1). */
         if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) continue;
-        var visible = false;
-        try { visible = !!issue.isVisibleTo(ctx.currentUser); } catch (_) { visible = false; }
-        if (!visible) continue;
+        if (!issueVisibleTo(issue, ctx)) continue;
         /* Лимиты validateItem: строки ≤1000 — усечение, чтобы длинный summary не 400-ил запись. */
         item.title = String(issue.summary || item.issueId).slice(0, 1000);
         if (!item.state && settings.fieldState) {
@@ -326,9 +337,9 @@ var ISSUEFIELDS_ENDPOINTS = [
            state-поля 'State' (та же формула, что на фронте — release-controller.js:603).
            Все 4 вызывателя (quick-edit rolecomposition-view, запись исполнителя core.js,
            reassign-controller, применение состояний release-controller) резолвят
-           fieldName из настроек — сверено при реализации. Закрывает «какие поля»,
-           не «под чьими правами пишет сервер» (Q1): field-level canBeWrittenBy
-           по-прежнему не вызывается — зафиксированный остаток. */
+           fieldName из настроек — сверено при реализации. Закрывает «какие поля»;
+           «под чьими правами пишет сервер» (Q1) закрыто ниже: isVisibleTo +
+           canBeWrittenBy по правам самого пользователя (стенд 2026-08-23). */
         var s7 = core.parseJson(core.getProp(ctx, 'ssp_settings'), null) || {};
         var allowedFields = {};
         for (var afi = 0; afi < FIELD_SETTING_KEYS.length; afi++) {
@@ -354,9 +365,20 @@ var ISSUEFIELDS_ENDPOINTS = [
             ctx.response.json({ success: false, error: 'issue_not_in_project' });
             return;
           }
+          /* #67 Q1c — скрытая задача: тот же ответ, что у несуществующей (без оракула). */
+          if (!issueVisibleTo(issue, ctx)) {
+            ctx.response.json({ success: false, error: 'issue_not_found' });
+            return;
+          }
 
           var projectField = null;
           try { projectField = issue.project.findFieldByName(fieldName); } catch (fe) { /* ignore */ }
+
+          /* #67 Q1 — право на запись поля по правам YouTrack самого пользователя. */
+          if (!fieldWritableBy(issue, projectField ? projectField.name : fieldName, ctx)) {
+            ctx.response.json({ success: false, error: 'field_not_writable' });
+            return;
+          }
 
           if (type === 'user') {
             if (!projectField) {
@@ -465,6 +487,7 @@ var ISSUEFIELDS_ENDPOINTS = [
             /* v3.2.1 — изоляция проекта (см. update-issue-field): чтение assignee/state
                чужих проектов через viewer-ручку закрыто на app-уровне. */
             if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) continue;
+            if (!issueVisibleTo(issue, ctx)) continue;   /* #67 Q2 — скрытая = null, как несуществующая */
             var raw = readField(issue, fieldName);
             var entry = null;
             if (raw && typeof raw === 'object') {

@@ -2,10 +2,17 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.24.1**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.25.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
+> **v3.25.0 — #67 closed in full: "the app never grants more than YouTrack does".** A stand experiment on YouTrack 2025.3 (a user with the Issue Reader role — read issues, no `UPDATE_ISSUE` — placed in the app's groups) confirmed the worse of the two hypotheses: inside an app handler the platform **checks neither the user's right to write a field nor issue visibility** — `entities.*` runs with delegated permissions (JetBrains docs, "Permission delegation"). Through `POST /update-issue-field` such a user changed State and the assignee, including on an issue with `Visible to` they cannot even read via REST; `POST /refresh-assignees` returned that issue's assignee and state. Closed server-side, fail-closed on any SDK exception:
+> - `update-issue-field`: `Issue.isVisibleTo(ctx.currentUser)` — an invisible issue answers `issue_not_found` (indistinguishable from a missing one, no oracle); then `Issue.canBeWrittenBy(<project field>, ctx.currentUser)` — without the YouTrack right to the field the answer is `field_not_writable` and the field is untouched. The app's groups remain the second lock, not a replacement for the first: a project Contributor writes as before.
+> - `refresh-assignees`: an invisible issue is returned as `null` — same as a missing one.
+> - The enricher (v3.18.0) was verified on the live platform against a hidden issue: not enriched, the counter does not reveal it.
+> - Also confirmed live: the **"All Users"** group in the app's permission settings grants nothing to anyone — `ctx.currentUser.groups` contains only explicitly assigned groups.
+> Endpoints, whitelists and the data schema are unchanged; the matrix rows for `update-issue-field`/`refresh-assignees` are extended.
+
 > **v3.24.1 — R6 "Mirror", incidental UI polish.** CSS and two UI strings only: the permission model, endpoints, whitelists and the data schema are unchanged, the access matrix is unaffected. Horizontal padding for textual `.ring-button-inline` buttons; ❄/🔒 replaced with the `lock` icon from the already vendored `@jetbrains/icons` (static SVG from the bundle, no user input involved).
 
 > **v3.24.0 — Simplification slice R4 "Forks" (rows 18, 20, 22, 28; owner decisions 2026-08-22).** UI-only slice: the permission model, endpoints, whitelists and data schema are unchanged; the access matrix is unchanged.
@@ -153,8 +160,8 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | POST   | `absences` | settingsManager OR planningManager |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
-| POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` — length/characters + **allow-list of configured fields, #67 H7**) |
-| POST   | `refresh-assignees` | **viewer** (bulk read of assignee/state, up to 200 issueIds per request) |
+| POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` — length/characters + **allow-list of configured fields, #67 H7**; **v3.25.0: `Issue.isVisibleTo` → `issue_not_found`, `Issue.canBeWrittenBy` against the user's own rights → `field_not_writable`**) |
+| POST   | `refresh-assignees` | **viewer** (bulk read of assignee/state, up to 200 issueIds per request; **v3.25.0: an issue invisible to the user → `null`**) |
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager OR releaseManager; releaseEngineer — advance-diff only (`engineerDiffAllowed`) |
@@ -209,6 +216,8 @@ Every project endpoint except `sync-acl` and `app-version` is reachable via the 
 | 21 | **Viewer reads the full settings blob / other users' drafts** *(#67 H10, kept)* | Project-member trust model: `GET /sprint-data` returns role group keys and rate settings, `GET /working-drafts` — everyone's working copies. No escalation — authorization never reads settings from the body; trimming the admin tier on GET was rejected (risk of regressing UI gates). |
 | 22 | **Project-existence oracle via the global adapter** *(#67 H11, closed in v3.18.0)* | `project_not_found`/`project_access_denied` collapsed into a single `project_unavailable` — enumerating the instance's project keys by response difference is no longer possible. |
 | 23 | **"Laundering" hidden issue titles via server-side enrichment** *(v3.18.0)* | The enricher reads the issue server-side and writes into `ssp_roleitems`, readable by any viewer → fail-closed: `Issue.isVisibleTo(ctx.currentUser)` before enriching; an invisible issue is indistinguishable in the response from a non-existent one (the `skipped` counter counts only the over-limit tail — not an oracle). Project isolation — same as `refresh-assignees`/`update-issue-field`. |
+| 24 | **Writing to an issue past the user's own YouTrack rights** *(#67 Q1, stand 2026-08-23, closed in v3.25.0)* | The platform runs `entities.*` inside a handler with delegated permissions and checks neither `UPDATE_ISSUE` nor `Visible to`: a member of the app's groups with read-only rights changed State/assignee, including on an issue hidden from them. `update-issue-field` now checks `Issue.isVisibleTo(ctx.currentUser)` itself (denial = `issue_not_found`, no oracle) and `Issue.canBeWrittenBy(<field>, ctx.currentUser)` (denial = `field_not_writable`); an SDK exception = denial. The app's groups are the second lock, not a replacement for the first. |
+| 25 | **Reading assignee/state of hidden issues via `refresh-assignees`** *(#67 Q2, stand 2026-08-23, closed in v3.25.0)* | `findById` returns an issue with `Visible to` that the user cannot see via REST (404), and the endpoint returned its fields. An invisible issue is now `null`, same as a missing one. |
 
 ---
 

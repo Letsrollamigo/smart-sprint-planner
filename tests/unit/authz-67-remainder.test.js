@@ -385,3 +385,129 @@ test('обогащение: длинный summary усекается до ли�
     assert.strictEqual(ri.analysis[0].title.length, 1000);
   } finally { entities.Issue.findById = orig; }
 });
+
+/* ── Q1/Q2 (стенд YT 2025.3, 2026-08-23): платформа не проверяет права внутри обработчика ──
+   Issue Reader без UPDATE_ISSUE менял State и исполнителя через update-issue-field — в том
+   числе у задачи с Visible to, невидимой ему даже через REST; refresh-assignees отдавал её
+   исполнителя/состояние. ⚖ «Плагин не даёт больше, чем YouTrack»: isVisibleTo +
+   canBeWrittenBy по правам самого пользователя, fail-closed на исключение SDK. */
+
+const EP_REFRESH = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'refresh-assignees');
+
+function mkWritableIssue(over) {
+  const fields = {};
+  const pf = { name: 'State', findValueByName: (n) => ({ name: n }) };
+  return Object.assign({
+    project: { key: 'DEMO', findFieldByName: () => pf },
+    isVisibleTo: () => true,
+    canBeWrittenBy: () => true,
+    fields: fields
+  }, over || {});
+}
+function updBody(over) {
+  return Object.assign({ issueId: 'DEMO-1', fieldName: 'State', value: 'In Progress', type: 'state' }, over || {});
+}
+
+test('Q1: видимая задача + право на запись — поле пишется', () => {
+  const orig = entities.Issue.findById;
+  const iss = mkWritableIssue();
+  entities.Issue.findById = () => iss;
+  try {
+    const ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.success, true);
+    assert.deepStrictEqual(iss.fields.State, { name: 'In Progress' });
+  } finally { entities.Issue.findById = orig; }
+});
+
+test('Q1: нет права YouTrack на поле — field_not_writable, поле не тронуто', () => {
+  const orig = entities.Issue.findById;
+  const iss = mkWritableIssue({ canBeWrittenBy: () => false });
+  entities.Issue.findById = () => iss;
+  try {
+    const ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.success, false);
+    assert.strictEqual(ctx.response.body.error, 'field_not_writable');
+    assert.strictEqual(iss.fields.State, undefined);
+  } finally { entities.Issue.findById = orig; }
+});
+
+test('Q1: canBeWrittenBy спрашивается о поле проекта и о текущем пользователе', () => {
+  const orig = entities.Issue.findById;
+  let asked = null;
+  const iss = mkWritableIssue({ canBeWrittenBy: (f, u) => { asked = { f, u }; return true; } });
+  entities.Issue.findById = () => iss;
+  try {
+    const ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(asked.f, 'State');
+    assert.strictEqual(asked.u, ctx.currentUser);
+  } finally { entities.Issue.findById = orig; }
+});
+
+test('Q1c: скрытая задача (Visible to) — issue_not_found, неотличимо от несуществующей; поле не тронуто', () => {
+  const orig = entities.Issue.findById;
+  const iss = mkWritableIssue({ isVisibleTo: () => false });
+  let askedWrite = false;
+  iss.canBeWrittenBy = () => { askedWrite = true; return true; };
+  entities.Issue.findById = () => iss;
+  try {
+    const ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.error, 'issue_not_found');
+    assert.strictEqual(iss.fields.State, undefined);
+    assert.strictEqual(askedWrite, false);   /* видимость первой — без оракула */
+  } finally { entities.Issue.findById = orig; }
+});
+
+test('Q1: исключение SDK в любой проверке = отказ (fail-closed)', () => {
+  const orig = entities.Issue.findById;
+  try {
+    let iss = mkWritableIssue({ isVisibleTo: () => { throw new Error('sdk'); } });
+    entities.Issue.findById = () => iss;
+    let ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.error, 'issue_not_found');
+
+    iss = mkWritableIssue({ canBeWrittenBy: () => { throw new Error('sdk'); } });
+    entities.Issue.findById = () => iss;
+    ctx = mkCtx({ groups: [G_EDITOR], body: updBody() });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.error, 'field_not_writable');
+    assert.strictEqual(iss.fields.State, undefined);
+  } finally { entities.Issue.findById = orig; }
+});
+
+test('Q1: поле типа user — тот же гейт права на запись', () => {
+  const orig = entities.Issue.findById;
+  const origUser = entities.User.findByLogin;
+  const iss = mkWritableIssue({ canBeWrittenBy: () => false });
+  iss.project.findFieldByName = () => ({ name: 'Assignee' });
+  entities.Issue.findById = () => iss;
+  entities.User.findByLogin = () => ({ login: 'dev2' });
+  try {
+    const ctx = mkCtx({ groups: [G_EDITOR], settings: { userFieldAnalysis: 'Assignee' },
+                        body: updBody({ fieldName: 'Assignee', value: 'dev2', type: 'user' }) });
+    EP_UPDATE.handle(ctx);
+    assert.strictEqual(ctx.response.body.error, 'field_not_writable');
+    assert.strictEqual(iss.fields.Assignee, undefined);
+  } finally { entities.Issue.findById = orig; entities.User.findByLogin = origUser; }
+});
+
+test('Q2: refresh-assignees — скрытая задача отдаётся как null, видимая — с данными', () => {
+  const orig = entities.Issue.findById;
+  const mk = (visible) => ({
+    project: { key: 'DEMO' },
+    isVisibleTo: () => visible,
+    fields: { Assignee: { login: 'dev2', fullName: 'Разработчик' } }
+  });
+  entities.Issue.findById = (id) => (id === 'DEMO-1' ? mk(false) : mk(true));
+  try {
+    const ctx = mkCtx({ groups: [], body: { issueIds: ['DEMO-1', 'DEMO-2'], fieldName: 'Assignee' } });
+    EP_REFRESH.handle(ctx);
+    assert.strictEqual(ctx.response.body.success, true);
+    assert.strictEqual(ctx.response.body.assignees['DEMO-1'], null);
+    assert.strictEqual(ctx.response.body.assignees['DEMO-2'].login, 'dev2');
+  } finally { entities.Issue.findById = orig; }
+});

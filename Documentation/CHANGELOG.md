@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.25.0] — 2026-08-23
+
+> **Authz audit #67 closed in full: "the app never grants more than YouTrack does".** The two open stand questions (Q1/Q2) were settled by an experiment on YouTrack 2025.3 — the worse outcome of the two, now closed server-side. No schema, endpoint or whitelist changes.
+
+### Security
+
+- **Writing to an issue now requires the user's own rights** (Q1). Inside an app handler the platform runs `entities.*` with delegated permissions and checks neither `UPDATE_ISSUE` nor `Visible to`: a user with the Issue Reader role (read-only), placed in the app's groups, changed State and the assignee through `POST /update-issue-field` — including on an issue with `Visible to` they cannot even read via REST. The handler now checks `Issue.isVisibleTo(ctx.currentUser)` itself (invisible → `issue_not_found`, indistinguishable from a missing issue) and `Issue.canBeWrittenBy(<project field>, ctx.currentUser)` (no right → `field_not_writable`, field untouched); an SDK exception means denial. The app's groups remain the second lock, not a replacement for the first — a project member with regular rights (Contributor) writes as before, verified on the stand.
+- **`POST /refresh-assignees` no longer returns hidden issues** (Q2): an issue invisible to the user comes back as `null`, same as a missing one. Previously the endpoint returned its assignee and state.
+- **The enricher (v3.18.0) verified on the live platform** against a hidden issue: not enriched, `enriched.count` does not reveal it — the fail-closed guard works.
+- Confirmed live and recorded in SECURITY: the **"All Users"** group in the app's permission settings grants nothing to anyone on YouTrack 2025.3 (`ctx.currentUser.groups` holds only explicitly assigned groups).
+
+### Tests
+
+- `authz-67-remainder.test.js` +7: write with/without the right, hidden issue, SDK exception, user field, `refresh-assignees` with a hidden issue. Gate 1545/1545.
+
+---
+
 ## [3.24.1] — 2026-08-22
 
 > **"Simplification" epic, slice R6 "Mirror" — incidental UI polish.** Minimal code: no schema, permission or endpoint changes.

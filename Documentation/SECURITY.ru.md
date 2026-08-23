@@ -2,10 +2,17 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.24.1**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.25.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
 >
+> **v3.25.0 — #67 закрыт целиком: «плагин не даёт больше, чем YouTrack».** Эксперимент на стенде YT 2025.3 (пользователь с ролью Issue Reader — чтение задач без `UPDATE_ISSUE`, в группах плагина) дал худший из двух исходов: платформа **не проверяет внутри обработчика приложения ни право пользователя на запись поля, ни видимость задачи** — `entities.*` исполняется с делегированными правами (документация JetBrains, «Permission delegation»). Через `POST /update-issue-field` такой пользователь менял State и исполнителя, в том числе у задачи с `Visible to`, которую не видит даже через REST; `POST /refresh-assignees` отдавал её исполнителя и состояние. Закрыто сервером, fail-closed на исключение SDK:
+> - `update-issue-field`: `Issue.isVisibleTo(ctx.currentUser)` — невидимая задача отвечает `issue_not_found` (неотличимо от несуществующей, без оракула); затем `Issue.canBeWrittenBy(<поле проекта>, ctx.currentUser)` — без права YouTrack на поле ответ `field_not_writable`, поле не трогается. Группы плагина остаются вторым замком, не заменой первого: Contributor проекта пишет как раньше.
+> - `refresh-assignees`: невидимая задача отдаётся как `null` — как несуществующая.
+> - Обогатитель (v3.18.0) проверен на живой платформе со скрытой задачей: не обогащает, счётчик её не выдаёт.
+> - Попутно подтверждено живьём: группа **«All Users»** в настройках прав плагина не даёт прав никому — `ctx.currentUser.groups` содержит только явно назначенные группы.
+> Endpoints, whitelist'ы и схема данных не менялись; матрица дополнена в строках `update-issue-field`/`refresh-assignees`.
+
 > **v3.24.1 — R6 «Зеркало», попутная полировка UI.** Только CSS и два UI-текста: модель прав, endpoints, whitelist'ы и схема данных не менялись, матрица доступа без изменений. Горизонтальный отступ у текстовых `.ring-button-inline` кнопок; ❄/🔒 заменены иконкой `lock` из уже вендоренного `@jetbrains/icons` (статический SVG из бандла, пользовательский ввод не участвует).
 
 > **v3.24.0 — #69 R4 «Развилки» (строки 18, 20, 22, 28; ⚖ владелец 2026-08-22).** UI-срез: модель прав, endpoints, whitelist'ы и схема данных не менялись; матрица доступа без изменений.
@@ -153,8 +160,8 @@
 | POST   | `absences` | settingsManager ИЛИ planningManager |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
-| POST   | `update-issue-field` | assigner-объединение (типы: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; изоляция проекта; `fieldName` — длина/символы + **allow-list настроенных полей, #67 H7**) |
-| POST   | `refresh-assignees` | **viewer** (bulk-чтение assignee/state до 200 issueId за запрос) |
+| POST   | `update-issue-field` | assigner-объединение (типы: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; изоляция проекта; `fieldName` — длина/символы + **allow-list настроенных полей, #67 H7**; **v3.25.0: `Issue.isVisibleTo` → `issue_not_found`, `Issue.canBeWrittenBy` по правам самого пользователя → `field_not_writable`**) |
+| POST   | `refresh-assignees` | **viewer** (bulk-чтение assignee/state до 200 issueId за запрос; **v3.25.0: невидимая пользователю задача → `null`**) |
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager ИЛИ releaseManager; releaseEngineer — только advance-дифф (`engineerDiffAllowed`) |
@@ -209,6 +216,8 @@
 | 21 | **Чтение viewer'ом полного блоба настроек / чужих черновиков** *(#67 H10, оставлено)* | Модель доверия «участник проекта = viewer»: `GET /sprint-data` отдаёт групп-ключи ролей и тарифные настройки, `GET /working-drafts` — рабочие копии всех. Эскалации нет — авторизация не читает настройки из тела; обрезка admin-тира на GET отклонена (риск регрессии UI-гейтов). |
 | 22 | **Оракул существования проектов через global-адаптер** *(#67 H11, закрыто в v3.18.0)* | `project_not_found`/`project_access_denied` схлопнуты в единый `project_unavailable` — перечисление ключей проектов инстанса по разнице ответов невозможно. |
 | 23 | **«Отмывание» названий скрытых задач через серверное обогащение** *(v3.18.0)* | Обогатитель читает задачу на сервере и кладёт данные в `ssp_roleitems`, читаемый любым viewer'ом → fail-closed: `Issue.isVisibleTo(ctx.currentUser)` до обогащения; невидимая задача неотличима в ответе от несуществующей (счётчик `skipped` считает только перелимит — не оракул). Изоляция проекта — как в `refresh-assignees`/`update-issue-field`. |
+| 24 | **Запись в задачу мимо прав YouTrack самого пользователя** *(#67 Q1, стенд 2026-08-23, закрыто в v3.25.0)* | Платформа исполняет `entities.*` внутри обработчика с делегированными правами и не проверяет ни `UPDATE_ISSUE`, ни `Visible to`: член групп плагина с одним правом чтения менял State/исполнителя, в том числе у скрытой от него задачи. `update-issue-field` теперь сам проверяет `Issue.isVisibleTo(ctx.currentUser)` (отказ = `issue_not_found`, без оракула) и `Issue.canBeWrittenBy(<поле>, ctx.currentUser)` (отказ = `field_not_writable`); исключение SDK = отказ. Группы плагина — второй замок, не замена первого. |
+| 25 | **Чтение исполнителя/состояния скрытых задач через `refresh-assignees`** *(#67 Q2, стенд 2026-08-23, закрыто в v3.25.0)* | `findById` возвращает задачу с `Visible to`, которую пользователь не видит через REST (404), и ручка отдавала её поля. Теперь невидимая задача → `null`, как несуществующая. |
 
 ---
 
