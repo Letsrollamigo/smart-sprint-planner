@@ -1,14 +1,14 @@
 /**
- * Smart Sprint Planner — User-prefs backend (#69 строка 21, мега-эпик «Упрощение»).
+ * Smart Sprint Planner — User-prefs backend (#69 строка 21, эпик «Упрощение»).
  *
  * Per-feature backend-модуль (§11 «фича бэка = свой модуль»), GLOBAL-only: require-ится
  * из backend-global.js, endpoint-объекты дописываются в его собственный список (не в
  * core.ENDPOINTS — project-scope и адаптер с projectKey тут не нужны: данные пользователя,
  * не проекта; чужой слот недостижим — только ctx.currentUser).
  *
- * Зачем: прод YT 2025.3 — виджет в srcdoc-песочнице БЕЗ allow-same-origin
- * (localStorage бросает SecurityError, host.navigation отсутствует — стенд YT 2025.3,
- * 2026-08-22) → язык/роль/сортировка и прочие safeLs-ключи не переживали перезагрузку.
+ * Зачем: на YouTrack 2025.3 виджет живёт в srcdoc-песочнице БЕЗ allow-same-origin
+ * (localStorage бросает SecurityError, host.navigation отсутствует) → язык, роль,
+ * сортировка и прочие safeLs-ключи не переживали перезагрузку страницы.
  * Единый блоб User.extensionProperties.ssp_user_prefs (entity-extensions.json); фронт
  * (infra/user-prefs.js) делает GET на старте и debounce-POST изменившихся ключей.
  * Прецедент — last-project (58-10, backend-global.js).

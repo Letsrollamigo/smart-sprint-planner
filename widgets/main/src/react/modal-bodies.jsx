@@ -5,6 +5,7 @@
    Импортируется в index.js ПОСЛЕ modal-mount.jsx (мост уже существует). */
 
 import * as React from 'react';
+import { RingIcon } from './settings-shared.jsx';
 
 const noop = () => {};
 
@@ -272,7 +273,7 @@ function ImportHistForm(props) {
                 </React.Fragment>
               ))}
             </div>
-            {props.anonText ? <div style={{ marginTop: '6px', color: 'var(--muted)', fontSize: '11px' }}>{props.anonText}</div> : null}
+            {props.anonText ? <div style={{ marginTop: '6px', color: 'var(--muted)', fontSize: '11px' }}><RingIcon name="lock" /> {props.anonText}</div> : null}
           </div>
         )
         : null}

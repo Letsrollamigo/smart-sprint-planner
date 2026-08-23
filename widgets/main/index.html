@@ -684,6 +684,15 @@
     .role-check__label { font-size: 13px; font-weight: 500; }
 
     /* ── Кнопки ── */
+    /* v3.24.1 (#69 R6) — Ring обнуляет padding у `.ring-button-inline` (link-подобная
+       кнопка без коробки), а наши текстовые inline-кнопки рисуют рамку/подложку
+       (.btn--finish-hist / .btn--edit-hist / .btn--excel, экспорт в истории релизов,
+       сброс мультиселекта) → текст упирался прямо в рамку. Возвращаем горизонтальный
+       отступ всем текстовым inline-кнопкам во всех локалях; иконочные не трогаем —
+       у них глиф центрован и коробки нет. */
+    .ring-button-inline:not(.ring-button-iconOnly) {
+      padding-inline: calc(var(--ring-unit, 8px) * 1.5);
+    }
     .btn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 8px 18px;

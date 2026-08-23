@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.24.1] — 2026-08-22
+
+> **"Simplification" epic, slice R6 "Mirror" — incidental UI polish.** Minimal code: no schema, permission or endpoint changes.
+
+### Fixed
+
+- **Inner padding on bordered buttons** (owner report): Ring zeroes `padding` on the `.ring-button-inline` variant (designed as a link-like button with no box), while our textual inline buttons draw a border and a background — the label sat flush against the border, most visibly with longer strings in non-English locales. A single rule `.ring-button-inline:not(.ring-button-iconOnly) { padding-inline: calc(var(--ring-unit) * 1.5) }` restores the horizontal padding for all of them at once: "Finish all roles", the "Edit"/"Finish" buttons in history, "Excel", the export button in release history and the group multiselect reset. Icon-only buttons are untouched — their glyph is centred and they have no box.
+
+### Changed
+
+- **Last two emoji → icon** (follow-up to R4 row 18): ❄ on release freeze (the "Frozen" badge and the "Freeze" button) and 🔒 on the anonymized-file badge in the history-import dialog now use the `lock` icon from `@jetbrains/icons` (`RingIcon`; `lock.svg` added to `LICENSE-icons.md`). Both survived R4 because they were not on the replacement table.
+
+---
+
 ## [3.24.0] — 2026-08-22
 
 > **"Simplification" epic, slice R4 "Forks" — rows 18, 20, 22, 28 of the audit list (owner decisions 2026-08-22).** UI-only slice; data schema and permissions unchanged.

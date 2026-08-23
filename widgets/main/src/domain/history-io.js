@@ -130,7 +130,7 @@ function openImportHistDialog(data, deps) {
       title: T('importHistTitle'),
       body: { kind: 'component', name: 'importHistForm', props: {
         infoRows: infoRows,
-        anonText: data.anonymized ? ('🔒 ' + (T('importHistAnonBadge') || '')) : '',
+        anonText: data.anonymized ? (T('importHistAnonBadge') || '') : '',
         warnings: warnings,
         groups: groupList.map(function(g){
           return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDate(g.dateStart) : '', collision: !!g.hasCollision };

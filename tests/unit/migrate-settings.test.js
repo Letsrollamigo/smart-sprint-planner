@@ -8,14 +8,14 @@ const backend = require(path.join(__dirname, '..', '..', 'backend-project.js'));
 const { migrateSettingsObj, validateSettings } = backend;
 
 /* v2.15.2 — read-time нормализатор settings: ремап legacy-orphan ключей роли
-   dev1c→devPlatform (внутренняя линия v7.x «Разработка 1С»).
+   dev1c→devPlatform (v7.x «Разработка 1С»).
 
-   Регрессия (прод v2.14.0, проект scbt1CUUHDB): full-rebuild (v2.1.x) мигрировал
+   Регрессия (v2.14.0, снимок настроек с боевой инсталляции): full-rebuild (v2.1.x) мигрировал
    sprint/roleItems/history, но field-ключи НАСТРОЕК — нет. Сироты fieldDev /
    fieldFactDev / userFieldDev1c + мёртвая роль dev1c в activeRoles застряли в
    хранилище; форма collect() делает Object.assign({}, initial) и re-POST'ит весь
    блоб → строгий validateSettings отклоняет → invalid_settings_structure на КАЖДОМ
-   сохранении настроек (и на init-авто-POST). Источник payload'ов — реальный HAR. */
+   сохранении настроек (и на init-авто-POST). Источник payload'ов — снятый HAR. */
 
 // HAR-A: канонические devPlatform-ключи пустые (null), userFieldDevPlatform=null.
 function harBlobA() {
@@ -95,8 +95,8 @@ test('guards: null → null; массив → passthrough', function () {
 });
 
 test('round-trip: вывод миграции (GET) → POST проходит validateSettings (петля сирот разорвана)', function () {
-  // До миграции реальный прод-блоб отклоняется...
-  assert.strictEqual(validateSettings(harBlobA()), false, 'сырой прод-блоб должен отклоняться');
+  // До миграции блоб с боевой инсталляции отклоняется...
+  assert.strictEqual(validateSettings(harBlobA()), false, 'сырой блоб должен отклоняться');
   // ...после — принимается, что и проигрывает фронтовый re-POST.
   assert.strictEqual(validateSettings(migrateSettingsObj(harBlobA())), true);
 });
@@ -116,7 +116,7 @@ test('v3.6.0 hard-removal: hideDiagLogUi срезается на READ, round-tri
 /* v3.6.0 — history-записи встраивают settings-блоб (заморозка при confirm);
    migrateHistoryArr обязан чистить его тем же нормализатором, иначе строгий
    validateSettings внутри history-валидатора бракует легаси-запись целиком.
-   Найдено на corp прод-фикстуре v7.5.0 (hideDiagLogUi в history[0].settings). */
+   Найдено на фикстуре v7.5.0 (hideDiagLogUi в history[0].settings). */
 test('v3.6.0: hideDiagLogUi во встроенном history.settings срезается migrateHistoryArr', function () {
   var backend2 = require(path.join(__dirname, '..', '..', 'backend-project.js'));
   var rec = {

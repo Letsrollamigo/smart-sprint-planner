@@ -7,6 +7,7 @@
    planned-card.html (H1-H7 + reps; светофор/дерево/действия — R1.4/R3/R1.5, за фичами). */
 
 import * as React from 'react';
+import { RingIcon } from './settings-shared.jsx';
 import * as ReactDOMClient from 'react-dom/client';
 
 const _mounted = new WeakMap(); // host element → React root (по одному на хост)
@@ -198,7 +199,7 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
         <div className="ssp-release-card__meta">
           {r.planDateLabel ? <span>{L.planDate}: {r.planDateLabel}</span> : null}
           {r.freezeDateLabel ? <span>{L.freezeDate}: {r.freezeDateLabel}</span> : null}
-          {r.freezeLocked ? <span className="ssp-release-card__frozen">❄ {L.frozenBadge}</span> : null}
+          {r.freezeLocked ? <span className="ssp-release-card__frozen"><RingIcon name="lock" /> {L.frozenBadge}</span> : null}
         </div>
       ) : null}
       {(r.manager || r.engineer) ? (
@@ -245,7 +246,7 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
           {canManage ? (
             <button type="button"
               className="ring-button-button ring-button-block ring-button-heightS ssp-release-card__freeze"
-              onClick={() => onToggleFreeze(r.id)}>{r.freezeLocked ? L.unfreeze : '❄ ' + L.freeze}</button>
+              onClick={() => onToggleFreeze(r.id)}>{r.freezeLocked ? L.unfreeze : <><RingIcon name="lock" /> {L.freeze}</>}</button>
           ) : null}
           {/* R4 (US-R4-03, E-2) — share вендорского: shareVisible=false до YT 2026.1 (negative-якорь) */}
           {canManage && r.shareVisible ? (
