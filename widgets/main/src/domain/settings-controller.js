@@ -127,6 +127,13 @@
         if (deps._tagsCache) return Promise.resolve(deps._tagsCache);
         return deps.loadProjectTags().then(function (tags) { deps._tagsCache = tags; return tags; });
       },
+      /* #74 — типы связей инстанса для таблицы «тип связи × роль»: кэш на сессию формы
+         (как loadTags). Фетч упал → [] : таблица покажет сохранённые строки как
+         «тип не найден», а сейв сохранит легаси-пару фраз прежней. */
+      loadLinkTypes:      function () {
+        if (deps._linkTypesCache) return Promise.resolve(deps._linkTypesCache);
+        return deps.loadLinkTypes().then(function (types) { deps._linkTypesCache = types; return types; });
+      },
       enumFields:         (_buildFieldsByType(deps).enumFields) || [],
       stateFieldName:     (settings && typeof settings.fieldState === 'string' && settings.fieldState) ? settings.fieldState : 'State',
       loadFieldValues:    function (fieldName) {

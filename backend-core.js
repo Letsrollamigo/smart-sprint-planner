@@ -313,12 +313,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.27.0';
+var CURRENT_PLUGIN_VERSION = '3.28.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.27.0';
+var APP_VERSION = '3.28.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -508,6 +508,8 @@ function stripDeprecatedHistoryKeys(h) {
   return h;
 }
 var DEPRECATED_SPRINT_KEYS = DEPRECATED_HISTORY_SNAP_KEYS.concat(['editingFromHistory', 'historyIdx']);   /* v3.2.1 gantt-набор + v3.23.0 legacy v5.2 */
+/* #74 шаг 1 — легаси-фразы иерархии, вытесняемые таблицей linkTypeRoles. */
+var DEPRECATED_LINK_PHRASE_KEYS = ['cascadeParentLinkInward', 'cascadeParentLinkOutward'];
 function stripDeprecatedSprintKeys(s) {
   if (!s || typeof s !== 'object') return s;
   for (var j = 0; j < DEPRECATED_SPRINT_KEYS.length; j++) {
@@ -552,6 +554,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.23.0', to: '3.27.0',
     migrate: function (snap) { /* no-op: additive optional key roles */ },
     note: 'v3.27.0: #73 additive sprint/history key roles (per-sprint participating roles)'
+  },
+  /* v3.28.0 — #74 фаза 1: аддитивный settings-ключ linkTypeRoles + лестница шаг 1 для
+     легаси-пары cascadeParentLink*. Настройка project-level, в снимках её нет → shape
+     снимков не меняется, миграция no-op; запись фиксирует переход схемы настроек
+     (регресс лестницы — на уровне settings, tests/unit/settings-validation.test.js). */
+  { from: '3.27.0', to: '3.28.0',
+    migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
+    note: 'v3.28.0: #74 additive settings key linkTypeRoles + soft-deprecation of cascadeParentLink* phrases'
   }
 ];
 
@@ -928,11 +938,17 @@ var ALLOWED_SETTINGS_KEYS = [
   'cascadeKindField',
   'cascadeLevel2Values',
   'cascadeLevel3Values',
+  /* #74 шаг 1 (soft-deprecation): вытеснены таблицей linkTypeRoles, но форма всё ещё
+     ПИШЕТ их производными от первой строки «Иерархии» (⚖ владелец 2026-08-24) — оба
+     workflow-правила читают этот блоб напрямую. Шаг 2: правила на резолвер + removal. */
   'cascadeParentLinkInward',
   'cascadeParentLinkOutward',
   /* v3.12.0 — тег-маркер защиты ручных оценок: родитель с этим тегом исключается
      из каскадной агрегации (str≤200|null). */
   'cascadeManualEstTag',
+  /* #74 — роли типов связей: [{type,hier,dep,info}], type = IssueLinkType.name (id
+     различаются между инстансами). Пусто → слоёный фолбэк резолвера на фронте. */
+  'linkTypeRoles',
   // Метаданные
   'savedAt',
   /* v1.7.0 D128 — State Rollup: parent.State ← min(children.State).
@@ -1069,6 +1085,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'cascadeAggregationEnabled','forbidContainerWorkItems','cascadeKindField',
   'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
   'cascadeManualEstTag', /* v3.12.0 — тег-маркер защиты ручных оценок */
+  'linkTypeRoles',       /* #74 — таблица «тип связи × роль», тот же тир, что и каскад */
   // State Rollup
   'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
   'stateRollupStrategy',
@@ -1291,6 +1308,22 @@ function validateSettings(settings) {
   var cascadeStrKeys = ['cascadeKindField','cascadeParentLinkInward','cascadeParentLinkOutward','cascadeManualEstTag'];
   for (var cs = 0; cs < cascadeStrKeys.length; cs++) {
     if (!assertStr(settings[cascadeStrKeys[cs]], 200)) return false;
+  }
+  /* #74 — linkTypeRoles: array<{type,hier,dep,info}>, max 50, dedup по type; type —
+     непустая строка ≤200; hier/dep = какой конец родитель/предшественник. */
+  if (settings.linkTypeRoles !== undefined && settings.linkTypeRoles !== null) {
+    if (!Array.isArray(settings.linkTypeRoles) || settings.linkTypeRoles.length > 50) return false;
+    var ltrSeen = {};
+    for (var ltr = 0; ltr < settings.linkTypeRoles.length; ltr++) {
+      var row = settings.linkTypeRoles[ltr];
+      if (!row || typeof row !== 'object' || Array.isArray(row)) return false;
+      if (typeof row.type !== 'string' || row.type.length === 0 || row.type.length > 200) return false;
+      if (ltrSeen[row.type]) return false;
+      ltrSeen[row.type] = true;
+      if (row.hier !== undefined && row.hier !== null && row.hier !== 'source' && row.hier !== 'target') return false;
+      if (row.dep !== undefined && row.dep !== null && row.dep !== 'source' && row.dep !== 'target') return false;
+      if (row.info !== undefined && row.info !== null && typeof row.info !== 'boolean') return false;
+    }
   }
   /* v1.3.0 Cascade — array<string ≤200>, max 50 для level-2/level-3 values. */
   if (settings.cascadeLevel2Values !== undefined && settings.cascadeLevel2Values !== null
@@ -2614,6 +2647,17 @@ var ENDPOINTS = [
           // (планировочный тир; admin-тир ключи preserve-merge'атся из stored).
           if (!authzGuard(ctx, 'settingsOrPlanning')) return;
           stripDeprecatedSettingsKeys(body.settings);   /* v3.23.0 — stale-вкладка до F5 несёт migratedTo */
+          /* #74 шаг 1: легаси-фразы принимаем, но помечаем. Блоб настроек не носит
+             migrationLog (в отличие от снимков спринта, прецедент v3.22.0) → WARN в
+             серверный лог. Срабатывает на клиенте до v3.28.0 И на новом с ПУСТОЙ
+             таблицей — ровно та популяция, что должна переехать на неё до шага 2. */
+          if (!Array.isArray(body.settings.linkTypeRoles) || !body.settings.linkTypeRoles.length) {
+            DEPRECATED_LINK_PHRASE_KEYS.forEach(function (dk) {
+              if (body.settings[dk] !== undefined && body.settings[dk] !== null) {
+                console.warn('[SCHEMA_DEPRECATION_WARN] settings.' + dk + ' → linkTypeRoles (#74 шаг 1, hard-removal ≥ 1 minor)');
+              }
+            });
+          }
           if (!validateSettings(body.settings)) {
             badRequest(ctx, 'invalid_settings_structure');
             return;

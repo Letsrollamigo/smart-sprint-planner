@@ -160,7 +160,7 @@ test('reporting A8/A9: принимает упорядоченный поток 
   assert.strictEqual(validateSettings({ reportingFlowStates: { a: 'b' } }), false);
 });
 
-/* #50 S6a — A3 : reportingA3StageField/OrgField/PriorityField — имя YT-поля (str≤200|null, опц.). */
+/* #50 S6a — A3: reportingA3StageField/OrgField/PriorityField — имя YT-поля (str≤200|null, опц.). */
 test('reporting A3: принимает имена полей среза (str|null), реджектит нестроку и переросшую длину', function() {
   assert.strictEqual(validateSettings({ reportingA3StageField: 'Бизнес-этап', reportingA3OrgField: 'Орг-юнит', reportingA3PriorityField: 'Priority' }), true);
   assert.strictEqual(validateSettings({ reportingA3StageField: '' }), true);   // пусто = колонка скрыта
@@ -232,4 +232,91 @@ test('fieldExternalTicketId: строка ≤200 принимается, не-с
   assert.strictEqual(validateSettings({ fieldExternalTicketId: null }), true);
   assert.strictEqual(validateSettings({ fieldExternalTicketId: 42 }), false);
   assert.strictEqual(validateSettings({ fieldExternalTicketId: 'x'.repeat(201) }), false);
+});
+
+/* ── #74 фаза 1 — linkTypeRoles: таблица «тип связи × роль» ──────────────── */
+
+test('#74: linkTypeRoles — валидные строки (обе стороны, роль выключена через null)', function () {
+  assert.strictEqual(validateSettings({ linkTypeRoles: [
+    { type: 'Subtask', hier: 'source', dep: null, info: false },
+    { type: 'Включает', hier: 'target', dep: null, info: true },
+    { type: 'Relates', info: true },
+  ] }), true);
+});
+
+test('#74: linkTypeRoles — отсутствие/null принимаются (backward compat: слоёный фолбэк резолвера)', function () {
+  assert.strictEqual(validateSettings({}), true);
+  assert.strictEqual(validateSettings({ linkTypeRoles: null }), true);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [] }), true);
+});
+
+test('#74: linkTypeRoles — reject: дубль type, пустой/длинный type, не-объект строки', function () {
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'A' }, { type: 'A' }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: '' }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'x'.repeat(201) }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'x'.repeat(200) }] }), true);
+  assert.strictEqual(validateSettings({ linkTypeRoles: ['A'] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [null] }), false);
+});
+
+test('#74: linkTypeRoles — reject: сторона вне {source,target,null}, нелогический info, не-массив, >50 строк', function () {
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'A', hier: 'left' }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'A', dep: 'up' }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: [{ type: 'A', info: 'yes' }] }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: {} }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: Array.from({ length: 51 }, function (_, i) { return { type: 'T' + i }; }) }), false);
+  assert.strictEqual(validateSettings({ linkTypeRoles: Array.from({ length: 50 }, function (_, i) { return { type: 'T' + i }; }) }), true);
+});
+
+test('#74: linkTypeRoles — в whitelist и в admin-тире (иначе ключ терялся бы на READ или при сейве планировщиком)', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  assert.ok(ALLOWED_SETTINGS_KEYS.indexOf('linkTypeRoles') >= 0, 'вне whitelist — migrateSettingsObj стёр бы ключ на READ');
+  assert.ok(backendFull.ADMIN_TIER_SETTINGS_KEYS.indexOf('linkTypeRoles') >= 0, 'вне admin-тира — сейв планировочным менеджером затёр бы настройку');
+});
+
+test('#74: linkTypeRoles переживает round-trip через migrateSettingsObj (defensive strip не съедает)', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const rows = [{ type: 'Subtask', hier: 'source', dep: null, info: false }];
+  const out = backendFull.migrateSettingsObj({ activeRoles: ['analysis'], linkTypeRoles: rows });
+  assert.deepStrictEqual(out.linkTypeRoles, rows);
+});
+
+test('#74: легаси-пара фраз остаётся в whitelist (лестница шаг 1 — backend принимает)', function () {
+  assert.ok(ALLOWED_SETTINGS_KEYS.indexOf('cascadeParentLinkInward') >= 0);
+  assert.ok(ALLOWED_SETTINGS_KEYS.indexOf('cascadeParentLinkOutward') >= 0);
+  assert.strictEqual(validateSettings({ cascadeParentLinkInward: 'subtask of', cascadeParentLinkOutward: 'parent for',
+    linkTypeRoles: [{ type: 'Subtask', hier: 'source' }] }), true);
+});
+
+test('#74 лестница шаг 1: блоб ТОЛЬКО с легаси-фразами читается и переписывается без потерь', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  /* Инстанс до v3.28.0: таблицы нет, фразы кастомные. Backend обязан принять их и на
+     READ, и на WRITE — иначе фоновые правила каскада/подтяжки состояния осиротеют. */
+  const legacy = { activeRoles: ['analysis'], cascadeParentLinkInward: 'part of epic', cascadeParentLinkOutward: 'epic of' };
+  const read = backendFull.migrateSettingsObj(Object.assign({}, legacy));
+  assert.strictEqual(read.cascadeParentLinkInward, 'part of epic');
+  assert.strictEqual(read.cascadeParentLinkOutward, 'epic of');
+  assert.strictEqual(validateSettings(read), true, 'migrate → validateForRead → validateForWrite');
+});
+
+test('#74 лестница шаг 1: таблица и легаси-пара сосуществуют (клиент v3.28.0 пишет обе)', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const both = { activeRoles: ['analysis'], linkTypeRoles: [{ type: 'Subtask', hier: 'source', dep: null, info: false }],
+    cascadeParentLinkInward: 'subtask of', cascadeParentLinkOutward: 'parent for' };
+  const out = backendFull.migrateSettingsObj(Object.assign({}, both));
+  assert.deepStrictEqual(out.linkTypeRoles, both.linkTypeRoles);
+  assert.strictEqual(out.cascadeParentLinkInward, 'subtask of');
+  assert.strictEqual(validateSettings(out), true);
+});
+
+test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0, маркер схемы бампнут', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.28.0');
+  const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.28.0');
+  assert.ok(step && step.from === '3.27.0', 'нет записи 3.27.0→3.28.0');
+  /* Снимки shape не меняли — миграция обязана быть no-op (настройка project-level). */
+  const snap = { sprintId: 'S-1', pluginVersion: '3.27.0' };
+  const before = JSON.stringify(snap);
+  step.migrate(snap);
+  assert.strictEqual(JSON.stringify(snap), before);
 });

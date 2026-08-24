@@ -19,6 +19,7 @@
         "initialGroups",
         "loadFieldValues",
         "loadGroups",
+        "loadLinkTypes",
         "loadTags",
         "onClose",
         "onSave",

@@ -155,6 +155,8 @@ function _leafVm(t, paused, zone, sprintStart) {
     issueId: t.issueId, idReadable: t.idReadable || t.issueId || '',
     summary: t.summary || '', system: t.system || null, priority: t.priority || null,
     isPaused: !!paused, zone: zone,
+    /* #74 ⚖4 — инфо-связи для бейджа-счётчика «связана с N задач» + тултип. */
+    infoLinks: Array.isArray(t.infoLinks) ? t.infoLinks : [],
     carry: carryoverLabel(t._sinceTs, t._prevState, sprintStart),
     inSprint: !!t._inSprint,   /* #polish — задача уже в составе любого спринта */
   };
@@ -212,22 +214,33 @@ function buildTreeVm(tasks, settings) {
     var leaf = _leafVm(t, paused, zoneOf(st), ss);
     counts.tasks++;
 
-    /* §5 — цепочка родителей ближний→дальний (parentChain); fallback на одиночный parent. */
-    var chain = Array.isArray(t.parentChain) ? t.parentChain
-      : (t.parent && t.parent.issueId ? [t.parent] : []);
-    if (!chain.length) { orphans.push(leaf); return; }
+    /* §5/#74 ⚖3 — цепочки родителей ближний→дальний (parentChains, по одной на каждого
+       ПРЯМОГО родителя: у задачи их может быть несколько — DAG). Fallback на одиночную
+       цепочку parentChain / одиночного parent (снапшоты и вызовы до #74). */
+    var chains = Array.isArray(t.parentChains) && t.parentChains.length ? t.parentChains
+      : (Array.isArray(t.parentChain) && t.parentChain.length ? [t.parentChain]
+        : (t.parent && t.parent.issueId ? [[t.parent]] : []));
+    if (!chains.length) { orphans.push(leaf); return; }
 
-    for (var i = 0; i < chain.length; i++) {
-      var node = ensureNode(chain[i]);
-      if (i + 1 < chain.length) {
-        var parentNode = ensureNode(chain[i + 1]);
-        if (!parentNode.childSet[node.issueId]) { parentNode.childSet[node.issueId] = true; parentNode.children.push(node.issueId); }
-        hasParent[node.issueId] = true;
+    /* Один и тот же прямой родитель по двум парам связей — лист кладём один раз. */
+    var attached = {};
+    chains.forEach(function (chain) {
+      if (!Array.isArray(chain) || !chain.length) return;
+      for (var i = 0; i < chain.length; i++) {
+        var node = ensureNode(chain[i]);
+        if (i + 1 < chain.length) {
+          var parentNode = ensureNode(chain[i + 1]);
+          if (!parentNode.childSet[node.issueId]) { parentNode.childSet[node.issueId] = true; parentNode.children.push(node.issueId); }
+          hasParent[node.issueId] = true;
+        }
       }
-    }
-    var dp = nodes[chain[0].issueId];   // лист — к ПРЯМОМУ родителю
-    dp.tasks.push(leaf);
-    dp.zoneCount[leaf.zone] = (dp.zoneCount[leaf.zone] || 0) + 1;
+      var dpId = chain[0].issueId;
+      if (attached[dpId]) return;
+      attached[dpId] = true;
+      var dp = nodes[dpId];             // лист — к КАЖДОМУ прямому родителю
+      dp.tasks.push(leaf);
+      dp.zoneCount[leaf.zone] = (dp.zoneCount[leaf.zone] || 0) + 1;
+    });
   });
 
   /* финализация снизу вверх: агрегат count + зоны контейнера = свои листья ⊕ потомки.

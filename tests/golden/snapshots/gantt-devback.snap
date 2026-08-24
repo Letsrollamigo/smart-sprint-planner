@@ -123,7 +123,10 @@
         "pillFg": "#1a1a1a",
         "hist": true,
         "loadingText": "загрузка истории…"
-      }
+      },
+      "deps": [],
+      "depTypes": {},
+      "extDeps": []
     },
     {
       "issueId": "GM-11",
@@ -141,7 +144,10 @@
         "pillFg": "#1a1a1a",
         "hist": true,
         "loadingText": "загрузка истории…"
-      }
+      },
+      "deps": [],
+      "depTypes": {},
+      "extDeps": []
     }
   ],
   "editable": false,
@@ -150,5 +156,17 @@
     "day": "День",
     "week": "Неделя",
     "month": "Месяц"
+  },
+  "linkColors": {},
+  "linkLegend": {
+    "types": [],
+    "external": false
+  },
+  "linksReady": false,
+  "i18nExt": {
+    "badge": "Ждёт задачи вне спринта",
+    "unknown": "состояние неизвестно",
+    "legend": "Связи:",
+    "legendExt": "вне спринта"
   }
 }

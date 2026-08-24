@@ -74,7 +74,7 @@ test('#73 history[].roles: валидный проходит, битый бра�
 
 test('#73 миграция 3.23.0 → 3.27.0: no-op — roles не досеивается и не теряется', () => {
   const bare = migrateSprintObj(sprintBody({ pluginVersion: '3.23.0' }));
-  assert.strictEqual(bare.pluginVersion, '3.27.0');
+  assert.strictEqual(bare.pluginVersion, '3.28.0');   /* цепочка достраивается дальше — #74 добавил no-op 3.27.0→3.28.0 */
   assert.ok(!('roles' in bare), 'roles не досеивается миграцией (отсутствие = фолбэк резолвера)');
 
   const withRoles = migrateSprintObj(sprintBody({ pluginVersion: '3.23.0', roles: ['testing'] }));
@@ -82,5 +82,5 @@ test('#73 миграция 3.23.0 → 3.27.0: no-op — roles не досеив�
 
   const h = migrateHistoryArr([histRec({ pluginVersion: '3.23.0', roles: ['analysis'] })]);
   assert.deepStrictEqual(h[0].roles, ['analysis']);
-  assert.strictEqual(h[0].pluginVersion, '3.27.0');
+  assert.strictEqual(h[0].pluginVersion, '3.28.0');
 });

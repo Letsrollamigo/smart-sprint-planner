@@ -25,6 +25,96 @@
    демонтируется (unmountAt). */
 'use strict';
 
+/* ── #74 фаза 2: связи состава спринта ───────────────────────────────────────
+   Links НЕ хранятся ни в составе спринта, ни в снимках истории (backend-whitelist
+   их не знает) — поэтому фетч ЭФЕМЕРНЫЙ и схемы не касается вовсе.
+   Два чанк-фетча (канон release-view.fetchIssueData): (1) связи задач состава,
+   (2) состояние внешних предшественников — ⚖6 «номер + состояние», даты чужих
+   проектов не тянем. Результат кэшируется на связку «спринт + роль»: билд vm
+   синхронный, поэтому первый проход рисует Гант без стрелок, а приход данных
+   запускает повторный renderGanttChart — стрелки появляются вторым кадром.
+   Кэш модуль-приватный и транзиентный (прецедент — таймеры draft-store);
+   зарегистрирован в module-registry (гейт C1). */
+var _ganttLinks = { key: '', loading: false, data: null };
+
+const GANTT_LINK_CHUNK = 50;
+const GANTT_LINK_FIELDS = 'idReadable,links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
+const GANTT_EXT_FIELDS = 'idReadable,customFields(name,projectCustomField(field(name)),value(name,localizedName,isResolved))';
+
+function _linkChunks(ids) {
+  var out = [];
+  for (var i = 0; i < ids.length; i += GANTT_LINK_CHUNK) out.push(ids.slice(i, i + GANTT_LINK_CHUNK));
+  return out;
+}
+/* Ошибка чанка — пропуск (частичные данные), как в release-view: Гант обязан
+   нарисоваться и без связей. */
+function _fetchChunks(host, ids, fields, onIssue) {
+  return Promise.all(_linkChunks(ids).map(function (chunk) {
+    return host.fetchYouTrack('issues', {
+      query: { fields: fields, query: 'issue id: ' + chunk.join(', '), $top: chunk.length },
+    }).then(function (issues) { (issues || []).forEach(onIssue); }).catch(function () {});
+  }));
+}
+
+/* Локализованное состояние задачи (⚖6). Имя поля состояния — из настроек, с
+   фолбэком на канонические, как в release-view._cfState. */
+function _extState(iss, stateNames) {
+  var cfs = (iss && iss.customFields) || [];
+  for (var i = 0; i < cfs.length; i++) {
+    var cf = cfs[i];
+    var nm = (cf && cf.name) || (cf && cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.name) || '';
+    if (stateNames.indexOf(nm) < 0) continue;
+    var v = cf.value;
+    if (!v) continue;
+    return { state: v.localizedName || v.name || '', resolved: !!v.isResolved };
+  }
+  return { state: '', resolved: false };
+}
+
+function _loadGanttLinks(deps, ids, key) {
+  var host = deps.state.getHost && deps.state.getHost();
+  if (!host || !ids.length) return;
+  if (_ganttLinks.loading || _ganttLinks.key === key) return;
+  var s = deps.state.getSettings() || {};
+  var LR = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+  if (!LR) return;
+  var matchers = LR.resolveLinkRoles(s).dependency;
+  if (!matchers.length) { _ganttLinks = { key: key, loading: false, data: { preds: {}, ext: {} } }; return; }
+
+  _ganttLinks.loading = true;
+  var preds = {}, inSprint = {};
+  ids.forEach(function (id) { inSprint[id] = true; });
+
+  _fetchChunks(host, ids, GANTT_LINK_FIELDS, function (it) {
+    if (!it || !it.idReadable) return;
+    preds[it.idReadable] = LR.dependencyPreds(it, matchers);
+  }).then(function () {
+    var extIds = [], seen = {};
+    Object.keys(preds).forEach(function (id) {
+      preds[id].forEach(function (p) {
+        if (inSprint[p.id] || seen[p.id]) return;
+        seen[p.id] = true; extIds.push(p.id);
+      });
+    });
+    var ext = {};
+    if (!extIds.length) return ext;
+    var stateNames = s.fieldState ? [s.fieldState, 'State', 'Состояние'] : ['State', 'Состояние'];
+    return _fetchChunks(host, extIds, GANTT_EXT_FIELDS, function (it) {
+      if (!it || !it.idReadable) return;
+      ext[it.idReadable] = _extState(it, stateNames);
+    }).then(function () { return ext; });
+  }).then(function (ext) {
+    _ganttLinks = { key: key, loading: false, data: { preds: preds, ext: ext || {} } };
+    /* Данные приехали — перерисовать Гант со стрелками (второй кадр). */
+    try { if (typeof deps.renderGanttChart === 'function') deps.renderGanttChart(); } catch (_) {}
+  }).catch(function () {
+    /* Ошибка — фиксируем ключ с пустым результатом: onAfterRender дёргается после
+       КАЖДОГО коммита DOM, без этого получился бы бесконечный цикл рендер↔фетч.
+       Повторную попытку даёт «Обновить из YT» (сбрасывает ключ). */
+    _ganttLinks = { key: key, loading: false, data: { preds: {}, ext: {} } };
+  });
+}
+
 /* Pure-билдер view-model Ганта. Возвращает null, если нет задач с датами
    (empty-ветка — на вызывающем). Сайд-эффектов нет: фетч-план возвращается
    данными (fetchPlan), решение «когда стартовать» — за onAfterRender. */
@@ -90,6 +180,12 @@ function _buildGanttVm(deps) {
 
   // Строки: позиция полосы в днях + данные бейджа состояния (#20)
   // #20-v2 (v3.2.0) — startTs/endTs (сырые ms, канон ta) для gantt-task-react (drag дат).
+  /* #74 фаза 2 — ключ кэша связей: спринт + роль, как у истории состояний. */
+  var linksKey = (deps.state.getCurrentSprintId() || '') + ':' + rk + ':links';
+  var _linkData = (_ganttLinks.key === linksKey) ? _ganttLinks.data : null;
+  var _idSet = {};
+  ganttItems.forEach(function (g) { _idSet[g.issueId] = true; });
+
   var rows = ganttItems.map(function(g) {
     var badge = null;
     if (g.state || g.stateLocalized) {
@@ -104,6 +200,15 @@ function _buildGanttVm(deps) {
         loadingText: deps.T('ganttStateLoading'),
       };
     }
+    /* #74 фаза 2 — предшественники: внутри спринта дают стрелку (нативный
+       Task.dependencies), вне спринта — значок на строке (⚖5/⚖6). */
+    var _p = (_linkData && _linkData.preds && _linkData.preds[g.issueId]) || [];
+    var _in = [], _types = {}, _ext = [];
+    _p.forEach(function (pr) {
+      if (_idSet[pr.id]) { _in.push(pr.id); _types[pr.id] = pr.type; return; }
+      var st = (_linkData && _linkData.ext && _linkData.ext[pr.id]) || { state: '', resolved: false };
+      _ext.push({ id: pr.id, state: st.state, resolved: !!st.resolved, type: pr.type });
+    });
     return {
       issueId:  g.issueId,
       title:    g.title,
@@ -115,8 +220,23 @@ function _buildGanttVm(deps) {
       startTs:  g.start,
       endTs:    g.end,
       badge:    badge,
+      deps:     _in,
+      depTypes: _types,
+      extDeps:  _ext,
     };
   });
+
+  /* #74 ⚖7 — палитра на тип + легенда из фактически видимых обозначений. */
+  var LRP = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+  var _linkColors = LRP ? LRP.dependencyColors(deps.state.getSettings() || {}) : {};
+  var _seenTypes = {}, _hasExt = false;
+  rows.forEach(function (r) {
+    Object.keys(r.depTypes || {}).forEach(function (k) { _seenTypes[r.depTypes[k]] = true; });
+    if (r.extDeps && r.extDeps.length) _hasExt = true;
+  });
+  var _legend = { types: Object.keys(_seenTypes).map(function (n) {
+    return { name: n, color: _linkColors[n] || '' };
+  }), external: _hasExt };
 
   // План history-фетча (#20): только активный спринт при настроенном fieldState
   var fetchPlan = null;
@@ -152,8 +272,20 @@ function _buildGanttVm(deps) {
       lang: (typeof deps.getLang === 'function' && deps.getLang()) || 'en',
       zoomLabels: { day: deps.T('ganttZoomDay'), week: deps.T('ganttZoomWeek'), month: deps.T('ganttZoomMonth') },
       fmtDate: deps.fmtGanttDate,
+      /* #74 фаза 2 ⚖7 — цвет на тип связи (детерминирован порядком типов в настройке)
+         и легенда: только фактически видимые обозначения. */
+      linkColors: _linkColors,
+      linkLegend: _legend,
+      linksReady: !!_linkData,
+      i18nExt: {
+        badge: deps.T('ganttExtDeps'),
+        unknown: deps.T('ganttExtStateUnknown'),
+        legend: deps.T('ganttLegendTitle'),
+        legendExt: deps.T('ganttLegendExternal'),
+      },
     },
     fetchPlan: fetchPlan,
+    linksPlan: { ids: ganttItems.map(function (g) { return g.issueId; }), key: linksKey },
   };
 }
 
@@ -250,6 +382,9 @@ function renderGanttChart(deps) {
   vm.onDateChange = _makeGanttDateChange(deps);
   vm.onBarDoubleClick = function (issueId) { cellClick(issueId, null); };
   vm.onAfterRender = function () {
+    /* #74 фаза 2 — связи: старт после коммита, как история состояний. Внутри guard
+       по in-flight и по уже собранному ключу, иначе цикл (см. _loadGanttLinks). */
+    if (built.linksPlan) _loadGanttLinks(deps, built.linksPlan.ids, built.linksPlan.key);
     if (!built.fetchPlan) return;
     deps.fetchGanttStateHistory(built.fetchPlan.ids, built.fetchPlan.key, false,
       built.fetchPlan.states, built.fetchPlan.fieldId);

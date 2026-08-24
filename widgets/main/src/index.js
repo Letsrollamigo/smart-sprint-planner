@@ -25,6 +25,7 @@ import './pure/refresh-merge-pure.js';
 import './pure/share-url-pure.js';
 import './pure/planning-model-pure.js';
 import './pure/permissions-matrix-pure.js';
+import './pure/link-roles-pure.js';
 import './pure/backlog-vm-pure.js';
 import './pure/capacity-pure.js';
 import './pure/forecast-pure.js';

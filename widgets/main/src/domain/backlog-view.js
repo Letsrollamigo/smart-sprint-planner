@@ -133,6 +133,7 @@ function renderBacklog(deps) {
       continuation: deps.t('backlogContinuation'),
       inSprint: deps.t('backlogInSprint'),          /* #polish — задача уже в составе любого спринта */
       inSprintHint: deps.t('backlogInSprintHint'),
+      infoLinksTitle: deps.t('backlogInfoLinks'),   /* #74 ⚖4 — заголовок тултипа бейджа связей */
       colKey: deps.t('thId'),
       colSystem: deps.t('thSystem'),
       colSummary: deps.t('thTitle'),

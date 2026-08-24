@@ -329,25 +329,19 @@ function _cfType(iss, typeNames) {
 }
 
 /* R3.2 — родители задачи из links. v3.24.0 (#69 строка 28, ⚖ владелец): не захардкоженный
-   linkType Subtask, а НАСТРОЙКА cascadeParentLinkInward — фраза связи со стороны ЭТОЙ задачи
-   (OUTWARD→sourceToTarget, INWARD→targetToSource), дефолт «subtask of» = прежнее поведение.
-   Тот же матчер, что backlog-loader._parentRaw (парити-тест в release-state-preview.test).
+   linkType Subtask, а настройка иерархии. #74 ⚖8: каскад состава наследует ВСЕ пары роли
+   «Иерархия» из общего резолвера (pure/link-roles-pure) — отдельной настройки у релизов нет,
+   а матчер теперь СТРУКТУРНО общий с backlog-loader._parentsRaw (был парити-тест).
    Массив: у задачи может быть НЕСКОЛЬКО родителей — какой в составе, решает tree-билдер. */
 function _linkParents(iss, s) {
-  var inward = (s && s.cascadeParentLinkInward && String(s.cascadeParentLinkInward)) || 'subtask of';
-  var out = [];
-  (iss.links || []).forEach(function (l) {
-    if (!l || !l.linkType) return;
-    var phrase = (l.direction === 'OUTWARD') ? l.linkType.sourceToTarget
-      : (l.direction === 'INWARD') ? l.linkType.targetToSource : null;
-    if (phrase !== inward) return;
-    (l.issues || []).forEach(function (p) { if (p && p.idReadable) out.push(p.idReadable); });
-  });
-  return out;
+  var LR = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+  if (!LR) return [];
+  return LR.linkParents(iss, LR.resolveLinkRoles(s).hierarchy)
+    .map(function (p) { return p.idReadable; }).filter(Boolean);
 }
 
 /* R2.3/R3.1/R3.2 — батч-фетч данных задач (summary + ТЕКУЩЕЕ State + isResolved + тип +
-   родители по cascadeParentLinkInward) → {id: {summary, state, resolved, type, parents}}. Чанки по 50,
+   родители по ролям связей #74) → {id: {summary, state, resolved, type, parents}}. Чанки по 50,
    query 'issue id: X, Y' (канон refresh-controller); ошибка чанка → пропуск (частичные
    данные, риск §10). Потребители: карточка планируемого (титулы+светофор+дерево R3.2),
    предпросмотр состояний, buildSnapshot. */

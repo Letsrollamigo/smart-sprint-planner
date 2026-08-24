@@ -791,7 +791,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.27.0';
+  var APP_VERSION = '3.28.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2239,6 +2239,7 @@
       fieldValuesCache: _fieldValuesCache,
       loadProjectGroups: loadProjectGroups,
       loadProjectTags: loadProjectTags,
+      loadLinkTypes: loadLinkTypes,   /* #74 — типы связей инстанса для таблицы ролей */
       invalidateFieldValuesCache: invalidateFieldValuesCache,
       syncProjectDefaultLang: _syncProjectDefaultLang,
       refreshFeatureStatusBar: _refreshFeatureStatusBar,
@@ -2322,6 +2323,7 @@
   function loadProjectFields()        { return DATA_LOADERS.loadProjectFields(_loadersDeps()); }
   function loadProjectGroups()        { return DATA_LOADERS.loadProjectGroups(_loadersDeps()); }
   function loadProjectTags()          { return DATA_LOADERS.loadProjectTags(_loadersDeps()); }
+  function loadLinkTypes()            { return DATA_LOADERS.loadLinkTypes(_loadersDeps()); }   /* #74 */
   function _refreshFeatureStatusBar() { return DATA_LOADERS._refreshFeatureStatusBar(_loadersDeps()); }
   function loadAllData()              { return DATA_LOADERS.loadAllData(_loadersDeps()); }
 

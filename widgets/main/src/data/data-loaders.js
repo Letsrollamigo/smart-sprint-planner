@@ -124,6 +124,39 @@
     }).catch(function (e) { deps.diag('Tags ERR: ' + String(e), 'err'); return []; });
   }
 
+  /* ── loadLinkTypes — типы связей ИНСТАНСА для таблицы «тип связи × роль» (#74).
+     Frontend-direct, как loadProjectTags. Настройка хранит name: id типов различаются
+     между инстансами (референс-анализ спеки §3), name — нет. Показываем
+     localizedName || name; фразы нужны и для выбора стороны, и для легаси-зеркала
+     (пара cascadeParentLink*, которую читают фоновые правила). ── */
+  function loadLinkTypes(deps) {
+    return deps.state.getHost().fetchYouTrack('issueLinkTypes', {
+      query: { fields: 'name,localizedName,directed,aggregation,sourceToTarget,targetToSource,'
+        + 'localizedSourceToTarget,localizedTargetToSource', $top: 1000 }
+    }).then(function (raw) {
+      var out = (Array.isArray(raw) ? raw : []).filter(function (t) { return t && t.name; })
+        .map(function (t) {
+          /* Локализованные фразы отдаёт не всякая версия YT: на 2025.3 все localized* = null,
+             на 2026.1 заполнены («подзадача для», «зависит от»). Показываем локализованное,
+             когда оно есть, иначе каноническое; хранение всегда по КАНОНУ (name/фраза). */
+          return {
+            name: t.name,
+            localizedName: (t.localizedName && t.localizedName !== t.name) ? t.localizedName : '',
+            directed: !!t.directed,
+            /* Признак самого трекера «тип агрегирующий» — подсказка «похоже на иерархию»
+               для кастомных типов (у встроенных true на Subtask и Duplicate). Не роль. */
+            aggregation: !!t.aggregation,
+            sourceToTarget: t.sourceToTarget || '',
+            targetToSource: t.targetToSource || '',
+            localizedSourceToTarget: t.localizedSourceToTarget || '',
+            localizedTargetToSource: t.localizedTargetToSource || '',
+          };
+        });
+      deps.diag('Link types loaded: ' + out.length, 'ok');
+      return out;
+    }).catch(function (e) { deps.diag('Link types ERR: ' + String(e), 'err'); return []; });
+  }
+
   /* ── _refreshFeatureStatusBar — статус-бар активных функциональных модулей
      (зелёная/красная точка + локализованный on/off для 6 chip'ов). Вызывается
      после каждого обновления _settings (initial load, save) и после applyI18N. ── */
@@ -261,6 +294,7 @@
     loadProjectFields: loadProjectFields,
     loadProjectGroups: loadProjectGroups,
     loadProjectTags: loadProjectTags,
+    loadLinkTypes: loadLinkTypes,
     _refreshFeatureStatusBar: _refreshFeatureStatusBar,
     loadAllData: loadAllData,
   };

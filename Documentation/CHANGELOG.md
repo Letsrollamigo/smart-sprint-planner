@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.28.0] — 2026-08-24
+
+> **Issue links, phases 1 and 2 (#74).** Links became configurable instead of typed in: instead of two phrase fields there is a settings section of its own where links are added from a picker. The backlog tree and release scope are built from several link types at once, and the Gantt chart gained dependency arrows. The app only reads links; they are still created in YouTrack.
+
+### Added
+
+- **An «Issue links» settings section** of its own, no longer a sub-part of «Estimate cascade» (the setting no longer depends on the cascade toggle: the backlog, releases and the Gantt read it too). Links are **added from a picker** listing the wordings of your instance's link types («subtask of», «depends on», …); picking a wording sets both the type and the side, so there is no separate «which side is the parent» question. The reverse wording is filled in automatically and the added type leaves the picker under both of its wordings. Localized wordings are used when the tracker provides them (YouTrack 2026.1), canonical ones otherwise.
+- **A «Used by» column** — each row shows which modules read the setting (Backlog, Releases, Estimate cascade, State rollup, Gantt) and whether the module is currently on in the project. A star marks the link that the estimate cascade and state rollup use: they read only the first link marked «Hierarchy».
+- **The `linkTypeRoles` schema key** (`array<{type,hier,dep,info}>`, ≤50 rows, deduplicated by type, admin tier), migration `3.27.0 → 3.28.0` (no-op — a project-level setting, snapshots unchanged), fixtures in `tests/fixtures/snapshots/3.28.0/`. The type **name** is stored: ids differ between instances, names do not.
+- **A link-role resolver** (`pure/link-roles-pure.js`) with layered fallback: the table → the historical `cascadeParentLinkInward` wording → the default set. Out of the box the behaviour matches the previous one; the hierarchy default matches both by type name and by the historical wording, so an instance with a renamed link type does not lose its tree on upgrade.
+- **A related-issues marker** on backlog rows — a counter plus an «ID · wording» list on hover, with no extra request to the tracker.
+- **Gantt: dependency arrows** between issues of the sprint, **a distinct color per link type** (an isoluminant palette — one color reads on both the light and the dark theme) and a legend built from what is actually on screen. A dependency on an issue **outside the sprint** gets no bar (dates of other projects are not fetched) — it shows as a row marker with the issue id and state on hover; an unresolved external issue is flagged in a warning tone, a resolved one stays calm. Links for this are fetched ephemerally and never stored in snapshots.
+
+### Changed
+
+- **The backlog tree supports several parents.** An issue is attached under **each** of its direct parents across all «Hierarchy» pairs, and every issue inside a link counts (previously only the first parent of the first matching link was used). The diamond and cycle guards from v3.2.1 cover the new tree shape.
+- **The release scope cascade** now uses the same resolver and inherits every «Hierarchy» pair automatically; the parent matcher is structurally shared with the backlog loader.
+- **Gantt rows are half as tall** (88 → 52 px): the cell content is laid out in two lines — «id · assignee» and «state · transition history» — instead of a column of four.
+- **The legacy `cascadeParentLinkInward`/`Outward` pair** entered step 1 of the deprecation ladder: the fields are gone from the form, the backend still accepts the keys and logs `SCHEMA_DEPRECATION_WARN`. The form nevertheless keeps **writing** the pair, deriving it from the first «Hierarchy» row: two workflow rules (estimate cascade aggregation, parent state rollup) read that same blob directly. Hard removal comes no earlier than one minor later.
+
+### Fixed
+
+- The related-issues marker in the backlog rendered without its border: the style referenced a non-existent `--line` token instead of `--border`.
+
+### Tests
+
+- `tests/unit/link-roles.test.js` — 43 checks: the three resolver layers, normalization and deduplication, link sides, undirected types, collecting parents across several pairs, the info marker, the legacy mirror, picker options and automatic reverse-wording, the module-consumer registry, Gantt arrow ordering and palette contrast against every Gantt row background.
+- `tests/unit/settings-validation.test.js` — `linkTypeRoles` bounds and enums, whitelist and admin-tier membership, a round-trip through `migrateSettingsObj`, and a ladder regression.
+- `tests/unit/backlog-loader.test.js` — the `parentChains` contract, and a parent missing from the batch no longer costing the tree a branch.
+
+---
+
 ## [3.27.0] — 2026-08-24
 
 > **Sprints pick their participating roles at creation (#73).** A sprint now owns its set of participating roles: chosen once in the creation dialog and immutable afterwards. This closes the "live sprint views are settings-driven" defect: editing project roles retroactively changed how all existing sprints looked (a phantom "Draft" role appearing when a role was enabled, a role holding data disappearing when disabled).

@@ -119,13 +119,15 @@ function RingIcon({ name, cls }) {
   return <span className={'ssp-icon ssp-icon--inline' + (cls ? ' ' + cls : '')} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-/* Парная константа гейта модуля отчётности (в corp-форке модуль отключён заглушкой,
-   здесь — включён). Потребители: секция «Отчётность» и колонки «Отчётность» матрицы прав. */
-const REPORTING_DISABLED = false;
+/* #64 — corp-заглушка модуля отчётности (⚖ владелец 2026-08-03): парная константа
+   гейта в core.js (REPORTING_DISABLED); возврат модуля = снять обе. Живёт здесь с #71:
+   потребителей два — ReportingSection и колонки «Отчётность» матрицы прав
+   (DIFF_MAP §10a; в community — false). */
+const REPORTING_DISABLED = true;
 
 /* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
    только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
-const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, rollup: true, capacity: true, backlog: true, release: true, reporting: true };
+const ADMIN_SECTION_IDS = { groups: true, dta: true, cascade: true, links: true, rollup: true, capacity: true, backlog: true, release: true, reporting: true };
 const LOCK_ICON_PATH = 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6z';
 function LockIcon() {
   return (

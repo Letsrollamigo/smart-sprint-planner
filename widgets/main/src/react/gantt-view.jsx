@@ -25,6 +25,7 @@
 
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { RingIcon } from './settings-shared.jsx';
 
 const _mounted = new WeakMap();
 const DAY = 86400000;
@@ -46,11 +47,24 @@ function endToInclusiveMs(end) {
   return localDayToMs(last);
 }
 
+const EXT_BADGE_BASE = {
+  display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '2px',
+  padding: '0 6px', borderRadius: '8px', fontSize: '11px', whiteSpace: 'nowrap',
+  border: '1px solid var(--border)',
+};
+
 const ST = {
+  legend: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px', margin: '0 0 8px', fontSize: '11px', color: 'var(--muted)' },
+  legendTitle: { fontWeight: 500 },
+  legendItem: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
+  legendSwatch: { display: 'inline-block', width: '14px', height: '3px', borderRadius: '2px' },
+  /* #74 ⚖6 — незакрытая внешняя зависимость предупреждает, закрытая спокойна. */
+  extDepsWarn: Object.assign({}, EXT_BADGE_BASE, { color: 'var(--warn)', borderColor: 'var(--warn)' }),
+  extDepsCalm: Object.assign({}, EXT_BADGE_BASE, { color: 'var(--muted)' }),
   listCell: {
     boxSizing: 'border-box', padding: '4px 8px', overflow: 'hidden',
     borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)',
-    background: 'var(--surface)', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+    background: 'var(--surface)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px',
   },
   listHeader: {
     boxSizing: 'border-box', padding: '6px 10px', fontWeight: 600, fontSize: '12px',
@@ -58,16 +72,16 @@ const ST = {
     display: 'flex', alignItems: 'center',
   },
   taskLink: {
-    fontWeight: 600, display: 'block', overflow: 'hidden', fontSize: '12px',
+    fontWeight: 600, overflow: 'hidden', fontSize: '12px', flexShrink: 0,
     textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
   taskAssignee: {
-    fontSize: '11px', color: 'var(--muted)', overflow: 'hidden',
+    fontSize: '11px', color: 'var(--muted)', overflow: 'hidden', minWidth: 0,
     textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   },
-  badgeWrap: { marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden' },
-  badgeSince: { color: 'var(--muted)', fontSize: '10px', marginLeft: '4px' },
-  badgePrev: { color: 'var(--muted)', fontSize: '10px', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  cellLine: { display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' },
+  badgeSince: { color: 'var(--muted)', fontSize: '10px', flexShrink: 0 },
+  badgePrev: { color: 'var(--muted)', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
   pillDot: { display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0 },
 };
 
@@ -84,14 +98,12 @@ function GanttBadge({ row }) {
   };
   return (
     <React.Fragment>
-      <div style={ST.badgeWrap}>
-        <span style={pill}>
-          <span style={{ ...ST.pillDot, background: b.pillFg }} />
-          {b.label}
-        </span>
-        {b.hist ? <span data-gantt-hist-since={row.issueId} style={ST.badgeSince} /> : null}
-      </div>
-      {b.hist ? <div data-gantt-hist-prev={row.issueId} style={ST.badgePrev}>{b.loadingText}</div> : null}
+      <span style={pill}>
+        <span style={{ ...ST.pillDot, background: b.pillFg }} />
+        {b.label}
+      </span>
+      {b.hist ? <span data-gantt-hist-since={row.issueId} style={ST.badgeSince} /> : null}
+      {b.hist ? <span data-gantt-hist-prev={row.issueId} style={ST.badgePrev}>{b.loadingText}</span> : null}
     </React.Fragment>
   );
 }
@@ -99,6 +111,24 @@ function GanttBadge({ row }) {
 /* Левая колонка либы (кастомный TaskListTable): паритет со старым ядром — ссылка на
    задачу, исполнитель, бейдж #20 с hist-плейсхолдерами. Высота строки = rowHeight
    пропа либы (жёстко — бары выравниваются по index*rowHeight). */
+/* #74 фаза 2 ⚖5/⚖6 — значок внешних зависимостей: предшественник вне спринта бара не
+   получает (даты чужих проектов не тянем), поэтому показывается счётчиком на строке.
+   Тултип — «номер · состояние»; незакрытая внешняя задача красится предупреждающим
+   тоном, закрытая — спокойным (это статус, поэтому здесь токены темы, а не палитра
+   типов: цвет типа = идентичность связи, смешивать нельзя). */
+function ExtDepsBadge({ row, i18n }) {
+  const ext = (row && row.extDeps) || [];
+  if (!ext.length) return null;
+  const open = ext.filter((e) => !e.resolved).length;
+  const tip = (i18n && i18n.badge ? i18n.badge + ': ' : '')
+    + ext.map((e) => e.id + ' · ' + (e.state || (i18n && i18n.unknown) || '')).join('\n');
+  return (
+    <span style={open ? ST.extDepsWarn : ST.extDepsCalm} title={tip}>
+      <RingIcon name="share" />{ext.length}
+    </span>
+  );
+}
+
 function makeTaskListTable(vm) {
   return function GanttTaskList({ tasks, rowHeight, rowWidth }) {
     return (
@@ -108,10 +138,18 @@ function makeTaskListTable(vm) {
           return (
             <div key={t.id} data-gantt-issue={row.issueId}
               style={{ ...ST.listCell, height: rowHeight + 'px', width: rowWidth }}>
-              {/* класс link — тема виджета поверх Ring-токенов (--primary) */}
-              <a href={row.url} target="_blank" rel="noopener noreferrer" className="link" style={ST.taskLink} title={row.title}>{row.issueId}</a>
-              <div style={ST.taskAssignee}>{row.assignee}</div>
-              <GanttBadge row={row} />
+              {/* Содержимое в ДВЕ строки, а не столбиком: строка 1 — задача и исполнитель,
+                  строка 2 — состояние, история переходов и внешние зависимости. Это и даёт
+                  сжатие по вертикали (rowHeight 88 → 52). */}
+              <div style={ST.cellLine}>
+                {/* класс link — тема виджета поверх Ring-токенов (--primary) */}
+                <a href={row.url} target="_blank" rel="noopener noreferrer" className="link" style={ST.taskLink} title={row.title}>{row.issueId}</a>
+                <span style={ST.taskAssignee} title={row.assignee}>{row.assignee}</span>
+              </div>
+              <div style={ST.cellLine}>
+                <GanttBadge row={row} />
+                <ExtDepsBadge row={row} i18n={vm.i18nExt} />
+              </div>
             </div>
           );
         })}
@@ -169,6 +207,48 @@ class GanttErrorBoundary extends React.Component {
   }
 }
 
+/* Раскраска стрелок по типу связи (⚖7). Порядок узлов .arrow воспроизводится
+   pure-функцией ganttArrowOrder; если фактическое число узлов не совпало с расчётом —
+   НИЧЕГО не красим: лучше один цвет по умолчанию, чем произвольно перепутанные. */
+function _paintArrows(host, vm) {
+  const LRP = globalThis.__SSP_LINK_ROLES_PURE;
+  if (!host || !vm || !LRP) return;
+  const nodes = host.querySelectorAll('g.arrows > g.arrow');
+  if (!nodes.length) return;
+  const plan = LRP.ganttArrowOrder(vm.rows.map((r) => ({
+    id: r.issueId, dependencies: r.deps || [], depTypes: r.depTypes || {},
+  })));
+  if (plan.length !== nodes.length) return;   /* расчёт разошёлся с DOM — не гадаем */
+  const colors = vm.linkColors || {};
+  for (let i = 0; i < nodes.length; i++) {
+    const c = colors[plan[i].type];
+    if (!c) continue;
+    nodes[i].setAttribute('stroke', c);
+    nodes[i].setAttribute('fill', c);
+  }
+}
+
+
+/* Легенда (⚖7): только фактически видимые обозначения, настроек нет. */
+function GanttLegend({ vm }) {
+  const lg = vm && vm.linkLegend;
+  if (!lg || (!lg.types.length && !lg.external)) return null;
+  const i18n = vm.i18nExt || {};
+  return (
+    <div style={ST.legend}>
+      <span style={ST.legendTitle}>{i18n.legend}</span>
+      {lg.types.map((t) => (
+        <span key={t.name} style={ST.legendItem}>
+          <span style={{ ...ST.legendSwatch, background: t.color || 'grey' }} />{t.name}
+        </span>
+      ))}
+      {lg.external ? (
+        <span style={ST.legendItem}><RingIcon name="share" />{i18n.legendExt}</span>
+      ) : null}
+    </div>
+  );
+}
+
 function GanttChart({ host }) {
   const [, force] = React.useReducer((x) => x + 1, 0);
   const [zoom, setZoom] = React.useState('Day');
@@ -183,6 +263,20 @@ function GanttChart({ host }) {
     /* После КАЖДОГО коммита DOM — пинок history-фетча #20 (плейсхолдеры уже
        в дереве, DOM-поки кэш-хитов youtrack-api попадают в цель). */
     if (vm && typeof vm.onAfterRender === 'function') vm.onAfterRender();
+    /* #74 фаза 2 ⚖7 — цвет на тип связи. Либа красит ВСЕ стрелки одним цветом на
+       контейнере <g class="arrows" fill stroke>, а у самих <g class="arrow"> ни id,
+       ни data-атрибута нет — сопоставляем позиционно: порядок рендера детерминирован
+       и воспроизведён ganttArrowOrder. Идемпотентно и переигрывается после каждого
+       коммита (зум и drag пересоздают узлы) — тот же контракт, что у поков истории. */
+    if (!vm) return undefined;
+    /* Либа строит бары и стрелки в СВОЁМ эффекте, то есть уже ПОСЛЕ нашего: на момент
+       этого коммита контейнер g.arrows ещё пуст, и разовая покраска всегда опаздывала
+       бы на такт. Поэтому красим по появлению узлов. Наблюдаем только childList —
+       наши setAttribute обратной волны не дают, цикла нет. */
+    _paintArrows(host, vm);
+    const obs = new MutationObserver(() => _paintArrows(host, vm));
+    obs.observe(host, { childList: true, subtree: true });
+    return () => obs.disconnect();
   });
   /* Кастомные компоненты либы пересоздаются только при смене vm (не при drag'е). */
   const parts = React.useMemo(() => (vm ? {
@@ -200,6 +294,10 @@ function GanttChart({ host }) {
     id: r.issueId, name: r.issueId, type: 'task',
     start: msToLocalDay(r.startTs), end: msToLocalDay(r.endTs + DAY),   /* инклюзивный канон → exclusive либы */
     progress: 0, isDisabled: !vm.editable,
+    /* #74 фаза 2 ⚖5 — предшественники ВНУТРИ спринта: либа сама рисует стрелку
+       «предшественник → зависимый». Внешние сюда не кладём (их id нет среди задач —
+       либа молча проигнорировала бы), они уходят в значок на строке. */
+    dependencies: (r.deps && r.deps.length) ? r.deps.slice() : undefined,
     styles: { backgroundColor: r.bg, backgroundSelectedColor: r.bg, progressColor: r.bg, progressSelectedColor: r.bg },
   }));
   const zoomBtns = [['Day', vm.zoomLabels && vm.zoomLabels.day], ['Week', vm.zoomLabels && vm.zoomLabels.week], ['Month', vm.zoomLabels && vm.zoomLabels.month]];
@@ -217,13 +315,15 @@ function GanttChart({ host }) {
           </button>
         ))}
       </div>
-      {/* v3.2.1 — rowHeight 88: 4 строки ячейки (ссылка+исполнитель+бейдж+hist) при
-          наследуемом line-height 1.5 занимают ~82px; при 64px строка «← было…» клипалась. */}
+      <GanttLegend vm={vm} />
+      {/* rowHeight 52 (⚖ владелец 2026-08-24 — сжать Гант по вертикали): содержимое
+          ячейки разложено в ДВЕ строки вместо столбика из четырёх, поэтому прежние 88px
+          (комментарий v3.2.1) больше не нужны. */}
       <Gantt
         tasks={tasks}
         viewMode={ViewMode[zoom]}
         locale={vm.lang || 'en'}
-        rowHeight={88}
+        rowHeight={52}
         headerHeight={50}
         listCellWidth="220px"
         columnWidth={ZOOM_COLUMN_W[zoom] || 60}

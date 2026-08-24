@@ -25,8 +25,9 @@ var BACKLOG_ISSUE_FIELDS = 'id,idReadable,summary,'
      activities-детекта смены состояния (без localized-mismatch; project-fields id не отдаёт). */
   + 'customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,minutes,isResolved)),'
   + 'tags(name),'
-  /* §5: только направление/фраза связи + id на другом конце (родитель = link, где фраза
-     с моей стороны === cascadeParentLinkInward, дефолт «subtask of»). */
+  /* §5/#74: направление + имя и фразы типа связи + id на другом конце. Родители и
+     инфо-связи резолвятся из этого же набора (pure/link-roles-pure) — бейджу ⚖4
+     новых полей не нужно. Имя типа обязательно: id типов различаются между инстансами. */
   + 'links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
 /* R5 фаза 2/3 — поля батч-дозагрузки родителей: summary + kind-CF (value(name) — как отдавал
    прежний вложенный селектор) + плоские links для резолва прародителя. Прародителям links не нужны. */
@@ -159,20 +160,22 @@ function _cfName(iss, fieldName) {
   return (v && v.name) || null;
 }
 
-/* §5 — родитель-issue (raw, с вложенными links для рекурсии). Ищем link, у которого фраза со
-   стороны ЭТОГО issue (OUTWARD→sourceToTarget, INWARD→targetToSource) == cascadeParentLinkInward
-   (дефолт «subtask of»). Возвращает issue-объект родителя (или null). */
-function _parentRaw(iss, s) {
-  var inward = (s.cascadeParentLinkInward && String(s.cascadeParentLinkInward)) || 'subtask of';
-  var links = (iss && iss.links) || [];
-  for (var i = 0; i < links.length; i++) {
-    var l = links[i];
-    if (!l || !l.linkType) continue;
-    var phrase = (l.direction === 'OUTWARD') ? l.linkType.sourceToTarget
-      : (l.direction === 'INWARD') ? l.linkType.targetToSource : null;
-    if (phrase === inward && Array.isArray(l.issues) && l.issues.length) return l.issues[0];
-  }
-  return null;
+/* #74 — мост к резолверу ролей связей (pure/link-roles-pure.js). Как и прочие
+   pure-мосты программы, читается по месту вызова: к моменту загрузки пула модуль
+   уже импортирован index.js. Мост недоступен → дерево без иерархии (деградация
+   канона _treeRows в release-view), а не тихо неверные родители. */
+function _LR() {
+  return (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+}
+
+/* §5 — родители-issue (raw, с вложенными links для рекурсии). #74: ВСЕ пары роли
+   «Иерархия» из резолвера и ВСЕ issues внутри каждой связи — до #74 брался только
+   links[i].issues[0] по единственной фразе cascadeParentLinkInward, из-за чего
+   терялся даже второй родитель того же типа. */
+function _parentsRaw(iss, s) {
+  var LR = _LR();
+  if (!LR) return [];
+  return LR.linkParents(iss, LR.resolveLinkRoles(s).hierarchy);
 }
 function _toContainer(p, s) {
   return {
@@ -181,30 +184,43 @@ function _toContainer(p, s) {
     kind: s.cascadeKindField ? _cfPres(p, s.cascadeKindField) : null,
   };
 }
-/* §5 — цепочка родителей (ближний→дальний), depth хопов (вложенность links). Для
+/* §5 — цепочки родителей (ближний→дальний), depth хопов (вложенность links). Для
    Эпик▸Стори▸Таск depth=2 (Стори, Эпик). Работает по тем данным, что есть в links
-   (плоский фетч R5 даст id-only заглушку — цепочку доуточняет _loadParentChains). */
-function _parentChain(iss, s, depth) {
-  var chain = [], cur = iss, d = depth || 2;
-  for (var i = 0; i < d; i++) {
-    var p = _parentRaw(cur, s);
-    if (!p) break;
-    chain.push(_toContainer(p, s));
-    cur = p;
-  }
-  return chain;
+   (плоский фетч R5 даст id-only заглушку — цепочки доуточняет _loadParentChains).
+   #74 ⚖3: цепочка на КАЖДОГО прямого родителя (лист крепится под каждым). Выше по
+   цепочке берём первого родителя-предка: контейнер под двумя предками VM всё равно
+   финализирует один раз (visited-guard v3.2.1), лишние ветки были бы холостыми. */
+function _parentChains(iss, s, depth) {
+  var d = depth || 2;
+  return _parentsRaw(iss, s).map(function (p) {
+    var chain = [_toContainer(p, s)], cur = p;
+    for (var i = 1; i < d; i++) {
+      var up = _parentsRaw(cur, s)[0];
+      if (!up) break;
+      chain.push(_toContainer(up, s));
+      cur = up;
+    }
+    return chain;
+  });
 }
-/* R5 — id родителя из плоских links (реюз _parentRaw). null если родителя нет. */
-function _parentIdOf(iss, s) {
-  var p = _parentRaw(iss, s);
-  return (p && (p.idReadable || p.id)) || null;
+/* #74 ⚖4 — инфо-связи задачи для бейджа-счётчика: [{ idReadable, phrase }].
+   Данные уже в пуле (links фетчатся под иерархию) — ни одного нового запроса. */
+function _infoLinks(iss, s) {
+  var LR = _LR();
+  if (!LR) return [];
+  return LR.linkInfo(iss, LR.resolveLinkRoles(s).info);
+}
+
+/* R5 — id прямых родителей из плоских links (реюз _parentsRaw). [] если родителей нет. */
+function _parentIdsOf(iss, s) {
+  return _parentsRaw(iss, s).map(function (p) { return p.idReadable || p.id; }).filter(Boolean);
 }
 
 /* R5 фазы 2/3 — дотянуть цепочки родителей батчами по УНИКАЛЬНЫМ id (у 1000 задач обычно
    100–200 стори и десятки эпиков): один-два запроса `issue id: …` на уровень вместо
-   квадратичного разворота siblings на каждую задачу пула. Мутирует task.parentChain
+   квадратичного разворота siblings на каждую задачу пула. Мутирует task.parentChains
    (контракт buildBacklogVm: ближний→дальний, ≤2). Родитель, недоступный батчу (нет прав/
-   удалён), остаётся id-only заглушкой из _parentChain. Ошибка фетча — reject (как падала
+   удалён), остаётся id-only заглушкой из _parentChains. Ошибка фетча — reject (как падала
    и страница прежнего вложенного селектора: fail-loud, не тихая деградация дерева). */
 const PARENT_BATCH = 100;   /* const — C1 arch-fitness */
 function _fetchByIds(deps, ids, fields) {
@@ -223,24 +239,33 @@ function _fetchByIds(deps, ids, fields) {
 function _loadParentChains(acc, deps) {
   var s = deps.settings || {};
   var pids = [], seen = {};
-  acc.forEach(function (t) { var id = t._parentId; if (id && !seen[id]) { seen[id] = true; pids.push(id); } });
+  acc.forEach(function (t) {
+    (t._parentIds || []).forEach(function (id) { if (id && !seen[id]) { seen[id] = true; pids.push(id); } });
+  });
   if (!pids.length) return Promise.resolve();
   return _fetchByIds(deps, pids, BACKLOG_PARENT_FIELDS).then(function (parents) {
     var gids = [], gseen = {};
     pids.forEach(function (pid) {
       var p = parents[pid]; if (!p) return;
-      var gid = _parentIdOf(p, s);
+      var gid = _parentIdsOf(p, s)[0];
       if (gid && !gseen[gid]) { gseen[gid] = true; gids.push(gid); }
     });
     var gp = gids.length ? _fetchByIds(deps, gids, BACKLOG_GRANDPARENT_FIELDS) : Promise.resolve({});
     return gp.then(function (grands) {
       acc.forEach(function (t) {
-        var p = t._parentId && parents[t._parentId];
-        if (!p) return;                                   /* заглушка из _parentChain остаётся */
-        var chain = [_toContainer(p, s)];
-        var gid = _parentIdOf(p, s);
-        if (gid) chain.push(grands[gid] ? _toContainer(grands[gid], s) : { issueId: gid, summary: '', kind: null });
-        t.parentChain = chain;
+        /* #74 ⚖3 — цепочка на КАЖДОГО прямого родителя. Недобранный батчем родитель
+           (нет прав/удалён) даёт id-only заглушку, а не выпадение ветки: иначе задача
+           с родителями [A, недоступный] потеряла бы вторую ветку дерева. */
+        var chains = [];
+        (t._parentIds || []).forEach(function (pid) {
+          var p = parents[pid];
+          if (!p) { chains.push([{ issueId: pid, summary: '', kind: null }]); return; }
+          var chain = [_toContainer(p, s)];
+          var gid = _parentIdsOf(p, s)[0];
+          if (gid) chain.push(grands[gid] ? _toContainer(grands[gid], s) : { issueId: gid, summary: '', kind: null });
+          chains.push(chain);
+        });
+        t.parentChains = chains;
       });
       if (deps.diag) deps.diag('backlog parents: ' + pids.length + ' uniq, grandparents: ' + gids.length, 'info');
     });
@@ -272,8 +297,9 @@ function _mapPoolIssue(iss, deps) {
     tags: (iss.tags || []).map(function (t) { return t && t.name; }).filter(Boolean),
     estByRole: estByRole,
     factByRole: factByRole,
-    parentChain: _parentChain(iss, s, 2),   /* §5 — цепочка из данных links as-is (R5: id-заглушка до батча) */
-    _parentId: _parentIdOf(iss, s),         /* R5 — вход батч-дозагрузки _loadParentChains */
+    parentChains: _parentChains(iss, s, 2), /* §5/#74 ⚖3 — цепочки as-is (R5: id-заглушка до батча) */
+    _parentIds: _parentIdsOf(iss, s),        /* R5 — вход батч-дозагрузки _loadParentChains */
+    infoLinks: _infoLinks(iss, s),           /* #74 ⚖4 — бейдж «связана с N» (данные уже в пуле) */
   };
 }
 
@@ -403,7 +429,7 @@ var _api = {
   _backlogAssist: _backlogAssist,
   computeUnmappedStates: computeUnmappedStates,
   _mapPoolIssue: _mapPoolIssue,
-  _parentIdOf: _parentIdOf,               /* test-only — парити матчера родителя с release-view (#69 строка 28) */
+  _parentIdsOf: _parentIdsOf,             /* test-only — парити матчера родителей с release-view (#69 строка 28, #74) */
   loadBacklogPool: loadBacklogPool,
 };
 

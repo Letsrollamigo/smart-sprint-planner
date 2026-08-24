@@ -8,6 +8,11 @@ const test   = require('node:test');
 const assert = require('node:assert');
 const path   = require('node:path');
 
+/* #74 — резолвер ролей связей приходит к домену через тот же window-мост, что и в рантайме
+   (index.js импортирует pure-модуль, тот саморегистрируется). Ставим ДО require загрузчика. */
+global.window = global.window || {};
+require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'pure', 'link-roles-pure.js'));
+
 const LOADER = require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'domain', 'backlog-loader.js'));
 const { buildBacklogVm } = require(path.join(__dirname, '..', '..', 'widgets', 'main', 'src', 'pure', 'backlog-vm-pure.js'));
 
@@ -205,7 +210,7 @@ test('_mapPoolIssue: родитель из INWARD-связи (targetToSource ===
   ];
   const deps = depsBase({ settings: Object.assign({}, SETTINGS, { cascadeParentLinkInward: 'subtask of', cascadeKindField: 'Вид' }) });
   const t = LOADER._mapPoolIssue(iss, deps);
-  assert.deepStrictEqual(t.parentChain, [{ issueId: 'EP-1', summary: 'Epic A', kind: 'Epic' }]);
+  assert.deepStrictEqual(t.parentChains, [[{ issueId: 'EP-1', summary: 'Epic A', kind: 'Epic' }]]);
 });
 
 test('_mapPoolIssue: цепочка Стори→Эпик из вложенных links (2 хопа)', function () {
@@ -218,24 +223,24 @@ test('_mapPoolIssue: цепочка Стори→Эпик из вложенны�
   ] }];
   const deps = depsBase({ settings: Object.assign({}, SETTINGS, { cascadeParentLinkInward: 'subtask of', cascadeKindField: 'Вид' }) });
   const t = LOADER._mapPoolIssue(iss, deps);
-  assert.deepStrictEqual(t.parentChain, [
+  assert.deepStrictEqual(t.parentChains, [[
     { issueId: 'ST-1', summary: 'Стори', kind: 'Story' },   // ближний
     { issueId: 'EP-1', summary: 'Эпик', kind: 'Epic' },     // дальний
-  ]);
+  ]]);
 });
 
-test('_mapPoolIssue: нет подходящей родительской связи → parentChain []', function () {
+test('_mapPoolIssue: нет подходящей родительской связи → parentChains []', function () {
   const iss = rawIssue(2, 'In Progress');
   iss.links = [{ direction: 'OUTWARD', linkType: { sourceToTarget: 'relates to', targetToSource: '' }, issues: [] }];
-  assert.deepStrictEqual(LOADER._mapPoolIssue(iss, depsBase()).parentChain, []);
+  assert.deepStrictEqual(LOADER._mapPoolIssue(iss, depsBase()).parentChains, []);
 });
 
 test('_mapPoolIssue: дефолт cascadeParentLinkInward = «subtask of» когда не задан', function () {
   const iss = rawIssue(3, 'In Progress');
   iss.links = [{ direction: 'INWARD', linkType: { sourceToTarget: 'parent for', targetToSource: 'subtask of' }, issues: [{ idReadable: 'P-1', summary: 'P' }] }];
   const t = LOADER._mapPoolIssue(iss, depsBase());   // SETTINGS без cascadeParentLinkInward
-  assert.strictEqual(t.parentChain[0].issueId, 'P-1');
-  assert.strictEqual(t.parentChain[0].kind, null);    // cascadeKindField не задан
+  assert.strictEqual(t.parentChains[0][0].issueId, 'P-1');
+  assert.strictEqual(t.parentChains[0][0].kind, null);    // cascadeKindField не задан
 });
 
 /* ── слайс 7 — carry-over обогащение пула из activities ── */
@@ -330,10 +335,10 @@ test('R5: цепочка Стори→Эпик собирается батчам
   await LOADER.loadBacklogPool(deps);
   assert.deepStrictEqual(batchCalls, ['issue id: ST-1', 'issue id: EP-1']);   // дедуп: 1 родитель + 1 прародитель
   stored.forEach(function (t) {
-    assert.deepStrictEqual(t.parentChain, [
+    assert.deepStrictEqual(t.parentChains, [[
       { issueId: 'ST-1', summary: 'Стори', kind: 'Story' },
       { issueId: 'EP-1', summary: 'Эпик', kind: 'Epic' },
-    ]);
+    ]]);
   });
 });
 
@@ -349,7 +354,25 @@ test('R5: родитель, не вернувшийся батчем (нет п�
   let stored = null;
   const deps = depsBase({ host: host, backlogPage: 50, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () { return stored; } } });
   await LOADER.loadBacklogPool(deps);
-  assert.deepStrictEqual(stored[0].parentChain, [{ issueId: 'GONE-1', summary: '', kind: null }]);
+  assert.deepStrictEqual(stored[0].parentChains, [[{ issueId: 'GONE-1', summary: '', kind: null }]]);
+});
+
+test('#74: батч вернул одного родителя из двух → вторая ветка НЕ теряется (id-only заглушка)', async function () {
+  const subtask = { name: 'Subtask', sourceToTarget: 'parent for', targetToSource: 'subtask of' };
+  const iss = rawIssue(1, 'Open');
+  iss.links = [{ direction: 'INWARD', linkType: subtask, issues: [{ idReadable: 'ST-1' }, { idReadable: 'GONE-1' }] }];
+  const host = { fetchYouTrack: function (p, opts) {
+    const q = opts.query.query || '';
+    if (q.indexOf('issue id:') === 0) return Promise.resolve([{ idReadable: 'ST-1', summary: 'Стори', links: [] }]);
+    return Promise.resolve(opts.query.$skip ? [] : [iss]);
+  } };
+  let stored = null;
+  const deps = depsBase({ host: host, backlogPage: 50, state: { setBacklogPool: function (p) { stored = p; }, getBacklogPool: function () { return stored; } } });
+  await LOADER.loadBacklogPool(deps);
+  assert.deepStrictEqual(stored[0].parentChains, [
+    [{ issueId: 'ST-1', summary: 'Стори', kind: null }],
+    [{ issueId: 'GONE-1', summary: '', kind: null }],
+  ]);
 });
 
 test('R5: _buildPoolQuery уважает пользовательский sort by (не дублирует клаузу)', function () {

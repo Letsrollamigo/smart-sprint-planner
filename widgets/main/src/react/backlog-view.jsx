@@ -80,6 +80,8 @@ const ST = {
   carryOver: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(229,109,23,.12)', color: AMBER, border: '1px solid ' + AMBER, whiteSpace: 'nowrap' },
   carryCont: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'var(--surface2)', color: 'var(--muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' },
   /* #polish — бейдж «в спринте» (задача уже в составе любого спринта планера) */
+  infoLinks: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', color: 'var(--muted)', border: '1px solid var(--border)', whiteSpace: 'nowrap' },
+  srOnly: { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' },
   inSprint: { display: 'inline-block', marginLeft: '6px', padding: '0 6px', borderRadius: '8px', fontSize: '11px', background: 'rgba(43,108,176,.12)', color: '#2b6cb0', border: '1px solid #2b6cb0', whiteSpace: 'nowrap' },
 };
 
@@ -127,6 +129,20 @@ function CarryBadge({ carry, i18n }) {
 function InSprintBadge({ inSprint, i18n }) {
   if (!inSprint) return null;
   return <span style={ST.inSprint} title={i18n.inSprintHint || i18n.inSprint}>{i18n.inSprint}</span>;
+}
+
+/* #74 ⚖4 — бейдж инфо-связей: значок со счётчиком «связана с N задач», тултип со
+   списком «ID · фраза связи». Данные приходят из пула (links уже фетчатся под
+   иерархию) — ни одного дополнительного запроса. Ring-иконка, не эмодзи (#69 R4). */
+function InfoLinksBadge({ links, i18n }) {
+  if (!Array.isArray(links) || !links.length) return null;
+  const tip = i18n.infoLinksTitle + ':\n' + links.map((l) => l.idReadable + ' · ' + l.phrase).join('\n');
+  return (
+    <span style={ST.infoLinks} title={tip}>
+      <RingIcon name="share" />{links.length}
+      <span style={ST.srOnly}>{tip}</span>
+    </span>
+  );
 }
 
 function Flag({ priority }) {
@@ -188,7 +204,7 @@ function TaskRow({ t, roleContext, showState, ytBase, fmt, i18n, onToSprint }) {
         <a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a>
       </td>
       <td style={ST.td}>{t.system || '—'}</td>
-      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /></td>
+      <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /><InfoLinksBadge links={t.infoLinks} i18n={i18n} /></td>
       {showState ? <td style={ST.td}>{t.stateName || '—'}</td> : null}
       {roleContext ? (
         <td style={ST.td}>
@@ -352,7 +368,7 @@ function TreeLeafTable({ tasks, colorOf, i18n, ytBase, onToSprint, pageSize }) {
             <tr key={t.issueId + ':' + i} style={t.isPaused ? undefined : undefined}>
               <td style={ST.td}><span style={{ ...ST.dot, background: colorOf[t.zone] || 'var(--muted)' }} title={zoneLabel(t.zone, i18n)} /></td>
               <td style={ST.td}><a className="link" style={ST.link} href={ytBase + '/issue/' + t.idReadable} target="_blank" rel="noopener noreferrer">{t.idReadable}</a></td>
-              <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /></td>
+              <td style={ST.td}>{t.summary}{t.isPaused ? <span style={ST.pause}>{i18n.paused}</span> : null}<CarryBadge carry={t.carry} i18n={i18n} /><InSprintBadge inSprint={t.inSprint} i18n={i18n} /><InfoLinksBadge links={t.infoLinks} i18n={i18n} /></td>
               <td style={ST.td}>
                 <button type="button" className="ring-button-button ring-button-block ring-button-heightS" style={ST.toSprint}
                         disabled={!onToSprint} title={i18n.toSprint}

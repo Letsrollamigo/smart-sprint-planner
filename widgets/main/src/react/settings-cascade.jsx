@@ -7,6 +7,10 @@ import { noop, FieldSelect, RoleCheck, MultiSelect, TextField, RingIcon } from '
 
 function CascadeSection(props) {
   const t = props.t;
+  /* #74: linkIn/linkOut больше не редактируются полями — настройка связей переехала
+     в собственную секцию «Связи задач». В стейте они ОСТАЮТСЯ: путь сохранения пишет
+     производную от первой строки «Иерархии», а при недоступных типах инстанса сохраняет
+     прежние значения (это правило и подтяжку состояния читают их напрямую). */
   const v = props.value; // { agg, forbid, kindField, level2, level3, linkIn, linkOut, tag }
   const set = props.onChange;
   const enumFields = props.enumFields || [];
@@ -51,17 +55,7 @@ function CascadeSection(props) {
         <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px' }}>{t('hintCascadeLevel3Optional')}</div>
         {overlap ? <div className="hint" style={{ fontSize: '12px', color: 'var(--error)', fontWeight: 500, marginTop: '4px' }}><RingIcon name="warning" />{t('warnCascadeLevelsOverlap')}</div> : null}
       </div>
-      <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
-        <div className="field">
-          <label>{t('lblCascadeLinkInward')}</label>
-          <TextField value={v.linkIn} onChange={(val) => patch({ linkIn: val })} placeholder={t('phCascadeLinkInward')} />
-        </div>
-        <div className="field">
-          <label>{t('lblCascadeLinkOutward')}</label>
-          <TextField value={v.linkOut} onChange={(val) => patch({ linkOut: val })} placeholder={t('phCascadeLinkOutward')} />
-        </div>
-      </div>
-      <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>{t('hintCascadeLinks')}</div>
+      <div className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '12px' }}>{t('hintCascadeUsesLinks')}</div>
       <div className="form-grid form-grid--2" style={{ marginTop: '12px' }}>
         <div className="field">
           <label>{t('lblCascadeManualEstTag')}</label>

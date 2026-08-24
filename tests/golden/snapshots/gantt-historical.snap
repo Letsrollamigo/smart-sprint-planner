@@ -18,7 +18,10 @@
       "pillFg": "#1f6feb",
       "hist": false,
       "loadingText": "загрузка истории…"
-    }
+    },
+    "deps": [],
+    "depTypes": {},
+    "extDeps": []
   },
   "fetchCalls": 0
 }

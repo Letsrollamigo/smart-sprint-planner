@@ -19,6 +19,7 @@ import * as React from 'react';
 import { ADMIN_SECTION_IDS, REPORTING_DISABLED, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, RingIcon, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
 import { DtaSection } from './settings-dta.jsx';
 import { CascadeSection } from './settings-cascade.jsx';
+import { LinkRolesTable } from './settings-links.jsx';
 import { StateRollupSection } from './settings-rollup.jsx';
 import { StandupSection } from './settings-standup.jsx';
 import { BacklogSection } from './settings-backlog.jsx';
@@ -151,6 +152,22 @@ function SettingsForm(props) {
     linkOut: (typeof initial.cascadeParentLinkOutward === 'string') ? initial.cascadeParentLinkOutward : '',
     tag: (typeof initial.cascadeManualEstTag === 'string') ? initial.cascadeManualEstTag : '',
   }));
+  /* #74 — таблица «тип связи × роль». Пустой массив = «не настроено»: резолвер
+     синтезирует дефолт (Subtask/Иерархия), поэтому из коробки поведение прежнее. */
+  const [linkRoles, setLinkRoles] = React.useState(() =>
+    (Array.isArray(initial.linkTypeRoles) ? initial.linkTypeRoles : []).map((r) => Object.assign({}, r)));
+  /* Типы связей инстанса — строки таблицы И источник фраз для легаси-зеркала в collect(). */
+  const [linkTypes, setLinkTypes] = React.useState([]);
+  React.useEffect(() => {
+    let alive = true;
+    if (props.loadLinkTypes) {
+      Promise.resolve(props.loadLinkTypes())
+        .then((ts) => { if (alive && Array.isArray(ts)) setLinkTypes(ts); })
+        .catch(noop);
+    }
+    return () => { alive = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [rollup, setRollup] = React.useState(() => ({
     enabled: !!initial.stateRollupEnabled,
     order: Array.isArray(initial.stateRollupOrder) ? initial.stateRollupOrder.slice() : [],
@@ -412,8 +429,20 @@ function SettingsForm(props) {
     data.cascadeKindField = strOrNull(cascade.kindField);
     data.cascadeLevel2Values = capValues(cascade.level2);
     data.cascadeLevel3Values = capValues(cascade.level3);
-    data.cascadeParentLinkInward = strOrNull(cascade.linkIn);
-    data.cascadeParentLinkOutward = strOrNull(cascade.linkOut);
+    /* #74 — таблица ролей связей (пустая = «не настроено», резолвер даст дефолт). */
+    data.linkTypeRoles = linkRoles.map((r) => ({
+      type: r.type, hier: r.hier || null, dep: r.dep || null, info: !!r.info,
+    }));
+    /* Легаси-пара фраз (⚖ владелец 2026-08-24) — ПРОИЗВОДНАЯ от первой строки «Иерархии».
+       Ключи из формы убраны, но писать их обязаны: фоновые правила каскадной агрегации и
+       подтяжки состояния читают их из этого же блоба напрямую, а сейв заменяет блоб
+       целиком — «просто перестать писать» молча откатило бы правила на «subtask of».
+       Вывести не из чего (типы инстанса не загрузились / нет строки Иерархии / тип
+       не найден) → сохраняем ровно то, что было сохранено раньше. */
+    const LRP = globalThis.__SSP_LINK_ROLES_PURE;
+    const derived = LRP ? LRP.legacyCascadePhrases(linkRoles, linkTypes) : null;
+    data.cascadeParentLinkInward = derived ? derived.inward : strOrNull(cascade.linkIn);
+    data.cascadeParentLinkOutward = derived ? derived.outward : strOrNull(cascade.linkOut);
     data.cascadeManualEstTag = strOrNull(cascade.tag);
 
     /* State rollup (5c): strategy всегда 'min' (enum пока только min). */
@@ -737,6 +766,21 @@ function SettingsForm(props) {
       id: 'cascade', title: t('cardCascade'), nav: t('navCascade'),
       node: (
         <CascadeSection t={t} value={cascade} onChange={setCascade} enumFields={props.enumFields || []} loadFieldValues={props.loadFieldValues} />
+      ),
+    },
+    {
+      /* #74 — связи задач: своя секция, а не подраздел каскада. Их читают бэклог, релизы,
+         Гант и два фоновых правила, поэтому привязка к тумблеру каскада была неверной. */
+      id: 'links', title: t('cardLinks'), nav: t('navLinks'),
+      node: (
+        <LinkRolesTable t={t} rows={linkRoles} types={linkTypes} onChange={setLinkRoles}
+                        settings={Object.assign({}, initial, {
+                          releaseEnabled: release.enabled,
+                          cascadeAggregationEnabled: cascade.agg,
+                          stateRollupEnabled: rollup.enabled,
+                          backlogZones: backlog.zones,
+                          backlogStartStates: backlog.startStates,
+                        })} />
       ),
     },
     {

@@ -1138,6 +1138,23 @@
     .ssp-settings-form .ssp-perm-cell label { margin: 0; }
     .ssp-settings-form .ssp-perm-act { text-align: right; }
     .ssp-perm-empty { padding: 16px; font-size: 12px; color: var(--muted); font-style: italic; text-align: center; }
+    /* #74 — экран «Связи задач»: каркас матрицы прав (#71) + колонка «где используется».
+       Колонки-роли приходят данными из ROLE_DEFS, поэтому ширины заданы не поимённо. */
+    .ssp-settings-form .ssp-link-table .ssp-perm-th-name { min-width: 240px; }
+    .ssp-link-phrases { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ssp-link-phrases .ssp-icon { margin-right: 4px; }
+    .ssp-settings-form .ssp-link-where { padding: 6px 10px; vertical-align: middle; }
+    .ssp-link-mod {
+      display: inline-block; margin: 1px 4px 1px 0; padding: 1px 7px; border-radius: 9px;
+      font-size: 11px; white-space: nowrap; color: var(--text); border: 1px solid var(--border);
+    }
+    .ssp-link-mod--off { opacity: .5; text-decoration: line-through; }
+    .ssp-link-mod--none { font-size: 11px; color: var(--muted); font-style: italic; }
+    .ssp-link-first { margin-left: 4px; color: var(--muted); }
+    .ssp-settings-form .ssp-link-note { display: block; font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .ssp-link-nofetch { display: inline-block; margin-left: 10px; font-size: 12px; color: var(--error); }
+    .ssp-link-row--gone .ssp-perm-name-text { color: var(--muted); text-decoration: line-through; }
+    .ssp-link-row--gone .ssp-perm-cell { color: var(--muted); font-size: 12px; }
     .ssp-settings-form .ssp-perm-mgr-note { font-size: 12px; color: var(--muted); display: block; margin-top: 8px; }
     .ssp-perm-warn {
       display: flex; align-items: center; gap: 6px; margin-top: 8px;

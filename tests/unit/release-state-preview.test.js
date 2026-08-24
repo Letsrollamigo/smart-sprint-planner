@@ -5,6 +5,10 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert');
+/* #74 — общий резолвер ролей связей ставится тем же window-мостом, что и в рантайме. */
+global.window = global.window || {};
+require('../../widgets/main/src/pure/link-roles-pure.js');
+
 const ctrl = require('../../widgets/main/src/domain/release-controller.js');
 
 const MAPPING = { planned: '', prep: 'Готова к сборке', work: 'В сборке', released: 'Закрыта', cancelled: '' };
@@ -193,15 +197,16 @@ test('fetchIssueData: cascadeParentLinkInward = «part of epic» → родит�
   assert.deepStrictEqual(data['DEMO-6'].parents, ['DEMO-1']);
 });
 
-/* Парити матчера: release-view._linkParents и backlog-loader._parentRaw обязаны выбирать
- * одного и того же родителя для одних и тех же links при любой фразе. */
-test('парити: родитель релиза == родитель бэклога для одних links', async () => {
+/* Парити матчера: release-view._linkParents и backlog-loader._parentsRaw обязаны выбирать
+ * ОДИН И ТОТ ЖЕ набор родителей для одних links. #74 сделал парити структурной (общий
+ * pure/link-roles-pure), тест остаётся сторожем на случай расхождения обёрток. */
+test('парити: родители релиза == родители бэклога для одних links', async () => {
   const view = require('../../widgets/main/src/domain/release-view.js');
   const loader = require('../../widgets/main/src/domain/backlog-loader.js');
   for (const phrase of [undefined, 'subtask of', 'part of epic', 'nope']) {
     const s = phrase === undefined ? {} : { cascadeParentLinkInward: phrase };
     const rel = (await view.fetchIssueData(mkDeps6(s), ['DEMO-6']))['DEMO-6'].parents;
-    const bl = loader._parentIdOf({ idReadable: 'DEMO-6', links: LINKS6 }, s);
-    assert.strictEqual(rel[0] || null, bl, 'phrase=' + phrase);
+    const bl = loader._parentIdsOf({ idReadable: 'DEMO-6', links: LINKS6 }, s);
+    assert.deepStrictEqual(rel, bl, 'phrase=' + phrase);
   }
 });
