@@ -605,31 +605,49 @@ test('golden: контракт change спринт-селектора — switch
   checkJsonSnapshot('header-selector-change-contract', { log: log });
 });
 
-test('golden: контракт кнопки «Создать новый спринт» — роли/без ролей/global-узел', () => {
-  const { gm, document, window } = createHost();
+test('golden: контракт кнопки «Создать новый спринт» — диалог ролей (#73)/отмена/global-узел/без ролей', () => {
+  const { gm, document, window, modalLog } = createHost();
   fx.applyBaseState(gm);
   const log = [];
   gm.set({
-    doNewSprint: function (rk) { log.push({ doNewSprint: rk }); },
+    doNewSprint: function (rk, roles) { log.push({ doNewSprint: rk, roles: roles || null }); },
     _setDashNode: function (node) { log.push({ setDashNode: node }); },
     toast: function (msg, kind) { log.push({ toast: kind }); },
   });
   const btn = document.getElementById('widgetNewSprintBtn');
   const click = function () { btn.dispatchEvent(new window.Event('click')); };
+  const lastDlg = function () { return modalLog[modalLog.length - 1]; };
 
-  /* 1. project-режим: роли есть → doNewSprint(первая роль), без узла дерева */
+  /* 1. project-режим: клик открывает диалог ролей-участниц (#73);
+     «Создать» → doNewSprint(первая из выбора, выбор), без узла дерева */
   gm.set({ _mode: 'project' });
   click();
+  let dlg = lastDlg();
+  log.push({ dialog: dlg.id, offered: dlg.body.props.roles.map(function (r) { return r.key; }) });
+  dlg.body.props.onCreate(['analysis', 'devBack']);
+  dlg.onClose();
 
-  /* 2. global-режим → плюс переход на узел sprint-params (#25 Ф2) */
+  /* 2. Отмена диалога — doNewSprint не зовётся */
+  click();
+  dlg = lastDlg();
+  dlg.body.props.onCancel();
+  dlg.onClose();
+  log.push({ afterCancel: true });
+
+  /* 3. global-режим: после создания — переход на узел sprint-params (#25 Ф2) */
   gm.set({ _mode: 'global' });
   click();
+  dlg = lastDlg();
+  dlg.body.props.onCreate(['analysis']);
+  dlg.onClose();
 
-  /* 3. Нет активных ролей → warn-тост, doNewSprint не зовётся */
+  /* 4. Нет активных ролей → warn-тост, диалог не открывается */
   const settings = fx.buildSettings();
   settings.activeRoles = [];
   gm.set({ _settings: settings });
+  const modalsBefore = modalLog.length;
   click();
+  log.push({ noRolesModalOpened: modalLog.length > modalsBefore });
 
   checkJsonSnapshot('new-sprint-btn-contract', { log: log });
 });

@@ -33,7 +33,7 @@
     "ctlCalls": [
       "pick:analysis",
       "validate:analysis",
-      "newSprint:analysis",
+      "newSprint:analysis:analysis+devBack",
       "saveHeader:analysis",
       "refresh"
     ],

@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.27.0] — 2026-08-24
+
+> **Sprints pick their participating roles at creation (#73).** A sprint now owns its set of participating roles: chosen once in the creation dialog and immutable afterwards. This closes the "live sprint views are settings-driven" defect: editing project roles retroactively changed how all existing sprints looked (a phantom "Draft" role appearing when a role was enabled, a role holding data disappearing when disabled).
+
+### Added
+
+- **«Participating roles» dialog on «New sprint»** (all three entry points: widget header button, per-role panel button, global dashboard): checkboxes of the project's active roles, all pre-checked, at least one required; «Create» fixes the set in the sprint. A sprint's set can only narrow the project's set — enforced by the dialog, not by the server.
+- **`roles` key on the sprint and history snapshots** — a new optional schema key, migration `3.23.0 → 3.27.0` (no-op, additive), fixtures `tests/fixtures/snapshots/3.27.0/`. Validation is independent of settings: elements from `ROLE_KEYS`, no duplicates — a sprint whose role was later disabled in settings keeps saving as before.
+- **`getSprintRolesFor` resolver with layered fallback** for sprints created before this release: `sprint.roles` → a history snapshot carrying `roles` → `settings.activeRoles` of the freshest snapshot (settings as of when the sprint was worked on) → current project settings. Older sprints display the role set recorded in their snapshots.
+- **«Sprint intro» card** — read-only «Participating roles» line (an indicator, not an editor).
+
+### Changed
+
+- **24 slot-scoped call sites across 12 modules** switched from project settings to the sprint's set by re-pointing a single `getActiveRoles` deps key (zero edits inside the modules); 7 targeted edits in parameterized spots (capacity, header badges, backlog, loading a sprint from history). The working-copy key sweep now iterates all roles regardless of the set.
+- Snapshotting the outgoing PLANNING slot on «New sprint» follows the slot's own role set, even when the picker rests on another, historical sprint.
+
+### Removed
+
+- Dead `aggregateStatus()` in the core (it had no callers).
+
+### Tests
+
+- `sprint-roles-73.test.js` (6) — schema validation of the `roles` key; `sprint-roles-73.golden.test.js` (6) — the resolver's 4 fallback tiers on an anonymized production state snapshot + the preservation invariant: creating a sprint with a narrowed set leaves other snapshots untouched, disabling a role in settings deletes no history records.
+
+---
+
 ## [3.26.0] — 2026-08-24
 
 > **Permissions management reworked into a single «group × permission» table (#71).** Twelve group permissions that lived in three different settings sections are now one table. Only the presentation changes: settings keys, the server-side permission model and the form's save path are untouched — permissions granted earlier survive the upgrade unchanged.

@@ -169,8 +169,10 @@ function _buildHeaderVm(deps) {
        - если записи нет — PLANNING (роль ещё не валидирована). */
   var curId = vm.resolvedSprintId;
   if (curId) {
-    var activeRoles = (typeof deps.getActiveRoles === 'function' && deps.getActiveRoles().length)
-      ? deps.getActiveRoles()
+    /* #73 — бейджи по набору ролей-участниц резолвнутого спринта (не настроек проекта):
+       фантомная роль не появляется задним числом, выключенная из настроек — не прячется. */
+    var activeRoles = (typeof deps.getSprintRolesFor === 'function' && deps.getSprintRolesFor(curId).length)
+      ? deps.getSprintRolesFor(curId)
       : deps.ALL_ROLES;
     var entries = getSprintRolesEntries(curId, deps);
     var statusByRole = {};
@@ -349,7 +351,8 @@ function _hasMyActiveWcForSprint(sprintId, deps) {
      переходе на исторические спринты. Найдено в diag-логе testbench v6.3.0 2026-05-08. */
   var _currentUser = deps.state.getCurrentUser();
   var myLogin = (_currentUser && _currentUser.login) ? _currentUser.login : null;
-  var roles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : [];
+  /* #73 — свип ключей WC по ВСЕМ ролям: фильтр по набору пропускал бы живую WC роли вне набора */
+  var roles = deps.ALL_ROLES || [];
   for (var i = 0; i < roles.length; i++) {
     var k = sprintId + '_' + roles[i].key;
     var wd = _workingDrafts[k];

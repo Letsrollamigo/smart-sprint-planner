@@ -559,7 +559,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
     toast: function (msg, type) { toastLog.push({ msg: msg, type: type || null }); },
     updateRoleRemaining: function (rk) { remainCalls.push(rk); },
     doValidateRole: function (rk) { ctlCalls.push('validate:' + rk); },
-    doNewSprint: function (rk) { ctlCalls.push('newSprint:' + rk); },
+    doNewSprint: function (rk, roles) { ctlCalls.push('newSprint:' + rk + (Array.isArray(roles) ? ':' + roles.join('+') : '')); },
     doSaveRoleHeader: function (rk) { ctlCalls.push('saveHeader:' + rk); },
     refreshFromYouTrack: function () { ctlCalls.push('refresh'); },
     openPickModal: function (rk) { ctlCalls.push('pick:' + rk); },
@@ -586,6 +586,9 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   document.getElementById('recalcBtn_analysis').click();
   document.getElementById('validateBtn_analysis').click();
   document.getElementById('newSprintBtn_analysis').click();
+  /* #73 — per-role кнопка открывает диалог ролей-участниц; «Создать» зовёт doNewSprint(первая, выбор) */
+  const rolesDlg = modalLog.find(function (s) { return s.id === 'newSprintRoles'; });
+  if (rolesDlg) { rolesDlg.body.props.onCreate(['analysis', 'devBack']); rolesDlg.onClose(); }
   document.getElementById('saveHeaderBtn_analysis').click();
   document.getElementById('planningRefreshBtn').click();
   const withRights = { toasts: toastLog.slice(), ctlCalls: ctlCalls.slice(), remainCalls: remainCalls.slice() };

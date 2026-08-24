@@ -32,6 +32,23 @@
     var _settings = deps.state.getSettings();
     var hasSprint  = _settings && _settings.fieldSprint;
     var hasVersion = _settings && _settings.fieldVersion;
+
+    /* #73 — read-only список ролей-участниц выбранного спринта (deps.getActiveRoles —
+       слот-резолвер getSprintRoles ядра). Индикация, не редактор: набор фиксируется
+       при создании. Рендерится ДО гейта extra-полей — строка живёт и без них. */
+    var rolesRow  = document.getElementById('sprintRolesRow');
+    var rolesList = document.getElementById('sprintRolesList');
+    if (rolesRow && rolesList) {
+      var sprintRoles = (typeof deps.getActiveRoles === 'function') ? deps.getActiveRoles() : [];
+      if (sprintRoles.length) {
+        rolesList.textContent = sprintRoles.map(function(r){
+          return (typeof deps.roleLabel === 'function') ? deps.roleLabel(r) : r.label;
+        }).join(', ');
+        rolesRow.style.display = '';
+      } else {
+        rolesRow.style.display = 'none';
+      }
+    }
     var extrasEl   = document.getElementById('sprintExtraFields');
     var sprintEl   = document.getElementById('fieldSprintVal');
     var versionEl  = document.getElementById('fieldVersionVal');

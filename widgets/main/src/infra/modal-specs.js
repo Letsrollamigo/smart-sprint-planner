@@ -165,6 +165,35 @@ function showDynFieldConfirm(title, desc, enumValues, currentVal, callback, deps
   });
 }
 
+/* #73 — диалог выбора ролей-участниц при создании спринта. Чекбоксы активных ролей
+   проекта (все отмечены), ≥1 обязательна. cb(selectedKeys) — только на «Создать»;
+   Cancel/Escape/backdrop — без вызова. Defensive-fallback без Ring — создание со всеми. */
+function openNewSprintRolesDialog(roles, cb, deps) {
+  var t = deps.t, openModal = deps.openModal;
+  if (!window.__SSP_RING_MODAL) { cb(roles.map(function(r){ return r.key; })); return; }
+  var picked = null;
+  var h = openModal({
+    id: 'newSprintRoles',
+    type: 'form',
+    title: t('dialogNewSprintRolesTitle'),
+    body: { kind: 'component', name: 'sprintRolesForm', props: {
+      roles: roles,
+      labels: {
+        hint: t('hintNewSprintRoles'),
+        cancelText: t('btnCancel'),
+        createText: t('btnCreateSprint'),
+      },
+      onCreate: function(keys){ picked = keys; h.close(); },
+      onCancel: function(){ picked = null; h.close(); },
+    }},
+    buttons: [],
+    dismissOnBackdrop: true,
+    blockEscape: false,
+    showCloseButton: true,
+    onClose: function(){ if (picked && picked.length) cb(picked); },
+  });
+}
+
 function openImportReplaceConfirm(deps) {
   var t = deps.t, openModal = deps.openModal;
   var confirmed = false;
@@ -194,6 +223,7 @@ const api = {
   showCloseWorkingCopyModal,
   openConfirmGoalDialog,
   showDynFieldConfirm,
+  openNewSprintRolesDialog,
   openImportReplaceConfirm,
 };
 

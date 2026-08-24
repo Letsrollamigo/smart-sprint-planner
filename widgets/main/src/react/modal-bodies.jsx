@@ -322,6 +322,48 @@ function ImportHistForm(props) {
   );
 }
 
+/* ── sprintRolesForm — выбор ролей-участниц при создании спринта (#73) ──
+   Чекбоксы активных ролей проекта, все отмечены; ≥1 обязательна («Создать»
+   дизейблится на пустом выборе). Набор фиксируется один раз — далее неизменен. */
+function SprintRolesForm(props) {
+  const roles = props.roles || [];
+  const L = props.labels || {};
+  const [selected, setSelected] = React.useState(() => {
+    const s = {};
+    roles.forEach((r) => { s[r.key] = true; });
+    return s;
+  });
+  const onCreate = props.onCreate || noop;
+  const onCancel = props.onCancel || noop;
+  const selectedKeys = roles.filter((r) => selected[r.key]).map((r) => r.key);
+  const toggle = (key) => setSelected((prev) => {
+    const next = Object.assign({}, prev);
+    next[key] = !next[key];
+    return next;
+  });
+  return (
+    <React.Fragment>
+      {L.hint ? <div style={{ marginBottom: '10px', fontSize: '12px', color: 'var(--muted)' }}>{L.hint}</div> : null}
+      <div style={{ marginBottom: '10px' }}>
+        {roles.map((r) => (
+          <label key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!selected[r.key]} onChange={() => toggle(r.key)} />
+            <span style={{ fontSize: '13px' }}>{r.label}</span>
+          </label>
+        ))}
+      </div>
+      <div className="ssp-modal-footer">
+        <button type="button" className={_btnCls('secondary')} onClick={() => onCancel()}>
+          {L.cancelText}
+        </button>
+        <button type="button" className={_btnCls('primary')} disabled={!selectedKeys.length} onClick={() => onCreate(selectedKeys)}>
+          {L.createText}
+        </button>
+      </div>
+    </React.Fragment>
+  );
+}
+
 /* ── pickPicker — подбор задач в спринт (Phase 4 #32, закрывает B10+B11) ──
    Bespoke React: поиск + результаты-таблица (простой <table>, НЕ Ring Table →
    нет mousedown-проблемы B12 и tri-state-рассинхрона B11) + пагинация + выбор.
@@ -533,5 +575,6 @@ if (window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.registerBody === '
   window.__SSP_RING_MODAL.registerBody('wcDiffView', WcDiffView);
   window.__SSP_RING_MODAL.registerBody('dynFieldForm', DynFieldForm);
   window.__SSP_RING_MODAL.registerBody('importHistForm', ImportHistForm);
+  window.__SSP_RING_MODAL.registerBody('sprintRolesForm', SprintRolesForm);
   window.__SSP_RING_MODAL.registerBody('pickPicker', PickPicker);
 }

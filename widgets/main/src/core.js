@@ -492,15 +492,53 @@
     return ALL_ROLES.filter(function(r){ return s.activeRoles.indexOf(r.key) >= 0; });
   }
 
+  /* ═══ #73 — роли-участницы СПРИНТА (не проекта) ═══
+     У спринта собственный набор ролей, выбираемый один раз при создании
+     (_sprint.roles). Слоёный фолбэк для спринтов, созданных до #73:
+       1) sprint.roles                     → канонический порядок ALL_ROLES;
+       2) снап спринта в _history с roles  → его roles;
+          иначе settings.activeRoles самого свежего снапа с settings
+          (по confirmedAt — настройки на момент работы со спринтом);
+       3) ничего нет                       → getActiveRoles() (текущие настройки).
+     Возвращает объекты ролей (как getActiveRoles). */
+  function getSprintRolesFor(sprintOrId) {
+    var sprintObj = null, id = null;
+    if (sprintOrId && typeof sprintOrId === 'object') {
+      sprintObj = sprintOrId; id = sprintOrId.sprintId || null;
+    } else if (sprintOrId) {
+      id = String(sprintOrId);
+      if (_sprint && _sprint.sprintId === id) sprintObj = _sprint;
+    }
+    if (sprintObj && Array.isArray(sprintObj.roles) && sprintObj.roles.length) {
+      return ALL_ROLES.filter(function(r){ return sprintObj.roles.indexOf(r.key) >= 0; });
+    }
+    if (id && Array.isArray(_history)) {
+      var snaps = _history.filter(function(h){
+        return h && typeof h.sprintId === 'string' && h.sprintId.indexOf(id + '_') === 0;
+      }).sort(function(a, b){ return (b.confirmedAt || 0) - (a.confirmedAt || 0); });
+      for (var i = 0; i < snaps.length; i++) {
+        if (Array.isArray(snaps[i].roles) && snaps[i].roles.length) {
+          var rr = snaps[i].roles;
+          return ALL_ROLES.filter(function(r){ return rr.indexOf(r.key) >= 0; });
+        }
+      }
+      for (var j = 0; j < snaps.length; j++) {
+        if (snaps[j].settings) return getActiveRoles(snaps[j].settings);
+      }
+    }
+    return getActiveRoles();
+  }
+  /* Слот-обёртка: набор ролей выбранного спринта (пикер), иначе рабочего. */
+  function getSprintRoles() {
+    return getSprintRolesFor(_currentSprintId || (_sprint && _sprint.sprintId) || null);
+  }
+
   /* ═══ Статус роли — per-role канон (statusByRole-рефактор) ═══
      Единственный источник правды о статусе роли — запись _history[<sprintId>_<rk>].status.
      Глобальный _sprint.status — легаси-агрегат, вытесняемый этими хелперами:
        • statusForRole(rk)  — чтение per-role статуса (дефолт PLANNING);
-       • aggregateStatus()  — производный «статус спринта» = min по STATUS_RANK среди
-                              не-FINISHED активных ролей (как header-view getSprintMeta);
        • setRoleStatus(rk,s)— запись per-role в _history + persist (apiPost history) +
                               ре-рендер бейджа роли и шапки. */
-  var _STATUS_RANK = { PLANNING: 0, CONFIRMED: 1, ALLOCATED: 2, FINISHED: 3 };
   function statusForRole(rk) {
     if (_sprint && _sprint.sprintId && _history) {
       var id = _sprint.sprintId + '_' + rk;
@@ -508,16 +546,6 @@
       if (rec && rec.status) return rec.status;
     }
     return STATUS.PLANNING;
-  }
-  function aggregateStatus() {
-    var min = Infinity, found = null;
-    getActiveRoles().forEach(function(r){
-      var s = statusForRole(r.key);
-      if (s === STATUS.FINISHED) return;          // FINISHED не понижает агрегат (как header-view)
-      var rank = _STATUS_RANK[s];
-      if (rank != null && rank < min) { min = rank; found = s; }
-    });
-    return found || STATUS.PLANNING;
   }
   function setRoleStatus(rk, status) {
     if (!_sprint || !_sprint.sprintId) return;
@@ -763,7 +791,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.26.0';
+  var APP_VERSION = '3.27.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -937,7 +965,9 @@
       deepClone: deepClone, apiGet: apiGet, apiPost: apiPost,
       buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon,
       getRoleItemsArr: getRoleItemsArr, calcRemForRole: calcRemForRole,
-      getActiveRoles: getActiveRoles,
+      /* #73 — снап уходящего СЛОТА: набор резолвится по самому _sprint (не по пикеру —
+         selection может стоять на чужом историческом спринте в момент doNewSprint). */
+      getActiveRoles: function(){ return getSprintRolesFor(_sprint); },
       isActiveSprintRecord: isActiveSprintRecord,
       computeBaseSnapshotHash: computeBaseSnapshotHash,
       computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
@@ -1129,7 +1159,7 @@
          пользовательского поля роли (тот же get-user-field-values). */
       apiGet: apiGet,
       ALL_ROLES: ALL_ROLES,
-      getActiveRoles: getActiveRoles,
+      getActiveRoles: getSprintRoles,   /* #73 — набор спринта, не проекта */
       state: {
         getSettings: function () { return _settings; },
         getCurrentRolePP: function () { return _currentRolePP; },
@@ -2446,7 +2476,7 @@
       populateGanttRoleSel: function(){ if (typeof populateGanttRoleSel === 'function') populateGanttRoleSel(); },
       refreshGantt: function(){
         var rkG = safeLs.get('ssp_lastActiveRole')
-               || ((typeof getActiveRoles === 'function' && getActiveRoles()[0]) ? getActiveRoles()[0].key : null);
+               || ((typeof getSprintRoles === 'function' && getSprintRoles()[0]) ? getSprintRoles()[0].key : null);
         if (typeof refreshGanttForCurrentSprint === 'function') refreshGanttForCurrentSprint(rkG);
       },
       hasBacklogZones: _hasBacklogZones,
@@ -2548,7 +2578,7 @@
       T: T, esc: esc, fmtHours: fmtHours,
       toast: toast, diag: diag, withLoader: withLoader,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
-      getActiveRoles: getActiveRoles,
+      getActiveRoles: getSprintRoles,   /* #73 — набор спринта, не проекта */
       getStateBundle: _standupStateBundle,   /* 68-7 — {values,colors}|null, лениво */
       getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
       saveCurrentRoleState: saveCurrentRoleState,
@@ -2624,9 +2654,9 @@
        statusBadge_) ещё не отрендерены → renderRolePlannerHeader заполнит
        только статические поля #sprintIntroCard. Идемпотентно (повтор просто переустановит
        .value). !_sprint → чистит поля и выходит (residual-фикс 2026-07-03), поэтому вызов безусловный (rk=null безопасен: res_null не найдётся) — гейт по ролям оставлял residual при свитче на ненастроенный проект. */
-    if (typeof renderRolePlannerHeader === 'function' && typeof getActiveRoles === 'function') {
+    if (typeof renderRolePlannerHeader === 'function' && typeof getSprintRoles === 'function') {
       try {
-        var _arIntro = getActiveRoles();
+        var _arIntro = getSprintRoles();
         renderRolePlannerHeader(_arIntro && _arIntro.length ? _arIntro[0].key : null);
       } catch(_){}
     }
@@ -2695,14 +2725,15 @@
       updateRoleRemaining: updateRoleRemaining,
       renderRoleComposition: renderRoleComposition,
       toast: toast, openModal: openModal, statusLabel: statusLabel,
-      getActiveRoles: getActiveRoles, safeLs: safeLs,
+      getActiveRoles: getSprintRoles, safeLs: safeLs,   /* #73 — набор спринта */
       draftGet: _draftGet, draftSet: _draftSet,
       renderRolePlannerHeader: renderRolePlannerHeader,
       applyEditorRightsToUI: applyEditorRightsToUI,
       populatePlanningRoleSel: populatePlanningRoleSel,
       refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
       openPickModal: openPickModal, refreshFromYouTrack: refreshFromYouTrack,
-      doValidateRole: doValidateRole, doNewSprint: doNewSprint,
+      doValidateRole: doValidateRole,
+      doNewSprint: openNewSprintDialog,   /* #73 — per-role кнопка тоже идёт через диалог ролей (rk игнорируется) */
       doSaveRoleHeader: doSaveRoleHeader,
       statusForRole: statusForRole, setRoleStatus: setRoleStatus,
       PAGE_SIZE: PAGE_SIZE, INC: INC, STATUS: STATUS, ALL_ROLES: ALL_ROLES,
@@ -2759,7 +2790,7 @@
     if (!sel) return;
     var prev = sel.value;
     sel.innerHTML = '';
-    var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
+    var roles = (typeof getSprintRoles === 'function') ? getSprintRoles() : [];
     roles.forEach(function(role){
       var opt = document.createElement('option');
       opt.value = role.key;
@@ -2937,8 +2968,8 @@
     populateGanttRoleSel();
     var sel = document.getElementById('ganttRoleSel');
     var rk = roleKey || (sel && sel.value) || null;
-    if (!rk && typeof getActiveRoles === 'function') {
-      var ar = getActiveRoles();
+    if (!rk && typeof getSprintRoles === 'function') {
+      var ar = getSprintRoles();
       rk = (ar[0] && ar[0].key) || null;
     }
     if (sel && rk) sel.value = rk;
@@ -3066,7 +3097,7 @@
     return {
       T: T, diag: diag, apiGet: apiGet,
       ALL_ROLES: ALL_ROLES, STATUS: STATUS,
-      getActiveRoles: getActiveRoles, statusLabel: statusLabel,
+      getActiveRoles: getSprintRoles, statusLabel: statusLabel, roleLabel: roleLabel,   /* #73 — набор спринта */
       toDateIn: toDateIn, fmtPeriod: fmtPeriod,
       getPersonalPlanningResourceForRole: getPersonalPlanningResourceForRole,
       getApprovedCapacityForRole: getApprovedCapacityForRole, /* #45 R4 §9.3 — Full res_<rk> read-only */
@@ -3154,7 +3185,7 @@
      При повторном клике без сохранения — перезаписываем тот же черновик, не плодим entries.
      После создания/переиспользования — переключаемся на вкладку Планирование уровень Роли
      (нажатие кнопки на любой вкладке должно приводить к планированию). */
-  function doNewSprint(rk) { return SPRINT_CTRL.doNewSprint(rk, _sprintDeps()); }
+  function doNewSprint(rk, roles) { return SPRINT_CTRL.doNewSprint(rk, roles, _sprintDeps()); }
 
   /* ── Таблица состава для роли ── */
   function getRoleItemsArr(rk) {
@@ -3240,8 +3271,8 @@
       markDirty: _markDirty,
       draftSaveDebounced: _draftSaveDebounced,
       safeLs: safeLs,
-      statusForRole: statusForRole, aggregateStatus: aggregateStatus, setRoleStatus: setRoleStatus,
-      getActiveRoles: getActiveRoles,
+      statusForRole: statusForRole, setRoleStatus: setRoleStatus,
+      getActiveRoles: getSprintRoles,   /* #73 — набор спринта, не проекта */
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC, STATUS: STATUS,
       state: {
         getSettings: function () { return _settings; },
@@ -3362,7 +3393,7 @@
       T: T, esc: esc, icon: icon, diag: diag,
       fmtDate: fmtDate, fmtHoursOnly: fmtHoursOnly,
       toast: toast, apiGet: apiGet, apiPost: apiPost,
-      getActiveRoles: getActiveRoles, roleLabel: roleLabel,
+      getSprintRolesFor: getSprintRolesFor, roleLabel: roleLabel,   /* #73 — набор выбранного в ёмкости спринта */
       checkSettingsManager: checkSettingsManager,
       checkInstanceAdmin: checkInstanceAdmin, /* #51 — гейт глобального пуша календаря */
       CAPACITY_PURE: CAPACITY_PURE,
@@ -3844,7 +3875,7 @@
     return {
       T: T, esc: esc, diag: diag, fmtDate: fmtDate,
       statusLabel: statusLabel, roleLabel: roleLabel,
-      getActiveRoles: getActiveRoles,
+      getSprintRolesFor: getSprintRolesFor,   /* #73 — бейджи по набору резолвнутого спринта */
       computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
       hideReassignModal: hideReassignModal,
       navAvailable: _navAvailable,
@@ -3881,6 +3912,28 @@
   /* Тир B — тело в modal-specs.js; cb только по явному клику (confirm/cancel). */
   function showCloseWorkingCopyModal(cb) {
     return MODAL_SPECS.showCloseWorkingCopyModal(cb, { t: T, openModal: openModal });
+  }
+
+  /* #73 — единая точка входа «Новый спринт» (шапка виджета, per-role кнопка, global-дашборд):
+     диалог выбора ролей-участниц из активных ролей ПРОЕКТА (⚖ №5 — набор спринта только
+     сужает набор проекта; UI-гейт, не write-гейт), затем doNewSprint с выбором. */
+  function openNewSprintDialog() {
+    var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
+    if (!roles.length) {
+      if (typeof toast === 'function') toast(T('toastSelectRole') || 'Select a role', 'warn');
+      return;
+    }
+    MODAL_SPECS.openNewSprintRolesDialog(
+      roles.map(function(r){ return { key: r.key, label: roleLabel(r) }; }),
+      function(keys) {
+        doNewSprint(keys[0], keys);
+        /* #25 Ф2 — в global-режиме после создания перекидываем на «Параметры спринта». */
+        if (_mode === 'global' && typeof _setDashNode === 'function') {
+          try { _setDashNode('sprint-params'); } catch(_){}
+        }
+      },
+      { t: T, openModal: openModal }
+    );
   }
 
   /* Идемпотентный рендер шапки виджета — вынесен в header-view.js (делегатор;
@@ -3927,18 +3980,9 @@
       newBtn.addEventListener('click', function() {
         /* v3.2.1 — синхронный editor-гейт здесь НЕВОЗМОЖЕН: _isEditor=false и до
            резолва прав (ложный блок легитимного редактора на первом клике).
-           Viewer'а страхуют backend-403 + .catch-тост в doNewSprint (v3.2.1). */
-        var roles = (typeof getActiveRoles === 'function') ? getActiveRoles() : [];
-        if (!roles.length) {
-          if (typeof toast === 'function') toast(T('toastSelectRole') || 'Select a role', 'warn');
-          return;
-        }
-        if (typeof doNewSprint === 'function') doNewSprint(roles[0].key);
-        /* #25 Ф2 — после создания нового спринта в global-режиме перекидываем на узел
-           дерева «Параметры спринта», чтобы пользователь сразу заполнил вводные. */
-        if (_mode === 'global' && typeof _setDashNode === 'function') {
-          try { _setDashNode('sprint-params'); } catch(_){}
-        }
+           Viewer'а страхуют backend-403 + .catch-тост в doNewSprint (v3.2.1).
+           #73 — диалог выбора ролей-участниц; global-переход внутри (после создания). */
+        openNewSprintDialog();
       });
     }
   })();
@@ -4093,7 +4137,7 @@
     /* #45 R4 §9.3 — Full: ресурс роли = утверждённая ёмкость (минуты, адаптер), поле read-only;
        НЕ перезаписываем _sprint[resKey] из PP (ручной остаётся fallback'ом адаптера). */
     if (_sprint && _settings && _settings.capacityMode === 'full') {
-      getActiveRoles().forEach(function (role) {
+      getSprintRoles().forEach(function (role) {
         var rEl = document.getElementById('res_' + role.key);
         if (rEl) {
           rEl.value = fmtPeriod(getApprovedCapacityForRole(role.key));
@@ -4104,7 +4148,7 @@
       return;
     }
     if (!_sprint || !_settings || !_settings.personalPlanningEnabled || !_settings.usePersonalForResource) return;
-    var activeRoles = getActiveRoles();
+    var activeRoles = getSprintRoles();
     activeRoles.forEach(function(role) {
       var totalH = getPersonalPlanningResourceForRole(role.key);
       var totalMin = Math.round(totalH * 60);
@@ -4224,7 +4268,7 @@
       renderGanttChart: renderGanttChart,
       migrateGrade: _migrateGrade, migrateKpeObject: _migrateKpeObject,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
-      getActiveRoles: getActiveRoles, getRoleItemsArr: getRoleItemsArr,
+      getActiveRoles: getSprintRoles, getRoleItemsArr: getRoleItemsArr,   /* #73 — набор спринта */
       isActiveSprintRecord: isActiveSprintRecord,
       saveCurrentRoleState: saveCurrentRoleState,
       updateIssueAssigneeField: updateIssueAssigneeField,
@@ -4332,7 +4376,7 @@
       ASSIGNEE_FALLBACK_COLOR: ASSIGNEE_FALLBACK_COLOR,
       fmtGanttDate: _fmtGanttDate, ganttDaysAgo: _ganttDaysAgo,
       fetchGanttStateHistory: _fetchGanttStateHistory,
-      getActiveRoles: getActiveRoles,
+      getActiveRoles: getSprintRoles,   /* #73 — набор спринта, не проекта */
       getRoleItemsArr: getRoleItemsArr,
       isActiveSprintRecord: isActiveSprintRecord,
       startPermissionsCheck: _startPermissionsCheck,
@@ -4531,7 +4575,8 @@
       t: T, diag: diag,
       buildBacklogVm: BACKLOG_VM.buildBacklogVm,
       buildTreeVm: BACKLOG_VM.buildTreeVm,         /* §5 слайс 6 — вид «Дерево» */
-      getActiveRoles: getActiveRoles, roleLabel: roleLabel,
+      /* #73 — колонки вида бэклога = набор ЦЕЛЕВОГО спринта (падение на проектный набор внутри резолвера) */
+      getActiveRoles: function(){ return getSprintRolesFor(_backlogTargetSprint()); }, roleLabel: roleLabel,
       fmtHoursOnly: fmtHoursOnly, pageSize: BACKLOG_PAGE_SIZE,
       onToSprint: openBacklogAssign,
       onFilterApply: reloadBacklogFiltered,        /* §10 — apply query-assist фильтра */
@@ -4565,7 +4610,8 @@
       inc: INC, ytBase: _ytBase, currentUser: _currentUser,
       draftVersion: DRAFT_VERSION, baseRevHash: SPRINT_STORE.getBaseRevHash(),
       sprint: _backlogTargetSprint(), roleItems: _roleItems, settings: _settings, backlogPool: _backlogPool,
-      getActiveRoles: getActiveRoles, roleLabel: roleLabel, fmt: fmtHoursOnly,
+      /* #73 — роли модалки «В спринт» = набор целевого спринта */
+      getActiveRoles: function(){ return getSprintRolesFor(_backlogTargetSprint()); }, roleLabel: roleLabel, fmt: fmtHoursOnly,
       getRoleItemsArr: getRoleItemsArr, openModal: openModal, apiPost: apiPost,
       markDirty: _markDirty, draftSet: _draftSet,
       renderRoleComposition: renderRoleComposition,
@@ -4647,7 +4693,7 @@
     return {
       T: T, toast: toast, diag: diag, fmtPeriod: fmtPeriod, openModal: openModal,
       host: _host,
-      getActiveRoles: getActiveRoles, getRoleItemsArr: getRoleItemsArr,
+      getActiveRoles: getSprintRoles, getRoleItemsArr: getRoleItemsArr,   /* #73 — набор спринта */
       markDirty: _markDirty, apiPost: apiPost,
       resolveRefreshMerge: REFRESH_MERGE_PURE.resolveRefreshMerge,
       renderPlanningRoles: renderPlanningRoles,
@@ -4706,7 +4752,8 @@
       renderHistory: renderHistory, applyHybridSprintMode: _applyHybridSprintMode,
       syncStateToUrl: _syncStateToUrl, updateShareBtnState: _updateShareBtnState,
       showCloseWorkingCopyModal: showCloseWorkingCopyModal,
-      getActiveRoles: getActiveRoles, safeLs: safeLs, roleLabel: roleLabel, emptyPP: emptyPP,
+      getActiveRoles: getSprintRoles, getSprintRolesFor: getSprintRolesFor,   /* #73 */
+      safeLs: safeLs, roleLabel: roleLabel, emptyPP: emptyPP,
       populatePlanningRoleSel: populatePlanningRoleSel,
       getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
       findHistRecForCurrent: _findHistRecForCurrent,

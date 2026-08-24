@@ -447,6 +447,7 @@
           "title title"
           "name  goal"
           "dates extra"
+          "roles roles"
           "act   act";
         gap: 14px 24px; align-items: start;
       }
@@ -459,6 +460,8 @@
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard [data-input-id="sprintGoal"] textarea,
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard [data-input-id="sprintGoal"] .ring-input-input { padding-top: 7px; }
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > #sprintExtraFields { grid-area: extra; margin-top: 0 !important; }
+      /* #73 — строка «Роли-участницы» (id бьёт класс-правило goal выше) */
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > #sprintRolesRow { grid-area: roles; margin-top: 0 !important; }
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-actions { grid-area: act; margin-top: 0 !important; }
       /* свёрнутый рельс → узкая полоса: всё, кроме кнопки-тогла, скрыто */
       body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail > :not(.ssp-rail__head) { display: none; }
@@ -2643,6 +2646,11 @@
               style="width:100%;display:block"></span>
         <span class="field-err" id="errSprintGoal" style="display:none"></span>
         <small class="hint" data-i18n="hintSprintGoal" style="color:var(--muted,#888);font-size:11px">Одна-две строки. Не «список задач», а outcome.</small>
+      </div>
+      <!-- #73 — роли-участницы спринта: read-only индикация (набор фиксируется при создании) -->
+      <div class="field" id="sprintRolesRow" style="margin-top:14px;display:none">
+        <label data-i18n="lblSprintRoles">Роли-участницы</label>
+        <div id="sprintRolesList" style="font-size:13px;margin-top:2px"></div>
       </div>
       <!-- v1.8.5 D130 — кнопка «Сохранить параметры спринта» для общих полей
            (_sprint.name/dateStart/dateEnd/sprintGoal/sprintFieldVal/versionFieldVal). С v3.20.1 (#69) —

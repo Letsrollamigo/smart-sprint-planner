@@ -68,9 +68,10 @@ function _copyAlloc(a) { var o = {}; if (a) Object.keys(a).forEach(function (k) 
 
 /* Редактируемая модель login→{grade,rate,participation,alloc} из ростера + записи/carry.
    #69 R1 (строка 9) — без записи/carry грейд сидируется из PP-канона (первая роль человека), не хардкодом «Middle». */
-function _buildModel(deps, roster, rec, carry, ppMap) {
+function _buildModel(deps, sel, roster, rec, carry, ppMap) {
   var model = {};
-  (deps.getActiveRoles ? deps.getActiveRoles() : []).forEach(function (role) {
+  /* #73 — роли-участницы выбранного в ёмкости спринта, не текущие настройки проекта */
+  (deps.getSprintRolesFor ? deps.getSprintRolesFor(sel && sel.id) : []).forEach(function (role) {
     (roster[role.key] || []).forEach(function (p) {
       var login = p.login;
       if (!model[login]) {
@@ -358,9 +359,9 @@ function _buildVm(deps, sprints, sel, ui) {
   var absMap = deps.state.getAbsences() || {};
   var readOnly = !sel.isActive;
   var ppMap = (typeof deps.buildPPMapFromCanon === 'function') ? deps.buildPPMapFromCanon(sel.id, deps.state.getHistory(), null) : null;
-  var model = _buildModel(deps, roster, rec, ui.carry || null, ppMap);
+  var model = _buildModel(deps, sel, roster, rec, ui.carry || null, ppMap);
   var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, model, absMap);
-  var roles = (deps.getActiveRoles ? deps.getActiveRoles() : []).map(function (role) {
+  var roles = (deps.getSprintRolesFor ? deps.getSprintRolesFor(sel && sel.id) : []).map(function (role) {
     return { key: role.key, label: deps.roleLabel(role), people: (roster[role.key] || []).map(function (p) { return { login: p.login, name: p.name || p.login }; }) };
   });
   var absTypes = deps.CAPACITY_PURE.ABSENCE_TYPES.map(function (t) { return { key: t, label: deps.T(ABS_KEY[t] || t) }; });
@@ -446,7 +447,7 @@ function loadAndRender(deps) {
   deps.state.setCapacityUiState(ui);
   var sel = _findSprint(sprints, ui.selectedSprintId);
 
-  var roles = deps.getActiveRoles ? deps.getActiveRoles() : [];
+  var roles = deps.getSprintRolesFor ? deps.getSprintRolesFor(sel && sel.id) : [];   /* #73 */
   var fieldByRole = {}, uniqFields = [];
   roles.forEach(function (role) { var fn = settings[role.userField] || null; fieldByRole[role.key] = fn; if (fn && uniqFields.indexOf(fn) < 0) uniqFields.push(fn); });
   var fieldUsers = {};

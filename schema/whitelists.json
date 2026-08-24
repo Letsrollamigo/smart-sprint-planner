@@ -6,6 +6,7 @@
     "migrationLog",
     "pluginVersion",
     "sprintGoal",
+    "roles",
     "_rev"
   ],
   "ALLOWED_HISTORY_SNAP_KEYS": [
@@ -17,7 +18,8 @@
     "hasWorkingCopy", "revisions",
     "migrationLog",
     "pluginVersion",
-    "sprintGoal", "goalOutcome", "goalRetroNote"
+    "sprintGoal", "goalOutcome", "goalRetroNote",
+    "roles"
   ],
   "ALLOWED_WORKING_DRAFT_KEYS": [
     "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",

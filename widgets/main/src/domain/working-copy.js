@@ -397,6 +397,9 @@ function buildRoleSnap(rk, goalFields, wasValidated, deps) {
   };
   snap[role.resKey] = sprint[role.resKey] || 0;
   snap[role.remKey] = rem;
+  /* #73 — набор ролей-участниц спринта едет в каждый снап: реконструкция из истории
+     (loadUnfinishedSprintAsWorking) и резолвер getSprintRolesFor читают его отсюда. */
+  if (Array.isArray(sprint.roles) && sprint.roles.length) snap.roles = sprint.roles.slice();
   snap.items = items.map(function(i) {
     var obj = {
       issueId:  i.issueId,

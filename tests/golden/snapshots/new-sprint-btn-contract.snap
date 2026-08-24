@@ -1,16 +1,38 @@
 {
   "log": [
     {
-      "doNewSprint": "analysis"
+      "dialog": "newSprintRoles",
+      "offered": [
+        "analysis",
+        "testing",
+        "devBack",
+        "devFront"
+      ]
     },
     {
-      "doNewSprint": "analysis"
+      "doNewSprint": "analysis",
+      "roles": [
+        "analysis",
+        "devBack"
+      ]
+    },
+    {
+      "afterCancel": true
+    },
+    {
+      "doNewSprint": "analysis",
+      "roles": [
+        "analysis"
+      ]
     },
     {
       "setDashNode": "sprint-params"
     },
     {
       "toast": "warn"
+    },
+    {
+      "noRolesModalOpened": false
     }
   ]
 }

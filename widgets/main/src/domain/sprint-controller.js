@@ -370,8 +370,11 @@
     });
   }
 
-  /* ── doNewSprint — создание/переиспользование черновика нового спринта ── */
-  function doNewSprint(rk, deps) {
+  /* ── doNewSprint — создание/переиспользование черновика нового спринта ──
+     #73 — roles: массив ключей ролей-участниц из диалога создания. Пишется в
+     _sprint.roles один раз; далее набор спринта неизменен. Пустой/отсутствующий
+     roles ключ не пишет — резолвер getSprintRolesFor падает на настройки. */
+  function doNewSprint(rk, roles, deps) {
     var st = deps.state;
     var T = deps.T;
     var STATUS = deps.STATUS;
@@ -384,11 +387,14 @@
       _sprint.status === STATUS.PLANNING &&
       (!_sprint.name || _sprint.name === draftName);
 
+    var rolesSel = (Array.isArray(roles) && roles.length) ? roles.slice() : null;
     if (isActiveDraft) {
       // Переиспользуем тот же sprintId, обнуляем поля черновика.
       _sprint.name = draftName;
       _sprint.dateStart = null;
       _sprint.dateEnd = null;
+      /* #73 — повторный «Новый спринт» на живом черновике перезаписывает набор */
+      if (rolesSel) _sprint.roles = rolesSel; else delete _sprint.roles;
       deps.ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
     } else {
       /* v3.2.1 — снимок уходящего PLANNING-спринта в историю ДО замены слота: кнопка
@@ -406,6 +412,7 @@
         dateStart: null, dateEnd: null,
         status: STATUS.PLANNING
       };
+      if (rolesSel) _sprint.roles = rolesSel;   /* #73 — набор фиксируется при создании */
       deps.ALL_ROLES.forEach(function(r) { _sprint[r.resKey] = 0; });
       st.setSprint(_sprint);
     }
@@ -474,7 +481,8 @@
        Смешанный/ALLOCATED оставляем прежнему пути (read-only / working copy под validator). */
     var allPlanning = snaps.every(function(s){ return s.status === deps.STATUS.PLANNING; });
     if (!allPlanning) return false;
-    var meta = snaps.filter(function(s){ return s && typeof deps.getActiveRoles === 'function' && deps.getActiveRoles().some(function(r){ return r.key === s.roleKey; }); })[0] || snaps[0]; /* #56-3 — снапы неактивных ролей держат протухшее имя */
+    var loadedRoles = (typeof deps.getSprintRolesFor === 'function') ? deps.getSprintRolesFor(newId) : [];
+    var meta = snaps.filter(function(s){ return s && loadedRoles.some(function(r){ return r.key === s.roleKey; }); })[0] || snaps[0]; /* #56-3 — снапы неактивных ролей держат протухшее имя; #73 — набор ЗАГРУЖАЕМОГО спринта */
     var sprint = {
       sprintId:        newId,
       name:            meta.name || null,
@@ -485,6 +493,10 @@
       sprintFieldVal:  meta.sprintFieldVal || null,
       versionFieldVal: meta.versionFieldVal || null
     };
+    /* #73 — восстановить набор ролей-участниц из снапа (иначе реконструированный _sprint
+       терял бы ключ, и следующие снапы перестали бы его нести). */
+    var _rolesSnap = snaps.filter(function(s){ return Array.isArray(s.roles) && s.roles.length; })[0];
+    if (_rolesSnap) sprint.roles = _rolesSnap.roles.slice();
     var roleItems = {};
     deps.ALL_ROLES.forEach(function(r){
       var rs = null;

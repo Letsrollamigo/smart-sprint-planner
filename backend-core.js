@@ -199,6 +199,7 @@ var ALLOWED_SPRINT_KEYS = [
   'migrationLog',
   'pluginVersion',
   'sprintGoal',
+  'roles',
   '_rev'
 ];
 var ALLOWED_HISTORY_SNAP_KEYS = [
@@ -225,7 +226,8 @@ var ALLOWED_HISTORY_SNAP_KEYS = [
   'pluginVersion',
   'sprintGoal',
   'goalOutcome',
-  'goalRetroNote'
+  'goalRetroNote',
+  'roles'
 ];
 var ALLOWED_WORKING_DRAFT_KEYS = [
   'schemaVersion',
@@ -311,12 +313,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.23.0';
+var CURRENT_PLUGIN_VERSION = '3.27.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.26.0';
+var APP_VERSION = '3.27.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -543,6 +545,13 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.6.0', to: '3.23.0',
     migrate: function (snap) { delete snap.editingFromHistory; delete snap.historyIdx; },
     note: 'v3.23.0: hard-removal editingFromHistory/historyIdx (sprint) + settings migratedTo'
+  },
+  /* v3.27.0 — #73: аддитивный ключ roles (роли-участницы спринта) в sprint/history-снапах.
+     Ключ optional: отсутствие = слоёный фолбэк резолвера на фронте (снапы истории →
+     settings эпохи → текущие настройки), поэтому миграция no-op. */
+  { from: '3.23.0', to: '3.27.0',
+    migrate: function (snap) { /* no-op: additive optional key roles */ },
+    note: 'v3.27.0: #73 additive sprint/history key roles (per-sprint participating roles)'
   }
 ];
 
@@ -682,6 +691,21 @@ function validateMigrationLog(arr, context) {
   return null;
 }
 
+/* v3.27.0 #73 — roles: optional массив ролей-участниц спринта. Absent/null →
+   accepted (pre-#73 снапшоты, набор резолвится фолбэком на фронте). Валидация
+   независима от settings.activeRoles (⚖ №5 — «⊆ проекта» только UI-гейт создания;
+   write-гейт по настройкам бракует сейв после их смены — класс брика v3.2.1/#70):
+   каждый элемент ∈ ROLE_KEYS, без дублей, длина ≤ ROLE_KEYS.length. */
+function validateSprintRoles(roles) {
+  if (roles == null) return true;
+  if (!Array.isArray(roles) || roles.length > ROLE_KEYS.length) return false;
+  for (var i = 0; i < roles.length; i++) {
+    if (typeof roles[i] !== 'string' || ROLE_KEYS.indexOf(roles[i]) < 0) return false;
+    if (roles.indexOf(roles[i]) !== i) return false; // дубль
+  }
+  return true;
+}
+
 /* v1.6.0 D125 — pluginVersion: optional string 'X.Y.Z', max 32 chars.
    Absent/null → accepted (pre-v1.6.0 snapshots). Malformed string → rejected. */
 function validatePluginVersion(v) {
@@ -729,6 +753,7 @@ function _validateSprintBody(sprint, strict) {
   if (sprint.sprintGoal !== undefined && sprint.sprintGoal !== null) {
     if (!assertStr(sprint.sprintGoal, 500)) return false;
   }
+  if (!validateSprintRoles(sprint.roles)) return false;   /* v3.27.0 #73 */
   if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
@@ -1626,6 +1651,7 @@ function _validateHistoryRecord(h, i, strict) {
   if (h.goalRetroNote !== undefined && h.goalRetroNote !== null) {
     if (!assertStr(h.goalRetroNote, 1000)) return false;
   }
+  if (!validateSprintRoles(h.roles)) return false;   /* v3.27.0 #73 */
   if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
   if (!validatePluginVersion(h.pluginVersion)) return false;
   return true;
@@ -1751,6 +1777,9 @@ function diagnoseHistoryWrite(history) {
       if (typeof h.goalOutcome !== 'string' || ['achieved','partial','missed'].indexOf(h.goalOutcome) < 0) {
         return { ok: false, where: 'goalOutcome_invalid:' + h.goalOutcome, idx: i };
       }
+    }
+    if (!validateSprintRoles(h.roles)) {
+      return { ok: false, where: 'roles_invalid:' + JSON.stringify(h.roles), idx: i };   /* v3.27.0 #73 */
     }
     if (h.goalRetroNote !== undefined && h.goalRetroNote !== null && !assertStr(h.goalRetroNote, 1000)) {
       return { ok: false, where: 'goalRetroNote_invalid: len=' + (h.goalRetroNote && h.goalRetroNote.length), idx: i };
