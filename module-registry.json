@@ -11,12 +11,12 @@
     },
     "budgets": {
       "modules": {
-        "loc": 19309,
+        "loc": 19553,
         "locBudget": 21240,
         "budgetNote": "#69 строка 23 (2026-08-22): 73 per-module бюджета заменены одним агрегатом Σloc секции с полосой 10 % (ratchet only-down по сумме). Поверх: A2 ядро не растёт, A3 fat-count ≤ baseline, D1/D2 полнота реестра."
       },
       "jsx": {
-        "loc": 7784,
+        "loc": 7867,
         "locBudget": 8563
       },
       "backend": {
@@ -93,6 +93,7 @@
       "HASH_PURE": "pure",
       "MIGRATE_PURE": "pure",
       "PERIOD_PURE": "pure",
+      "PERMISSIONS_MATRIX_PURE": "pure",
       "PLANNING_MODEL_PURE": "pure",
       "REFRESH_MERGE_PURE": "pure",
       "RELEASE_TREE_PURE": "pure",
@@ -206,7 +207,7 @@
         "loc": 58
       },
       "react/modal-bodies.jsx": {
-        "loc": 503
+        "loc": 504
       },
       "react/modal-mount.jsx": {
         "loc": 263
@@ -224,7 +225,7 @@
         "loc": 167
       },
       "react/release-view.jsx": {
-        "loc": 412
+        "loc": 413
       },
       "react/reporting-view.jsx": {
         "loc": 1486,
@@ -246,15 +247,18 @@
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-form.jsx": {
-        "loc": 928,
+        "loc": 918,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +28: стейт standupHidden/standupStateRoles + save-нормализация маппинга (dedup по state, roles ∩ role keys — 1:1 с backlogZones) + пропсы StandupSection. Форма — композиционный корень настроек: секция в settings-standup.jsx, таблица в settings-shared.jsx. #61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
+      "react/settings-permissions.jsx": {
+        "loc": 203
+      },
       "react/settings-release.jsx": {
-        "loc": 96,
+        "loc": 83,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-reporting.jsx": {
-        "loc": 496,
+        "loc": 486,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). v3.12.0 (#11) — +поле окна A11 (reportingVelocityWindow). v3.12.3 — пикеры в отчётности: FieldSelect для A3-полей/типов B1-B2/тегов B1-B3 + Type-бандл."
       },
       "react/settings-rollup.jsx": {
@@ -262,7 +266,7 @@
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-shared.jsx": {
-        "loc": 419,
+        "loc": 330,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +83: StateRolesTable — таблица «состояние → роль(и)» вынесена 1:1 из BacklogSection (переиспользование в маппинге стендапа по требованию владельца). Донор ужался симметрично (settings-backlog.jsx 134→81), суммарно по jsx-слою рост ~+6. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-standup.jsx": {
@@ -289,8 +293,11 @@
     "data/data-loaders.js": {
       "layer": "domain",
       "domain": "data/data-loaders",
-      "loc": 236,
+      "loc": 260,
       "state": [
+        "AUTO_GROUP_IDS",
+        "AUTO_GROUP_NAMES",
+        "AUTO_GROUP_TYPES",
         "api"
       ],
       "publishes": [
@@ -639,7 +646,7 @@
     "domain/settings-controller.js": {
       "layer": "domain",
       "domain": "domain/settings-controller",
-      "loc": 202,
+      "loc": 206,
       "state": [
         "api"
       ],
@@ -936,6 +943,20 @@
       ],
       "publishes": [
         "PERIOD_PURE"
+      ]
+    },
+    "pure/permissions-matrix-pure.js": {
+      "layer": "pure",
+      "domain": "pure/permissions-matrix-pure",
+      "loc": 216,
+      "state": [
+        "COLUMN_GROUPS",
+        "MAX_GROUPS_PER_SLOT",
+        "PERMISSION_COLUMNS",
+        "_api"
+      ],
+      "publishes": [
+        "PERMISSIONS_MATRIX_PURE"
       ]
     },
     "pure/planning-model-pure.js": {

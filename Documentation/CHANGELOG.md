@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.26.0] — 2026-08-24
+
+> **Permissions management reworked into a single «group × permission» table (#71).** Twelve group permissions that lived in three different settings sections are now one table. Only the presentation changes: settings keys, the server-side permission model and the form's save path are untouched — permissions granted earlier survive the upgrade unchanged.
+
+### Changed
+
+- **«Permissions» section is now a «group × permission» table.** Rows are YouTrack groups (added with a button, removed with a bin), columns are 12 permissions in three header groups: **Planning** (settings, validation, editing, clear history, assignees & dates, sprint lock), **Releases** (manager pool, engineer pool, release manager, release engineer) and **Reporting** (tier A, tier B). The grey explanatory text that sat under each former multi-select became a tooltip on the column header (plus a hidden description for screen readers).
+- **Permissions removed from the «Releases» and «Reporting» sections** — those now configure their own modules only. The permissions section keeps its place and its navigation entry.
+- **A group cannot be added twice** — the picker offers only groups that are not in the table yet.
+- **Removing a row asks for confirmation:** the dialog names the group and how many permissions will be revoked; the change takes effect once settings are saved.
+- **The settings-manager row is read-only.** Shown on top with a lock icon and «All permissions»; it cannot be edited here because it is configured in the app settings (Project → Apps).
+
+### Added
+
+- **Warning for automatic YouTrack groups.** «All Users», «Registered Users» and a project team are flagged: YouTrack never passes such groups to an app, so permissions granted through them silently do not work. Detection is layered and works on both YouTrack 2025.3 and 2026.1 — on 2025.3 the list `/api/groups` erases the concrete group subtype and always answers `allUsersGroup: false`, so a single field is not enough.
+- **«Group not found in YouTrack» marker** for rows whose group was deleted or renamed. Such a row stays in the table with all its permissions — nothing is lost and nothing is wiped by the first save.
+- **Warning for an empty required column** («Validation», «Editing»): with no group there, nobody but a YouTrack administrator can act. Saving is still allowed — the behaviour is unchanged.
+
+### Removed
+
+- The `GrpMultiSelect` group multi-select component and its CSS — the rework left it without a single consumer. 21 orphaned localization keys removed alongside it.
+
+### Tests
+
+- `permissions-matrix.test.js` (12) — invariants: rows are built from the saved slots while the live group list only enriches names and never filters; an edit-free round-trip is byte-identical across all 24 arrays; stored names are not refreshed; append-to-end and splice-by-index; slot limit; duplicate ban; removal from every slot; empty required columns; a legacy id-less entry.
+- `data-loaders.golden.test.js` +1 — all four layers of automatic-group detection against real response shapes from both YouTrack versions.
+- Gate 1566/1566. Smoke on YouTrack 2025.3 and 2026.1: saving without edits leaves all 24 arrays byte-for-byte unchanged.
+
+---
+
 ## [3.25.0] — 2026-08-23
 
 > **Authz audit #67 closed in full: "the app never grants more than YouTrack does".** The two open stand questions (Q1/Q2) were settled by an experiment on YouTrack 2025.3 — the worse outcome of the two, now closed server-side. No schema, endpoint or whitelist changes.

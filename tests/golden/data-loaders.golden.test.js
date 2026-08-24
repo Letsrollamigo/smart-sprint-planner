@@ -174,6 +174,37 @@ test('loadProjectGroups — happy: фильтр no-id + name-trim fallback на 
   });
 });
 
+/* #71 — маркер автогруппы: все четыре слоя детектора на реальных формах ответа
+   YouTrack, снятых 2026-08-23 (2026.1 отдаёт $type и allUsersGroup,
+   2025.3 стирает подтип и всегда шлёт allUsersGroup=false). */
+test('loadProjectGroups — маркер автогруппы: 4 слоя детектора (#71)', async () => {
+  const { gm } = createHost();
+  stubHost(gm, function () {
+    return Promise.resolve([
+      /* YT 2026.1 — слой 1: авторитетный флаг */
+      { id: '101-0', name: 'Все пользователи', allUsersGroup: true, $type: 'AllUsersGroup' },
+      /* YT 2026.1 — слой 2: подтип (флага нет, имя локализовано) */
+      { id: '5-9', name: 'Demo project Team', allUsersGroup: false, $type: 'ProjectTeam' },
+      /* YT 2025.3 — слой 3: подтип стёрт, флаг false, имя локализовано → системный id */
+      { id: '6-0', name: 'Зарегистрированные пользователи', allUsersGroup: false, $type: 'UserGroup' },
+      /* YT 2025.3 — слой 4: имя (EN-инстанс) */
+      { id: '9-9', name: 'All Users', allUsersGroup: false, $type: 'UserGroup' },
+      /* Обычная группа — маркера быть не должно */
+      { id: '4-7', name: 'Разработчики', allUsersGroup: false, $type: 'NestedGroup' },
+      /* Обычная группа с « Team» в имени на 2025.3 — ложного срабатывания нет */
+      { id: '4-8', name: 'Dream Team', allUsersGroup: false, $type: 'UserGroup' },
+    ]);
+  });
+  await gm.call('loadProjectGroups');
+  await settle();
+  const byId = {};
+  gm.get('_projectGroups').forEach((g) => { byId[g.id] = g.allUsersGroup; });
+  assert.deepStrictEqual(byId, {
+    '101-0': true, '5-9': true, '6-0': true, '9-9': true,
+    '4-7': false, '4-8': false,
+  });
+});
+
 test('loadProjectGroups — reject: _projectGroups = []', async () => {
   const { gm } = createHost();
   gm.set({ _projectGroups: ['SENTINEL'] });

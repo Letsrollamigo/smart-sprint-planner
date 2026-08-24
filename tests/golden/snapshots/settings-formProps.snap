@@ -12,6 +12,7 @@
     "onClose",
     "onSave",
     "roles",
+    "settingsManagerGroupName",
     "stateFieldName",
     "t",
     "uiLang"
@@ -29,6 +30,7 @@
     "onClose": "function",
     "onSave": "function",
     "roles": "object",
+    "settingsManagerGroupName": "string",
     "stateFieldName": "string",
     "t": "function",
     "uiLang": "string"

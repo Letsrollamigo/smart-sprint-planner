@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { noop, RoleCheck, GrpMultiSelect, RingSelLite } from './settings-shared.jsx';
+import { noop, RoleCheck, RingSelLite } from './settings-shared.jsx';
 
 function ReleaseSection(props) {
   const t = props.t;
@@ -11,7 +11,6 @@ function ReleaseSection(props) {
   const set = props.onChange;
   const bundleStates = props.bundleStates || [];
   const patch = (p) => set(Object.assign({}, v, p));
-  const setGrp = (k, val) => patch({ [k]: val });
   const setMap = (status, val) => patch({ mapping: Object.assign({}, v.mapping, { [status]: val }) });
   const setTagMap = (status, val) => patch({ tagMapping: Object.assign({}, v.tagMapping, { [status]: val }) });
 
@@ -37,13 +36,6 @@ function ReleaseSection(props) {
   ];
   const subCls = { fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' };
   const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'block' };
-  const grpRow = (key, label) => (
-    <div className="field" style={{ marginBottom: '12px' }} key={key}>
-      <label>{label}</label>
-      <GrpMultiSelect t={t} value={v[key]} onChange={(val) => setGrp(key, val)}
-        initialGroups={props.initialGroups} loadGroups={props.loadGroups} onMax={props.onMax} />
-    </div>
-  );
 
   return (
     <React.Fragment>
@@ -51,15 +43,9 @@ function ReleaseSection(props) {
       {/* #69 R1 (строка 6) — подполя при выключенном модуле притушены, не скрыты. */}
       <div className={v.enabled ? '' : 'ssp-subfields--dim'}>
 
-      {/* Пул кандидатов представителей (D-D2 — отдельно от групп прав) */}
-      <div className="card-subtitle" style={subCls}>{t('relSetCandGroups')}</div>
-      {grpRow('candMgr', t('relSetCandManagers'))}
-      {grpRow('candEng', t('relSetCandEngineers'))}
-
-      {/* Группы прав */}
-      <div className="card-subtitle" style={subCls}>{t('relSetRightsGroups')}</div>
-      {grpRow('rightsMgr', t('relSetRightsManagers'))}
-      {grpRow('rightsEng', t('relSetRightsEngineers'))}
+      {/* #71 — пул кандидатов (D-D2) и группы прав переехали в «Управление правами»
+          колонками матрицы «группа × полномочие»; слоты стейта остались здесь
+          (candMgr/candEng/rightsMgr/rightsEng) — путь сохранения не менялся. */}
 
       {/* Маппинг «статус релиза → целевое состояние задач» (применение — R2) */}
       <div className="card-subtitle" style={subCls}>{t('relSetMappingTitle')}</div>

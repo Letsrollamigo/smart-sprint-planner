@@ -109,7 +109,7 @@ To make the project operational and **make it appear in the main-menu planner**,
 
    If your project uses standard YouTrack fields, you usually just pick them once from the dropdowns.
 
-3. **Set the sprint editing group.** In the **Manage permissions** section, fill in the **Sprint Editing** field — the group (or groups) whose members can save sprint composition and parameters. This step is **required**: while the group is empty, writing is closed for everyone except the YouTrack instance administrator — the plugin follows the "everything not explicitly allowed is denied" rule. If your sprints will go through review and get finished (see [section 10](#10-sprint-stages-review-commit-complete)), fill in **Sprint Validation** here as well — without it nobody can confirm or finish a sprint. Every field in the form has a hint underneath saying what the group grants.
+3. **Set the sprint editing group.** In the **Manage permissions** section, add a group to the table and tick it in the **Editing** column — its members can save sprint composition and parameters. This step is **required**: while the group is empty, writing is closed for everyone except the YouTrack instance administrator — the plugin follows the "everything not explicitly allowed is denied" rule. If your sprints will go through review and get finished (see [section 10](#10-sprint-stages-review-commit-complete)), tick the **Validation** column here as well — without it nobody can confirm or finish a sprint. Hovering a column header shows what the permission grants.
 
 4. **Check "Other Fields".** In the **Other Fields** section, under the **Main** heading, there are the **Priority** and **State** fields. If you leave them empty, the plugin uses the project fields named *Priority* and *State*; saving isn't blocked, but a "Required fields are not set" warning is shown. If your project names these fields differently — pick them explicitly.
 
@@ -664,7 +664,7 @@ Group project tasks into **releases** and walk each release through statuses —
 
 ### Enabling and permissions
 
-Plugin settings → the **Releases** section: the enable toggle, two permission groups, and the **«release status → task State» mapping** (which State the release's tasks get when its status changes):
+Plugin settings → the **Releases** section: the enable toggle and the **«release status → task State» mapping** (which State the release's tasks get when its status changes). The permission groups and candidate pools themselves are set in the **Manage permissions** section — columns "Manager pool", "Engineer pool", "Release manager", "Release engineer":
 
 - **Release managers (RM)** — create and edit releases, pick tasks, any status changes, cancellation, composition freeze. The plugin settings manager automatically has RM rights.
 - **Release engineers (RE)** — can only advance the status to the next step in the chain.
@@ -709,7 +709,7 @@ The reports are split into two contours with separate access via YouTrack groups
 - **"Operational (A)"** — 10 reports for leads and Scrum masters: the daily and weekly work with the task flow.
 - **"Management (B)"** — 4 reports for management: monthly trends, technical debt, the "bug tax".
 
-Access groups are set in plugin settings, in the **Reporting** section — these are separate groups, not reusing planning or release permissions. Membership in a contour-B group automatically grants contour A as well. Membership is also checked on the server — a hidden button is not the only line of defence.
+Access groups are set in plugin settings, in the **Manage permissions** table — columns "Tier A" and "Tier B". These are separate permissions, not reusing planning or release ones. Membership in a contour-B group automatically grants contour A as well. Membership is also checked on the server — a hidden button is not the only line of defence.
 
 Once the module is enabled, the navigation tree gets a **"Reporting"** group with the items **"Operational (A)"** and **"Management (B)"** — each person sees only the contours their groups grant. If you see neither, you are not in any reporting group — ask the project configurator.
 
@@ -788,9 +788,9 @@ Groups are **additive**: one person can be in multiple groups and gets the sum o
 
 ### How groups are configured
 
-The settings manager group is set in the app settings (Project Settings → Apps → Smart Sprint Planner). All the other groups are picked in the **⚙ Plugin Settings** dialog: planning and history groups in the **Manage permissions** section, release groups in the Release management section, reporting groups in the Reporting section. Group names come from YouTrack — the same groups your project uses for other permissions.
+The settings manager group is set in the app settings (Project Settings → Apps → Smart Sprint Planner). All the other groups are picked in the **⚙ Plugin Settings** dialog, in a single section — **Manage permissions**: the «group × permission» table covers planning, releases and reporting alike. Group names come from YouTrack — the same groups your project uses for other permissions.
 
-The Release management section also has two **candidate pools** for release representatives (managers and engineers) — these aren't permissions but lists of people the responsible persons for a specific release are picked from.
+Two of the table's columns — **Manager pool** and **Engineer pool** — aren't permissions but lists of people the responsible persons for a specific release are picked from.
 
 > ⚠ **Groups are matched by name.** The plugin remembers the group's name, not its internal identifier. If you **rename** a group in YouTrack, its members lose access — open the settings and pick the group again under its new name. Nested groups are honoured: a member of a child group gets the parent group's permissions.
 
@@ -882,14 +882,42 @@ The same estimate (or actual) field can't be assigned to two roles — the form 
 
 ### "Manage permissions" section (administration)
 
-- **Planning settings manager** — who can edit the planning sections of this dialog without touching permissions and automation rules.
-- **Sprint Validation** — who can confirm (**Confirm composition**, **Confirm distribution**) and finish a sprint. **Required for review**: without a group, validation is unavailable to everyone.
-- **Sprint Editing** — who can save composition, capacities, assignees and sprint parameters. **Required**: without a group, writing is closed for everyone except the instance administrator.
-- **Full Sprint History Clearing** — who sees the **Clear all history** button.
-- **Assignee & Dates Edit (Assigner)** — limited permissions: only assignees and Start / Finish dates.
-- **Sprint creation lock** — who can flip the "sprint creation lock" toggle in the planner header.
+All permissions are granted in **one «group × permission» table**: rows are YouTrack groups, columns are permissions. A tick at the intersection grants the group that permission. Hover a column header to read what it allows.
 
-Every field has a hint underneath saying exactly what the group grants. How groups are matched and why renaming a group in YouTrack breaks access — see [section 14](#14-who-can-do-what-group-permissions).
+Columns are grouped into three blocks:
+
+| Block | Columns |
+|---|---|
+| **Planning** | Settings · Validation\* · Editing\* · Clear history · Assignees & dates · Sprint lock |
+| **Releases** | Manager pool · Engineer pool · Release manager · Release engineer |
+| **Reporting** | Tier A · Tier B |
+
+What each permission means:
+
+- **Settings** — who can edit the planning sections of this dialog without touching permissions and automation rules.
+- **Validation**\* — who can confirm (**Confirm composition**, **Confirm distribution**) and finish a sprint.
+- **Editing**\* — who can save composition, capacities, assignees and sprint parameters.
+- **Clear history** — who sees the **Clear all history** button.
+- **Assignees & dates** — limited permissions: only assignees and Start / Finish dates.
+- **Sprint lock** — who can flip the "sprint creation lock" toggle in the planner header.
+- **Manager pool / Engineer pool** — not a permission but a pool: the release manager and release engineer are picked from these groups in the release card.
+- **Release manager / Release engineer** — permissions in release management (see [section 11](#11-release-management)).
+- **Tier A / Tier B** — reporting access; tier B members also see all tier A reports.
+
+\* **Required columns.** While a column has no group in it, the action is available to **nobody** except the YouTrack instance administrator — the plugin follows the "everything not explicitly allowed is denied" rule. The form warns about it but still lets you save.
+
+**Working with the table:**
+
+- **Add a group** — with the button above the table. Groups already in the table are not offered, so one group cannot be added twice.
+- **Remove a group** — with the bin at the end of the row. A confirmation names how many permissions will be revoked; the change takes effect once settings are saved.
+- **The locked row on top** — the settings manager group. It holds every permission and is not editable here: it is set in the app settings (Project Settings → Apps → Smart Sprint Planner).
+
+**Warning markers in a row:**
+
+- ⚠ **Automatic YouTrack group** ("All Users", "Registered Users", a project team). YouTrack does not pass such groups to the app, so permissions granted through them **will not work** — use a group with an explicit member list.
+- ⚠ **Group not found in YouTrack** — deleted or renamed. The row and its permissions are kept: the plugin never wipes them silently. Remove the row with the bin if the group is gone for good.
+
+How groups are matched and why renaming a group in YouTrack breaks access — see [section 14](#14-who-can-do-what-group-permissions).
 
 ### "Other Fields" section
 

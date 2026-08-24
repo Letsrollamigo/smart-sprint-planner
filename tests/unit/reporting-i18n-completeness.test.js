@@ -17,7 +17,9 @@ const EXPECTED_LOCALES = ['en', 'ru', 'cs', 'de', 'es', 'fr', 'hu', 'it', 'ja', 
    S1c — пороги aging (settings-таблица). */
 const REPORTING_KEYS = [
   'repNavSettings', 'repNodeA', 'repNodeB',
-  'repSetEnable', 'repSetAccessGroups', 'repSetAccessNote', 'repSetGroupsA', 'repSetGroupsB',
+  /* #71 — контуры доступа A/B переехали в матрицу «Управление правами»
+     (колонки permColRepA/permColRepB); подписи секции удалены из словарей. */
+  'repSetEnable',
   'repPlaceholder',
   // S1c — пороги aging (settings)
   'repSetThresholds', 'repSetThHint', 'repSetThColState', 'repSetThColYellow', 'repSetThColRed', 'repSetThEmpty',
@@ -186,12 +188,14 @@ test('reporting i18n: нет placeholder-копий EN (реальные пер�
   assert.strictEqual(placeholders.length, 0, 'EN-копии (не переведено): ' + placeholders.join(', '));
 });
 
-test('reporting i18n: символ ⊇ (B⊇A) сохранён в repSetAccessNote во всех локалях', function () {
+/* #71 — носитель семантики переехал: подпись секции «Доступ к отчётности» снесена,
+   вложенность контуров теперь объясняет подсказка на заголовке колонки «Контур B». */
+test('reporting i18n: символ ⊇ (B⊇A) сохранён в hintRepB во всех локалях', function () {
   const missing = [];
   EXPECTED_LOCALES.forEach(function (lc) {
-    if (String(dicts[lc].repSetAccessNote || '').indexOf('⊇') < 0) missing.push(lc);
+    if (String(dicts[lc].hintRepB || '').indexOf('⊇') < 0) missing.push(lc);
   });
-  assert.deepStrictEqual(missing, [], 'Потерян символ ⊇ в repSetAccessNote: ' + missing.join(', '));
+  assert.deepStrictEqual(missing, [], 'Потерян символ ⊇ в hintRepB: ' + missing.join(', '));
 });
 
 test('reporting i18n: плейсхолдер {n} сохранён в repIncomplete/repLimitHit во всех локалях', function () {

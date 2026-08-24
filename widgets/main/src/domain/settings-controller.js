@@ -141,6 +141,10 @@
       onSave:             function (data) { return _saveSettingsData(data, deps); },
       /* #22 — admin-тир (workflow + доступ/права) рендерится только при true. */
       canEditWorkflow:    !!(opts && opts.canEditWorkflow),
+      /* #71 — строка настройщика (read-only) в матрице прав. Имя уже приходит из
+         check-settings-manager.groupName; редактировать его из формы нельзя
+         (живёт в app-настройках проекта, не в whitelist настроек плагина). */
+      settingsManagerGroupName: (opts && opts.settingsManagerGroupName) || '',
       onClose:            onCloseFn,
     };
   }
@@ -185,7 +189,7 @@
         id: 'settings', type: 'form', title: T('appTitleSettings'),
         dialogClass: 'ssp-ring-modal--wide ssp-ring-modal--settings',
         body: { kind: 'component', name: 'settingsForm',
-          props: buildSettingsFormProps(function () { if (handle) handle.close(); }, deps, { canEditWorkflow: canEditWorkflow }) },
+          props: buildSettingsFormProps(function () { if (handle) handle.close(); }, deps, { canEditWorkflow: canEditWorkflow, settingsManagerGroupName: r.groupName || '' }) },
         buttons: [],
         dismissOnBackdrop: false,
         blockEscape: false,

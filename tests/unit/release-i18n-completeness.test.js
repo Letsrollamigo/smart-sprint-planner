@@ -29,8 +29,9 @@ const RELEASE_KEYS = [
   'relEmptyTitle', 'relEmptyHint',
   // §5 настройки (R1.1)
   'relNavSettings', 'relSetEnable',
-  'relSetCandGroups', 'relSetCandManagers', 'relSetCandEngineers',
-  'relSetRightsGroups', 'relSetRightsManagers', 'relSetRightsEngineers',
+  /* #71 — группы-кандидатов и группы прав переехали в матрицу «Управление правами»
+     (колонки permColCandMgr/permColCandEng/permColRelMgr/permColRelEng); прежние
+     шесть подписей секции удалены из словарей вместе с блоком. */
   'relSetMappingTitle', 'relSetMappingNoChange', 'relSetMappingColStatus', 'relSetMappingColState',
   'relSetMappingAnchorNote', // R3.1 — двойная роль маппинга (свои настройки светофора снесены)
   'relSetTypeTitle', 'relSetTypeFixedNote',

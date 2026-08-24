@@ -3,7 +3,7 @@
    props-контракт секции не менялся — чистый перенос. */
 
 import * as React from 'react';
-import { noop, genZoneUid, _btnCls, FieldSelect, RoleCheck, GrpMultiSelect, MultiSelect, RingSelLite } from './settings-shared.jsx';
+import { noop, genZoneUid, _btnCls, FieldSelect, RoleCheck, MultiSelect, RingSelLite } from './settings-shared.jsx';
 
 function _repThToRows(obj) {
   const o = (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
@@ -45,7 +45,6 @@ function ReportingSection(props) {
   const v = props.value;
   const set = props.onChange;
   const patch = (p) => set(Object.assign({}, v, p));
-  const setGrp = (k, val) => patch({ [k]: val });
   /* #50 S3a — теги инстанса: маркеры-пауз A2 + тег-пикеры B1/B3 (реюз props.loadTags, как BacklogSection/#55). */
   const [pauseTagBundle, setPauseTagBundle] = React.useState([]);
   React.useEffect(() => {
@@ -73,13 +72,6 @@ function ReportingSection(props) {
     return out; })();
   const subCls = { fontSize: '12px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.04em', marginTop: '16px', marginBottom: '8px' };
   const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'block' };
-  const grpRow = (key, label) => (
-    <div className="field" style={{ marginBottom: '12px' }} key={key}>
-      <label>{label}</label>
-      <GrpMultiSelect t={t} value={v[key]} onChange={(val) => setGrp(key, val)}
-        initialGroups={props.initialGroups} loadGroups={props.loadGroups} onMax={props.onMax} />
-    </div>
-  );
   /* #50 — пороги aging (A7) / цели A1 / поток A8-A9: строка = пикер состояния из бандла State-поля
      + сателлит-поля + добавить/удалить (паттерн зон бэклога #21; НЕ фикс-строка на КАЖДОЕ значение
      бандла — на корп-инстансе бандл длинный). bundleStates реактивно из fields.fieldState. */
@@ -192,10 +184,8 @@ function ReportingSection(props) {
       {/* v3.9.0 — «Система» в отчётах: колонка в A-таблицах + группировка B-отчётов + экспорт. */}
       <RoleCheck on={v.showSystem !== false} label={t('repSetShowSystem')} onToggle={() => patch({ showSystem: v.showSystem === false })} />
       <span className="hint" style={hintCls}>{t('repSetShowSystemHint')}</span>
-      <div className="card-subtitle" style={subCls}>{t('repSetAccessGroups')}</div>
-      <span className="hint" style={hintCls}>{t('repSetAccessNote')}</span>
-      {grpRow('groupsA', t('repSetGroupsA'))}
-      {grpRow('groupsB', t('repSetGroupsB'))}
+      {/* #71 — контуры доступа A/B переехали в «Управление правами» колонками матрицы;
+          слоты стейта (groupsA/groupsB) остались здесь, путь сохранения не менялся. */}
 
       {/* #50 D10 — таймаут-бэкстоп прогона отчёта: страховка «не завесить систему». */}
       <div className="card-subtitle" style={subCls}>{t('repSetTimeout')}</div>

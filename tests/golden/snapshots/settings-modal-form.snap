@@ -23,6 +23,7 @@
         "onClose",
         "onSave",
         "roles",
+        "settingsManagerGroupName",
         "stateFieldName",
         "t",
         "uiLang"

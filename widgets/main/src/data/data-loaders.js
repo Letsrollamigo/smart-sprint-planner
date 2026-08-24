@@ -60,17 +60,43 @@
     }).catch(function () {});
   }
 
+  /* #71 — автогруппа YouTrack (All Users / Registered Users / команда проекта).
+     Почему это важно: ctx.currentUser.groups отдаёт приложению только ЯВНО назначенные
+     группы, поэтому выданные через автогруппу права молча не срабатывают
+     (feedback_yt_ctx_groups_explicit_only) — матрица прав ставит на такой строке маркер.
+
+     Детектор послойный, потому что списочный /api/groups ведёт себя по-разному
+     в разных версиях YouTrack (проверено 2026-08-23):
+       • YT 2026.1 — отдаёт конкретный $type (AllUsersGroup / RegisteredUsersGroup /
+         ProjectTeam) и allUsersGroup=true → распознаются все три класса точно;
+       • YT 2025.3 — СТИРАЕТ подтип до 'UserGroup' и всегда шлёт allUsersGroup=false
+         (правду говорит только запрос по id) → работают только системные id и имена.
+     Имена системных групп локализуются («Все пользователи»), поэтому имя — последний
+     слой, а не первый. Известный остаток: на 2025.3 команды проектов не распознаются
+     (эвристика по суффиксу « Team» дала бы ложные срабатывания на обычных группах).
+     Маркер только предупреждает — сохранение он не блокирует. */
+  var AUTO_GROUP_TYPES = { AllUsersGroup: 1, RegisteredUsersGroup: 1, ProjectTeam: 1 };
+  /* Системные id Hub'а — совпали на обеих проверенных версиях (2025.3 и 2026.1). */
+  var AUTO_GROUP_IDS = { '101-0': 1, '6-0': 1 };
+  var AUTO_GROUP_NAMES = { 'All Users': 1, 'Registered Users': 1 };
+  function _isAutoGroup(gr, name) {
+    if (gr.allUsersGroup === true) return true;
+    if (gr.$type && AUTO_GROUP_TYPES[gr.$type]) return true;
+    if (AUTO_GROUP_IDS[String(gr.id)]) return true;
+    return !!AUTO_GROUP_NAMES[name];
+  }
+
   /* ── loadProjectGroups — справочник групп (для баннеров прав / настроек) ── */
   function loadProjectGroups(deps) {
     return deps.state.getHost().fetchYouTrack('groups', {
-      query: { fields: 'id,name', $top: 5000 }
+      query: { fields: 'id,name,allUsersGroup', $top: 5000 }
     }).then(function (g) {
       var raw = Array.isArray(g) ? g : [];
       var groups = raw
         .filter(function (gr) { return !!gr.id; })
         .map(function (gr) {
           var name = (gr.name && gr.name.trim()) ? gr.name.trim() : gr.id;
-          return { id: gr.id, name: name };
+          return { id: gr.id, name: name, allUsersGroup: _isAutoGroup(gr, name) };
         });
       deps.state.setProjectGroups(groups);
       deps.diag('Groups loaded: ' + groups.length, 'ok');

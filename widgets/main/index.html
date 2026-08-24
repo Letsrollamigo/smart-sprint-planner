@@ -1076,6 +1076,70 @@
       min-width: min(1040px, 95vw) !important;
       max-width: min(1040px, 95vw) !important;
     }
+    /* #71 — «Управление правами»: таблица «группа × полномочие» (12 колонок в трёх
+       группах шапки). Ширина 12×56 + имя 200 + корзина 36 → шире two-pane-панели
+       модалки (~900px): горизонтальная прокрутка ВНУТРИ блока, страница не едет. */
+    .ssp-settings-form .ssp-perm-lead { font-size: 12px; color: var(--muted); display: block; margin-bottom: 10px; }
+    .ssp-settings-form .ssp-perm-add { max-width: 320px; margin-bottom: 12px; }
+    .ssp-settings-form .ssp-perm-scroll { overflow-x: auto; max-width: 100%; }
+    /* Раскладка авто + min-width на колонках (НЕ table-layout:fixed и НЕ width):
+       fixed ужимает колонки пропорционально, когда контейнер уже суммы ширин, —
+       заданные 80px игнорировались и подписи снова рвались. С min-width таблица
+       перерастает панель, и прокручивается обёртка, а ширина колонки подстраивается
+       под самую длинную подпись локали (жёстких пикселей суммы не держим). */
+    .ssp-settings-form .ssp-perm-table { max-width: none; width: auto; border-collapse: collapse; }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-grp {
+      text-align: center; padding: 0 6px 4px; border-bottom: 1px solid var(--border, #e0e0e0);
+    }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-th {
+      /* 80px — «Редактирование»/«Валидация» встают в одну строку, остальные ложатся
+         в две по границам слов. Переносы по слогам (hyphens) намеренно выключены:
+         на 64px они рвали подписи в «Ре-дак-ти-ро-ва-ние». overflow-wrap оставлен
+         страховкой на случай ещё более длинного слова в другой локали. */
+      min-width: 80px; text-align: center; vertical-align: bottom;
+      white-space: normal; overflow-wrap: anywhere;
+      /* без uppercase: подписи многословные, капслок раздувает их на лишнюю строку */
+      text-transform: none; font-size: 11px; letter-spacing: 0;
+      line-height: 1.15; padding: 6px 3px 8px; cursor: help;
+    }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-th-name {
+      min-width: 200px; text-align: left; vertical-align: bottom; padding-bottom: 8px;
+    }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-th-act { min-width: 36px; }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-name { overflow-wrap: anywhere; }
+    .ssp-perm-req { color: var(--error); text-decoration: none; margin-left: 2px; font-weight: 700; }
+    .ssp-perm-grp--dim { opacity: .55; }
+    .ssp-perm-grp--off { opacity: .55; }
+    .ssp-perm-off-tag {
+      display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 3px;
+      background: var(--surface2, rgba(128,128,128,.14)); color: var(--muted);
+      font-size: 9px; font-weight: 600; letter-spacing: 0; text-transform: none;
+    }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-row > th,
+    .ssp-settings-form .ssp-perm-table .ssp-perm-row > td {
+      border-top: 1px solid var(--border, #e0e0e0); padding: 4px 3px; vertical-align: middle;
+    }
+    .ssp-settings-form .ssp-perm-table .ssp-perm-name {
+      text-align: left; font-weight: 400; font-size: 13px; color: var(--text);
+      text-transform: none; letter-spacing: 0; padding-right: 10px;
+    }
+    .ssp-perm-name-text { vertical-align: middle; }
+    .ssp-perm-mark { margin-left: 5px; color: var(--warning, #cc8b1f); vertical-align: middle; cursor: help; }
+    .ssp-perm-none { margin-left: 6px; font-size: 11px; color: var(--muted); font-style: italic; }
+    .ssp-perm-row--manager .ssp-perm-manager-cell {
+      font-size: 12px; color: var(--muted); text-align: center; font-style: italic;
+    }
+    /* Ячейка: Ring-чекбокс без подписи — центрируем и снимаем правый отступ лейбла. */
+    .ssp-settings-form .ssp-perm-cell { text-align: center; }
+    .ssp-settings-form .ssp-perm-cell .ssp-role-toggle { display: inline-block; }
+    .ssp-settings-form .ssp-perm-cell label { margin: 0; }
+    .ssp-settings-form .ssp-perm-act { text-align: right; }
+    .ssp-perm-empty { padding: 16px; font-size: 12px; color: var(--muted); font-style: italic; text-align: center; }
+    .ssp-settings-form .ssp-perm-mgr-note { font-size: 12px; color: var(--muted); display: block; margin-top: 8px; }
+    .ssp-perm-warn {
+      display: flex; align-items: center; gap: 6px; margin-top: 8px;
+      font-size: 12px; color: var(--error); font-weight: 500;
+    }
     .ssp-ring-modal .ring-island-header,
     .ssp-ring-modal .ring-island-withBottomBorder.ring-island-withBottomBorder {
       border-bottom: none !important;
@@ -1535,105 +1599,6 @@
 
     /* ── Дельта-ресурс ── */
     .delta-neg { color: var(--error); font-weight: 700; }
-
-    /* ── Multi-select групп ── */
-    .grp-ms {
-      position: relative;
-      width: 100%;
-    }
-    .grp-ms__control {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      align-items: center;
-      min-height: 38px;
-      padding: 4px 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      cursor: text;
-      transition: border-color .15s;
-    }
-    .grp-ms__control:focus-within { border-color: var(--primary); }
-    .grp-ms__tag {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 2px 8px; border-radius: 10px;
-      background: var(--surface); border: 1px solid var(--border);
-      font-size: 12px; color: var(--text); white-space: nowrap;
-    }
-    .grp-ms__tag-icon { width: 14px; height: 14px; opacity: .5; flex-shrink: 0; }
-    .grp-ms__tag-rm {
-      background: none; border: none; cursor: pointer;
-      color: var(--muted); font-size: 12px; line-height: 1;
-      padding: 0 0 0 2px;
-    }
-    .grp-ms__tag-rm:hover { color: var(--error); }
-    .grp-ms__input {
-      flex: 1; min-width: 100px;
-      background: none; border: none; outline: none;
-      color: var(--text); font-size: 13px;
-      padding: 2px 0;
-    }
-    .grp-ms__input:focus-visible { box-shadow: var(--focus-ring); border-radius: 2px; }
-    .grp-ms__input::placeholder { color: var(--muted); }
-    .grp-ms__dropdown {
-      display: none;
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0; right: 0;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      z-index: var(--z-popover);
-      max-height: 280px;
-      overflow-y: auto;
-    }
-    .grp-ms__dropdown.open { display: block; }
-    .grp-ms__section-label {
-      padding: 8px 12px 4px;
-      font-size: 10px; font-weight: 700;
-      color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
-    }
-    .grp-ms__item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 7px 12px;
-      font-size: 13px; color: var(--text);
-      cursor: pointer;
-      transition: background .1s;
-      user-select: none;
-    }
-    .grp-ms__item:hover { background: var(--surface2); }
-    .grp-ms__item-cb-native { display: none; }
-    .grp-ms__item-cb {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 15px; height: 15px; flex-shrink: 0;
-      border: 2px solid var(--border); border-radius: 3px;
-      background: var(--surface2);
-      transition: background .1s, border-color .1s;
-      position: relative;
-    }
-    .grp-ms__item-cb::after {
-      content: '';
-      display: none;
-      position: absolute; left: 3px; top: 0px;
-      width: 5px; height: 9px;
-      border: 2px solid #fff; border-top: none; border-left: none;
-      transform: rotate(45deg);
-    }
-    .grp-ms__item--checked .grp-ms__item-cb {
-      background: var(--primary); border-color: var(--primary);
-    }
-    .grp-ms__item--checked .grp-ms__item-cb::after { display: block; }
-    .grp-ms__item-icon { width: 16px; height: 16px; opacity: .55; flex-shrink: 0; }
-    .grp-ms__item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
-    .grp-ms__empty { padding: 12px; font-size: 12px; color: var(--muted); font-style: italic; text-align: center; }
-    .grp-ms__reset {   /* v3.20.1 — Ring inline/ghost-кнопка; здесь только раскладка футера списка */
-      display: block; width: 100%;
-      padding: 8px 12px; border-top: 1px solid var(--border);
-      font-size: 12px; text-align: left;
-    }
-    .grp-ms__reset:hover { color: var(--error); }
 
     /* ── Misc ── */
     .empty { text-align: center; padding: 36px; color: var(--muted); font-size: 13px; }

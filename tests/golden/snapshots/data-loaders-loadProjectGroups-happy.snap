@@ -2,21 +2,24 @@
   "fetched": [
     {
       "path": "groups",
-      "fields": "id,name"
+      "fields": "id,name,allUsersGroup"
     }
   ],
   "projectGroups": [
     {
       "id": "g-1",
-      "name": "sprint-managers"
+      "name": "sprint-managers",
+      "allUsersGroup": false
     },
     {
       "id": "g-2",
-      "name": "g-2"
+      "name": "g-2",
+      "allUsersGroup": false
     },
     {
       "id": "g-3",
-      "name": "trimmed"
+      "name": "trimmed",
+      "allUsersGroup": false
     }
   ]
 }

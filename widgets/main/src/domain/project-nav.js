@@ -89,7 +89,7 @@
       try { deps.applyRingTheme(); } catch (_) {}
       try { deps.loadAppVersion(); } catch (_) {}
 
-      _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow);
+      _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow, (r && r.groupName) || '');
       deps.diag('project settings page rendered (canManagePlanning=' + canManagePlanning + ', canEditWorkflow=' + canEditWorkflow + ', configured=' + configured + ')', 'info');
     });
   }
@@ -97,7 +97,7 @@
   /* Inline-маунт формы настроек в страницу. Read-only (CSS) для не-менеджера / не-настроенного.
      #22 — canManagePlanning гейтит редактируемость (планировочный менеджер editable),
      canEditWorkflow прокидывается в форму (admin-тир рендерится только при true). */
-  function _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow) {
+  function _mountProjectSettings(deps, canManagePlanning, configured, canEditWorkflow, settingsManagerGroupName) {
     var host = document.getElementById('projectSettingsHost');
     if (!host) return;
     var ro = !canManagePlanning || !configured;
@@ -114,7 +114,7 @@
     var props = deps.buildSettingsFormProps(function () {
       try { window.__SSP_RING_MODAL.unmountInline(host); } catch (_) {}
       _renderProjectSettingsPage(deps);
-    }, { canEditWorkflow: !!canEditWorkflow });
+    }, { canEditWorkflow: !!canEditWorkflow, settingsManagerGroupName: settingsManagerGroupName || '' });
     window.__SSP_RING_MODAL.mountInline(host, 'settingsForm', props);
   }
 

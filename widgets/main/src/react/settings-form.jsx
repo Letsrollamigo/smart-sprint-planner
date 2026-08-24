@@ -16,13 +16,14 @@
 
 import * as React from 'react';
 /* R6 (аудит §7 п.13) — декомпозиция: общие контролы и 7 Section'ов вынесены по файлам. */
-import { ADMIN_SECTION_IDS, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, RingIcon, GrpMultiSelect, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
+import { ADMIN_SECTION_IDS, REPORTING_DISABLED, noop, genZoneUid, I18nCtx, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, RingIcon, strOrNull, capValues, RingSelLite } from './settings-shared.jsx';
 import { DtaSection } from './settings-dta.jsx';
 import { CascadeSection } from './settings-cascade.jsx';
 import { StateRollupSection } from './settings-rollup.jsx';
 import { StandupSection } from './settings-standup.jsx';
 import { BacklogSection } from './settings-backlog.jsx';
 import { ReleaseSection } from './settings-release.jsx';
+import { PermissionsMatrix } from './settings-permissions.jsx';
 import { ReportingSection, _repThToRows, _repA1ToRows, _repFlowToRows, _repRowsToTh, _repRowsToA1, _repRowsToFlow } from './settings-reporting.jsx';
 
 function SettingsForm(props) {
@@ -123,7 +124,6 @@ function SettingsForm(props) {
     /* #22 — планировочный тир (Вариант C). */
     planning: { ids: (initial.planningManagerGroups || []).slice(), names: (initial.planningManagerGroupNames || []).slice() },
   }));
-  const setGroup = (k, v) => setGroups((p) => Object.assign({}, p, { [k]: v }));
 
   /* Прочее */
   /* #56-5 — showDiagLogUi заменил инверсный hideDiagLogUi (лог скрыт по умолчанию). */
@@ -617,32 +617,26 @@ function SettingsForm(props) {
       ),
     },
     {
+      /* #71 — секция «Управление правами»: одна таблица «группа × полномочие» вместо
+         12 мультиселектов в трёх разных секциях. id 'groups' НЕ меняется (завязаны
+         ADMIN_SECTION_IDS, прогрессивное раскрытие #69 R1, nav-группировка по тирам).
+         Слоты стейта остаются на местах (groups / release / reporting) — collect()
+         не трогается ни строкой (императив #71 п.2). */
       id: 'groups', title: t('cardGroups'),
       node: (
-        <React.Fragment>
-          {[
-            { key: 'planning', label: t('lblPlanningManagerGroup'), hint: t('hintPlanningManagerGroup') },
-            /* #69 R1 (строка 3) — маркеры обязательности (deny-by-default editGroups / validationGroups). */
-            { key: 'val', label: t('lblValGroup'), hint: t('hintValGroup') },
-            { key: 'edit', label: t('lblEditGroup'), hint: t('hintEditGroup') },
-            { key: 'histClear', label: t('lblHistClearGroup'), hint: t('hintHistClearGroup') },
-            { key: 'assigner', label: t('lblAssignerGroup'), hint: t('hintAssignerGroup') },
-            { key: 'sprintLock', label: t('lblSprintLockGroup'), hint: t('hintSprintLockGroup') },   /* #57-2 */
-          ].map((g) => (
-            <div className="field" key={g.key} style={{ marginBottom: '12px' }}>
-              <label>{g.label}</label>
-              <GrpMultiSelect
-                t={t}
-                value={groups[g.key]}
-                onChange={(v) => setGroup(g.key, v)}
-                initialGroups={props.initialGroups}
-                loadGroups={props.loadGroups}
-                onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
-              />
-              {g.hint ? <span className="hint" style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>{g.hint}</span> : null}
-            </div>
-          ))}
-        </React.Fragment>
+        <PermissionsMatrix
+          t={t}
+          groups={groups} onGroups={setGroups}
+          release={release} onRelease={setRelease}
+          reporting={reporting} onReporting={setReporting}
+          releaseEnabled={release.enabled}
+          reportingEnabled={reporting.enabled}
+          reportingDisabled={REPORTING_DISABLED}
+          settingsManagerGroupName={props.settingsManagerGroupName}
+          initialGroups={props.initialGroups}
+          loadGroups={props.loadGroups}
+          onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
+        />
       ),
     },
     {
@@ -883,8 +877,6 @@ function SettingsForm(props) {
           t={t} value={release} onChange={setRelease}
           bundleStates={bundleStates}
           loadTags={props.loadTags} /* #55 — опции колонки «Тег задач» */
-          loadGroups={props.loadGroups} initialGroups={props.initialGroups}
-          onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
         />
       ),
     },
@@ -897,8 +889,6 @@ function SettingsForm(props) {
           bundleStates={bundleStates} loadTags={props.loadTags}
           fieldsByType={fieldsByType} /* A3 — пикеры имён полей */
           fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues} /* B1/B2 — значения Type-поля */
-          loadGroups={props.loadGroups} initialGroups={props.initialGroups}
-          onMax={() => setHint({ cls: 'save-err', text: t('toastMaxGroupsReached') })}
         />
       ),
     },
