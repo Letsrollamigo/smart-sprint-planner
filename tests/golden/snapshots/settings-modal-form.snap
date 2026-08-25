@@ -23,6 +23,7 @@
         "loadTags",
         "onClose",
         "onSave",
+        "projectFields",
         "roles",
         "settingsManagerGroupName",
         "stateFieldName",

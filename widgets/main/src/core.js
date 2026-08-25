@@ -791,7 +791,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.28.0';
+  var APP_VERSION = '3.29.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2696,6 +2696,7 @@
   function _roleCompDeps() {
     return {
       T: T, esc: esc, safeUrl: safeUrl, diag: diag,
+      getHost: function () { return _host; },   /* 68-8 — эфемерное чтение значений отображаемых полей */
       computeRoleQuickStats: computeRoleQuickStats,   /* #61 — hoisted-делегатор ниже */
       icon: icon, applyIcons: applyIcons,
       roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
@@ -4263,6 +4264,7 @@
   function _currentRoleDeps() {
     return {
       T: T, esc: esc, toast: toast, diag: diag,
+      getHost: function () { return _host; },   /* 68-8 — эфемерное чтение значений отображаемых полей */
       icon: icon, openModal: openModal,
       safeUrl: safeUrl, toDateIn: toDateIn, dispEnum: dispEnum,
       multiKeySort: multiKeySort, getSortKey: getSortKey, setSortKey: setSortKey,
@@ -4284,6 +4286,7 @@
         getSprint: function () { return _sprint; },
         getCurrentRolePP: function () { return _currentRolePP; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getCurrentSprintId: function () { return _currentSprintId; },   /* 68-8 — общий ключ кэша значений с двумя другими таблицами */
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentRoleNkcKey: function () { return _currentRoleNkcKey; },
         isEditor: function () { return _isEditor; }, /* #40 — гейт кнопки прогноза */
@@ -4704,6 +4707,7 @@
       renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
       updateCurrentRoleTotals: updateCurrentRoleTotals,
       renderGanttChart: renderGanttChart,
+      resetGanttLinks: GANTT_VIEW.resetLinksCache,   /* 68-8 ⚖6 — ретрай неполной загрузки связей (звезда B1) */
       updateRoleRemaining: updateRoleRemaining,
       saveCurrentRoleState: saveCurrentRoleState,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,

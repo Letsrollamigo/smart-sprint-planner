@@ -26,6 +26,7 @@ import './pure/share-url-pure.js';
 import './pure/planning-model-pure.js';
 import './pure/permissions-matrix-pure.js';
 import './pure/link-roles-pure.js';
+import './pure/display-fields-pure.js';   /* 68-8 — набор отображаемых полей + форматтеры значений */
 import './pure/backlog-vm-pure.js';
 import './pure/capacity-pure.js';
 import './pure/forecast-pure.js';
@@ -41,6 +42,7 @@ import './pure/reporting-export-pure.js';
 import './infra/modal-specs.js';
 import './infra/diag-snapshot.js';   /* #63 п.4 — экспорт-слепок состояния из диаг-панели */
 import './infra/user-prefs.js';      /* #69 строка 21 — localStorage ⊃ серверное зеркало предпочтений */
+import './infra/fieldvalues-loader.js'; /* 68-8 — эфемерная подгрузка значений полей под правами пользователя */
 import './domain/excel-export.js';
 import './domain/revalidation.js';
 import './domain/history-io.js';

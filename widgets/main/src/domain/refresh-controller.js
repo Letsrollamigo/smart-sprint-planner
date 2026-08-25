@@ -55,6 +55,10 @@ function _persistAndRerenderRefresh(curRk, deps, skipPPSave) {
   try { deps.renderCurrentRoleTaskTable(); } catch (_) {}
   try { if (typeof deps.updateCurrentRoleTotals === 'function') deps.updateCurrentRoleTotals(); } catch (_) {}
   deps.state.getGanttStateHist()._fetchedAt = 0;
+  /* 68-8 ⚖6 — тем же движением сбрасываем кэш связей Ганта: до этого частично
+     загруженные связи залипали навсегда (ключ никто не сбрасывал). Через core deps —
+     прямой вызов чужого domain-моста закрыт гейтом B1. */
+  try { if (typeof deps.resetGanttLinks === 'function') deps.resetGanttLinks(); } catch (_) {}
   try { if (typeof deps.renderGanttChart === 'function') deps.renderGanttChart(); } catch (_) {}
   /* v3.2.1 — при протухшем _currentSprintRoleRec (skipPPSave) PP-канон не персистим:
      saveCurrentRoleState записал бы клон PP ЧУЖОГО спринта в его запись истории. */
@@ -242,7 +246,10 @@ function refreshFromYouTrack(deps) {
      (localizedName/presentation); workflow entities-API на backend — нет (#35: на стенде
      priority приходил как name «Show-stopper» вместо «Неотложная»). Чанкуем по 100 id,
      чтобы не упереться в лимит длины URL-запроса. */
-  var FIELDS = 'id,idReadable,summary,customFields(name,projectCustomField(field(name,id)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login,fullName))';
+  /* 68-8 — + $type и text: батч и так везёт ВСЕ customFields задачи, поэтому значения
+     «отображаемых полей» раздаются в кэш загрузчика из этого же ответа, без второго запроса.
+     Без подполя text текстовые поля приезжают пустышкой (спека §3). */
+  var FIELDS = 'id,idReadable,summary,customFields($type,name,projectCustomField(field(name,id)),value(name,localizedName,presentation,color(id,background,foreground),minutes,login,fullName,text))';
   var CHUNK = 100, chunks = [];
   for (var ci = 0; ci < ids.length; ci += CHUNK) chunks.push(ids.slice(ci, ci + CHUNK));
 
@@ -291,6 +298,25 @@ function refreshFromYouTrack(deps) {
         if (issue.id) issuesById[issue.id] = issue;
       });
     });
+
+    /* 68-8 — значения «отображаемых полей» уже приехали в ЭТОМ ответе (батч везёт все
+       customFields задачи): раздаём их в кэш загрузчика вместо второго запроса за тем же
+       самым. Сброс и посев — обязательно ПАРОЙ и здесь: отдельный invalidate ниже, в
+       _persistAndRerenderRefresh, стёр бы свежий посев и заставил перезапрашивать всё.
+       Заодно это и есть ретрай ⚖6 — у засеянных задач снимается пометка «не загрузилось». */
+    try {
+      var _DFP = (typeof window !== 'undefined' && window.__SSP_DISPLAY_FIELDS_PURE) || null;
+      var _FVL2 = (typeof window !== 'undefined' && window.__SSP_FIELDVALUES_LOADER) || null;
+      if (_DFP && _FVL2) {
+        var _dfRows = (state.getSettings() || {}).displayFields;
+        var _dfNames = _DFP.fieldNames(_dfRows);
+        if (_dfNames.length) {
+          _FVL2.invalidate();
+          _FVL2.seed((state.getCurrentSprintId() || '') + ':' + _DFP.fingerprint(_dfRows),
+            _dfNames, Object.keys(issuesById).map(function (k) { return issuesById[k]; }));
+        }
+      }
+    } catch (_) {}
 
     var curPP = state.getCurrentRolePP();
     var snapPP = state.getServerSnapshotCurrentRolePP();

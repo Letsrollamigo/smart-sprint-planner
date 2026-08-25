@@ -313,12 +313,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.28.0';
+var CURRENT_PLUGIN_VERSION = '3.29.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.28.0';
+var APP_VERSION = '3.29.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -562,6 +562,13 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.27.0', to: '3.28.0',
     migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
     note: 'v3.28.0: #74 additive settings key linkTypeRoles + soft-deprecation of cascadeParentLink* phrases'
+  },
+  /* v3.29.0 — 68-8: аддитивный settings-ключ displayFields (отображаемые поля таблиц
+     задач). Значения самих полей НЕ хранятся — читаются на лету, поэтому shape снимков
+     не меняется и миграция no-op; запись фиксирует переход схемы настроек. */
+  { from: '3.28.0', to: '3.29.0',
+    migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
+    note: 'v3.29.0: 68-8 additive settings key displayFields (issue-table display columns)'
   }
 ];
 
@@ -949,6 +956,11 @@ var ALLOWED_SETTINGS_KEYS = [
   /* #74 — роли типов связей: [{type,hier,dep,info}], type = IssueLinkType.name (id
      различаются между инстансами). Пусто → слоёный фолбэк резолвера на фронте. */
   'linkTypeRoles',
+  /* 68-8 — отображаемые поля: [{name,summary,role,my}], name = имя поля YouTrack
+     проекта (id у project-fields нет). Значения полей НЕ хранятся — читаются на лету
+     фронтом под правами пользователя. Имя ключа намеренно НЕ начинается с field/userField:
+     такие ключи попадают в allow-list записи полей задач (backend-issuefields.js). */
+  'displayFields',
   // Метаданные
   'savedAt',
   /* v1.7.0 D128 — State Rollup: parent.State ← min(children.State).
@@ -1086,6 +1098,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'cascadeLevel2Values','cascadeLevel3Values','cascadeParentLinkInward','cascadeParentLinkOutward',
   'cascadeManualEstTag', /* v3.12.0 — тег-маркер защиты ручных оценок */
   'linkTypeRoles',       /* #74 — таблица «тип связи × роль», тот же тир, что и каскад */
+  'displayFields',       /* 68-8 — отображаемые поля таблиц задач (⚖11 — только настройщик проекта) */
   // State Rollup
   'stateRollupEnabled','stateRollupOrder','stateRollupResolvedStates','stateRollupFloor',
   'stateRollupStrategy',
@@ -1323,6 +1336,25 @@ function validateSettings(settings) {
       if (row.hier !== undefined && row.hier !== null && row.hier !== 'source' && row.hier !== 'target') return false;
       if (row.dep !== undefined && row.dep !== null && row.dep !== 'source' && row.dep !== 'target') return false;
       if (row.info !== undefined && row.info !== null && typeof row.info !== 'boolean') return false;
+    }
+  }
+  /* 68-8 — displayFields: array<{name,summary,role,my}>, max 50, дедуп по name;
+     name — непустая строка ≤200 (имя поля YouTrack); три флага = в какой из трёх
+     таблиц задач колонка показывается. */
+  if (settings.displayFields !== undefined && settings.displayFields !== null) {
+    if (!Array.isArray(settings.displayFields) || settings.displayFields.length > 50) return false;
+    var dfSeen = {};
+    for (var df = 0; df < settings.displayFields.length; df++) {
+      var dfRow = settings.displayFields[df];
+      if (!dfRow || typeof dfRow !== 'object' || Array.isArray(dfRow)) return false;
+      if (typeof dfRow.name !== 'string' || dfRow.name.length === 0 || dfRow.name.length > 200) return false;
+      if (dfSeen[dfRow.name]) return false;
+      dfSeen[dfRow.name] = true;
+      var dfFlags = ['summary', 'role', 'my'];
+      for (var dfF = 0; dfF < dfFlags.length; dfF++) {
+        var dfV = dfRow[dfFlags[dfF]];
+        if (dfV !== undefined && dfV !== null && typeof dfV !== 'boolean') return false;
+      }
     }
   }
   /* v1.3.0 Cascade — array<string ≤200>, max 50 для level-2/level-3 values. */

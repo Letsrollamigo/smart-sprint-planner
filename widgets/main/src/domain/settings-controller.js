@@ -117,6 +117,10 @@
       initial:            settings || {},
       roles:              deps.ALL_ROLES,
       fieldsByType:       _buildFieldsByType(deps),
+      /* 68-8 — сырой список полей проекта отдельно от категоризации: пикер
+         «Отображаемых полей» берёт ЛЮБОЙ тип, а _buildFieldsByType отсекает
+         date/number/text (⚖4). */
+      projectFields:      st.getProjectFields() || [],
       defaultLangOptions: defaultLangOptions,
       uiLang:             st.getLang(),
       t:                  deps.T,

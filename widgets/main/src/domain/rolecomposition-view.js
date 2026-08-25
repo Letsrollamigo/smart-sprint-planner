@@ -636,6 +636,22 @@ function wireRolePanel(role, dynEdit, deps) {
    остаётся diff 0. */
 function _vmCell(row, c) { return row.cells[c.id]; }
 
+/* 68-8 — динамические колонки «отображаемых полей». host передаём только из vm-билдера
+   (там известен список видимых задач) — рендер зовёт с host:null: колонки и признак
+   частичной загрузки нужны и там, а вторая волна фетча — нет. */
+function _dynFields(deps, rk, ids, host) {
+  var FVL = (typeof window !== 'undefined' && window.__SSP_FIELDVALUES_LOADER) || null;
+  if (!FVL) return null;
+  return FVL.prepare({
+    host: host,
+    sprintId: deps.state.getCurrentSprintId(),
+    settings: deps.state.getSettings(), table: 'role',
+    ids: ids || [],
+    warnTitle: deps.T('dfLoadFailed'),
+    onDone: function () { deps.renderRoleComposition(rk); },
+  });
+}
+
 function _buildRoleCompositionVm(rk, deps) {
   var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl;
   var _settings = deps.state.getSettings();
@@ -721,6 +737,9 @@ function _buildRoleCompositionVm(rk, deps) {
   var hasSystem    = !!(_settings && _settings.fieldSystem);
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
 
+  var _dyn = _dynFields(deps, rk, page.map(function (it) { return it.issueId; }),
+    (typeof deps.getHost === 'function') ? deps.getHost() : null);
+
   /* Строки vm: pre-computed derived values + готовые cell-значения
      (plain-строки — React-текст, экранирует table-mount; esc — только в { __html }). */
   var rows = page.map(function(item) {
@@ -778,6 +797,7 @@ function _buildRoleCompositionVm(rk, deps) {
       '</select>' };
     cells['delete'] = { __html: '<button class="ring-button-button ring-button-inline ring-button-heightM ring-button-ghost ring-button-flat ring-button-iconOnly del-item-btn" data-iid="'+esc(iid)+'" data-rk="'+rk+'"'+lockAttr+' title="'+esc(T('btnDeleteTitle'))+'" aria-label="'+esc(T('aria.btnDeleteRow'))+'">'+deps.icon('trash',T('aria.btnDeleteRow')).outerHTML+'</button>' };
 
+    if (_dyn) _dyn.cols.forEach(function (c) { cells[c.id] = _dyn.cell(iid, c.name); });
     return { iid: iid, isDirty: isDirty, cells: cells };
   });
 
@@ -862,6 +882,13 @@ function renderRoleComposition(rk, deps) {
   columns.push({ id: 'resource', title: vm.resourceColTitle, sortable: false, className: 'td-num', getValue: _vmCell });
   columns.push({ id: 'allocation', title: T('thAllocation'), sortable: false, className: 'td-num', getValue: _vmCell });
   columns.push({ id: 'incStatus', title: T('thIncStatus'), sortable: false, getValue: _vmCell });
+  /* 68-8 — перед колонкой действий (⚖9 «в конец» = в конец содержательных колонок:
+     за полосой полей кнопка удаления уехала бы в горизонтальный скролл). */
+  var _dynCols = _dynFields(deps, rk, [], null);
+  if (_dynCols) _dynCols.cols.forEach(function (c) {
+    columns.push({ id: c.id, title: c.name, sortable: false, className: 'td-dynfield',
+                   getValue: _vmCell, getHeaderValue: _dynCols.headerOf(c.name) });
+  });
   columns.push({ id: 'delete', title: '', sortable: false, className: 'ssp-col-action', getValue: _vmCell });
 
   if (window.__SSP_TABLE) {

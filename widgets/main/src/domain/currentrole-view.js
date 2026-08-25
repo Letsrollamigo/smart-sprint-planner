@@ -32,6 +32,22 @@ function _ic(name, cls) {
 
 function round2(v) { return (Math.round((v || 0) * 100) / 100).toFixed(2); }
 
+/* 68-8 — динамические колонки «отображаемых полей» ТОЛЬКО таблицы задач: таблица
+   исполнителей ниже — не про задачи, колонок не получает. host передаём из vm-билдера
+   (там известен список задач), рендер зовёт с host:null — вторая волна фетча не нужна. */
+function _dynFields(deps, ids, host) {
+  var FVL = (typeof window !== 'undefined' && window.__SSP_FIELDVALUES_LOADER) || null;
+  if (!FVL) return null;
+  return FVL.prepare({
+    host: host,
+    sprintId: deps.state.getCurrentSprintId(),
+    settings: deps.state.getSettings(), table: 'my',
+    ids: ids || [],
+    warnTitle: deps.T('dfLoadFailed'),
+    onDone: function () { renderCurrentRoleTaskTable(deps); },
+  });
+}
+
 /* ── Получить НКЧ в часах из настроек ── */
 function getCurrentRoleNkcHours(deps) {
   var _settings = deps.state.getSettings();
@@ -428,6 +444,8 @@ function _buildTaskTableVm(deps) {
 
   /* v3.2.1 — unfit-сет валиден только в контексте своего прогноза (sprintId_rk). */
   var unfitSet = _forecastUnfitFor(deps.state.getCurrentSprintRoleRec());
+  var _dyn = _dynFields(deps, active.map(function (it) { return it.issueId; }),
+    (typeof deps.getHost === 'function') ? deps.getHost() : null);
   var rows = active.map(function (item) {
     var taEntry = ta[item.issueId] || {};
     var cells = {};
@@ -495,6 +513,7 @@ function _buildTaskTableVm(deps) {
       min: sprintStartDate,
       max: sprintEndDate,
     };
+    if (_dyn) _dyn.cols.forEach(function (c) { cells[c.id] = _dyn.cell(item.issueId, c.name); });
     return { issueId: item.issueId, cells: cells };
   });
 
@@ -566,6 +585,12 @@ function renderCurrentRoleTaskTable(deps) {
   }
   columns.push({ id: 'dateStart', title: T('thStart'), sortable: false, className: 'td-date td-start', getValue: _vmCell });
   columns.push({ id: 'dateEnd', title: T('thFinish'), sortable: false, className: 'td-date td-end', getValue: _vmCell });
+  /* 68-8 — в конец, в порядке строк настроек (⚖9); sortable намеренно не ставим (⚖10). */
+  var _dynCols = _dynFields(deps, [], null);
+  if (_dynCols) _dynCols.cols.forEach(function (c) {
+    columns.push({ id: c.id, title: c.name, sortable: false, className: 'td-dynfield',
+                   getValue: _vmCell, getHeaderValue: _dynCols.headerOf(c.name) });
+  });
 
   if (window.__SSP_TABLE) {
     window.__SSP_TABLE.mountAt(host, {

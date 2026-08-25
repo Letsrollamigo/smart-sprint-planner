@@ -163,10 +163,12 @@
     "external": false
   },
   "linksReady": false,
+  "linksPartial": false,
   "i18nExt": {
     "badge": "Ждёт задачи вне спринта",
     "unknown": "состояние неизвестно",
     "legend": "Связи:",
-    "legendExt": "вне спринта"
+    "legendExt": "вне спринта",
+    "linksPartial": "Связи загрузились не полностью. Повторить — кнопкой «Обновить из задачи»."
   }
 }

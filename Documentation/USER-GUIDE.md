@@ -933,6 +933,26 @@ Shared fields for all roles.
 - **External ticket ID** — if your tasks come from an external system (Service Desk, 1C, SAP, legacy JIRA) and the YouTrack task has a text field with the ID from that system. If set — an **External ID** column appears in tables as the second column after the YouTrack ID.
 - **Type** — the issue type field (Feature / Bug / Spike…) whose values drive the type filter in the **Working with the backlog** module. Changing the field resets the backlog filter.
 
+### "Display fields" section (administration)
+
+An admin section: visible and editable only by the project's settings manager. It defines the **extra columns** of the issue tables — any field of your project can be shown next to the built-in ones.
+
+**How to set it up.** Pick a field from the picker — the list holds the project's fields except those already taken by other settings (role estimates, actuals and assignees, priority, state, system, sprint, version, type, external ID): the same field will not end up as both a role column and a plain one. Then three checkboxes in the row say where the column appears:
+
+- **Summary** — the "Shared resource allocation" table (the spoiler above the role cards);
+- **Role scope** — the sprint composition table inside an expanded role card;
+- **My role** — the issue table on the per-person distribution page.
+
+A row with no checkbox is not saved, but it does not vanish from the screen until you remove it with the trash button. The maximum is 50 fields.
+
+**Worth knowing:**
+
+- **The column header is the field name exactly as YouTrack shows it**, untranslated, so you recognise it by the same name as in the issue itself. Column order follows the setting; there is no sorting by these columns.
+- **The field type is unrestricted**: strings, numbers, dates, multi-line text, periods, users, bundle values. Bundle values render as a chip in their native color, dates print without a time, multiple values are joined with commas, users show their full name.
+- **Values are never stored.** The app reads them from YouTrack when the table opens — on your behalf. That is why these columns do not appear in history snapshots or in reports, and why two people with different rights may see different things in the same column: each sees exactly what they are allowed to in YouTrack.
+- If a field is **renamed or deleted** in the project, its settings row is flagged with a warning — remove it with the trash button.
+- If YouTrack answered for only some issues, **a warning icon appears in the column header**. Retry with **"Refresh from issue"**.
+
 ### "Capacity management" section (administration)
 
 An admin section: visible and editable only by the project settings manager (a member of the settings manager group); a planning settings manager doesn't see the administration sections. It gathers everything that affects role and per-person capacity calculation.

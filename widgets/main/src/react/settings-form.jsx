@@ -20,6 +20,7 @@ import { ADMIN_SECTION_IDS, REPORTING_DISABLED, noop, genZoneUid, I18nCtx, _btnC
 import { DtaSection } from './settings-dta.jsx';
 import { CascadeSection } from './settings-cascade.jsx';
 import { LinkRolesTable } from './settings-links.jsx';
+import { DisplayFieldsTable } from './settings-fields.jsx';
 import { StateRollupSection } from './settings-rollup.jsx';
 import { StandupSection } from './settings-standup.jsx';
 import { BacklogSection } from './settings-backlog.jsx';
@@ -158,6 +159,9 @@ function SettingsForm(props) {
     (Array.isArray(initial.linkTypeRoles) ? initial.linkTypeRoles : []).map((r) => Object.assign({}, r)));
   /* Типы связей инстанса — строки таблицы И источник фраз для легаси-зеркала в collect(). */
   const [linkTypes, setLinkTypes] = React.useState([]);
+  /* 68-8 — набор отображаемых полей. Пустой массив = «колонок нет»: поведение прежнее. */
+  const [displayFields, setDisplayFields] = React.useState(() =>
+    (Array.isArray(initial.displayFields) ? initial.displayFields : []).map((r) => Object.assign({}, r)));
   React.useEffect(() => {
     let alive = true;
     if (props.loadLinkTypes) {
@@ -433,6 +437,10 @@ function SettingsForm(props) {
     data.linkTypeRoles = linkRoles.map((r) => ({
       type: r.type, hier: r.hier || null, dep: r.dep || null, info: !!r.info,
     }));
+    /* 68-8 — набор отображаемых полей (только имена и три флага; значения не хранятся). */
+    data.displayFields = displayFields.map((r) => ({
+      name: r.name, summary: !!r.summary, role: !!r.role, my: !!r.my,
+    }));
     /* Легаси-пара фраз (⚖ владелец 2026-08-24) — ПРОИЗВОДНАЯ от первой строки «Иерархии».
        Ключи из формы убраны, но писать их обязаны: фоновые правила каскадной агрегации и
        подтяжки состояния читают их из этого же блоба напрямую, а сейв заменяет блоб
@@ -573,6 +581,19 @@ function SettingsForm(props) {
 
     return data; // savedAt проставит легаси-колбэк onSave.
   }
+
+  /* 68-8 — снимок «какие поля проекта уже заняты настройками» из ЖИВОГО состояния формы.
+     Ключи вида field... / userField... — ровно те, что пикер обязан исключить. */
+  const occupiedSettings = React.useMemo(() => {
+    const o = Object.assign({}, fields);
+    roles.forEach((r) => {
+      const rf = roleFields[r.key] || {};
+      o[r.fieldEst] = rf.est || '';
+      o[r.fieldFact] = rf.fact || '';
+      o[r.userField] = rf.user || '';
+    });
+    return o;
+  }, [fields, roleFields, roles]);
 
   function doSave() {
     if (blocked || saving) return;
@@ -781,6 +802,17 @@ function SettingsForm(props) {
                           backlogZones: backlog.zones,
                           backlogStartStates: backlog.startStates,
                         })} />
+      ),
+    },
+    {
+      /* 68-8 — отображаемые поля: набор колонок трёх таблиц задач. «Занятые» имена
+         считаются из ТЕКУЩЕГО состояния формы (fields + roleFields), а не из initial:
+         в этой же сессии пользователь мог переназначить поле роли, и пикер иначе
+         разрешил бы взять уже занятое имя. */
+      id: 'displayFields', title: t('cardDisplayFields'), nav: t('navDisplayFields'),
+      node: (
+        <DisplayFieldsTable t={t} rows={displayFields} fields={props.projectFields || []}
+                            onChange={setDisplayFields} settings={occupiedSettings} />
       ),
     },
     {

@@ -309,9 +309,9 @@ test('#74 лестница шаг 1: таблица и легаси-пара с�
   assert.strictEqual(validateSettings(out), true);
 });
 
-test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0, маркер схемы бампнут', function () {
+test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0 (маркер уехал дальше — 68-8)', function () {
   const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
-  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.28.0');
+  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.29.0');
   const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.28.0');
   assert.ok(step && step.from === '3.27.0', 'нет записи 3.27.0→3.28.0');
   /* Снимки shape не меняли — миграция обязана быть no-op (настройка project-level). */

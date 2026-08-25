@@ -4,19 +4,19 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4565,
-      "locBudget": 4566,
+      "loc": 4569,
+      "locBudget": 4569,
       "stateBaseline": 71,
-      "budgetNote": "#74 фаза 2 (v3.28.0) — осознанный +1: аксессор getHost в _ganttDeps. #73 (роли-участницы спринта, v3.27.0) — осознанный +43: getSprintRolesFor/getSprintRoles — слоёный резолвер набора ролей спринта (sprint.roles → снапы истории → settings эпохи → getActiveRoles). Живёт в ядре: читает closure-стейт _sprint/_history/_currentSprintId и раздаётся 12 модулям через deps (перевес ключа getActiveRoles) — вынос в модуль потребовал бы стейт-аксессоров дороже самого резолвера. +openNewSprintDialog (единая точка трёх входов «Новый спринт», сам диалог — modal-specs/modal-bodies). Минус: aggregateStatus+_STATUS_RANK удалены (caller-less), stateBaseline 72→71 (ratchet вниз). 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
+      "budgetNote": "68-8 «Отображаемые поля» (v3.29.0) — осознанный +4: аксессоры getHost в _roleCompDeps (обслуживает и состав роли, и сводную) и _currentRoleDeps + resetGanttLinks в _refreshDeps (попутный фикс ⚖6: «Обновить из задачи» сбрасывает кэш связей Ганта — прямой вызов domain→domain закрыт гейтом B1). Эфемерное чтение значений полей живёт в infra/fieldvalues-loader.js — ядро только отдаёт хост. Прецедент — #74 фаза 2 (тот же «+1 на getHost» для Ганта). #74 фаза 2 (v3.28.0) — осознанный +1: аксессор getHost в _ganttDeps. #73 (роли-участницы спринта, v3.27.0) — осознанный +43: getSprintRolesFor/getSprintRoles — слоёный резолвер набора ролей спринта (sprint.roles → снапы истории → settings эпохи → getActiveRoles). Живёт в ядре: читает closure-стейт _sprint/_history/_currentSprintId и раздаётся 12 модулям через deps (перевес ключа getActiveRoles) — вынос в модуль потребовал бы стейт-аксессоров дороже самого резолвера. +openNewSprintDialog (единая точка трёх входов «Новый спринт», сам диалог — modal-specs/modal-bodies). Минус: aggregateStatus+_STATUS_RANK удалены (caller-less), stateBaseline 72→71 (ratchet вниз). 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
     "budgets": {
       "modules": {
-        "loc": 20160,
+        "loc": 20649,
         "locBudget": 21240,
         "budgetNote": "#69 строка 23 (2026-08-22): 73 per-module бюджета заменены одним агрегатом Σloc секции с полосой 10 % (ratchet only-down по сумме). Поверх: A2 ядро не растёт, A3 fat-count ≤ baseline, D1/D2 полнота реестра."
       },
       "jsx": {
-        "loc": 8270,
+        "loc": 8440,
         "locBudget": 8563
       },
       "backend": {
@@ -80,6 +80,7 @@
       "MODAL_ANCHOR": "infra",
       "DP_BRIDGE": "infra",
       "DIAG_SNAPSHOT": "infra",
+      "FIELDVALUES_LOADER": "infra",
       "MODAL_SPECS": "infra",
       "TOAST": "infra",
       "TOAST_RING": "infra",
@@ -88,6 +89,7 @@
       "BACKLOG_VM_PURE": "pure",
       "CAPACITY_PURE": "pure",
       "DATE_PURE": "pure",
+      "DISPLAY_FIELDS_PURE": "pure",
       "ENUM_PURE": "pure",
       "FORECAST_PURE": "pure",
       "HASH_PURE": "pure",
@@ -119,9 +121,9 @@
   "backend": {
     "_note": "LOC-ратчет бэкенда (CommonJS-модули в корне репо; tests/arch/backend-size-ratchet.test.js). core ужимается, не пухнет (BE2); каждый backend-<feature>.js ≤ бюджет (BE1) и обязан иметь запись (BE3 — новый модуль без записи = красный). Топология/стейт-гейты НЕ применимы: бэкенд через CommonJS require, не window.__-мосты. Числа per-fork (форки дрейфят) — править в каждом форке вручную.",
     "core": {
-      "loc": 3210,
-      "locBudget": 3254,
-      "budgetNote": "#74 фаза 1 (роли типов связей, v3.28.0) — осознанный +42: аддитивный settings-ключ linkTypeRoles в SETTINGS_WHITELIST + ADMIN_TIER_SETTINGS_KEYS + validateSettings (array<{type,hier,dep,info}> ≤50, dedup по type, enum сторон) + лестница шаг 1 для легаси-пары cascadeParentLink* (DEPRECATED_LINK_PHRASE_KEYS + SCHEMA_DEPRECATION_WARN в settings-ветке sprint-data: блоб настроек не носит migrationLog, поэтому WARN идёт в серверный лог, а не в снимок) + SCHEMA_MIGRATIONS запись 3.27.0→3.28.0 (no-op: настройка project-level, shape снимков не меняется). Schema-движок настроек по определению BE2 живёт в ядре — прецеденты #50/#55/68-7/#73. #73 (роли-участницы спринта, v3.27.0) — осознанный +28: validateSprintRoles (optional массив ⊆ ROLE_KEYS, дедуп, ≤9; независим от settings — «⊆ проекта» только UI-гейт) + вызовы в _validateSprintBody/history-валидаторе/diagnoseHistoryWrite + SCHEMA_MIGRATIONS запись 3.23.0→3.27.0 (no-op). Schema-движок по определению BE2 живёт в ядре. 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +33: два аддитивных settings-ключа — standupHiddenStates (зеркало контракта standupDoneStates) и standupStateRoles (контракт 1:1 с backlogZones) в SETTINGS_WHITELIST + validateSettings. Schema-движок настроек по определению BE2 живёт в ядре. v3.18.0 (#67 остаток) — осознанный рост: H5 ветка ?action=snapshot (upsert одной записи, ~50 LOC с комментариями) + псевдороль editorOrValidator в authzGuard + H8 stampHistoryAudit (серверные аудит-штампы истории) + H9 syncAclMirror (вынос тела sync-acl в хелпер + вызов из settings-save) + хук обогащения (путь 3, ~12 строк — сам обогатитель в backend-issuefields). Authz-движок и ?action-ветки существующих endpoints по определению BE2 живут в ядре. v3.17.0 (#67) — осознанный +17: фиксы authz-аудита в существующих ветках ядра (H1 гейт по эффекту на очистку истории основной веткой POST /history; H2 снятие validate-байпаса editor-гейта на sprint:null; H4 editorLogin из хранилища; H6 hasOwnProperty-guard). Authz-движок по определению BE2 живёт в ядре. v3.16.1 (#66) — осознанный +3: вырез historyManager из байпаса #51 в isHistoryManager + раннем admin-return authzGuard (комментарии; кода +0 строк, изменены существующие). Authz-движок по определению BE2 живёт в ядре. v3.15.1 — осознанный +5: гейт allowOverlimitPlanning + скоуп ?role= в overlimit-warn validate (правка существующего блока ветки sprint-data ядра, не новый endpoint/домен; ОС прода внешней команды). Прошлое: v3.2.0 APP_VERSION из manifest.json — +6 (шапка показывает фактически установленную версию, вкл. temp-деплои; литерал = fallback). #50 v3.2.0 — осознанный +6 (2983→2992 бюджет): reportingTerminalPolicy в ALLOWED_SETTINGS_KEYS + ADMIN_TIER_SETTINGS_KEYS + enum-валидатор (settings-ключи ведутся в ядре — это не endpoint/домен). Прошлое: #40 settings — осознанный +5: autoForecastEnabled в SETTINGS_WHITELIST (планировочный тир, 3 строки коммента) + boolKeys. #53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
+      "loc": 3286,
+      "locBudget": 3286,
+      "budgetNote": "68-8 (отображаемые поля, v3.29.0) — осознанный +32: аддитивный settings-ключ displayFields в SETTINGS_WHITELIST + ADMIN_TIER_SETTINGS_KEYS + validateSettings (array<{name,summary,role,my}> ≤50, dedup по name) + no-op запись SCHEMA_MIGRATIONS 3.28.0→3.29.0. Своего эндпоинта фича не заводит (значения полей читает фронт под правами пользователя), поэтому backend-<feature>.js создавать нечего — это чистая schema/whitelist-регистрация, зона ядра. #74 фаза 1 (роли типов связей, v3.28.0) — осознанный +42: аддитивный settings-ключ linkTypeRoles в SETTINGS_WHITELIST + ADMIN_TIER_SETTINGS_KEYS + validateSettings (array<{type,hier,dep,info}> ≤50, dedup по type, enum сторон) + лестница шаг 1 для легаси-пары cascadeParentLink* (DEPRECATED_LINK_PHRASE_KEYS + SCHEMA_DEPRECATION_WARN в settings-ветке sprint-data: блоб настроек не носит migrationLog, поэтому WARN идёт в серверный лог, а не в снимок) + SCHEMA_MIGRATIONS запись 3.27.0→3.28.0 (no-op: настройка project-level, shape снимков не меняется). Schema-движок настроек по определению BE2 живёт в ядре — прецеденты #50/#55/68-7/#73. #73 (роли-участницы спринта, v3.27.0) — осознанный +28: validateSprintRoles (optional массив ⊆ ROLE_KEYS, дедуп, ≤9; независим от settings — «⊆ проекта» только UI-гейт) + вызовы в _validateSprintBody/history-валидаторе/diagnoseHistoryWrite + SCHEMA_MIGRATIONS запись 3.23.0→3.27.0 (no-op). Schema-движок по определению BE2 живёт в ядре. 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +33: два аддитивных settings-ключа — standupHiddenStates (зеркало контракта standupDoneStates) и standupStateRoles (контракт 1:1 с backlogZones) в SETTINGS_WHITELIST + validateSettings. Schema-движок настроек по определению BE2 живёт в ядре. v3.18.0 (#67 остаток) — осознанный рост: H5 ветка ?action=snapshot (upsert одной записи, ~50 LOC с комментариями) + псевдороль editorOrValidator в authzGuard + H8 stampHistoryAudit (серверные аудит-штампы истории) + H9 syncAclMirror (вынос тела sync-acl в хелпер + вызов из settings-save) + хук обогащения (путь 3, ~12 строк — сам обогатитель в backend-issuefields). Authz-движок и ?action-ветки существующих endpoints по определению BE2 живут в ядре. v3.17.0 (#67) — осознанный +17: фиксы authz-аудита в существующих ветках ядра (H1 гейт по эффекту на очистку истории основной веткой POST /history; H2 снятие validate-байпаса editor-гейта на sprint:null; H4 editorLogin из хранилища; H6 hasOwnProperty-guard). Authz-движок по определению BE2 живёт в ядре. v3.16.1 (#66) — осознанный +3: вырез historyManager из байпаса #51 в isHistoryManager + раннем admin-return authzGuard (комментарии; кода +0 строк, изменены существующие). Authz-движок по определению BE2 живёт в ядре. v3.15.1 — осознанный +5: гейт allowOverlimitPlanning + скоуп ?role= в overlimit-warn validate (правка существующего блока ветки sprint-data ядра, не новый endpoint/домен; ОС прода внешней команды). Прошлое: v3.2.0 APP_VERSION из manifest.json — +6 (шапка показывает фактически установленную версию, вкл. temp-деплои; литерал = fallback). #50 v3.2.0 — осознанный +6 (2983→2992 бюджет): reportingTerminalPolicy в ALLOWED_SETTINGS_KEYS + ADMIN_TIER_SETTINGS_KEYS + enum-валидатор (settings-ключи ведутся в ядре — это не endpoint/домен). Прошлое: #40 settings — осознанный +5: autoForecastEnabled в SETTINGS_WHITELIST (планировочный тир, 3 строки коммента) + boolKeys. #53 — осознанный +2: аддитивные whitelist-ключи (hoursDelta в ALLOWED_ABSENCE_ENTRY_KEYS + dateEnd в ALLOWED_CAPACITY_RECORD_KEYS; autogen из schema/whitelists.json — schema-движок ядра). Прошлое: #55 — осознанный +18: releaseTagMapping в SETTINGS_WHITELIST + ADMIN_TIER + validateSettings (schema-движок ядра; применение тегов — фронт). Прошлое: #51 — осознанный +50: байпас инстанс-админа = authz-движок ядра по определению BE2 (isInstanceAdmin с ctx-кэшем + байпас в authzGuard и 8 ролевых is*-хелперах + canManage в check-settings-manager + GET /check-instance-admin + test-only exports хелперов; ключ UPDATE_PROJECT верифицирован стендовой эмпирикой 2026-07-03 на corp-форке: sysadmin true / Test_user_1 false, hasPermission без project-аргумента = глобальная роль). Прошлое: #56-4/#56-5 — осознанный +43: optimistic lock слота sprint-data (rev-гейт+инкремент в 3 ветках endpoint'а ядра — общий движок, не фича-модуль) + showDiagLogUi в whitelist/boolKeys."
     },
     "modules": {
       "backend-capacity.js": {
@@ -196,7 +198,7 @@
         "loc": 110
       },
       "react/gantt-view.jsx": {
-        "loc": 349
+        "loc": 354
       },
       "react/i18n-bridge.jsx": {
         "loc": 37
@@ -247,8 +249,11 @@
         "loc": 80,
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
+      "react/settings-fields.jsx": {
+        "loc": 134
+      },
       "react/settings-form.jsx": {
-        "loc": 961,
+        "loc": 992,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +28: стейт standupHidden/standupStateRoles + save-нормализация маппинга (dedup по state, roles ∩ role keys — 1:1 с backlogZones) + пропсы StandupSection. Форма — композиционный корень настроек: секция в settings-standup.jsx, таблица в settings-shared.jsx. #61 — осознанный +6: тумблер allocSummaryEnabled (init/data/RoleCheck в секции multirole). R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос). Ратчет ужат 2317→895."
       },
       "react/settings-links.jsx": {
@@ -334,7 +339,7 @@
     "domain/allocsummary-view.js": {
       "layer": "domain",
       "domain": "domain/allocsummary-view",
-      "loc": 229,
+      "loc": 247,
       "state": [],
       "publishes": [
         "ALLOCSUMMARY_VIEW"
@@ -407,7 +412,7 @@
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
-      "loc": 1050,
+      "loc": 1074,
       "state": [
         "GRADES_LOCAL",
         "KPE_DEFAULTS_LOCAL",
@@ -453,7 +458,7 @@
     "domain/gantt-view.js": {
       "layer": "domain",
       "domain": "domain/gantt-view",
-      "loc": 401,
+      "loc": 419,
       "state": [
         "_ganttLinks"
       ],
@@ -555,7 +560,7 @@
     "domain/refresh-controller.js": {
       "layer": "domain",
       "domain": "domain/refresh-controller",
-      "loc": 481,
+      "loc": 506,
       "state": [],
       "publishes": [
         "REFRESH_CTRL"
@@ -643,7 +648,7 @@
     "domain/rolecomposition-view.js": {
       "layer": "domain",
       "domain": "domain/rolecomposition-view",
-      "loc": 1085,
+      "loc": 1110,
       "state": [],
       "publishes": [
         "ROLECOMP_VIEW"
@@ -653,7 +658,7 @@
     "domain/settings-controller.js": {
       "layer": "domain",
       "domain": "domain/settings-controller",
-      "loc": 213,
+      "loc": 217,
       "state": [
         "api"
       ],
@@ -823,6 +828,23 @@
       "budgetNote": " #63 п.4 (2026-08-03) — экспорт-слепок состояния из диаг-панели (формат един с prod-snapshots фикстурами).",
       "stateNote": "константы формата (лимит err-хвоста, таймаут YT-версии) + api-мост; мутируемого стейта нет"
     },
+    "infra/fieldvalues-loader.js": {
+      "layer": "infra",
+      "domain": "infra/fieldvalues-loader",
+      "loc": 196,
+      "state": [
+        "CHUNK",
+        "CHUNK_TIMEOUT_MS",
+        "FIELDS",
+        "_gen",
+        "api"
+      ],
+      "publishes": [
+        "FIELDVALUES_LOADER"
+      ],
+      "budgetNote": "68-8 (v3.29.0) — эфемерная подгрузка значений полей под правами пользователя. Лежит в infra, а не в domain: зовут ТРИ вью, а domain→domain запрещён гейтом B1; через ядро нельзя — бюджет core исчерпан. host приходит аргументом (B2: leaf не тянет domain/data).",
+      "stateNote": "модуль-приватное ПОКОЛЕНИЕ кэша значений «отображаемых полей» (ключ = спринт + отпечаток состава колонок; byId/done/inflight/failed) — транзиентный, как таймеры draft-store и кэш связей Ганта. Значения полей нигде не персистятся (⚖2), кэш живёт ровно до смены состава или «Обновить из задачи»."
+    },
     "infra/modal-specs.js": {
       "layer": "infra",
       "domain": "infra/modal-specs",
@@ -900,6 +922,20 @@
       ],
       "publishes": [
         "DATE_PURE"
+      ]
+    },
+    "pure/display-fields-pure.js": {
+      "layer": "pure",
+      "domain": "pure/display-fields-pure",
+      "loc": 179,
+      "state": [
+        "DF_MAX",
+        "DF_TABLES",
+        "_COLOR_RE",
+        "_api"
+      ],
+      "publishes": [
+        "DISPLAY_FIELDS_PURE"
       ]
     },
     "pure/enum-locale-pure.js": {

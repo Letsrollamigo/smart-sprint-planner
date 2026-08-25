@@ -529,3 +529,33 @@ test('68-3: назначение исполнителя при dynEditEnabled=fa
     apiPostLog.filter(function (e) { return e.path === 'update-issue-field'; }).length, 0,
     'при выключенной «Быстрой правке» запись исполнителя в YT запрещена');
 });
+
+/* 68-8 — «Отображаемые поля»: колонки идут в таблицу ЗАДАЧ подвкладки «Распределение
+   по исполнителям» и НЕ идут в таблицу исполнителей (в модуле их две — спека §8).
+   Живьём этот экран под автоматизацию не встаёт (empty-state без подобранных
+   исполнителей), поэтому контракт колонок зафиксирован здесь. */
+test('68-8: динамические колонки — в таблице задач «Моей роли», не в таблице исполнителей', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const st = fx.buildSettings();
+  st.displayFields = [
+    { name: 'Заказчик', summary: false, role: false, my: true },
+    { name: 'Срок', summary: true, role: true, my: false },   /* не для «Моей роли» */
+  ];
+  gm.set({ _settings: st });
+  gm.call('renderCurrentRoleTaskTable');
+  const task = materializeTable(document.getElementById('currentRoleTaskHost'));
+  const ids = (task.columns || []).map((c) => c.id);
+  assert.ok(ids.indexOf('cf_Заказчик') >= 0,
+    'колонка с галочкой «Моя роль» обязана быть в таблице задач; получено: ' + ids.join(','));
+  assert.strictEqual(ids.indexOf('cf_Срок'), -1,
+    'поле без галочки «Моя роль» в этой таблице появляться не должно');
+  assert.strictEqual(ids[ids.length - 1], 'cf_Заказчик', 'динамические колонки идут в конец (⚖9)');
+
+  gm.call('renderCurrentRoleAssigneeTable');
+  const people = materializeTable(document.getElementById('currentRoleAssigneeHost'));
+  const pids = (people.columns || []).map((c) => c.id);
+  assert.strictEqual(pids.filter((i) => /^cf_/.test(i)).length, 0,
+    'таблица исполнителей — не про задачи, динамических колонок не получает; получено: ' + pids.join(','));
+});

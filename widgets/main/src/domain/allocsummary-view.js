@@ -104,6 +104,19 @@ function _buildBody(inner, deps) {
   var hasSystem    = !!(_settings && _settings.fieldSystem);
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
 
+  /* 68-8 — динамические колонки «отображаемых полей». Значения не хранятся: загрузчик
+     стартует прямо отсюда (идемпотентен по done/inflight/failed — цикла рендер↔фетч нет),
+     приход данных перерисовывает сводную вторым кадром. */
+  var FVL = (typeof window !== 'undefined' && window.__SSP_FIELDVALUES_LOADER) || null;
+  var dyn = FVL ? FVL.prepare({
+    host: (typeof deps.getHost === 'function') ? deps.getHost() : null,
+    sprintId: deps.state.getCurrentSprintId(),
+    settings: _settings, table: 'summary',
+    ids: rows.map(function (r) { return r.issueId; }),
+    warnTitle: T('dfLoadFailed'),
+    onDone: function () { renderAllocSummary(deps); },
+  }) : null;
+
   var vmRows = sorted.map(function (row) {
     var cells = {};
     cells.id = { __html: '<a href="' + safeUrl(row.url) + '" target="_blank" class="link">' + esc(row.issueId) + '</a>' };
@@ -126,6 +139,7 @@ function _buildBody(inner, deps) {
       cells['est_' + rk] = (est === null || est === undefined) ? '—' : deps.fmtPeriod(est);
     });
     cells.estSum = (row.estSum === null || row.estSum === undefined) ? '—' : deps.fmtPeriod(row.estSum);
+    if (dyn) dyn.cols.forEach(function (c) { cells[c.id] = dyn.cell(row.issueId, c.name); });
     return { iid: row.issueId, over: row.isOver, cells: cells };
   });
 
@@ -151,6 +165,11 @@ function _buildBody(inner, deps) {
     });
   });
   columns.push({ id: 'estSum', title: T('thEstSum'), sortable: false, className: 'td-num', getValue: _cell });
+  /* 68-8 — в конец, в порядке строк настроек (⚖9). sortable намеренно не ставим (⚖10). */
+  if (dyn) dyn.cols.forEach(function (c) {
+    columns.push({ id: c.id, title: c.name, sortable: false, className: 'td-dynfield',
+                   getValue: _cell, getHeaderValue: dyn.headerOf(c.name) });
+  });
 
   var tblWrap = document.createElement('div');
   tblWrap.className = 'tbl-wrap';

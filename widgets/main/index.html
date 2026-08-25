@@ -308,6 +308,7 @@
     body.ssp-global-mode [data-ssp-table-host] .td-num input { font-size: 11px !important; padding-left: 4px !important; padding-right: 4px !important; min-width: 0 !important; width: 100% !important; box-sizing: border-box; }
     body.ssp-global-mode [data-ssp-table-host] .td-num input::placeholder { font-size: 11px; }
     body.ssp-global-mode [data-ssp-table-host] .td-id  { min-width: 52px; max-width: 15ch; width: 15ch; }  /* #56-1 — было 60px: длинный ID (15 симв) обрезался на дашборде */
+    body.ssp-global-mode [data-ssp-table-host] .td-dynfield { min-width: 70px !important; max-width: 120px !important; width: 90px !important; }  /* 68-8 — в global-пейне полоса полей ужимается вместе с прочими колонками */
     /* поле «Ресурс (ч)» исполнителя (ручной режим) — вписать в ячейку, чтобы правый бордер не обрезался */
     body.ssp-global-mode [data-ssp-table-host] .currentRole-manual-res { width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
     /* таблица исполнителей просторнее плотной таблицы ролей — числовым колонкам больше ширины */
@@ -943,6 +944,11 @@
     /* v2.1.6/v2.1.7 — fixed width для date columns (Start/Финиш) чтобы last column
        не растягивалась на остаток ширины строки в людях-distribution table. */
     [data-ssp-table-host] .td-date      { min-width: 130px; max-width: 160px; width: 140px; white-space: nowrap; }
+    /* 68-8 — динамические колонки «отображаемых полей». Свой класс обязателен: без
+       фиксированной ширины Ring делит остаток равномерно и ломает пропорции соседей
+       (прецедент v2.1.5). Полоса намеренно уезжает вправо по горизонтали (⚖ владелец). */
+    [data-ssp-table-host] .td-dynfield  { min-width: 90px;  max-width: 180px; width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    [data-ssp-table-host] .ssp-dynfield-chip { display: inline-block; font-size: 10px; font-weight: 600; line-height: 1; padding: 3px 7px; border-radius: 8px; white-space: nowrap; border: 1px solid var(--border, #e0e0e0); }
 
     /* v2.3.2 #42 — компактная типографика таблиц (микроредизайн).
        Главный рычаг «рыхлости»: Ring `.ring-table-row` line-height = 30px

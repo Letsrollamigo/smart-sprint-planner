@@ -37,6 +37,10 @@
    зарегистрирован в module-registry (гейт C1). */
 var _ganttLinks = { key: '', loading: false, data: null };
 
+/* Реальный ретрай неполной загрузки связей (68-8 ⚖6): «Обновить из задачи» сбрасывает
+   ключ, следующий onAfterRender стартует фетч заново. */
+function resetLinksCache() { _ganttLinks = { key: '', loading: false, data: null }; }
+
 const GANTT_LINK_CHUNK = 50;
 const GANTT_LINK_FIELDS = 'idReadable,links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
 const GANTT_EXT_FIELDS = 'idReadable,customFields(name,projectCustomField(field(name)),value(name,localizedName,isResolved))';
@@ -46,14 +50,16 @@ function _linkChunks(ids) {
   for (var i = 0; i < ids.length; i += GANTT_LINK_CHUNK) out.push(ids.slice(i, i + GANTT_LINK_CHUNK));
   return out;
 }
-/* Ошибка чанка — пропуск (частичные данные), как в release-view: Гант обязан
-   нарисоваться и без связей. */
+/* Ошибка чанка не роняет Гант (он обязан нарисоваться и без связей), но и НЕ глотается:
+   68-8 ⚖6 — провалы считаются и доезжают до легенды признаком «связи загрузились не
+   полностью». Раньше пустой catch выдавал частичный результат за полный. */
 function _fetchChunks(host, ids, fields, onIssue) {
+  var failed = 0;
   return Promise.all(_linkChunks(ids).map(function (chunk) {
     return host.fetchYouTrack('issues', {
       query: { fields: fields, query: 'issue id: ' + chunk.join(', '), $top: chunk.length },
-    }).then(function (issues) { (issues || []).forEach(onIssue); }).catch(function () {});
-  }));
+    }).then(function (issues) { (issues || []).forEach(onIssue); }).catch(function () { failed++; });
+  })).then(function () { return failed; });
 }
 
 /* Локализованное состояние задачи (⚖6). Имя поля состояния — из настроек, с
@@ -85,10 +91,12 @@ function _loadGanttLinks(deps, ids, key) {
   var preds = {}, inSprint = {};
   ids.forEach(function (id) { inSprint[id] = true; });
 
+  var _failed = 0;
   _fetchChunks(host, ids, GANTT_LINK_FIELDS, function (it) {
     if (!it || !it.idReadable) return;
     preds[it.idReadable] = LR.dependencyPreds(it, matchers);
-  }).then(function () {
+  }).then(function (nf) {
+    _failed += nf;
     var extIds = [], seen = {};
     Object.keys(preds).forEach(function (id) {
       preds[id].forEach(function (p) {
@@ -102,16 +110,18 @@ function _loadGanttLinks(deps, ids, key) {
     return _fetchChunks(host, extIds, GANTT_EXT_FIELDS, function (it) {
       if (!it || !it.idReadable) return;
       ext[it.idReadable] = _extState(it, stateNames);
-    }).then(function () { return ext; });
+    }).then(function (nf) { _failed += nf; return ext; });
   }).then(function (ext) {
-    _ganttLinks = { key: key, loading: false, data: { preds: preds, ext: ext || {} } };
+    _ganttLinks = { key: key, loading: false, data: { preds: preds, ext: ext || {}, partial: _failed > 0 } };
     /* Данные приехали — перерисовать Гант со стрелками (второй кадр). */
     try { if (typeof deps.renderGanttChart === 'function') deps.renderGanttChart(); } catch (_) {}
   }).catch(function () {
-    /* Ошибка — фиксируем ключ с пустым результатом: onAfterRender дёргается после
-       КАЖДОГО коммита DOM, без этого получился бы бесконечный цикл рендер↔фетч.
-       Повторную попытку даёт «Обновить из YT» (сбрасывает ключ). */
-    _ganttLinks = { key: key, loading: false, data: { preds: {}, ext: {} } };
+    /* Ошибка — фиксируем ключ с ПОМЕЧЕННЫМ частичным результатом: onAfterRender дёргается
+       после КАЖДОГО коммита DOM, без фиксации получился бы бесконечный цикл рендер↔фетч.
+       68-8 ⚖6: partial доезжает до легенды, а реальный ретрай даёт «Обновить из задачи» —
+       она сбрасывает ключ через resetLinksCache (прежний комментарий про сброс ключа
+       коду не соответствовал: сбрасывать было некому). */
+    _ganttLinks = { key: key, loading: false, data: { preds: {}, ext: {}, partial: true } };
   });
 }
 
@@ -181,7 +191,11 @@ function _buildGanttVm(deps) {
   // Строки: позиция полосы в днях + данные бейджа состояния (#20)
   // #20-v2 (v3.2.0) — startTs/endTs (сырые ms, канон ta) для gantt-task-react (drag дат).
   /* #74 фаза 2 — ключ кэша связей: спринт + роль, как у истории состояний. */
-  var linksKey = (deps.state.getCurrentSprintId() || '') + ':' + rk + ':links';
+  /* 68-8 ⚖6 — в ключ входит и НАСТРОЙКА связей: без неё правка ролей типов связей
+     оставляла кэш прежним и Гант рисовал стрелки по старым правилам. */
+  var _LRP0 = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+  var _lrFp = _LRP0 ? JSON.stringify(_LRP0.resolveLinkRoles(deps.state.getSettings() || {}).dependency) : '';
+  var linksKey = (deps.state.getCurrentSprintId() || '') + ':' + rk + ':links:' + _lrFp;
   var _linkData = (_ganttLinks.key === linksKey) ? _ganttLinks.data : null;
   var _idSet = {};
   ganttItems.forEach(function (g) { _idSet[g.issueId] = true; });
@@ -277,11 +291,15 @@ function _buildGanttVm(deps) {
       linkColors: _linkColors,
       linkLegend: _legend,
       linksReady: !!_linkData,
+      /* 68-8 ⚖6 — «связи загрузились не полностью»: раньше провал чанка был неотличим
+         от «связей нет». Признак показывает легенда, ретрай — «Обновить из задачи». */
+      linksPartial: !!(_linkData && _linkData.partial),
       i18nExt: {
         badge: deps.T('ganttExtDeps'),
         unknown: deps.T('ganttExtStateUnknown'),
         legend: deps.T('ganttLegendTitle'),
         legendExt: deps.T('ganttLegendExternal'),
+        linksPartial: deps.T('ganttLinksPartial'),
       },
     },
     fetchPlan: fetchPlan,
@@ -418,6 +436,7 @@ function _updateGanttHistDOM(container, issueId, hist, deps) {
 
 const api = {
   renderGanttChart: renderGanttChart,
+  resetLinksCache: resetLinksCache,   /* 68-8 ⚖6 — ретрай из «Обновить из задачи» */
   _buildGanttVm: _buildGanttVm,
   _updateGanttHistDOM: _updateGanttHistDOM,
 };

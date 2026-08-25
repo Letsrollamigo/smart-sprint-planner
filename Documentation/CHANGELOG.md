@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.29.0] — 2026-08-25
+
+> **Display fields (68-8).** Issue tables stopped being a fixed set of columns: any field of the project can be brought in. The app stores no values — it reads them from YouTrack when the table opens, so visibility follows each person's own rights rather than app logic.
+
+### Added
+
+- **«Display fields» settings section** — a field is added from a picker of the project's actual fields, minus those already taken by other settings (estimates, actuals, role assignees, priority, state, system, sprint, version, type, external ID): the same field will not end up as both a role column and a plain one. Three checkboxes per row decide where the column appears — the «Shared resource allocation» summary, the role scope table, and «My role». The field type is unrestricted: strings, numbers, dates, text, periods, users, bundle values. A field that disappeared from the project is flagged in the row and removed with the trash button.
+- **Columns in the three issue tables** — the header is the field name exactly as YouTrack shows it, ordered as in the setting. Bundle values render as a chip in their native color, dates print without a time, multiple values are joined with commas, users show their full name.
+- **Schema key `displayFields`** (`array<{name,summary,role,my}>`, ≤50 rows, deduplicated by name, admin tier), migration `3.28.0 → 3.29.0` (a no-op — field values are not stored at all, snapshots did not change), fixtures in `tests/fixtures/snapshots/3.29.0/`. The field **name** is stored: the project field list carries no ids.
+- **A partial-load marker** in the column header: if YouTrack answered for only some issues, that is visible instead of looking like «no values». Retry is the existing «Refresh from issue» button.
+
+### Changed
+
+- **«Refresh from issue»** hands out display-field values from its own response: it already carries every field of the issue, so no second request for the same data is made.
+
+### Fixed
+
+- **The Gantt chart stopped passing partially loaded links off as complete.** A failed link request used to be swallowed silently and the incomplete result cached as final — arrows were simply missing, indistinguishable from «no dependencies». A partial load is now shown in the legend, and «Refresh from issue» genuinely retries it (previously nothing reset the cache, contrary to the comment in the code). The link settings also entered the cache key: editing link type roles no longer leaves arrows drawn by the old rules on screen.
+
+---
+
 ## [3.28.0] — 2026-08-24
 
 > **Issue links, phases 1 and 2 (#74).** Links became configurable instead of typed in: instead of two phrase fields there is a settings section of its own where links are added from a picker. The backlog tree and release scope are built from several link types at once, and the Gantt chart gained dependency arrows. The app only reads links; they are still created in YouTrack.

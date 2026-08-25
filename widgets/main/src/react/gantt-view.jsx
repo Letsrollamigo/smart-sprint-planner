@@ -232,7 +232,8 @@ function _paintArrows(host, vm) {
 /* Легенда (⚖7): только фактически видимые обозначения, настроек нет. */
 function GanttLegend({ vm }) {
   const lg = vm && vm.linkLegend;
-  if (!lg || (!lg.types.length && !lg.external)) return null;
+  const partial = !!(vm && vm.linksPartial);
+  if (!lg || (!lg.types.length && !lg.external && !partial)) return null;
   const i18n = vm.i18nExt || {};
   return (
     <div style={ST.legend}>
@@ -244,6 +245,10 @@ function GanttLegend({ vm }) {
       ))}
       {lg.external ? (
         <span style={ST.legendItem}><RingIcon name="share" />{i18n.legendExt}</span>
+      ) : null}
+      {/* 68-8 ⚖6 — часть связей не доехала: раньше это молча выглядело как «связей нет». */}
+      {partial ? (
+        <span style={ST.legendItem} title={i18n.linksPartial}><RingIcon name="warning" />{i18n.linksPartial}</span>
       ) : null}
     </div>
   );
