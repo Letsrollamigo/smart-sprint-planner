@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.29.2] — 2026-08-26
+
+> **Reporting could be switched on but not handed out.** A build flag that marks the reporting module as absent was set here by mistake, and it disabled the two permission columns that grant access — so reports stayed visible to the settings manager alone. Present in 3.28.0, 3.29.0 and 3.29.1.
+
+### Fixed
+
+- **«Reporting circuit A» and «circuit B» are editable again in the permissions table.** The flag that greys those columns out exists for builds that ship without the reporting module: they should not offer permissions for something that is not there. Here the module is present and the flag was set by mistake in 3.28.0, with nothing but a comment standing in its way. The effect was quiet and easy to misread: enabling the module in project settings worked, the reporting tabs kept appearing by «module enabled × group membership» exactly as documented — but the only control that puts a group into a circuit was disabled, so membership stayed empty and the reports were seen by the settings manager alone, who holds every permission by definition. Saved permissions were never touched: the columns rendered the stored values and returned them unchanged, so a project with circuits configured before 3.28.0 kept working throughout. Upgrading restores the editing; nothing to redo on your side, unless an attempt to grant access fell into those three releases.
+
+### Tests
+
+- **The build flags that must not drift are now pinned by tests of their own** (`tests/unit/fork-constants.test.js`): the reporting flag, the absence of a reporting gate in the widget core, and the stand-up done-state picker. A stray change to any of them now fails a test instead of changing behaviour in silence — which is exactly how this defect arrived.
+- **The `settings.json` meta-schema reference is pinned** (`tests/unit/schema-evolution.test.js`). Written after 3.29.1 was tagged, recorded here for completeness: YouTrack resolves the draft-07 meta-schema over `http://` only, and a drift to `https://` makes the whole application-parameters form unsaveable.
+
+---
+
 ## [3.29.1] — 2026-08-26
 
 > **Version alignment — no functional changes in this build.** Recorded for a first-setup failure mode that this build was checked against and does not have.

@@ -111,8 +111,9 @@ function PermissionsMatrix(props) {
   }
 
   /* Группа шапки «Релизы» притушена при выключенном модуле (#69 R1 строка 6 — dim,
-     не hide; чекбоксы остаются активными). Отчётность в corp — disabled целиком
-     (#64): значения показываются как сохранены и проходят сейв как есть. */
+     не hide; чекбоксы остаются активными). Колонки отчётности приходят disabled
+     только там, где модуль отключён сборкой (REPORTING_DISABLED); в этой редакции
+     он рабочий, поэтому колонки всегда активны. */
   const dimGroup = { planning: false, release: !props.releaseEnabled, reporting: !props.reportingEnabled };
   const disabledGroup = { planning: false, release: false, reporting: !!props.reportingDisabled };
 

@@ -119,11 +119,14 @@ function RingIcon({ name, cls }) {
   return <span className={'ssp-icon ssp-icon--inline' + (cls ? ' ' + cls : '')} aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
-/* #64 — corp-заглушка модуля отчётности (⚖ владелец 2026-08-03): парная константа
-   гейта в core.js (REPORTING_DISABLED); возврат модуля = снять обе. Живёт здесь с #71:
-   потребителей два — ReportingSection и колонки «Отчётность» матрицы прав
-   (DIFF_MAP §10a; в community — false). */
-const REPORTING_DISABLED = true;
+/* Гейт модуля отчётности. В этой редакции модуль рабочий → строго `false`.
+   Единственный потребитель — колонки «Контур A»/«Контур B» матрицы прав
+   (settings-permissions.jsx): при `true` они приходят disabled, и выдать группам
+   доступ к отчётам через интерфейс становится нечем — отчёты остаются видны
+   только менеджеру настроек. Значение пинится tests/unit/fork-constants.test.js:
+   в v3.28.0 оно уже переворачивалось молча (#77), и три релиза ушли с
+   недоступной пользователям отчётностью. */
+const REPORTING_DISABLED = false;
 
 /* #22 — секции admin-тира (workflow-правила + доступ/права). Видны/редактируемы
    только при canEditWorkflow (settings-менеджер). Остальные секции — планировочный тир. */
