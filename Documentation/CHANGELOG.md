@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.29.1] — 2026-08-26
+
+> **Version alignment — no functional changes in this build.** Recorded for a first-setup failure mode that this build was checked against and does not have.
+
+### Notes
+
+- **The application-parameters form saves on a fresh install — verified, nothing to change.** YouTrack's settings-form validator recognises the JSON Schema draft-07 meta-schema only over `http://`. A `settings.json` that references it over `https://json-schema.org/draft-07/schema#` therefore fails to compile, and every save of the application parameters is rejected with «Form validation failed». First setup takes the whole hit: the mandatory settings-manager group is set from that form and nowhere else — deliberately, so that a freshly installed app cannot configure itself — and without that group the backend refuses every write, so a newly connected project stays in read-only with no way out through the interface. Already configured projects would be unaffected, since it is writing that breaks, not reading. Here the meta-schema has always been referenced over `http://` and the form has always saved; `settings.json` was re-checked in full and no other reference needed changing. Written down because the failure is silent and easy to reintroduce.
+
+---
+
 ## [3.29.0] — 2026-08-25
 
 > **Display fields (68-8).** Issue tables stopped being a fixed set of columns: any field of the project can be brought in. The app stores no values — it reads them from YouTrack when the table opens, so visibility follows each person's own rights rather than app logic.

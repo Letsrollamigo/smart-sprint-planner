@@ -2,7 +2,7 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.29.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.29.1**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
