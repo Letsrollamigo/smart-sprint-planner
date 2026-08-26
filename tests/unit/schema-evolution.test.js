@@ -72,3 +72,18 @@ test('schema-evolution: если whitelist расширен — есть SCHEMA_
     '\nТребуется SCHEMA_MIGRATIONS запись с to="' + CURRENT_PLUGIN_VERSION +
     '" ИЛИ директория tests/fixtures/snapshots/' + CURRENT_PLUGIN_VERSION + '/');
 });
+
+/* v3.29.1 — регресс на мета-схему settings.json.
+   YouTrack компилирует схему параметров приложения валидатором, который знает
+   мета-схему draft-07 ТОЛЬКО по `http://json-schema.org/draft-07/schema#`.
+   Вариант с `https://` не резолвится → форма параметров всегда невалидна и не
+   сохраняется вовсе. Цена дефекта высока непропорционально размеру: ключ
+   settingsManagerGroup задаётся только оттуда, поэтому новый проект остаётся
+   в read-only без обходного пути через интерфейс (см. CHANGELOG 3.29.1). */
+test('settings.json: мета-схема указана по http (иначе YouTrack не сохраняет параметры приложения)', function () {
+  const appSettings = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'settings.json'), 'utf8'));
+  assert.strictEqual(appSettings.$schema, 'http://json-schema.org/draft-07/schema#',
+    'Мета-схема settings.json должна быть по http://: валидатор YouTrack не знает её по https:// ' +
+    'и отклоняет сохранение всей формы параметров приложения.');
+});
