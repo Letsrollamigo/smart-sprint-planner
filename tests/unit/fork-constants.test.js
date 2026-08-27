@@ -19,6 +19,10 @@ const path = require('path');
 
 const SRC = path.join(__dirname, '..', '..', 'widgets', 'main', 'src');
 const read = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
+const ROOT = path.join(__dirname, '..', '..');
+const readRoot = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const WF_FILES = ['workflow-cascade-aggregation.js', 'workflow-common.js',
+  'workflow-dta-aggregation.js', 'workflow-forbid-container.js', 'workflow-state-rollup.js'];
 
 test('fork-constants: отчётность включена — REPORTING_DISABLED = false', function () {
   assert.match(read('react/settings-shared.jsx'), /^const REPORTING_DISABLED = false;$/m,
@@ -36,4 +40,18 @@ test('fork-constants: done-пикер стендапа виден — STANDUP_DO
   assert.match(read('react/settings-standup.jsx'), /^const STANDUP_DONE_PICKER_HIDDEN = false;$/m,
     'Список done-состояний — канон отчётности (A10/spillover), и настраивается он только здесь. ' +
     'При `true` пикер скрыт и отчёты считают по умолчанию (#77, тот же класс дрейфа).');
+});
+
+test('fork-constants: workflow-правила подписаны именем этой редакции', function () {
+  /* `title` правила виден администратору YouTrack в списке рабочих процессов, поэтому имя
+     продукта в нём — часть идентичности редакции, а не косметика. Перенос workflow-файла
+     из другой редакции упрётся в этот пин и потребует ручного решения. */
+  for (const f of WF_FILES.filter((x) => x !== 'workflow-common.js')) {
+    assert.match(readRoot(f), /^ {2}title: 'Smart Sprint Planner — /m,
+      f + ': заголовок правила начинается с имени продукта этой редакции.');
+  }
+  for (const f of WF_FILES) {
+    assert.match(readRoot(f), /Smart Sprint Planner/,
+      f + ': шапка файла подписана именем продукта этой редакции.');
+  }
 });
