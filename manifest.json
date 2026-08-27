@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.29.2",
+  "version": "3.29.3",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "🐛 <b>Reporting access can be granted again</b> — the «Reporting circuit A» and «circuit B» columns of the permissions table were disabled by a build flag that marks the reporting module as absent, set here by mistake. The module could be switched on for a project, but no group could be given access, so reports stayed visible to the settings manager alone. The columns are live again. Permissions you had already saved were never altered — the flag only blocked editing them. Affects 3.28.0 through 3.29.1.<br><br>🔍 <b>Compatibility</b> — YouTrack 2024.3+. Drop-in upgrade, no schema change.",
+  "changeNotes": "🐛 <b>Gantt dependency arrows are back</b> — the chart never asked YouTrack for issue links at all: the loader could not reach the host, so it returned before the first request. Arrows between tasks of one sprint and the badge for predecessors outside it had been dead since 3.28.0. Configure link roles in the settings and the chart draws them again, coloured per link type.",
   "widgets": [
     {
       "key": "ssp-main",

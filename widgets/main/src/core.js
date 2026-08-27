@@ -791,7 +791,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.29.2';
+  var APP_VERSION = '3.29.3';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4401,6 +4401,7 @@
         getSprint: function () { return _sprint; },
         getSettings: function () { return _settings; },
         getIsEditor: function () { return _isEditor; },
+        getHost: function () { return _host; },   /* #74 фаза 2 — эфемерный фетч связей */
       },
     };
   }

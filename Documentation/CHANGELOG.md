@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.29.3] — 2026-08-27
+
+> **Gantt dependency arrows never worked in this edition.** The chart did not fail to draw them — it never asked YouTrack for the links in the first place. Present in 3.28.0, 3.29.0, 3.29.1 and 3.29.2.
+
+### Fixed
+
+- **Dependency arrows and the badge for predecessors outside the sprint are back on the Gantt chart.** Both are the second phase of the issue-links epic shipped in 3.28.0, and both had been inert here ever since. The link loader begins by taking the YouTrack host out of the dependencies the core hands it; in this edition that accessor was missing, so the loader returned before its first request and the chart drew bars with nothing between them. Everything downstream was healthy — link roles saved in project settings, the matcher that reads them, the arrow palette per link type, the legend — which is why the screen looked deliberate rather than broken: no arrows, no legend, no error. Nothing to redo on your side: configure link roles as documented and the chart draws them on the next open. The same accessor is what the hierarchy tree in the backlog uses through its own path, which is why grouping under an epic kept working throughout and made the fault look like a data problem.
+
+### Tests
+
+- **A new architecture gate checks that every state accessor a module calls is actually handed to it** (`tests/arch/deps-contract.test.js`). The core builds a per-call dependency factory for each module; a module then reads `deps.state.getSomething()`. When the accessor is absent the call returns `undefined`, and a module that guards against a missing host quietly takes an early exit instead of failing — no exception, no log, just a feature that is not there. The gate derives the module-to-factory map from the core itself, so it cannot drift, and it fails on the first missing accessor. It reproduces this defect when the line is removed, and it is deliberately blind to nothing else: only `deps.state`, whose shape is uniform across every factory.
+
+---
+
 ## [3.29.2] — 2026-08-26
 
 > **Reporting could be switched on but not handed out.** A build flag that marks the reporting module as absent was set here by mistake, and it disabled the two permission columns that grant access — so reports stayed visible to the settings manager alone. Present in 3.28.0, 3.29.0 and 3.29.1.
