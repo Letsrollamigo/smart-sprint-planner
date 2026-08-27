@@ -123,6 +123,7 @@ Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manu
 
 ## Documentation
 
+- **[docs/](docs/) — the illustrated manual, in English and Russian.** Three documents, 88 chapters, 80 screenshots: [an overview of every screen](docs/en/01-overview/), [a step-by-step rollout guide](docs/en/02-setup/), and [the fourteen reports](docs/en/03-reporting/).
 - [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with configuration examples.
 - [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum-master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.
 - [SECURITY.md](.github/SECURITY.md) — security model, threat surface, and disclosure process.

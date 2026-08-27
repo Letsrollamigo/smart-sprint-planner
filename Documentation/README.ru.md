@@ -123,6 +123,7 @@ npm test               # unit + golden (Node test runner, jsdom — без бр�
 
 ## Документация
 
+- **[docs/](../docs/) — иллюстрированное руководство на русском и английском.** Три документа, 88 глав, 80 кадров: [обзор всех экранов](../docs/ru/01-overview/), [внедрение по шагам](../docs/ru/02-setup/) и [четырнадцать отчётов](../docs/ru/03-reporting/).
 - [USER-GUIDE.ru.md](USER-GUIDE.ru.md) — полное руководство пользователя с примерами конфигурации.
 - [METHODOLOGY-GUIDE.ru.md](METHODOLOGY-GUIDE.ru.md) — взгляд team-lead'а / Scrum master'а / PM'а: карта церемоний, capacity planning, дисциплина учёта времени, антипаттерны.
 - [SECURITY.ru.md](SECURITY.ru.md) — модель безопасности, поверхность угроз, процесс ответственного раскрытия.
