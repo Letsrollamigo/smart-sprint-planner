@@ -119,7 +119,7 @@ curl -X POST "$YT_BASE/api/admin/apps/import" -H "Authorization: Bearer $YT_TOKE
 
 Open the planner, exercise the flow your change touches, and confirm behavior.
 For a scripted smoke you can drive a headless browser (the maintainers use
-[agent-browser](https://github.com/…); any DOM-aware automation works) — focus the
+agent-browser; any DOM-aware automation works) — focus the
 widget iframe and assert on the accessibility tree.
 
 ## Notes & troubleshooting
@@ -133,4 +133,3 @@ widget iframe and assert on the accessibility tree.
   widget — exercise them by changing issue fields and watching aggregation/roll-up.
 - **Settings stay read-only until the settings-manager group is set** (step 4.2) —
   if mutations are denied, that's the usual cause.
-</content>
