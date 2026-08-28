@@ -303,6 +303,10 @@
   function _onProjectPicked(deps, newKey) {
     if (!newKey || newKey === deps.state.getActiveProjectKey()) return;
     if (deps.draftIsDirty()) {
+      /* #97 — пока висит вопрос, селектор не должен врать: нативный <select> уже
+         переключился сам, но проект ещё прежний. Откатываем сразу; новое значение
+         поставит _applyActiveProject после подтверждения. */
+      _setPickerValue(deps, deps.state.getActiveProjectKey());
       _confirmDiscardAndSwitch(deps,
         function onConfirm() { _switchToProject(deps, newKey); },
         function onCancel()  { _setPickerValue(deps, deps.state.getActiveProjectKey()); }

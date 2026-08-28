@@ -561,3 +561,31 @@ test('_renderProjectSettingsPage — loaders + check-settings-manager → body-m
     mountInline: mountLog,
   });
 });
+
+/* #97 хвост — селектор не врёт, пока висит вопрос о черновике. Нативный <select>
+   переключается сам, до обработчика: раньше он показывал новый проект всё время,
+   пока модалка ждала ответа, а данные оставались от прежнего. Именно это в разборе
+   2026-08-28 было принято за «расхождение при смене проекта». */
+test('#97: грязный черновик — селектор откатывается на время вопроса, новое значение только после подтверждения', () => {
+  const { gm, document } = createHost();
+  let confirmBtn = null;
+  gm.set({
+    _activeProjectKey: 'DEMO',
+    _globalProjects: [{ key: 'DEMO', name: 'Демопроект' }, { key: 'DEMOClone', name: 'Clone' }],
+    _draftIsDirty: function () { return true; },
+    _updateProjectNameLabel: function () {}, _syncStateToUrl: function () {},
+    _resetProjectStateCaches: function () {},
+    _loadAndRenderProject: function () { return Promise.resolve(); },
+    openModal: function (spec) { confirmBtn = spec.buttons.filter(function (b) { return b.id === 'ok'; })[0]; },
+  });
+  gm.call('_renderProjectPicker');
+  const sel = document.getElementById('globalProjectSelect');
+  sel.value = 'DEMOClone';                       /* браузер уже переключил значение сам */
+
+  gm.call('_onProjectPicked', 'DEMOClone');
+  assert.strictEqual(sel.value, 'DEMO', 'пока вопрос не решён, селектор показывает открытый проект');
+
+  confirmBtn.onClick({ close: function () {} });
+  assert.strictEqual(sel.value, 'DEMOClone', 'после подтверждения селектор переезжает на новый проект');
+  assert.strictEqual(gm.get('_activeProjectKey'), 'DEMOClone');
+});
