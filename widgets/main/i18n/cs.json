@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Zámek vytváření sprintů",
   "sprintLockNoRights": "Nedostatečná práva: přepínač spravuje skupina z nastavení «Správa přístupu»",
   "toastSprintCreationLocked": "Vytváření nových sprintů je zablokováno administrátorem",
+  "toastSprintViewOnlyRole": "Sprint „{sprint}“ je jen ke čtení: role „{role}“ je ve stavu „{status}“. Pro úpravu použijte „Upravit“ v historii sprintů.",
   "toastSprintLockOn": "Vytváření sprintů uzamčeno",
   "toastSprintLockOff": "Vytváření sprintů odemčeno",
   "hintSprintLockGroup": "Členové mohou přepínat zámek vytváření sprintů v záhlaví plánovače. Stávající sprinty při zapnutém zámku fungují dál.",

@@ -570,3 +570,55 @@ test('golden: setCurrentSprintId — активная WC → модалка canc
     idAfterConfirm: gm.get('_currentSprintId'),
   });
 });
+
+/* ════ #96 — гейт «выбрал → редактирую» смотрит только на роли-участницы спринта ════
+   Снап роли ВНЕ набора (#73) блокировал загрузку спринта как рабочего навсегда и молча:
+   спринт открывался только на просмотр, причина нигде не называлась. Теперь гейт судит
+   по набору спринта, а если всё же блокирует — объясняет, какая роль и в каком статусе. */
+function snap96(over) {
+  return Object.assign({
+    sprintId: 'gm-y_analysis', roleKey: 'analysis', roleLabel: 'Анализ',
+    name: 'Спринт #96', status: 'PLANNING',
+    dateStart: fx.DATE_START, dateEnd: fx.DATE_END, confirmedAt: 1779000000000,
+    items: [], resourceAnalysis: 2400,
+  }, over || {});
+}
+
+test('#96: снап роли ВНЕ набора спринта не блокирует загрузку как рабочего', () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+  stubApiPost(gm); stubDraft(gm); stubRenders(gm);
+  const toasts = recordToasts(gm);
+  /* набор спринта — только «Анализ»; снап «Тестирования» посторонний (импорт/старая роль) */
+  gm.set({ _history: [
+    snap96({ roles: ['analysis'] }),
+    snap96({ sprintId: 'gm-y_testing', roleKey: 'testing', roleLabel: 'Тестирование',
+             status: 'ALLOCATED', roles: ['analysis'], resourceTesting: 1200 }),
+  ] });
+
+  assert.strictEqual(gm.call('_loadUnfinishedSprintAsWorking', 'gm-y'), true, 'спринт грузится как рабочий');
+  assert.strictEqual(gm.get('_sprint').sprintId, 'gm-y', 'слот переехал на выбранный спринт');
+  assert.deepStrictEqual(gm.get('_sprint').roles, ['analysis'], 'набор ролей восстановлен из снапа');
+  assert.deepStrictEqual(toasts, [], 'ничего не объясняем — блокировки нет');
+});
+
+test('#96: роль ИЗ набора вне «Черновика» блокирует и называет причину', () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+  stubApiPost(gm); stubDraft(gm); stubRenders(gm);
+  const toasts = recordToasts(gm);
+  const slotBefore = gm.get('_sprint').sprintId;
+  gm.set({ _history: [
+    snap96({ sprintId: 'gm-z_analysis', roles: ['analysis', 'testing'] }),
+    snap96({ sprintId: 'gm-z_testing', roleKey: 'testing', roleLabel: 'Тестирование',
+             status: 'ALLOCATED', roles: ['analysis', 'testing'], resourceTesting: 1200 }),
+  ] });
+
+  assert.strictEqual(gm.call('_loadUnfinishedSprintAsWorking', 'gm-z'), false, 'спринт как рабочий не грузится');
+  assert.strictEqual(gm.get('_sprint').sprintId, slotBefore, 'слот не тронут');
+  assert.strictEqual(toasts.length, 1, 'ровно одно объяснение');
+  assert.strictEqual(toasts[0].type, 'warn');
+  assert.match(toasts[0].msg, /Тестирование/, 'названа блокирующая роль');
+  assert.match(toasts[0].msg, /Распределён по людям/, 'назван её статус');
+  assert.match(toasts[0].msg, /Спринт #96/, 'назван спринт');
+});

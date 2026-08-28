@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Vergrendeling sprintcreatie",
   "sprintLockNoRights": "Onvoldoende rechten: de schakelaar wordt beheerd door de groep uit de instellingen «Toegangsbeheer»",
   "toastSprintCreationLocked": "Het aanmaken van nieuwe sprints is door de beheerder geblokkeerd",
+  "toastSprintViewOnlyRole": "Sprint ‘{sprint}’ is alleen-lezen: rol ‘{role}’ heeft status ‘{status}’. Gebruik ‘Bewerken’ in de sprintgeschiedenis om te wijzigen.",
   "toastSprintLockOn": "Sprintcreatie vergrendeld",
   "toastSprintLockOff": "Sprintcreatie ontgrendeld",
   "hintSprintLockGroup": "Leden kunnen de vergrendelschakelaar voor sprintcreatie in de plannerkop omzetten. Bestaande sprints blijven werken terwijl de vergrendeling actief is.",

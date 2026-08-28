@@ -477,11 +477,18 @@
       return h && typeof h.sprintId === 'string' && h.sprintId.indexOf(newId + '_') === 0;
     });
     if (!snaps.length) return false;
-    /* Консервативно: только полностью планируемый спринт (все role-снапшоты PLANNING).
-       Смешанный/ALLOCATED оставляем прежнему пути (read-only / working copy под validator). */
-    var allPlanning = snaps.every(function(s){ return s.status === deps.STATUS.PLANNING; });
-    if (!allPlanning) return false;
     var loadedRoles = (typeof deps.getSprintRolesFor === 'function') ? deps.getSprintRolesFor(newId) : [];
+    /* #96 — гейт судит по ролям-участницам спринта (#73): снап роли ВНЕ набора блокировал загрузку
+       навсегда и молча. Набор не резолвится → по всем; блокирует — называем роль и статус. */
+    var gated = snaps.filter(function(s){ return loadedRoles.some(function(r){ return r.key === s.roleKey; }); });
+    var blocker = (gated.length ? gated : snaps).filter(function(s){ return s.status !== deps.STATUS.PLANNING; })[0];
+    if (blocker) {
+      var bRole = deps.ALL_ROLES.find(function(r){ return r.key === blocker.roleKey; });
+      deps.toast((deps.T('toastSprintViewOnlyRole') || '').replace('{sprint}', blocker.name || '')
+        .replace('{role}', bRole ? deps.roleLabel(bRole) : (blocker.roleLabel || blocker.roleKey || ''))
+        .replace('{status}', deps.statusLabel(blocker.status)), 'warn');
+      return false;
+    }
     var meta = snaps.filter(function(s){ return s && loadedRoles.some(function(r){ return r.key === s.roleKey; }); })[0] || snaps[0]; /* #56-3 — снапы неактивных ролей держат протухшее имя; #73 — набор ЗАГРУЖАЕМОГО спринта */
     var sprint = {
       sprintId:        newId,

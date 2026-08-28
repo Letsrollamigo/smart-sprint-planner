@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Sprint oluşturma kilidi",
   "sprintLockNoRights": "Yetersiz yetki: anahtar, «Erişim yönetimi» ayarlarındaki grup tarafından yönetilir",
   "toastSprintCreationLocked": "Yeni sprint oluşturma yönetici tarafından engellendi",
+  "toastSprintViewOnlyRole": "“{sprint}” sprinti salt okunur: “{role}” rolü “{status}” durumunda. Değiştirmek için sprint geçmişindeki “Düzenle” düğmesini kullanın.",
   "toastSprintLockOn": "Sprint oluşturma kilitlendi",
   "toastSprintLockOff": "Sprint oluşturma kilidi açıldı",
   "hintSprintLockGroup": "Üyeler, planlayıcı başlığındaki sprint oluşturma kilidini değiştirebilir. Kilit açıkken mevcut sprintler çalışmaya devam eder.",

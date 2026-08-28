@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Blocco creazione sprint",
   "sprintLockNoRights": "Permessi insufficienti: l'interruttore è gestito dal gruppo delle impostazioni «Controllo accessi»",
   "toastSprintCreationLocked": "La creazione di nuovi sprint è bloccata dall'amministratore",
+  "toastSprintViewOnlyRole": "Lo sprint «{sprint}» è in sola lettura: il ruolo «{role}» è nello stato «{status}». Per modificarlo usa «Modifica» nella cronologia degli sprint.",
   "toastSprintLockOn": "Creazione sprint bloccata",
   "toastSprintLockOff": "Creazione sprint sbloccata",
   "hintSprintLockGroup": "I membri possono azionare l'interruttore di blocco della creazione sprint nell'intestazione del planner. Gli sprint esistenti continuano a funzionare con il blocco attivo.",

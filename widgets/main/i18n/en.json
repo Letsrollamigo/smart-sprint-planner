@@ -191,6 +191,7 @@
   "sprintLockToggleLabel": "Sprint creation lock",
   "sprintLockNoRights": "Insufficient rights: the toggle is managed by the group from the “Access control” settings",
   "toastSprintCreationLocked": "Creating new sprints is blocked by the administrator",
+  "toastSprintViewOnlyRole": "Sprint “{sprint}” is view-only: role “{role}” is in status “{status}”. To change it, use “Edit” in the sprint history.",
   "toastSprintLockOn": "Sprint creation locked",
   "toastSprintLockOff": "Sprint creation unlocked",
   "hintSprintLockGroup": "Members can flip the sprint-creation lock toggle in the planner header. Existing sprints keep working while the lock is on.",

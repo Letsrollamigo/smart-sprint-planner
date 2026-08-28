@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Sperre für Sprint-Erstellung",
   "sprintLockNoRights": "Unzureichende Rechte: Der Schalter wird von der Gruppe aus den Einstellungen „Zugriffsverwaltung“ verwaltet",
   "toastSprintCreationLocked": "Das Erstellen neuer Sprints wurde vom Administrator gesperrt",
+  "toastSprintViewOnlyRole": "Sprint „{sprint}“ ist schreibgeschützt: Rolle „{role}“ hat den Status „{status}“. Zum Ändern „Bearbeiten“ in der Sprint-Historie verwenden.",
   "toastSprintLockOn": "Sprint-Erstellung gesperrt",
   "toastSprintLockOff": "Sprint-Erstellung entsperrt",
   "hintSprintLockGroup": "Mitglieder können den Sperrschalter für die Sprint-Erstellung in der Planer-Kopfzeile umschalten. Bestehende Sprints funktionieren bei aktiver Sperre weiter.",

@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "冲刺创建锁定",
   "sprintLockNoRights": "权限不足：此开关由“访问管理”设置中的用户组管理",
   "toastSprintCreationLocked": "管理员已禁止创建新冲刺",
+  "toastSprintViewOnlyRole": "冲刺“{sprint}”为只读：角色“{role}”处于“{status}”状态。如需修改，请在冲刺历史中使用“编辑”。",
   "toastSprintLockOn": "已锁定冲刺创建",
   "toastSprintLockOff": "已解锁冲刺创建",
   "hintSprintLockGroup": "成员可在规划器顶栏切换冲刺创建锁定开关。锁定期间现有冲刺继续正常工作。",

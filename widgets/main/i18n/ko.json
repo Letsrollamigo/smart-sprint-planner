@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "스프린트 생성 잠금",
   "sprintLockNoRights": "권한이 부족합니다: 이 토글은 «액세스 관리» 설정의 그룹이 관리합니다",
   "toastSprintCreationLocked": "새 스프린트 생성이 관리자에 의해 차단되었습니다",
+  "toastSprintViewOnlyRole": "스프린트 ‘{sprint}’은(는) 읽기 전용입니다. ‘{role}’ 역할의 상태가 ‘{status}’입니다. 변경하려면 스프린트 기록에서 ‘편집’을 사용하세요.",
   "toastSprintLockOn": "스프린트 생성이 잠겼습니다",
   "toastSprintLockOff": "스프린트 생성 잠금이 해제되었습니다",
   "hintSprintLockGroup": "구성원은 플래너 헤더에서 스프린트 생성 잠금 토글을 전환할 수 있습니다. 잠금이 켜져 있어도 기존 스프린트는 계속 작동합니다.",

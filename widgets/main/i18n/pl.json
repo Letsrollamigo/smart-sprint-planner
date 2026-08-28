@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Blokada tworzenia sprintów",
   "sprintLockNoRights": "Brak uprawnień: przełącznikiem zarządza grupa z ustawień «Zarządzanie dostępem»",
   "toastSprintCreationLocked": "Tworzenie nowych sprintów zostało zablokowane przez administratora",
+  "toastSprintViewOnlyRole": "Sprint „{sprint}” jest tylko do odczytu: rola „{role}” ma status „{status}”. Aby go zmienić, użyj „Edytuj” w historii sprintów.",
   "toastSprintLockOn": "Tworzenie sprintów zablokowane",
   "toastSprintLockOff": "Tworzenie sprintów odblokowane",
   "hintSprintLockGroup": "Członkowie mogą przełączać blokadę tworzenia sprintów w nagłówku planera. Istniejące sprinty działają dalej przy włączonej blokadzie.",

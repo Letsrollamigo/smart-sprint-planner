@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Sprint-létrehozási zár",
   "sprintLockNoRights": "Nincs elegendő jogosultság: a kapcsolót a «Hozzáférés-kezelés» beállítások csoportja kezeli",
   "toastSprintCreationLocked": "Új sprintek létrehozását az adminisztrátor letiltotta",
+  "toastSprintViewOnlyRole": "A(z) „{sprint}” sprint csak olvasható: a(z) „{role}” szerep állapota „{status}”. Módosításhoz használja a „Szerkesztés” gombot a sprintelőzményekben.",
   "toastSprintLockOn": "Sprint-létrehozás zárolva",
   "toastSprintLockOff": "Sprint-létrehozás feloldva",
   "hintSprintLockGroup": "A tagok átkapcsolhatják a sprint-létrehozási zárat a tervező fejlécében. A meglévő sprintek a zár bekapcsolása mellett is működnek.",

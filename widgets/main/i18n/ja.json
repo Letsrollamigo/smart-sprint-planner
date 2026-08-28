@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "スプリント作成ロック",
   "sprintLockNoRights": "権限がありません: このスイッチは「アクセス管理」設定のグループが管理します",
   "toastSprintCreationLocked": "新しいスプリントの作成は管理者によりブロックされています",
+  "toastSprintViewOnlyRole": "スプリント「{sprint}」は閲覧専用です。ロール「{role}」のステータスが「{status}」のためです。変更するにはスプリント履歴の「編集」を使用してください。",
   "toastSprintLockOn": "スプリント作成をロックしました",
   "toastSprintLockOff": "スプリント作成のロックを解除しました",
   "hintSprintLockGroup": "メンバーはプランナーのヘッダーでスプリント作成ロックを切り替えられます。ロック中も既存のスプリントは引き続き動作します。",

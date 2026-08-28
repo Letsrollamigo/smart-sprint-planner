@@ -125,6 +125,7 @@
   "sprintLockToggleLabel": "Verrou de création de sprints",
   "sprintLockNoRights": "Droits insuffisants : l'interrupteur est géré par le groupe des paramètres « Contrôle d'accès »",
   "toastSprintCreationLocked": "La création de nouveaux sprints est bloquée par l'administrateur",
+  "toastSprintViewOnlyRole": "Le sprint « {sprint} » est en lecture seule : le rôle « {role} » est au statut « {status} ». Pour le modifier, utilisez « Modifier » dans l’historique des sprints.",
   "toastSprintLockOn": "Création de sprints verrouillée",
   "toastSprintLockOff": "Création de sprints déverrouillée",
   "hintSprintLockGroup": "Les membres peuvent basculer le verrou de création de sprints dans l'en-tête du planificateur. Les sprints existants continuent de fonctionner quand le verrou est actif.",

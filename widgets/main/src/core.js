@@ -4760,7 +4760,7 @@
       syncStateToUrl: _syncStateToUrl, updateShareBtnState: _updateShareBtnState,
       showCloseWorkingCopyModal: showCloseWorkingCopyModal,
       getActiveRoles: getSprintRoles, getSprintRolesFor: getSprintRolesFor,   /* #73 */
-      safeLs: safeLs, roleLabel: roleLabel, emptyPP: emptyPP,
+      safeLs: safeLs, roleLabel: roleLabel, statusLabel: statusLabel, emptyPP: emptyPP,   /* #96 — подпись блокирующей роли */
       populatePlanningRoleSel: populatePlanningRoleSel,
       getPersonalPlanningForCurrent: _getPersonalPlanningForCurrent,
       findHistRecForCurrent: _findHistRecForCurrent,
