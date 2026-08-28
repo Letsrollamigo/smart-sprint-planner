@@ -874,6 +874,34 @@ test('golden: renderBacklog — по зонам: пул/multi-role/single/нуж
   checkJsonSnapshot('backlog-zones', backlogShape(backlogVm(document)));
 });
 
+/* #95 — единицы полосы ёмкости. Спрос (Σ rem) и ёмкость (ресурс роли) приходят в чип
+   из разных источников; оба обязаны быть в МИНУТАХ. Пин против конверсии в розетке
+   (getApprovedCapacityFor, core.js §6.3): при `* 60` ёмкость завышалась в 60 раз,
+   мини-бар всегда near-zero, а `over` не срабатывал даже при кратном перекрытии. */
+test('#95: полоса ёмкости — спрос и ёмкость в одних единицах, перелимит срабатывает', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const sprint = gm.get('_sprint');   /* фикстура: resourceDevBack 4800 мин (80ч), resourceTesting 1200 мин (20ч) */
+  gm.set({
+    _settings: backlogSettings(),
+    _backlogPool: [
+      /* devBack: спрос 6000 мин (100ч) > ёмкости 4800 → перелимит */
+      backlogTask({ issueId: 'CAP-1', idReadable: 'CAP-1', summary: 'Перелимит', stateName: 'In Progress',
+        estByRole: { devBack: 6000, testing: 600 }, factByRole: {} }),
+    ],
+  });
+  gm.call('renderBacklog');
+  const strip = backlogVm(document).capacityStrip;
+  const byRole = {};
+  strip.forEach(function (c) { byRole[c.roleKey] = c; });
+
+  assert.strictEqual(byRole.devBack.capacity, sprint.resourceDevBack, 'ёмкость = ресурс роли в минутах (не ×60)');
+  assert.strictEqual(byRole.devBack.demand, 6000, 'спрос = Σ остатков в минутах');
+  assert.strictEqual(byRole.devBack.over, true, 'спрос 6000 > ёмкости 4800 → перелимит');
+  assert.strictEqual(byRole.testing.capacity, sprint.resourceTesting, 'ёмкость testing = ресурс роли в минутах');
+  assert.strictEqual(byRole.testing.over, false, 'спрос 600 < ёмкости 1200 → без перелимита');
+});
+
 test('golden: renderBacklog — нет маппинга зон → empty-баннер, vm не монтируется', () => {
   const { gm, document } = createHost();
   fx.applyBaseState(gm);

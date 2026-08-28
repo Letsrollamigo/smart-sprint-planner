@@ -162,3 +162,34 @@ test('parity: адаптер == формулы CAPACITY_PURE на одной з�
     );
   });
 });
+
+/* ════ #95 — розетка ёмкости бэклога (#21 §6.3 слайс 5): единицы ════
+   getApprovedCapacityFor(roleKey, sprint) отдаёт _sprint[resKey] КАК ЕСТЬ — минуты, в тех
+   же единицах, что спрос бэклога (Σ rem, backlog-view.js «rem в МИНУТАХ»). Пин против
+   возврата `* 60` под подписью «часы → минуты»: на уже-минутах чип завышал ёмкость в 60 раз
+   и признак перелимита не срабатывал никогда. Единицы сверяются с соседним адаптером
+   getApprovedCapacityForRole, который без утверждённой записи отдаёт тот же ресурс. */
+test('#95: розетка бэклога — ресурс роли verbatim в минутах, без конверсии', () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+  const sprint = gm.get('_sprint');
+
+  [['analysis', 'resourceAnalysis'], ['testing', 'resourceTesting'], ['devBack', 'resourceDevBack']]
+    .forEach(function (pair) {
+      const rk = pair[0], resKey = pair[1];
+      assert.ok(sprint[resKey] > 0, 'фикстура должна нести ресурс роли: ' + resKey);
+      assert.strictEqual(
+        gm.call('getApprovedCapacityFor', rk, sprint), sprint[resKey],
+        'ёмкость бэклога = ресурс роли в минутах, без ×60: ' + rk
+      );
+      assert.strictEqual(
+        gm.call('getApprovedCapacityFor', rk, sprint), gm.call('getApprovedCapacityForRole', rk),
+        'обе розетки в одних единицах (fallback без approved-записи): ' + rk
+      );
+    });
+
+  assert.strictEqual(gm.call('getApprovedCapacityFor', 'analysis', null), null, 'нет спринта → null');
+  assert.strictEqual(gm.call('getApprovedCapacityFor', 'nope', sprint), null, 'неизвестная роль → null');
+  assert.strictEqual(sprint.resourceDevFront, 0, 'фикстура должна нести роль с нулевым ресурсом');
+  assert.strictEqual(gm.call('getApprovedCapacityFor', 'devFront', sprint), null, 'нулевой ресурс → null («только спрос»)');
+});

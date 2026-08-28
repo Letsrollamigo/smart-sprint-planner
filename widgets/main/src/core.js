@@ -4496,14 +4496,14 @@
   /* §6.3 слайс 5 — адаптер-розетка ёмкости роли. Экспонирует СУЩЕСТВУЮЩИЙ ресурс роли
      спринта (_sprint[resKey], тот же, что у calcRemForRole — «остатки»), НЕ изобретает
      формулу (не зависим от frozen #45; точная бизнес-ёмкость придёт с #45, #21 не переписываем).
-     Часы → минуты (demand в минутах). Нет ресурса (0/unset) → null = деградация «только спрос». */
+     #95 — resKey и спрос бэклога уже в МИНУТАХ, конверсии НЕТ. 0/unset → null («только спрос»). */
   function getApprovedCapacityFor(roleKey, sprint) {
     if (!sprint) return null;
     var role = ALL_ROLES.find(function (r) { return r.key === roleKey; });
     if (!role) return null;
     var res = sprint[role.resKey];
     if (typeof res !== 'number' || !isFinite(res) || res <= 0) return null;
-    return res * 60;
+    return res;
   }
 
   /* ═══ #45 R4 — адаптеры ёмкость→планирование (spec §9) ═══════════════════════

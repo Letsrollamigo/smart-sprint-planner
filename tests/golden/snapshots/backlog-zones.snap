@@ -4,14 +4,14 @@
       "roleKey": "testing",
       "label": "Тестирование",
       "demand": 120,
-      "capacity": 72000,
+      "capacity": 1200,
       "over": false
     },
     {
       "roleKey": "devBack",
       "label": "Разработка Back",
       "demand": 780,
-      "capacity": 288000,
+      "capacity": 4800,
       "over": false
     }
   ],
