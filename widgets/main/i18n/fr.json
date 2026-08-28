@@ -692,6 +692,8 @@
   "globalProjectPlaceholder": "— sélectionnez un projet —",
   "globalNoProjects": "Aucun projet disponible avec le planificateur activé. Attachez l'application à un projet (Project Settings → Apps), sélectionnez le groupe de gestionnaires des paramètres dans les réglages de l'application (champ obligatoire), puis ouvrez le planificateur dans les paramètres du projet.",
   "globalPickPrompt": "Sélectionnez un projet dans l’en-tête pour commencer la planification.",
+  "bannerProjectLoadFailed": "Le chargement des données du projet a échoué ({reason}). L’écran peut être incomplet — rechargez la page ou sélectionnez de nouveau le projet.",
+  "loadFailedTimeout": "délai de réponse dépassé",
   "globalSwitchDiscardTitle": "Brouillon non enregistré",
   "globalSwitchDiscardMsg": "Le projet actuel comporte des modifications non enregistrées et non validées. Le changement de projet effacera le brouillon local. Continuer ?",
   "globalSwitchDiscardConfirm": "Changer de projet",

@@ -309,3 +309,59 @@ test('_refreshFeatureStatusBar — 6 chip\'ов по флагам _settings', as
   });
   checkJsonSnapshot('data-loaders-featureStatusBar', chips);
 });
+
+/* ════════════════════ #97 — предохранители загрузки проекта ════════════════════
+   Сбой загрузки раньше глотался молча: `loadProjectFields` заканчивался пустым
+   `.catch`, `loadAllData` писал только в диаг. Пользователь видел пустой экран,
+   неотличимый от пустого проекта. Плюс отсутствовал generation-guard: поздний
+   ответ по уже покинутому проекту оседал в стейте под новой шапкой. */
+
+test('#97: сбой загрузки состава → полоса с причиной (а не молчаливый пустой экран)', async () => {
+  const { gm } = createHost();
+  const banners = [];
+  gm.set({ _setGlobalBanner: function (key, sub) { banners.push({ key: key, sub: sub }); } });
+  stubApiGet(gm, { 'sprint-data': new Error('gm-backend-down') });
+  await gm.call('loadAllData');
+  await settle();
+  assert.deepStrictEqual(banners, [{ key: 'bannerProjectLoadFailed', sub: 'gm-backend-down' }],
+    'причина сбоя показана полосой');
+});
+
+test('#97: превышенное ожидание ответа названо человеческим текстом, не «Error»', async () => {
+  const { gm } = createHost();
+  const banners = [];
+  gm.set({ _setGlobalBanner: function (key, sub) { banners.push({ key: key, sub: sub }); } });
+  const timeoutErr = new Error('read deadline 30000ms exceeded: project-fields');
+  timeoutErr._readDeadlineExceeded = true;
+  stubApiGet(gm, { 'project-fields': timeoutErr });
+  gm.set({ _updateProjectNameLabel: function () {}, _ytBaseFromProject: function () {} });
+  await gm.call('loadProjectFields');
+  await settle();
+  assert.strictEqual(banners.length, 1);
+  assert.strictEqual(banners[0].key, 'bannerProjectLoadFailed');
+  assert.strictEqual(banners[0].sub, gm.call('T', 'loadFailedTimeout'), 'причина — локализованный текст таймаута');
+});
+
+test('#97: поздний ответ по покинутому проекту не пишет в стейт', async () => {
+  const { gm } = createHost();
+  gm.set({ _activeProjectKey: 'PRJ-A', _settings: { sentinel: 'KEEP' }, _sprint: null });
+  let release = null;
+  /* подвешен только sprint-data; остальное отвечает сразу, иначе цепочка не завершится */
+  gm.set({
+    apiGet: function (path) {
+      if (path === 'sprint-data') return new Promise(function (res) { release = res; });
+      return Promise.resolve({ success: true, history: [] });
+    },
+    _workingDraftsLoadFromBackend: function () { return Promise.resolve(); },
+    reconcileHasWorkingCopyFlag: function () {}, gcWorkingDrafts: function () {},
+  });
+
+  const inFlight = gm.call('loadAllData');
+  gm.set({ _activeProjectKey: 'PRJ-B' });          /* пользователь ушёл на другой проект */
+  release({ success: true, settings: { sentinel: 'STALE' }, sprint: { sprintId: 'stale' }, roleItems: {} });
+  await inFlight;
+  await settle();
+
+  assert.strictEqual(gm.get('_settings').sentinel, 'KEEP', 'настройки покинутого проекта не применены');
+  assert.strictEqual(gm.get('_sprint'), null, 'спринт покинутого проекта не применён');
+});

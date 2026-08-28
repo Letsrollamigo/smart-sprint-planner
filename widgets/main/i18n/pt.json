@@ -691,6 +691,8 @@
   "globalProjectPlaceholder": "— selecione um projeto —",
   "globalNoProjects": "Nenhum projeto disponível com o planejador ativado. Anexe o aplicativo a um projeto (Project Settings → Apps), selecione o grupo de gerentes de configurações nas configurações do aplicativo (campo obrigatório) e depois abra o planejador nas configurações do projeto.",
   "globalPickPrompt": "Selecione um projeto no cabeçalho para começar a planejar.",
+  "bannerProjectLoadFailed": "Não foi possível carregar os dados do projeto ({reason}). A tela pode estar incompleta — recarregue a página ou selecione o projeto novamente.",
+  "loadFailedTimeout": "tempo de resposta esgotado",
   "globalSwitchDiscardTitle": "Rascunho não salvo",
   "globalSwitchDiscardMsg": "O projeto atual tem alterações não salvas e não validadas. Trocar de projeto limpará o rascunho local. Continuar?",
   "globalSwitchDiscardConfirm": "Trocar projeto",

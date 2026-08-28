@@ -692,6 +692,8 @@
   "globalProjectPlaceholder": "— vyberte projekt —",
   "globalNoProjects": "Žádné dostupné projekty s povoleným plánovačem. Připojte aplikaci k projektu (Project Settings → Apps), v nastavení aplikace vyberte skupinu správců nastavení (povinné pole) a poté otevřete plánovač v nastavení projektu.",
   "globalPickPrompt": "Vyberte projekt v záhlaví a začněte plánovat.",
+  "bannerProjectLoadFailed": "Data projektu se nepodařilo načíst ({reason}). Obrazovka může být neúplná — obnovte stránku nebo znovu vyberte projekt.",
+  "loadFailedTimeout": "vypršel čas odpovědi",
   "globalSwitchDiscardTitle": "Neuložený koncept",
   "globalSwitchDiscardMsg": "Aktuální projekt má neuložené a neověřené změny. Přepnutím projektu se místní koncept vymaže. Pokračovat?",
   "globalSwitchDiscardConfirm": "Přepnout projekt",

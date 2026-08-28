@@ -691,6 +691,8 @@
   "globalProjectPlaceholder": "— 选择项目 —",
   "globalNoProjects": "没有启用规划器的可用项目。请将应用附加到项目（Project Settings → Apps），在应用设置中选择设置管理员组（必填项），然后在项目设置中打开规划器。",
   "globalPickPrompt": "在标题中选择一个项目以开始规划。",
+  "bannerProjectLoadFailed": "项目数据加载失败（{reason}）。界面可能不完整——请刷新页面或重新选择项目。",
+  "loadFailedTimeout": "响应超时",
   "globalSwitchDiscardTitle": "未保存的草稿",
   "globalSwitchDiscardMsg": "当前项目有未保存且未验证的更改。切换项目将清除本地草稿。是否继续？",
   "globalSwitchDiscardConfirm": "切换项目",

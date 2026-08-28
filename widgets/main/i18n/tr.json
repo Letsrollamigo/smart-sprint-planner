@@ -691,6 +691,8 @@
   "globalProjectPlaceholder": "— bir proje seçin —",
   "globalNoProjects": "Planlayıcı etkinleştirilmiş kullanılabilir proje yok. Uygulamayı bir projeye bağlayın (Project Settings → Apps), uygulama ayarlarında ayar yöneticisi grubunu seçin (zorunlu alan), ardından planlayıcıyı proje ayarlarında açın.",
   "globalPickPrompt": "Planlamaya başlamak için başlıktan bir proje seçin.",
+  "bannerProjectLoadFailed": "Proje verileri yüklenemedi ({reason}). Ekran eksik olabilir — sayfayı yenileyin veya projeyi yeniden seçin.",
+  "loadFailedTimeout": "yanıt zaman aşımına uğradı",
   "globalSwitchDiscardTitle": "Kaydedilmemiş taslak",
   "globalSwitchDiscardMsg": "Geçerli projede kaydedilmemiş ve doğrulanmamış değişiklikler var. Proje değiştirmek yerel taslağı temizleyecek. Devam edilsin mi?",
   "globalSwitchDiscardConfirm": "Projeyi değiştir",

@@ -756,6 +756,8 @@
   "globalProjectPlaceholder": "— select a project —",
   "globalNoProjects": "No available projects with the planner enabled. Attach the app to a project (Project Settings → Apps), select the settings manager group in the app settings (a required field), then open the planner in the project settings.",
   "globalPickPrompt": "Select a project in the header to start planning.",
+  "bannerProjectLoadFailed": "Project data failed to load ({reason}). The screen may be incomplete — reload the page or pick the project again.",
+  "loadFailedTimeout": "response timed out",
   "globalSwitchDiscardTitle": "Unsaved draft",
   "globalSwitchDiscardMsg": "The current project has unsaved and unvalidated changes. Switching projects will clear the local draft. Continue?",
   "globalSwitchDiscardConfirm": "Switch project",

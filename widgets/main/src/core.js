@@ -2291,7 +2291,7 @@
       ytBaseFromProject: _ytBaseFromProject,
       syncProjectDefaultLang: _syncProjectDefaultLang,
       refreshFeatureStatusBar: _refreshFeatureStatusBar,
-      applyDiagLogVisibility: _applyDiagLogVisibility,
+      applyDiagLogVisibility: _applyDiagLogVisibility, setGlobalBanner: _setGlobalBanner,   /* #97 — причина сбоя загрузки полосой */
       workingDraftsLoadFromBackend: _workingDraftsLoadFromBackend,
       reconcileHasWorkingCopyFlag: reconcileHasWorkingCopyFlag,
       gcWorkingDrafts: gcWorkingDrafts,
@@ -2301,7 +2301,7 @@
         getSettings:           function () { return _settings; },
         getSprint:             function () { return _sprint; },
         getRoleItems:          function () { return _roleItems; },
-        getEnableDebugLog:     function () { return _enableDebugLog; },
+        getEnableDebugLog:     function () { return _enableDebugLog; }, getActiveProjectKey: function () { return _activeProjectKey; },   /* #97 — гейт позднего ответа */
         setCurrentUser:        function (v) { _currentUser = v; },
         setProjectFields:      function (v) { _projectFields = v; },
         setProjectDisplayName: function (v) { _projectDisplayName = v; },

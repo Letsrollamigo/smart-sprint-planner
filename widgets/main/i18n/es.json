@@ -692,6 +692,8 @@
   "globalProjectPlaceholder": "— seleccione un proyecto —",
   "globalNoProjects": "No hay proyectos disponibles con el planificador habilitado. Adjunte la aplicación a un proyecto (Project Settings → Apps), seleccione el grupo de administradores de configuración en los ajustes de la aplicación (campo obligatorio) y luego abra el planificador en la configuración del proyecto.",
   "globalPickPrompt": "Seleccione un proyecto en el encabezado para comenzar a planificar.",
+  "bannerProjectLoadFailed": "No se pudieron cargar los datos del proyecto ({reason}). La pantalla puede estar incompleta: recargue la página o vuelva a elegir el proyecto.",
+  "loadFailedTimeout": "tiempo de respuesta agotado",
   "globalSwitchDiscardTitle": "Borrador sin guardar",
   "globalSwitchDiscardMsg": "El proyecto actual tiene cambios sin guardar y sin validar. Al cambiar de proyecto se borrará el borrador local. ¿Continuar?",
   "globalSwitchDiscardConfirm": "Cambiar proyecto",

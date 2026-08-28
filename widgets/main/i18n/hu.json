@@ -691,6 +691,8 @@
   "globalProjectPlaceholder": "— válasszon projektet —",
   "globalNoProjects": "Nincs elérhető projekt engedélyezett tervezővel. Csatolja az alkalmazást egy projekthez (Project Settings → Apps), az alkalmazás beállításaiban válassza ki a beállításkezelő csoportot (kötelező mező), majd nyissa meg a tervezőt a projekt beállításaiban.",
   "globalPickPrompt": "Válasszon projektet a fejlécben a tervezés megkezdéséhez.",
+  "bannerProjectLoadFailed": "A projekt adatai nem töltődtek be ({reason}). A képernyő hiányos lehet — töltse újra az oldalt, vagy válassza ki ismét a projektet.",
+  "loadFailedTimeout": "a válasz időtúllépése",
   "globalSwitchDiscardTitle": "Nem mentett piszkozat",
   "globalSwitchDiscardMsg": "A jelenlegi projektben nem mentett és nem validált változások vannak. A projektváltás törli a helyi piszkozatot. Folytatja?",
   "globalSwitchDiscardConfirm": "Projekt váltása",

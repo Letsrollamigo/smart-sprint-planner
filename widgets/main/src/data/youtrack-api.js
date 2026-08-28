@@ -56,9 +56,36 @@ function _backendCall(path, baseOpts, deps) {
    путём ниже. Числовой rev живёт в sprint-store (map slot→rev, сброс на смене проекта). */
 const REV_SLOT_PATHS = { history: 1, releases: 1, absences: 1 };
 
+/* #97 — дедлайн ЧТЕНИЯ. Зависший (не упавший) ответ раньше держал цепочку загрузки
+   проекта вечно: шапка уже на новом проекте, тело — от прежнего, и ничто не выводило
+   из этого состояния. Гонку выигрывает таймер → цепочка падает в catch, вызывающий
+   покажет причину. Ошибка помечена `_readDeadlineExceeded`, чтобы отличать её от ответа сервера.
+   Только GET: у записи таймаут опаснее самой проблемы — POST мог дойти до сервера,
+   и клиент, «отменивший» его по времени, соврал бы о результате. */
+const READ_DEADLINE_MS = 30000;
+
+function _withDeadline(p, path, deps) {
+  if (typeof setTimeout !== 'function') return p;
+  var timer = null;
+  return Promise.race([
+    p,
+    new Promise(function (_, reject) {
+      timer = setTimeout(function () {
+        var e = new Error('read deadline ' + READ_DEADLINE_MS + 'ms exceeded: ' + path);
+        e._readDeadlineExceeded = true;
+        deps.diag('TIMEOUT ' + path + ' (' + READ_DEADLINE_MS + 'ms)', 'err');
+        reject(e);
+      }, READ_DEADLINE_MS);
+    }),
+  ]).then(
+    function (r) { if (timer) clearTimeout(timer); return r; },
+    function (e) { if (timer) clearTimeout(timer); throw e; }
+  );
+}
+
 function apiGet(path, deps, _isRetry) {
   deps.diag('GET ' + path + ' [' + deps.state.getMode() + ']');
-  return _backendCall(path, {}, deps)
+  return _withDeadline(_backendCall(path, {}, deps), path, deps)
     .then(function (r) {
       deps.diag('OK ' + path, 'ok');
       /* v3.12.0 (P2-хвост v3.2.1) — анти-clobber слотов: GET, чей rev МЕНЬШЕ уже

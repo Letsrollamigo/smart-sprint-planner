@@ -35,6 +35,31 @@
 (function () {
   'use strict';
 
+  /* #97 — два предохранителя вокруг загрузки проекта.
+     `_projectGate` фиксирует ключ проекта на старте запроса: поздний ответ по УЖЕ
+     покинутому проекту не должен писать в стейт (generation-guard отсутствовал —
+     старые данные оседали под новой шапкой). `_reportLoadFailure` заменяет глухое
+     глотание ошибки: раньше сбой давал пустой экран, неотличимый от пустого проекта. */
+  function _projectGate(deps) {
+    var get = deps.state.getActiveProjectKey;
+    var key0 = (typeof get === 'function') ? get() : null;
+    return function stillCurrent() {
+      if (typeof get !== 'function') return true;
+      if (get() === key0) return true;
+      deps.diag('load answer for stale project ' + key0 + ' dropped (now ' + get() + ')', 'warn');
+      return false;
+    };
+  }
+
+  function _reportLoadFailure(deps, e) {
+    var reason = (e && e._readDeadlineExceeded) ? (deps.T ? deps.T('loadFailedTimeout') : 'timeout')
+                                       : ((e && e.message) ? e.message : String(e));
+    deps.diag('load failed: ' + reason, 'err');
+    if (typeof deps.setGlobalBanner === 'function') {
+      try { deps.setGlobalBanner('bannerProjectLoadFailed', reason); } catch (_) { /* баннера может не быть в project-режиме */ }
+    }
+  }
+
   /* ── loadMe — текущий пользователь (user-scoped, один раз на init) ── */
   function loadMe(deps) {
     return deps.state.getHost().fetchYouTrack('users/me', { query: { fields: 'id,login,fullName' } })
@@ -44,8 +69,9 @@
 
   /* ── loadProjectFields — кастомные поля проекта + имя проекта ── */
   function loadProjectFields(deps) {
+    var stillCurrent = _projectGate(deps);
     return deps.apiGet('project-fields').then(function (r) {
-      if (r && r.success) {
+      if (r && r.success && stillCurrent()) {
         var fields = r.fields || [];
         deps.state.setProjectFields(fields);
         deps.diag('Fields loaded: ' + fields.length, 'ok');
@@ -57,7 +83,7 @@
         }
         deps.ytBaseFromProject();
       }
-    }).catch(function () {});
+    }).catch(function (e) { _reportLoadFailure(deps, e); });
   }
 
   /* #71 — автогруппа YouTrack (All Users / Registered Users / команда проекта).
@@ -194,8 +220,9 @@
      защиту от стэйла кэшей. ── */
   function loadAllData(deps) {
     var st = deps.state;
+    var stillCurrent = _projectGate(deps);
     return deps.apiGet('sprint-data').then(function (r) {
-      if (r && r.success) {
+      if (r && r.success && stillCurrent()) {
         st.setSettings(r.settings || null);
         /* v1.1.0 — после загрузки _settings подтянуть project-default язык в loader. */
         deps.syncProjectDefaultLang();
@@ -286,7 +313,7 @@
         try { deps.reconcileHasWorkingCopyFlag(); } catch (e) { deps.diag('reconcile failed: ' + e, 'err'); }
         try { deps.gcWorkingDrafts(); }            catch (e) { deps.diag('gc failed: ' + e, 'err'); }
       });
-    }).catch(function (e) { deps.diag('loadAllData ERR: ' + e, 'err'); });
+    }).catch(function (e) { _reportLoadFailure(deps, e); });
   }
 
   var api = {

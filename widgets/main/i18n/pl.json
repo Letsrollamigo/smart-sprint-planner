@@ -692,6 +692,8 @@
   "globalProjectPlaceholder": "— wybierz projekt —",
   "globalNoProjects": "Brak dostępnych projektów z włączonym plannerem. Podłącz aplikację do projektu (Project Settings → Apps), w ustawieniach aplikacji wybierz grupę zarządzających ustawieniami (pole wymagane), a następnie otwórz planner w ustawieniach projektu.",
   "globalPickPrompt": "Wybierz projekt w nagłówku, aby rozpocząć planowanie.",
+  "bannerProjectLoadFailed": "Nie udało się wczytać danych projektu ({reason}). Ekran może być niekompletny — odśwież stronę lub wybierz projekt ponownie.",
+  "loadFailedTimeout": "przekroczono czas odpowiedzi",
   "globalSwitchDiscardTitle": "Niezapisany szkic",
   "globalSwitchDiscardMsg": "Bieżący projekt ma niezapisane i niezweryfikowane zmiany. Zmiana projektu spowoduje wyczyszczenie lokalnego szkicu. Kontynuować?",
   "globalSwitchDiscardConfirm": "Zmień projekt",

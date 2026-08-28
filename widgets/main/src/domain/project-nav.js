@@ -220,7 +220,7 @@
     if (!b) return;
     if (textKey) {
       var txt = deps.T(textKey);
-      if (sub != null) txt = txt.replace('{key}', String(sub));   /* #36 — noAccessToProject {key} */
+      if (sub != null) txt = txt.replace('{key}', String(sub)).replace('{reason}', String(sub));   /* #36 — {key}; #97 — {reason} */
       b.textContent = txt;
       b.classList.remove('hidden');
     } else b.classList.add('hidden');
@@ -320,9 +320,10 @@
     /* Явный выбор проекта в пикере → открыть «Параметры спринта», не последний открытый узел. */
     try { deps.state.setForceSprintParamsOnLoad(true); } catch (_) {}
     _setGlobalBanner(deps, null);
-    deps.loadAndRenderProject().catch(function (e) {
-      deps.diag('switch load ERR: ' + (e && e.message ? e.message : e), 'err');
-    });
+    /* #97 — .catch снят как мёртвый: терминальный обработчик _loadAndRenderProject
+       всегда резолвит цепочку, сюда отказ не доходил ни разу. Сбой теперь виден
+       полосой из _reportLoadFailure (data-loaders), а не молчаливым пустым экраном. */
+    deps.loadAndRenderProject();
   }
 
   /* Модалка-предупреждение «черновик будет очищен» (Ring; fallback — нативный confirm). */

@@ -344,3 +344,31 @@ test('golden: _fetchGanttStateHistory — деградации: не-масси�
 
   checkJsonSnapshot('gantt-state-hist-degraded', { nonArray: nonArray, rejected: rejected });
 });
+
+/* #97 — дедлайн ЧТЕНИЯ. Зависший (не упавший) ответ держал цепочку загрузки проекта
+   бесконечно: шапка уже на новом проекте, тело — от прежнего, выхода нет. Таймаутов в
+   слое не было вовсе. Тест подменяет планировщик, чтобы не ждать 30 секунд живьём. */
+test('#97: apiGet — зависший ответ отбивается по дедлайну, POST не трогаем', async () => {
+  const { gm, window } = bootApi();
+  const realSetTimeout = window.setTimeout;
+  window.setTimeout = function (fn) { return realSetTimeout(fn, 0); };   /* дедлайн наступает сразу */
+  try {
+    gm.set({ _host: recHost(function () { return new Promise(function () {}); }) });   /* ответ не придёт никогда */
+
+    let err = null;
+    try { await gm.call('apiGet', 'sprint-data'); } catch (e) { err = e; }
+    assert.ok(err, 'зависший GET обязан отклониться, а не висеть вечно');
+    assert.strictEqual(err._readDeadlineExceeded, true, 'отказ помечен как дедлайн — вызывающий отличит его от ответа сервера');
+    assert.match(err.message, /read deadline/, 'в сообщении видно, что это дедлайн');
+
+    /* Запись дедлайна НЕ получает: POST мог дойти до сервера, и «отменивший» его
+       по времени клиент соврал бы о результате. */
+    let postSettled = false;
+    gm.call('apiPost', 'history', { history: [] }).then(function () { postSettled = true; },
+                                                        function () { postSettled = true; });
+    await new Promise(function (r) { realSetTimeout(r, 30); });
+    assert.strictEqual(postSettled, false, 'зависший POST остаётся в полёте — таймаут на запись не вешаем');
+  } finally {
+    window.setTimeout = realSetTimeout;
+  }
+});

@@ -691,6 +691,8 @@
   "globalProjectPlaceholder": "— プロジェクトを選択 —",
   "globalNoProjects": "プランナーが有効な利用可能なプロジェクトがありません。アプリをプロジェクトに接続し（Project Settings → Apps）、アプリ設定で設定マネージャーグループを選択（必須項目）してから、プロジェクト設定でプランナーを開いてください。",
   "globalPickPrompt": "プランニングを開始するには、ヘッダーでプロジェクトを選択してください。",
+  "bannerProjectLoadFailed": "プロジェクトのデータを読み込めませんでした（{reason}）。画面が不完全な可能性があります。ページを再読み込みするか、プロジェクトを選び直してください。",
+  "loadFailedTimeout": "応答がタイムアウトしました",
   "globalSwitchDiscardTitle": "未保存の下書き",
   "globalSwitchDiscardMsg": "現在のプロジェクトには未保存かつ未検証の変更があります。プロジェクトを切り替えるとローカルの下書きが消去されます。続行しますか？",
   "globalSwitchDiscardConfirm": "プロジェクトを切り替える",
