@@ -468,6 +468,27 @@ test('_confirmDiscardAndSwitch — Ring openModal: confirm → onConfirm; cancel
   });
 });
 
+/* Закрытие модалки БЕЗ решения (крестик, Escape — blockEscape:false) обязано быть отменой:
+   иначе пикер остался бы на новом проекте, а данные — на прежнем (разбор 2026-08-28). */
+test('_confirmDiscardAndSwitch — onClose без решения = отмена (крестик/Escape)', () => {
+  const { gm } = createHost();
+  let captured = null;
+  gm.set({ openModal: function (spec) { captured = spec; } });
+  let decided = '';
+  gm.call('_confirmDiscardAndSwitch', function () { decided = 'confirm'; }, function () { decided = 'cancel'; });
+  assert.strictEqual(captured.showCloseButton, true, 'крестик есть — значит выход без кнопок возможен');
+  assert.strictEqual(captured.blockEscape, false, 'Escape закрывает — тот же выход');
+  captured.onClose();
+  assert.strictEqual(decided, 'cancel', 'закрытие без решения откатывает выбор проекта');
+
+  /* А после решения onClose повторно отменять НЕ должен (иначе откат затрёт удачный switch). */
+  let decided2 = '';
+  gm.call('_confirmDiscardAndSwitch', function () { decided2 = 'confirm'; }, function () { decided2 = 'cancel'; });
+  captured.buttons.filter(function (b) { return b.id === 'ok'; })[0].onClick({ close: function () {} });
+  captured.onClose();
+  assert.strictEqual(decided2, 'confirm', 'подтверждение не перебивается закрытием');
+});
+
 /* ════════════════════ project-mode: _loadSettingsOnly ════════════════════ */
 
 test('_loadSettingsOnly — apiGet sprint-data → _settings; reject → стейт цел', async () => {
