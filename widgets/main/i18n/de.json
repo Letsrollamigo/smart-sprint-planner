@@ -513,6 +513,8 @@
   "wcDiffChanged": "Geänderte Aufgaben",
   "wcDiffNoChanges": "Kein Diff — Arbeitskopie ist identisch mit dem Snapshot.",
   "wcCloseHide": "Arbeitskopie ausblenden",
+  "railExpand": "Bereich ausklappen",
+  "railCollapse": "Bereich einklappen",
   "wcResume": "Bearbeitung fortsetzen",
   "wcDiscard": "Arbeitskopie verwerfen",
   "wcDiscardConfirmTitle": "Arbeitskopie verwerfen?",

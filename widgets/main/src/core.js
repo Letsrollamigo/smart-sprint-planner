@@ -349,8 +349,8 @@
   var I18N_CTRL = (typeof window !== 'undefined' && window.__SSP_I18N_CTRL) || {};
   function _i18nDeps() {
     return {
-      T: T,
-      doFullRerender: _doFullRerender,
+      T: T, diag: diag,   /* #81 — рядом с doFullRerender: поверхности вне него (свой монтаж, язык не подхватывали) */
+      doFullRerender: _doFullRerender, renderBacklog: renderBacklog, renderStandupView: renderStandupView, renderProjectSettingsPage: function () { if (_mode === 'project') _renderProjectSettingsPage(); },
       safeLs: safeLs,
       I18N: I18N,
       i18nBridge: _i18nBridge,
@@ -1429,8 +1429,8 @@
     var tgl = document.getElementById('sspRailToggle');
     if (tgl) {
       tgl.textContent = v ? '»' : '«';
-      tgl.setAttribute('aria-label', v ? 'Развернуть панель' : 'Свернуть панель');
-      tgl.setAttribute('title', v ? 'Развернуть панель' : 'Свернуть панель');
+      tgl.setAttribute('aria-label', T(v ? 'railExpand' : 'railCollapse'));   /* #79 — было RU-литералом мимо T() */
+      tgl.setAttribute('title', T(v ? 'railExpand' : 'railCollapse'));
       tgl.setAttribute('aria-expanded', v ? 'false' : 'true');
     }
   }
@@ -3441,7 +3441,7 @@
   var RELEASE_RB    = (typeof window !== 'undefined' && window.__SSP_RELEASE_ROLLBACK) || {};   /* #57-3 */
   function _releaseDeps() {
     return {
-      T: T, esc: esc, icon: icon, diag: diag,
+      T: T, esc: esc, icon: icon, diag: diag, getLang: function () { return _lang; },   /* #94 — даты релизов в языке планера */
       toast: toast, apiGet: apiGet, apiPost: apiPost,
       openModal: openModal, appVersion: APP_VERSION,
       activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),  /* скоуп подбора задач (R1.4) */
@@ -4442,7 +4442,7 @@
   var REPORTING_DATA = (typeof window !== 'undefined' && window.__SSP_REPORTING_DATA) || {};
   function _reportingDeps() {
     return {
-      T: T, diag: diag, host: _host, ctx: _ctx, settings: _settings,
+      T: T, diag: diag, host: _host, ctx: _ctx, settings: _settings, getLang: function () { return _lang; },   /* #94 */
       activeProjectKey: _activeProjectKey, activeProjectId: _activeProjId(),
       draftGet: _draftGet, draftSet: _draftSet,
       bulkStateTransitions: REPORTING_DATA.bulkStateTransitions, bulkWorkItems: REPORTING_DATA.bulkWorkItems, bulkAsOfEstimates: REPORTING_DATA.bulkAsOfEstimates, /* #50 S5a A4 · S5b A5 */
@@ -4665,7 +4665,7 @@
   /* ─── Helpers: Гант state-история (#20) ─── */
 
   /* _fmtGanttDate/_ganttDaysAgo — делегаторы к DATE_PURE (объявлен выше, date-pure.js). */
-  function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts); }
+  function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts, _lang); }   /* #94 */
   function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
   /* Бейдж состояния (#20) — данные в vm gantt-view.js, рендер — react/gantt-view.jsx.

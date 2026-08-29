@@ -208,3 +208,84 @@ test('golden: _syncProjectDefaultLang — проброс _settings.defaultLang �
     setDefaultArgs: log.setDefaultArgs,
   });
 });
+
+/* ════════════════════ #79 / #81 — язык доходит до всех поверхностей ════════════════════ */
+
+/* #79 — подпись кнопки сворачивания рельса шла двумя русскими литералами мимо T():
+   у пользователя с английским интерфейсом всплывающая подсказка оставалась русской,
+   и скринридер читал её по-русски. */
+test('#79: подсказка кнопки рельса берётся из словаря, а не из русского литерала', () => {
+  const { gm, document } = createHost();
+  const tgl = document.createElement('button');
+  tgl.id = 'sspRailToggle';
+  document.body.appendChild(tgl);
+
+  gm.set({ _lang: 'en' });
+  const enExpectExpand = gm.call('T', 'railExpand');
+  const enExpectCollapse = gm.call('T', 'railCollapse');
+  gm.call('_applyRailCollapsed', true);
+  const enExpanded = tgl.getAttribute('title');
+  gm.call('_applyRailCollapsed', false);
+  const enCollapsed = tgl.getAttribute('title');
+
+  gm.set({ _lang: 'ru' });
+  gm.call('_applyRailCollapsed', true);
+  const ruExpanded = tgl.getAttribute('title');
+
+  assert.strictEqual(enExpanded, enExpectExpand, 'EN: подсказка из словаря');
+  assert.strictEqual(enCollapsed, enExpectCollapse, 'EN: вторая подсказка из словаря');
+  assert.notStrictEqual(enExpanded, ruExpanded, 'подсказка меняется вместе с языком');
+  assert.strictEqual(tgl.getAttribute('aria-label'), ruExpanded, 'aria-label и title совпадают');
+});
+
+/* #81 — setLang перерисовывал только оболочку и планировочные поверхности: React-деревья
+   настроек, бэклога и стендапа монтируются отдельно и оставались на прежнем языке
+   (страница настроек показывала «Роли и поля» при английской шапке — до перезагрузки). */
+test('#81: смена языка перерисовывает и поздние поверхности (настройки/бэклог/стендап)', () => {
+  const { gm, window } = createHost();
+  const log = stubI18nDeps(gm, window);
+  const late = [];
+  gm.set({
+    renderBacklog: function () { late.push('backlog'); },
+    renderStandupView: function () { late.push('standup'); },
+    _renderProjectSettingsPage: function () { late.push('settings'); },
+  });
+
+  gm.call('setLang', 'en');
+  assert.strictEqual(log.rerender, 1, 'оболочка перерисована');
+  assert.deepStrictEqual(late.sort(), ['backlog', 'settings', 'standup'],
+    'все поздние поверхности дёрнуты (host по умолчанию в project-режиме)');
+});
+
+/* Падение одной поверхности не должно оставить остальные непереведёнными. */
+test('#81: сбой одной поверхности не срывает перерисовку остальных', () => {
+  const { gm, window } = createHost();
+  stubI18nDeps(gm, window);
+  const late = [];
+  gm.set({
+    renderBacklog: function () { throw new Error('backlog boom'); },
+    renderStandupView: function () { late.push('standup'); },
+    _renderProjectSettingsPage: function () { late.push('settings'); },
+  });
+
+  gm.call('setLang', 'en');
+  assert.deepStrictEqual(late.sort(), ['settings', 'standup'], 'остальные перерисованы, несмотря на падение бэклога');
+});
+
+/* #81 регресс-гейт: в global-режиме (главное меню) страницу настроек трогать НЕЛЬЗЯ —
+   её хост присутствует в разметке всегда, и монтаж формы поверх дашборда стирает виджет.
+   Поймано живым смоуком: после смены языка в главном меню оставался пустой экран. */
+test('#81: в global-режиме настройки НЕ перемонтируются на смене языка', () => {
+  const { gm, window } = createHost();
+  stubI18nDeps(gm, window);
+  const late = [];
+  gm.set({
+    _mode: 'global',
+    renderBacklog: function () { late.push('backlog'); },
+    renderStandupView: function () { late.push('standup'); },
+    _renderProjectSettingsPage: function () { late.push('settings'); },
+  });
+
+  gm.call('setLang', 'en');
+  assert.deepStrictEqual(late.sort(), ['backlog', 'standup'], 'настройки в global-режиме не трогаем');
+});

@@ -512,6 +512,8 @@
   "wcDiffChanged": "Tarefas alteradas",
   "wcDiffNoChanges": "Sem diff — cópia de trabalho idêntica ao instantâneo.",
   "wcCloseHide": "Ocultar cópia de trabalho",
+  "railExpand": "Expandir painel",
+  "railCollapse": "Recolher painel",
   "wcResume": "Retomar edição",
   "wcDiscard": "Descartar cópia de trabalho",
   "wcDiscardConfirmTitle": "Descartar cópia de trabalho?",

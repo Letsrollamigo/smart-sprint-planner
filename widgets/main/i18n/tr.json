@@ -512,6 +512,8 @@
   "wcDiffChanged": "Değiştirilen görevler",
   "wcDiffNoChanges": "Diff yok — çalışma kopyası anlık görüntüyle aynı.",
   "wcCloseHide": "Çalışma kopyasını gizle",
+  "railExpand": "Paneli genişlet",
+  "railCollapse": "Paneli daralt",
   "wcResume": "Düzenlemeye devam et",
   "wcDiscard": "Çalışma kopyasını at",
   "wcDiscardConfirmTitle": "Çalışma kopyasını at?",

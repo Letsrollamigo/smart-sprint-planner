@@ -513,6 +513,8 @@
   "wcDiffChanged": "Gewijzigde taken",
   "wcDiffNoChanges": "Geen diff — werkkopie is identiek aan snapshot.",
   "wcCloseHide": "Werkkopie verbergen",
+  "railExpand": "Paneel uitklappen",
+  "railCollapse": "Paneel inklappen",
   "wcResume": "Bewerking hervatten",
   "wcDiscard": "Werkkopie weggooien",
   "wcDiscardConfirmTitle": "Werkkopie weggooien?",

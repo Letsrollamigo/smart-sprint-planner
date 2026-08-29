@@ -513,6 +513,8 @@
   "wcDiffChanged": "Tareas modificadas",
   "wcDiffNoChanges": "Sin diff — la copia de trabajo es idéntica a la instantánea.",
   "wcCloseHide": "Ocultar copia de trabajo",
+  "railExpand": "Expandir panel",
+  "railCollapse": "Contraer panel",
   "wcResume": "Reanudar edición",
   "wcDiscard": "Descartar copia de trabajo",
   "wcDiscardConfirmTitle": "¿Descartar copia de trabajo?",

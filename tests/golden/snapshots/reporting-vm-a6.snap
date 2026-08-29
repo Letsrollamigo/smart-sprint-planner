@@ -3,6 +3,7 @@
     "contour",
     "gen",
     "labels",
+    "lang",
     "limit",
     "limitHit",
     "loading",
@@ -287,6 +288,7 @@
   "vm": {
     "contour": "a",
     "gen": 1,
+    "lang": "en",
     "limit": 1000,
     "limitHit": false,
     "loading": false,

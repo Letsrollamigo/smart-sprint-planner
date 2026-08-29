@@ -513,6 +513,8 @@
   "wcDiffChanged": "Tâches modifiées",
   "wcDiffNoChanges": "Aucun diff — la copie de travail est identique à l'instantané.",
   "wcCloseHide": "Masquer la copie de travail",
+  "railExpand": "Déplier le panneau",
+  "railCollapse": "Replier le panneau",
   "wcResume": "Reprendre la modification",
   "wcDiscard": "Abandonner la copie de travail",
   "wcDiscardConfirmTitle": "Abandonner la copie de travail ?",

@@ -33,8 +33,10 @@ function RingSelect({ value, options, onChange, size, label, minWidth }) {
   );
 }
 
-/* Дата перехода: epoch-ms → локальная дата (display-only). */
-function _fmtDate(ms) { return (typeof ms === 'number' && isFinite(ms)) ? new Date(ms).toLocaleDateString() : ''; }
+/* Дата перехода: epoch-ms → дата в языке ПЛАНЕРА (display-only).
+   #94 — было toLocaleDateString() без аргумента: формат брался из локали ОС,
+   поэтому русский интерфейс на англоязычной машине показывал американские даты. */
+function _fmtDate(ms, lang) { return (typeof ms === 'number' && isFinite(ms)) ? new Date(ms).toLocaleDateString(lang || 'en') : ''; }
 
 /* v3.9.0 — кликабельный ID задачи (паттерн бэклога: ytBase + '/issue/' + id, новая вкладка).
    nowrap чинит перенос «DEMO-16» на две строки; без ytBase — просто nowrap-текст. */
@@ -258,7 +260,7 @@ function A1Table({ rows, L, vm }) {
               <td className="ring-table-cell"><IssueLink id={r.id} ytBase={vm.ytBase} /></td>
               <td className="ring-table-cell">{r.summary}</td>
               <td className="ring-table-cell">{r.state}</td>
-              <td className="ring-table-cell" style={{ whiteSpace: 'nowrap' }}>{_fmtDate(r.enteredAt)}</td>
+              <td className="ring-table-cell" style={{ whiteSpace: 'nowrap' }}>{_fmtDate(r.enteredAt, vm.lang)}</td>
               <td className="ring-table-cell"><LabelPill text={r.label} /></td>
               {vm.hasSystem ? <td className="ring-table-cell" style={_mutedS}>{r.system || '—'}</td> : null}
             </tr>

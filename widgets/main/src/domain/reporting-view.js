@@ -1041,6 +1041,7 @@ function _loadContourB(deps, L, run) {
   }
   var base = {
     contour: 'b', report: report, labels: L, query: '', period: period, periodOpts: periodOpts, gen: gen,
+    lang: (typeof deps.getLang === 'function' && deps.getLang()) || 'en',   /* #94 — даты в языке планера, не браузера */
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],
     onSwitchReport: function (r) { _patchB({ reportingReportB: (r === 'b3' || r === 'b2' || r === 'b1' || r === 'b0') ? r : 'b1' }); },
     onSetPeriod: function (preset, opts) { _patchB({ reportingPeriodB: String(preset || 'last30'), reportingPeriodOptsB: opts || {} }); },
@@ -1397,6 +1398,7 @@ function loadAndRender(deps, contour, run) {
   }
   var base = {
     contour: 'a', report: report, labels: L, query: userQ, period: period, periodOpts: periodOpts, gen: gen,
+    lang: (typeof deps.getLang === 'function' && deps.getLang()) || 'en',   /* #94 — даты в языке планера, не браузера */
     spillSprint: String(ui.reportingSpillSprint || ''),   /* #58-12 — для dirty-сравнения A10 */
     ytBase: (deps.ytBase ? String(deps.ytBase) : ''),   /* v3.9.0 — кликабельные ID (ссылка как в бэклоге) */
     years: [nowY, nowY - 1, nowY - 2, nowY - 3, nowY - 4],

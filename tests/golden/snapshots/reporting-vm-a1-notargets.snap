@@ -3,6 +3,7 @@
     "contour",
     "gen",
     "labels",
+    "lang",
     "loading",
     "noTargets",
     "onAssist",
@@ -274,6 +275,7 @@
   "vm": {
     "contour": "a",
     "gen": 1,
+    "lang": "en",
     "loading": false,
     "noTargets": true,
     "onAssist": "[Function]",

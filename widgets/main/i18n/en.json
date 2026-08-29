@@ -577,6 +577,8 @@
   "wcDiffChanged": "Changed tasks",
   "wcDiffNoChanges": "No diff — working copy is identical to the snapshot.",
   "wcCloseHide": "Hide working copy",
+  "railExpand": "Expand panel",
+  "railCollapse": "Collapse panel",
   "wcResume": "Resume editing",
   "wcDiscard": "Discard working copy",
   "wcDiscardConfirmTitle": "Discard working copy?",

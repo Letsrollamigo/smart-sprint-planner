@@ -79,6 +79,20 @@
     /* v5.10.0 — удалён мёртвый guard на renderDistribPanel + tab-distrib (оба удалены в v5.6.0). */
   }
 
+
+  /* #81 — поверхности, которых нет в _doFullRerender ядра: React-деревья настроек,
+     бэклога и стендапа монтируются отдельно и после смены языка оставались на прежнем
+     (страница настроек показывала «Роли и поля» при английской шапке — до перезагрузки).
+     Каждая — со своим try: падение одной не должно оставить остальные непереведёнными.
+     Отчётность сознательно НЕ трогаем: её ре-рендер — это загрузка с бэкенда, дёргать
+     сеть на переключение языка неоправданно (её vm подхватит язык при следующем показе). */
+  function _rerenderLateSurfaces(deps) {
+    ['renderProjectSettingsPage', 'renderBacklog', 'renderStandupView'].forEach(function (k) {
+      if (typeof deps[k] !== 'function') return;
+      try { deps[k](); } catch (e) { if (typeof deps.diag === 'function') deps.diag('setLang: ' + k + ' failed: ' + e, 'err'); }
+    });
+  }
+
   /** Переключить язык. Если для языка нет inline-словаря (то есть это не EN/RU),
       сначала асинхронно подгружает JSON через loader, затем выполняет полный rerender. */
   function setLang(lang, deps) {
@@ -99,6 +113,7 @@
       deps.i18nBridge.loadDictionary(lang).then(function (dict) {
         deps.I18N[lang] = dict || {};
         deps.doFullRerender();
+        _rerenderLateSurfaces(deps);
       }).catch(function () {
         /* Не удалось загрузить → откатываемся на предыдущий язык, чтобы UI не остался полу-переведённым. */
         st.setLang(prev);
@@ -109,6 +124,7 @@
       return;
     }
     deps.doFullRerender();
+    _rerenderLateSurfaces(deps);
   }
 
   /* v1.1.0 — заполняет <select> 15 языками из window.__SSP_I18N_LANGS__.

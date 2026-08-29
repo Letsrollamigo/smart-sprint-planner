@@ -32,12 +32,12 @@ function fmtDate(ts, lang) { return ts ? new Date(ts).toLocaleDateString(lang ||
 /* timestamp → числовые дата+время в переданной локали. */
 function fmtDT(ts, lang) { return ts ? new Date(ts).toLocaleString(lang || 'en', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; }
 
-/* Короткая дата 'DD.MM' из timestamp (бейдж изменения состояния на Ганте, #20). */
-function _fmtGanttDate(ts) {
+/* Короткая дата из timestamp (бейдж изменения состояния на Ганте, #20).
+   #94 — формат по языку планера: был жёсткий 'D.MM' независимо от локали. */
+function _fmtGanttDate(ts, lang) {
   if (!ts) return '';
   try {
-    var d = new Date(ts);
-    return d.getDate() + '.' + String(d.getMonth() + 1).padStart(2, '0');
+    return new Date(ts).toLocaleDateString(lang || 'en', { day: 'numeric', month: '2-digit' });
   } catch (_) { return ''; }
 }
 

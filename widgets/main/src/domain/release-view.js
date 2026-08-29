@@ -24,18 +24,23 @@ function _filter(releases, mode) {
   });
 }
 
-function _z(n) { return n < 10 ? '0' + n : '' + n; }
-/* epoch-ms (UTC-полночь, как пишет release-controller _ymdToMs) → DD.MM.YYYY | ''. */
-function _fmtDate(ms) {
+/* #94 — язык планера для форматтеров дат; 'en' — как в date-pure, если не пробросили. */
+function _lang(deps) { return (deps && typeof deps.getLang === 'function' && deps.getLang()) || 'en'; }
+
+/* #94 — дата карточки релиза в языке ПЛАНЕРА (был жёсткий DD.MM.YYYY: EN-интерфейс
+   показывал «Plan date: 31.08.2026»). timeZone:'UTC' обязателен — плановая дата хранится
+   UTC-полночью (release-controller _ymdToMs), и локальный формат сдвинул бы её на день
+   назад западнее Гринвича. */
+function _fmtDate(ms, lang) {
   if (typeof ms !== 'number' || !isFinite(ms)) return '';
-  var d = new Date(ms);
-  return _z(d.getUTCDate()) + '.' + _z(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear();
+  return new Date(ms).toLocaleDateString(lang || 'en',
+    { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 }
-/* Момент закрытия (реальный timestamp, не date-only) → DD.MM.YYYY HH:MM в локальном tz | ''. */
-function _fmtDateTime(ms) {
+/* Момент закрытия — реальный timestamp, показываем в локальном tz (без timeZone:'UTC'). */
+function _fmtDateTime(ms, lang) {
   if (typeof ms !== 'number' || !isFinite(ms)) return '';
-  var d = new Date(ms);
-  return _z(d.getDate()) + '.' + _z(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + _z(d.getHours()) + ':' + _z(d.getMinutes());
+  return new Date(ms).toLocaleString(lang || 'en',
+    { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /* R3.1 — зона готовности задачи АВТОМАТОМ по State + маппингу (ревизия владельца 2026-07-01,
@@ -108,7 +113,7 @@ function _labels(T) {
    Pure-сборка контента (детерминирована при фикс. record+labels — golden):
    название / тип ОБОИМИ измерениями (консистентно чипам истории, §8) / даты /
    патчноут / заметки. Скачивание — Blob+a[download] (канон диаг-лога core.js). */
-function buildExportText(rec, labels) {
+function buildExportText(rec, labels, lang) {
   var L = labels || {};
   var title = String(rec.name || rec.id || '');
   var out = [title, new Array(title.length + 1).join('=')];
@@ -116,9 +121,9 @@ function buildExportText(rec, labels) {
   if (rec.kind) type.push((L.kindLabel || 'Kind') + ': ' + ((L.kind && L.kind[rec.kind]) || rec.kind));
   if (rec.source) type.push((L.srcLabel || 'Source') + ': ' + ((L.src && L.src[rec.source]) || rec.source));
   if (type.length) out.push(type.join(' · '));
-  if (typeof rec.plannedDate === 'number' && isFinite(rec.plannedDate)) out.push((L.planDate || 'Date') + ': ' + _fmtDate(rec.plannedDate));
+  if (typeof rec.plannedDate === 'number' && isFinite(rec.plannedDate)) out.push((L.planDate || 'Date') + ': ' + _fmtDate(rec.plannedDate, lang));
   var snap = (rec.snapshot && typeof rec.snapshot === 'object') ? rec.snapshot : null;
-  if (snap && typeof snap.closedAt === 'number') out.push((L.closedAt || 'Closed') + ': ' + _fmtDateTime(snap.closedAt));
+  if (snap && typeof snap.closedAt === 'number') out.push((L.closedAt || 'Closed') + ': ' + _fmtDateTime(snap.closedAt, lang));
   if (rec.taskUrl) { out.push((L.taskUrl || 'Task') + ': ' + String(rec.taskUrl)); }
   if (rec.patchNote) { out.push('', (L.patchNote || 'Patch note') + ':', String(rec.patchNote)); }
   if (rec.notes) { out.push('', (L.notes || 'Notes') + ':', String(rec.notes)); }
@@ -152,7 +157,7 @@ function _findRelease(deps, releaseId) {
 function exportRelease(deps, releaseId) {
   var rec = _findRelease(deps, releaseId);
   if (!rec) return;
-  var text = buildExportText(rec, _labels(deps.T));
+  var text = buildExportText(rec, _labels(deps.T), _lang(deps));
   var stem = String(rec.name || rec.id).replace(/[\\/:*?"<>|\s]+/g, '_');
   if (!_downloadTxt('release-' + stem + '.txt', text)) {
     deps.diag('release export download failed', 'err');
@@ -204,7 +209,7 @@ function _buildVm(deps, mode, list) {
       return {
         id: r.id, name: r.name || r.id, kind: r.kind, source: r.source, status: r.status || 'planned',
         overdue: overdue, freezeLocked: !!r.freezeLocked,
-        planDateLabel: _fmtDate(r.plannedDate), freezeDateLabel: _fmtDate(r.freezeDate),
+        planDateLabel: _fmtDate(r.plannedDate, _lang(deps)), freezeDateLabel: _fmtDate(r.freezeDate, _lang(deps)),
         manager: reps.manager || '', managerName: repNames[reps.manager] || '',
         engineer: reps.engineer || '', engineerName: repNames[reps.engineer] || '',
         issuesCount: issueList.length, compositionLabel: T('relCardComposition').replace('{n}', String(issueList.length)),
@@ -238,14 +243,14 @@ function _buildVm(deps, mode, list) {
 /* Строка истории из записи — общая для history-вкладки и архива (R4). Всё из r.snapshot,
    БЕЗ обращений к YT (US-R1-14 — network-clean). Легаси-запись без snapshot
    (hasSnapshot=false) → рисуется только шапка. read-only. */
-function _histRow(r) {
+function _histRow(r, lang) {
   var snap = (r.snapshot && typeof r.snapshot === 'object') ? r.snapshot : null;
   var reps = (snap && snap.reps) || {};
   var rows = (snap && Array.isArray(snap.issues)) ? snap.issues : [];
   return {
     id: r.id, name: r.name || r.id, kind: r.kind, source: r.source, status: r.status || 'released',
-    planDateLabel: _fmtDate(r.plannedDate),
-    closedAtLabel: snap ? _fmtDateTime(snap.closedAt) : '',
+    planDateLabel: _fmtDate(r.plannedDate, lang),
+    closedAtLabel: snap ? _fmtDateTime(snap.closedAt, lang) : '',
     issuesCount: rows.length,
     managerName: (reps.manager && reps.manager.name) || '',
     engineerName: (reps.engineer && reps.engineer.name) || '',
@@ -269,11 +274,11 @@ function _buildHistoryVm(deps, mode, list) {
   var archive = (rel.getArchive && rel.getArchive()) || null; // null → ещё не загружен (lazy)
   return {
     mode: 'history', versionTag: 0, canCreate: false, canManage: false, canAdvance: false,
-    releases: list.map(_histRow),
+    releases: list.map(function (r) { return _histRow(r, _lang(deps)); }),
     archive: {
       count: (rel.getArchivedCount && rel.getArchivedCount()) || 0,
       loaded: Array.isArray(archive),
-      rows: Array.isArray(archive) ? archive.map(_histRow) : [],
+      rows: Array.isArray(archive) ? archive.map(function (r) { return _histRow(r, _lang(deps)); }) : [],
     },
     onLoadArchive: function () { _loadArchive(deps); },
     onExport: function (releaseId) { exportRelease(deps, releaseId); },

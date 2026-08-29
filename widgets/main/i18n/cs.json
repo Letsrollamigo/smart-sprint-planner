@@ -513,6 +513,8 @@
   "wcDiffChanged": "Změněné úkoly",
   "wcDiffNoChanges": "Žádný rozdíl — pracovní kopie je shodná se snímkem.",
   "wcCloseHide": "Skrýt pracovní kopii",
+  "railExpand": "Rozbalit panel",
+  "railCollapse": "Sbalit panel",
   "wcResume": "Pokračovat v úpravách",
   "wcDiscard": "Zahodit pracovní kopii",
   "wcDiscardConfirmTitle": "Zahodit pracovní kopii?",

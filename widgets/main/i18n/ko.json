@@ -513,6 +513,8 @@
   "wcDiffChanged": "변경된 작업",
   "wcDiffNoChanges": "차이 없음 — 작업 사본은 스냅샷과 동일합니다.",
   "wcCloseHide": "작업 사본 숨기기",
+  "railExpand": "패널 펼치기",
+  "railCollapse": "패널 접기",
   "wcResume": "편집 재개",
   "wcDiscard": "작업 사본 폐기",
   "wcDiscardConfirmTitle": "작업 사본을 폐기하시겠습니까?",

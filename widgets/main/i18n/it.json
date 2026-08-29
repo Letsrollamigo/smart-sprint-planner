@@ -513,6 +513,8 @@
   "wcDiffChanged": "Attività modificate",
   "wcDiffNoChanges": "Nessuna diff — la copia di lavoro è identica all'istantanea.",
   "wcCloseHide": "Nascondi copia di lavoro",
+  "railExpand": "Espandi il pannello",
+  "railCollapse": "Comprimi il pannello",
   "wcResume": "Riprendi modifica",
   "wcDiscard": "Scarta copia di lavoro",
   "wcDiscardConfirmTitle": "Scartare copia di lavoro?",

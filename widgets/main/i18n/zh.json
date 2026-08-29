@@ -512,6 +512,8 @@
   "wcDiffChanged": "已更改任务",
   "wcDiffNoChanges": "没有 diff — 工作副本与快照相同。",
   "wcCloseHide": "隐藏工作副本",
+  "railExpand": "展开面板",
+  "railCollapse": "收起面板",
   "wcResume": "恢复编辑",
   "wcDiscard": "丢弃工作副本",
   "wcDiscardConfirmTitle": "丢弃工作副本?",

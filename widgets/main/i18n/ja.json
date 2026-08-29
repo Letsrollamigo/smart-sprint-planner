@@ -512,6 +512,8 @@
   "wcDiffChanged": "変更されたタスク",
   "wcDiffNoChanges": "差分なし — 作業コピーはスナップショットと同じです。",
   "wcCloseHide": "作業コピーを非表示",
+  "railExpand": "パネルを展開",
+  "railCollapse": "パネルを折りたたむ",
   "wcResume": "編集を再開",
   "wcDiscard": "作業コピーを破棄",
   "wcDiscardConfirmTitle": "作業コピーを破棄しますか?",

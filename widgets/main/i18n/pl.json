@@ -513,6 +513,8 @@
   "wcDiffChanged": "Zmienione zadania",
   "wcDiffNoChanges": "Brak diff — kopia robocza identyczna z migawką.",
   "wcCloseHide": "Ukryj kopię roboczą",
+  "railExpand": "Rozwiń panel",
+  "railCollapse": "Zwiń panel",
   "wcResume": "Wznów edycję",
   "wcDiscard": "Odrzuć kopię roboczą",
   "wcDiscardConfirmTitle": "Odrzucić kopię roboczą?",

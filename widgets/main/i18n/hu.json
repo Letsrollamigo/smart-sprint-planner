@@ -512,6 +512,8 @@
   "wcDiffChanged": "Módosított feladatok",
   "wcDiffNoChanges": "Nincs diff — a munkapéldány azonos a pillanatképpel.",
   "wcCloseHide": "Munkapéldány elrejtése",
+  "railExpand": "Panel kibontása",
+  "railCollapse": "Panel összecsukása",
   "wcResume": "Szerkesztés folytatása",
   "wcDiscard": "Munkapéldány elvetése",
   "wcDiscardConfirmTitle": "Elveti a munkapéldányt?",

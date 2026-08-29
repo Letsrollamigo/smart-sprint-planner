@@ -577,6 +577,8 @@
   "wcDiffChanged": "Изменены задачи",
   "wcDiffNoChanges": "Различий нет — рабочая копия идентична снимку.",
   "wcCloseHide": "Свернуть рабочую копию",
+  "railExpand": "Развернуть панель",
+  "railCollapse": "Свернуть панель",
   "wcResume": "Продолжить правку",
   "wcDiscard": "Отменить правку",
   "wcDiscardConfirmTitle": "Отменить правку?",

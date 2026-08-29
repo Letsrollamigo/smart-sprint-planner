@@ -39,6 +39,9 @@ var _ganttLinks = { key: '', loading: false, data: null };
 
 /* Реальный ретрай неполной загрузки связей (68-8 ⚖6): «Обновить из задачи» сбрасывает
    ключ, следующий onAfterRender стартует фетч заново. */
+/* #94 — язык планера для подписей дат ('en', если аксессор не пробросили). */
+function _langOf(deps) { return (deps && typeof deps.getLang === 'function' && deps.getLang()) || 'en'; }
+
 function resetLinksCache() { _ganttLinks = { key: '', loading: false, data: null }; }
 
 const GANTT_LINK_CHUNK = 50;
@@ -183,7 +186,9 @@ function _buildGanttVm(deps) {
     var dayTs = minTs + d * dayMs;
     var dayDate = new Date(dayTs);
     days.push({
-      label: (dayDate.getDate()) + '.' + String(dayDate.getMonth()+1).padStart(2,'0'),
+      /* #94 — подпись дня в языке планера (был жёсткий D.MM). Формат короткий: на линейке
+         помещается только день+месяц, год берётся из шапки периода. */
+      label: dayDate.toLocaleDateString(_langOf(deps), { day: 'numeric', month: '2-digit' }),
       weekend: dayDate.getDay() === 0 || dayDate.getDay() === 6,
     });
   }
@@ -283,7 +288,7 @@ function _buildGanttVm(deps) {
       taskColHeader: deps.T('ganttColTask'), days: days, rows: rows,
       /* #20-v2 — поля gantt-task-react: зум, локаль оси, редактируемость drag'а */
       editable: editable,
-      lang: (typeof deps.getLang === 'function' && deps.getLang()) || 'en',
+      lang: _langOf(deps),
       zoomLabels: { day: deps.T('ganttZoomDay'), week: deps.T('ganttZoomWeek'), month: deps.T('ganttZoomMonth') },
       fmtDate: deps.fmtGanttDate,
       /* #74 фаза 2 ⚖7 — цвет на тип связи (детерминирован порядком типов в настройке)

@@ -3,6 +3,7 @@
     "contour",
     "gen",
     "labels",
+    "lang",
     "loading",
     "onAssist",
     "onCancel",
@@ -274,6 +275,7 @@
   "vm": {
     "contour": "a",
     "gen": 1,
+    "lang": "en",
     "loading": false,
     "onAssist": "[Function]",
     "onCancel": "[Function]",
