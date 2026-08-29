@@ -294,6 +294,49 @@ test('golden: refreshFromYouTrack — тихие updates (cf-парсеры) + �
   });
 });
 
+/* #102 — «Обновить из задачи» стирало исполнителей, проставленных в планере, когда «Быстрая
+   правка» выключена: гейт 68-3 запрещает писать поле роли в YT, поэтому оно пустое ВСЕГДА, а
+   резолвер применял эту пустоту как снятие — и `_persistAndRerenderRefresh` тут же сохранял.
+   Воспроизведено живьём на :8081 (DEMO-44 «Аналитик Иванов» → «— не назначено —», без диалога).
+   Ассерт, а не снимок: снимок зафиксировал бы стирание как эталон. */
+test('#102: пустое поле исполнителя в YT при выключенной «Быстрой правке» НЕ снимает исполнителя', async () => {
+  const { gm, document } = createHost();
+  applyMergeState(gm);
+  ensureRefreshButtons(document);
+  const st = buildRefreshSettings();
+  st.dynEditEnabled = false;              /* канал записи исполнителя в YT закрыт (68-3) */
+  gm.set({ _settings: st });
+  recordToasts(gm); stubApiPost(gm); stubPersistHooks(gm);
+  /* YT отдаёт GM-10 БЕЗ поля «Исполнитель Back» → remote.assignee === null */
+  stubFetchBatch(gm, document, [ytIssue('GM-10', 'Бэкенд расчёта ёмкости', [cf('Оценка Back', { minutes: 1500 })])]);
+
+  gm.call('refreshFromYouTrack');
+  await settle();
+
+  const ta = gm.get('_currentRolePP').taskAssignments;
+  assert.strictEqual(ta['GM-10'].assignee, 'gm_user_1',
+    'исполнитель, проставленный в планере, не должен сниматься пустым полем YT');
+});
+
+/* Обратная половина той же развилки: при открытой «Быстрой правке» планер сам пишет поле,
+   поэтому его пустота — настоящее снятие, и оно обязано доехать (поведение #35 не тронуто). */
+test('#102: при включённой «Быстрой правке» пустое поле YT по-прежнему снимает исполнителя', async () => {
+  const { gm, document } = createHost();
+  applyMergeState(gm);
+  ensureRefreshButtons(document);
+  const st = buildRefreshSettings();
+  st.dynEditEnabled = true;
+  gm.set({ _settings: st });
+  recordToasts(gm); stubApiPost(gm); stubPersistHooks(gm);
+  stubFetchBatch(gm, document, [ytIssue('GM-10', 'Бэкенд расчёта ёмкости', [cf('Оценка Back', { minutes: 1500 })])]);
+
+  gm.call('refreshFromYouTrack');
+  await settle();
+
+  assert.strictEqual(gm.get('_currentRolePP').taskAssignments['GM-10'].assignee, null,
+    'снятие исполнителя в YT должно доезжать, когда планер сам туда пишет');
+});
+
 /* ═══════════════════ равенство после парсинга → no-change без персиста ═══════════════════ */
 
 test('golden: refreshFromYouTrack — YT вернул локальные значения → no-change, без персиста', async () => {

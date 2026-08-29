@@ -18,7 +18,8 @@
        отсутствием данных). Это сознательное отличие от старого refreshRoleEstimates, который
        молча писал null.
      • зеркальные строковые поля пишем только если remote непустое — страховка на случай
-       неидеального парсинга workflow-API формата на backend (см. #35 spec S1 risk). */
+       неидеального парсинга workflow-API формата на backend (см. #35 spec S1 risk);
+     • пустой assignee из YT — факт только когда планер в это поле пишет (assigneeWritable). */
 
 function _login(a) {
   if (a == null) return null;
@@ -33,7 +34,8 @@ function _login(a) {
                  priority, xpriority, system, externalTicketId, assignee },
      snapshot: { estimate, fact, assignee },   // baseline для dirty-детекции пограничных
      remote:   { estimate, fact, state, stateLocalized, stateColor, stateFieldId,
-                 priority, xpriority, system, externalTicketId, assignee }   // нормализовано фронтом
+                 priority, xpriority, system, externalTicketId, assignee },  // нормализовано фронтом
+     assigneeWritable: bool   // #102 — открыт ли канал записи исполнителя в YT (гейт 68-3); по умолчанию true
    }
    → { updates:{<field>:value}, assigneeUpdate:value|undefined, conflicts:[{issueId,roleKey,field,from,to}] }
      assigneeUpdate === undefined → не трогать; === null → снять исполнителя; иначе — новое значение. */
@@ -73,7 +75,12 @@ function resolveRefreshMerge(input) {
   if (remote.assignee !== undefined) {
     var rLogin = _login(remote.assignee);
     var lLogin = _login(local.assignee);
-    if (rLogin !== lLogin) {
+    /* #102 — при закрытом канале записи (гейт 68-3 «Быстрая правка») поле роли в YT пустое
+       ВСЕГДА: планер туда не пишет по построению. Пустота такого поля не значит «исполнителя
+       сняли», и применять её — стирать работу пользователя. Непустое значение из YT по-прежнему
+       подтягиваем: оно информативно и проходит тот же dirty-guard. */
+    var remoteNullIsFact = input.assigneeWritable !== false || rLogin !== null;
+    if (rLogin !== lLogin && remoteNullIsFact) {
       var sLogin = _login(snap.assignee);
       if (lLogin === sLogin) assigneeUpdate = remote.assignee; /* не dirty — тихо (включая снятие = null) */
       else conflicts.push({ issueId: issueId, roleKey: roleKey, field: 'assignee', from: lLogin, to: rLogin });

@@ -219,6 +219,9 @@ function refreshFromYouTrack(deps) {
   var fSystem    = (settings && settings.fieldSystem) || '';
   var fExtId     = (settings && settings.fieldExternalTicketId) || '';
   var curUserField = (curRole && settings && settings[curRole.userField]) || '';
+  /* #102 — канал записи исполнителя в YT закрыт гейтом 68-3 → пустое поле роли в YT
+     ничего не значит; резолвер не должен применять его как снятие исполнителя. */
+  var assigneeWritable = !!(settings && settings.dynEditEnabled);
 
   var roleData = [], idSet = {};
   roles.forEach(function (role) {
@@ -368,6 +371,7 @@ function refreshFromYouTrack(deps) {
 
         var res = deps.resolveRefreshMerge({
           issueId: item.issueId, roleKey: rk, local: local, snapshot: snapshot, remote: remote,
+          assigneeWritable: assigneeWritable,
         });
 
         if (res.updates && Object.keys(res.updates).length) pendingItemUpdates.push({ item: item, updates: res.updates, rk: rk });

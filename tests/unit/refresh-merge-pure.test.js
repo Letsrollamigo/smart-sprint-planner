@@ -135,6 +135,47 @@ describe('пограничный assignee — dirty-guard по login', () => {
   });
 });
 
+/* #102 — гейт 68-3 закрывает запись исполнителя в YT, поэтому поле роли там пустое ВСЕГДА.
+   Раньше эта пустота приезжала обратно как «снятие» и стирала распределение (воспроизведено
+   живьём на :8081: DEMO-44 «Аналитик Иванов» → «— не назначено —» после «Обновить из задачи»,
+   молча и с персистом). Пустое значение при закрытом канале больше не факт. */
+describe('assigneeWritable — пустой assignee из YT при закрытом канале записи (#102)', () => {
+  it('remote null при assigneeWritable=false → не трогаем и не конфликтуем', () => {
+    const r = resolveRefreshMerge(base({
+      assigneeWritable: false,
+      local: { assignee: 'alice' }, snapshot: { assignee: 'alice' },
+      remote: { assignee: null },
+    }));
+    assert.equal(r.assigneeUpdate, undefined);
+    assert.deepEqual(r.conflicts, []);
+  });
+  it('remote null при закрытом канале не конфликтует и на грязном локальном', () => {
+    const r = resolveRefreshMerge(base({
+      assigneeWritable: false,
+      local: { assignee: 'carol' }, snapshot: { assignee: 'alice' },
+      remote: { assignee: null },
+    }));
+    assert.equal(r.assigneeUpdate, undefined);
+    assert.deepEqual(r.conflicts, []);
+  });
+  it('НЕпустой remote при закрытом канале по-прежнему подтягивается', () => {
+    const r = resolveRefreshMerge(base({
+      assigneeWritable: false,
+      local: { assignee: 'alice' }, snapshot: { assignee: 'alice' },
+      remote: { assignee: { login: 'bob', fullName: 'Bob' } },
+    }));
+    assert.deepEqual(r.assigneeUpdate, { login: 'bob', fullName: 'Bob' });
+  });
+  it('при открытом канале снятие исполнителя работает как прежде', () => {
+    const r = resolveRefreshMerge(base({
+      assigneeWritable: true,
+      local: { assignee: 'alice' }, snapshot: { assignee: 'alice' },
+      remote: { assignee: null },
+    }));
+    assert.equal(r.assigneeUpdate, null);
+  });
+});
+
 describe('комбинированный сценарий', () => {
   it('зеркало обновляется, чистый estimate тихо, грязный fact в конфликт', () => {
     const r = resolveRefreshMerge(base({
