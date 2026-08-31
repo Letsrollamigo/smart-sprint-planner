@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.30.0] — 2026-08-31
+
+> **A cumulative round of fixes.** Seven defects found by running a sprint-draft import end to end, by walking the whole interface in English, and by an adversarial check of the units behind the capacity figures. No new features; the data schema is untouched.
+
+### Fixed
+
+- **"Refresh from issue" silently cleared assignees set in the planner.** While direct editing of YouTrack fields is switched off, the planner is not allowed to write the assignee back to the issue — so the role field there stays empty by construction. The merge resolver read that emptiness as "the assignee was removed" and, when there were no unsaved edits of your own, applied it without asking and persisted the result immediately. One press of the button wiped the whole distribution: no dialog, no message, and the loss survived a reload. An empty value coming from YouTrack now counts as a fact only when the planner writes to that field itself; with the write channel closed it is neither applied nor raised as a conflict. A non-empty value is still pulled in as before, and with direct editing switched on, clearing an assignee in YouTrack still reaches the planner.
+- **The capacity bar in Backlog work overstated the available resource sixtyfold.** The adapter read a role resource that is already stored in minutes and multiplied it by 60 as if it were hours. As a result the "demand exceeds capacity" warning practically never fired and the bar always looked free.
+- **A failed project load looked like an empty project.** The request error was swallowed, so instead of a failure message you saw empty screens — easy to mistake for the real state and start filling them in again. A failure is now shown as a bar at the top until it is resolved, and a request that hangs is cut off by a deadline instead of leaving stale data under a new header.
+- **A stale role snapshot outside the sprint's own set silently locked the sprint.** The sprint opened read-only for good and the reason was never stated anywhere. The check now looks only at the roles taking part in the sprint, and when something does block it, the role and its status are named.
+- **Switching the language left screens that mount on their own untranslated** — the project settings page, Backlog work and Stand-up stayed in the previous language until a reload.
+- **Dates in four places followed the browser locale instead of the planner language** — the release card and its export, the short date and axis labels on the Gantt chart, and the transition date in reporting. The planned release date also stopped shifting a day back in time zones west of Greenwich.
+- **The tooltip on the side rail's collapse button was hardcoded in Russian**, bypassing the translation dictionary.
+
+---
+
 ## [3.29.3] — 2026-08-27
 
 > **Gantt dependency arrows never worked in this edition.** The chart did not fail to draw them — it never asked YouTrack for the links in the first place. Present in 3.28.0, 3.29.0, 3.29.1 and 3.29.2.

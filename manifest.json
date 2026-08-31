@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.29.3",
+  "version": "3.30.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "🐛 <b>Gantt dependency arrows are back</b> — the chart never asked YouTrack for issue links at all: the loader could not reach the host, so it returned before the first request. Arrows between tasks of one sprint and the badge for predecessors outside it had been dead since 3.28.0. Configure link roles in the settings and the chart draws them again, coloured per link type.",
+  "changeNotes": "🐛 <b>\"Refresh from issue\" no longer clears assignees set in the planner.</b> While direct editing of YouTrack fields is off, the planner may not write the assignee back to the issue, so the role field there stays empty by construction — and that emptiness used to come back as a removal, wiping the whole distribution in one press, silently and for good. An empty value from YouTrack now counts only when the planner writes to that field itself.<br><br>🐛 <b>The capacity bar in Backlog work overstated the available resource sixtyfold</b> — the \"demand exceeds capacity\" warning practically never fired.<br><br>🐛 <b>A failed project load looked like an empty project.</b> Failures now show as a bar until resolved, and a hanging request is cut off by a deadline instead of leaving stale data under a new header.<br><br>🐛 <b>A stale role snapshot outside the sprint's own set silently locked the sprint</b> read-only; the check now looks at the sprint's own roles and names whatever blocks it.<br><br>🌐 <b>Language and dates.</b> The project settings page, Backlog work and Stand-up now follow a language switch without a reload; dates in the release card and export, on the Gantt chart and in reporting follow the planner language instead of the browser locale.",
   "widgets": [
     {
       "key": "ssp-main",
