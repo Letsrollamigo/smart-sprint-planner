@@ -171,6 +171,7 @@
   "hintShowDiagLogUi": "Zeigt den Block «Diagnoseprotokoll» unten im Widget. Standardmäßig ausgeblendet; nur bei der Untersuchung eines Vorfalls aktivieren.",
   "errRevConflict": "Der Sprint wurde von einem anderen Benutzer geändert. Laden Sie die Seite neu und speichern Sie erneut.",
   "errSlotRevConflict": "Die Daten wurden von einem anderen Benutzer geändert. Laden Sie die Seite neu und speichern Sie erneut.",
+  "toastEditsBlockedRevConflict": "Bearbeitung eingefroren: Ihre Daten weichen vom Server ab. Laden Sie die Seite neu.",
   "ganttBarTooltipUnassigned": "Nicht zugewiesen",
   "cardSprintIntro": "Sprint-Übersicht",
   "lblSprintName": "Sprint-Name",

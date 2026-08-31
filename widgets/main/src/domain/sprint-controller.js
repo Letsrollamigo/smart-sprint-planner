@@ -60,6 +60,27 @@
     }
   }
 
+  /* #100 — откат локальной мутации при отказе оптимистичной блокировки.
+     Было: saveCurrentRoleState сперва писал histRec.personalPlanning в память, потом слал
+     POST /history, а отказ сервера (`rev_conflict`) уходил только в диаг-лог. Экран
+     продолжал показывать назначения, которых на сервере нет, и пользователь дописывал в
+     уже отвергнутое состояние — прод-баг «исполнители слетают с задач» (#100, разобран по
+     записи экрана 2026-08-31). Теперь отказ возвращает и запись истории, и живой PP к
+     доконфликтному состоянию и перерисовывает обе таблицы: экран показывает правду сервера. */
+  function rollbackPPOnRevConflict(err, histRec, prevPP, deps) {
+    var msg = (err && err.message) ? String(err.message) : String(err || '');
+    if (msg.indexOf('rev_conflict') < 0) return;
+    if (histRec) {
+      if (prevPP === undefined) { try { delete histRec.personalPlanning; } catch (_) { histRec.personalPlanning = null; } }
+      else { histRec.personalPlanning = prevPP; }
+    }
+    deps.state.setCurrentRolePP(prevPP ? deps.deepClone(prevPP) : { resourcesByAssignee: {}, taskAssignments: {} });
+    deps.diag('#100 rev_conflict: локальная мутация personalPlanning откачена, правки заморожены до перезагрузки', 'err');
+    ['renderCurrentRoleAssigneeTable', 'renderCurrentRoleTaskTable', 'updateCurrentRoleTotals'].forEach(function (fn) {
+      try { if (typeof deps[fn] === 'function') deps[fn](); } catch (e) { deps.diag('#100 rollback ' + fn + ' err: ' + e, 'err'); }
+    });
+  }
+
   /* ── saveCurrentRoleState — персист personalPlanning / gantt текущей роли ── */
   function saveCurrentRoleState(deps) {
     var st = deps.state;
@@ -94,6 +115,8 @@
     var history = st.getHistory();
     var pp = st.getCurrentRolePP();
     var histRec = history.find(function(r){ return r.sprintId === rec.sprintId; });
+    /* #100 — доконфликтное значение запоминаем ДО мутации: отказ сервера обязан его вернуть. */
+    var prevPP = histRec ? histRec.personalPlanning : undefined;
     if (histRec) {
       histRec.personalPlanning = deps.deepClone(pp);
     }
@@ -102,10 +125,16 @@
         ? [{ sprintId: histRec.sprintId, personalPlanning: deps.deepClone(pp) }]
         : [];
       apiPost('history', { history: minimalHistory }, { action: 'assignerSync' })
-        .catch(function (e) { diag('saveCurrentRoleState(history,assignerSync) failed: ' + e, 'err'); });
+        .catch(function (e) {
+          diag('saveCurrentRoleState(history,assignerSync) failed: ' + e, 'err');
+          rollbackPPOnRevConflict(e, histRec, prevPP, deps);
+        });
     } else {
       apiPost('history', { history: history })
-        .catch(function (e) { diag('saveCurrentRoleState(history) failed: ' + e, 'err'); });
+        .catch(function (e) {
+          diag('saveCurrentRoleState(history) failed: ' + e, 'err');
+          rollbackPPOnRevConflict(e, histRec, prevPP, deps);
+        });
     }
 
     if (deps.isActiveSprintRecord(rec)) {

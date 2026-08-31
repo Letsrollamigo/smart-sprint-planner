@@ -622,3 +622,64 @@ test('#96: роль ИЗ набора вне «Черновика» блокир
   assert.match(toasts[0].msg, /Распределён по людям/, 'назван её статус');
   assert.match(toasts[0].msg, /Спринт #96/, 'назван спринт');
 });
+
+/* ════ #100 — отказ оптимистичной блокировки откатывает локальную мутацию ════
+   Прод-баг (разобран по записи экрана 2026-08-31): saveCurrentRoleState сперва писал
+   histRec.personalPlanning в память, потом слал POST /history, а отказ сервера
+   (`rev_conflict`, слот history в REV_SLOT_PATHS) уходил ТОЛЬКО в диаг-лог. Экран
+   продолжал показывать назначения, которых на сервере нет, пользователь дописывал в
+   отвергнутое состояние, и всё это терялось при первом же перечитывании канона. */
+test('#100: rev_conflict на /history откатывает personalPlanning и живой PP', async () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+  stubDraft(gm); stubRenders(gm); recordToasts(gm);
+
+  /* запись НЕ активного спринта: ветка sprint-data пропускается, остаётся только /history */
+  const rec = { sprintId: 'gm-other_analysis', roleKey: 'analysis' };
+  gm.set({ _currentSprintRoleRec: rec });
+  const before = { resourcesByAssignee: {}, taskAssignments: { 'GM-1': { assignee: 'srv_user' } } };
+  const histRec = { sprintId: rec.sprintId, roleKey: rec.roleKey, personalPlanning: before };
+  gm.set({ _history: [histRec] });
+
+  /* пользователь назначил ещё одного — мутация уже в живом PP */
+  gm.set({ _currentRolePP: { resourcesByAssignee: {}, taskAssignments: {
+    'GM-1': { assignee: 'srv_user' }, 'GM-2': { assignee: 'local_user' } } } });
+
+  gm.set({ apiPost: function (path) {
+    if (path === 'history') return Promise.reject(new Error('rev_conflict'));
+    return Promise.resolve({ success: true });
+  } });
+
+  gm.call('saveCurrentRoleState');
+  for (let i = 0; i < 4; i++) await new Promise(function (r) { setTimeout(r, 0); });
+
+  assert.deepStrictEqual(histRec.personalPlanning, before,
+    'запись истории вернулась к доконфликтному состоянию');
+  /* deepClone живёт в realm'е jsdom — сравниваем по значению, а не по прототипу */
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(gm.get('_currentRolePP').taskAssignments)),
+    { 'GM-1': { assignee: 'srv_user' } },
+    'живой PP тоже откачен — экран показывает правду сервера, а не отвергнутую правку');
+});
+
+test('#100: обычный отказ (не rev_conflict) откат НЕ запускает', async () => {
+  const { gm } = createHost();
+  fx.applyBaseState(gm);
+  stubDraft(gm); stubRenders(gm); recordToasts(gm);
+
+  const rec = { sprintId: 'gm-other_analysis', roleKey: 'analysis' };
+  gm.set({ _currentSprintRoleRec: rec });
+  const before = { resourcesByAssignee: {}, taskAssignments: { 'GM-1': { assignee: 'srv_user' } } };
+  const histRec = { sprintId: rec.sprintId, roleKey: rec.roleKey, personalPlanning: before };
+  gm.set({ _history: [histRec] });
+  const local = { resourcesByAssignee: {}, taskAssignments: {
+    'GM-1': { assignee: 'srv_user' }, 'GM-2': { assignee: 'local_user' } } };
+  gm.set({ _currentRolePP: local });
+  gm.set({ apiPost: function () { return Promise.reject(new Error('network_down')); } });
+
+  gm.call('saveCurrentRoleState');
+  for (let i = 0; i < 4; i++) await new Promise(function (r) { setTimeout(r, 0); });
+
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(gm.get('_currentRolePP').taskAssignments)),
+    { 'GM-1': { assignee: 'srv_user' }, 'GM-2': { assignee: 'local_user' } },
+    'сетевой сбой — не расхождение с сервером: правку не выбрасываем');
+});

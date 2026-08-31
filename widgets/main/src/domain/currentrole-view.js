@@ -391,6 +391,14 @@ function renderCurrentRoleAssigneeTable(deps) {
    and data-attrs (.currentRole-task-assignee, data-ssp-datepicker-host)
    are preserved. Cell change handlers — single event-delegated listener
    on host, bound idempotently on first render. */
+/* #100 — «локальный стейт разошёлся с сервером»: метку ставит data-слой при
+   rev_conflict, снимает перезагрузка страницы. Читаем из DOM намеренно — своего
+   module-level стейта не заводим (гейт C1), и семантика «до reload» получается даром. */
+function _revConflictBlocked() {
+  try { return !!(document.body && document.body.dataset && document.body.dataset.sspRevConflict === '1'); }
+  catch (_) { return false; }
+}
+
 function _buildTaskTableVm(deps) {
   var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl, toDateIn = deps.toDateIn, dispEnum = deps.dispEnum;
   var _currentSprintRoleRec = deps.state.getCurrentSprintRoleRec();
@@ -420,6 +428,9 @@ function _buildTaskTableVm(deps) {
   var sprintStartDate = sprintStart ? toDateIn(sprintStart) : '';
   var sprintEndDate   = sprintEnd   ? toDateIn(sprintEnd)   : '';
 
+  /* #100 — заморозка правок после rev_conflict видна пользователю: селект исполнителя
+     становится disabled, а не молча игнорирует выбор. */
+  var editsBlocked = _revConflictBlocked();
   var hasExternalTicket = !!(_settings && _settings.fieldExternalTicketId);
   var hasXPriority = !!(_settings && _settings.fieldXPriority);
   var hasSystem = !!(_settings && _settings.fieldSystem);
@@ -476,7 +487,8 @@ function _buildTaskTableVm(deps) {
       cells.system = item.system || '—';
     }
     cells.assignee = { __html:
-      '<select class="currentRole-task-assignee assigner-btn" data-issue="' + esc(item.issueId) + '" style="width:100%;font-size:12px">' +
+      '<select class="currentRole-task-assignee assigner-btn" data-issue="' + esc(item.issueId) + '"'
+        + (editsBlocked ? ' disabled' : '') + ' style="width:100%;font-size:12px">' +
         '<option value="">' + esc(T('phNotAssigned')) + '</option>' +
         assigneeOptions.map(function (login) {
           var entry = rba[login];
@@ -635,6 +647,15 @@ function renderCurrentRoleTaskTable(deps) {
     host.addEventListener('change', function (ev) {
       var t = ev.target;
       if (!t) return;
+      /* #100 — после отказа оптимистичной блокировки локальный стейт разошёлся с сервером.
+         Правки заморожены до перезагрузки: иначе пользователь дописывает в состояние,
+         которое сервер уже отверг (на прод-записи так потерялись три назначения подряд).
+         Метку ставит api-слой, снимает перезагрузка страницы. */
+      if (_revConflictBlocked()) {
+        deps.toast(deps.T('toastEditsBlockedRevConflict'), 'warn');
+        try { renderCurrentRoleTaskTable(deps); } catch (_) {}   /* вернуть DOM к модели */
+        return;
+      }
       var _currentRolePP = deps.state.getCurrentRolePP();
       var _currentSprintRoleRec = deps.state.getCurrentSprintRoleRec();
       var _sprint = deps.state.getSprint();

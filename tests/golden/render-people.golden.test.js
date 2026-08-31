@@ -559,3 +559,68 @@ test('68-8: динамические колонки — в таблице зад
   assert.strictEqual(pids.filter((i) => /^cf_/.test(i)).length, 0,
     'таблица исполнителей — не про задачи, динамических колонок не получает; получено: ' + pids.join(','));
 });
+
+/* ════ #100 — после rev_conflict правки на «Людях» заморожены до перезагрузки ════
+   Прод-запись 2026-08-31: сервер отверг запись слота `history`, тост показан, а экран
+   продолжал принимать правки — пользователь сделал ещё три назначения, все потерялись.
+   Метку ставит data-слой (`document.body.dataset.sspRevConflict`), снимает reload. */
+test('#100: при метке rev_conflict change-делегат не пишет назначение и объясняет почему', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const st = fx.buildSettings();
+  st.userFieldDevBack = 'Backend Dev';
+  st.dynEditEnabled = true;
+  const apiPostLog = [];
+  const toasts = [];
+  gm.set({
+    _settings: st,
+    apiPost: function (path) { apiPostLog.push(path); return Promise.resolve({ success: true }); },
+    toast: function (msg, type) { toasts.push({ msg: String(msg), type: type || null }); },
+  });
+  gm.call('renderCurrentRoleTaskTable');
+  const taBefore = JSON.parse(JSON.stringify(gm.get('_currentRolePP').taskAssignments || {}));
+
+  document.body.dataset.sspRevConflict = '1';
+
+  const host = document.getElementById('currentRoleTaskHost');
+  const sel = document.createElement('select');
+  sel.className = 'currentRole-task-assignee assigner-btn';
+  sel.setAttribute('data-issue', 'GM-11');
+  sel.innerHTML = '<option value=""></option><option value="gm_user_1">U1</option>';
+  host.appendChild(sel);
+  sel.value = 'gm_user_1';
+  sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(gm.get('_currentRolePP').taskAssignments || {})), taBefore,
+    'назначение НЕ записано: локальный стейт разошёлся с сервером');
+  assert.strictEqual(apiPostLog.indexOf('update-issue-field'), -1,
+    'в живую задачу YT тоже не пишем');
+  assert.strictEqual(toasts.length, 1, 'пользователю сказано, почему правка не прошла');
+  assert.strictEqual(toasts[0].type, 'warn');
+  assert.match(toasts[0].msg, /Перезагрузите страницу/, 'тост называет способ выйти из заморозки');
+});
+
+test('#100: при метке rev_conflict селект исполнителя рендерится disabled', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  gm.set({ _settings: fx.buildSettings() });
+
+  const assigneeCells = function () {
+    const t = materializeTable(document.getElementById('currentRoleTaskHost'));
+    const col = (t.columns || []).find(function (c) { return c.id === 'assignee'; });
+    assert.ok(col, 'колонка исполнителя в таблице есть');
+    return col.cells.map(function (c) { return (c && c.html) || ''; }).join('\n');
+  };
+
+  gm.call('renderCurrentRoleTaskTable');
+  const open = assigneeCells();
+  assert.match(open, /currentRole-task-assignee/, 'селект исполнителя отрисован');
+  assert.ok(open.indexOf('disabled') < 0, 'без метки селект активен');
+
+  document.body.dataset.sspRevConflict = '1';
+  gm.call('renderCurrentRoleTaskTable');
+  assert.match(assigneeCells(), /<select[^>]*disabled/,
+    'с меткой селект disabled — заморозка видна, а не только слышна в тосте');
+});

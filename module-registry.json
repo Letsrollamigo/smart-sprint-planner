@@ -29,8 +29,8 @@
       }
     },
     "fatThreshold": 600,
-    "_fatCountNote": "#69 строка 23 (2026-08-22): fat-count считает modules + react/*.jsx (до этого — только modules); baseline 5→7 = reporting-view.jsx 1486 и settings-form.jsx 928 уже были жирными. v3.2.1 — domain/sprint-controller.js пересёк 600 (615): доснап уходящего PLANNING в doNewSprint (дыра фикса v2.16.6) + .catch persist. Осознанно: багфикс-код по месту жительства. fatCountBaseline 4→5. Прошлое: #50 S8b — pure/reporting-pure.js пересёк 600 (595→640) на движке B1 buildTechDebtRows → 4-й «жирный» (reporting-view domain уже 3-й). Осознанно: reporting-pure легитимно владеет ВСЕМИ pure-движками отчётности (10 функций A1–A10+B1+B3); декомпозиция (вынос B-движков в reporting-b-pure) — отдельный техдолг, если продолжит расти. fatCountBaseline 3→4.",
-    "fatCountBaseline": 7,
+    "_fatCountNote": "#100 (2026-08-31): domain/sprint-controller.js пересёк 600 (600→628) — откат локальной мутации personalPlanning при отказе оптимистичной блокировки (rev_conflict). Осознанно: файл стоял РОВНО на пороге, headroom был нулевой, а перенос помощника в любой другой модуль требовал +1 строку в core.js, где locBudget 4622 при 4622 (уперлись бы в A2). Багфикс P1 с потерей данных по месту жительства; дробление sprint-controller — отдельная работа. fatCountBaseline 7→8. ⚖ владелец 2026-08-31. #69 строка 23 (2026-08-22): fat-count считает modules + react/*.jsx (до этого — только modules); baseline 5→7 = reporting-view.jsx 1486 и settings-form.jsx 928 уже были жирными. v3.2.1 — domain/sprint-controller.js пересёк 600 (615): доснап уходящего PLANNING в doNewSprint (дыра фикса v2.16.6) + .catch persist. Осознанно: багфикс-код по месту жительства. fatCountBaseline 4→5. Прошлое: #50 S8b — pure/reporting-pure.js пересёк 600 (595→640) на движке B1 buildTechDebtRows → 4-й «жирный» (reporting-view domain уже 3-й). Осознанно: reporting-pure легитимно владеет ВСЕМИ pure-движками отчётности (10 функций A1–A10+B1+B3); декомпозиция (вынос B-движков в reporting-b-pure) — отдельный техдолг, если продолжит расти. fatCountBaseline 3→4.",
+    "fatCountBaseline": 8,
     "leafLayers": [
       "infra",
       "pure",

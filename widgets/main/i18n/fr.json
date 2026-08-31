@@ -171,6 +171,7 @@
   "hintShowDiagLogUi": "Affiche le bloc «Journal de diagnostic» en bas du widget. Masqué par défaut; à activer uniquement lors de l’analyse d’un incident.",
   "errRevConflict": "Le sprint a été modifié par un autre utilisateur. Rechargez la page et réessayez d’enregistrer.",
   "errSlotRevConflict": "Les données ont été modifiées par un autre utilisateur. Rechargez la page et réessayez d’enregistrer.",
+  "toastEditsBlockedRevConflict": "Modifications gelées : vos données diffèrent de celles du serveur. Rechargez la page.",
   "ganttBarTooltipUnassigned": "Non affecté",
   "cardSprintIntro": "Aperçu du sprint",
   "lblSprintName": "Nom du sprint",

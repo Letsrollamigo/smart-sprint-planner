@@ -171,6 +171,7 @@
   "hintShowDiagLogUi": "ウィジェット下部の«診断ログ»ブロックを表示します。デフォルトでは非表示です。インシデント調査時のみ有効にしてください。",
   "errRevConflict": "スプリントは別のユーザーによって変更されました。ページを再読み込みして、もう一度保存してください。",
   "errSlotRevConflict": "データは別のユーザーによって変更されました。ページを再読み込みして、もう一度保存してください。",
+  "toastEditsBlockedRevConflict": "編集は凍結されました：データがサーバーと一致しません。ページを再読み込みしてください。",
   "ganttBarTooltipUnassigned": "未割り当て",
   "cardSprintIntro": "スプリント概要",
   "lblSprintName": "スプリント名",

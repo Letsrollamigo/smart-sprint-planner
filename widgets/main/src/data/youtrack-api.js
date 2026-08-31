@@ -145,9 +145,17 @@ function apiPost(path, body, query, deps) {
         var reason = (r && (r.reason || r.error)) || 'unknown_error';
         deps.diag('ERR ' + path + ': server returned success=false reason=' + reason, 'err');
         /* #56-4 — конкурентная правка: понятный тост вместо генерик-ошибки. */
-        if (reason === 'rev_conflict' && typeof deps.toast === 'function') {
-          /* R6 — у слотов history/releases/absences своя формулировка («данные», не «спринт»). */
-          deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
+        if (reason === 'rev_conflict') {
+          /* #100 — сервер отверг запись, а локальный стейт вызывающий уже мутировал.
+             Ставим метку «разошлись с сервером»: правки замораживаются до перезагрузки
+             страницы (прод-баг — пользователь после тоста сделал ещё три назначения, и
+             все они потерялись). Метка живёт в DOM, поэтому reload её и снимает, а
+             module-level стейта не прибавляется (гейт C1). */
+          try { document.body.dataset.sspRevConflict = '1'; } catch (_) {}
+          if (typeof deps.toast === 'function') {
+            /* R6 — у слотов history/releases/absences своя формулировка («данные», не «спринт»). */
+            deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
+          }
         }
         throw new Error(reason);
       }

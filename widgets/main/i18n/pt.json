@@ -171,6 +171,7 @@
   "hintShowDiagLogUi": "Mostra o bloco «Log de diagnóstico» na parte inferior do widget. Oculto por padrão; ative apenas ao investigar um incidente.",
   "errRevConflict": "O sprint foi modificado por outro usuário. Recarregue a página e tente salvar novamente.",
   "errSlotRevConflict": "Os dados foram modificados por outro usuário. Recarregue a página e tente salvar novamente.",
+  "toastEditsBlockedRevConflict": "Edição congelada: os seus dados divergem do servidor. Recarregue a página.",
   "ganttBarTooltipUnassigned": "Não atribuído",
   "cardSprintIntro": "Visão geral do sprint",
   "lblSprintName": "Nome do sprint",
