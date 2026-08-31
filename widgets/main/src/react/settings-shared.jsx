@@ -58,7 +58,10 @@ function FieldSelect({ value, onChange, names, placeholder }) {
       data={data} selected={selected}
       clear filter={_filterCfg(tCtx, data, 10)}
       label={placeholder || undefined}
-      onSelect={(item) => onChange(item ? String(item.key) : '')}
+      /* #101 — onChange, а не onSelect: крестик «очистить» у Ring Select зовёт ТОЛЬКО
+         onChange(null); на onSelect очистка не доходила до формы и молча не сохранялась.
+         Для одиночного селекта onChange — надмножество onSelect (Ring зовёт их парой). */
+      onChange={(item) => onChange(item ? String(item.key) : '')}
     />
   );
 }
@@ -222,7 +225,8 @@ function RingSelLite({ options, value, onChange, placeholder, clearable, disable
       clear={!!clearable} disabled={!!disabled}
       filter={_filterCfg(tCtx, data, 10)}
       label={placeholder || undefined}
-      onSelect={(item) => onChange(item ? String(item.key) : '')}
+      /* #101 — onChange вместо onSelect: см. комментарий в FieldSelect. */
+      onChange={(item) => onChange(item ? String(item.key) : '')}
     />
   );
 }

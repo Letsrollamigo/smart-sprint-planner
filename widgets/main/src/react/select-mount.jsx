@@ -96,8 +96,9 @@ function SspSelectCmp({ host }) {
   return React.createElement(Select, {
     data,
     selected: multiple ? selected || [] : selected,
-    onSelect: multiple ? undefined : handleSelect,
-    onChange: multiple ? handleSelect : undefined,
+    /* #101 — только onChange: крестик «очистить» зовёт его, а не onSelect; для
+       одиночного выбора onChange — надмножество (Ring зовёт их парой). */
+    onChange: handleSelect,
     filter,
     clear,
     disabled,
