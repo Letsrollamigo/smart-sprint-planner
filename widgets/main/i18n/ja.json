@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "プランナー無効",
   "toastPlannerDisabled": "このプロジェクトでプランナーを無効にしました",
   "toastPlannerEnabled": "このプロジェクトでプランナーを有効にしました",
-  "errPlannerDisabled": "このプロジェクトではプランナーが無効のため、変更は保存されませんでした。下書きは残っています。プロジェクトの設定管理者にお問い合わせください。"
+  "errPlannerDisabled": "このプロジェクトではプランナーが無効のため、変更は保存されませんでした。下書きは残っています。プロジェクトの設定管理者にお問い合わせください。",
+  "bannerRegisterFailed": "ウィジェットを YouTrack に登録できませんでした。ページを再読み込みしてください（F5）。エラーが続く場合は管理者にお問い合わせください。",
+  "dpPrevMonth": "前の月",
+  "dpNextMonth": "次の月",
+  "hintZombieValue": "値は保存されていますが、現在のバンドルにありません",
+  "ganttVmError": "ガントチャートを構築できませんでした",
+  "repA11Easter": "生命、宇宙、そして計画についての究極の疑問の答え。",
+  "toastParrotMode": "オウムで測定 🦜",
+  "hintThisIsFine": "this is fine"
 }

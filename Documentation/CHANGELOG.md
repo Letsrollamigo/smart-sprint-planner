@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.33.0] — 2026-08-31
+
+> **Fix pack: backdated state colors + localization all the way down.** Three backlog defects. No new features; the data schema is unchanged.
+
+### Fixed
+
+- **State color was not picked up when the flow was colored after the sprint was composed.** "Refresh from issue" wrote the color only together with a state change — a project that assigned colors to field values after composing the sprint kept grey chips and Gantt bars forever. The color is now compared by value and pulled on any difference; there are no phantom "changes" when everything matches — a repeated refresh honestly answers "No differences".
+- **Reporting did not translate on language change.** Report labels are baked into the built view, so switching the language left table headers, legends and tiles untouched until you left the tab and came back (which re-ran the whole report). Switching the language now rebuilds the labels from the dictionary and redraws the open contours from the data already at hand — no re-run.
+- **Eight user-facing strings were hardcoded past the localization dictionary**, including the only text of the "widget failed to register" scenario (always shown in Russian), the "(h)" unit in XLSX export headers, the calendar arrow labels for screen readers, the "zombie value" hint in sprint/version selectors and the Gantt chart failure text. All are now translated into 15 locales. The easter eggs moved into the dictionary too — which also removed a comparison of a localized label against a Russian literal that silently broke one of them whenever the wording changed.
+---
+
 ## [3.32.0] — 2026-08-31
 
 > **"Disable planner in this project".** Detaching the app from a project in YouTrack does not remove the project from the planner's project picker: app data survives detachment, and the project kept being served through the main menu in full. A project settings manager now has an explicit switch. Data schema: additive settings key `plannerDisabled`, no-op migration.

@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "tervező kikapcsolva",
   "toastPlannerDisabled": "A tervező kikapcsolva ebben a projektben",
   "toastPlannerEnabled": "A tervező bekapcsolva ebben a projektben",
-  "errPlannerDisabled": "A tervező ki van kapcsolva ebben a projektben — a módosítások nem lettek mentve. A piszkozat érintetlen; forduljon a projekt beállításkezelőjéhez."
+  "errPlannerDisabled": "A tervező ki van kapcsolva ebben a projektben — a módosítások nem lettek mentve. A piszkozat érintetlen; forduljon a projekt beállításkezelőjéhez.",
+  "bannerRegisterFailed": "A widgetet nem sikerült regisztrálni a YouTrackben. Töltse újra az oldalt (F5). Ha a hiba továbbra is fennáll, forduljon az adminisztrátorhoz.",
+  "dpPrevMonth": "Előző hónap",
+  "dpNextMonth": "Következő hónap",
+  "hintZombieValue": "Az érték mentve van, de hiányzik az aktuális bundle-ből",
+  "ganttVmError": "A Gantt-diagram felépítése nem sikerült",
+  "repA11Easter": "A válasz az élet, a világegyetem meg a tervezés nagy kérdésére.",
+  "toastParrotMode": "Papagájban mérve 🦜",
+  "hintThisIsFine": "this is fine"
 }

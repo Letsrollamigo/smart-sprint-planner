@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "planlayıcı devre dışı",
   "toastPlannerDisabled": "Bu projede planlayıcı devre dışı bırakıldı",
   "toastPlannerEnabled": "Bu projede planlayıcı etkinleştirildi",
-  "errPlannerDisabled": "Bu projede planlayıcı devre dışı — değişiklikler kaydedilmedi. Taslak korunuyor; proje ayar yöneticisine başvurun."
+  "errPlannerDisabled": "Bu projede planlayıcı devre dışı — değişiklikler kaydedilmedi. Taslak korunuyor; proje ayar yöneticisine başvurun.",
+  "bannerRegisterFailed": "Widget YouTrack'e kaydedilemedi. Sayfayı yeniden yükleyin (F5). Hata devam ederse yöneticinize başvurun.",
+  "dpPrevMonth": "Önceki ay",
+  "dpNextMonth": "Sonraki ay",
+  "hintZombieValue": "Değer kaydedildi ancak geçerli pakette yok",
+  "ganttVmError": "Gantt şeması oluşturulamadı",
+  "repA11Easter": "Yaşam, evren ve planlamayla ilgili nihai sorunun yanıtı.",
+  "toastParrotMode": "Papağan cinsinden ölçüldü 🦜",
+  "hintThisIsFine": "this is fine"
 }

@@ -146,7 +146,7 @@ function _labels(T) {
     flowMenu: T('repFlowMenu'), a4Menu: T('repA4Menu'), a5Menu: T('repA5Menu'), a6Menu: T('repA6Menu'), a10Menu: T('repA10Menu'),
     a11Menu: T('repA11Menu'),
     /* v3.12.0 (#11) — A11 Velocity вью (скорость команды по ролям из снимков) */
-    a11Title: T('repA11Title'), a11Sub: T('repA11Sub'),
+    a11Title: T('repA11Title'), a11Sub: T('repA11Sub'), a11Easter: T('repA11Easter'),   /* #98 — пасхалка 42 из словаря */
     a11SectAvg: T('repA11SectAvg'), a11SectTrend: T('repA11SectTrend'),
     a11ColAvgClosed: T('repA11ColAvgClosed'), a11ColAvgPct: T('repA11ColAvgPct'), a11ColPlanned: T('repA11ColPlanned'),
     a11ColSprints: T('repA11ColSprints'), a11ColSprint: T('repA11ColSprint'), a11Sparse: T('repA11Sparse'),
@@ -1437,7 +1437,27 @@ function loadAndRender(deps, contour, run) {
   else _loadA7(deps, base, settings, fieldState, proj, pure);
 }
 
-const api = { loadAndRender: loadAndRender };
+/* #99 — синк-ре-рендер обоих контуров из кэша последнего НЕ-loading вида (смена языка).
+   Подписи запечены в vm при сборке (_labels(T) → vm.labels), компонент читает const L =
+   vm.labels — принудительный React-рендер их не переводит. Пересобираем labels из
+   актуального T и перемонтируем; данные те же — рефетча нет (повторный loadAndRender
+   сработал бы, но стоил бы полного прогона отчёта). Контур не смонтирован / кэша нет /
+   идёт прогон — no-op (in-flight доедет со своими подписями, свитч отчёта обновит сам). */
+function rerenderFromCache(deps) {
+  ['a', 'b'].forEach(function (c) {
+    var host = document.getElementById(_hostId(c));
+    var m = _mount();
+    if (!host || !m) return;
+    if (host.__sspReportingLoading) return;
+    var good = host.__sspReportingGood;
+    if (!good) return;
+    var vm = Object.assign({}, good, { labels: _labels(deps.T) });
+    host.__sspReportingGood = vm;   /* цель отката тоже говорит на новом языке */
+    m.mountAt(host, vm);
+  });
+}
+
+const api = { loadAndRender: loadAndRender, rerenderFromCache: rerenderFromCache };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_REPORTING_VIEW = api; } catch (_) { /* sandboxed write may throw */ }

@@ -446,6 +446,8 @@
     try { if (typeof renderCapacityView === 'function') renderCapacityView(); } catch(_){}
     /* #48 R1.2b — перерисовать вкладки релиз-менеджмента из готового стора (смена языка). */
     try { if (typeof renderReleaseView === 'function') renderReleaseView(); } catch(_){}
+    /* #99 — перерисовать отчётность из кэша последнего готового вида (подписи запечены в vm). */
+    try { if (typeof renderReportingView === 'function') renderReportingView(); } catch(_){}
     /* Subtab-метки «Аллокация общего ресурса» / «Распределение по исполнителям» —
        обновятся через applyI18N (data-i18n атрибуты). */
     if (typeof refreshDirtyIndicator === 'function') refreshDirtyIndicator();
@@ -791,7 +793,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.32.0';
+  var APP_VERSION = '3.33.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1665,7 +1667,7 @@
             b.classList.remove('hidden');
             b.style.background = 'rgba(224,90,106,.18)';
             b.style.color = '#b13e4d';
-            setButtonText(b, 'Не удалось зарегистрировать виджет в YouTrack. Перезагрузите страницу (F5). Если ошибка повторяется — обратитесь к администратору.');
+            setButtonText(b, T('bannerRegisterFailed'));   /* #98 — единственный текст этого сценария был зашит по-русски */
           }
         } catch(_){}
         throw err;
@@ -4474,6 +4476,10 @@
   }
   function loadReportingView(contour) {
     if (typeof REPORTING_VIEW.loadAndRender === 'function') REPORTING_VIEW.loadAndRender(_reportingDeps(), contour);
+  }
+  /* #99 — sync-делегатор (пере-подписи из кэша готового вида, без рефетча) — для _doFullRerender (смена языка). */
+  function renderReportingView() {
+    if (typeof REPORTING_VIEW.rerenderFromCache === 'function') REPORTING_VIEW.rerenderFromCache(_reportingDeps());
   }
   function _backlogAssist(req) { return BACKLOG_LOADER._backlogAssist(req, _backlogDeps()); }
   /* §8 schema-level fail-loud — сверить бандл состояний fieldState с маппингом (зоны/старт/

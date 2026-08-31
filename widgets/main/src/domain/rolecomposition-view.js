@@ -146,7 +146,7 @@ function renderRoleAccordion(rk, deps) {
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
     +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
-    +     (_thisIsFine ? '<span class="planning-role-dog" title="this is fine">' + DOG_SVG + '</span>' : '')
+    +     (_thisIsFine ? '<span class="planning-role-dog" title="' + esc(T('hintThisIsFine')) + '">' + DOG_SVG + '</span>' : '')   /* #98 */
     +   '</button>'
     +   '<div class="planning-role-body" data-role-body="' + rk + '">'
     /* v5.6.0 — Этап 4 (4c): hint и кнопка «Открыть в legacy» удалены.

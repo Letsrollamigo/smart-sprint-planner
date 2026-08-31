@@ -132,7 +132,7 @@ function exportSprintToExcel(rec, deps) {
   if (rec.versionFieldVal) meta.push([T('excelVersion'), rec.versionFieldVal]);
   meta.push([]);
 
-  var roleSuffixHdr = ' ' + (role ? roleLabel(role) : rk) + ' (ч)';
+  var roleSuffixHdr = ' ' + (role ? roleLabel(role) : rk) + ' (' + T('hourShort') + ')';   /* #98 — единица через словарь */
   /* v5.5.0 — Этап 3e: условная колонка «Ответственный по задаче» при наличии
      personal-распределения хотя бы по одной задаче этой роли. Multi-assignee — через запятую.
      Спринты без personal распределения экспортируются как раньше (regression-safe). */

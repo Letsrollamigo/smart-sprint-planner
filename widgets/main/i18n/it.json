@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "pianificatore disattivato",
   "toastPlannerDisabled": "Pianificatore disattivato in questo progetto",
   "toastPlannerEnabled": "Pianificatore attivato in questo progetto",
-  "errPlannerDisabled": "Il pianificatore è disattivato in questo progetto: le modifiche non sono state salvate. La bozza è intatta; contatta il gestore delle impostazioni del progetto."
+  "errPlannerDisabled": "Il pianificatore è disattivato in questo progetto: le modifiche non sono state salvate. La bozza è intatta; contatta il gestore delle impostazioni del progetto.",
+  "bannerRegisterFailed": "Impossibile registrare il widget in YouTrack. Ricarica la pagina (F5). Se l'errore persiste, contatta l'amministratore.",
+  "dpPrevMonth": "Mese precedente",
+  "dpNextMonth": "Mese successivo",
+  "hintZombieValue": "Il valore è salvato ma manca nel bundle corrente",
+  "ganttVmError": "Impossibile costruire il diagramma di Gantt",
+  "repA11Easter": "La risposta alla domanda fondamentale sulla vita, l'universo e la pianificazione.",
+  "toastParrotMode": "Misurato in pappagalli 🦜",
+  "hintThisIsFine": "this is fine"
 }

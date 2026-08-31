@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "Planer deaktiviert",
   "toastPlannerDisabled": "Planer in diesem Projekt deaktiviert",
   "toastPlannerEnabled": "Planer in diesem Projekt aktiviert",
-  "errPlannerDisabled": "Der Planer ist in diesem Projekt deaktiviert — Änderungen wurden nicht gespeichert. Der Entwurf ist intakt; wenden Sie sich an den Einstellungsverwalter des Projekts."
+  "errPlannerDisabled": "Der Planer ist in diesem Projekt deaktiviert — Änderungen wurden nicht gespeichert. Der Entwurf ist intakt; wenden Sie sich an den Einstellungsverwalter des Projekts.",
+  "bannerRegisterFailed": "Das Widget konnte in YouTrack nicht registriert werden. Laden Sie die Seite neu (F5). Wenn der Fehler bestehen bleibt, wenden Sie sich an den Administrator.",
+  "dpPrevMonth": "Vorheriger Monat",
+  "dpNextMonth": "Nächster Monat",
+  "hintZombieValue": "Der Wert ist gespeichert, fehlt aber im aktuellen Bundle",
+  "ganttVmError": "Gantt-Diagramm konnte nicht erstellt werden",
+  "repA11Easter": "Die Antwort auf die endgültige Frage nach dem Leben, dem Universum und der Planung.",
+  "toastParrotMode": "Gemessen in Papageien 🦜",
+  "hintThisIsFine": "this is fine"
 }

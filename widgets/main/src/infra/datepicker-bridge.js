@@ -74,9 +74,9 @@
       var valIso = valP ? _sspDpFmtIso(valP.y, valP.mo, valP.d) : null;
 
       var h = '<div class="ssp-dp-hdr" style="display:flex;align-items:center;justify-content:space-between;padding:2px 0">' +
-        '<button type="button" class="ssp-dp-nav ssp-dp-prev" aria-label="prev month" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">‹</button>' +
+        '<button type="button" class="ssp-dp-nav ssp-dp-prev" aria-label="' + deps.esc(deps.T('dpPrevMonth')) + '" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">‹</button>' +
         '<span class="ssp-dp-title" style="font-weight:600;text-transform:capitalize">' + deps.esc(title) + '</span>' +
-        '<button type="button" class="ssp-dp-nav ssp-dp-next" aria-label="next month" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">›</button>' +
+        '<button type="button" class="ssp-dp-nav ssp-dp-next" aria-label="' + deps.esc(deps.T('dpNextMonth')) + '" style="background:none;border:none;cursor:pointer;font-size:16px;padding:2px 10px;color:inherit">›</button>' +
         '</div>' +
         '<div class="ssp-dp-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:6px">';
       for (var ww = 0; ww < 7; ww++) {

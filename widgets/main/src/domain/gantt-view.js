@@ -382,7 +382,7 @@ function renderGanttChart(deps) {
     built = _buildGanttVm(deps);
   } catch (e) {
     /* #20-v2 fail-loud: OOPIF прячет исключения от top-консоли — показываем в пейне. */
-    if (container) container.textContent = 'Gantt vm error: ' + String((e && e.message) || e);
+    if (container) container.textContent = deps.T('ganttVmError') + ': ' + String((e && e.message) || e);   /* #98 */
     return;
   }
   if (!built) {

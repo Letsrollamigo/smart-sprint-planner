@@ -1339,5 +1339,13 @@
   "plannerDisabledMark": "planner disabled",
   "toastPlannerDisabled": "Planner disabled in this project",
   "toastPlannerEnabled": "Planner enabled in this project",
-  "errPlannerDisabled": "The planner is disabled in this project — changes were not saved. Your draft is intact; contact the project settings manager."
+  "errPlannerDisabled": "The planner is disabled in this project — changes were not saved. Your draft is intact; contact the project settings manager.",
+  "bannerRegisterFailed": "Failed to register the widget in YouTrack. Reload the page (F5). If the error persists, contact your administrator.",
+  "dpPrevMonth": "Previous month",
+  "dpNextMonth": "Next month",
+  "hintZombieValue": "The value is saved but missing from the current bundle",
+  "ganttVmError": "Failed to build the Gantt chart",
+  "repA11Easter": "The answer to the ultimate question of life, the universe, and planning.",
+  "toastParrotMode": "Measured in parrots 🦜",
+  "hintThisIsFine": "this is fine"
 }

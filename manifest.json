@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.32.0",
+  "version": "3.33.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.31.0</b><br><br>🔌 <b>Disable planner in this project</b> — detaching the app from a project never removed it from the planner's project picker: app data survives detachment, and the project kept being served through the main menu. A project settings manager or an administrator can now switch the planner off explicitly, with a confirmation dialog. A disabled project disappears from the picker for regular users and main-menu service stops entirely; planner data stays intact and the switch is reversible.<br><br>🔓 <b>No lock-out</b> — users who can re-enable the planner still see the disabled project in the picker with a “planner disabled” mark, and get a banner with an enable button instead of the planner.<br><br>🛡 <b>Safe by construction</b> — the flag is written only by a dedicated endpoint under the settings-manager role; saving the settings form never touches it, and a save that races with disabling answers with a clear message without losing the draft. Automatic workflow rules are not gated by the switch (a deliberate decision, named in the confirmation dialog).",
+  "changeNotes": "<b>What's new since v3.32.0</b><br><br>🎨 <b>State color catches up</b> — “Refresh from issues” pulled a state's color only together with a change of the state itself; a project that colored its State field values after sprint composition was built kept gray chips and Gantt bars forever. Color is now compared by value and pulled on any difference — with no phantom “changes” reported when nothing differs.<br><br>🌐 <b>Reports re-render on language switch</b> — switching the app language now rebuilds report labels from the dictionary and re-renders open report contours from already-loaded data, without re-running the report.<br><br>✍️ <b>Last hardcoded strings localized</b> — eight user-facing strings lived outside the i18n dictionary: the widget-registration banner, the “(h)” unit in XLSX export headers, calendar arrow labels for screen readers, the zombie-value hint in sprint/release selectors, and the Gantt fallback error text. All are now translated into 15 locales.",
   "widgets": [
     {
       "key": "ssp-main",

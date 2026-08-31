@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "planner uitgeschakeld",
   "toastPlannerDisabled": "Planner uitgeschakeld in dit project",
   "toastPlannerEnabled": "Planner ingeschakeld in dit project",
-  "errPlannerDisabled": "De planner is uitgeschakeld in dit project — wijzigingen zijn niet opgeslagen. Het concept is intact; neem contact op met de instellingenbeheerder van het project."
+  "errPlannerDisabled": "De planner is uitgeschakeld in dit project — wijzigingen zijn niet opgeslagen. Het concept is intact; neem contact op met de instellingenbeheerder van het project.",
+  "bannerRegisterFailed": "Kan de widget niet registreren in YouTrack. Herlaad de pagina (F5). Neem contact op met de beheerder als de fout aanhoudt.",
+  "dpPrevMonth": "Vorige maand",
+  "dpNextMonth": "Volgende maand",
+  "hintZombieValue": "De waarde is opgeslagen maar ontbreekt in de huidige bundle",
+  "ganttVmError": "Kan het Gantt-diagram niet opbouwen",
+  "repA11Easter": "Het antwoord op de ultieme vraag over het leven, het universum en planning.",
+  "toastParrotMode": "Gemeten in papegaaien 🦜",
+  "hintThisIsFine": "this is fine"
 }

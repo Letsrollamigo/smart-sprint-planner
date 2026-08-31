@@ -358,6 +358,8 @@ function refreshFromYouTrack(deps) {
         var local = {
           estimate: item['estimate_' + rk], fact: item['fact_' + rk],
           state: item.state, priority: item.priority, xpriority: item.xpriority,
+          /* #92 — атрибуты состояния нужны резолверу для сравнения по значению */
+          stateLocalized: item.stateLocalized, stateColor: item.stateColor, stateFieldId: item.stateFieldId,
           system: item.system, externalTicketId: item.externalTicketId,
         };
         var snapshot = {
@@ -399,6 +401,7 @@ function refreshFromYouTrack(deps) {
         var res = deps.resolveRefreshMerge({
           issueId: item.issueId, roleKey: rk,
           local: { state: item.state, priority: item.priority, xpriority: item.xpriority,
+                   stateLocalized: item.stateLocalized, stateColor: item.stateColor, stateFieldId: item.stateFieldId,   /* #92 */
                    system: item.system, externalTicketId: item.externalTicketId },
           snapshot: {}, remote: remote,
         });

@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "规划器已停用",
   "toastPlannerDisabled": "已在此项目中停用规划器",
   "toastPlannerEnabled": "已在此项目中启用规划器",
-  "errPlannerDisabled": "此项目中的规划器已停用——更改未保存。草稿完好无损；请联系项目设置管理员。"
+  "errPlannerDisabled": "此项目中的规划器已停用——更改未保存。草稿完好无损；请联系项目设置管理员。",
+  "bannerRegisterFailed": "无法在 YouTrack 中注册小部件。请重新加载页面（F5）。如果错误仍然存在，请联系管理员。",
+  "dpPrevMonth": "上个月",
+  "dpNextMonth": "下个月",
+  "hintZombieValue": "该值已保存，但当前包中不存在",
+  "ganttVmError": "无法构建甘特图",
+  "repA11Easter": "关于生命、宇宙以及规划的终极问题的答案。",
+  "toastParrotMode": "以鹦鹉为单位 🦜",
+  "hintThisIsFine": "this is fine"
 }

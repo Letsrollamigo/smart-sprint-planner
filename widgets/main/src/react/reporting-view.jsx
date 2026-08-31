@@ -1175,12 +1175,10 @@ function A11View({ vm, L }) {
           </table>
         </div>
       )}
-      {roleRows.some((r) => Math.round(r.avgClosedMinutes / 60) === 42) ? (
-        <div style={{ ...(_mutedS), marginTop: '8px', fontStyle: 'italic' }}>
-          {L.a11Title === 'Velocity команды'
-            ? 'Ответ на главный вопрос жизни, Вселенной и планирования.'
-            : 'The answer to the ultimate question of life, the universe, and planning.'}
-        </div>
+      {/* #98 — пасхалка 42 из словаря; прежнее сравнение ЛОКАЛИЗОВАННОЙ подписи с русским
+          литералом молча разваливалось при правке формулировки repA11Title */}
+      {roleRows.some((r) => Math.round(r.avgClosedMinutes / 60) === 42) && L.a11Easter ? (
+        <div style={{ ...(_mutedS), marginTop: '8px', fontStyle: 'italic' }}>{L.a11Easter}</div>
       ) : null}
     </React.Fragment>
   );

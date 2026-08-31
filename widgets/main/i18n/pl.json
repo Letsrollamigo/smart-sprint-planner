@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "planer wyłączony",
   "toastPlannerDisabled": "Planer wyłączony w tym projekcie",
   "toastPlannerEnabled": "Planer włączony w tym projekcie",
-  "errPlannerDisabled": "Planer jest wyłączony w tym projekcie — zmiany nie zostały zapisane. Szkic jest nienaruszony; skontaktuj się z menedżerem ustawień projektu."
+  "errPlannerDisabled": "Planer jest wyłączony w tym projekcie — zmiany nie zostały zapisane. Szkic jest nienaruszony; skontaktuj się z menedżerem ustawień projektu.",
+  "bannerRegisterFailed": "Nie udało się zarejestrować widżetu w YouTrack. Odśwież stronę (F5). Jeśli błąd się powtarza, skontaktuj się z administratorem.",
+  "dpPrevMonth": "Poprzedni miesiąc",
+  "dpNextMonth": "Następny miesiąc",
+  "hintZombieValue": "Wartość jest zapisana, ale nie ma jej w bieżącym bundle'u",
+  "ganttVmError": "Nie udało się zbudować diagramu Gantta",
+  "repA11Easter": "Odpowiedź na wielkie pytanie o życie, wszechświat i planowanie.",
+  "toastParrotMode": "Mierzone w papugach 🦜",
+  "hintThisIsFine": "this is fine"
 }

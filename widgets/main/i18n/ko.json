@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "플래너 비활성화됨",
   "toastPlannerDisabled": "이 프로젝트에서 플래너가 비활성화되었습니다",
   "toastPlannerEnabled": "이 프로젝트에서 플래너가 활성화되었습니다",
-  "errPlannerDisabled": "이 프로젝트에서 플래너가 비활성화되어 변경 사항이 저장되지 않았습니다. 초안은 그대로 있습니다. 프로젝트 설정 관리자에게 문의하세요."
+  "errPlannerDisabled": "이 프로젝트에서 플래너가 비활성화되어 변경 사항이 저장되지 않았습니다. 초안은 그대로 있습니다. 프로젝트 설정 관리자에게 문의하세요.",
+  "bannerRegisterFailed": "위젯을 YouTrack에 등록하지 못했습니다. 페이지를 새로 고치세요(F5). 오류가 계속되면 관리자에게 문의하세요.",
+  "dpPrevMonth": "이전 달",
+  "dpNextMonth": "다음 달",
+  "hintZombieValue": "값은 저장되어 있지만 현재 번들에 없습니다",
+  "ganttVmError": "간트 차트를 구성하지 못했습니다",
+  "repA11Easter": "삶과 우주, 그리고 계획에 대한 궁극적인 질문의 답.",
+  "toastParrotMode": "앵무새 단위로 측정 🦜",
+  "hintThisIsFine": "this is fine"
 }

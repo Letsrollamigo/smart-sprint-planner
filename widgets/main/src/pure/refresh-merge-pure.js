@@ -21,6 +21,15 @@
        неидеального парсинга workflow-API формата на backend (см. #35 spec S1 risk);
      • пустой assignee из YT — факт только когда планер в это поле пишет (assigneeWritable). */
 
+/* #92 — сравнение цвета состояния по значению ({background,foreground}|null); null/undefined
+   считаются равными между собой. Идентичность объектов не годится: remote всегда новый. */
+function _sameStateColor(a, b) {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return (a.background || null) === (b.background || null)
+      && (a.foreground || null) === (b.foreground || null);
+}
+
 function _login(a) {
   if (a == null) return null;
   if (typeof a === 'string') return a || null;
@@ -53,11 +62,22 @@ function resolveRefreshMerge(input) {
   });
 
   /* ── YT-зеркало: state (комплекс name + localized + color + fieldId) ── */
-  if (remote.state != null && remote.state !== '' && remote.state !== local.state) {
-    updates.state = remote.state;
-    if (remote.stateLocalized !== undefined) updates.stateLocalized = remote.stateLocalized;
-    if (remote.stateColor !== undefined) updates.stateColor = remote.stateColor;
-    if (remote.stateFieldId != null) updates.stateFieldId = remote.stateFieldId;
+  if (remote.state != null && remote.state !== '') {
+    var stateChanged = remote.state !== local.state;
+    if (stateChanged) updates.state = remote.state;
+    if (stateChanged) {
+      if (remote.stateLocalized !== undefined) updates.stateLocalized = remote.stateLocalized;
+      if (remote.stateFieldId != null) updates.stateFieldId = remote.stateFieldId;
+    }
+    /* #92 — ЦВЕТ состояния назначается в проекте и задним числом: пишем его при любом
+       расхождении, а не только при смене имени состояния — иначе поток, раскрашенный
+       ПОСЛЕ набора состава, остаётся серым навсегда (класс v2.1.14 #20 «смена только
+       State не считалась в changed»). Сравнение по значению — иначе каждый refresh
+       рапортовал бы фантомные изменения. Прочие атрибуты (localized/fieldId) намеренно
+       остаются на прежнем гейте: remote.stateLocalized тут всегда = имени состояния, а
+       старые позиции его не хранят — «писать всегда» дало бы фантом на них (пойман
+       голденом refresh-no-change). */
+    if (remote.stateColor !== undefined && (stateChanged || !_sameStateColor(remote.stateColor, local.stateColor))) updates.stateColor = remote.stateColor;
   }
 
   /* ── Пограничные числовые: estimate, fact (dirty-guard) ── */

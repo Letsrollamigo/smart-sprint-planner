@@ -1340,5 +1340,13 @@
   "plannerDisabledMark": "planificador desactivado",
   "toastPlannerDisabled": "Planificador desactivado en este proyecto",
   "toastPlannerEnabled": "Planificador activado en este proyecto",
-  "errPlannerDisabled": "El planificador está desactivado en este proyecto: los cambios no se guardaron. El borrador está intacto; contacte con el gestor de configuración del proyecto."
+  "errPlannerDisabled": "El planificador está desactivado en este proyecto: los cambios no se guardaron. El borrador está intacto; contacte con el gestor de configuración del proyecto.",
+  "bannerRegisterFailed": "No se pudo registrar el widget en YouTrack. Recargue la página (F5). Si el error persiste, contacte con el administrador.",
+  "dpPrevMonth": "Mes anterior",
+  "dpNextMonth": "Mes siguiente",
+  "hintZombieValue": "El valor está guardado pero falta en el bundle actual",
+  "ganttVmError": "No se pudo construir el diagrama de Gantt",
+  "repA11Easter": "La respuesta a la pregunta definitiva sobre la vida, el universo y la planificación.",
+  "toastParrotMode": "Medido en loros 🦜",
+  "hintThisIsFine": "this is fine"
 }

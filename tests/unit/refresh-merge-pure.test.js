@@ -190,3 +190,43 @@ describe('комбинированный сценарий', () => {
     assert.equal(r.conflicts[0].field, 'fact');
   });
 });
+
+/* ── #92 — атрибуты состояния пишутся при любом расхождении, не только при смене имени ── */
+describe('#92 stateColor/stateLocalized при неизменном имени состояния', () => {
+  const COLOR = { background: '#a5f4bc', foreground: '#014f22' };
+  it('цвет раскрасили задним числом (имя то же) → пишется только цвет', () => {
+    const r = resolveRefreshMerge(base({
+      local:  { state: 'In Progress', stateLocalized: 'In Progress', stateColor: null },
+      remote: { state: 'In Progress', stateLocalized: 'In Progress', stateColor: COLOR },
+    }));
+    assert.deepEqual(r.updates, { stateColor: COLOR });
+  });
+  it('цвет сняли в проекте → стирается (null пишется поверх старого)', () => {
+    const r = resolveRefreshMerge(base({
+      local:  { state: 'Done', stateColor: COLOR },
+      remote: { state: 'Done', stateColor: null },
+    }));
+    assert.deepEqual(r.updates, { stateColor: null });
+  });
+  it('всё совпадает по значению → фантомных изменений нет (счётчик тоста честный)', () => {
+    const r = resolveRefreshMerge(base({
+      local:  { state: 'Done', stateLocalized: 'Done', stateColor: { background: '#eee', foreground: null }, stateFieldId: 'f-1' },
+      remote: { state: 'Done', stateLocalized: 'Done', stateColor: { background: '#eee', foreground: null }, stateFieldId: 'f-1' },
+    }));
+    assert.deepEqual(r.updates, {});
+  });
+  it('null и undefined цвета равны между собой → нет записи', () => {
+    const r = resolveRefreshMerge(base({
+      local:  { state: 'Done' },                       /* stateColor отсутствует */
+      remote: { state: 'Done', stateColor: null },
+    }));
+    assert.deepEqual(r.updates, {});
+  });
+  it('смена имени состояния по-прежнему тянет весь комплекс', () => {
+    const r = resolveRefreshMerge(base({
+      local:  { state: 'Open', stateColor: null },
+      remote: { state: 'Done', stateLocalized: 'Готово', stateColor: COLOR, stateFieldId: 'f-1' },
+    }));
+    assert.deepEqual(r.updates, { state: 'Done', stateLocalized: 'Готово', stateColor: COLOR, stateFieldId: 'f-1' });
+  });
+});

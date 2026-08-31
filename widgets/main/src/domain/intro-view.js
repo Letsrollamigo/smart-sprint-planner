@@ -91,7 +91,7 @@
           var o = document.createElement('option');
           o.value = spec.v;
           o.textContent = spec.v + ' *';
-          o.title = 'Значение сохранено, но отсутствует в текущем бандле';
+          o.title = deps.T('hintZombieValue');   /* #98 */
           sel.appendChild(o);
         }
         sel.value = spec.v;
