@@ -253,16 +253,17 @@ function reconcileHasWorkingCopyFlag(deps) {
     }
   });
   if (draftsChanged) workingDraftsScheduleFlush(deps);
-  if (historyChanged) {
-    deps.apiPost('history', { history: _history }).catch(function(e){
-      deps.diag('history flush after reconcile failed: '+(e&&e.message?e.message:e), 'err');
-    });
-  }
+  /* #103 — писать историю ЗДЕСЬ нельзя: следом на том же init идёт gcWorkingDrafts,
+     и два конкурентных POST в один rev-слот несут ОДИН baseRev — второй сервер
+     отвергает `rev_conflict`, клиентский rev остаётся протухшим, и все правки
+     пользователя после загрузки летят в отказ. Отдаём флаг, пишет GC — один раз. */
+  return historyChanged;
 }
 /* Lazy purge: удаляет working copies со updatedAt > 30 дней назад.
    Без фоновых таймеров — один проход на init. Сводный toast. */
-function gcWorkingDrafts(deps) {
-  if (!deps.state.getWorkingDraftsLoaded()) return;
+function gcWorkingDrafts(deps, histDirtyFromReconcile) {
+  var historyChanged = !!histDirtyFromReconcile;   /* #103 — общий POST на двоих */
+  if (!deps.state.getWorkingDraftsLoaded()) return historyChanged;
   var _workingDrafts = deps.state.getWorkingDrafts();
   var now = Date.now();
   var TTL = 30 * 24 * 3600 * 1000;
@@ -279,7 +280,6 @@ function gcWorkingDrafts(deps) {
     deps.diag('working-drafts GC: removed '+removed.length+' stale entries', 'info');
     workingDraftsScheduleFlush(deps);
     /* Снять hasWorkingCopy с соответствующих снимков */
-    var historyChanged = false;
     var _history = deps.state.getHistory();
     _history.forEach(function(snap){
       if (snap && removed.indexOf(snap.sprintId) >= 0 && snap.hasWorkingCopy) {
@@ -287,11 +287,16 @@ function gcWorkingDrafts(deps) {
         historyChanged = true;
       }
     });
-    if (historyChanged) {
-      deps.apiPost('history', { history: _history }).catch(function(){});
-    }
     try { deps.toast(deps.T('wcGcDiscarded').replace('{n}', removed.length), 'info'); } catch(_){}
   }
+  /* #103 — ЕДИНСТВЕННАЯ запись истории на init (своя + флаг reconcile). Отказ раньше
+     глотался пустым catch — теперь виден в диаг-логе: именно он оставлял rev протухшим. */
+  if (historyChanged) {
+    deps.apiPost('history', { history: deps.state.getHistory() }).catch(function(e){
+      deps.diag('history flush after init reconcile+gc failed: '+(e&&e.message?e.message:e), 'err');
+    });
+  }
+  return historyChanged;
 }
 
 /* Зеркалит in-memory правки (_sprint/_roleItems) в активную working copy.

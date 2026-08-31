@@ -310,8 +310,9 @@
       return deps.workingDraftsLoadFromBackend().then(function () {
         /* После загрузки и _history, и _workingDrafts — выровнять флаги hasWorkingCopy
            и удалить orphan/stale (>30 дней) drafts. */
-        try { deps.reconcileHasWorkingCopyFlag(); } catch (e) { deps.diag('reconcile failed: ' + e, 'err'); }
-        try { deps.gcWorkingDrafts(); }            catch (e) { deps.diag('gc failed: ' + e, 'err'); }
+        var histDirty = false;   /* #103 — reconcile и gc пишут историю ОДНИМ POST, не двумя */
+        try { histDirty = !!deps.reconcileHasWorkingCopyFlag(); } catch (e) { deps.diag('reconcile failed: ' + e, 'err'); }
+        try { deps.gcWorkingDrafts(histDirty); }   catch (e) { deps.diag('gc failed: ' + e, 'err'); }
       });
     }).catch(function (e) { _reportLoadFailure(deps, e); });
   }

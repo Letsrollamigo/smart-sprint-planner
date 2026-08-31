@@ -439,7 +439,11 @@ test('golden: WC — load (карта/мусор/reject) и deleteOnBackend (key
   });
 });
 
-test('golden: WC — reconcile: гард !loaded, orphan-чистка, выравнивание hasWorkingCopy + POST history', async () => {
+/* #103 — reconcile БОЛЬШЕ НЕ пишет историю сам: два конкурентных POST в один rev-слот
+   на init несли ОДИН baseRev, сервер отвергал второй (`rev_conflict`), клиентский rev
+   оставался протухшим — и все правки пользователя после загрузки летели в отказ.
+   Теперь reconcile отдаёт флаг, а пишет gcWorkingDrafts — ровно один раз. */
+test('golden: WC — reconcile: гард !loaded, orphan-чистка, выравнивание hasWorkingCopy (без POST — #103)', async () => {
   const { gm, window } = createHost();
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
@@ -464,9 +468,10 @@ test('golden: WC — reconcile: гард !loaded, orphan-чистка, выра�
       return m;
     })(),
   });
-  gm.call('reconcileHasWorkingCopyFlag');
+  const histDirty = gm.call('reconcileHasWorkingCopyFlag');
   checkJsonSnapshot('wc-reconcile-contract', {
     guardedDrafts: guardedDrafts,
+    histDirtyReturned: histDirty,
     draftsAfter: Object.keys(gm.get('_workingDrafts')),
     flags: { hist0: gm.get('_history')[0].hasWorkingCopy, hist1: gm.get('_history')[1].hasWorkingCopy },
     flushArmed: sched.delays(),
@@ -507,4 +512,35 @@ test('golden: WC — gc: TTL 30 дней от frozen-now, null-записи, toa
     flushArmed: sched.delays(),
     api: api,
   });
+});
+
+/* ════ #103 — init пишет историю ОДНИМ POST, а не двумя ════
+   Прод-корень (запись экрана 2026-08-31): reconcileHasWorkingCopyFlag и gcWorkingDrafts
+   вызываются подряд на одном init и раньше каждый слал свой `apiPost('history', …)`.
+   Оба несли baseRev, снятый ДО ответа первого → сервер отвергал второй с `rev_conflict`.
+   Отказ GC глотался пустым `.catch(function(){})`, клиентский rev оставался протухшим,
+   и каждая последующая правка пользователя получала отказ. */
+test('#103: reconcile + gc на одном init шлют РОВНО один POST history', async () => {
+  const { gm, window } = createHost();
+  fx.applyBaseState(gm);
+  stubScheduler(window);
+  const api = stubApi(gm, {});
+  const wcKey = fx.HIST_SPRINT_ID + '_analysis';
+
+  /* reconcile увидит расхождение флага, gc — просроченную рабочую копию: меняют оба */
+  const hist = gm.get('_history');
+  hist[0].hasWorkingCopy = false;
+  hist[1].hasWorkingCopy = true;
+  const stale = {};
+  stale[wcKey] = { key: wcKey, items: [], updatedAt: 1 };  /* 1970 → старше 30 дней */
+  gm.set({ _workingDraftsLoaded: true, _workingDrafts: stale });
+
+  const histDirty = gm.call('reconcileHasWorkingCopyFlag');
+  assert.strictEqual(histDirty, true, 'reconcile сообщает о правке истории флагом, а не POST-ом');
+  assert.strictEqual(api.filter(function (c) { return c.path === 'history'; }).length, 0,
+    'reconcile сам историю НЕ пишет');
+
+  gm.call('gcWorkingDrafts', histDirty);
+  assert.strictEqual(api.filter(function (c) { return c.path === 'history'; }).length, 1,
+    'на весь init — ровно один POST history: второй ловил бы rev_conflict своим же первым');
 });

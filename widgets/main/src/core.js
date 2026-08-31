@@ -917,7 +917,7 @@
   function _workingDraftsFlushNow() { return DRAFT_STORE.workingDraftsFlushNow(_draftStoreDeps()); }
   function _workingDraftsDeleteOnBackend(key) { return DRAFT_STORE.workingDraftsDeleteOnBackend(key, _draftStoreDeps()); }
   function reconcileHasWorkingCopyFlag() { return DRAFT_STORE.reconcileHasWorkingCopyFlag(_draftStoreDeps()); }
-  function gcWorkingDrafts() { return DRAFT_STORE.gcWorkingDrafts(_draftStoreDeps()); }
+  function gcWorkingDrafts(histDirty) { return DRAFT_STORE.gcWorkingDrafts(_draftStoreDeps(), histDirty); }
   /* Простой 32-битный хэш (FNV-1a) для conflict detection.
      Используется только для сравнения версий, не для криптографии. */
   /* Hash/equality/diff-утилиты рабочих копий вынесены в widgets/main/src/hash-pure.js
