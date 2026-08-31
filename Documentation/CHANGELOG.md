@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.32.0] — 2026-08-31
+
+> **"Disable planner in this project".** Detaching the app from a project in YouTrack does not remove the project from the planner's project picker: app data survives detachment, and the project kept being served through the main menu in full. A project settings manager now has an explicit switch. Data schema: additive settings key `plannerDisabled`, no-op migration.
+
+### Added
+
+- **"Disable planner in this project"** — for a project settings manager or an administrator: a button in the main-menu sidebar and on the project settings page, with a confirmation dialog. A disabled project disappears from the project picker for regular users, and main-menu service stops entirely — endpoints answer with a "planner disabled" refusal, rather than the row merely hiding from one list. Planner data stays intact; disabling is reversible.
+- **Lock-out protection:** users who can re-enable the planner still see the disabled project in the picker with a "planner disabled" mark, and a banner with an enable button is drawn instead of the planner. The re-enable right in the main menu is resolved via the project's rights mirror; with an empty mirror access is denied (fail-closed) — an instance administrator or a settings manager on the project settings page can enable it.
+- The flag is written only by a dedicated endpoint under the settings-manager role: saving the settings form never touches the stored value, so the switch does not get undone by the next save. If the planner is disabled while someone is saving a sprint, the save answers with a clear message and the draft is not lost.
+
+### Known limitations
+
+- **Automatic workflow rules are not gated by the switch** (a deliberate decision): cascade aggregation and state rollup read project settings directly on the server and will keep running in a disabled project. The limitation is named in the confirmation dialog; if needed, the rules can be detached from the project with standard YouTrack means (Project → Workflows).
+
+---
+
 ## [3.31.0] — 2026-08-31
 
 > **Save reliability.** Three defects around one seam: the app showed as saved what the server had rejected. Root cause found from a screen recording of a live incident. No new features; the data schema is unchanged.

@@ -1330,5 +1330,15 @@
   "dfEmpty": "추가된 항목이 없습니다 — 추가 열이 없습니다.",
   "hintDfNotStored": "필드 값은 어디에도 저장되지 않습니다. 테이블을 열 때마다 YouTrack에서 읽어오므로 각자 권한이 있는 값만 보게 됩니다.",
   "dfLoadFailed": "값을 일부만 불러왔습니다. 「이슈에서 새로 고침」으로 다시 시도하세요.",
-  "ganttLinksPartial": "링크를 일부만 불러왔습니다. 「이슈에서 새로 고침」으로 다시 시도하세요."
+  "ganttLinksPartial": "링크를 일부만 불러왔습니다. 「이슈에서 새로 고침」으로 다시 시도하세요.",
+  "btnPlannerDisable": "이 프로젝트에서 플래너 비활성화",
+  "btnPlannerEnable": "이 프로젝트에서 플래너 활성화",
+  "btnPlannerDisableConfirm": "비활성화",
+  "plannerDisableConfirmTitle": "이 프로젝트에서 플래너를 비활성화할까요?",
+  "plannerDisableConfirmBody": "일반 사용자의 플래너 프로젝트 선택기에서 이 프로젝트가 사라지고 메인 메뉴를 통한 서비스가 중단됩니다. 플래너 데이터는 보존되며, 프로젝트 설정 관리자 또는 관리자가 다시 활성화할 수 있습니다. 자동 워크플로 규칙(캐스케이드 집계, 상태 롤업)은 프로젝트에서 계속 작동합니다.",
+  "plannerDisabledBanner": "이 프로젝트에서 플래너가 비활성화되어 있습니다. 데이터는 보존되며, 프로젝트 설정 관리자 또는 관리자가 활성화할 수 있습니다.",
+  "plannerDisabledMark": "플래너 비활성화됨",
+  "toastPlannerDisabled": "이 프로젝트에서 플래너가 비활성화되었습니다",
+  "toastPlannerEnabled": "이 프로젝트에서 플래너가 활성화되었습니다",
+  "errPlannerDisabled": "이 프로젝트에서 플래너가 비활성화되어 변경 사항이 저장되지 않았습니다. 초안은 그대로 있습니다. 프로젝트 설정 관리자에게 문의하세요."
 }

@@ -37,6 +37,8 @@ require('./backend-release.js');
 require('./backend-reporting.js');
 /* #57-2 — Sprint-lock backend: тумблер блокировки создания спринтов; endpoints дописываются в core.ENDPOINTS. */
 require('./backend-sprintlock.js');
+/* #80 — Planner-disable backend: «Отключить планер в этом проекте»; endpoint дописывается в core.ENDPOINTS. */
+require('./backend-plannerdisable.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.
@@ -113,6 +115,16 @@ function resolveOrReject(globalCtx) {
   return buildProjectCtx(globalCtx, project);
 }
 
+// #80 — «планер отключён в проекте»: делегирование отвечает 403 planner_disabled.
+// Exempt ТОЛЬКО planner-disabled (канал включения обратно — иначе самозапирание).
+// Гейт читает ТОЛЬКО актуальный блоб ssp_settings проекта (НЕ history — риск 3 #80).
+var PLANNER_DISABLE_EXEMPT = { 'planner-disabled': true };
+function isProjectPlannerDisabled(project) {
+  var s = null;
+  try { s = core.parseJson(project.extensionProperties.ssp_settings, null); } catch (e) { s = null; }
+  return core.isPlannerDisabled(s);
+}
+
 // ── Сборка global-endpoints из core.ENDPOINTS ────────────────────────────────
 var SKIP = { 'sync-acl': true, 'app-version': true };
 var endpoints = [];
@@ -120,6 +132,7 @@ var endpoints = [];
 core.ENDPOINTS.forEach(function (ep) {
   if (SKIP[ep.path]) return;
   var coreHandle = ep.handle;
+  var exemptFromDisable = !!PLANNER_DISABLE_EXEMPT[ep.path];
   endpoints.push({
     scope:  'global',
     method: ep.method,
@@ -127,6 +140,12 @@ core.ENDPOINTS.forEach(function (ep) {
     handle: function (globalCtx) {
       var adapter = resolveOrReject(globalCtx);  // projectKey + read-gate ДО логики
       if (!adapter) return;                      // 400/403 уже отправлены
+      /* #80 — «выключен» значит выключен: global-обслуживание отключённого проекта
+         останавливается целиком, а не только его строка в пикере. */
+      if (!exemptFromDisable && isProjectPlannerDisabled(adapter.project)) {
+        gForbid(globalCtx, 'planner_disabled');
+        return;
+      }
       coreHandle(adapter);                       // делегируем в общее тело ядра
     }
   });
@@ -186,9 +205,18 @@ endpoints.push({
       if (!attached) continue;
       // авторитетная серверная перепроверка прав (клиентский список недоверенный)
       if (!userCanReadProject(ctx, project)) continue;
+      /* #80 — отключённый проект видят ТОЛЬКО те, кто может включить обратно
+         (settings-manager по зеркалу ssp_acl / инстанс-админ), с пометкой disabled —
+         иначе самозапирание: отцеплённый+выключенный проект пропадает отовсюду.
+         Fail-closed: пустое/устаревшее зеркало → isSettingsManager=false → скрыт
+         (включит инстанс-админ либо настройщик из проектного виджета, если прикреплён). */
+      var plannerOff = isProjectPlannerDisabled(project);
+      if (plannerOff && !core.isSettingsManager(buildProjectCtx(ctx, project))) continue;
       var hasMirror = false;
       try { hasMirror = (project.extensionProperties.ssp_acl != null); } catch (e) { hasMirror = false; }
-      out.push({ key: k, name: project.name || k, hasMirror: hasMirror });
+      var row = { key: k, name: project.name || k, hasMirror: hasMirror };
+      if (plannerOff) row.disabled = true;
+      out.push(row);
     }
     out.sort(function (a, b) { return (a.name || '').localeCompare(b.name || '', 'ru'); });
     ctx.response.json({ success: true, projects: out });
@@ -227,3 +255,5 @@ require('./backend-userprefs.js').endpoints.forEach(function (e) { endpoints.pus
 
 exports.httpHandler = { endpoints: endpoints };
 exports.isValidProjectKey = isValidProjectKey;  // test-only (unit: project-key-validation)
+exports.isProjectPlannerDisabled = isProjectPlannerDisabled;  // test-only (#80: гейт читает ТОЛЬКО актуальный блоб)
+exports.buildProjectCtx = buildProjectCtx;      // test-only (#80: fail-closed при пустом зеркале ssp_acl)

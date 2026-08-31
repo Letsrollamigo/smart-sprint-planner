@@ -1330,5 +1330,15 @@
   "dfEmpty": "No se ha añadido nada: sin columnas adicionales.",
   "hintDfNotStored": "Los valores de los campos no se guardan en ninguna parte: la aplicación los lee de YouTrack al abrir la tabla, así que cada persona ve exactamente aquello a lo que tiene acceso.",
   "dfLoadFailed": "Los valores se cargaron solo en parte. Reintente con «Actualizar desde la incidencia».",
-  "ganttLinksPartial": "Los enlaces se cargaron solo en parte. Reintente con «Actualizar desde la incidencia»."
+  "ganttLinksPartial": "Los enlaces se cargaron solo en parte. Reintente con «Actualizar desde la incidencia».",
+  "btnPlannerDisable": "Desactivar el planificador en este proyecto",
+  "btnPlannerEnable": "Activar el planificador en este proyecto",
+  "btnPlannerDisableConfirm": "Desactivar",
+  "plannerDisableConfirmTitle": "¿Desactivar el planificador en este proyecto?",
+  "plannerDisableConfirmBody": "El proyecto desaparecerá del selector de proyectos del planificador para los usuarios normales y el servicio desde el menú principal se detendrá. Los datos del planificador se conservan; un gestor de configuración del proyecto o un administrador podrá reactivarlo. Las reglas de workflow automáticas (agregación en cascada, rollup de estados) seguirán funcionando en el proyecto.",
+  "plannerDisabledBanner": "El planificador está desactivado en este proyecto. Los datos se conservan; un gestor de configuración del proyecto o un administrador puede activarlo.",
+  "plannerDisabledMark": "planificador desactivado",
+  "toastPlannerDisabled": "Planificador desactivado en este proyecto",
+  "toastPlannerEnabled": "Planificador activado en este proyecto",
+  "errPlannerDisabled": "El planificador está desactivado en este proyecto: los cambios no se guardaron. El borrador está intacto; contacte con el gestor de configuración del proyecto."
 }

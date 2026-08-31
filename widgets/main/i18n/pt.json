@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nada adicionado — nenhuma coluna extra.",
   "hintDfNotStored": "Os valores dos campos não são armazenados em lugar nenhum: o app os lê do YouTrack ao abrir a tabela, então cada pessoa vê exatamente aquilo a que tem direito.",
   "dfLoadFailed": "Os valores foram carregados apenas em parte. Tente de novo com «Atualizar da tarefa».",
-  "ganttLinksPartial": "Os vínculos foram carregados apenas em parte. Tente de novo com «Atualizar da tarefa»."
+  "ganttLinksPartial": "Os vínculos foram carregados apenas em parte. Tente de novo com «Atualizar da tarefa».",
+  "btnPlannerDisable": "Desativar o planejador neste projeto",
+  "btnPlannerEnable": "Ativar o planejador neste projeto",
+  "btnPlannerDisableConfirm": "Desativar",
+  "plannerDisableConfirmTitle": "Desativar o planejador neste projeto?",
+  "plannerDisableConfirmBody": "O projeto desaparecerá do seletor de projetos do planejador para usuários comuns e o serviço pelo menu principal será interrompido. Os dados do planejador são mantidos; um gerente de configurações do projeto ou um administrador poderá reativá-lo. As regras de workflow automáticas (agregação em cascata, rollup de estados) continuarão funcionando no projeto.",
+  "plannerDisabledBanner": "O planejador está desativado neste projeto. Os dados são mantidos; um gerente de configurações do projeto ou um administrador pode ativá-lo.",
+  "plannerDisabledMark": "planejador desativado",
+  "toastPlannerDisabled": "Planejador desativado neste projeto",
+  "toastPlannerEnabled": "Planejador ativado neste projeto",
+  "errPlannerDisabled": "O planejador está desativado neste projeto — as alterações não foram salvas. O rascunho está intacto; contate o gerente de configurações do projeto."
 }

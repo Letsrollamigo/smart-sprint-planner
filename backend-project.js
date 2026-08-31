@@ -21,6 +21,8 @@ require('./backend-release.js');
 require('./backend-reporting.js');
 /* #57-2 — Sprint-lock backend: тумблер блокировки создания спринтов; endpoints дописываются в core.ENDPOINTS. */
 require('./backend-sprintlock.js');
+/* #80 — Planner-disable backend: «Отключить планер в этом проекте»; endpoint дописывается в core.ENDPOINTS. */
+require('./backend-plannerdisable.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

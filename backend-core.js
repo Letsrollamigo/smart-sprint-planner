@@ -313,12 +313,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.29.0';
+var CURRENT_PLUGIN_VERSION = '3.32.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.31.0';
+var APP_VERSION = '3.32.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -569,6 +569,13 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.28.0', to: '3.29.0',
     migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
     note: 'v3.29.0: 68-8 additive settings key displayFields (issue-table display columns)'
+  },
+  /* v3.32.0 — #80: аддитивный settings-ключ plannerDisabled («Отключить планер в этом
+     проекте»). Настройка project-level, в снимках её нет → shape снимков не меняется,
+     миграция no-op; запись фиксирует переход схемы настроек. */
+  { from: '3.29.0', to: '3.32.0',
+    migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
+    note: 'v3.32.0: #80 additive settings key plannerDisabled (planner switched off per project)'
   }
 ];
 
@@ -1031,6 +1038,12 @@ var ALLOWED_SETTINGS_KEYS = [
      preserve'ит хранимое значение (анти-гонка формы с тумблером). */
   'blockSprintCreation',
   'sprintLockGroups','sprintLockGroupNames',
+  /* #80 — «Отключить планер в этом проекте»: флаг пишется ТОЛЬКО эндпоинтом
+     planner-disabled (backend-plannerdisable.js, роль settingsManager); обычный
+     settings-save preserve'ит хранимое значение (анти-затирание формой, ожог #74).
+     Потребители: гейт пикера и global-делегирования (backend-global.js). Workflow-правила
+     флагом НЕ гейтятся — осознанно (карточка #80): каскад/rollup читают блоб напрямую. */
+  'plannerDisabled',
   /* #50 — Оперативная отчётность (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
      reportingEnabled — мастер-тумблер модуля (гейтит узлы дерева/секцию, как releaseEnabled).
      reportingGroups{A,B}/*Names — reporting-access группы (US-ACC): контур A (лиды) /
@@ -1091,6 +1104,7 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'historyClearGroups','historyClearGroupNames','assignerGroups','assignerGroupNames',
   'planningManagerGroups','planningManagerGroupNames',
   'sprintLockGroups','sprintLockGroupNames','blockSprintCreation',   /* #57-2 */
+  'plannerDisabled',   /* #80 — только settings-менеджер (и то через planner-disabled, не формой) */
   // DTA
   'dtaEnabled','dtaWarningsEnabled','workItemTypeMapping',
   // Каскад + forbid container
@@ -1254,6 +1268,7 @@ function validateSettings(settings) {
   var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled',
     /* #57-2 — блокировка создания спринтов */ 'blockSprintCreation',
+    /* #80 — планер отключён в проекте */ 'plannerDisabled',
     /* #59 — кросс-ролевое исключение */ 'crossRoleExcludeEnabled',
     /* #61 — сводная мультиролевого планирования */ 'allocSummaryEnabled'];
   for (var b = 0; b < boolKeys.length; b++) {
@@ -2203,6 +2218,13 @@ function isSettingsManager(ctx) {
   return userInGroups(ctx, ids, names);
 }
 
+/* #80 — «планер отключён в проекте»: единственный детектор флага. Читает ТОЛЬКО
+   переданный АКТУАЛЬНЫЙ settings-блоб проекта — НЕ снимки history[].settings (они несут
+   настройки эпохи и «выключали» бы проект задним числом, риск 3 карточки #80). */
+function isPlannerDisabled(settingsObj) {
+  return !!(settingsObj && settingsObj.plannerDisabled === true);
+}
+
 /**
  * Отклоняет запрос с кодом 403.
  * reason — короткий машинный код (без эха содержимого тела).
@@ -2706,6 +2728,10 @@ var ENDPOINTS = [
           var storedLock = parseJson(getProp(ctx, 'ssp_settings'), null);
           if (storedLock && storedLock.blockSprintCreation !== undefined) settingsToSave.blockSprintCreation = storedLock.blockSprintCreation;
           else delete settingsToSave.blockSprintCreation;
+          /* #80 — plannerDisabled пишет ТОЛЬКО эндпоинт planner-disabled: тот же preserve
+             (иначе каждый сейв формы настроек затирал бы флаг — класс ожога #74). */
+          if (storedLock && storedLock.plannerDisabled !== undefined) settingsToSave.plannerDisabled = storedLock.plannerDisabled;
+          else delete settingsToSave.plannerDisabled;
           var stStr = JSON.stringify(settingsToSave);
           if (stStr.length > MAX_PROP_SIZE) {
             badRequest(ctx, 'settings_data_too_large');
@@ -3361,6 +3387,7 @@ exports.CURRENT_PLUGIN_VERSION      = CURRENT_PLUGIN_VERSION;
 exports.isSettingsManager           = isSettingsManager;
 exports.isInstanceAdmin             = isInstanceAdmin;       // #51 — байпас инстанс-админа
 exports.isSprintLockManager         = isSprintLockManager;   // #57-2 — право тумблера блокировки
+exports.isPlannerDisabled           = isPlannerDisabled;     // #80 — гейт «планер отключён» (пикер + делегирование)
 exports.isNewSprintCreation         = isNewSprintCreation;   // #57-2 — pure-детект создания (unit-тест)
 exports.isPlanningManager           = isPlanningManager;
 exports.isReleaseManager            = isReleaseManager;      // #48 R2.4 — релиз-роли (D-C)

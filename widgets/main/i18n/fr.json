@@ -1330,5 +1330,15 @@
   "dfEmpty": "Rien d’ajouté — aucune colonne supplémentaire.",
   "hintDfNotStored": "Les valeurs des champs ne sont stockées nulle part : l’application les lit dans YouTrack à l’ouverture du tableau, chacun voit donc exactement ce à quoi il a droit.",
   "dfLoadFailed": "Valeurs chargées seulement en partie. Réessayez avec « Actualiser depuis le ticket ».",
-  "ganttLinksPartial": "Liens chargés seulement en partie. Réessayez avec « Actualiser depuis le ticket »."
+  "ganttLinksPartial": "Liens chargés seulement en partie. Réessayez avec « Actualiser depuis le ticket ».",
+  "btnPlannerDisable": "Désactiver le planificateur dans ce projet",
+  "btnPlannerEnable": "Activer le planificateur dans ce projet",
+  "btnPlannerDisableConfirm": "Désactiver",
+  "plannerDisableConfirmTitle": "Désactiver le planificateur dans ce projet ?",
+  "plannerDisableConfirmBody": "Le projet disparaîtra du sélecteur de projets du planificateur pour les utilisateurs ordinaires et le service via le menu principal s'arrêtera. Les données du planificateur sont conservées ; un gestionnaire des paramètres du projet ou un administrateur pourra le réactiver. Les règles de workflow automatiques (agrégation en cascade, rollup des états) continueront de fonctionner dans le projet.",
+  "plannerDisabledBanner": "Le planificateur est désactivé dans ce projet. Les données sont conservées ; un gestionnaire des paramètres du projet ou un administrateur peut l'activer.",
+  "plannerDisabledMark": "planificateur désactivé",
+  "toastPlannerDisabled": "Planificateur désactivé dans ce projet",
+  "toastPlannerEnabled": "Planificateur activé dans ce projet",
+  "errPlannerDisabled": "Le planificateur est désactivé dans ce projet — les modifications n'ont pas été enregistrées. Le brouillon est intact ; contactez le gestionnaire des paramètres du projet."
 }

@@ -1330,5 +1330,15 @@
   "dfEmpty": "Niets toegevoegd — geen extra kolommen.",
   "hintDfNotStored": "Veldwaarden worden nergens opgeslagen: de app leest ze bij het openen van de tabel uit YouTrack, zodat iedereen precies ziet waartoe hij gerechtigd is.",
   "dfLoadFailed": "Waarden zijn maar deels geladen. Probeer opnieuw met «Bijwerken vanuit issue».",
-  "ganttLinksPartial": "Koppelingen zijn maar deels geladen. Probeer opnieuw met «Bijwerken vanuit issue»."
+  "ganttLinksPartial": "Koppelingen zijn maar deels geladen. Probeer opnieuw met «Bijwerken vanuit issue».",
+  "btnPlannerDisable": "Planner uitschakelen in dit project",
+  "btnPlannerEnable": "Planner inschakelen in dit project",
+  "btnPlannerDisableConfirm": "Uitschakelen",
+  "plannerDisableConfirmTitle": "Planner uitschakelen in dit project?",
+  "plannerDisableConfirmBody": "Het project verdwijnt uit de projectkiezer van de planner voor gewone gebruikers en de bediening via het hoofdmenu stopt. De plannergegevens blijven bewaard; een instellingenbeheerder van het project of een beheerder kan hem opnieuw inschakelen. Automatische workflowregels (cascade-aggregatie, status-rollup) blijven in het project werken.",
+  "plannerDisabledBanner": "De planner is uitgeschakeld in dit project. De gegevens blijven bewaard; een instellingenbeheerder van het project of een beheerder kan hem inschakelen.",
+  "plannerDisabledMark": "planner uitgeschakeld",
+  "toastPlannerDisabled": "Planner uitgeschakeld in dit project",
+  "toastPlannerEnabled": "Planner ingeschakeld in dit project",
+  "errPlannerDisabled": "De planner is uitgeschakeld in dit project — wijzigingen zijn niet opgeslagen. Het concept is intact; neem contact op met de instellingenbeheerder van het project."
 }

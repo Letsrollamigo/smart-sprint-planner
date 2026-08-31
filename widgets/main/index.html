@@ -198,9 +198,12 @@
     #projectSettingsHost { display:none; }
     #projectSettingsBanner { display:none; padding:10px 14px; margin:0 0 12px; border-radius:var(--radius);
       background:rgba(90,125,232,.12); color:var(--text); border:1px solid rgba(90,125,232,.35); font-size:13px; }
-    .ssp-project-settings-mode .page > *:not(.page-header):not(#projectSettingsHost):not(#projectSettingsBanner):not(#projectSettingsRoBanner):not(#diagWrap) { display:none; }
+    .ssp-project-settings-mode .page > *:not(.page-header):not(#projectSettingsHost):not(#projectSettingsBanner):not(#projectSettingsRoBanner):not(#plannerDisabledBanner):not(#plannerToggleHost):not(#diagWrap) { display:none; }
     .ssp-project-settings-mode #projectSettingsHost { display:block; }
     .ssp-project-settings-mode #projectSettingsBanner { display:block; }
+    /* #80 — баннер «планер отключён» + кнопка-переключатель на странице настроек проекта */
+    .ssp-project-settings-mode #plannerDisabledBanner:not(.hidden) { display:block; }
+    .ssp-project-settings-mode #plannerToggleHost { display:block; }
     /* #29 — read-only онбординг-подсказка: группа управления настройками не выбрана */
     #projectSettingsRoBanner { display:none; padding:10px 14px; margin:0 0 12px; border-radius:var(--radius);
       background:rgba(250,176,5,.12); border:1px solid rgba(250,176,5,.45); font-weight:600; }
@@ -2476,6 +2479,10 @@
               data-icon="settings" data-aria-label-key="aria.btnSettings"
               data-i18n="btnOpenSettings"
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
+      <!-- #80 — «Отключить планер в этом проекте» (global-режим; видимость: check-settings-manager → canManage; логика — project-nav.js) -->
+      <button id="plannerDisableBtn" class="ring-button-button ring-button-block ring-button-heightS hidden"
+              data-icon="cancel" data-i18n="btnPlannerDisable"
+              style="background:transparent;border-color:var(--warn);color:var(--warn)">Отключить планер в этом проекте</button>
       <!-- #43 W4 (E-1) — ссылки-кнопки на Ring-классах (единый вид с openSettingsBtn) -->
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
          target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
@@ -2585,6 +2592,9 @@
   <div id="projectSettingsBanner" class="banner hidden"></div>
   <!-- #29 — показывается при configured=false: без группы управления настройками форма read-only -->
   <div id="projectSettingsRoBanner" class="hidden"></div>
+  <!-- #80 — планер отключён: баннер (всем) + кнопка-переключатель (настройщику); рендер — project-nav.js -->
+  <div id="plannerDisabledBanner" class="banner banner--warn hidden"></div>
+  <div id="plannerToggleHost" style="margin:8px 0"></div>
   <div id="projectSettingsHost"></div>
 
   <div id="bannerNotConfigured" class="banner banner--warn hidden" data-i18n="bannerNotConfigured" data-icon="warning">

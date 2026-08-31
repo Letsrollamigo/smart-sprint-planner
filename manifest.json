@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.31.0",
+  "version": "3.32.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>Reliability update since v3.29.3</b><br><br>🛟 <b>Nothing stays on screen that the server rejected</b> — when a concurrent edit makes the server refuse a save, the assignee distribution now rolls back to what is really stored and freezes further edits until you reload, with the reason spelled out instead of a silent failure.<br><br>🔁 <b>The app no longer conflicts with itself on startup</b> — reconciling working copies used to send two competing history writes at load, so the second was always refused and every later edit failed with it.<br><br>🧹 <b>The clear button in settings selectors really clears</b> — the field showed «not selected», the save reported success, and the old value came back after a reload. Optional fields can be switched off again.<br><br>🔄 <b>«Refresh from issue» no longer drops assignees set in the planner</b> when Quick edit is off: an empty role field in YouTrack is expected in that mode and is no longer treated as an unassignment.<br><br>📊 <b>Backlog capacity bar stopped overstating the available resource 60×</b>, so the overload warning works again.<br><br>🚦 <b>A failed project load looks like a failure</b>, not like an empty project, and a hung request now times out.<br><br>🌍 <b>Language reaches the whole app</b> — settings, backlog, stand-up and every date follow the planner language, not the browser locale.",
+  "changeNotes": "<b>What's new since v3.31.0</b><br><br>🔌 <b>Disable planner in this project</b> — detaching the app from a project never removed it from the planner's project picker: app data survives detachment, and the project kept being served through the main menu. A project settings manager or an administrator can now switch the planner off explicitly, with a confirmation dialog. A disabled project disappears from the picker for regular users and main-menu service stops entirely; planner data stays intact and the switch is reversible.<br><br>🔓 <b>No lock-out</b> — users who can re-enable the planner still see the disabled project in the picker with a “planner disabled” mark, and get a banner with an enable button instead of the planner.<br><br>🛡 <b>Safe by construction</b> — the flag is written only by a dedicated endpoint under the settings-manager role; saving the settings form never touches it, and a save that races with disabling answers with a clear message without losing the draft. Automatic workflow rules are not gated by the switch (a deliberate decision, named in the confirmation dialog).",
   "widgets": [
     {
       "key": "ssp-main",

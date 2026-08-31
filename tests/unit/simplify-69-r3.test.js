@@ -157,7 +157,7 @@ test('шаг 2: editingFromHistory/historyIdx на WRITE молча стрипа
   const stored = JSON.parse(ctx._props.ssp_sprint);
   assert.ok(!('editingFromHistory' in stored) && !('historyIdx' in stored), 'ключей в сторадже нет');
   assert.ok(!(stored.migrationLog || []).some((e) => e.level === 'SCHEMA_DEPRECATION_WARN'));
-  assert.strictEqual(stored.pluginVersion, '3.29.0');
+  assert.strictEqual(stored.pluginVersion, '3.32.0');
   /* прямой strict-валидатор без strip — отвергает как неизвестный ключ */
   assert.strictEqual(core.validateSprintForWrite(sprintBody({ historyIdx: 1 })), false);
 });
@@ -173,11 +173,11 @@ test('шаг 2: assignerSync поверх хранимого спринта ≤v
   assert.deepStrictEqual(after.personalPlanning, { 'SCBT-1': { assignee: 'user1' } });
 });
 
-test('шаг 2: миграция на READ — sprint 3.6.0 с legacy-ключами → ключей нет, SCHEMA_BUMP 3.6.0→3.23.0→3.27.0→3.28.0→3.29.0', () => {
+test('шаг 2: миграция на READ — sprint 3.6.0 с legacy-ключами → ключей нет, SCHEMA_BUMP 3.6.0→3.23.0→3.27.0→3.28.0→3.29.0→3.32.0', () => {
   const s = core.migrateSprintObj(Object.assign(sprintBody({ editingFromHistory: true, historyIdx: 1 }), { pluginVersion: '3.6.0' }));
   assert.ok(!('editingFromHistory' in s) && !('historyIdx' in s));
-  assert.strictEqual(s.pluginVersion, '3.29.0');
-  assert.deepStrictEqual(s.migrationLog.filter((e) => e.level === 'SCHEMA_BUMP').map((e) => e.fromVersion + '→' + e.toVersion), ['3.6.0→3.23.0', '3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0']);
+  assert.strictEqual(s.pluginVersion, '3.32.0');
+  assert.deepStrictEqual(s.migrationLog.filter((e) => e.level === 'SCHEMA_BUMP').map((e) => e.fromVersion + '→' + e.toVersion), ['3.6.0→3.23.0', '3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0', '3.29.0→3.32.0']);
   assert.strictEqual(core.validateSprintForWrite(s), true, 'после миграции проходит strict');
 });
 

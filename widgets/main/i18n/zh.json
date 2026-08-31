@@ -1330,5 +1330,15 @@
   "dfEmpty": "尚未添加任何内容——没有额外的列。",
   "hintDfNotStored": "字段值不会被插件保存：每次打开表格时都从 YouTrack 读取，因此每个人看到的都正好是自己有权查看的内容。",
   "dfLoadFailed": "字段值仅部分加载成功。请用“从任务刷新”重试。",
-  "ganttLinksPartial": "链接仅部分加载成功。请用“从任务刷新”重试。"
+  "ganttLinksPartial": "链接仅部分加载成功。请用“从任务刷新”重试。",
+  "btnPlannerDisable": "在此项目中停用规划器",
+  "btnPlannerEnable": "在此项目中启用规划器",
+  "btnPlannerDisableConfirm": "停用",
+  "plannerDisableConfirmTitle": "在此项目中停用规划器？",
+  "plannerDisableConfirmBody": "该项目将从普通用户的规划器项目选择器中消失，通过主菜单的服务将停止。规划器数据会保留；项目设置管理员或管理员可以重新启用。自动工作流规则（级联聚合、状态汇总）将继续在项目中运行。",
+  "plannerDisabledBanner": "此项目中的规划器已停用。数据已保留；项目设置管理员或管理员可以启用它。",
+  "plannerDisabledMark": "规划器已停用",
+  "toastPlannerDisabled": "已在此项目中停用规划器",
+  "toastPlannerEnabled": "已在此项目中启用规划器",
+  "errPlannerDisabled": "此项目中的规划器已停用——更改未保存。草稿完好无损；请联系项目设置管理员。"
 }

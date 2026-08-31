@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nichts hinzugefügt — keine zusätzlichen Spalten.",
   "hintDfNotStored": "Feldwerte werden nirgends gespeichert: Die App liest sie beim Öffnen der Tabelle aus YouTrack, sodass jeder genau das sieht, wozu er berechtigt ist.",
   "dfLoadFailed": "Werte nur teilweise geladen. Mit „Aus Vorgang aktualisieren“ erneut versuchen.",
-  "ganttLinksPartial": "Verknüpfungen nur teilweise geladen. Mit „Aus Vorgang aktualisieren“ erneut versuchen."
+  "ganttLinksPartial": "Verknüpfungen nur teilweise geladen. Mit „Aus Vorgang aktualisieren“ erneut versuchen.",
+  "btnPlannerDisable": "Planer in diesem Projekt deaktivieren",
+  "btnPlannerEnable": "Planer in diesem Projekt aktivieren",
+  "btnPlannerDisableConfirm": "Deaktivieren",
+  "plannerDisableConfirmTitle": "Planer in diesem Projekt deaktivieren?",
+  "plannerDisableConfirmBody": "Das Projekt verschwindet für normale Benutzer aus der Projektauswahl des Planers, die Bedienung über das Hauptmenü stoppt. Die Planer-Daten bleiben erhalten; ein Einstellungsverwalter des Projekts oder ein Administrator kann ihn wieder aktivieren. Automatische Workflow-Regeln (Kaskaden-Aggregation, Status-Rollup) laufen im Projekt weiter.",
+  "plannerDisabledBanner": "Der Planer ist in diesem Projekt deaktiviert. Die Daten bleiben erhalten; ein Einstellungsverwalter des Projekts oder ein Administrator kann ihn aktivieren.",
+  "plannerDisabledMark": "Planer deaktiviert",
+  "toastPlannerDisabled": "Planer in diesem Projekt deaktiviert",
+  "toastPlannerEnabled": "Planer in diesem Projekt aktiviert",
+  "errPlannerDisabled": "Der Planer ist in diesem Projekt deaktiviert — Änderungen wurden nicht gespeichert. Der Entwurf ist intakt; wenden Sie sich an den Einstellungsverwalter des Projekts."
 }

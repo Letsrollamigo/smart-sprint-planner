@@ -157,6 +157,11 @@ function apiPost(path, body, query, deps) {
             deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
           }
         }
+        /* #80 — планер выключили, пока пользователь работал: понятный тост вместо кода
+           причины; отказ уже не дал пометить сохранённым — черновик/dirty целы (риск 5). */
+        if (reason === 'planner_disabled' && typeof deps.toast === 'function') {
+          deps.toast(deps.T('errPlannerDisabled'), 'err');
+        }
         throw new Error(reason);
       }
       deps.diag('OK ' + path, 'ok');

@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nincs hozzáadva semmi — nincsenek további oszlopok.",
   "hintDfNotStored": "A mezőértékeket az alkalmazás sehol nem tárolja: a tábla megnyitásakor olvassa be a YouTrackből, így mindenki pontosan azt látja, amihez jogosultsága van.",
   "dfLoadFailed": "Az értékek csak részben töltődtek be. Próbálja újra a „Frissítés a feladatból” gombbal.",
-  "ganttLinksPartial": "A kapcsolatok csak részben töltődtek be. Próbálja újra a „Frissítés a feladatból” gombbal."
+  "ganttLinksPartial": "A kapcsolatok csak részben töltődtek be. Próbálja újra a „Frissítés a feladatból” gombbal.",
+  "btnPlannerDisable": "A tervező kikapcsolása ebben a projektben",
+  "btnPlannerEnable": "A tervező bekapcsolása ebben a projektben",
+  "btnPlannerDisableConfirm": "Kikapcsolás",
+  "plannerDisableConfirmTitle": "Kikapcsolja a tervezőt ebben a projektben?",
+  "plannerDisableConfirmBody": "A projekt eltűnik a tervező projektválasztójából a normál felhasználók számára, és a főmenün keresztüli kiszolgálás leáll. A tervező adatai megmaradnak; a projekt beállításkezelője vagy egy adminisztrátor újra bekapcsolhatja. Az automatikus workflow-szabályok (kaszkád aggregáció, állapot-rollup) tovább működnek a projektben.",
+  "plannerDisabledBanner": "A tervező ki van kapcsolva ebben a projektben. Az adatok megmaradnak; a projekt beállításkezelője vagy egy adminisztrátor bekapcsolhatja.",
+  "plannerDisabledMark": "tervező kikapcsolva",
+  "toastPlannerDisabled": "A tervező kikapcsolva ebben a projektben",
+  "toastPlannerEnabled": "A tervező bekapcsolva ebben a projektben",
+  "errPlannerDisabled": "A tervező ki van kapcsolva ebben a projektben — a módosítások nem lettek mentve. A piszkozat érintetlen; forduljon a projekt beállításkezelőjéhez."
 }

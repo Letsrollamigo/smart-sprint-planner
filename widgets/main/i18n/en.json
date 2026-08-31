@@ -1329,5 +1329,15 @@
   "dfEmpty": "Nothing added — no extra columns.",
   "hintDfNotStored": "Field values are never stored by the app: they are read from YouTrack when the table opens, so everyone sees exactly what they are allowed to.",
   "dfLoadFailed": "Values loaded only partly. Use «Refresh from issue» to try again.",
-  "ganttLinksPartial": "Links loaded only partly. Use «Refresh from issue» to try again."
+  "ganttLinksPartial": "Links loaded only partly. Use «Refresh from issue» to try again.",
+  "btnPlannerDisable": "Disable planner in this project",
+  "btnPlannerEnable": "Enable planner in this project",
+  "btnPlannerDisableConfirm": "Disable",
+  "plannerDisableConfirmTitle": "Disable planner in this project?",
+  "plannerDisableConfirmBody": "The project will disappear from the planner project picker for regular users, and main-menu service will stop. Planner data is kept; a project settings manager or an administrator can re-enable it. Automatic workflow rules (cascade aggregation, state rollup) will keep running in the project.",
+  "plannerDisabledBanner": "The planner is disabled in this project. Data is kept; a project settings manager or an administrator can re-enable it.",
+  "plannerDisabledMark": "planner disabled",
+  "toastPlannerDisabled": "Planner disabled in this project",
+  "toastPlannerEnabled": "Planner enabled in this project",
+  "errPlannerDisabled": "The planner is disabled in this project — changes were not saved. Your draft is intact; contact the project settings manager."
 }

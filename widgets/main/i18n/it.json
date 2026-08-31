@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nulla di aggiunto — nessuna colonna extra.",
   "hintDfNotStored": "I valori dei campi non vengono memorizzati da nessuna parte: l’app li legge da YouTrack all’apertura della tabella, così ognuno vede esattamente ciò a cui ha diritto.",
   "dfLoadFailed": "Valori caricati solo in parte. Riprova con «Aggiorna dalla issue».",
-  "ganttLinksPartial": "Collegamenti caricati solo in parte. Riprova con «Aggiorna dalla issue»."
+  "ganttLinksPartial": "Collegamenti caricati solo in parte. Riprova con «Aggiorna dalla issue».",
+  "btnPlannerDisable": "Disattiva il pianificatore in questo progetto",
+  "btnPlannerEnable": "Attiva il pianificatore in questo progetto",
+  "btnPlannerDisableConfirm": "Disattiva",
+  "plannerDisableConfirmTitle": "Disattivare il pianificatore in questo progetto?",
+  "plannerDisableConfirmBody": "Il progetto scomparirà dal selettore dei progetti del pianificatore per gli utenti normali e il servizio dal menu principale si fermerà. I dati del pianificatore vengono conservati; un gestore delle impostazioni del progetto o un amministratore potrà riattivarlo. Le regole di workflow automatiche (aggregazione a cascata, rollup degli stati) continueranno a funzionare nel progetto.",
+  "plannerDisabledBanner": "Il pianificatore è disattivato in questo progetto. I dati sono conservati; un gestore delle impostazioni del progetto o un amministratore può attivarlo.",
+  "plannerDisabledMark": "pianificatore disattivato",
+  "toastPlannerDisabled": "Pianificatore disattivato in questo progetto",
+  "toastPlannerEnabled": "Pianificatore attivato in questo progetto",
+  "errPlannerDisabled": "Il pianificatore è disattivato in questo progetto: le modifiche non sono state salvate. La bozza è intatta; contatta il gestore delle impostazioni del progetto."
 }

@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nic nie dodano — brak dodatkowych kolumn.",
   "hintDfNotStored": "Wartości pól nie są nigdzie zapisywane: aplikacja odczytuje je z YouTracka przy otwarciu tabeli, więc każdy widzi dokładnie to, do czego ma uprawnienia.",
   "dfLoadFailed": "Wartości wczytano tylko częściowo. Ponów przyciskiem „Odśwież ze zgłoszenia”.",
-  "ganttLinksPartial": "Powiązania wczytano tylko częściowo. Ponów przyciskiem „Odśwież ze zgłoszenia”."
+  "ganttLinksPartial": "Powiązania wczytano tylko częściowo. Ponów przyciskiem „Odśwież ze zgłoszenia”.",
+  "btnPlannerDisable": "Wyłącz planer w tym projekcie",
+  "btnPlannerEnable": "Włącz planer w tym projekcie",
+  "btnPlannerDisableConfirm": "Wyłącz",
+  "plannerDisableConfirmTitle": "Wyłączyć planer w tym projekcie?",
+  "plannerDisableConfirmBody": "Projekt zniknie z wyboru projektów planera dla zwykłych użytkowników, a obsługa przez menu główne zostanie zatrzymana. Dane planera zostają zachowane; menedżer ustawień projektu lub administrator może go ponownie włączyć. Automatyczne reguły workflow (agregacja kaskadowa, rollup stanów) będą nadal działać w projekcie.",
+  "plannerDisabledBanner": "Planer jest wyłączony w tym projekcie. Dane są zachowane; menedżer ustawień projektu lub administrator może go włączyć.",
+  "plannerDisabledMark": "planer wyłączony",
+  "toastPlannerDisabled": "Planer wyłączony w tym projekcie",
+  "toastPlannerEnabled": "Planer włączony w tym projekcie",
+  "errPlannerDisabled": "Planer jest wyłączony w tym projekcie — zmiany nie zostały zapisane. Szkic jest nienaruszony; skontaktuj się z menedżerem ustawień projektu."
 }

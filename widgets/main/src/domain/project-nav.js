@@ -77,6 +77,9 @@
         roBanner.classList.toggle('hidden', configured);
       }
 
+      /* #80 — планер отключён: баннер всем, кнопка-переключатель настройщику. */
+      _renderPlannerToggleProject(deps, canManage);
+
       /* header chrome (lang/icons/theme/version) — нужный подмножество init-цепочки */
       try { deps.populateLangSelect(document.getElementById('langSel')); } catch (_) {}
       var langSelEl = document.getElementById('langSel');
@@ -203,7 +206,9 @@
     deps.state.getGlobalProjects().forEach(function (p) {
       var o = document.createElement('option');
       o.value = p.key;
-      o.textContent = p.name + ' (' + p.key + ')';
+      /* #80 — отключённый проект в пикере видят только настройщики/админ (фильтр бэкенда),
+         с пометкой — иначе строка неотличима от рабочей. */
+      o.textContent = p.name + ' (' + p.key + ')' + (p.disabled ? ' — ' + deps.T('plannerDisabledMark') : '');
       sel.appendChild(o);
     });
     var activeKey = deps.state.getActiveProjectKey();
@@ -284,7 +289,7 @@
       }
       _applyActiveProject(deps, initKey);
       _setGlobalBanner(deps, null);
-      return deps.loadAndRenderProject();
+      return _startProjectLoad(deps);   /* #80 — отключённый проект: баннер вместо загрузки */
     });
   }
 
@@ -327,7 +332,124 @@
     /* #97 — .catch снят как мёртвый: терминальный обработчик _loadAndRenderProject
        всегда резолвит цепочку, сюда отказ не доходил ни разу. Сбой теперь виден
        полосой из _reportLoadFailure (data-loaders), а не молчаливым пустым экраном. */
-    deps.loadAndRenderProject();
+    _startProjectLoad(deps);   /* #80 — отключённый проект: баннер вместо загрузки */
+  }
+
+  /* ═══ #80 — «Отключить планер в этом проекте» ═══
+     Флаг plannerDisabled (ssp_settings) пишет ТОЛЬКО эндпоинт planner-disabled.
+     Global: отключённый проект в пикере видят лишь те, кто может включить (фильтр
+     бэкенда), его выбор рисует баннер+кнопку вместо загрузки (эндпоинты всё равно
+     ответят 403 planner_disabled). Project-виджет: баннер всем + кнопка настройщику. */
+
+  /* Старт загрузки активного проекта с гейтом «планер отключён». */
+  function _startProjectLoad(deps) {
+    var key = deps.state.getActiveProjectKey();
+    var entry = (deps.state.getGlobalProjects() || []).filter(function (p) { return p && p.key === key; })[0];
+    if (entry && entry.disabled) { _renderPlannerDisabledState(deps); return Promise.resolve(); }
+    return deps.loadAndRenderProject();
+  }
+
+  /* Экран «планер отключён» (global). Load пропущен → сайдбарные кнопки прошлого
+     проекта прячем здесь же (refreshOpenSettingsBtn в этой ветке не зовётся). */
+  function _renderPlannerDisabledState(deps) {
+    var sBtn = document.getElementById('openSettingsBtn');
+    if (sBtn) sBtn.style.display = 'none';
+    var dBtn = document.getElementById('plannerDisableBtn');
+    if (dBtn) dBtn.classList.add('hidden');
+    var el = document.getElementById('globalNoProjectBanner');
+    if (!el) return;
+    el.textContent = '';
+    el.appendChild(document.createTextNode(deps.T('plannerDisabledBanner') + ' '));
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ring-button-button ring-button-heightS';
+    btn.textContent = deps.T('btnPlannerEnable');
+    btn.addEventListener('click', function () {
+      _togglePlannerDisabled(deps, false, function () { _afterPlannerToggleGlobal(deps, false); });
+    });
+    el.appendChild(btn);
+    el.classList.remove('hidden');
+  }
+
+  /* Переключение флага. Выключение — через confirm (риск 2 карточки #80 проговаривается
+     в теле: данные целы, включит настройщик, workflow-правила продолжают работать). */
+  function _togglePlannerDisabled(deps, disable, onDone) {
+    if (!disable) { _postPlannerDisabled(deps, false, onDone); return; }
+    deps.openModal({
+      id: 'plannerDisableConfirm',
+      type: 'destructive',
+      title: deps.T('plannerDisableConfirmTitle'),
+      body: { kind: 'text', text: deps.T('plannerDisableConfirmBody') },
+      buttons: [
+        { id: 'confirm', text: deps.T('btnPlannerDisableConfirm'), variant: 'danger',
+          onClick: function (h) { h.close(); _postPlannerDisabled(deps, true, onDone); } },
+        { id: 'cancel', text: deps.T('btnCancel'), variant: 'primary',
+          onClick: function (h) { h.close(); } },
+      ],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+    });
+  }
+
+  function _postPlannerDisabled(deps, disable, onDone) {
+    return deps.apiPost('planner-disabled', { disabled: !!disable }).then(function (r) {
+      if (!r || r.success === false) throw new Error((r && r.reason) || 'unknown_error');
+      deps.toast(deps.T(disable ? 'toastPlannerDisabled' : 'toastPlannerEnabled'), 'success');
+      if (onDone) onDone();
+    }).catch(function (e) {
+      deps.diag('planner-disabled POST ERR: ' + (e && e.message ? e.message : e), 'err');
+      deps.toast(deps.T('toastSaveError'), 'err');
+    });
+  }
+
+  /* Пост-обработка в global: пометка в списке пикера + пере-рендер + экран. */
+  function _afterPlannerToggleGlobal(deps, disable) {
+    var key = deps.state.getActiveProjectKey();
+    var entry = (deps.state.getGlobalProjects() || []).filter(function (p) { return p && p.key === key; })[0];
+    if (entry) { if (disable) entry.disabled = true; else delete entry.disabled; }
+    _renderProjectPicker(deps);
+    _setGlobalBanner(deps, null);   /* при включении баннер «отключён» обязан уйти; при выключении его перерисует _renderPlannerDisabledState */
+    if (disable) deps.resetProjectStateCaches();   /* стейт прошлого проекта не должен пережить выключение */
+    _startProjectLoad(deps);
+  }
+
+  /* Вход сайдбарной кнопки «Отключить планер в этом проекте» (global, canManage). */
+  function _disablePlannerFromSidebar(deps) {
+    _togglePlannerDisabled(deps, true, function () { _afterPlannerToggleGlobal(deps, true); });
+  }
+
+  /* Project-виджет (страница настроек): баннер «отключён» всем + кнопка настройщику. */
+  function _renderPlannerToggleProject(deps, canManage) {
+    var off = false;
+    try { off = ((deps.state.getSettings() || {}).plannerDisabled === true); } catch (_) { off = false; }
+    var banner = document.getElementById('plannerDisabledBanner');
+    if (banner) {
+      banner.textContent = deps.T('plannerDisabledBanner');
+      banner.classList.toggle('hidden', !off);
+    }
+    var host = document.getElementById('plannerToggleHost');
+    if (!host) return;
+    host.textContent = '';
+    if (!canManage) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ring-button-button ring-button-heightS';
+    if (!off) {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'var(--warn)';
+      btn.style.color = 'var(--warn)';
+    }
+    btn.textContent = deps.T(off ? 'btnPlannerEnable' : 'btnPlannerDisable');
+    btn.addEventListener('click', function () {
+      _togglePlannerDisabled(deps, !off, function () {
+        var s = deps.state.getSettings() || {};
+        if (!off) s.plannerDisabled = true; else delete s.plannerDisabled;
+        deps.state.setSettings(s);
+        _renderPlannerToggleProject(deps, canManage);
+      });
+    });
+    host.appendChild(btn);
   }
 
   /* Модалка-предупреждение «черновик будет очищен» (Ring; fallback — нативный confirm). */
@@ -361,6 +483,7 @@
     _loadSettingsOnly: _loadSettingsOnly,
     _renderProjectSettingsPage: _renderProjectSettingsPage,
     _mountProjectSettings: _mountProjectSettings,
+    _disablePlannerFromSidebar: _disablePlannerFromSidebar,   /* #80 — вход сайдбарной кнопки */
     _syncAclFireAndForget: _syncAclFireAndForget,
     _getLastProjectKey: _getLastProjectKey,
     _setLastProjectKey: _setLastProjectKey,

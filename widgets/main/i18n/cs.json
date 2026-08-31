@@ -1330,5 +1330,15 @@
   "dfEmpty": "Nic nepřidáno — žádné další sloupce.",
   "hintDfNotStored": "Hodnoty polí se nikde neukládají: aplikace je načítá z YouTracku při otevření tabulky, takže každý vidí přesně to, na co má právo.",
   "dfLoadFailed": "Hodnoty se načetly jen zčásti. Opakujte tlačítkem „Načíst z úkolu“.",
-  "ganttLinksPartial": "Vazby se načetly jen zčásti. Opakujte tlačítkem „Načíst z úkolu“."
+  "ganttLinksPartial": "Vazby se načetly jen zčásti. Opakujte tlačítkem „Načíst z úkolu“.",
+  "btnPlannerDisable": "Vypnout plánovač v tomto projektu",
+  "btnPlannerEnable": "Zapnout plánovač v tomto projektu",
+  "btnPlannerDisableConfirm": "Vypnout",
+  "plannerDisableConfirmTitle": "Vypnout plánovač v tomto projektu?",
+  "plannerDisableConfirmBody": "Projekt zmizí z výběru projektů plánovače pro běžné uživatele a obsluha přes hlavní menu se zastaví. Data plánovače zůstávají zachována; znovu jej může zapnout správce nastavení projektu nebo administrátor. Automatická workflow pravidla (kaskádová agregace, rollup stavů) poběží dál.",
+  "plannerDisabledBanner": "Plánovač je v tomto projektu vypnutý. Data jsou zachována; zapnout jej může správce nastavení projektu nebo administrátor.",
+  "plannerDisabledMark": "plánovač vypnut",
+  "toastPlannerDisabled": "Plánovač v tomto projektu vypnut",
+  "toastPlannerEnabled": "Plánovač v tomto projektu zapnut",
+  "errPlannerDisabled": "Plánovač je v tomto projektu vypnutý — změny nebyly uloženy. Koncept je zachován; obraťte se na správce nastavení projektu."
 }

@@ -791,7 +791,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.31.0';
+  var APP_VERSION = '3.32.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1936,7 +1936,7 @@
   var PROJECT_NAV = (typeof window !== 'undefined' && window.__SSP_PROJECT_NAV) || {};
   function _projectNavDeps() {
     return {
-      T: T, diag: diag,
+      T: T, diag: diag, toast: toast,   /* #80 — тосты переключения планера */
       apiGet: apiGet, apiPost: apiPost, safeLs: safeLs,
       lastProjectLsKey: 'ssp_last_project_key',
       NO_PROJECT_SENTINEL: _NO_PROJECT_SENTINEL,
@@ -1962,6 +1962,7 @@
       state: {
         getHost: function () { return _host; },
         getLang: function () { return _lang; },
+        getSettings: function () { return _settings; },   /* #80 — флаг plannerDisabled на странице настроек */
         setSettings: function (v) { _settings = v; },
         getActiveProjectKey: function () { return _activeProjectKey; },
         setActiveProjectKey: function (v) { _activeProjectKey = v; },
@@ -2094,6 +2095,17 @@
       if (banner) {
         if (configured) banner.classList.add('hidden');
         else            banner.classList.remove('hidden');
+      }
+
+      /* #80 — «Отключить планер в этом проекте»: global-режим, только settings-менеджер
+         (canManage; планировочному не показываем — admin-тир). Логика — в project-nav.js. */
+      var dBtn = document.getElementById('plannerDisableBtn');
+      if (dBtn) {
+        dBtn.classList.toggle('hidden', !(_mode === 'global' && canManage));
+        if (!dBtn._sspBound) {
+          dBtn.addEventListener('click', function () { PROJECT_NAV._disablePlannerFromSidebar(_projectNavDeps()); });
+          dBtn._sspBound = true;
+        }
       }
 
       // Кнопка открытия overlay настроек — settings-менеджеру ИЛИ планировочному менеджеру (#22)

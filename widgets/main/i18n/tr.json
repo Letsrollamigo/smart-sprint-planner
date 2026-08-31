@@ -1330,5 +1330,15 @@
   "dfEmpty": "Hiçbir şey eklenmedi — ek sütun yok.",
   "hintDfNotStored": "Alan değerleri hiçbir yerde saklanmaz: uygulama tabloyu açarken bunları YouTrack’ten okur, böylece herkes yalnızca yetkisi olan değerleri görür.",
   "dfLoadFailed": "Değerler yalnızca kısmen yüklendi. «İşten güncelle» ile yeniden deneyin.",
-  "ganttLinksPartial": "Bağlantılar yalnızca kısmen yüklendi. «İşten güncelle» ile yeniden deneyin."
+  "ganttLinksPartial": "Bağlantılar yalnızca kısmen yüklendi. «İşten güncelle» ile yeniden deneyin.",
+  "btnPlannerDisable": "Bu projede planlayıcıyı devre dışı bırak",
+  "btnPlannerEnable": "Bu projede planlayıcıyı etkinleştir",
+  "btnPlannerDisableConfirm": "Devre dışı bırak",
+  "plannerDisableConfirmTitle": "Bu projede planlayıcı devre dışı bırakılsın mı?",
+  "plannerDisableConfirmBody": "Proje, normal kullanıcılar için planlayıcının proje seçicisinden kaybolur ve ana menü üzerinden hizmet durur. Planlayıcı verileri korunur; proje ayar yöneticisi veya bir yönetici yeniden etkinleştirebilir. Otomatik workflow kuralları (kademeli toplama, durum rollup) projede çalışmaya devam eder.",
+  "plannerDisabledBanner": "Bu projede planlayıcı devre dışı. Veriler korunuyor; proje ayar yöneticisi veya bir yönetici etkinleştirebilir.",
+  "plannerDisabledMark": "planlayıcı devre dışı",
+  "toastPlannerDisabled": "Bu projede planlayıcı devre dışı bırakıldı",
+  "toastPlannerEnabled": "Bu projede planlayıcı etkinleştirildi",
+  "errPlannerDisabled": "Bu projede planlayıcı devre dışı — değişiklikler kaydedilmedi. Taslak korunuyor; proje ayar yöneticisine başvurun."
 }
