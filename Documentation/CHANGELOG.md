@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.31.0] — 2026-08-31
+
+> **Save reliability.** Three defects around one seam: the app showed as saved what the server had rejected. Root cause found from a screen recording of a live incident. No new features; the data schema is unchanged.
+
+### Fixed
+
+- **A save rejected by the server stayed on screen as if it had succeeded.** The assignee distribution mutated its state in memory first, sent it afterwards, and an optimistic-lock refusal (a concurrent edit) went to the diagnostic log only. The screen kept showing assignments that do not exist on the server, so people kept working on top of them — in the recorded incident three more assignments were made after the refusal, and all of them were lost. A refusal now restores both the history record and the live distribution to what the server actually holds, and redraws both tables. Ordinary failures — network, server error — do not discard the edit: they must not be confused with a data divergence.
+- **Edits were not blocked after diverging from the server.** The refusal message could be dismissed and work continued in a state where nothing would ever save. Editing on the distribution screen is now frozen until the page is reloaded: assignee selectors are disabled, and any attempt explains the reason and the way out.
+- **The app created the conflict itself at startup.** Reconciling working-copy flags and purging stale ones run in one pass on load and used to send **two** competing history writes. Both carried the same slot version, so the server refused the second one, and its error was swallowed by an empty handler — the client version stayed stale and every later edit was refused with it. That is what the recording shows as a conflict message right after load, before a single user action. Startup now sends exactly one write, and its refusal is visible in the diagnostic log.
+- **The clear button in settings selectors cleared nothing.** The field showed «not selected», the save reported success, and the previous value came back after a reload — meaning no optional field could be switched off at all. Fixed for every settings selector: issue fields, differentiated cost accounting, state rollup, releases, reporting and the default language.
+
+---
+
 ## [3.30.0] — 2026-08-31
 
 > **A cumulative round of fixes.** Seven defects found by running a sprint-draft import end to end, by walking the whole interface in English, and by an adversarial check of the units behind the capacity figures. No new features; the data schema is untouched.
