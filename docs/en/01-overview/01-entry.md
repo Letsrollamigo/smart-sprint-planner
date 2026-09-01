@@ -18,6 +18,8 @@ On the left is the **rail** — the tree of the planner's sections. It is the sa
 
 The blue bar at the top says exactly that: sprint planning has moved to the main menu, and this screen is the settings. What to do here is covered in [Setup and rollout](../02-setup/).
 
+This entry is not visible to everyone: YouTrack shows the project settings page only to users with the **Update Project** permission (typically a project administrator or the project lead) — that is how YouTrack itself works. If you manage the planner's settings without being a project administrator, you do not need this entry: the same settings form opens via the **Plugin settings** button in the main-menu rail header.
+
 ## Picking a project
 
 The **Project** picker in the rail lists only the projects where the planner is attached and configured and where you have access to it. If a project is missing, either the app is not attached to it or the settings-manager group has not been set — chapter 04 of the setup document.
@@ -43,7 +45,6 @@ This one is easy to miss and worth remembering: **the planner's language and You
 
 Switch only one and the interface comes out mixed. In this documentation both are switched.
 
-⚠️ After the planner's language changes, the project settings screen does not redraw completely — the section navigation stays in the previous language until the page is reloaded. This is a known defect; reloading the page fixes it.
 
 ## Picking a sprint
 
