@@ -28,6 +28,18 @@ const TOKEN = process.env.YT_TOKEN;
 const PROJECT = process.env.YT_PROJECT || 'DEMOClone';
 const APP = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'manifest.json'), 'utf8')).name;
 
+/* ── Предохранитель «только локальный стенд» (#86) ───────────────────────────
+   Сид перезаписывает состояние планера боевыми POST'ами через backend
+   приложения, поэтому цель обязана быть петлевой: цена опечатки в YT_BASE
+   равна проду. Обхода нет намеренно — у сида нет назначения вне стенда.
+   Проверка стоит ДО чтения токена, чтобы отказ не зависел от окружения. */
+const LOCAL_TARGET = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|[A-Za-z0-9._-]+\.local)(:\d+)?\/?$/;
+if (!LOCAL_TARGET.test(BASE)) {
+  console.error('seed-democlone: ОТКАЗ — YT_BASE «' + BASE + '» не локальный тест-стенд.');
+  console.error('  Разрешены только localhost / 127.0.0.1 / [::1] / *.local (с портом, без пути).');
+  process.exit(2);
+}
+
 if (!TOKEN) {
   console.error('YT_TOKEN не задан (permanent admin token стенда).');
   process.exit(1);
