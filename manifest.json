@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.34.1",
+  "version": "3.34.2",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.33.0</b><br><br>\ud83e\udd1d <b>Concurrent edits now merge instead of failing</b> \u2014 when two people saved at the same time, the second was told to reload the page and re-enter the work. The app now re-reads the data and replays your edits on top of the fresh version whenever the two of you touched different places: the save goes through, your colleague's work survives, and nothing interrupts you. A refusal is left only for a genuine overlap \u2014 the same value changed by both \u2014 where your edit is rolled back honestly instead of quietly disappearing.<br><br>\ud83d\udd27 <b>3.34.1</b> \u2014 after a merge the active role record could stay bound to the previous copy of the data, so a following assignee edit might not reach the server. The reference is now refreshed together with the data.",
+  "changeNotes": "<b>What's new since v3.34.1</b><br><br>\ud83d\udd35 <b>A refresh button that says what it does</b> \u2014 \u201cRefresh from task\u201d told you neither what it pulls nor where from. It is now \u201cRefresh issue data from YouTrack\u201d in every interface language, and it is styled as a primary action. The partial-load hints that pointed at the button by a different name were corrected too.",
   "widgets": [
     {
       "key": "ssp-main",

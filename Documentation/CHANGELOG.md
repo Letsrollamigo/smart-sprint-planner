@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.34.2] — 2026-09-02
+
+> **A refresh button that says what it does.** Wording and styling only; behaviour is unchanged.
+
+### Changed
+
+- **"Refresh from task" is now "Refresh issue data from YouTrack"**, styled as a primary action. The old label told you neither what it pulls nor where from; there are three such buttons — on the roles panel, on "My role" and above the Gantt chart — and all three were renamed. Translated across 15 interface languages.
+- **The partial-load hints pointed at the button by a different name.** "Values loaded only partly. Use … to try again." and its counterpart for links referred to the button as "Refresh from issue" while the button itself said "Refresh from task". The quote now matches the label in every language.
+- **Documentation.** The FAQ described behaviour that no longer exists for write conflicts: since 3.31.0 edits freeze, and since 3.34.0 non-overlapping edits merge silently. The question was split in two and rewritten to match what actually happens.
+
+---
+
 ## [3.34.1] — 2026-09-02
 
 > **Patch to the concurrent-edit merge.** One defect, found by tightening a test right after 3.34.0 shipped.
