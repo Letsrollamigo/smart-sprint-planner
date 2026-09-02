@@ -810,8 +810,11 @@ If you see a button hidden or a field greyed out — it's probably permissions. 
 
 ## 15. FAQ
 
+**Two of us are editing the same sprint — will I lose my changes?**
+Not if the two of you edited different places. Since v3.34.0 the plugin re-reads the data from the server in that case, replays your edit on top of the fresh version and saves it: your work lands, your colleague's work survives, and you notice nothing. Different places means different sprints, roles, issues and assignees.
+
 **The plugin says «The sprint was modified by another user. Reload the page and try saving again» — what is this?**
-Concurrent-editing protection (added in v2.17.0). Someone saved this sprint after you loaded it — your save was rejected so it wouldn't silently wipe their work. Reload the page (your view picks up their changes) and re-apply your edit.
+It means the two of you changed **the very same value**, and the plugin cannot choose for you. Your edit has been reverted to what the server actually holds, and further editing is blocked until you reload — so that you don't keep typing into a state the server never received. Reload the page: your view picks up their changes, and you decide how to combine them with yours.
 
 **I changed something but I'm afraid to close the tab — will it really be saved?**
 Yes. The plugin saves your changes to the server automatically in the background. If you close the tab, get a coffee, and come back an hour later — you'll see everything exactly as you left it. The **Save sprint parameters**, **Save role resource** and **Confirm** buttons are not for saving data, but for fixing sprint inputs and stages.

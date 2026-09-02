@@ -117,7 +117,7 @@
   },
   "btnAfter": {
     "disabled": false,
-    "text": "Обновить из задачи"
+    "text": "Обновить данные задач из YouTrack"
   },
   "toasts": [
     {

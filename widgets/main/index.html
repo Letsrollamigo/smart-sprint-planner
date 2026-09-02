@@ -2071,7 +2071,7 @@
     /* v5.5.0 — Этап 3b: accordion-карточки для уровня «Роли» */
     .role-accordions { display: flex; flex-direction: column; gap: 8px; }
     /* 68-2 — бар фильтра исключённых над аккордеонами */
-    .ssp-planning-toolbar { margin: 6px 0 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ssp-planning-toolbar { margin: 6px 0 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }   /* wrap — подпись кнопки обновления длинная: на узких экранах фильтр уходит на свою строку, а не сплющивает кнопку */
     .ssp-planning-filterbar { display: flex; justify-content: flex-end; margin-left: auto; }
     .planning-role-card {
       border: 1px solid var(--border); border-radius: var(--radius);
@@ -2720,7 +2720,7 @@
       <!-- #69 R1 — панель уровня «Роли»: одна кнопка «Обновить из задач» (весь спринт, #35) +
            68-2 фильтр «скрыть исключённые» (Ring Toggle рендерит rolecomposition-view._renderExcludedFilter) -->
       <div id="planningToolbar" class="ssp-planning-toolbar" style="display:none">
-        <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
+        <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
         <div id="planningFilterBar" class="ssp-planning-filterbar"></div>
       </div>
       <div id="roleAccordions" class="role-accordions"></div>
@@ -2782,7 +2782,7 @@
               <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" id="currentRolePickBtn" data-i18n="btnPickAssignees" data-icon="add">Подобрать исполнителей</button>
               <button class="ring-button-button ring-button-block ring-button-heightS btn--warn editor-btn" id="currentRoleClearAssigneesBtn" data-i18n="btnClearAssignees" data-icon="close">Очистить</button>
               <!-- v6.1.0 D80 (F3) — sync Assignee из YouTrack (source-of-truth = YT). -->
-              <button class="ring-button-button ring-button-block ring-button-heightS" id="currentRoleSyncFromYtBtn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
+              <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText" id="currentRoleSyncFromYtBtn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
             </div>
           </div>
           <!-- v2.1.0 E1 — Ring Table host. Native <table> + <thead> + <tbody> removed;
@@ -2857,7 +2857,7 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v2.1.14 — merged: sync assignee+state из YT + дозагрузка истории состояний. -->
-      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM" data-i18n="btnRefreshFromTask" data-icon="update">Обновить из задачи</button>
+      <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
     </div>
     <div id="ganttContainer"></div>
   </div>
