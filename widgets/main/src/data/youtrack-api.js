@@ -163,6 +163,25 @@ function apiGet(path, deps, _isRetry) {
     .catch(function (e) { deps.diag('ERR ' + path + ': ' + (e && e.message ? e.message : e), 'err'); throw e; });
 }
 
+/* v5.0.3 (итерация 5) — после успешного POST history обновлённая запись в _history имеет
+   ту же sprintId, что и _currentSprintRoleRec: перепривязываем ссылку, чтобы distrib-таблица
+   видела свежие items/personalPlanning.
+   #84 — зовётся ДВАЖДЫ: из хвоста apiPost и ещё раз после досылки слитого в память
+   (_mergeRetry). Слитое приходит НОВЫМ массивом новых объектов, а хвост apiPost отрабатывает
+   ДО досылки — то есть перепривязывает на прежний массив, который тут же заменяется.
+   Ссылка, оставшаяся в отцепленном массиве, увела бы следующую правку personalPlanning
+   в объект, которого никто не отправляет: #100 ровно в том виде, в каком он уже случался. */
+function _rebindCurrentRoleRec(deps) {
+  try {
+    var rec     = deps.state.getCurrentSprintRoleRec();
+    var history = deps.state.getHistory();
+    if (rec && rec.sprintId && Array.isArray(history)) {
+      var freshRec = history.find(function (h) { return h.sprintId === rec.sprintId; });
+      if (freshRec && freshRec !== rec) deps.state.setCurrentSprintRoleRec(freshRec);
+    }
+  } catch (_) {}
+}
+
 /* #100 — отказ оптимистичной блокировки: сервер запись не принял, а локальный стейт
    вызывающий уже мутировал. Метка «разошлись с сервером» замораживает правки до
    перезагрузки (прод-баг: после тоста человек сделал ещё три назначения, и все
@@ -238,6 +257,7 @@ function _mergeRetry(path, body, query, deps) {
          память = сервер, поэтому rev и база, засинканные хвостом apiPost выше,
          честны, и следующая обычная запись пройдёт замок заслуженно. */
       Object.keys(merged).forEach(function (f) { deps.state[MERGE_SETTERS[f]](merged[f]); });
+      if (merged.history) _rebindCurrentRoleRec(deps);   /* см. коммент у _rebindCurrentRoleRec */
       deps.diag('#84 ' + path + ': слитое дослано в память вкладки (' + Object.keys(merged).join(',') + ')', 'ok');
       return ok;
     });
@@ -353,18 +373,7 @@ function apiPost(path, body, query, deps, _isRetry) {
           }
         } else if (path === 'history') {
           deps.markSavedAndCleanup('currentRole');
-          /* v5.0.3 (итерация 5) — после успешного POST history (обычно auto-snapshot)
-             обновлённая запись в _history имеет ту же sprintId, что и _currentSprintRoleRec.
-             Перепривязываем _currentSprintRoleRec на новую ссылку, чтобы distrib-таблица
-             видела свежие items/personalPlanning. */
-          try {
-            var rec     = deps.state.getCurrentSprintRoleRec();
-            var history = deps.state.getHistory();
-            if (rec && rec.sprintId && Array.isArray(history)) {
-              var freshRec = history.find(function (h) { return h.sprintId === rec.sprintId; });
-              if (freshRec && freshRec !== rec) deps.state.setCurrentSprintRoleRec(freshRec);
-            }
-          } catch (_) {}
+          _rebindCurrentRoleRec(deps);
         }
       } catch (_) {}
       return r;

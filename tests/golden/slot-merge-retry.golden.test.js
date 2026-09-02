@@ -57,6 +57,9 @@ test('#84: правки в разных записях сливаются — п
   gm.set({ _host: host });
 
   const mine = [rec('s1', { goal: 'моя' }), rec('s2')];
+  /* Активная запись роли указывает ВНУТРЬ того массива, который вкладка сейчас отправит —
+     как это и бывает в живом сохранении (saveCurrentRoleState правит histRec по ссылке). */
+  gm.set({ _history: mine, _currentSprintRoleRec: mine[0] });
   await gm.call('apiPost', 'history', { history: mine });
 
   const posts = host.log.filter((c) => c.method === 'POST');
@@ -79,6 +82,15 @@ test('#84: правки в разных записях сливаются — п
   assert.strictEqual(memById.s2.goal, 'их', 'в памяти вкладки и чужая тоже');
   assert.strictEqual(gm.call('SPRINT_STORE.getSlotRevFor', 'history'), 8,
     'rev продвинут до серверного — память уже соответствует ему');
+  /* 🔴 Слитое приходит НОВЫМ массивом новых объектов (merge3 прогоняет через JSON).
+     Если активная запись роли осталась указывать в прежний массив, следующая правка
+     personalPlanning легла бы в отцепленный объект и до сервера не доехала — это #100
+     ровно в том виде, в каком он уже случался. */
+  const activeRec = gm.get('_currentSprintRoleRec');
+  assert.ok(activeRec, 'предусловие теста: активная запись роли выставлена');
+  assert.ok(gm.get('_history').indexOf(activeRec) >= 0,
+    'активная запись роли перепривязана в новый _history, а не осталась в отцепленном массиве');
+  assert.strictEqual(activeRec.goal, 'моя', 'и это именно слитая запись');
 });
 
 test('#84: правка одного и того же места остаётся отказом с заморозкой (#100)', async () => {

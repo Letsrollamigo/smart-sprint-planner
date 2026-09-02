@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.34.1] — 2026-09-02
+
+> **Patch to the concurrent-edit merge.** One defect, found by tightening a test right after 3.34.0 shipped.
+
+### Fixed
+
+- **After a merge the active role record stayed bound to the previous copy of the data.** Merged data arrives as a fresh set of objects, and the rebinding of the current-role reference ran before they were installed into memory — so it bound to a copy that was replaced a moment later. A following assignee edit landed in a detached object and never reached the server: the screen showed the assignment, the server knew nothing about it. The reference is now refreshed together with the data.
+
+---
+
 ## [3.34.0] — 2026-09-02
 
 > **Concurrent edits merge instead of failing (#84).** A write conflict is no longer a dead end: the app re-reads the data and replays your edits on top of the fresh version when the two of you touched different places. A refusal is left only for a genuine overlap. The data schema is unchanged.
