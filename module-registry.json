@@ -4,23 +4,23 @@
     "generatedBy": "scripts/gen-arch-registry.js",
     "fork": "fork-agnostic (суффиксы без namespace-префикса)",
     "core": {
-      "loc": 4587,
-      "locBudget": 4587,
+      "loc": 4596,
+      "locBudget": 4596,
       "stateBaseline": 71,
-      "budgetNote": "#99 (v3.33.0) — осознанный +6: sync-делегатор renderReportingView (пере-подписи отчётности из кэша готового вида на смене языка; логика — domain/reporting-view.js rerenderFromCache) + вызов из _doFullRerender. (Пасхалки-попугаев в community нет — corp-only, поэтому экономии #98 здесь нет.) #80 «Отключить планер в этом проекте» (v3.32.0) — осознанный +11: toast+getSettings в _projectNavDeps (тосты переключения и чтение флага на странице настроек проекта — логика в domain/project-nav.js) + видимость/bind сайдбарной кнопки #plannerDisableBtn в refreshOpenSettingsBtn (единственная точка, где уже есть canManage из check-settings-manager; сам обработчик — делегат PROJECT_NAV._disablePlannerFromSidebar). #93 (v3.29.3) — осознанный +1: аксессор getHost в _ganttDeps ВОЗВРАЩЁН. Он значится в этой же записи как «+1 #74 фаза 2 (v3.28.0)», но в коде редакции его не было: строка потерялась при пофайловом переносе правок, и Гант ни разу не запросил связи — стрелки зависимостей были мертвы три релиза. Бюджет пересчитывался уже без неё, поэтому возврат снова упирается в ратчет. Гейт на повтор — tests/arch/deps-contract.test.js (E1/E2). 68-8 «Отображаемые поля» (v3.29.0) — осознанный +4: аксессоры getHost в _roleCompDeps (обслуживает и состав роли, и сводную) и _currentRoleDeps + resetGanttLinks в _refreshDeps (попутный фикс ⚖6: «Обновить из задачи» сбрасывает кэш связей Ганта — прямой вызов domain→domain закрыт гейтом B1). Эфемерное чтение значений полей живёт в infra/fieldvalues-loader.js — ядро только отдаёт хост. Прецедент — #74 фаза 2 (тот же «+1 на getHost» для Ганта). #74 фаза 2 (v3.28.0) — осознанный +1: аксессор getHost в _ganttDeps. #73 (роли-участницы спринта, v3.27.0) — осознанный +43: getSprintRolesFor/getSprintRoles — слоёный резолвер набора ролей спринта (sprint.roles → снапы истории → settings эпохи → getActiveRoles). Живёт в ядре: читает closure-стейт _sprint/_history/_currentSprintId и раздаётся 12 модулям через deps (перевес ключа getActiveRoles) — вынос в модуль потребовал бы стейт-аксессоров дороже самого резолвера. +openNewSprintDialog (единая точка трёх входов «Новый спринт», сам диалог — modal-specs/modal-bodies). Минус: aggregateStatus+_STATUS_RANK удалены (caller-less), stateBaseline 72→71 (ratchet вниз). 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
+      "budgetNote": "#84 досылка слитого (2026-09-02) — осознанный +5 сверх +2 ниже: сеттеры setSprint/setRoleItems/setHistory/setReleases/setAbsences в _ytApiDeps. Шов обязан положить слитое в память вкладки ДО того, как rev станет валидным; сеттеры уже существуют в других deps-фабриках, здесь только проброс, логика — в data/youtrack-api.js. #84 «перечитать-и-слить» (2026-09-02) — осознанный +2: аксессоры getSlotBase/setSlotBase в _ytApiDeps (база трёхстороннего слияния слота живёт в sprint-store рядом с rev'ами — пара rev+база обязана сбрасываться одной операцией; сама логика слияния — pure/slot-merge-pure.js, повтор записи — data/youtrack-api.js). Через deps.state, а не прямым мостом к стору: api-шов голден-тестируется на моке deps.state, глобальный мост эту проверяемость снял бы. #99 (v3.33.0) — осознанный +6: sync-делегатор renderReportingView (пере-подписи отчётности из кэша готового вида на смене языка; логика — domain/reporting-view.js rerenderFromCache) + вызов из _doFullRerender. (Пасхалки-попугаев в community нет — corp-only, поэтому экономии #98 здесь нет.) #80 «Отключить планер в этом проекте» (v3.32.0) — осознанный +11: toast+getSettings в _projectNavDeps (тосты переключения и чтение флага на странице настроек проекта — логика в domain/project-nav.js) + видимость/bind сайдбарной кнопки #plannerDisableBtn в refreshOpenSettingsBtn (единственная точка, где уже есть canManage из check-settings-manager; сам обработчик — делегат PROJECT_NAV._disablePlannerFromSidebar). #93 (v3.29.3) — осознанный +1: аксессор getHost в _ganttDeps ВОЗВРАЩЁН. Он значится в этой же записи как «+1 #74 фаза 2 (v3.28.0)», но в коде редакции его не было: строка потерялась при пофайловом переносе правок, и Гант ни разу не запросил связи — стрелки зависимостей были мертвы три релиза. Бюджет пересчитывался уже без неё, поэтому возврат снова упирается в ратчет. Гейт на повтор — tests/arch/deps-contract.test.js (E1/E2). 68-8 «Отображаемые поля» (v3.29.0) — осознанный +4: аксессоры getHost в _roleCompDeps (обслуживает и состав роли, и сводную) и _currentRoleDeps + resetGanttLinks в _refreshDeps (попутный фикс ⚖6: «Обновить из задачи» сбрасывает кэш связей Ганта — прямой вызов domain→domain закрыт гейтом B1). Эфемерное чтение значений полей живёт в infra/fieldvalues-loader.js — ядро только отдаёт хост. Прецедент — #74 фаза 2 (тот же «+1 на getHost» для Ганта). #74 фаза 2 (v3.28.0) — осознанный +1: аксессор getHost в _ganttDeps. #73 (роли-участницы спринта, v3.27.0) — осознанный +43: getSprintRolesFor/getSprintRoles — слоёный резолвер набора ролей спринта (sprint.roles → снапы истории → settings эпохи → getActiveRoles). Живёт в ядре: читает closure-стейт _sprint/_history/_currentSprintId и раздаётся 12 модулям через deps (перевес ключа getActiveRoles) — вынос в модуль потребовал бы стейт-аксессоров дороже самого резолвера. +openNewSprintDialog (единая точка трёх входов «Новый спринт», сам диалог — modal-specs/modal-bodies). Минус: aggregateStatus+_STATUS_RANK удалены (caller-less), stateBaseline 72→71 (ratchet вниз). 68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +25: _standupStateBundle ({values,colors} из общего _fieldValuesCache) + _ensureFieldValuesFetch (единый стартер ленивого подъёма бандла — дедуп с 68-1 _stateRankMap, по приходу ре-рендерит обе зоны-потребителя) + getStateBundle в _standupDeps. Кэш field-values и лоадеры живут в ядре (68-1); логика секций — в domain/standup-view.js. v3.17.0 (68-1/68-2/#65) — осознанный +36: 68-1 — _stateRankMap (ранг состояний из _fieldValuesCache + ленивый подъём бандла) + 4-й аргумент multiKeySort + 'state' в SORT_KEYS_CYCLE; deps-wiring 68-1/68-2 в _roleCompDeps (buildPPMapFromCanon, getActiveSubtab/getCurrentRolePP, isExcludedHidden/mountRingToggle/renderAllocSummary — острова монтирует ядро, звезда B1; логика — в rolecomposition-view/allocsummary-view/sort-pure). #57-2 — +3: _applySprintLockUi (⚖ владелец: лок дизейблит кнопки «Новый спринт») + рендер тумблера из _loadAndRenderProject (global-режим). R6 (аудит §7 п.14) — capacity-стейт вынесен в domain/capacity-store.js (ADR-001, третье применение): −7 стейт-var, deps-аксессоры делегируют в стор; stateBaseline 79→72 (ratchet вниз зафиксирован). Прошлое: #20-v2 (v3.2.0) — осознанный +5: _ganttDeps дополнен saveCurrentRoleState/renderCurrentRoleTaskTable/getLang (drag дат Ганта пишет тем же каналом, что #40). Прошлое: #40 — осознанный +1 (без стейта): isEditor-аксессор в _currentRoleDeps (гейт кнопки прогноза). #50 S9-EXP-b — осознанный +23 LOC и +1 стейт (stateBaseline 78→79): loadPdfMakeLib (ленивый вендоренный pdfmake, relative-script min→vfs, зеркало loadXLSXLib) + pdf-ветка exportReport. _pdfLoadPromise — memo-промис загрузки либы, СИММЕТРИЧЕН уже принятому _xlsxLoadPromise (лоадеры живут в ядре — там инъекция <script>); домен-стор для script-loader-синглтона был бы оверинжинирингом. #50 S9-EXP-a — осознанный +5 (deps-wiring, без стейта): exportReport в _reportingDeps (композиция-рут: pure-проекция reporting-export-pure.reportToSheets → EXCEL_EXPORT.writeReportXlsx через _excelDeps; логика в pure/excel-export, ядро только компонует, топология domain→domain обойдена). #50 S3c — осознанный +3 (без стейта): deps-wiring bulkAnchorTransitions/bulkPauseTagIntervals/combinePauses в _reportingDeps (data-layer S3b для _loadA2 A2 TTM; чистый прокид мостов REPORTING_DATA, логика в domain/data/pure). Прошлое: #50 S1 — осознанный +47 LOC и +1 стейт (_reportingAccess): init-оркестровка каркаса отчётности в ядре (композиция) — refreshReportingAccess (async-гейт членства reporting-access, паттерн refreshOpenSettingsBtn) + push вкладок reporting-a/b в _mountTabsAndSync + прямой mount плейсхолдера в tab-btn handler + hasRep/wantRep в _syncGlobalDashTree + getReportingAccess в _dashDeps. _reportingAccess — транзиентный per-session UI-гейт флаг {a,b} (сиблинг _settings/_lang), НЕ доменные данные → стор ADR-001 был бы оверинжинирингом; stateBaseline 77→78 осознанно. Доменный слой отчётности (pull-загрузка A7) появится в S1c отдельным модулем. Прошлое: #55 +3: делегаторы onIssuesAdded/onIssuesTransferred в _releaseDeps (wiring, логика в release-controller). Прошлое: #51 (2026-07-03) — осознанный +4: делегатор checkInstanceAdmin + getMode/getGlobalProjects в _capacityDeps (чистый deps-wiring; логика в domain/permissions.js и domain/capacity-view.js). Прошлое: ADR-001 r2 (2026-07-03) — конфликт-канон (_serverSnapshot*/_baseRevHash/_slotRev) вынесен в domain/sprint-store.js: −6 стейт-var, deps-аксессоры делегируют в стор, −2 LOC; введён stateBaseline (гейт C3, ratchet only-down). Прошлое: #56-4 +4: _slotRev + getSlotRev/setSlotRev + toast/T в _ytApiDeps (optimistic lock sprint-data; сама логика в youtrack-api/backend-core — ядро только deps-wiring). Прошлое: #48 R4 +4 (getArchive/setArchive/getArchivedCount/setArchivedCount в _releaseDeps), fix дубликата getIsEditor −1, R2.4 +2, R2.3 +4, R2.2 +2, R2.1 +4, bugfix reload +5, R1.5a +2, R1.5 +2, R1.3b +2, R1.4 +4, R1.3 +8, R1.2b +29 (nav)."
     },
     "budgets": {
       "modules": {
-        "loc": 20649,
-        "locBudget": 21240,
-        "budgetNote": "#69 строка 23 (2026-08-22): 73 per-module бюджета заменены одним агрегатом Σloc секции с полосой 10 % (ratchet only-down по сумме). Поверх: A2 ядро не растёт, A3 fat-count ≤ baseline, D1/D2 полнота реестра."
+        "loc": 21246,
+        "locBudget": 21246,
+        "budgetNote": "#84 «перечитать-и-слить» (2026-09-02) — осознанный +6: досылка слитого в память вкладки (`MERGE_SETTERS` + fail-closed предохранитель и запись результата в стейт в `data/youtrack-api.js`). Без неё после merge-записи rev был бы валиден при устаревшем содержимом — следующая обычная запись прошла бы замок и затёрла чужое (класс v2.16.6). #69 строка 23 (2026-08-22): 73 per-module бюджета заменены одним агрегатом Σloc секции с полосой 10 % (ratchet only-down по сумме). Поверх: A2 ядро не растёт, A3 fat-count ≤ baseline, D1/D2 полнота реестра."
       },
       "jsx": {
-        "loc": 8440,
+        "loc": 8449,
         "locBudget": 8563
       },
       "backend": {
-        "loc": 1961,
+        "loc": 2050,
         "locBudget": 2158
       },
       "workflow": {
@@ -107,6 +107,7 @@
       "REPORTING_ROLLUP": "pure",
       "REPORTING_TTM": "pure",
       "SHARE_URL_PURE": "pure",
+      "SLOT_MERGE_PURE": "pure",
       "SORT_PURE": "pure",
       "TOAST_PURE": "pure",
       "VELOCITY_PURE": "pure",
@@ -239,7 +240,7 @@
         "budgetNote": "v3.21.0 (#69 R2) — осознанный рост +24: loadRecharts (ленивый recharts.chunk.js, паттерн pdfmake) + useEffect-гейт в ReportingPanel; Recharts вынесен из вендор-чанка. Прошлое: #57 (эпик 57) — осознанный рост +2: Н4 баннер A3 без целевых статусов + 57-4 канон Ring кнопок экспорта/прерывания (block/danger, комментарии). v3.9.0 — осознанный рост: тумблер «Система» в отчётах (колонка/группировка/экспорт по reportingShowSystem) + кликабельные ID задач (ytBase-линки в UI и XLSX/PDF) + однострочная вёрстка строк (nowrap пилюль/ID). Прошлое: R4 (v3.8.0, аудит D5) — ChartFrame: общий шелл Recharts (RC-гейт+сайзинг+ResponsiveContainer) для 5 обвязок; фолбэки/серии bespoke; ратчет ужат. v3.12.0 (#11) — +A11View (сводка ролей + LineChart тренда + фолбэк-таблица). v3.12.0 — микрополировка A11View (+8)."
       },
       "react/select-mount.jsx": {
-        "loc": 141
+        "loc": 142
       },
       "react/settings-backlog.jsx": {
         "loc": 77,
@@ -264,7 +265,7 @@
         "loc": 212
       },
       "react/settings-permissions.jsx": {
-        "loc": 203
+        "loc": 204
       },
       "react/settings-release.jsx": {
         "loc": 83,
@@ -279,7 +280,7 @@
         "budgetNote": "R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-shared.jsx": {
-        "loc": 332,
+        "loc": 339,
         "budgetNote": "68-7 (стендап: реальные состояния по ролям, вариант А владельца) — осознанный +83: StateRolesTable — таблица «состояние → роль(и)» вынесена 1:1 из BacklogSection (переиспользование в маппинге стендапа по требованию владельца). Донор ужался симметрично (settings-backlog.jsx 134→81), суммарно по jsx-слою рост ~+6. R6 (аудит §7 п.13) — декомпозиция settings-form: общие контролы (settings-shared) и 7 Section-компонентов вынесены по файлам; props-контракты не менялись (чистый перенос)."
       },
       "react/settings-standup.jsx": {
@@ -306,7 +307,7 @@
     "data/data-loaders.js": {
       "layer": "domain",
       "domain": "data/data-loaders",
-      "loc": 293,
+      "loc": 319,
       "state": [
         "AUTO_GROUP_IDS",
         "AUTO_GROUP_NAMES",
@@ -333,7 +334,7 @@
     "data/youtrack-api.js": {
       "layer": "domain",
       "domain": "data/youtrack-api",
-      "loc": 310,
+      "loc": 475,
       "state": [],
       "publishes": [
         "YOUTRACK_API"
@@ -416,7 +417,7 @@
     "domain/currentrole-view.js": {
       "layer": "domain",
       "domain": "domain/currentrole-view",
-      "loc": 1074,
+      "loc": 1094,
       "state": [
         "GRADES_LOCAL",
         "KPE_DEFAULTS_LOCAL",
@@ -441,7 +442,7 @@
     "domain/draft-store.js": {
       "layer": "domain",
       "domain": "domain/draft-store",
-      "loc": 364,
+      "loc": 369,
       "state": [
         "_draftFlushTimer",
         "_draftSaveTimers",
@@ -462,7 +463,7 @@
     "domain/gantt-view.js": {
       "layer": "domain",
       "domain": "domain/gantt-view",
-      "loc": 419,
+      "loc": 423,
       "state": [
         "_ganttLinks"
       ],
@@ -542,7 +543,7 @@
     "domain/project-nav.js": {
       "layer": "domain",
       "domain": "domain/project-nav",
-      "loc": 348,
+      "loc": 467,
       "state": [
         "_serverLastSynced"
       ],
@@ -564,7 +565,7 @@
     "domain/refresh-controller.js": {
       "layer": "domain",
       "domain": "domain/refresh-controller",
-      "loc": 506,
+      "loc": 513,
       "state": [],
       "publishes": [
         "REFRESH_CTRL"
@@ -625,7 +626,7 @@
     "domain/release-view.js": {
       "layer": "domain",
       "domain": "domain/release-view",
-      "loc": 436,
+      "loc": 440,
       "state": [],
       "publishes": [],
       "budgetNote": "v3.24.0 (#69 строка 28, ⚖ владелец) — осознанный +6: родители состава релиза по настройке cascadeParentLinkInward (фразовый матчер, парити с backlog-loader._parentRaw). #57-1 — +2: прокидка onRemoveIssue + лейбл removeIssue. #57-3 — +2: прокидка onRollbackPreview + лейбл rollbackStates. #48 R4-ревью владельца: +1 — patchNote в live-VM (патчноут виден и на планируемой карточке). R4: +92 — экспорт .txt (US-R4-01: buildExportText pure-golden + _downloadTxt Blob-канон диаг-лога + exportRelease/_findRelease по активным+архиву) + архив (US-R4-02: _loadArchive lazy-GET, archive-срез в history-VM, archivedCount из GET) + share-гейт (US-R4-03: canShareRelease × _RELEASE_EXT_SHARE=false до YT 2026.1 — host.navigation НЕ признак, он есть в 2025.x) + _histRow извлечён (общая строка история/архив; + patchNote/notes полировка). R3.2 дерево: +61 — fetchIssueData links(Subtask INWARD)+_cfType; _treeRows → RELEASE_TREE_PURE; tree в обоих VM; слепок замораживает parentId+type (additive). R3.1 светофор: +26 нетто — computeZone/_anchorState/_countZones + readiness live+слепок; −14 снос _fetchTitles. R2.4: +4 — VM гейтит контролы серверными правами. R2.3: +42 — fetchIssueData (КАНОНИЧЕСКОЕ v.name — localizedName давал ложный рассинхрон). R2.2 база = 204. R2.1: +1. R1.5b/c: +80. R1.5 база = 121."
@@ -633,7 +634,7 @@
     "domain/reporting-view.js": {
       "layer": "domain",
       "domain": "domain/reporting-view",
-      "loc": 1404,
+      "loc": 1425,
       "state": [],
       "publishes": [
         "REPORTING_VIEW"
@@ -685,7 +686,7 @@
     "domain/sprint-controller.js": {
       "layer": "domain",
       "domain": "domain/sprint-controller",
-      "loc": 593,
+      "loc": 628,
       "state": [
         "api"
       ],
@@ -697,13 +698,14 @@
     "domain/sprint-store.js": {
       "layer": "domain",
       "domain": "domain/sprint-store",
-      "loc": 65,
+      "loc": 73,
       "state": [
         "_baseRevHash",
         "_serverSnapshotCurrentRoleGantt",
         "_serverSnapshotCurrentRolePP",
         "_serverSnapshotRoleItems",
         "_serverSnapshotSprint",
+        "_slotBases",
         "_slotRev",
         "_slotRevs"
       ],
@@ -768,7 +770,7 @@
     "i18n/i18n-controller.js": {
       "layer": "i18n",
       "domain": "i18n-i18n-controller",
-      "loc": 148,
+      "loc": 162,
       "state": [
         "api"
       ],
@@ -1032,7 +1034,7 @@
     "pure/refresh-merge-pure.js": {
       "layer": "pure",
       "domain": "pure/refresh-merge-pure",
-      "loc": 81,
+      "loc": 107,
       "state": [
         "_api"
       ],
@@ -1139,6 +1141,19 @@
       ],
       "publishes": [
         "SHARE_URL_PURE"
+      ]
+    },
+    "pure/slot-merge-pure.js": {
+      "layer": "pure",
+      "domain": "pure/slot-merge-pure",
+      "loc": 143,
+      "state": [
+        "ID_FIELDS",
+        "STAMP_KEYS",
+        "api"
+      ],
+      "publishes": [
+        "SLOT_MERGE_PURE"
       ]
     },
     "pure/sort-pure.js": {

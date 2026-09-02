@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.33.0",
+  "version": "3.34.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.32.0</b><br><br>🎨 <b>State color catches up</b> — “Refresh from issues” pulled a state's color only together with a change of the state itself; a project that colored its State field values after sprint composition was built kept gray chips and Gantt bars forever. Color is now compared by value and pulled on any difference — with no phantom “changes” reported when nothing differs.<br><br>🌐 <b>Reports re-render on language switch</b> — switching the app language now rebuilds report labels from the dictionary and re-renders open report contours from already-loaded data, without re-running the report.<br><br>✍️ <b>Last hardcoded strings localized</b> — eight user-facing strings lived outside the i18n dictionary: the widget-registration banner, the “(h)” unit in XLSX export headers, calendar arrow labels for screen readers, the zombie-value hint in sprint/release selectors, and the Gantt fallback error text. All are now translated into 15 locales.",
+  "changeNotes": "<b>What's new since v3.33.0</b><br><br>\ud83e\udd1d <b>Concurrent edits now merge instead of failing</b> \u2014 when two people saved at the same time, the second was told to reload the page and re-enter the work. The app now re-reads the data and replays your edits on top of the fresh version whenever the two of you touched different places: the save goes through, your colleague's work survives, and nothing interrupts you. A refusal is left only for a genuine overlap \u2014 the same value changed by both \u2014 where your edit is rolled back honestly instead of quietly disappearing.",
   "widgets": [
     {
       "key": "ssp-main",

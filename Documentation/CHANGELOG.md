@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.34.0] — 2026-09-02
+
+> **Concurrent edits merge instead of failing (#84).** A write conflict is no longer a dead end: the app re-reads the data and replays your edits on top of the fresh version when the two of you touched different places. A refusal is left only for a genuine overlap. The data schema is unchanged.
+
+### Changed
+
+- **"Reload the page and save again" is no longer the only answer to a conflict.** Previously, if a colleague saved before you, your write was rejected outright — even when the two of you had edited completely different sprints, roles or issues. The app now re-reads the data from the server, replays your edit on top of the fresh version and saves it: your work lands, your colleague's work survives, and nothing happens on your screen. Merging is record-aware — one history sprint is distinguished from another by its id, one issue from another, one assignee from another — so only a change to the very same value counts as an overlap.
+- **A genuine overlap still refuses, exactly as before.** If both of you changed the same value, the save is rejected, the local edit is rolled back to what the server actually holds, and further edits are frozen until reload — with an explanation and disabled fields, the behaviour introduced in 3.31.0.
+- Merging covers sprint composition, sprint history, releases and the absence register.
+
+---
+
 ## [3.33.0] — 2026-08-31
 
 > **Fix pack: backdated state colors + localization all the way down.** Three backlog defects. No new features; the data schema is unchanged.

@@ -86,6 +86,7 @@ const BRIDGE_SCRIPTS = [
   'intro-view.js',
   'capacity-view.js',
   'sprint-store.js',
+  'slot-merge-pure.js',   /* #84 — трёхстороннее слияние слота на 409 */
   'capacity-store.js',   /* R6 — стор ёмкости (ADR-001) */
 ];
 

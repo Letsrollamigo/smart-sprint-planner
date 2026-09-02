@@ -56,6 +56,46 @@ function _backendCall(path, baseOpts, deps) {
    путём ниже. Числовой rev живёт в sprint-store (map slot→rev, сброс на смене проекта). */
 const REV_SLOT_PATHS = { history: 1, releases: 1, absences: 1 };
 
+/* #84 — слоты, где 409 лечится перечитыванием и слиянием, и поля тела, которые в
+   слиянии участвуют. Имена совпадают с полями ответа GET того же слота, поэтому
+   одна таблица обслуживает и снятие базы, и сборку повторного тела.
+   `settings` в sprint-data не участвует осознанно: слот rev'ом не гейтится. */
+const MERGE_SLOTS = {
+  'sprint-data': ['sprint', 'roleItems'],
+  'history':     ['history'],
+  'releases':    ['releases'],
+  'absences':    ['absences']
+};
+
+/* #84 — куда положить слитое В ПАМЯТЬ вкладки: поле слота → сеттер стейта. Без
+   досылки в памяти осталось бы «моё» без чужих правок, и следующая обычная запись
+   ушла бы с валидным rev, но устаревшим содержимым — молча затёрла бы чужое (класс
+   v2.16.6). Отсутствие сеттера = слияние не пробуем вовсе (см. _mergeRetry). */
+const MERGE_SETTERS = {
+  sprint:   'setSprint',   roleItems: 'setRoleItems', history: 'setHistory',
+  releases: 'setReleases', absences:  'setAbsences'
+};
+
+function _cloneJson(v) {
+  if (v === undefined) return undefined;
+  try { return JSON.parse(JSON.stringify(v)); } catch (_) { return undefined; }
+}
+
+/* Слепок полей слоя слияния из ответа (GET) или из тела (POST). */
+function _pickMergeFields(src, fields) {
+  var out = {};
+  for (var i = 0; i < fields.length; i++) {
+    if (src && src[fields[i]] !== undefined) out[fields[i]] = _cloneJson(src[fields[i]]);
+  }
+  return out;
+}
+
+/* rev слота из ответа GET: у sprint-data он живёт внутри блоба спринта, у прочих — полем. */
+function _revOfGet(path, r) {
+  if (path === 'sprint-data') return (r && r.sprint && typeof r.sprint._rev === 'number') ? r.sprint._rev : 0;
+  return (r && typeof r.rev === 'number') ? r.rev : 0;
+}
+
 /* #97 — дедлайн ЧТЕНИЯ. Зависший (не упавший) ответ раньше держал цепочку загрузки
    проекта вечно: шапка уже на новом проекте, тело — от прежнего, и ничто не выводило
    из этого состояния. Гонку выигрывает таймер → цепочка падает в catch, вызывающий
@@ -111,12 +151,100 @@ function apiGet(path, deps, _isRetry) {
           && typeof deps.state.setSlotRevFor === 'function') {
         deps.state.setSlotRevFor(path, r.rev);
       }
+      /* #84 — вместе с rev снимаем базу трёхстороннего слияния: каким слот был,
+         когда вкладка получила этот rev. Пара rev+база обязана двигаться синхронно —
+         иначе на 409 мы сравнивали бы «своё» с базой другой ревизии. */
+      if (MERGE_SLOTS[path] && r && r.success !== false
+          && typeof deps.state.setSlotBase === 'function') {
+        deps.state.setSlotBase(path, _pickMergeFields(r, MERGE_SLOTS[path]));
+      }
       return r;
     })
     .catch(function (e) { deps.diag('ERR ' + path + ': ' + (e && e.message ? e.message : e), 'err'); throw e; });
 }
 
-function apiPost(path, body, query, deps) {
+/* #100 — отказ оптимистичной блокировки: сервер запись не принял, а локальный стейт
+   вызывающий уже мутировал. Метка «разошлись с сервером» замораживает правки до
+   перезагрузки (прод-баг: после тоста человек сделал ещё три назначения, и все
+   потерялись). Метка живёт в DOM, поэтому reload её снимает, а module-level стейта
+   не прибавляется (гейт C1). Вынесено из apiPost в #84: точек отказа стало две —
+   слот вообще не сливается и слияние упёрлось в пересечение. */
+function _revConflictRefuse(path, deps) {
+  try { document.body.dataset.sspRevConflict = '1'; } catch (_) {}
+  if (typeof deps.toast === 'function') {
+    /* R6 — у слотов history/releases/absences своя формулировка («данные», не «спринт»). */
+    deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
+  }
+}
+
+/* #84 — «перечитать-и-слить вместо „обновите страницу"». 409 означает: слот сдвинулся
+   с тех пор, как эта вкладка его читала. Перечитываем слот, трёхсторонне сливаем
+   (база — слепок на момент нашего baseRev) и переписываем поверх свежего. Правки в
+   разных местах сливаются молча; правка одного и того же места разными значениями
+   остаётся честным отказом #100 (⚖ владелец 2026-09-02).
+
+   🔴 Порядок «сперва досылка слитого в память, только потом доверие к rev» —
+   несущий. Валидный rev при устаревшем содержимом пропустил бы следующую обычную
+   запись через замок, и она затёрла бы чужое молча (класс v2.16.6, ровно то, от
+   чего стоит замок). Поэтому merge-запись доводится до конца ТОЛЬКО когда слитое
+   легло в память вкладки (MERGE_SETTERS): нет сеттера — слияние не пробуем вовсе и
+   отдаём прежний отказ. Экран при этом НЕ перерисовываем (⚖ владелец: сливаем
+   молча) — память = сервер, а таблицы подхватят её на ближайшей перерисовке.
+
+   Перечитываем сырым _backendCall, а не apiGet: apiGet синкает rev и базу побочным
+   эффектом, то есть двигал бы их ДО того, как слияние удалось.
+
+   Возвращает промис повторной записи либо null, если слить нечем (тогда наверху
+   отрабатывает прежний отказ). Потолок: одна попытка слияния на запрос — второй
+   конфликт в том же окне уходит в отказ. */
+function _mergeRetry(path, body, query, deps) {
+  var fields = MERGE_SLOTS[path];
+  /* ?action=… — записи с иной семантикой тела: validate/assignerSync/snapshot шлют
+     не весь слот, clear/import-replace деструктивны осознанно. Их не сливаем. */
+  if (!fields || (query && query.action) || !body || typeof body !== 'object') return null;
+  var MERGE = (typeof window !== 'undefined' && window.__SSP_SLOT_MERGE_PURE) || null;
+  if (!MERGE || typeof deps.state.getSlotBase !== 'function') return null;
+  var base = deps.state.getSlotBase(path);
+  if (!base) return null;
+  var touched = fields.filter(function (f) { return body[f] !== undefined && base[f] !== undefined; });
+  if (!touched.length) return null;
+  /* Fail-closed: слить и не суметь положить результат в память = та самая дыра
+     «валидный rev при устаревшем содержимом». Лучше прежний честный отказ. */
+  if (!touched.every(function (f) { return typeof deps.state[MERGE_SETTERS[f]] === 'function'; })) return null;
+
+  /* #97 — перечитывание идёт под тем же дедлайном чтения, что и обычный GET:
+     зависший (не упавший) ответ иначе держал бы сохранение вечно. */
+  return _withDeadline(_backendCall(path, {}, deps), path, deps).then(function (fresh) {
+    if (!fresh || fresh.success === false) { _revConflictRefuse(path, deps); throw new Error('rev_conflict'); }
+    var merged = {};
+    for (var i = 0; i < touched.length; i++) {
+      var f = touched[i];
+      var res = MERGE.merge(base[f], body[f], fresh[f]);
+      if (!res.ok) {
+        deps.diag('#84 ' + path + ': слить не вышло, правки пересеклись — '
+          + res.conflicts.slice(0, 5).join(', '), 'warn');
+        _revConflictRefuse(path, deps);
+        throw new Error('rev_conflict');
+      }
+      merged[f] = res.result;
+    }
+    var retryBody = {};
+    Object.keys(body).forEach(function (k) { if (k !== 'baseRev') retryBody[k] = body[k]; });
+    Object.keys(merged).forEach(function (k) { retryBody[k] = merged[k]; });
+    retryBody.baseRev = _revOfGet(path, fresh);
+    deps.diag('#84 ' + path + ': конфликт слит, пишем поверх свежего (rev ' + retryBody.baseRev + ')', 'ok');
+    return apiPost(path, retryBody, query, deps, true).then(function (ok) {
+      /* Сервер принял слитое → кладём его же в память вкладки. С этого момента
+         память = сервер, поэтому rev и база, засинканные хвостом apiPost выше,
+         честны, и следующая обычная запись пройдёт замок заслуженно. */
+      Object.keys(merged).forEach(function (f) { deps.state[MERGE_SETTERS[f]](merged[f]); });
+      deps.diag('#84 ' + path + ': слитое дослано в память вкладки (' + Object.keys(merged).join(',') + ')', 'ok');
+      return ok;
+    });
+  });
+}
+
+function apiPost(path, body, query, deps, _isRetry) {
   deps.diag('POST ' + path + ' [' + deps.state.getMode() + ']');
   /* #56-4 — optimistic lock: к каждому write sprint-data прикладываем rev слота,
      который этот клиент видел. Сервер отвергает несовпадение (409 rev_conflict) —
@@ -144,18 +272,13 @@ function apiPost(path, body, query, deps) {
       if (r && r.success === false) {
         var reason = (r && (r.reason || r.error)) || 'unknown_error';
         deps.diag('ERR ' + path + ': server returned success=false reason=' + reason, 'err');
-        /* #56-4 — конкурентная правка: понятный тост вместо генерик-ошибки. */
+        /* #56-4 — конкурентная правка. #84 — сперва пробуем перечитать-и-слить;
+           отказ (#100: метка заморозки + тост) остаётся для случаев, когда слить
+           нечем — слот не мержится, базы нет или правки пересеклись. */
         if (reason === 'rev_conflict') {
-          /* #100 — сервер отверг запись, а локальный стейт вызывающий уже мутировал.
-             Ставим метку «разошлись с сервером»: правки замораживаются до перезагрузки
-             страницы (прод-баг — пользователь после тоста сделал ещё три назначения, и
-             все они потерялись). Метка живёт в DOM, поэтому reload её и снимает, а
-             module-level стейта не прибавляется (гейт C1). */
-          try { document.body.dataset.sspRevConflict = '1'; } catch (_) {}
-          if (typeof deps.toast === 'function') {
-            /* R6 — у слотов history/releases/absences своя формулировка («данные», не «спринт»). */
-            deps.toast(deps.T(REV_SLOT_PATHS[path] ? 'errSlotRevConflict' : 'errRevConflict'), 'err');
-          }
+          var mergeP = _isRetry ? null : _mergeRetry(path, body, query, deps);
+          if (mergeP) return mergeP;
+          _revConflictRefuse(path, deps);
         }
         /* #80 — планер выключили, пока пользователь работал: понятный тост вместо кода
            причины; отказ уже не дал пометить сохранённым — черновик/dirty целы (риск 5). */
@@ -165,7 +288,9 @@ function apiPost(path, body, query, deps) {
         throw new Error(reason);
       }
       deps.diag('OK ' + path, 'ok');
-      /* #56-4 — успешный write sprint: сервер вернул новый rev слота. */
+      /* #56-4 — успешный write sprint: сервер вернул новый rev слота. На merge-повторе
+         синк тоже честен: _mergeRetry сразу за этим кладёт слитое в память вкладки,
+         так что rev и содержимое остаются одной версией (см. коммент у _mergeRetry). */
       if (path === 'sprint-data' && r && typeof r.rev === 'number'
           && typeof deps.state.setSlotRev === 'function') {
         deps.state.setSlotRev(r.rev);
@@ -174,6 +299,19 @@ function apiPost(path, body, query, deps) {
       if (REV_SLOT_PATHS[path] && r && typeof r.rev === 'number'
           && typeof deps.state.setSlotRevFor === 'function') {
         deps.state.setSlotRevFor(path, r.rev);
+      }
+      /* #84 — база слияния после обычной записи = то, что мы записали. Иначе первый же
+         409 сравнивался бы с базой старше собственных сохранений и выдавал наши же
+         правки за чужие. ?action=… пропускаем: там тело — не весь слот. */
+      if (MERGE_SLOTS[path] && !(query && query.action)
+          && body && typeof body === 'object'
+          && typeof deps.state.setSlotBase === 'function') {
+        var prevBase = deps.state.getSlotBase(path) || {};
+        var nextBase = _pickMergeFields(body, MERGE_SLOTS[path]);
+        MERGE_SLOTS[path].forEach(function (f) {
+          if (nextBase[f] === undefined && prevBase[f] !== undefined) nextBase[f] = prevBase[f];
+        });
+        deps.state.setSlotBase(path, nextBase);
       }
       /* v5.0.3 — после успешного сохранения снять dirty + обновить snapshot/baseRevHash */
       try {

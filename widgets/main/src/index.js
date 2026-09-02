@@ -77,6 +77,7 @@ import './domain/backlog-assign.js';
 import './domain/intro-view.js';
 import './domain/capacity-view.js';
 import './domain/sprint-store.js';
+import './pure/slot-merge-pure.js';   /* #84 — трёхстороннее слияние слота на 409 */
 import './domain/release-store.js';
 import './domain/capacity-store.js';   /* R6 — стор ёмкости (ADR-001) */
 import './domain/release-view.js';

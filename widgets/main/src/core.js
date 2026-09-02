@@ -793,7 +793,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.33.0';
+  var APP_VERSION = '3.34.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1635,6 +1635,15 @@
         setSlotRev: function (v) { SPRINT_STORE.setSlotRev(v); },
         getSlotRevFor: function (slot) { return SPRINT_STORE.getSlotRevFor(slot); },   /* R6 — history/releases/absences */
         setSlotRevFor: function (slot, v) { SPRINT_STORE.setSlotRevFor(slot, v); },
+        getSlotBase: function (slot) { return SPRINT_STORE.getSlotBase(slot); },        /* #84 — база слияния на 409 */
+        setSlotBase: function (slot, v) { SPRINT_STORE.setSlotBase(slot, v); },
+        /* #84 — досылка слитого в память вкладки после merge-записи (иначе в памяти
+           осталось бы «моё» без чужих правок, и следующая запись их бы затёрла). */
+        setSprint: function (v) { _sprint = v; },
+        setRoleItems: function (v) { _roleItems = v; },
+        setHistory: function (v) { _history = v; },
+        setReleases: function (v) { RELEASE_STORE.setReleases(v); },
+        setAbsences: function (v) { CAPACITY_STORE.setAbsences(v); },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         getActiveSubtab: function () { return _activeSubtab; },
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
