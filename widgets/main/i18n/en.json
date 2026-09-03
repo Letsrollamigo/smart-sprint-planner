@@ -1347,5 +1347,14 @@
   "ganttVmError": "Failed to build the Gantt chart",
   "repA11Easter": "The answer to the ultimate question of life, the universe, and planning.",
   "toastParrotMode": "Measured in parrots 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Sprint field",
+  "lblSprintFieldByRole": "Sprint by role",
+  "lblSprintWrite": "Write the sprint into YouTrack issues",
+  "descSprintWrite": "When on, confirming a role composition sets the chosen sprint value on each issue. The value is only set — it is never cleared.",
+  "sprintWriteMultiValue": "Field \"{field}\" accepts multiple values — the planner will not write to it. Pick a single-value sprint field.",
+  "sprintWriteResult": "Sprint \"{value}\" → field \"{field}\": {written} written, {errors} errors",
+  "navDanger": "Danger zone",
+  "cardDanger": "Danger zone",
+  "hintPlannerDisable": "Disabling removes the project from the planner's project picker for regular users and stops serving it from the main menu. Planner data is kept. A project configurator or an administrator can enable it again — here, or on the planner tab in the YouTrack project settings."
 }

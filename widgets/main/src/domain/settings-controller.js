@@ -33,10 +33,15 @@
   /** Категоризация полей проекта (_projectFields) по типам YouTrack. */
   function _buildFieldsByType(deps) {
     var projectFields = deps.state.getProjectFields();
-    function ofTypes(allowed) {
+    var SF = (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null;
+    function ofTypes(allowed, singleOnly) {
       var out = [];
       (projectFields || []).forEach(function (f) {
         var ty = (f.type || '').toLowerCase();
+        /* #88 — поле спринта планер ПИШЕТ в задачу, а присваивание многозначному полю
+           заменило бы весь список: такие поля в подбор не отдаём (⚖ владелец 2026-09-03).
+           Кратность приходит прямо в типе — enum[1] против version[*]. */
+        if (singleOnly && SF && !SF.isSingleValueType(ty)) return;
         if (allowed.some(function (at) { return ty.indexOf((at || '').toLowerCase()) >= 0; })) out.push(f.name);
       });
       return out;
@@ -47,7 +52,7 @@
       state:            ofTypes(['state', 'enum']),
       system:           ofTypes(['enum', 'owned']),
       externalTicketId: ofTypes(['string']),
-      sprint:           ofTypes(['enum']),
+      sprint:           ofTypes(['enum'], /* singleOnly */ true),
       version:          ofTypes(['version', 'build']),
       period:           ofTypes(['period']),
       user:             ofTypes(['user']),
@@ -157,6 +162,12 @@
          (живёт в app-настройках проекта, не в whitelist настроек плагина). */
       settingsManagerGroupName: (opts && opts.settingsManagerGroupName) || '',
       onClose:            onCloseFn,
+      /* #80 — «Отключить/включить планер в этом проекте» из секции «Опасная зона» формы.
+         Ядро отдаёт колбэк только при наличии wiring (project-nav); в global-режиме
+         он же закрывает модалку настроек перед экраном «отключён». */
+      onPlannerToggle:    (typeof deps.togglePlannerDisabled === 'function')
+        ? function (disable) { return deps.togglePlannerDisabled(!!disable, onCloseFn); }
+        : undefined,
     };
   }
 

@@ -1348,5 +1348,14 @@
   "ganttVmError": "Nepodařilo se sestavit Ganttův diagram",
   "repA11Easter": "Odpověď na základní otázku života, vesmíru a plánování.",
   "toastParrotMode": "Měřeno v papoušcích 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Pole sprintu",
+  "lblSprintFieldByRole": "Sprint podle role",
+  "lblSprintWrite": "Zapisovat sprint do úkolů YouTrack",
+  "descSprintWrite": "Když je zapnuto, potvrzení složení role zapíše zvolenou hodnotu sprintu do úkolu. Hodnota se pouze nastavuje, nikdy nemaže.",
+  "sprintWriteMultiValue": "Pole „{field}\" přijímá více hodnot — plánovač do něj nezapisuje. Vyberte jednohodnotové pole sprintu.",
+  "sprintWriteResult": "Sprint „{value}\" → pole „{field}\": zapsáno {written}, chyb {errors}",
+  "navDanger": "Nebezpečná zóna",
+  "cardDanger": "Nebezpečná zóna",
+  "hintPlannerDisable": "Vypnutí odstraní projekt z výběru projektů plánovače pro běžné uživatele a zastaví obsluhu z hlavní nabídky. Data plánovače zůstávají zachována. Konfigurátor projektu nebo správce jej může znovu zapnout — zde nebo na kartě plánovače v nastavení projektu YouTrack."
 }

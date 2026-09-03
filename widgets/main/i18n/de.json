@@ -1348,5 +1348,14 @@
   "ganttVmError": "Gantt-Diagramm konnte nicht erstellt werden",
   "repA11Easter": "Die Antwort auf die endgültige Frage nach dem Leben, dem Universum und der Planung.",
   "toastParrotMode": "Gemessen in Papageien 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Sprint-Feld",
+  "lblSprintFieldByRole": "Sprint je Rolle",
+  "lblSprintWrite": "Sprint in YouTrack-Vorgänge schreiben",
+  "descSprintWrite": "Wenn aktiv, setzt der Planer beim Bestätigen der Rollenzusammensetzung den gewählten Sprint-Wert im Vorgang. Der Wert wird nur gesetzt, nie gelöscht.",
+  "sprintWriteMultiValue": "Das Feld „{field}\" erlaubt mehrere Werte — der Planer schreibt nicht hinein. Wähle ein einwertiges Sprint-Feld.",
+  "sprintWriteResult": "Sprint „{value}\" → Feld „{field}\": {written} geschrieben, {errors} Fehler",
+  "navDanger": "Gefahrenzone",
+  "cardDanger": "Gefahrenzone",
+  "hintPlannerDisable": "Das Deaktivieren entfernt das Projekt für normale Nutzer aus der Projektauswahl des Planers und stoppt die Bedienung über das Hauptmenü. Die Planer-Daten bleiben erhalten. Ein Projekt-Konfigurator oder Administrator kann es wieder aktivieren — hier oder auf der Planer-Registerkarte in den YouTrack-Projekteinstellungen."
 }

@@ -19,6 +19,91 @@
    раньше — порядок регистрации сохранён (install-once паттерн мостов E3). */
 'use strict';
 
+/* ═══ #88 — запись значения спринта в САМИ задачи YouTrack ════════════════════
+   Момент записи — согласование состава роли (⚖ владелец 2026-09-03), а не каждое
+   добавление задачи: черновиковая возня (добавили → убрали → добавили) не должна
+   править боевые задачи и будить правила/уведомления YouTrack пачками.
+   Снятие значения НЕ делаем никогда: его могли поставить руками до нас, и стирание
+   было бы ожогом #102 наизнанку. Канал под своим выключателем sprintWriteEnabled
+   (default OFF) — новый путь записи в боевые задачи включается осознанно.
+   Частичный успех сохраняется, отчёт позадачный (модель release-controller
+   _applyStates): молчаливый отказ на боевых задачах недопустим. */
+var SPRINT_WRITE_CHUNK = 25;
+
+/* Мост читаем в момент вызова — порядок импорта бандла не гарантирует публикацию. */
+function _sfPure() { return (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null; }
+
+/* Последовательные чанки: внутри чанка параллельно, между чанками цепочкой —
+   спринт на сотни задач не выстреливает сотни конкурентных запросов. */
+function _writeChunked(plan, jobFn) {
+  var results = [];
+  var p = Promise.resolve();
+  for (var i = 0; i < plan.length; i += SPRINT_WRITE_CHUNK) {
+    (function (chunk) {
+      p = p.then(function () {
+        return Promise.all(chunk.map(jobFn)).then(function (rs) { results.push.apply(results, rs); });
+      });
+    })(plan.slice(i, i + SPRINT_WRITE_CHUNK));
+  }
+  return p.then(function () { return results; });
+}
+
+/* Возвращает Promise<{written,failed}|null>. null — писать было нечего (выключено,
+   поле не настроено, значение не выбрано, нет активных задач): штатный тихий исход. */
+function writeSprintFieldToIssues(rk, role, deps) {
+  var SF = _sfPure();
+  var settings = deps.state.getSettings() || {};
+  if (!SF || !settings.sprintWriteEnabled) return Promise.resolve(null);
+
+  /* Пишем ТОЛЬКО если состав роли действительно подтверждён. saveRoleHistorySnapshot
+     в двух ветках отдаёт resolved-промис, НЕ сохранив снимок: модалка конфликта рабочей
+     копии ждёт решения человека, и buildRoleSnap может вернуть пусто. Без этой проверки
+     задачи получили бы метку спринта под состав, которого на сервере нет, — тот же
+     рассинхрон «экран говорит одно, сервер знает другое», что и #100. */
+  var sprint = deps.state.getSprint();
+  var sid = (sprint && sprint.sprintId) ? sprint.sprintId + '_' + rk : null;
+  var rec = sid && (deps.state.getHistory() || []).filter(function (h) { return h && h.sprintId === sid; })[0];
+  if (!rec || rec.status !== deps.STATUS.CONFIRMED) return Promise.resolve(null);
+
+  var fieldName = SF.fieldNameFor(settings, role);
+  var value     = SF.valueFor(sprint, rk, settings, role);
+  if (!fieldName || !value) return Promise.resolve(null);
+
+  /* Страховка от многозначного поля (⚖ владелец 2026-09-03): присваивание заменило бы
+     весь список спринтов задачи. Подбор в настройках такие поля уже не предлагает —
+     здесь ловим настройку, сохранённую до 3.35.0. Молча не пропускаем: говорим почему. */
+  var pf = (deps.state.getProjectFields && deps.state.getProjectFields()) || [];
+  for (var q = 0; q < pf.length; q++) {
+    if (pf[q] && pf[q].name === fieldName && !SF.isSingleValueType(pf[q].type)) {
+      deps.toast(deps.T('sprintWriteMultiValue').replace('{field}', fieldName), 'warn');
+      return Promise.resolve(null);
+    }
+  }
+
+  var plan = SF.writePlan(deps.getRoleItemsArr(rk), deps.ACTIVE_INC, fieldName, value);
+  if (!plan.length) return Promise.resolve(null);
+
+  return _writeChunked(plan, function (row) {
+    return deps.apiPost('update-issue-field',
+        { issueId: row.issueId, fieldName: row.fieldName, value: row.value, type: 'enum' })
+      .then(function (r) {
+        return { id: row.issueId, ok: !!(r && r.success), error: (r && (r.message || r.error)) || 'write_failed' };
+      })
+      .catch(function (e) { return { id: row.issueId, ok: false, error: String((e && e.message) || e) }; });
+  }).then(function (results) {
+    var written = [], failed = [];
+    results.forEach(function (r) { if (r.ok) written.push(r.id); else failed.push(r); });
+    var T = deps.T;
+    deps.toast(T('sprintWriteResult').replace('{field}', fieldName).replace('{value}', value)
+      .replace('{written}', String(written.length)).replace('{errors}', String(failed.length)),
+      failed.length ? 'warn' : 'success');
+    if (failed.length) {
+      deps.diag('#88 sprint field write failed: ' + failed.map(function (f) { return f.id + '=' + f.error; }).join(', '), 'err');
+    }
+    return { written: written, failed: failed };
+  });
+}
+
 function doValidateRole(rk, deps) {
   var T = deps.T, toast = deps.toast, diag = deps.diag;
   if (!deps.state.getSettings()) { toast(T('toastFillSettings')); return Promise.resolve(); }
@@ -76,6 +161,9 @@ function doValidateRole(rk, deps) {
           var newBtn = document.getElementById('newSprintBtn_'+rk);
           if (newBtn) newBtn.style.display = '';
           toast(T('toastSprintConfirmed').replace('{role}', deps.roleLabel(role)), 'success');
+          /* #88 — состав роли утверждён: только теперь отражаем спринт в самих задачах.
+             Отказ записи не отменяет подтверждение — состав уже сохранён. */
+          return writeSprintFieldToIssues(rk, role, deps);
         }).catch(function(e) {
           toast(T('toastSaveError')+': '+(e&&e.message?e.message:String(e)), 'error');
         });
@@ -253,6 +341,7 @@ function install(depsFactory) {
 
 const api = {
   doValidateRole: doValidateRole,
+  writeSprintFieldToIssues: writeSprintFieldToIssues,   /* #88 — голден-вход */
   updateAllocOverlimitUI: updateAllocOverlimitUI,
   maybeShowAllocatedLockHint: maybeShowAllocatedLockHint,
   install: install,

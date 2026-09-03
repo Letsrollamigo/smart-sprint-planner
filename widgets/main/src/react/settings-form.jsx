@@ -63,6 +63,8 @@ function SettingsForm(props) {
         est: (initial[r.fieldEst] || ''),
         fact: (initial[r.fieldFact] || ''),
         user: (initial[r.userField] || ''),
+        /* #88 — своё поле «Спринт» у роли; пусто = общее fieldSprint. */
+        sprint: (initial[r.sprintField] || ''),
       };
     });
     return o;
@@ -84,6 +86,8 @@ function SettingsForm(props) {
          настроек один раз: пересохранение не должно насильно включать авто-перенос суммы. */
       legacyHybrid: PM.isLegacyHybrid(initial),
       dynEditEnabled: !!initial.dynEditEnabled,
+      /* #88 — запись спринта в задачу YouTrack; ключа нет у старых установок → OFF. */
+      sprintWriteEnabled: !!initial.sprintWriteEnabled,
       allowOverlimitPlanning: !!initial.allowOverlimitPlanning,
       /* #40 — авто-прогноз дат (кнопка + очередь на уровне «Люди»); планировочный тир. */
       autoForecastEnabled: !!initial.autoForecastEnabled,
@@ -346,6 +350,7 @@ function SettingsForm(props) {
 
     data.activeRoles = activeRoles.slice();
     data.dynEditEnabled = modes.dynEditEnabled;
+    data.sprintWriteEnabled = modes.sprintWriteEnabled;
     /* v2.14.0 — planningModel = источник правды; legacy-флаги пишутся derived-зеркалом
        (расчёты/super-light читают их). PLANNING_MODEL_SHIM — derived-блок снять, когда
        расчёты переведут на planningModel (см. PLANNING_MODEL_DROPDOWN_SPEC §10). */
@@ -577,6 +582,7 @@ function SettingsForm(props) {
       data[r.fieldEst] = rf.est || null;
       data[r.fieldFact] = rf.fact || null;
       data[r.userField] = rf.user || null;
+      data[r.sprintField] = rf.sprint || null;
     });
 
     return data; // savedAt проставит легаси-колбэк onSave.
@@ -591,6 +597,7 @@ function SettingsForm(props) {
       o[r.fieldEst] = rf.est || '';
       o[r.fieldFact] = rf.fact || '';
       o[r.userField] = rf.user || '';
+      o[r.sprintField] = rf.sprint || '';
     });
     return o;
   }, [fields, roleFields, roles]);
@@ -640,6 +647,7 @@ function SettingsForm(props) {
                 <th scope="col">{t('thRoleFieldEst')}</th>
                 <th scope="col">{t('thRoleFieldFact')}</th>
                 <th scope="col">{t('thRoleFieldUser')}</th>
+                <th scope="col">{t('thRoleFieldSprint')}</th>
               </tr>
             </thead>
             <tbody>
@@ -656,6 +664,7 @@ function SettingsForm(props) {
                     <td>{cell('est', fieldsByType.period)}</td>
                     <td>{cell('fact', fieldsByType.period)}</td>
                     <td>{cell('user', fieldsByType.user)}</td>
+                    <td>{cell('sprint', fieldsByType.sprint)}</td>
                   </tr>
                 );
               })}
@@ -750,6 +759,11 @@ function SettingsForm(props) {
       node: (
         <React.Fragment>
           <RoleCheck on={modes.dynEditEnabled} label={t('lblDynEdit')} hint={t('descDynEdit')} tooltip={t('tooltipDynEdit')} onToggle={() => toggleMode('dynEditEnabled')} />
+          {/* #88 — запись значения спринта в саму задачу при согласовании состава роли.
+              Default OFF: канал правит боевые задачи, включается осознанно. */}
+          <div style={{ marginTop: '12px' }}>
+            <RoleCheck on={modes.sprintWriteEnabled} label={t('lblSprintWrite')} hint={t('descSprintWrite')} onToggle={() => toggleMode('sprintWriteEnabled')} />
+          </div>
           <div style={{ marginTop: '12px' }}>
             <RoleCheck on={modes.allowOverlimitPlanning} label={t('lblAllowOverlimit')} hint={t('descAllowOverlimit')} onToggle={() => toggleMode('allowOverlimitPlanning')} />
           </div>
@@ -968,12 +982,33 @@ function SettingsForm(props) {
         />
       ),
     },
+    {
+      /* #80/#88 — «Опасная зона»: «Отключить планер в этом проекте» переехала сюда из сайдбара
+         (⚖ владелец 2026-09-03: в рабочей области один промах — и проект пропал у всех).
+         Admin-тир, последний пункт; сама кнопка — действие, не поле формы: ничего не
+         собирает в collect(), зовёт колбэк, который открывает Ring-confirm и пишет флаг
+         единственным писателем (эндпоинт planner-disabled). В global-режиме модалка
+         настроек закрывается перед экраном «отключён»; в project-режиме страница
+         перерисовывается. Секция отсутствует, если ядро колбэк не дало (голдены без wiring). */
+      id: 'danger', title: t('cardDanger'), nav: t('navDanger'),
+      hidden: typeof props.onPlannerToggle !== 'function',
+      node: (
+        <React.Fragment>
+          <p className="hint" style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 12px', maxWidth: '560px' }}>{t('hintPlannerDisable')}</p>
+          <button
+            type="button" className={_btnCls('secondary')}
+            style={initial.plannerDisabled === true ? undefined : { background: 'transparent', borderColor: 'var(--warn)', color: 'var(--warn)' }}
+            onClick={() => props.onPlannerToggle(initial.plannerDisabled !== true)}
+          >{t(initial.plannerDisabled === true ? 'btnPlannerEnable' : 'btnPlannerDisable')}</button>
+        </React.Fragment>
+      ),
+    },
   ];
 
   /* #22 — фильтр nav по тиру: не-админ (canEditWorkflow=false) не видит admin-секции. */
-  const visibleSections = canEditWorkflow
+  const visibleSections = (canEditWorkflow
     ? SECTIONS
-    : SECTIONS.filter((s) => !ADMIN_SECTION_IDS[s.id]);
+    : SECTIONS.filter((s) => !ADMIN_SECTION_IDS[s.id])).filter((s) => !s.hidden);
   const active = visibleSections.filter((s) => s.id === activeSection)[0] || visibleSections[0];
 
   return (

@@ -1348,5 +1348,14 @@
   "ganttVmError": "Impossibile costruire il diagramma di Gantt",
   "repA11Easter": "La risposta alla domanda fondamentale sulla vita, l'universo e la pianificazione.",
   "toastParrotMode": "Misurato in pappagalli 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Campo sprint",
+  "lblSprintFieldByRole": "Sprint per ruolo",
+  "lblSprintWrite": "Scrivi lo sprint nelle issue di YouTrack",
+  "descSprintWrite": "Se attivo, confermando la composizione di un ruolo il planner imposta il valore di sprint scelto sulla issue. Il valore viene solo impostato, mai rimosso.",
+  "sprintWriteMultiValue": "Il campo «{field}» accetta più valori: il planner non ci scrive. Scegli un campo sprint a valore singolo.",
+  "sprintWriteResult": "Sprint «{value}» → campo «{field}»: {written} scritte, {errors} errori",
+  "navDanger": "Zona pericolosa",
+  "cardDanger": "Zona pericolosa",
+  "hintPlannerDisable": "La disattivazione rimuove il progetto dal selettore progetti del planner per gli utenti normali e ne interrompe il servizio dal menu principale. I dati del planner vengono conservati. Un configuratore del progetto o un amministratore potrà riattivarlo: qui, oppure nella scheda del planner nelle impostazioni del progetto YouTrack."
 }

@@ -468,23 +468,23 @@
      от _lang. Теперь смена языка корректно отображает роли в EN. */
   var ALL_ROLES = [
     { key: 'analysis',   label: 'Анализ',               labelEn: 'Analysis',     fieldEst: 'fieldAnalysis',     fieldFact: 'fieldFactAnalysis',
-      resKey: 'resourceAnalysis', remKey: 'remainAnalysis',    userField: 'userFieldAnalysis' },
+      resKey: 'resourceAnalysis', remKey: 'remainAnalysis',    userField: 'userFieldAnalysis',     sprintField: 'fieldSprintAnalysis' },
     { key: 'testing',    label: 'Тестирование',          labelEn: 'Testing',      fieldEst: 'fieldTesting',      fieldFact: 'fieldFactTesting',
-      resKey: 'resourceTesting',  remKey: 'remainTesting',     userField: 'userFieldTesting' },
+      resKey: 'resourceTesting',  remKey: 'remainTesting',     userField: 'userFieldTesting',      sprintField: 'fieldSprintTesting' },
     { key: 'devPlatform', label: 'Платформенная разработка', labelEn: 'Platform development', fieldEst: 'fieldDevPlatform', fieldFact: 'fieldFactDevPlatform',
-      resKey: 'resourceDevPlatform', remKey: 'remainDevPlatform', userField: 'userFieldDevPlatform' },
+      resKey: 'resourceDevPlatform', remKey: 'remainDevPlatform', userField: 'userFieldDevPlatform',  sprintField: 'fieldSprintDevPlatform' },
     { key: 'devBack',    label: 'Разработка Back',       labelEn: 'Dev Back',     fieldEst: 'fieldDevBack',      fieldFact: 'fieldFactDevBack',
-      resKey: 'resourceDevBack',  remKey: 'remainDevBack',     userField: 'userFieldDevBack' },
+      resKey: 'resourceDevBack',  remKey: 'remainDevBack',     userField: 'userFieldDevBack',      sprintField: 'fieldSprintDevBack' },
     { key: 'devFront',   label: 'Разработка Front',      labelEn: 'Dev Front',    fieldEst: 'fieldDevFront',     fieldFact: 'fieldFactDevFront',
-      resKey: 'resourceDevFront', remKey: 'remainDevFront',    userField: 'userFieldDevFront' },
+      resKey: 'resourceDevFront', remKey: 'remainDevFront',    userField: 'userFieldDevFront',     sprintField: 'fieldSprintDevFront' },
     { key: 'devIos',     label: 'Разработка IOS',        labelEn: 'Dev iOS',      fieldEst: 'fieldDevIos',       fieldFact: 'fieldFactDevIos',
-      resKey: 'resourceDevIos',   remKey: 'remainDevIos',      userField: 'userFieldDevIos' },
+      resKey: 'resourceDevIos',   remKey: 'remainDevIos',      userField: 'userFieldDevIos',       sprintField: 'fieldSprintDevIos' },
     { key: 'devAndroid', label: 'Разработка Android',    labelEn: 'Dev Android',  fieldEst: 'fieldDevAndroid',   fieldFact: 'fieldFactDevAndroid',
-      resKey: 'resourceDevAndroid', remKey: 'remainDevAndroid', userField: 'userFieldDevAndroid' },
+      resKey: 'resourceDevAndroid', remKey: 'remainDevAndroid', userField: 'userFieldDevAndroid',   sprintField: 'fieldSprintDevAndroid' },
     { key: 'devFs',      label: 'Разработка FullStack',  labelEn: 'Dev FullStack', fieldEst: 'fieldDevFullstack', fieldFact: 'fieldFactDevFullstack',
-      resKey: 'resourceDevFs',    remKey: 'remainDevFs',       userField: 'userFieldDevFs' },
+      resKey: 'resourceDevFs',    remKey: 'remainDevFs',       userField: 'userFieldDevFs',        sprintField: 'fieldSprintDevFullstack' },
     { key: 'devDb',      label: 'Разработка СУБД',       labelEn: 'Dev DB',       fieldEst: 'fieldDevDb',        fieldFact: 'fieldFactDevDb',
-      resKey: 'resourceDevDb',    remKey: 'remainDevDb',       userField: 'userFieldDevDb' },
+      resKey: 'resourceDevDb',    remKey: 'remainDevDb',       userField: 'userFieldDevDb',        sprintField: 'fieldSprintDevDb' },
   ];
 
   /* Получить активные роли из настроек */
@@ -793,7 +793,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.34.2';
+  var APP_VERSION = '3.35.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1973,6 +1973,7 @@
       state: {
         getHost: function () { return _host; },
         getLang: function () { return _lang; },
+        getMode: function () { return _mode; },   /* #80 — переключатель планера ведёт себя по режиму */
         getSettings: function () { return _settings; },   /* #80 — флаг plannerDisabled на странице настроек */
         setSettings: function (v) { _settings = v; },
         getActiveProjectKey: function () { return _activeProjectKey; },
@@ -2106,17 +2107,6 @@
       if (banner) {
         if (configured) banner.classList.add('hidden');
         else            banner.classList.remove('hidden');
-      }
-
-      /* #80 — «Отключить планер в этом проекте»: global-режим, только settings-менеджер
-         (canManage; планировочному не показываем — admin-тир). Логика — в project-nav.js. */
-      var dBtn = document.getElementById('plannerDisableBtn');
-      if (dBtn) {
-        dBtn.classList.toggle('hidden', !(_mode === 'global' && canManage));
-        if (!dBtn._sspBound) {
-          dBtn.addEventListener('click', function () { PROJECT_NAV._disablePlannerFromSidebar(_projectNavDeps()); });
-          dBtn._sspBound = true;
-        }
       }
 
       // Кнопка открытия overlay настроек — settings-менеджеру ИЛИ планировочному менеджеру (#22)
@@ -2276,6 +2266,9 @@
       renderPlannerRoles: renderPlannerRoles,
       renderStandupView: renderStandupView,   /* 68-7 — маппинг/скрытые состояния применяются post-save без перезахода */
       applyDiagLogVisibility: _applyDiagLogVisibility,
+      /* #80 — «Опасная зона» формы: переключатель планера идёт через project-nav (mode-aware);
+         ядро только композирует — прямой путь domain→domain закрыт гейтом B1. */
+      togglePlannerDisabled: function (disable, closeForm) { return PROJECT_NAV._togglePlannerFromSettings(_projectNavDeps(), disable, closeForm); },
       state: {
         getSettings:      function () { return _settings; },
         setSettings:      function (v) { _settings = v; },
@@ -3121,7 +3114,7 @@
   var INTRO_VIEW = (typeof window !== 'undefined' && window.__SSP_INTRO_VIEW) || {};
   function _introDeps() {
     return {
-      T: T, diag: diag, apiGet: apiGet,
+      T: T, diag: diag, apiGet: apiGet, esc: esc,
       ALL_ROLES: ALL_ROLES, STATUS: STATUS,
       getActiveRoles: getSprintRoles, statusLabel: statusLabel, roleLabel: roleLabel,   /* #73 — набор спринта */
       toDateIn: toDateIn, fmtPeriod: fmtPeriod,
@@ -3305,6 +3298,7 @@
         getSprint: function () { return _sprint; },
         getRoleItems: function () { return _roleItems; },
         getHistory: function () { return _history; },
+        getProjectFields: function () { return _projectFields; },   /* #88 — кратность поля спринта */
         setIsValidator: function (v) { _isValidator = v; },
         getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
         setActiveWorkingDraftKey: function (v) { _activeWorkingDraftKey = v; },

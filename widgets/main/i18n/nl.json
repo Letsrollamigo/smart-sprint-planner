@@ -1348,5 +1348,14 @@
   "ganttVmError": "Kan het Gantt-diagram niet opbouwen",
   "repA11Easter": "Het antwoord op de ultieme vraag over het leven, het universum en planning.",
   "toastParrotMode": "Gemeten in papegaaien 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Sprintveld",
+  "lblSprintFieldByRole": "Sprint per rol",
+  "lblSprintWrite": "Sprint naar YouTrack-issues schrijven",
+  "descSprintWrite": "Indien aan zet de planner bij het bevestigen van een rolsamenstelling de gekozen sprintwaarde op de issue. De waarde wordt alleen gezet, nooit gewist.",
+  "sprintWriteMultiValue": "Veld \"{field}\" accepteert meerdere waarden — de planner schrijft er niet naartoe. Kies een sprintveld met één waarde.",
+  "sprintWriteResult": "Sprint \"{value}\" → veld \"{field}\": {written} geschreven, {errors} fouten",
+  "navDanger": "Gevarenzone",
+  "cardDanger": "Gevarenzone",
+  "hintPlannerDisable": "Uitschakelen verwijdert het project uit de projectkiezer van de planner voor gewone gebruikers en stopt de bediening via het hoofdmenu. Plannergegevens blijven bewaard. Een projectconfigurator of beheerder kan het weer inschakelen — hier, of op het planner-tabblad in de YouTrack-projectinstellingen."
 }

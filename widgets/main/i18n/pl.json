@@ -1348,5 +1348,14 @@
   "ganttVmError": "Nie udało się zbudować diagramu Gantta",
   "repA11Easter": "Odpowiedź na wielkie pytanie o życie, wszechświat i planowanie.",
   "toastParrotMode": "Mierzone w papugach 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Pole sprintu",
+  "lblSprintFieldByRole": "Sprint wg roli",
+  "lblSprintWrite": "Zapisuj sprint w zadaniach YouTrack",
+  "descSprintWrite": "Gdy włączone, zatwierdzenie składu roli ustawia wybraną wartość sprintu w zadaniu. Wartość jest tylko ustawiana, nigdy nie czyszczona.",
+  "sprintWriteMultiValue": "Pole „{field}\" przyjmuje wiele wartości — planer do niego nie zapisuje. Wybierz jednowartościowe pole sprintu.",
+  "sprintWriteResult": "Sprint „{value}\" → pole „{field}\": zapisano {written}, błędów {errors}",
+  "navDanger": "Strefa niebezpieczna",
+  "cardDanger": "Strefa niebezpieczna",
+  "hintPlannerDisable": "Wyłączenie usuwa projekt z wyboru projektów planera dla zwykłych użytkowników i zatrzymuje obsługę z menu głównego. Dane planera są zachowywane. Konfigurator projektu lub administrator może włączyć go ponownie — tutaj albo na karcie planera w ustawieniach projektu YouTrack."
 }

@@ -1348,5 +1348,14 @@
   "ganttVmError": "无法构建甘特图",
   "repA11Easter": "关于生命、宇宙以及规划的终极问题的答案。",
   "toastParrotMode": "以鹦鹉为单位 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "冲刺字段",
+  "lblSprintFieldByRole": "按角色的冲刺",
+  "lblSprintWrite": "将冲刺写入 YouTrack 问题",
+  "descSprintWrite": "开启后，确认角色组成时会把所选冲刺值写入问题。只写入，不清除。",
+  "sprintWriteMultiValue": "字段「{field}」允许多个值，规划器不会写入。请选择单值的冲刺字段。",
+  "sprintWriteResult": "冲刺「{value}」→ 字段「{field}」：写入 {written}，错误 {errors}",
+  "navDanger": "危险区域",
+  "cardDanger": "危险区域",
+  "hintPlannerDisable": "停用后，普通用户的规划器项目选择中将不再显示该项目，并停止通过主菜单提供服务。规划器数据会保留。项目配置者或管理员可以重新启用——在此处，或在 YouTrack 项目设置的规划器标签页中。"
 }

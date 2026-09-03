@@ -117,6 +117,46 @@ test('golden: renderSprintIntroExtras — populated (field-config + apiGet)', as
   });
 });
 
+/* #88 — поля спринта у ролей разошлись: один общий список показал бы значение чужого
+   бандла, поэтому вводные переключаются на строку-на-роль. Ролям, у которых поле не
+   настроено, строки не дают — выбора они не создают. */
+test('golden: renderSprintIntroExtras — #88 ролевые поля спринта (строка на роль)', async () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  gm.set({
+    _settings: Object.assign(fx.buildSettings(), {
+      activeRoles: ['analysis', 'testing'],
+      fieldSprint: 'Sprints', fieldSprintTesting: 'QA Sprints',
+    }),
+    _sprint: Object.assign(fx.buildSprint(), {
+      roles: ['analysis', 'testing'],
+      sprintFieldVal: 'Sprint B',
+      sprintFieldValByRole: { testing: 'QA-19' },
+    }),
+  });
+  const log = stubApiGet(gm, { success: true, values: ['Sprint A', 'Sprint B', 'Sprint C'] });
+  gm.call('renderSprintIntroExtras');
+  await flush(10);
+
+  /* Предусловия: общий список скрыт, ролевой блок показан — иначе снимок ниже
+     зафиксировал бы «как было» и молча прошёл. */
+  assert.strictEqual(document.getElementById('fieldSprintVal').style.display, 'none',
+    'общий список скрыт: у ролей разные поля');
+  assert.notStrictEqual(document.getElementById('fieldSprintPerRole').style.display, 'none',
+    'ролевой блок показан');
+  assert.strictEqual(document.getElementById('sprintFieldVal_testing').value, 'QA-19',
+    'у роли со своим полем стоит ЕЁ значение');
+  assert.strictEqual(document.getElementById('sprintFieldVal_analysis').value, 'Sprint B',
+    'роль на общем поле берёт общее значение');
+  assert.ok(log.indexOf('field-values?fieldName=QA%20Sprints') >= 0,
+    'бандл ролевого поля запрошен: ' + JSON.stringify(log));
+
+  checkJsonSnapshot('intro-extras-per-role', {
+    apiGet: log.slice().sort(),
+    perRoleHtml: document.getElementById('fieldSprintPerRole').outerHTML,
+  });
+});
+
 /* ═══════════════════ renderRolePlannerHeader ═══════════════════ */
 
 test('golden: renderRolePlannerHeader — normal-resource (+ badge/extras вживую)', () => {

@@ -366,7 +366,21 @@
     _sprint.dateEnd   = deps.fromDateIn(e);
     var sprintFv  = document.getElementById('sprintFieldVal');
     var versionFv = document.getElementById('versionFieldVal');
-    if (sprintFv)  _sprint.sprintFieldVal  = sprintFv.value  || null;
+    /* #88 — если поля спринта у ролей разошлись, вводные показывают строку на роль,
+       а общий список СКРЫТ: читать его нельзя — пустое значение затёрло бы общее.
+       Ролевые значения ложатся в карту, общий sprintFieldVal остаётся фолбэком. */
+    var perRoleSels = document.querySelectorAll('#fieldSprintPerRole select[data-ssp-sprint-role]');
+    if (perRoleSels.length) {
+      var byRole = {};
+      Array.prototype.forEach.call(perRoleSels, function (sel) {
+        var rv = sel.value || '';
+        if (rv) byRole[sel.getAttribute('data-ssp-sprint-role')] = rv;
+      });
+      if (Object.keys(byRole).length) _sprint.sprintFieldValByRole = byRole;
+      else delete _sprint.sprintFieldValByRole;
+    } else if (sprintFv) {
+      _sprint.sprintFieldVal = sprintFv.value || null;
+    }
     if (versionFv) _sprint.versionFieldVal = versionFv.value || null;
     /* v1.9.0 D132 — Sprint goal: read + soft-warn if empty. */
     var _goalElI = document.getElementById('sprintGoal');

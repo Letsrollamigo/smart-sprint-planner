@@ -1,0 +1,7 @@
+{
+  "apiGet": [
+    "field-values?fieldName=QA%20Sprints",
+    "field-values?fieldName=Sprints"
+  ],
+  "perRoleHtml": "<div class=\"field\" id=\"fieldSprintPerRole\" style=\"min-width: 260px;\"><label>Спринт по ролям</label><div class=\"ssp-sprint-field-role\"><label for=\"sprintFieldVal_analysis\">Анализ</label><select id=\"sprintFieldVal_analysis\" class=\"app-select ring-select-button\" data-ssp-sprint-role=\"analysis\"><option value=\"\">— не выбрано —</option><option value=\"Sprint A\">Sprint A</option><option value=\"Sprint B\">Sprint B</option><option value=\"Sprint C\">Sprint C</option></select></div><div class=\"ssp-sprint-field-role\"><label for=\"sprintFieldVal_testing\">Тестирование</label><select id=\"sprintFieldVal_testing\" class=\"app-select ring-select-button\" data-ssp-sprint-role=\"testing\"><option value=\"\">— не выбрано —</option><option value=\"Sprint A\">Sprint A</option><option value=\"Sprint B\">Sprint B</option><option value=\"Sprint C\">Sprint C</option><option value=\"QA-19\" title=\"Значение сохранено, но отсутствует в текущем бандле\">QA-19 *</option></select></div></div>"
+}

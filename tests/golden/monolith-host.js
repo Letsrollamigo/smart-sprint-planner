@@ -87,6 +87,7 @@ const BRIDGE_SCRIPTS = [
   'capacity-view.js',
   'sprint-store.js',
   'slot-merge-pure.js',   /* #84 — трёхстороннее слияние слота на 409 */
+  'sprint-field-pure.js', /* #88 — резолверы ролевого поля «Спринт» */
   'capacity-store.js',   /* R6 — стор ёмкости (ADR-001) */
 ];
 
@@ -172,6 +173,13 @@ function createHost(opts) {
     };
   }
   if (!window.scrollTo) window.scrollTo = function () {};
+  /* jsdom не отдаёт CSS в песочницу, а на нём висит зомби-option вводных
+     (intro-view: значение, исчезнувшее из бандла). Без стаба ветка молча падала в
+     catch, и голдены значений в селектах ничего не проверяли — поймано на #88. */
+  if (!window.CSS) window.CSS = {};
+  if (!window.CSS.escape) {
+    window.CSS.escape = function (v) { return String(v).replace(/[^a-zA-Z0-9_-]/g, function (c) { return '\\' + c; }); };
+  }
 
   /* ── YTApp: init-цепочка заморожена ───────────────────────── */
   const fetchAppLog = [];

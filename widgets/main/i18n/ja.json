@@ -1348,5 +1348,14 @@
   "ganttVmError": "ガントチャートを構築できませんでした",
   "repA11Easter": "生命、宇宙、そして計画についての究極の疑問の答え。",
   "toastParrotMode": "オウムで測定 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "スプリントのフィールド",
+  "lblSprintFieldByRole": "ロール別スプリント",
+  "lblSprintWrite": "スプリントを YouTrack の課題に書き込む",
+  "descSprintWrite": "有効にすると、ロールの構成を確定したときに選択したスプリント値を課題に設定します。値は設定のみで、消去はしません。",
+  "sprintWriteMultiValue": "フィールド「{field}」は複数値を受け付けます。プランナーは書き込みません。単一値のスプリントフィールドを選んでください。",
+  "sprintWriteResult": "スプリント「{value}」→ フィールド「{field}」: {written} 件書き込み、{errors} 件エラー",
+  "navDanger": "危険ゾーン",
+  "cardDanger": "危険ゾーン",
+  "hintPlannerDisable": "無効にすると、一般ユーザーのプランナーのプロジェクト選択からこのプロジェクトが消え、メインメニューからの利用が停止します。プランナーのデータは保持されます。再度有効にできるのはプロジェクトの設定担当者または管理者です — ここ、または YouTrack のプロジェクト設定のプランナータブから。"
 }

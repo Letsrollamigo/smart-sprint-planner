@@ -110,10 +110,10 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
    displayFields (значения полей не хранятся вовсе) → тоже no-op.
    v3.32.0 — шестая запись 3.29.0 → 3.32.0 (#80): аддитивный settings-ключ
    plannerDisabled («Отключить планер в этом проекте») → тоже no-op. */
-test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0 → 3.23.0 + no-op 3.23.0 → 3.27.0 → 3.28.0 → 3.29.0 → 3.32.0', function () {
+test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0 → 3.23.0 + no-op 3.23.0 → 3.27.0 → 3.28.0 → 3.29.0 → 3.32.0 → 3.35.0', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 6,
-    'Registry: свёрнутая запись + 3.23.0 + 3.27.0 + 3.28.0 + 3.29.0 + 3.32.0; при следующем schema-change добавляй from="3.32.0"');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 7,
+    'Registry: свёрнутая запись + 3.23.0 + 3.27.0 + 3.28.0 + 3.29.0 + 3.32.0 + 3.35.0; при следующем schema-change добавляй from="3.35.0"');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].from, '1.4.2');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '3.6.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[1].from, '3.6.0');
@@ -127,24 +127,26 @@ test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0
   assert.strictEqual(SCHEMA_MIGRATIONS[4].to, '3.29.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[5].from, '3.29.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[5].to, '3.32.0');
+  assert.strictEqual(SCHEMA_MIGRATIONS[6].from, '3.32.0');
+  assert.strictEqual(SCHEMA_MIGRATIONS[6].to, '3.35.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[2].migrate, 'function');
 });
 
-test('migrateSnap: legacy snapshot получает шесть SCHEMA_BUMP — 3.6.0, 3.23.0, 3.27.0, 3.28.0, 3.29.0, 3.32.0', function () {
+test('migrateSnap: legacy snapshot получает семь SCHEMA_BUMP — 3.6.0, 3.23.0, 3.27.0, 3.28.0, 3.29.0, 3.32.0, 3.35.0', function () {
   const snap = { pluginVersion: '2.14.0', editingFromHistory: false, historyIdx: 1 };
   migrateSnap(snap);
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
   const bumps = (snap.migrationLog || []).filter(function (e) { return e.level === 'SCHEMA_BUMP'; }).map(function (e) { return e.toVersion; });
-  assert.deepStrictEqual(bumps, ['3.6.0', '3.23.0', '3.27.0', '3.28.0', '3.29.0', '3.32.0']);
+  assert.deepStrictEqual(bumps, ['3.6.0', '3.23.0', '3.27.0', '3.28.0', '3.29.0', '3.32.0', '3.35.0']);
   assert.ok(!('editingFromHistory' in snap) && !('historyIdx' in snap), 'legacy-ключи вычищены миграцией');
 });
 
-test('migrateSnap: snapshot на 3.23.0 — четыре SCHEMA_BUMP до 3.32.0; на 3.32.0 — ни одного', function () {
+test('migrateSnap: snapshot на 3.23.0 — пять SCHEMA_BUMP до 3.35.0; на 3.35.0 — ни одного', function () {
   const snap = { pluginVersion: '3.23.0' };
   migrateSnap(snap);
-  assert.strictEqual(snap.pluginVersion, '3.32.0');
-  assert.deepStrictEqual(snap.migrationLog.map(function (e) { return e.fromVersion + '→' + e.toVersion; }), ['3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0', '3.29.0→3.32.0']);
-  const cur = { pluginVersion: '3.32.0' };
+  assert.strictEqual(snap.pluginVersion, '3.35.0');
+  assert.deepStrictEqual(snap.migrationLog.map(function (e) { return e.fromVersion + '→' + e.toVersion; }), ['3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0', '3.29.0→3.32.0', '3.32.0→3.35.0']);
+  const cur = { pluginVersion: '3.35.0' };
   migrateSnap(cur);
   assert.ok(!cur.migrationLog, 'migrationLog не должен появиться');
 });

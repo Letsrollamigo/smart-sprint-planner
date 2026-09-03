@@ -880,8 +880,11 @@ One table: a row per functional role (9 rows: Analysis, Testing, Platform develo
 - **Estimate field** — where planned hours are stored (e.g. *Estimation*).
 - **Actual field** — where actual spent hours are stored (e.g. *Spent time*).
 - **Assignee field** — who's responsible for the task in this role (e.g. *Assignee*, *Developer*, *Tester*).
+- **Sprint field** — set it only if this role runs its own sprint. Leave it empty and the role uses the shared sprint field from the "Other fields" section, which is how most projects work. The column exists for teams where several roles share one project but keep their sprints in different issue fields.
 
 The same estimate (or actual) field can't be assigned to two roles — the form highlights the duplicate.
+
+> Fields that accept several values at once are not offered as a sprint field: the planner writes a single value there, and assigning it would replace the issue's entire list of sprints.
 
 ### "Manage permissions" section (administration)
 
@@ -955,6 +958,12 @@ A row with no checkbox is not saved, but it does not vanish from the screen unti
 - **Values are never stored.** The app reads them from YouTrack when the table opens — on your behalf. That is why these columns do not appear in history snapshots or in reports, and why two people with different rights may see different things in the same column: each sees exactly what they are allowed to in YouTrack.
 - If a field is **renamed or deleted** in the project, its settings row is flagged with a warning — remove it with the trash button.
 - If YouTrack answered for only some issues, **a warning icon appears in the column header**. Retry with **"Refresh from issue"**.
+
+### "Danger zone" section (administration)
+
+The last item of the administration group; visible to the project configurator only. It holds a single button — **"Disable planner in this project"** (or "Enable planner in this project" once it is disabled). The button was deliberately removed from the planner sidebar: in the working area one misclick made the project vanish for everyone.
+
+What disabling does: the project disappears from the project picker for regular users and stops being served from the main menu; planner data is kept, workflow rules keep running. A confirmation dialog precedes it. A project configurator or an administrator can enable it again — here, on the "planner disabled" screen when picking the project in the planner, or on the planner tab in the YouTrack project settings.
 
 ### "Capacity management" section (administration)
 
@@ -1032,6 +1041,7 @@ Stand-up groups tasks by every state of the project's State field (see [section 
 ### "Planning Modes" section
 
 - **Direct editing of YouTrack issue fields from sprint table.** If enabled, the plugin can write assignee / state / priority changes back to the YouTrack task directly from sprint tables (with a confirmation). Without this mode, all changes stay local to the plugin.
+- **Write the sprint into YouTrack issues.** **Off by default.** When enabled, confirming a role composition makes the planner set the chosen sprint value on every active issue of that composition. The write runs under your own permissions (an issue you may not edit is left alone and reported), in batches, with a report of how many were written and how many failed. **The value is only ever set and never cleared**: someone may have set it by hand before the planner ever touched the issue, and clearing would destroy their work. If an issue is excluded from the composition, its previous value stays until the issue is placed into another sprint.
 - **Allow planning over the limits** — when enabled, a role's resource overlimit **does not block** the "Validate" button and doesn't trigger a warning dialog. A negative remainder is still highlighted in red as an indicator, and a mode chip is shown in the plugin header. Off by default (overlimit blocks validation).
 - **Auto-forecast dates** (v3.1.0) — enables the **Forecast dates** button and the "#" queue column on the **By assignees** level (see [section 7](#7-distributing-tasks-among-assignees)). Off by default. With the "Simple" planning model the toggle isn't shown — there's no per-person level in it.
 

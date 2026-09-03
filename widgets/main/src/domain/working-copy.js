@@ -1,4 +1,9 @@
 'use strict';
+
+/* #88 — резолвер ролевого значения поля «Спринт» (leaf-слой pure, гейт B1 доволен).
+   Мост читаем В МОМЕНТ вызова, а не при загрузке модуля: порядок импорта бандла
+   не гарантирует, что pure-слой уже опубликовался. */
+function _sfPure() { return (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null; }
 // Working-copy lifecycle state machine (v5.3.0 D3/b) extracted from
 // widgets/main/src/core.js (Tier C, most interconnected cluster).
 // Browser bridge: window.__SSP_WORKING_COPY. Golden-tested in
@@ -103,6 +108,7 @@ function resumeWorkingDraft(key, idx, deps) {
   sprint.dateStart       = draft.sprint.dateStart;
   sprint.dateEnd         = draft.sprint.dateEnd;
   sprint.sprintFieldVal  = draft.sprint.sprintFieldVal;
+  sprint.sprintFieldValByRole = draft.sprint.sprintFieldValByRole || undefined;   /* #88 */
   sprint.versionFieldVal = draft.sprint.versionFieldVal;
   sprint.status          = deps.status.PLANNING;  /* в working copy всегда PLANNING (lock-bypass) */
   /* Все resource<Role> копируются */
@@ -392,7 +398,11 @@ function buildRoleSnap(rk, goalFields, wasValidated, deps) {
     confirmedBy:  currentUser ? (currentUser.fullName || currentUser.login) : null,
     isOverLimit:  isOverLimit,
     settings:     deps.state.getSettings(),
-    sprintFieldVal:   sprint.sprintFieldVal || null,
+    /* #88 — в снимок роли едет ЕЁ значение спринта; форма снимка не меняется (тот же
+       плоский ключ), просто значение теперь резолвится по роли. */
+    sprintFieldVal:   (_sfPure()
+                        ? _sfPure().valueFor(sprint, rk, deps.state.getSettings(), role)
+                        : sprint.sprintFieldVal) || null,
     versionFieldVal:  sprint.versionFieldVal || null,
   };
   snap[role.resKey] = sprint[role.resKey] || 0;

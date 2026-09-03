@@ -11,6 +11,7 @@
     "loadLinkTypes",
     "loadTags",
     "onClose",
+    "onPlannerToggle",
     "onSave",
     "projectFields",
     "roles",
@@ -31,6 +32,7 @@
     "loadLinkTypes": "function",
     "loadTags": "function",
     "onClose": "function",
+    "onPlannerToggle": "function",
     "onSave": "function",
     "projectFields": "object",
     "roles": "object",
@@ -62,8 +64,7 @@
     ],
     "externalTicketId": [],
     "sprint": [
-      "Priority",
-      "Sprints"
+      "Priority"
     ],
     "version": [],
     "period": [

@@ -28,9 +28,31 @@
 (function () {
   'use strict';
 
+  /* #88 — раскладка поля «Спринт» по ролям-участницам. rows несёт только роли с
+     настроенным полем; diverge=true → у ролей РАЗНЫЕ поля, и вводные показывают строку
+     на роль вместо одного списка (⚖ владелец 2026-09-03). common — имя поля для
+     не-расходящегося случая: ролевое, если задано хотя бы одной ролью, иначе общее. */
+  function _sprintFieldLayout(deps) {
+    var SF = (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null;
+    var settings = deps.state.getSettings() || {};
+    var roles = (typeof deps.getActiveRoles === 'function') ? (deps.getActiveRoles() || []) : [];
+    if (!SF) return { rows: [], diverge: false, common: settings.fieldSprint || '' };
+    var rows = [];
+    roles.forEach(function (r) {
+      var f = SF.fieldNameFor(settings, r);
+      if (f) rows.push({ rk: r.key, role: r, field: f });
+    });
+    return {
+      rows: rows,
+      diverge: SF.fieldsDiverge(settings, roles),
+      common: (rows[0] && rows[0].field) || settings.fieldSprint || ''
+    };
+  }
+
   function renderSprintIntroExtras(deps) {
     var _settings = deps.state.getSettings();
-    var hasSprint  = _settings && _settings.fieldSprint;
+    var layout     = _sprintFieldLayout(deps);
+    var hasSprint  = !!layout.common;
     var hasVersion = _settings && _settings.fieldVersion;
 
     /* #73 — read-only список ролей-участниц выбранного спринта (deps.getActiveRoles —
@@ -52,9 +74,11 @@
     var extrasEl   = document.getElementById('sprintExtraFields');
     var sprintEl   = document.getElementById('fieldSprintVal');
     var versionEl  = document.getElementById('fieldVersionVal');
+    var perRoleEl  = document.getElementById('fieldSprintPerRole');
 
     if (!hasSprint && !hasVersion) {
       extrasEl.style.display = 'none';
+      if (perRoleEl) { perRoleEl.style.display = 'none'; perRoleEl.innerHTML = ''; }
       return;
     }
     extrasEl.style.display = '';
@@ -62,11 +86,37 @@
        иначе persisted значение из _sprint.sprintFieldVal/versionFieldVal не
        находит matching <option> и select остаётся пустым. */
     var loaders = [];
-    if (hasSprint) {
+    var perRole = hasSprint && layout.diverge && perRoleEl;
+    if (perRole) {
+      /* #88 — поля ролей разошлись: один общий список показал бы значение чужого
+         бандла. Строим строку на роль; id селекта — sprintFieldVal_<роль>. */
+      sprintEl.style.display = 'none';
+      perRoleEl.style.display = '';
+      perRoleEl.innerHTML = '<label>' + deps.esc(deps.T('lblSprintFieldByRole')) + '</label>';
+      layout.rows.forEach(function (row) {
+        var id = 'sprintFieldVal_' + row.rk;
+        var line = document.createElement('div');
+        line.className = 'ssp-sprint-field-role';
+        var lab = document.createElement('label');
+        lab.setAttribute('for', id);
+        lab.textContent = deps.roleLabel ? deps.roleLabel(row.role) : row.role.label;
+        var sel = document.createElement('select');
+        sel.id = id;
+        sel.className = 'app-select ring-select-button';
+        sel.innerHTML = '<option value="">' + deps.esc(deps.T('phNotSelected')) + '</option>';
+        sel.setAttribute('data-ssp-sprint-role', row.rk);
+        line.appendChild(lab);
+        line.appendChild(sel);
+        perRoleEl.appendChild(line);
+        loaders.push(loadFieldBundle(row.field, id, deps));
+      });
+    } else if (hasSprint) {
       sprintEl.style.display = '';
-      loaders.push(loadFieldBundle(_settings.fieldSprint, 'sprintFieldVal', deps));
+      if (perRoleEl) { perRoleEl.style.display = 'none'; perRoleEl.innerHTML = ''; }
+      loaders.push(loadFieldBundle(layout.common, 'sprintFieldVal', deps));
     } else {
       sprintEl.style.display = 'none';
+      if (perRoleEl) { perRoleEl.style.display = 'none'; perRoleEl.innerHTML = ''; }
     }
     if (hasVersion) {
       versionEl.style.display = '';
@@ -77,10 +127,14 @@
     Promise.all(loaders).then(function(){
       var _sprint = deps.state.getSprint();
       if (!_sprint) return;
-      [
-        { v: _sprint.sprintFieldVal,  id: 'sprintFieldVal'  },
-        { v: _sprint.versionFieldVal, id: 'versionFieldVal' }
-      ].forEach(function(spec){
+      var SF = (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null;
+      var specs = perRole && SF
+        ? layout.rows.map(function (row) {
+            return { v: SF.valueFor(_sprint, row.rk, _settings, row.role), id: 'sprintFieldVal_' + row.rk };
+          })
+        : [{ v: _sprint.sprintFieldVal, id: 'sprintFieldVal' }];
+      specs.push({ v: _sprint.versionFieldVal, id: 'versionFieldVal' });
+      specs.forEach(function(spec){
         if (!spec.v) return;
         var sel = document.getElementById(spec.id);
         if (!sel) return;

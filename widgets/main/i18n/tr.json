@@ -1348,5 +1348,14 @@
   "ganttVmError": "Gantt şeması oluşturulamadı",
   "repA11Easter": "Yaşam, evren ve planlamayla ilgili nihai sorunun yanıtı.",
   "toastParrotMode": "Papağan cinsinden ölçüldü 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Sprint alanı",
+  "lblSprintFieldByRole": "Role göre sprint",
+  "lblSprintWrite": "Sprint’i YouTrack işlerine yaz",
+  "descSprintWrite": "Açıkken rol bileşimi onaylandığında planlayıcı seçilen sprint değerini işe yazar. Değer yalnızca yazılır, hiçbir zaman silinmez.",
+  "sprintWriteMultiValue": "\"{field}\" alanı birden çok değer kabul ediyor — planlayıcı bu alana yazmaz. Tek değerli bir sprint alanı seçin.",
+  "sprintWriteResult": "Sprint \"{value}\" → \"{field}\" alanı: {written} yazıldı, {errors} hata",
+  "navDanger": "Tehlikeli bölge",
+  "cardDanger": "Tehlikeli bölge",
+  "hintPlannerDisable": "Devre dışı bırakma, projeyi sıradan kullanıcılar için planlayıcının proje seçiminden kaldırır ve ana menüden hizmeti durdurur. Planlayıcı verileri korunur. Proje yapılandırıcısı veya bir yönetici yeniden etkinleştirebilir — burada ya da YouTrack proje ayarlarındaki planlayıcı sekmesinde."
 }

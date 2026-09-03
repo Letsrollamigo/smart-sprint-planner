@@ -6,6 +6,7 @@
       "dateStart": 1779408000000,
       "dateEnd": 1781568000000,
       "sprintFieldVal": "GM Sprint June 2026",
+      "sprintFieldValByRole": null,
       "versionFieldVal": "v2026.06",
       "resourceAnalysis": 2400,
       "resourceTesting": 1200,

@@ -2,7 +2,7 @@
   "$comment": "Source of truth для backend whitelist'ов. После любой правки запускать `npm run build` — backend-core.js пересинхронизуется автоматически через scripts/sync-backend-whitelists.js. См. внутренние правила проекта → Soft-deprecation policy. История изменений — в Documentation/CHANGELOG.md, НЕ в этом файле.",
   "ALLOWED_SPRINT_KEYS": [
     "sprintId", "name", "status", "dateStart", "dateEnd", "updatedBy", "updatedAt",
-    "sprintFieldVal", "versionFieldVal", "personalPlanning",
+    "sprintFieldVal", "sprintFieldValByRole", "versionFieldVal", "personalPlanning",
     "migrationLog",
     "pluginVersion",
     "sprintGoal",

@@ -77,8 +77,8 @@
         roBanner.classList.toggle('hidden', configured);
       }
 
-      /* #80 — планер отключён: баннер всем, кнопка-переключатель настройщику. */
-      _renderPlannerToggleProject(deps, canManage);
+      /* #80 — планер отключён: баннер всем; переключатель — в секции «Опасная зона» формы. */
+      _renderPlannerDisabledBanner(deps);
 
       /* header chrome (lang/icons/theme/version) — нужный подмножество init-цепочки */
       try { deps.populateLangSelect(document.getElementById('langSel')); } catch (_) {}
@@ -339,7 +339,10 @@
      Флаг plannerDisabled (ssp_settings) пишет ТОЛЬКО эндпоинт planner-disabled.
      Global: отключённый проект в пикере видят лишь те, кто может включить (фильтр
      бэкенда), его выбор рисует баннер+кнопку вместо загрузки (эндпоинты всё равно
-     ответят 403 planner_disabled). Project-виджет: баннер всем + кнопка настройщику. */
+     ответят 403 planner_disabled). Project-виджет: баннер всем. Сама кнопка
+     «Отключить/включить» живёт в секции «Опасная зона» формы настроек (admin-тир) —
+     из сайдбара убрана (⚖ владелец 2026-09-03: один промах в рабочей области — и
+     проект пропал у всех). */
 
   /* Старт загрузки активного проекта с гейтом «планер отключён». */
   function _startProjectLoad(deps) {
@@ -354,8 +357,6 @@
   function _renderPlannerDisabledState(deps) {
     var sBtn = document.getElementById('openSettingsBtn');
     if (sBtn) sBtn.style.display = 'none';
-    var dBtn = document.getElementById('plannerDisableBtn');
-    if (dBtn) dBtn.classList.add('hidden');
     var el = document.getElementById('globalNoProjectBanner');
     if (!el) return;
     el.textContent = '';
@@ -414,13 +415,28 @@
     _startProjectLoad(deps);
   }
 
-  /* Вход сайдбарной кнопки «Отключить планер в этом проекте» (global, canManage). */
-  function _disablePlannerFromSidebar(deps) {
-    _togglePlannerDisabled(deps, true, function () { _afterPlannerToggleGlobal(deps, true); });
+  /* Вход секции «Опасная зона» формы настроек: disable=true — выключить (через confirm),
+     false — включить. closeForm — колбэк закрытия формы (onClose модалки / inline-страницы).
+     global: форму закрываем ПЕРЕД экраном «отключён», иначе модалка повисла бы над баннером.
+     project: страница настроек перерисовывается целиком (баннер + свежая форма, где та же
+     секция уже показывает «Включить»). */
+  function _togglePlannerFromSettings(deps, disable, closeForm) {
+    var isGlobal = (typeof deps.state.getMode === 'function') && deps.state.getMode() === 'global';
+    _togglePlannerDisabled(deps, !!disable, function () {
+      if (isGlobal) {
+        if (typeof closeForm === 'function') { try { closeForm(); } catch (_) {} }
+        _afterPlannerToggleGlobal(deps, !!disable);
+        return;
+      }
+      var s = deps.state.getSettings() || {};
+      if (disable) s.plannerDisabled = true; else delete s.plannerDisabled;
+      deps.state.setSettings(s);
+      _renderProjectSettingsPage(deps);
+    });
   }
 
-  /* Project-виджет (страница настроек): баннер «отключён» всем + кнопка настройщику. */
-  function _renderPlannerToggleProject(deps, canManage) {
+  /* Project-виджет (страница настроек): баннер «отключён» всем. */
+  function _renderPlannerDisabledBanner(deps) {
     var off = false;
     try { off = ((deps.state.getSettings() || {}).plannerDisabled === true); } catch (_) { off = false; }
     var banner = document.getElementById('plannerDisabledBanner');
@@ -428,28 +444,6 @@
       banner.textContent = deps.T('plannerDisabledBanner');
       banner.classList.toggle('hidden', !off);
     }
-    var host = document.getElementById('plannerToggleHost');
-    if (!host) return;
-    host.textContent = '';
-    if (!canManage) return;
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'ring-button-button ring-button-heightS';
-    if (!off) {
-      btn.style.background = 'transparent';
-      btn.style.borderColor = 'var(--warn)';
-      btn.style.color = 'var(--warn)';
-    }
-    btn.textContent = deps.T(off ? 'btnPlannerEnable' : 'btnPlannerDisable');
-    btn.addEventListener('click', function () {
-      _togglePlannerDisabled(deps, !off, function () {
-        var s = deps.state.getSettings() || {};
-        if (!off) s.plannerDisabled = true; else delete s.plannerDisabled;
-        deps.state.setSettings(s);
-        _renderPlannerToggleProject(deps, canManage);
-      });
-    });
-    host.appendChild(btn);
   }
 
   /* Модалка-предупреждение «черновик будет очищен» (Ring; fallback — нативный confirm). */
@@ -483,7 +477,7 @@
     _loadSettingsOnly: _loadSettingsOnly,
     _renderProjectSettingsPage: _renderProjectSettingsPage,
     _mountProjectSettings: _mountProjectSettings,
-    _disablePlannerFromSidebar: _disablePlannerFromSidebar,   /* #80 — вход сайдбарной кнопки */
+    _togglePlannerFromSettings: _togglePlannerFromSettings,   /* #80 — вход секции «Опасная зона» формы настроек */
     _syncAclFireAndForget: _syncAclFireAndForget,
     _getLastProjectKey: _getLastProjectKey,
     _setLastProjectKey: _setLastProjectKey,

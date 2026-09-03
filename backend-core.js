@@ -194,6 +194,7 @@ var ALLOWED_SPRINT_KEYS = [
   'updatedBy',
   'updatedAt',
   'sprintFieldVal',
+  'sprintFieldValByRole',
   'versionFieldVal',
   'personalPlanning',
   'migrationLog',
@@ -313,12 +314,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.32.0';
+var CURRENT_PLUGIN_VERSION = '3.35.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.34.2';
+var APP_VERSION = '3.35.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -576,6 +577,15 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.29.0', to: '3.32.0',
     migrate: function (snap) { /* no-op: настройка project-level, snapshot shape unchanged */ },
     note: 'v3.32.0: #80 additive settings key plannerDisabled (planner switched off per project)'
+  },
+  /* v3.35.0 — #88: аддитивный ключ спринта sprintFieldValByRole (значение поля «Спринт»
+     на роль) + ролевые settings-ключи fieldSprint<Роль> и выключатель sprintWriteEnabled.
+     Ключ спринта optional: его отсутствие = все роли берут общий sprintFieldVal, как жили
+     все спринты до 3.35.0 → миграция no-op. Снимок роли в истории НЕ меняет форму: туда
+     по-прежнему едет плоский sprintFieldVal, просто резолвленный для этой роли. */
+  { from: '3.32.0', to: '3.35.0',
+    migrate: function (snap) { /* no-op: additive optional key sprintFieldValByRole */ },
+    note: 'v3.35.0: #88 additive sprint key sprintFieldValByRole + per-role fieldSprint<Role> settings'
   }
 ];
 
@@ -757,6 +767,19 @@ function _validateSprintBody(sprint, strict) {
   if (!assertStr(sprint.name,            500)) return false;
   if (!assertStr(sprint.updatedBy,       200)) return false;
   if (!assertStr(sprint.sprintFieldVal,  500)) return false;
+  /* #88 — sprintFieldValByRole: { roleKey: 'значение поля спринта' }. Аддитивный
+     необязательный ключ; отсутствие = все роли берут общий sprintFieldVal (так живут
+     все спринты до 3.35.0). Ключи — только ролевые (тот же charset, что resource<Role>). */
+  if (sprint.sprintFieldValByRole !== undefined && sprint.sprintFieldValByRole !== null) {
+    var sfvr = sprint.sprintFieldValByRole;
+    if (typeof sfvr !== 'object' || Array.isArray(sfvr)) return false;
+    var rkeys = Object.keys(sfvr);
+    if (rkeys.length > 50) return false;
+    for (var rq = 0; rq < rkeys.length; rq++) {
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,49}$/.test(rkeys[rq])) return false;
+      if (!assertStr(sfvr[rkeys[rq]], 500)) return false;
+    }
+  }
   if (!assertStr(sprint.versionFieldVal, 500)) return false;
   if (sprint.status !== undefined && sprint.status !== null) {
     if (typeof sprint.status !== 'string' || STATUS_CODES.indexOf(sprint.status) < 0) return false;
@@ -894,6 +917,16 @@ var ALLOWED_SETTINGS_KEYS = [
   // Прочие поля
   'fieldPriority','fieldXPriority','fieldState','fieldSystem',
   'fieldSprint','fieldVersion',
+  /* #88 — поле спринта может быть СВОЁ у каждой роли: крупная команда из нескольких
+     ролей работает в одном проекте, но ведёт свои спринты в разных полях задачи.
+     Пусто → фолбэк на общий fieldSprint, поэтому старые настройки читаются как прежде.
+     Тир планировочный — как у остальных field*-ключей. */
+  'fieldSprintAnalysis','fieldSprintTesting','fieldSprintDevPlatform',
+  'fieldSprintDevBack','fieldSprintDevFront','fieldSprintDevIos',
+  'fieldSprintDevAndroid','fieldSprintDevFullstack','fieldSprintDevDb',
+  /* #88 — мастер-выключатель записи значения спринта в саму задачу YouTrack.
+     Default OFF: новый канал записи в боевые задачи включается осознанно. */
+  'sprintWriteEnabled',
   /* #21 — тип-назначение задачи (Фича/Баг/Спайк/…) для фильтра модуля «Работа с бэклогом».
      Планировочный тир, как прочие field* (НЕ admin). */
   'fieldType',
@@ -1236,6 +1269,10 @@ function validateSettings(settings) {
     'fieldDevDb','fieldFactDevDb','userFieldDevDb',
     'fieldPriority','fieldXPriority','fieldState','fieldSystem',
     'fieldSprint','fieldVersion','fieldExternalTicketId',   /* #69 R1 — был в whitelist, но без assertStr(200) */
+    /* #88 — ролевые поля спринта (пусто → фолбэк на общий fieldSprint). */
+    'fieldSprintAnalysis','fieldSprintTesting','fieldSprintDevPlatform',
+    'fieldSprintDevBack','fieldSprintDevFront','fieldSprintDevIos',
+    'fieldSprintDevAndroid','fieldSprintDevFullstack','fieldSprintDevDb',
     /* #21 — тип-назначение задачи (фильтр модуля «Работа с бэклогом»). */
     'fieldType'];
   for (var f = 0; f < fieldKeys.length; f++) {
@@ -1268,6 +1305,7 @@ function validateSettings(settings) {
   var boolKeys = ['dynEditEnabled','personalPlanningEnabled','usePersonalForResource','manualPersonalResource','allowOverlimitPlanning','autoForecastEnabled','showDiagLogUi','dtaEnabled','dtaWarningsEnabled','cascadeAggregationEnabled','forbidContainerWorkItems',
     /* v1.7.0 D128 — State Rollup */ 'stateRollupEnabled',
     /* #57-2 — блокировка создания спринтов */ 'blockSprintCreation',
+    /* #88 — запись спринта в задачу YouTrack */ 'sprintWriteEnabled',
     /* #80 — планер отключён в проекте */ 'plannerDisabled',
     /* #59 — кросс-ролевое исключение */ 'crossRoleExcludeEnabled',
     /* #61 — сводная мультиролевого планирования */ 'allocSummaryEnabled'];

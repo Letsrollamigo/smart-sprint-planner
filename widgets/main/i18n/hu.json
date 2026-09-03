@@ -1348,5 +1348,14 @@
   "ganttVmError": "A Gantt-diagram felépítése nem sikerült",
   "repA11Easter": "A válasz az élet, a világegyetem meg a tervezés nagy kérdésére.",
   "toastParrotMode": "Papagájban mérve 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Sprint mező",
+  "lblSprintFieldByRole": "Sprint szerepenként",
+  "lblSprintWrite": "Sprint írása a YouTrack-hibajegyekbe",
+  "descSprintWrite": "Bekapcsolva a szerep összetételének jóváhagyásakor a tervező beírja a választott sprintértéket a hibajegybe. Az érték csak beállításra kerül, törlésre soha.",
+  "sprintWriteMultiValue": "A(z) „{field}\" mező több értéket fogad — a tervező nem ír bele. Válassz egyértékű sprint mezőt.",
+  "sprintWriteResult": "Sprint „{value}\" → „{field}\" mező: {written} beírva, {errors} hiba",
+  "navDanger": "Veszélyzóna",
+  "cardDanger": "Veszélyzóna",
+  "hintPlannerDisable": "A kikapcsolás eltávolítja a projektet a tervező projektválasztójából a hétköznapi felhasználók számára, és leállítja a kiszolgálást a főmenüből. A tervező adatai megmaradnak. A projekt beállítója vagy egy adminisztrátor újra bekapcsolhatja — itt, vagy a YouTrack projektbeállításainak tervező lapján."
 }

@@ -198,12 +198,11 @@
     #projectSettingsHost { display:none; }
     #projectSettingsBanner { display:none; padding:10px 14px; margin:0 0 12px; border-radius:var(--radius);
       background:rgba(90,125,232,.12); color:var(--text); border:1px solid rgba(90,125,232,.35); font-size:13px; }
-    .ssp-project-settings-mode .page > *:not(.page-header):not(#projectSettingsHost):not(#projectSettingsBanner):not(#projectSettingsRoBanner):not(#plannerDisabledBanner):not(#plannerToggleHost):not(#diagWrap) { display:none; }
+    .ssp-project-settings-mode .page > *:not(.page-header):not(#projectSettingsHost):not(#projectSettingsBanner):not(#projectSettingsRoBanner):not(#plannerDisabledBanner):not(#diagWrap) { display:none; }
     .ssp-project-settings-mode #projectSettingsHost { display:block; }
     .ssp-project-settings-mode #projectSettingsBanner { display:block; }
     /* #80 — баннер «планер отключён» + кнопка-переключатель на странице настроек проекта */
     .ssp-project-settings-mode #plannerDisabledBanner:not(.hidden) { display:block; }
-    .ssp-project-settings-mode #plannerToggleHost { display:block; }
     /* #29 — read-only онбординг-подсказка: группа управления настройками не выбрана */
     #projectSettingsRoBanner { display:none; padding:10px 14px; margin:0 0 12px; border-radius:var(--radius);
       background:rgba(250,176,5,.12); border:1px solid rgba(250,176,5,.45); font-weight:600; }
@@ -1359,11 +1358,18 @@
     .ssp-settings-form .ssp-dta-table td:last-child { padding-right: 0; width: 34px; }
     /* #69 R1 — per-role таблица «Роли и поля» (строка 4): 4 равноправные колонки без лимита
        ширины DTA-таблицы; притушенные подполя выключенных мастеров (строка 6) — dim, не hide. */
-    .ssp-settings-form .ssp-role-fields-table { max-width: none; }
+    /* #88 — пятая колонка «Поле спринта»: при авто-раскладке четыре Ring Select распирали
+       таблицу до ~1090px в 776px панели (горизонтальный скролл). Фиксированная раскладка +
+       узкая колонка роли; значение селекта усекается многоточием, справа место под ✕ и ⌄
+       (.ring-select-icons позиционированы абсолютно). Проверено на настоящем Ring Select. */
+    .ssp-settings-form .ssp-role-fields-table { max-width: none; table-layout: fixed; width: 100%; }
     .ssp-settings-form .ssp-role-fields-table th:first-child,
-    .ssp-settings-form .ssp-role-fields-table td:first-child { width: 22%; }
+    .ssp-settings-form .ssp-role-fields-table td:first-child { width: 16%; }
     .ssp-settings-form .ssp-role-fields-table td:last-child { width: auto; padding-right: 0; }
-    .ssp-settings-form .ssp-role-fields-table td { padding: 5px 6px 5px 0; vertical-align: middle; }
+    .ssp-settings-form .ssp-role-fields-table td { padding: 5px 4px 5px 0; vertical-align: middle; }
+    .ssp-settings-form .ssp-role-fields-table .ssp-form-select .ring-select-buttonValue {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-sizing: border-box; padding-right: 40px;
+    }
     .ssp-settings-form .ssp-subfields--dim { opacity: .55; }
     /* width:100% — для текстовых полей и select'ов (заполняют ячейку).
        Чекбоксы/радио ИСКЛЮЧЕНЫ: иначе галочка растягивается на всю ячейку и
@@ -1733,6 +1739,11 @@
     }
     .sprint-intro-dates { display: flex; gap: 14px; }
     .sprint-intro-extra { display: flex; gap: 14px; flex-wrap: wrap; }
+    /* #88 — строка «роль → её значение спринта»: подпись роли слева узкой колонкой,
+       список справа. Появляется только когда поля спринта у ролей разошлись. */
+    .ssp-sprint-field-role { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .ssp-sprint-field-role > label { flex: 0 0 130px; margin: 0; font-weight: 400; }
+    .ssp-sprint-field-role > select { flex: 1 1 auto; min-width: 0; }
     @media (max-width: 800px) {
       .sprint-intro-grid { grid-template-columns: 1fr; }
       .sprint-intro-dates { flex-direction: column; }
@@ -2479,10 +2490,6 @@
               data-icon="settings" data-aria-label-key="aria.btnSettings"
               data-i18n="btnOpenSettings"
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
-      <!-- #80 — «Отключить планер в этом проекте» (global-режим; видимость: check-settings-manager → canManage; логика — project-nav.js) -->
-      <button id="plannerDisableBtn" class="ring-button-button ring-button-block ring-button-heightS hidden"
-              data-icon="cancel" data-i18n="btnPlannerDisable"
-              style="background:transparent;border-color:var(--warn);color:var(--warn)">Отключить планер в этом проекте</button>
       <!-- #43 W4 (E-1) — ссылки-кнопки на Ring-классах (единый вид с openSettingsBtn) -->
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
          target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
@@ -2594,7 +2601,6 @@
   <div id="projectSettingsRoBanner" class="hidden"></div>
   <!-- #80 — планер отключён: баннер (всем) + кнопка-переключатель (настройщику); рендер — project-nav.js -->
   <div id="plannerDisabledBanner" class="banner banner--warn hidden"></div>
-  <div id="plannerToggleHost" style="margin:8px 0"></div>
   <div id="projectSettingsHost"></div>
 
   <div id="bannerNotConfigured" class="banner banner--warn hidden" data-i18n="bannerNotConfigured" data-icon="warning">
@@ -2659,6 +2665,11 @@
           <label for="sprintFieldVal" data-i18n="lblSprintField">Спринт</label>
           <select id="sprintFieldVal" class="app-select ring-select-button"><option value="">— не выбрано —</option></select>
         </div>
+        <!-- #88 — поле «Спринт» бывает своё у каждой роли: когда поля ролей-участниц
+             разошлись, вместо одного списка выше рендерится строка на роль (сборка —
+             domain/intro-view.js renderSprintIntroExtras). Пока поле у всех одно,
+             блок пуст и скрыт, а экран выглядит ровно как раньше. -->
+        <div class="field" id="fieldSprintPerRole" style="min-width:260px;display:none"></div>
         <div class="field" id="fieldVersionVal" style="min-width:200px;display:none">
           <label for="versionFieldVal" data-i18n="lblVersionField">Версия</label>
           <select id="versionFieldVal" class="app-select ring-select-button"><option value="">— не выбрано —</option></select>

@@ -1348,5 +1348,14 @@
   "ganttVmError": "Não foi possível construir o diagrama de Gantt",
   "repA11Easter": "A resposta à pergunta fundamental sobre a vida, o universo e o planejamento.",
   "toastParrotMode": "Medido em papagaios 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "Campo de sprint",
+  "lblSprintFieldByRole": "Sprint por papel",
+  "lblSprintWrite": "Gravar o sprint nas tarefas do YouTrack",
+  "descSprintWrite": "Se ativo, ao confirmar a composição de um papel o planejador grava o valor de sprint escolhido na tarefa. O valor só é definido, nunca apagado.",
+  "sprintWriteMultiValue": "O campo «{field}» aceita vários valores — o planejador não grava nele. Escolha um campo de sprint de valor único.",
+  "sprintWriteResult": "Sprint «{value}» → campo «{field}»: {written} gravadas, {errors} erros",
+  "navDanger": "Zona de perigo",
+  "cardDanger": "Zona de perigo",
+  "hintPlannerDisable": "Desativar remove o projeto do seletor de projetos do planejador para usuários comuns e interrompe o atendimento pelo menu principal. Os dados do planejador são preservados. Um configurador do projeto ou um administrador poderá reativá-lo — aqui ou na aba do planejador nas configurações do projeto no YouTrack."
 }

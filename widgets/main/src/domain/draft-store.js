@@ -314,6 +314,8 @@ function syncWorkingDraftFromMemory(rk, deps) {
     draft.sprint.dateStart       = _sprint.dateStart || null;
     draft.sprint.dateEnd         = _sprint.dateEnd || null;
     draft.sprint.sprintFieldVal  = _sprint.sprintFieldVal || null;
+    /* #88 — без этого восстановленный черновик молча терял ролевые значения спринта. */
+    draft.sprint.sprintFieldValByRole = _sprint.sprintFieldValByRole || null;
     draft.sprint.versionFieldVal = _sprint.versionFieldVal || null;
     deps.allRoles.forEach(function(r){
       if (_sprint[r.resKey] != null) draft.sprint[r.resKey] = _sprint[r.resKey];

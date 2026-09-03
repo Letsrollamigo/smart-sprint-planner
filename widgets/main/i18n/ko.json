@@ -1348,5 +1348,14 @@
   "ganttVmError": "간트 차트를 구성하지 못했습니다",
   "repA11Easter": "삶과 우주, 그리고 계획에 대한 궁극적인 질문의 답.",
   "toastParrotMode": "앵무새 단위로 측정 🦜",
-  "hintThisIsFine": "this is fine"
+  "hintThisIsFine": "this is fine",
+  "thRoleFieldSprint": "스프린트 필드",
+  "lblSprintFieldByRole": "역할별 스프린트",
+  "lblSprintWrite": "스프린트를 YouTrack 이슈에 기록",
+  "descSprintWrite": "켜면 역할 구성을 확정할 때 선택한 스프린트 값을 이슈에 설정합니다. 값은 설정만 하며 지우지 않습니다.",
+  "sprintWriteMultiValue": "\"{field}\" 필드는 여러 값을 허용합니다 — 플래너는 기록하지 않습니다. 단일 값 스프린트 필드를 선택하세요.",
+  "sprintWriteResult": "스프린트 \"{value}\" → \"{field}\" 필드: {written}건 기록, 오류 {errors}건",
+  "navDanger": "위험 구역",
+  "cardDanger": "위험 구역",
+  "hintPlannerDisable": "비활성화하면 일반 사용자의 플래너 프로젝트 선택에서 이 프로젝트가 사라지고 메인 메뉴를 통한 서비스가 중단됩니다. 플래너 데이터는 보존됩니다. 프로젝트 설정 담당자 또는 관리자가 여기에서, 또는 YouTrack 프로젝트 설정의 플래너 탭에서 다시 활성화할 수 있습니다."
 }

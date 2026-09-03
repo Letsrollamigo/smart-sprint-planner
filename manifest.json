@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.34.2",
+  "version": "3.35.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.34.1</b><br><br>\ud83d\udd35 <b>A refresh button that says what it does</b> \u2014 \u201cRefresh from task\u201d told you neither what it pulls nor where from. It is now \u201cRefresh issue data from YouTrack\u201d in every interface language, and it is styled as a primary action. The partial-load hints that pointed at the button by a different name were corrected too.",
+  "changeNotes": "<b>What's new since v3.34.1</b><br><br>🔵 <b>A sprint field per role</b> — a team of several roles living in one project can now keep its sprints in different issue fields. Settings gained a “Sprint field” column in the roles table; leave it empty and the role uses the shared field, so projects with a single field see no change. The sprint form adapts on its own: one picker while every participating role shares a field, a row per role the moment they differ.<br><br>🔵 <b>Write the sprint into YouTrack issues</b> — a new switch, off by default. When on, confirming a role composition sets the chosen sprint value on every active issue of that composition, under your own permissions, in batches, with a per-issue report. The value is only ever set, never cleared — someone may have set it by hand before the planner touched it. Multi-value fields are no longer offered as sprint fields, and a previously saved one is refused before any write.<br><br>🔵 <b>A refresh button that says what it does</b> — “Refresh from task” told you neither what it pulls nor where from. It is now “Refresh issue data from YouTrack” in every interface language, and it is styled as a primary action.",
   "widgets": [
     {
       "key": "ssp-main",

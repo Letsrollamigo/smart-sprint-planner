@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.35.0] — 2026-09-03
+
+> **A sprint field per role, and the sprint reflected in the issues themselves.** A large team of several roles lives in one project but keeps its sprints in different issue fields — the sprint field is no longer a single project-wide setting.
+
+### Added
+
+- **Each role can have its own "Sprint" field.** The roles table in settings gained a "Sprint field" column; leaving it empty means the role uses the shared field from "Issue fields", so projects with a single field notice nothing. The sprint form adapts on its own: one picker while every participating role shares a field, a row per role with its own value list the moment they differ.
+- **A "Write the sprint into YouTrack issues" switch** ("Planning modes", **off by default**). When on, confirming a role composition sets the chosen sprint value on every active issue of that composition — under the user's own permissions, in batches of 25 requests, with a per-issue report of successes and failures. The value is **only ever set and never cleared**: someone may have set it by hand before the planner ever touched the issue, and clearing would destroy their work.
+- **A guard against multi-value fields.** Fields that accept several values at once are no longer offered when picking a sprint field, and a setting saved earlier is refused before any write with an explanation: assignment would replace the issue's entire list of sprints.
+
+### Changed
+
+- **A role's history snapshot now carries that role's sprint value.** The snapshot shape did not change — same key, the value is simply resolved per role. Past snapshots are not rewritten.
+- **The data schema** gained an optional sprint key `sprintFieldValByRole` (migration 3.32.0 → 3.35.0 is a no-op: the absence of the key means the previous behaviour for every existing sprint).
+- **"Disable planner in this project" moved out of the sidebar** into plugin settings — the administration group, last item, "Danger zone". In the working area the button sat between "Plugin settings" and the guide: one misclick and the project vanished for every user. Confirmation and the way back are unchanged: a project configurator or an administrator can re-enable it — in the same "Danger zone", on the "planner disabled" screen when picking the project, or on the planner tab in the YouTrack project settings.
+- **The "Roles and issue fields" table no longer overflows the pane** with its fifth column: fixed column layout, long field names are truncated with an ellipsis.
+
+---
+
 ## [3.34.2] — 2026-09-02
 
 > **A refresh button that says what it does.** Wording and styling only; behaviour is unchanged.

@@ -5,6 +5,12 @@
 <option value="">— не выбрано —</option>
 </select>
         </div>
+        <!-- #88 — поле «Спринт» бывает своё у каждой роли: когда поля ролей-участниц
+             разошлись, вместо одного списка выше рендерится строка на роль (сборка —
+             domain/intro-view.js renderSprintIntroExtras). Пока поле у всех одно,
+             блок пуст и скрыт, а экран выглядит ровно как раньше. -->
+        <div class="field" id="fieldSprintPerRole" style="min-width:260px;display:none">
+</div>
         <div class="field" id="fieldVersionVal" style="min-width:200px;display:none">
           <label for="versionFieldVal" data-i18n="lblVersionField">Версия</label>
           <select id="versionFieldVal" class="app-select ring-select-button">
