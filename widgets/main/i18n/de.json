@@ -490,6 +490,8 @@
   "btnOpenSettings": "Plugin-Einstellungen",
   "btnOpenSettingsTitle": "Plugin-Einstellungen öffnen (verfügbar für Mitglieder der Verwaltungsgruppe)",
   "bannerNotConfigured": "Plugin nicht konfiguriert. Projektadmin muss die Verwaltungsgruppe in Project Settings → Apps → Sprint Planner festlegen.",
+  "bannerNotLinked": "Die Planer-Einstellungen für dieses Projekt wurden noch nicht übernommen. Prüfen Sie, ob in den App-Parametern die Verwaltungsgruppe gesetzt ist, und öffnen Sie dann den Planer-Tab im Projekt — danach sieht das Hauptmenü die Einstellungen.",
+  "btnOpenProjectPlanner": "Planer im Projekt öffnen",
   "appTitleSettings": "Smart Sprint Planner: Einstellungen",
   "btnCloseSettings": "Schließen",
   "btnCloseSettingsTitle": "Einstellungen schließen und zur Planung zurückkehren",

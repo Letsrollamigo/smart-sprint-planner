@@ -1999,6 +1999,8 @@
   function _renderProjectPicker()                       { return PROJECT_NAV._renderProjectPicker(_projectNavDeps()); }
   function _setPickerValue(k)                           { return PROJECT_NAV._setPickerValue(_projectNavDeps(), k); }
   function _setGlobalBanner(textKey, sub)               { return PROJECT_NAV._setGlobalBanner(_projectNavDeps(), textKey, sub); }
+  function _renderNotLinkedBanner(href)                 { return PROJECT_NAV._renderNotLinkedBanner(_projectNavDeps(), href); }
+  function _hideNotLinkedBanner()                       { return PROJECT_NAV._hideNotLinkedBanner(); }
   function _initGlobalProjectSelection()                { return PROJECT_NAV._initGlobalProjectSelection(_projectNavDeps()); }
   function _applyActiveProject(key)                     { return PROJECT_NAV._applyActiveProject(_projectNavDeps(), key); }
 
@@ -2103,11 +2105,15 @@
       var configured = !!(r && r.configured);
       diag('check-settings-manager: configured='+configured+' canManage='+canManage+' canManagePlanning='+canManagePlanning,'info');
 
-      // Глобальный баннер «не настроен» (видим всем пользователям, не только settings-менеджерам)
+      /* Глобальный баннер «не настроен». #109 — в global причина configured:false неоднозначна
+         («не задана» vs «задана, но зеркало не дописано») → своя полоса, см. project-nav. */
+      var notLinked = !configured && _mode === 'global';
       if (banner) {
-        if (configured) banner.classList.add('hidden');
-        else            banner.classList.remove('hidden');
+        if (configured || notLinked) banner.classList.add('hidden');
+        else                         banner.classList.remove('hidden');
       }
+      if (notLinked) SHARE_CTRL._projectSettingsHrefAsync(_shareDeps()).then(_renderNotLinkedBanner);
+      else           _hideNotLinkedBanner();
 
       // Кнопка открытия overlay настроек — settings-менеджеру ИЛИ планировочному менеджеру (#22)
       if (!btn) return;

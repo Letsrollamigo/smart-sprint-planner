@@ -489,6 +489,8 @@
   "btnOpenSettings": "Eklenti ayarları",
   "btnOpenSettingsTitle": "Eklenti ayarlarını aç (yönetim grubu üyeleri için kullanılabilir)",
   "bannerNotConfigured": "Eklenti yapılandırılmadı. Proje yöneticisi Project Settings → Apps → Sprint Planner üzerinden yönetim grubunu ayarlamalıdır.",
+  "bannerNotLinked": "Bu projenin planlayıcı ayarları henüz alınmadı. Uygulama parametrelerinde ayar yönetim grubunun tanımlı olduğunu kontrol edin ve projede planlayıcı sekmesini açın; bundan sonra ana menü ayarları görecektir.",
+  "btnOpenProjectPlanner": "Projede planlayıcıyı aç",
   "appTitleSettings": "Smart Sprint Planner: Ayarlar",
   "btnCloseSettings": "Kapat",
   "btnCloseSettingsTitle": "Ayarları kapat ve planlamaya dön",

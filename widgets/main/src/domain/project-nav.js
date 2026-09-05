@@ -372,6 +372,34 @@
     el.classList.remove('hidden');
   }
 
+  /* #109 — баннер «планер в проекте ещё не открывали». Главное меню знает группу настроек
+     только из зеркала ssp_acl, а пишет зеркало исключительно проектный режим (sync-acl на
+     init виджета + досинк на settings-save). Поэтому проект, где группу задали в Параметрах
+     приложения, но планер ни разу не открывали, честно приходит как configured:false — и
+     старая полоса «Плагин не настроен» отправляла человека настраивать заново. Кнопка ведёт
+     ровно туда, где подключение и завершается. href == null (нет базы/ключа) → только текст. */
+  function _renderNotLinkedBanner(deps, href) {
+    var el = document.getElementById('bannerNotLinked');
+    if (!el) return;
+    el.textContent = '';
+    el.appendChild(document.createTextNode(deps.T('bannerNotLinked') + ' '));
+    if (href) {
+      var a = document.createElement('a');
+      a.className = 'ring-button-button ring-button-heightS';
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = deps.T('btnOpenProjectPlanner');
+      el.appendChild(a);
+    }
+    el.classList.remove('hidden');
+  }
+
+  function _hideNotLinkedBanner() {
+    var el = document.getElementById('bannerNotLinked');
+    if (el) { el.textContent = ''; el.classList.add('hidden'); }
+  }
+
   /* Переключение флага. Выключение — через confirm (риск 2 карточки #80 проговаривается
      в теле: данные целы, включит настройщик, workflow-правила продолжают работать). */
   function _togglePlannerDisabled(deps, disable, onDone) {
@@ -485,6 +513,8 @@
     _renderProjectPicker: _renderProjectPicker,
     _setPickerValue: _setPickerValue,
     _setGlobalBanner: _setGlobalBanner,
+    _renderNotLinkedBanner: _renderNotLinkedBanner,   /* #109 */
+    _hideNotLinkedBanner: _hideNotLinkedBanner,       /* #109 */
     _initGlobalProjectSelection: _initGlobalProjectSelection,
     _applyActiveProject: _applyActiveProject,
     _onProjectPicked: _onProjectPicked,

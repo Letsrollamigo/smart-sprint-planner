@@ -489,6 +489,8 @@
   "btnOpenSettings": "Plugin beállítások",
   "btnOpenSettingsTitle": "Plugin beállítások megnyitása (a beállításkezelő csoport tagjai számára elérhető)",
   "bannerNotConfigured": "Plugin nincs konfigurálva. A projekt-admin köteles beállítani a kezelő csoportot a Project Settings → Apps → Sprint Planner alatt.",
+  "bannerNotLinked": "A tervező beállításait ehhez a projekthez még nem vette át a rendszer. Ellenőrizze, hogy az alkalmazás paramétereiben be van-e állítva a beállításkezelő csoport, majd nyissa meg a tervező lapot a projektben — ezután a főmenü látni fogja a beállításokat.",
+  "btnOpenProjectPlanner": "Tervező megnyitása a projektben",
   "appTitleSettings": "Smart Sprint Planner: Beállítások",
   "btnCloseSettings": "Bezárás",
   "btnCloseSettingsTitle": "Beállítások bezárása és visszatérés a tervezéshez",

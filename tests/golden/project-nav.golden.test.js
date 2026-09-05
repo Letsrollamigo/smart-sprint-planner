@@ -589,3 +589,78 @@ test('#97: грязный черновик — селектор откатыва
   assert.strictEqual(sel.value, 'DEMOClone', 'после подтверждения селектор переезжает на новый проект');
   assert.strictEqual(gm.get('_activeProjectKey'), 'DEMOClone');
 });
+
+
+/* #109 — главное меню читает группу настроек из зеркала (пишет его только проектный
+   режим), поэтому «группа не задана» и «задана, но планер в проекте не открывали»
+   приходят одинаково: configured:false. Полоса обязана объяснять обе причины и давать
+   кнопку в проектную вкладку — именно её открытие и дописывает зеркало.
+   Живой стенд это состояние подтверждает: project-scope отвечает configured:true,
+   global-scope по тому же проекту — configured:false. */
+test('#109 global: configured:false → полоса «настройки не подхвачены» с кнопкой, старая полоса скрыта', async () => {
+  const { gm, document } = createHost();
+  gm.set({
+    _mode: 'global',
+    _activeProjectKey: 'T109',
+    _ytBase: 'http://localhost:8081',
+    _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2025.3' }); },
+             fetchApp: function () { return Promise.resolve({}); } },
+    apiGet: function (p) {
+      return p === 'check-settings-manager'
+        ? Promise.resolve({ canManage: false, configured: false, reason: 'not_configured' })
+        : Promise.resolve({});
+    },
+  });
+  gm.call('refreshOpenSettingsBtn');
+  await settle(30);
+
+  const linked = document.getElementById('bannerNotLinked');
+  const old    = document.getElementById('bannerNotConfigured');
+  assert.ok(!linked.classList.contains('hidden'), 'новая полоса показана');
+  assert.ok(old.classList.contains('hidden'), 'старая полоса «не настроен» скрыта — она про другую причину');
+  assert.ok(linked.textContent.length > 30, 'в полосе есть текст объяснения');
+
+  const a = linked.querySelector('a');
+  assert.ok(a, 'в полосе есть кнопка-ссылка');
+  /* YT 2025.3 — вкладка настроек проекта адресуется без сегмента /settings. */
+  assert.strictEqual(a.getAttribute('href'),
+    'http://localhost:8081/projects/T109?tab=' + encodeURIComponent('smart-sprint-planner:Smart Sprint Planner'));
+});
+
+test('#109 global: configured:true → обе полосы скрыты', async () => {
+  const { gm, document } = createHost();
+  gm.set({
+    _mode: 'global', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8081',
+    _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2026.2' }); },
+             fetchApp: function () { return Promise.resolve({}); } },
+    apiGet: function (p) {
+      return p === 'check-settings-manager'
+        ? Promise.resolve({ canManage: true, canManagePlanning: true, configured: true, groupName: 'G' })
+        : Promise.resolve({});
+    },
+  });
+  gm.call('refreshOpenSettingsBtn');
+  await settle(30);
+  assert.ok(document.getElementById('bannerNotLinked').classList.contains('hidden'));
+  assert.ok(document.getElementById('bannerNotConfigured').classList.contains('hidden'));
+});
+
+/* В project-режиме ctx.settings достоверны: configured:false значит буквально
+   «группа не задана» — там остаётся прежний текст, а не подсказка про зеркало. */
+test('#109 project: configured:false → старая полоса «плагин не настроен», новой нет', async () => {
+  const { gm, document } = createHost();
+  gm.set({
+    _mode: 'project', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8081',
+    _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2025.3' }); },
+             fetchApp: function () { return Promise.resolve({}); } },
+    apiGet: function (p) {
+      return p === 'check-settings-manager'
+        ? Promise.resolve({ canManage: false, configured: false, reason: 'not_configured' })
+        : Promise.resolve({});
+    },
+  });
+  gm.call('refreshOpenSettingsBtn');
+  await settle(30);
+  assert.ok(!document.getElementById('bannerNotConfigured').classList.contains('hidden'), 'старая полоса показана');
+  assert.ok(document.getElementById('bannerNotLinked').classList.contains('hidden'), 'новая полоса не показана');
+});

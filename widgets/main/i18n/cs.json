@@ -490,6 +490,8 @@
   "btnOpenSettings": "Nastavení pluginu",
   "btnOpenSettingsTitle": "Otevřít nastavení pluginu (dostupné členům skupiny správy nastavení)",
   "bannerNotConfigured": "Plugin není nakonfigurován. Správce projektu musí nastavit skupinu správy v Project Settings → Apps → Sprint Planner.",
+  "bannerNotLinked": "Nastavení plánovače pro tento projekt zatím nebylo načteno. Zkontrolujte, že je v parametrech aplikace nastavena skupina správy nastavení, a otevřete kartu plánovače v projektu — poté hlavní nabídka nastavení uvidí.",
+  "btnOpenProjectPlanner": "Otevřít plánovač v projektu",
   "appTitleSettings": "Smart Sprint Planner: Nastavení",
   "btnCloseSettings": "Zavřít",
   "btnCloseSettingsTitle": "Zavřít nastavení a vrátit se k plánování",

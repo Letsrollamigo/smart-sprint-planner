@@ -2592,6 +2592,10 @@
     <button class="tab-btn tab-state-tracker" data-tab="reporting-b" data-i18n="repNodeB" aria-hidden="true" tabindex="-1" style="display:none">Управленческие (B)</button>
   </div>
 
+    <!-- #109 — баннер global-режима: планер в проекте ещё не открывали, зеркало настроек не создано.
+       Текст и кнопку ставит JS (_renderNotLinkedBanner) — перерисовывается на смене языка. -->
+  <div id="bannerNotLinked" class="banner banner--warn hidden"></div>
+
   <!-- Глобальный баннер «плагин не настроен» (показывается init'ом, если check-settings-manager → configured:false) -->
   <div id="globalNoProjectBanner" class="banner banner--warn hidden"></div>
 

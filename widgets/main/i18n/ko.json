@@ -490,6 +490,8 @@
   "btnOpenSettings": "플러그인 설정",
   "btnOpenSettingsTitle": "플러그인 설정 열기 (설정 관리 그룹의 구성원이 사용 가능)",
   "bannerNotConfigured": "플러그인이 구성되지 않았습니다. 프로젝트 관리자는 Project Settings → Apps → Sprint Planner에서 관리 그룹을 설정해야 합니다.",
+  "bannerNotLinked": "이 프로젝트의 플래너 설정이 아직 적용되지 않았습니다. 앱 매개변수에 설정 관리 그룹이 지정되어 있는지 확인한 뒤 프로젝트의 플래너 탭을 열어 주세요. 그 후 메인 메뉴가 설정을 인식합니다.",
+  "btnOpenProjectPlanner": "프로젝트에서 플래너 열기",
   "appTitleSettings": "Smart Sprint Planner: 설정",
   "btnCloseSettings": "닫기",
   "btnCloseSettingsTitle": "설정을 닫고 계획으로 돌아가기",

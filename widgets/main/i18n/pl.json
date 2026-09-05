@@ -490,6 +490,8 @@
   "btnOpenSettings": "Ustawienia wtyczki",
   "btnOpenSettingsTitle": "Otwórz ustawienia wtyczki (dostępne dla członków grupy zarządzania)",
   "bannerNotConfigured": "Wtyczka nie skonfigurowana. Admin projektu musi ustawić grupę zarządzania w Project Settings → Apps → Sprint Planner.",
+  "bannerNotLinked": "Ustawienia planera dla tego projektu nie zostały jeszcze wczytane. Sprawdź, czy w parametrach aplikacji ustawiono grupę zarządzającą ustawieniami, a następnie otwórz kartę planera w projekcie — wtedy menu główne zobaczy ustawienia.",
+  "btnOpenProjectPlanner": "Otwórz planer w projekcie",
   "appTitleSettings": "Smart Sprint Planner: Ustawienia",
   "btnCloseSettings": "Zamknij",
   "btnCloseSettingsTitle": "Zamknij ustawienia i wróć do planowania",

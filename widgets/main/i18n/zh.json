@@ -489,6 +489,8 @@
   "btnOpenSettings": "插件设置",
   "btnOpenSettingsTitle": "打开插件设置 (设置管理组成员可用)",
   "bannerNotConfigured": "插件未配置。项目管理员必须在 Project Settings → Apps → Sprint Planner 中设置管理组。",
+  "bannerNotLinked": "此项目的规划器设置尚未生效。请确认应用参数中已指定设置管理组，然后在项目中打开规划器标签页，之后主菜单便会读取到设置。",
+  "btnOpenProjectPlanner": "在项目中打开规划器",
   "appTitleSettings": "Smart Sprint Planner: 设置",
   "btnCloseSettings": "关闭",
   "btnCloseSettingsTitle": "关闭设置并返回规划",

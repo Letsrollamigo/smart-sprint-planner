@@ -6,7 +6,7 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { parseShareSearch, buildShareSearch, parseFocus } =
+const { parseShareSearch, buildShareSearch, parseFocus, buildProjectSettingsHref } =
   require('../../widgets/main/src/pure/share-url-pure.js');
 
 describe('parseShareSearch', () => {
@@ -107,5 +107,39 @@ describe('parseFocus', () => {
     assert.equal(parseFocus('bad'), null);
     assert.equal(parseFocus(''), null);
     assert.equal(parseFocus(null), null);
+  });
+});
+
+describe('buildProjectSettingsHref (#109 — ссылка «открыть планер в проекте»)', () => {
+  const TAB = 'smart-sprint-planner:Smart Sprint Planner';
+
+  it('YT 2026.x — путь со /settings, ключ и tab закодированы', () => {
+    const href = buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB, true);
+    assert.equal(href,
+      'https://yt.example.com/projects/DEMO/settings?tab=' + encodeURIComponent(TAB));
+  });
+
+  it('YT 2025.3 (и неизвестная версия) — путь без /settings', () => {
+    const legacy = 'https://yt.example.com/projects/DEMO?tab=' + encodeURIComponent(TAB);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB, false), legacy);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB), legacy);
+  });
+
+  it('хвостовые слэши базы срезаются (двойной слэш ломает роутинг YT)', () => {
+    const href = buildProjectSettingsHref('https://yt.example.com///', 'DEMO', TAB, true);
+    assert.ok(href.startsWith('https://yt.example.com/projects/DEMO/settings?'), href);
+    assert.ok(!href.includes('.com//projects'), href);
+  });
+
+  it('ключ проекта кодируется (пробелы/кириллица не рвут адрес)', () => {
+    const href = buildProjectSettingsHref('https://yt.example.com', 'ПРО ЕКТ', TAB, true);
+    assert.ok(href.includes('/projects/' + encodeURIComponent('ПРО ЕКТ') + '/settings?'), href);
+  });
+
+  it('без базы, ключа или tab → null (кнопку не рисуем)', () => {
+    assert.equal(buildProjectSettingsHref('', 'DEMO', TAB, true), null);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', '', TAB, true), null);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', '', true), null);
+    assert.equal(buildProjectSettingsHref(null, null, null, true), null);
   });
 });

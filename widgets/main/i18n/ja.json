@@ -489,6 +489,8 @@
   "btnOpenSettings": "プラグイン設定",
   "btnOpenSettingsTitle": "プラグイン設定を開く (設定管理グループのメンバーが利用可能)",
   "bannerNotConfigured": "プラグインが設定されていません。プロジェクト管理者は Project Settings → Apps → Sprint Planner で管理グループを設定する必要があります。",
+  "bannerNotLinked": "このプロジェクトのプランナー設定はまだ読み込まれていません。アプリのパラメーターで設定管理グループが指定されていることを確認し、プロジェクトのプランナータブを開いてください。その後、メインメニューに設定が反映されます。",
+  "btnOpenProjectPlanner": "プロジェクトでプランナーを開く",
   "appTitleSettings": "Smart Sprint Planner: 設定",
   "btnCloseSettings": "閉じる",
   "btnCloseSettingsTitle": "設定を閉じて計画に戻る",

@@ -96,8 +96,28 @@ function parseFocus(focus) {
   return { kind: focus.slice(0, i), value: focus.slice(i + 1) };
 }
 
+/* #109 — ссылка на вкладку планера в настройках проекта. Главное меню знает группу
+   настроек только из зеркала ssp_acl, а пишется зеркало исключительно из проектного
+   режима — поэтому «подключить» проект можно лишь одним способом: открыть в нём планер.
+   tab — per-fork строка «<имя-приложения>:<display-имя виджета>» (адресация вкладки идёт
+   по display-имени, не по key — reference_yt_widget_tab_url_resolution), приходит из
+   монолита. Пустой base/key → null: кнопку в этом случае не рисуем. */
+function buildProjectSettingsHref(ytBase, projectKey, tab, useSettingsPath) {
+  var base = String(ytBase || '').replace(/\/+$/, '');
+  var key  = String(projectKey || '').trim();
+  if (!base || !key || !tab) return null;
+  /* Путь вкладки различается между линейками YouTrack (снято живьём #82, 2026-09-01):
+     2025.3 — /projects/<key>?tab=…, 2026.x — /projects/<key>/settings?tab=…
+     Флаг приходит из монолита (версия инстанса); неизвестна → консервативно 2025.3,
+     старшая из поддерживаемых линеек. */
+  return base + '/projects/' + encodeURIComponent(key)
+       + (useSettingsPath ? '/settings' : '')
+       + '?tab=' + encodeURIComponent(String(tab));
+}
+
 var _api = {
   parseShareSearch: parseShareSearch,
+  buildProjectSettingsHref: buildProjectSettingsHref,
   buildShareSearch: buildShareSearch,
   parseFocus: parseFocus,
   NODE_URL_TO_INTERNAL: NODE_URL_TO_INTERNAL,
