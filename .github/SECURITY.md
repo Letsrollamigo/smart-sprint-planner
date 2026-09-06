@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.36.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.36.1**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.36.1 — #111: no change to the model; one `config?fields=version` request from the main menu is gone** (the tab address no longer depends on the instance version).
 >
 > **v3.36.0 — #89/#90/#109: no change to the security model.** The unestimated-task counter and the import preview are pure computations over data already loaded under the user's own permissions; the preview uses the same plan as the write, and there are no new endpoints or schema keys. The “settings not picked up” bar in the main menu only reads the settings mirror already available to it and builds a link to the project tab.
 >

@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.36.0",
+  "version": "3.36.1",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.35.0</b><br><br>🔵 <b>Unestimated-task counter on the planning screen</b> — every role header now shows “unestimated: N” whenever active issues of that role have no estimate in YouTrack, so a manager sees an incomplete calculation at a glance instead of digging through a diagnostic log.<br><br>🔵 <b>Import preview</b> — the sprint-history import dialog shows “Records to apply: N · overwritten: M · skipped: K” and recomputes it on every checkbox and mode switch, using the very same rule the import will apply.<br><br>🔵 <b>A main menu that explains itself</b> — instead of “Plugin not configured”, the main menu now says why a project's settings are not picked up yet and offers a button that opens the planner tab inside the project, where the link is completed.<br><br>📘 <b>Coming from Jira? A glossary</b> — a new documentation chapter maps Story Points, Velocity, Complete Sprint and the rest to the planner's own terms, and says what is deliberately done differently.",
+  "changeNotes": "<b>What's new since v3.35.0</b><br><br>🔵 <b>Unestimated-task counter on the planning screen</b> — every role header now shows “unestimated: N” whenever active issues of that role have no estimate in YouTrack, so a manager sees an incomplete calculation at a glance instead of digging through a diagnostic log.<br><br>🔵 <b>Import preview</b> — the sprint-history import dialog shows “Records to apply: N · overwritten: M · skipped: K” and recomputes it on every checkbox and mode switch, using the very same rule the import will apply.<br><br>🔵 <b>A main menu that explains itself</b> — instead of “Plugin not configured”, the main menu now says why a project's settings are not picked up yet and offers a button that opens the planner tab inside the project, where the link is completed.<br><br>🐛 <b>That button works on YouTrack 2026.1 too</b> — 3.36.0 built the tab address with a <code>/settings</code> segment for every 2026.x line, and 2026.1 has no such page. One address form now serves every version (2026.2 redirects it on its own).<br><br>📘 <b>Coming from Jira? A glossary</b> — a new documentation chapter maps Story Points, Velocity, Complete Sprint and the rest to the planner's own terms, and says what is deliberately done differently.",
   "widgets": [
     {
       "key": "ssp-main",

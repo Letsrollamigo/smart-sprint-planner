@@ -97,7 +97,7 @@
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
 | `rolecomposition-view.js` | 1128 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
 | `settings-controller.js` | 228 | `__SSP_SETTINGS_CTRL` | обвязка формы настроек проекта (Фаза 5, зачистка «прочих» — слайс 11). |
-| `share-controller.js` | 186 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
+| `share-controller.js` | 165 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
 | `sprint-controller.js` | 642 | `__SSP_SPRINT_CTRL` | контроллеры спринт-CRUD (Фаза 5 слайс 6, домен E1-sprint, последний подслайс E1). |
 | `sprint-store.js` | 73 | `__SSP_SPRINT_STORE` | доменный стор конфликт-канона спринта (ADR-001, второе применение). |
 | `standup-view.js` | 377 | `__SSP_STANDUP_VIEW` | значение опции «Все роли» (не пересекается с role keys) |
@@ -130,7 +130,7 @@
 | `reporting-pure.js` | 656 | `__SSP_REPORTING_PURE` | #50 S1b. |
 | `reporting-rollup.js` | 238 | `__SSP_REPORTING_ROLLUP` | #50 B0 «Свод» (контур B, управленческий roll-up). |
 | `reporting-ttm.js` | 412 | `__SSP_REPORTING_TTM` | #50 S3b/S4b. |
-| `share-url-pure.js` | 111 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
+| `share-url-pure.js` | 110 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
 | `slot-merge-pure.js` | 143 | `__SSP_SLOT_MERGE_PURE` | #84 «перечитать-и-слить вместо „обновите страницу"». |
 | `sort-pure.js` | 144 | `__SSP_SORT_PURE` | sandboxed write may throw |
 | `sprint-field-pure.js` | 86 | `__SSP_SPRINT_FIELD_PURE` | #88 «ролевое поле спринта». |

@@ -102,16 +102,15 @@ function parseFocus(focus) {
    tab — per-fork строка «<имя-приложения>:<display-имя виджета>» (адресация вкладки идёт
    по display-имени, не по key — reference_yt_widget_tab_url_resolution), приходит из
    монолита. Пустой base/key → null: кнопку в этом случае не рисуем. */
-function buildProjectSettingsHref(ytBase, projectKey, tab, useSettingsPath) {
+function buildProjectSettingsHref(ytBase, projectKey, tab) {
   var base = String(ytBase || '').replace(/\/+$/, '');
   var key  = String(projectKey || '').trim();
   if (!base || !key || !tab) return null;
-  /* Путь вкладки различается между линейками YouTrack (снято живьём #82, 2026-09-01):
-     2025.3 — /projects/<key>?tab=…, 2026.x — /projects/<key>/settings?tab=…
-     Флаг приходит из монолита (версия инстанса); неизвестна → консервативно 2025.3,
-     старшая из поддерживаемых линеек. */
+  /* #111 — одна форма адреса на все линейки: /projects/<key>?tab=…. Снято живьём 2026-09-06:
+     2025.3 и 2026.1 открывают вкладку по ней, 2026.2 редиректит на /projects/<key>/settings?tab=….
+     Форма со /settings, которую #109 строил для «2026.x», на 2026.1 отдаёт «Не удаётся найти» —
+     она появилась только в 2026.2, поэтому развилка по линейке снята вместе с пробой версии. */
   return base + '/projects/' + encodeURIComponent(key)
-       + (useSettingsPath ? '/settings' : '')
        + '?tab=' + encodeURIComponent(String(tab));
 }
 

@@ -133,37 +133,16 @@ function _buildShareHref(deps) {
 /* #109 — адрес вкладки планера в настройках проекта. Главное меню знает группу настроек
    только из зеркала, а пишет зеркало исключительно проектный режим — поэтому «подключить»
    проект можно единственным способом: открыть в нём планер. Вкладка адресуется парой
-   «имя приложения : display-имя виджета» (не key), а путь различается между линейками
-   YouTrack — версию инстанса спрашиваем один раз за сессию.
+   «имя приложения : display-имя виджета» (не key). Форма адреса одна на все линейки
+   (#111 — проба версии инстанса снята: форма со /settings ломала 2026.1).
    ⚠️ _PROJECT_WIDGET_TAB — per-fork константа (DIFF_MAP §9), как и _SHARE_APP_PATH выше. */
 var _PROJECT_WIDGET_TAB = 'smart-sprint-planner:Smart Sprint Planner';
-var _ytMajorP = null;
-function _ytMajorOnce(deps) {
-  if (_ytMajorP) return _ytMajorP;
-  _ytMajorP = new Promise(function (resolve) {
-    var done = false;
-    function fin(v) { if (!done) { done = true; resolve(v); } }
-    setTimeout(function () { fin(null); }, 4000);
-    try {
-      var host = deps.state.getHost();
-      var pr = (host && typeof host.fetchYouTrack === 'function') ? host.fetchYouTrack('config?fields=version') : null;
-      if (!pr || typeof pr.then !== 'function') return fin(null);
-      pr.then(function (r) {
-        var m = String((r && r.version) || '').match(/^(\d{4})/);
-        fin(m ? parseInt(m[1], 10) : null);
-      }).catch(function () { fin(null); });
-    } catch (_) { fin(null); }
-  });
-  return _ytMajorP;
-}
-/* Promise<string|null> — null, если базы/ключа нет или чистое ядро недоступно. */
+/* Promise<string|null> — null, если базы/ключа нет или чистое ядро недоступно.
+   Промис сохранён ради контракта потребителя (project-nav ждёт адрес асинхронно). */
 function _projectSettingsHrefAsync(deps) {
-  return _ytMajorOnce(deps).then(function (maj) {
-    if (typeof SHARE_URL_PURE.buildProjectSettingsHref !== 'function') return null;
-    return SHARE_URL_PURE.buildProjectSettingsHref(
-      deps.state.getYtBase(), deps.state.getActiveProjectKey(), _PROJECT_WIDGET_TAB,
-      maj != null && maj >= 2026);
-  });
+  if (typeof SHARE_URL_PURE.buildProjectSettingsHref !== 'function') return Promise.resolve(null);
+  return Promise.resolve(SHARE_URL_PURE.buildProjectSettingsHref(
+    deps.state.getYtBase(), deps.state.getActiveProjectKey(), _PROJECT_WIDGET_TAB));
 }
 
 function _onShareClick(deps) {

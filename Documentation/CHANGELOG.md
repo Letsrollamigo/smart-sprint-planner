@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.36.1] — 2026-09-06
+
+> **A patch for the “Open the planner in the project” button (#109): on YouTrack 2026.1 it led to an empty page.** One defect (#111), found while reshooting the documentation on a 2026.1 instance on the day 3.36.0 shipped.
+
+### Fixed
+
+- **The address of the planner tab in project settings** was built with a `/settings` segment for every 2026.x line, but 2026.1 has no such form — the button returned “Page not found”. Verified live on three versions: the form without `/settings` opens the tab on 2025.3 and 2026.1, and 2026.2 redirects it to its own address itself. The per-line branch is gone together with the instance-version request — one address form for every version.
+
+---
+
 ## [3.36.0] — 2026-09-06
 
 > **Small borrowings in one release: data health on the planning screen, an import preview, a main menu that explains itself.** Three small improvements from the competitor review plus a glossary for teams coming from Jira. The data schema did not change.

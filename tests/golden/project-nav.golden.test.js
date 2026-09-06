@@ -627,6 +627,29 @@ test('#109 global: configured:false → полоса «настройки не �
     'http://localhost:8081/projects/T109?tab=' + encodeURIComponent('smart-sprint-planner:Smart Sprint Planner'));
 });
 
+test('#111 global: инстанс 2026.1 → адрес вкладки БЕЗ /settings (форма со /settings там отдаёт 404)', async () => {
+  const { gm, document } = createHost();
+  gm.set({
+    _mode: 'global',
+    _activeProjectKey: 'T111',
+    _ytBase: 'http://localhost:8082',
+    _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2026.1' }); },
+             fetchApp: function () { return Promise.resolve({}); } },
+    apiGet: function (p) {
+      return p === 'check-settings-manager'
+        ? Promise.resolve({ canManage: false, configured: false, reason: 'not_configured' })
+        : Promise.resolve({});
+    },
+  });
+  gm.call('refreshOpenSettingsBtn');
+  await settle(30);
+  const a = document.getElementById('bannerNotLinked').querySelector('a');
+  assert.ok(a, 'в полосе есть кнопка-ссылка');
+  /* Снято живьём 2026-09-06: 2025.3 и 2026.1 открывают вкладку по этой форме, 2026.2 редиректит на неё же со /settings. */
+  assert.strictEqual(a.getAttribute('href'),
+    'http://localhost:8082/projects/T111?tab=' + encodeURIComponent('smart-sprint-planner:Smart Sprint Planner'));
+});
+
 test('#109 global: configured:true → обе полосы скрыты', async () => {
   const { gm, document } = createHost();
   gm.set({

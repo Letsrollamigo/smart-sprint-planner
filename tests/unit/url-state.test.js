@@ -111,35 +111,31 @@ describe('parseFocus', () => {
 });
 
 describe('buildProjectSettingsHref (#109 — ссылка «открыть планер в проекте»)', () => {
-  const TAB = 'smart-sprint-planner:Smart Sprint Planner';
+  const TAB = 'scbt-sprint-planner:СКБТ Спринт-планер';
 
-  it('YT 2026.x — путь со /settings, ключ и tab закодированы', () => {
-    const href = buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB, true);
-    assert.equal(href,
-      'https://yt.example.com/projects/DEMO/settings?tab=' + encodeURIComponent(TAB));
-  });
-
-  it('YT 2025.3 (и неизвестная версия) — путь без /settings', () => {
+  it('#111 — одна форма на все линейки: без /settings, ключ и tab закодированы', () => {
     const legacy = 'https://yt.example.com/projects/DEMO?tab=' + encodeURIComponent(TAB);
-    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB, false), legacy);
     assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB), legacy);
+    /* бывший флаг «2026.x → /settings» игнорируется: на 2026.1 та форма отдаёт 404 */
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', TAB, true), legacy);
+    assert.ok(!legacy.includes('/settings'), legacy);
   });
 
   it('хвостовые слэши базы срезаются (двойной слэш ломает роутинг YT)', () => {
-    const href = buildProjectSettingsHref('https://yt.example.com///', 'DEMO', TAB, true);
-    assert.ok(href.startsWith('https://yt.example.com/projects/DEMO/settings?'), href);
+    const href = buildProjectSettingsHref('https://yt.example.com///', 'DEMO', TAB);
+    assert.ok(href.startsWith('https://yt.example.com/projects/DEMO?'), href);
     assert.ok(!href.includes('.com//projects'), href);
   });
 
   it('ключ проекта кодируется (пробелы/кириллица не рвут адрес)', () => {
-    const href = buildProjectSettingsHref('https://yt.example.com', 'ПРО ЕКТ', TAB, true);
-    assert.ok(href.includes('/projects/' + encodeURIComponent('ПРО ЕКТ') + '/settings?'), href);
+    const href = buildProjectSettingsHref('https://yt.example.com', 'ПРО ЕКТ', TAB);
+    assert.ok(href.includes('/projects/' + encodeURIComponent('ПРО ЕКТ') + '?tab='), href);
   });
 
   it('без базы, ключа или tab → null (кнопку не рисуем)', () => {
-    assert.equal(buildProjectSettingsHref('', 'DEMO', TAB, true), null);
-    assert.equal(buildProjectSettingsHref('https://yt.example.com', '', TAB, true), null);
-    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', '', true), null);
+    assert.equal(buildProjectSettingsHref('', 'DEMO', TAB), null);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', '', TAB), null);
+    assert.equal(buildProjectSettingsHref('https://yt.example.com', 'DEMO', ''), null);
     assert.equal(buildProjectSettingsHref(null, null, null, true), null);
   });
 });
