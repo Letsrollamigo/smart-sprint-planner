@@ -30,7 +30,7 @@ A snapshot is not a link to the issues but a copy of their state at the moment o
 
 - **All history (JSON)** — export the project's whole history as one file.
 - Inside an expanded record there is an export of that single sprint to Excel and JSON.
-- **Import from file** — load history back: moving between instances, restoring.
+- **Import from file** — load history back: moving between instances, restoring. Under the mode selector the dialog shows “Records to apply: N · overwritten: M · skipped: K” and recomputes it on every checkbox, so the scale of the import is visible before you press “Import”.
 
 ## Bringing a sprint back for editing
 
