@@ -33,6 +33,7 @@ Everything the planner knows about an issue it reads from YouTrack. It invents n
 | 11 | [Releases](11-releases.md) | planned releases, composition, the readiness bar |
 | 12 | [Sprint stages and who can do what](12-stages-rights.md) | draft → agreed → distributed → closed |
 | 13 | [Day one on a new project](13-first-day.md) | what you see before setup, and why |
+| 14 | [Coming from Jira: a glossary](14-jira-mapping.md) | Jira term → its place in the planner, what is done differently |
 
 ## Conventions
 

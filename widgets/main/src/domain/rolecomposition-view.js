@@ -38,6 +38,12 @@ function cascadeExcludeAcrossRoles(roleItems, srcRk, issueId, mode, excludedCode
   return touched;
 }
 
+/* #89.1 — задача «без оценки»: поле оценки роли пусто или ноль. Ручная аллокация
+   не спасает — в YouTrack оценки всё равно нет; считаются только активные (канон #65). */
+function _countUnestimated(items, rk) {
+  return items.filter(function(it){ return !(it && it['estimate_'+rk] > 0); }).length;
+}
+
 function computeRoleQuickStats(rk, deps) {
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
   var _sprint = deps.state.getSprint();
@@ -68,10 +74,10 @@ function computeRoleQuickStats(rk, deps) {
           : Math.max(0, (it['estimate_'+rk] || 0) - (it['fact_'+rk] || 0)) / 60;
         if (isFinite(a)) totH += a;
       });
-      return { resource: resH, totalAlloc: totH, taskCount: itemsH.length, overlimit: (resH > 0) && (totH > resH + 0.001) };
+      return { resource: resH, totalAlloc: totH, taskCount: itemsH.length, overlimit: (resH > 0) && (totH > resH + 0.001), unestimated: _countUnestimated(itemsH, rk) };
     }
     /* нет снапшота для этой роли в выбранном спринте — пустой stat */
-    return { resource: 0, totalAlloc: 0, taskCount: 0, overlimit: false };
+    return { resource: 0, totalAlloc: 0, taskCount: 0, overlimit: false, unestimated: 0 };
   }
   /* #45 R4 — ресурс активной роли через адаптер §9: Full+approved → утверждённая ёмкость
      (минуты), иначе verbatim _sprint[role.resKey]. Fallback адаптера = тот же _sprint[resKey],
@@ -97,7 +103,7 @@ function computeRoleQuickStats(rk, deps) {
     if (isFinite(a)) totalAlloc += a;
   });
   var overlimit = (resource > 0) && (totalAlloc > resource + 0.001);
-  return { resource: resource, totalAlloc: totalAlloc, taskCount: items.length, overlimit: overlimit };
+  return { resource: resource, totalAlloc: totalAlloc, taskCount: items.length, overlimit: overlimit, unestimated: _countUnestimated(items, rk) };
 }
 
 function renderRoleAccordion(rk, deps) {
@@ -145,6 +151,7 @@ function renderRoleAccordion(rk, deps) {
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
+    +     (stats.unestimated ? '<span class="planning-role-unest">' + esc(T('planningRoleStatUnestimated')) + ': ' + stats.unestimated + '</span>' : '')   /* #89.1 */
     +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
     +     (_thisIsFine ? '<span class="planning-role-dog" title="' + esc(T('hintThisIsFine')) + '">' + DOG_SVG + '</span>' : '')   /* #98 */
     +   '</button>'
@@ -177,6 +184,18 @@ function _updateRoleAccordionStats(rk, deps) {
   if (nums[0]) nums[0].textContent = resStr;
   if (nums[1]) nums[1].textContent = allocStr + ' / ' + resStr;
   if (nums[2]) nums[2].textContent = String(stats.taskCount);
+  var toggle = card.querySelector('.planning-role-toggle');
+  var unest = toggle.querySelector('.planning-role-unest');   /* #89.1 */
+  if (stats.unestimated) {
+    if (!unest) {
+      unest = document.createElement('span');
+      unest.className = 'planning-role-unest';
+      toggle.insertBefore(unest, toggle.querySelector('.planning-role-warn'));
+    }
+    unest.textContent = deps.T('planningRoleStatUnestimated') + ': ' + stats.unestimated;
+  } else if (unest) {
+    unest.parentNode.removeChild(unest);
+  }
   var warn = card.querySelector('.planning-role-toggle .planning-role-warn');
   if (stats.overlimit) {
     if (!warn) {

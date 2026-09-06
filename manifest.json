@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.35.0",
+  "version": "3.36.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.34.1</b><br><br>🔵 <b>A sprint field per role</b> — a team of several roles living in one project can now keep its sprints in different issue fields. Settings gained a “Sprint field” column in the roles table; leave it empty and the role uses the shared field, so projects with a single field see no change. The sprint form adapts on its own: one picker while every participating role shares a field, a row per role the moment they differ.<br><br>🔵 <b>Write the sprint into YouTrack issues</b> — a new switch, off by default. When on, confirming a role composition sets the chosen sprint value on every active issue of that composition, under your own permissions, in batches, with a per-issue report. The value is only ever set, never cleared — someone may have set it by hand before the planner touched it. Multi-value fields are no longer offered as sprint fields, and a previously saved one is refused before any write.<br><br>🔵 <b>A refresh button that says what it does</b> — “Refresh from task” told you neither what it pulls nor where from. It is now “Refresh issue data from YouTrack” in every interface language, and it is styled as a primary action.",
+  "changeNotes": "<b>What's new since v3.35.0</b><br><br>🔵 <b>Unestimated-task counter on the planning screen</b> — every role header now shows “unestimated: N” whenever active issues of that role have no estimate in YouTrack, so a manager sees an incomplete calculation at a glance instead of digging through a diagnostic log.<br><br>🔵 <b>Import preview</b> — the sprint-history import dialog shows “Records to apply: N · overwritten: M · skipped: K” and recomputes it on every checkbox and mode switch, using the very same rule the import will apply.<br><br>🔵 <b>A main menu that explains itself</b> — instead of “Plugin not configured”, the main menu now says why a project's settings are not picked up yet and offers a button that opens the planner tab inside the project, where the link is completed.<br><br>📘 <b>Coming from Jira? A glossary</b> — a new documentation chapter maps Story Points, Velocity, Complete Sprint and the rest to the planner's own terms, and says what is deliberately done differently.",
   "widgets": [
     {
       "key": "ssp-main",

@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.36.0] — 2026-09-06
+
+> **Small borrowings in one release: data health on the planning screen, an import preview, a main menu that explains itself.** Three small improvements from the competitor review plus a glossary for teams coming from Jira. The data schema did not change.
+
+### Added
+
+- **An “unestimated: N” counter in the role header** on the allocation screen. It shows how many active issues of the role have no estimate in YouTrack (the field is empty or zero) and appears only when such issues exist. A manual allocation does not “rescue” an issue — there is still no estimate in the tracker, and plan-vs-fact will not see it. Before, this was visible only in the engineer's diagnostic log.
+- **A preview in the sprint-history import.** Under the mode selector in the import dialog — the line “Records to apply: N · overwritten: M · skipped: K”. It is recomputed on every sprint checkbox and mode switch, using the same rule the write will apply: selection is by sprint, duplicates are by role snapshot. Before, the scale of “replace or merge” was visible only after the fact.
+- **A “Coming from Jira: a glossary” chapter** in the planner overview: Story Points, Velocity, Complete Sprint and the rest — where they live here and what is deliberately done differently.
+
+### Changed
+
+- **The main menu explains why a project's settings are not picked up** (#109). The “Plugin not configured” bar sent people to configure the project again although the settings were often already there: the main menu learns the settings group only from a mirror that the project tab writes on its first open. From the main menu there is no way to tell “the group is not set” from “it is set, but the tab has never been opened”, so the text covers both causes and the “Open the planner in the project” button leads exactly to the planner tab in the project settings — the address is built per YouTrack line (2025.3 and 2026.x address the tab differently).
+
+### Verified, no change
+
+- **Pinning manually entered capacity** (#89.3). In the competitor, shifting sprint dates overwrites manually entered capacity rows; here the problem does not exist: in the Light model the manual resource is a mode for the whole role, the formula recalculation skips it, and the hour norm does not depend on sprint dates; in the Full model the manual inputs are grade, rate, participation and shares — values without a date — while the base is computed and not editable.
+
+---
+
 ## [3.35.0] — 2026-09-03
 
 > **A sprint field per role, and the sprint reflected in the issues themselves.** A large team of several roles lives in one project but keeps its sprints in different issue fields — the sprint field is no longer a single project-wide setting.

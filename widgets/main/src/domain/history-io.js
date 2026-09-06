@@ -69,6 +69,25 @@ function _preflightHistFile(data, deps) {
   return { ok: true };
 }
 
+/* ── #89.2 — план слияния импорта. Единственный источник и для записи (submitHistImport
+   контроллера — через deps ядра), и для предпросмотра в модалке: иначе «к применению N»
+   разошлось бы с фактом. Выбор — по базовому sprintId (спринт), дедуп — по полному
+   sprintId (снимок роли): один спринт может частично уже быть в истории. ── */
+function planHistImport(selectedBaseIds, mode, fileRecords, currentHistory) {
+  var current = (currentHistory || []).filter(function (h) { return !!h; });
+  var toAdd = (fileRecords || []).filter(function (r) { return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });
+  var existingIds = {}; current.forEach(function (h) { existingIds[h.sprintId] = true; });
+  var replaced = 0, skipped = 0;
+  if (mode === 'overwrite') {
+    var removeSet = {};
+    toAdd.forEach(function (r) { removeSet[r.sprintId] = true; if (existingIds[r.sprintId]) replaced++; });
+    current = current.filter(function (h) { return !removeSet[h.sprintId]; });
+  } else {
+    toAdd = toAdd.filter(function (r) { if (existingIds[r.sprintId]) { skipped++; return false; } return true; });
+  }
+  return { toAdd: toAdd, merged: current.concat(toAdd), replaced: replaced, skipped: skipped };
+}
+
 /* ── Диалог импорта (Promise-based) ── */
 function openImportHistDialog(data, deps) {
   var T = deps.t, toast = deps.toast, fmtDate = deps.fmtDate, fmtDT = deps.fmtDT;
@@ -144,6 +163,12 @@ function openImportHistDialog(data, deps) {
           replaceTitle:   T('btnImportReplaceTitle')    || '',
           cancelText:     T('btnCancel')                || 'Отмена',
           submitText:     T('btnImport')                || 'Импортировать',
+          dryRun:         T('importHistDryRun')         || '',
+        },
+        /* #89.2 — предпросмотр: тот же план, что применит submitHistImport */
+        preview: function (sel, m) {
+          var p = planHistImport(sel, m, records, deps.history || []);
+          return { apply: p.toAdd.length, replaced: p.replaced, skipped: p.skipped };
         },
         onSubmit:  function(sel, mode){ decided = { action: 'merge', sel: sel, mode: mode }; h.close(); },
         onReplace: function(){ decided = { action: 'replace' }; h.close(); },
@@ -175,6 +200,7 @@ const api = {
   _histFileStem,
   exportAllHistoryToJson,
   _preflightHistFile,
+  planHistImport,
   openImportHistDialog,
 };
 

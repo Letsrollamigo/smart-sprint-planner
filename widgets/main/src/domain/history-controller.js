@@ -171,18 +171,9 @@
   /* Слияние импортируемых записей (overwrite/skip) + persist */
   function submitHistImport(selectedBaseIds, mode, fileRecords, deps) {
     var st = deps.state;
-    var current = (st.getHistory() || []).slice();
-    var toAdd = fileRecords.filter(function (r) { return r && r.sprintId && selectedBaseIds.indexOf(String(r.sprintId).split('_')[0]) >= 0; });
-    if (mode === 'overwrite') {
-      var removeSet = {};
-      toAdd.forEach(function (r) { removeSet[r.sprintId] = true; });
-      current = current.filter(function (h) { return !removeSet[h.sprintId]; });
-    } else {
-      // skip: убираем из toAdd то, что уже есть (по полному sprintId)
-      var existingIds = {}; current.forEach(function (h) { if (h) existingIds[h.sprintId] = true; });
-      toAdd = toAdd.filter(function (r) { return !existingIds[r.sprintId]; });
-    }
-    var merged = current.concat(toAdd);
+    /* #89.2 — план слияния общий с предпросмотром модалки (HISTORY_IO.planHistImport через deps ядра) */
+    var plan = deps.planHistImport(selectedBaseIds, mode, fileRecords, st.getHistory() || []);
+    var toAdd = plan.toAdd, merged = plan.merged;
     return deps.apiPost('history', { history: merged }).then(function () {
       st.setHistory(merged);
       deps.renderHistory();

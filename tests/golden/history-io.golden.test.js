@@ -195,7 +195,17 @@ test('golden: openImportHistDialog — контракты cancel / replace / mer
   specM.onClose();
   const resMerge = await pM;
 
+  /* #89.2 — предпросмотр считает тем же планом, что применит запись: на фикстуре
+     collision-снимок уже есть в истории → skip и overwrite обязаны разойтись. */
+  const existingBase = String(hostM.gm.get('_history')[0].sprintId).split('_')[0];
+  const pvSkip = specM.body.props.preview(['ext1', existingBase], 'skip');
+  const pvOver = specM.body.props.preview(['ext1', existingBase], 'overwrite');
+  assert.deepEqual(pvSkip, { apply: 2, replaced: 0, skipped: 1 });
+  assert.deepEqual(pvOver, { apply: 3, replaced: 1, skipped: 0 });
+  assert.deepEqual(specM.body.props.preview(['ext1'], 'skip'), { apply: 2, replaced: 0, skipped: 0 });
+
   checkJsonSnapshot('hist-import-dialog-behavior', {
+    preview: { skip: pvSkip, overwrite: pvOver },
     cancel: { result: resCancel === null ? 'null' : resCancel },
     replace: {
       result: resReplace,

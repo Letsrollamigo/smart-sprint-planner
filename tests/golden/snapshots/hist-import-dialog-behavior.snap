@@ -1,4 +1,16 @@
 {
+  "preview": {
+    "skip": {
+      "apply": 2,
+      "replaced": 0,
+      "skipped": 1
+    },
+    "overwrite": {
+      "apply": 3,
+      "replaced": 1,
+      "skipped": 0
+    }
+  },
   "cancel": {
     "result": "null"
   },

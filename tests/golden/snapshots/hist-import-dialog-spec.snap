@@ -66,8 +66,10 @@
         "replaceText": "Полное восстановление…",
         "replaceTitle": "Сотрёт всю историю и заменит файлом (требуются права historyManager)",
         "cancelText": "Отмена",
-        "submitText": "Импортировать"
+        "submitText": "Импортировать",
+        "dryRun": "Записей к применению: {n} · перезапись: {r} · пропуск: {s}"
       },
+      "preview": "<fn>",
       "onSubmit": "<fn>",
       "onReplace": "<fn>",
       "onCancel": "<fn>"

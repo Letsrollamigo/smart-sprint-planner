@@ -254,6 +254,11 @@ function ImportHistForm(props) {
   const onCancel = props.onCancel || noop;
 
   const selectedIds = groups.filter((g) => selected[g.baseId]).map((g) => g.baseId);
+  /* #89.2 — предпросмотр слияния: считается тем же планом, что применит импорт */
+  const pv = (typeof props.preview === 'function') ? props.preview(selectedIds, mode) : null;
+  const dryRunText = pv && L.dryRun
+    ? L.dryRun.replace('{n}', String(pv.apply)).replace('{r}', String(pv.replaced)).replace('{s}', String(pv.skipped))
+    : '';
   const toggle = (id) => setSelected((prev) => {
     const next = Object.assign({}, prev);
     next[id] = !next[id];
@@ -305,6 +310,7 @@ function ImportHistForm(props) {
             </Radio>
           )
           : null}
+        {dryRunText ? <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px' }}>{dryRunText}</div> : null}
       </div>
 
       <div className="ssp-modal-footer" style={{ flexWrap: 'wrap' }}>
