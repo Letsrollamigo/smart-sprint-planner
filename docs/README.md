@@ -3,7 +3,7 @@
 Smart Sprint Planner for YouTrack — full documentation in English and Russian.
 Полная документация планера на английском и русском.
 
-Planner version **3.29.3**. Screenshots taken on YouTrack **2026.1**.
+Planner version **3.36.0**. Screenshots taken on YouTrack **2026.1**.
 
 ---
 

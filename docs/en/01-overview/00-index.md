@@ -2,7 +2,7 @@
 
 A walk through every screen of the planner: what each tab shows, what each button does, where the numbers come from.
 
-Planner version **3.29.3**. Screenshots taken on YouTrack **2026.1**.
+Planner version **3.36.0**. Screenshots taken on YouTrack **2026.1**.
 
 ## Who this is for
 
