@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- **Retries for transient read errors.** When YouTrack answers 429/502/503/504, drops the connection or does not answer, the read is retried up to twice with a growing pause (0.3 s, 0.9 s) — before, the first hiccup failed the whole screen. Writes are never retried: they may have reached the server.
+- **Retries for transient read errors.** When YouTrack answers 429/502/503/504 or drops the connection, the read is retried up to twice with a growing pause (0.3 s, 0.9 s) — before, the first hiccup failed the whole screen. Writes are never retried: they may have reached the server.
 - **A cap on parallel YouTrack reads.** No more than six requests at once, the rest wait in a queue in call order. Before, the backlog pool and Gantt links sent all their batches at once.
 - **A request id in every refusal** (#85). The error body carries `cid`, the same id appears in the error text and in the diagnostic log, and the server writes one line with the id, the status and the reason code — never the request body or user values. Quote the id in a bug report and the incident is found in the log in seconds.
 
