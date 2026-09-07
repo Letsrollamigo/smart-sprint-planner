@@ -66,7 +66,7 @@
 |---|---|---|---|
 | `data-loaders.js` | 319 | `__SSP_DATA_LOADERS` | загрузчики данных проекта (Фаза 5 слайс 12, домен E6 — первый выносимый подкластер init/bootstrap). |
 | `reporting-data.js` | 538 | `__SSP_REPORTING_DATA` | #50 S1b. |
-| `youtrack-api.js` | 483 | `__SSP_YOUTRACK_API` | #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global → backend-global + projectKey. |
+| `youtrack-api.js` | 487 | `__SSP_YOUTRACK_API` | #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global → backend-global + projectKey. |
 | `allocsummary-view.js` | 247 | `__SSP_ALLOCSUMMARY_VIEW` | #61 — Сводная таблица мультиролевого планирования: read-only спойлер над аккордеонами ролей экрана «Аллокация общего ресурса» (#allocSummaryHost). |
 | `backlog-assign.js` | 138 | `__SSP_BACKLOG_ASSIGN` | #21 слайс 4 — раскладка задачи из пула бэклога в состав ролей спринта (C1-C2 спеки). |
 | `backlog-loader.js` | 422 | `__SSP_BACKLOG_LOADER` | #21 слайс 2b — async-загрузчик пула бэклога. |
@@ -104,6 +104,7 @@
 | `tab-router.js` | 107 | `__SSP_TAB_ROUTER` | Этап 4: planner-wide на всё, что не settings-overlay. |
 | `validation-controller.js` | 331 | `__SSP_VALIDATION_CTRL` | Validation-контроллер: валидация состава роли (doValidateRole), детектор перелимита аллокаций + блокировка кнопки валидации (updateAllocOverlimitUI… |
 | `working-copy.js` | 555 | `__SSP_WORKING_COPY` | #88 — резолвер ролевого значения поля «Спринт» (leaf-слой pure, гейт B1 доволен). |
+| `read-gate.js` | 81 | `__SSP_READ_GATE` | #110 (v3.37.0): единый шлюз чтений YouTrack. |
 
 ### pure/ — чистые функции без DOM и стейта: расчёты, слияние, даты, сортировка
 

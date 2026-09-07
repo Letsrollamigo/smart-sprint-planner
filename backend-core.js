@@ -54,6 +54,22 @@ function dlog(ctx, msg) {
   } catch (e) { /* never throw from logger */ }
 }
 
+/* #85 — сквозной идентификатор запроса: один на ctx, создаётся лениво при первом отказе.
+   Кладётся в конверт ошибки (`cid`) и в единственную строку лога отказа — только cid,
+   HTTP-статус и машинный код причины, без тела запроса и пользовательских значений.
+   Пользователь называет cid в баг-репорте — инцидент находится в логе за секунды.
+   Строка пишется всегда (не гейтится enableDebugLog): без неё cid не по чему искать. */
+function cid(ctx) {
+  if (!ctx) return null;
+  try {
+    if (!ctx.__scbtCid) ctx.__scbtCid = 'cid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    return ctx.__scbtCid;
+  } catch (e) { return null; }
+}
+function logRefusal(ctx, status, reason) {
+  try { console.warn('[smart-sprint-planner] ' + cid(ctx) + ' ' + status + ' ' + String(reason || '').substring(0, 80)); } catch (e) { /* never throw */ }
+}
+
 function getProp(ctx, key, defaultVal) {
   try {
     var val = ctx.project.extensionProperties[key];
@@ -84,7 +100,8 @@ function bumpSlotRev(ctx, prop) {
 function revConflict(ctx, baseRev, cur) {
   if (baseRev === undefined || baseRev === null || baseRev === cur) return false;
   ctx.response.status = 409;
-  ctx.response.json({ success: false, error: 'rev_conflict', rev: cur });
+  ctx.response.json({ success: false, error: 'rev_conflict', rev: cur, cid: cid(ctx) });
+  logRefusal(ctx, 409, 'rev_conflict');
   return true;
 }
 
@@ -319,7 +336,7 @@ var CURRENT_PLUGIN_VERSION = '3.35.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.36.1';
+var APP_VERSION = '3.37.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2269,7 +2286,8 @@ function isPlannerDisabled(settingsObj) {
  */
 function forbidden(ctx, reason) {
   ctx.response.status = 403;
-  ctx.response.json({ success: false, error: 'Forbidden', reason: reason || 'insufficient_rights' });
+  ctx.response.json({ success: false, error: 'Forbidden', reason: reason || 'insufficient_rights', cid: cid(ctx) });
+  logRefusal(ctx, 403, reason || 'insufficient_rights');
 }
 
 /**
@@ -2277,7 +2295,8 @@ function forbidden(ctx, reason) {
  */
 function badRequest(ctx, reason) {
   ctx.response.status = 400;
-  ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input' });
+  ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input', cid: cid(ctx) });
+  logRefusal(ctx, 400, reason || 'invalid_input');
 }
 
 /**
@@ -2287,7 +2306,8 @@ function badRequest(ctx, reason) {
 function internalError(ctx, reason) {
   try { ctx.response.status = 500; } catch (e) { /* ignore */ }
   dlog(ctx, 'internalError: ' + (reason || ''));
-  ctx.response.json({ success: false, error: 'internal_error' });
+  ctx.response.json({ success: false, error: 'internal_error', cid: cid(ctx) });
+  logRefusal(ctx, 500, 'internal_error');
 }
 
 /**
@@ -3442,6 +3462,10 @@ exports.internalError               = internalError;         // #48 R1.2 — bac
 exports.slotRev                     = slotRev;               // R6 — optimistic lock слотов (releases/absences)
 exports.bumpSlotRev                 = bumpSlotRev;           // R6
 exports.revConflict                 = revConflict;           // R6
+exports.cid                         = cid;                   // #85 — сквозной идентификатор запроса
+exports.ALLOWED_SPRINT_KEYS         = ALLOWED_SPRINT_KEYS;   // #110 — гейт внешнего контракта (tests/arch/api-contract)
+exports.ALLOWED_ITEM_KEYS           = ALLOWED_ITEM_KEYS;
+exports.ALLOWED_SPRINT_DATA_KEYS    = ALLOWED_SPRINT_DATA_KEYS;
 exports.parseJson                   = parseJson;             // #48 R1.2 — stored blob parse
 
 /* v1.6.0 D125 — Test-only CommonJS exports.

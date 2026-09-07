@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.36.1**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.37.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.37.0 — #85/#110: no change to the model; error envelopes gained `cid`, and every refusal writes one server log line `cid + status + reason code` — never the request body or user values (not gated by enableDebugLog, otherwise there is nothing to search by).** Read retries cover GET only and pass the same authz gates on every attempt.
 >
 > **v3.36.1 — #111: no change to the model; one `config?fields=version` request from the main menu is gone** (the tab address no longer depends on the instance version).
 >

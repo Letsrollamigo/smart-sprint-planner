@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.37.0] — 2026-09-07
+
+> **Reads that survive a hiccup, a request id in every refusal.** Five rows of the operations audit #110 plus #85 in one release; the data schema did not change.
+
+### Added
+
+- **Retries for transient read errors.** When YouTrack answers 429/502/503/504, drops the connection or does not answer, the read is retried up to twice with a growing pause (0.3 s, 0.9 s) — before, the first hiccup failed the whole screen. Writes are never retried: they may have reached the server.
+- **A cap on parallel YouTrack reads.** No more than six requests at once, the rest wait in a queue in call order. Before, the backlog pool and Gantt links sent all their batches at once.
+- **A request id in every refusal** (#85). The error body carries `cid`, the same id appears in the error text and in the diagnostic log, and the server writes one line with the id, the status and the reason code — never the request body or user values. Quote the id in a bug report and the incident is found in the log in seconds.
+
+### Changed
+
+- **The role-panel button contract check** waits for a condition instead of fixed milliseconds — the gate stopped going red under load.
+
+---
+
 ## [3.36.1] — 2026-09-06
 
 > **A patch for the “Open the planner in the project” button (#109): on YouTrack 2026.1 it led to an empty page.** One defect (#111), found while reshooting the documentation on a 2026.1 instance on the day 3.36.0 shipped.

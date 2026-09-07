@@ -1,0 +1,86 @@
+{
+  "$comment": "Базовая линия внешнего контракта (правило аддитивности, ⚖ 2026-09-07). Ключи отсюда не удаляются и не переименовываются; новые ключи контракта добавляются сюда осознанно вместе с правкой YAML.",
+  "since": "3.37.0",
+  "schemas": {
+    "Sprint": [
+      "sprintId",
+      "name",
+      "status",
+      "dateStart",
+      "dateEnd",
+      "sprintGoal",
+      "sprintFieldVal",
+      "sprintFieldValByRole",
+      "roles",
+      "versionFieldVal",
+      "updatedBy",
+      "updatedAt",
+      "pluginVersion",
+      "personalPlanning",
+      "migrationLog",
+      "_rev"
+    ],
+    "Item": [
+      "issueId",
+      "url",
+      "title",
+      "priority",
+      "xpriority",
+      "state",
+      "system",
+      "version",
+      "inclusionStatus",
+      "assignee",
+      "addedBy",
+      "addedAt",
+      "externalTicketId",
+      "stateLocalized",
+      "stateFieldId",
+      "stateColor"
+    ],
+    "RoleItems": [
+      "analysis",
+      "testing",
+      "devPlatform",
+      "devBack",
+      "devFront",
+      "devIos",
+      "devAndroid",
+      "devFs",
+      "devDb"
+    ],
+    "GetSprintDataOk": [
+      "success",
+      "sprint",
+      "roleItems",
+      "settings",
+      "orphanGanttIssues",
+      "enableDebugLog",
+      "configured"
+    ],
+    "PostSprintDataRequest": [
+      "sprint",
+      "roleItems",
+      "baseRev"
+    ],
+    "PostSprintDataOk": [
+      "success",
+      "saved",
+      "rev",
+      "warnings",
+      "enriched"
+    ],
+    "RevConflict": [
+      "success",
+      "error",
+      "rev",
+      "cid"
+    ],
+    "AppError": [
+      "success",
+      "error",
+      "cid",
+      "reason"
+    ]
+  }
+}

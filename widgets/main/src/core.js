@@ -48,7 +48,7 @@
   /* v6.1.0 D70 — safe localStorage wrapper для production iframe без allow-same-origin.
      #69 строка 21 — тело в infra/user-prefs.js: localStorage ⊃ серверное зеркало
      (User.extensionProperties.ssp_user_prefs) — на YT 2025.3 localStorage мёртв. */
-  var USER_PREFS = (typeof window !== 'undefined' && window.__SSP_USER_PREFS) || {};
+  var USER_PREFS = (typeof window !== 'undefined' && window.__SSP_USER_PREFS) || {}, READ_GATE = (typeof window !== 'undefined' && window.__SSP_READ_GATE) || {};   /* #110 — шлюз чтений */
   function _prefsDeps() { return { getHost: function () { return _host; }, diag: diag }; }
   var safeLs = {
     get: function (k) { return USER_PREFS.get(k); },
@@ -793,7 +793,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.36.1';
+  var APP_VERSION = '3.37.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1690,7 +1690,7 @@
   }
   _ytAppRegisterWithRetry().then(function(h) {
     /* #69 строка 21 — серверные предпочтения ДО первого рендера: язык применяется без мигания. */
-    _host = h;
+    _host = (typeof READ_GATE.wrapHost === 'function') ? READ_GATE.wrapHost(h, { diag: diag }) : h;   /* #110 */
     return USER_PREFS.load(_prefsDeps()).then(function (p) {
       var l = p && p.ssp_lang;
       if (l && l !== _lang && (window.__SSP_I18N_LANGS__ || []).some(function (x) { return x.code === l; })) {

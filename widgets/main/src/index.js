@@ -43,6 +43,7 @@ import './infra/modal-specs.js';
 import './infra/diag-snapshot.js';   /* #63 п.4 — экспорт-слепок состояния из диаг-панели */
 import './infra/user-prefs.js';      /* #69 строка 21 — localStorage ⊃ серверное зеркало предпочтений */
 import './infra/fieldvalues-loader.js'; /* 68-8 — эфемерная подгрузка значений полей под правами пользователя */
+import './infra/read-gate.js';        /* #110 — потолок параллелизма чтений YouTrack + повтор транзиентных ошибок */
 import './domain/excel-export.js';
 import './domain/revalidation.js';
 import './domain/history-io.js';

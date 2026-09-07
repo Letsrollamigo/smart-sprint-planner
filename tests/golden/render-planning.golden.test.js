@@ -13,6 +13,22 @@ const { createHost } = require('./monolith-host');
 const { checkHtmlSnapshot, checkJsonSnapshot } = require('./snap');
 const { materializeTable } = require('./serialize');
 const fx = require('./fixtures/state');
+/* #110 — ждём условие, а не фиксированные миллисекунды: сон в 5/20 мс проигрывал гонку
+   под нагрузкой полного гейта (один красный прогон из двух). Каждый тик — макрозадача. */
+async function waitFor(pred, what) {
+  const tick = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
+  for (let i = 0; i < 500; i++) {
+    if (pred()) {
+      /* условие видно сразу после синхронного рендера, а обвязка (wireRolePanel, mount
+         таблицы) висит в setTimeout(0), поставленном РАНЬШЕ нашего тика — FIFO таймеров
+         гарантирует, что два лишних тика её дождутся. */
+      await tick(); await tick();
+      return;
+    }
+    await tick();
+  }
+  throw new Error('waitFor: ' + what + ' не наступило');
+}
 
 /** compHost_<rk> и сопутствующие элементы создаются buildRolePanel динамически —
  *  для изолированной характеризации создаём их в body напрямую. */
@@ -184,7 +200,7 @@ test('golden: тоггл аккордеона — expand монтирует buil
 
   toggle.click();
   /* buildRolePanel вешает wireRolePanel/render* через setTimeout(0) */
-  await new Promise(function (r) { setTimeout(r, 20); });
+  await waitFor(function () { return !!materializeTable(document.getElementById('compHost_analysis')); }, 'состав роли смонтирован');
 
   const body = card.querySelector('.planning-role-body');
   const expandedContract = {
@@ -204,7 +220,7 @@ test('golden: тоггл аккордеона — expand монтирует buil
   checkJsonSnapshot('rolepanel-composition-analysis', table);
 
   toggle.click();
-  await new Promise(function (r) { setTimeout(r, 20); });
+  await waitFor(function () { return !card.classList.contains('expanded') && !!(gm.get('_draft').ui || {}).expandedRoles; }, 'панель свёрнута');
   const collapsedContract = {
     cardExpanded: card.classList.contains('expanded'),
     chevron: card.querySelector('.planning-role-chevron').textContent,
@@ -568,7 +584,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   /* панель монтируем штатным флоу: renderPlanningRoles → toggle */
   gm.call('renderPlanningRoles');
   document.querySelector('.planning-role-card[data-role-key="analysis"] .planning-role-toggle').click();
-  await new Promise(function (r) { setTimeout(r, 20); });
+  await waitFor(function () { return !!document.getElementById('pickBtn_analysis'); }, 'панель analysis смонтирована');
 
   /* без прав редактора — warn-тосты, контроллеры не зовутся */
   gm.set({ _isEditor: false, _isValidator: false });
@@ -600,7 +616,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   const clearSpec = modalLog[0];
   const confirmBtn = clearSpec.buttons.find(function (b) { return b.id === 'confirm'; });
   confirmBtn.onClick({ close: function () {} });
-  await new Promise(function (r) { setTimeout(r, 5); });
+  await waitFor(function () { return apiPostLog.length >= 1; }, 'очистка состава отправлена');
   const clearContract = {
     modalId: clearSpec.id,
     modalType: clearSpec.type,
@@ -615,7 +631,7 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   const ri = gm.get('_roleItems');
   ri.testing._page = 1;
   document.querySelector('.planning-role-card[data-role-key="testing"] .planning-role-toggle').click();
-  await new Promise(function (r) { setTimeout(r, 20); });
+  await waitFor(function () { return !!document.getElementById('planNext_testing'); }, 'панель testing смонтирована');
   document.getElementById('planNext_testing').click();
   const pageAfterNext = gm.get('_roleItems').testing._page;
   document.getElementById('planPrev_testing').click();

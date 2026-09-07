@@ -291,7 +291,11 @@ function apiPost(path, body, query, deps, _isRetry) {
          сохранёнными, хотя сервер их отверг). */
       if (r && r.success === false) {
         var reason = (r && (r.reason || r.error)) || 'unknown_error';
-        deps.diag('ERR ' + path + ': server returned success=false reason=' + reason, 'err');
+        /* #85 — идентификатор запроса из конверта: в диаг-лог и в текст ошибки (→ тосты),
+           чтобы пользователь мог назвать его в баг-репорте. Коды причин потребители читают
+           из тела ответа, а не из message, поэтому суффикс их не ломает. */
+        var cidTag = (r && r.cid) ? ' [' + r.cid + ']' : '';
+        deps.diag('ERR ' + path + ': server returned success=false reason=' + reason + cidTag, 'err');
         /* #56-4 — конкурентная правка. #84 — сперва пробуем перечитать-и-слить;
            отказ (#100: метка заморозки + тост) остаётся для случаев, когда слить
            нечем — слот не мержится, базы нет или правки пересеклись. */
@@ -305,7 +309,7 @@ function apiPost(path, body, query, deps, _isRetry) {
         if (reason === 'planner_disabled' && typeof deps.toast === 'function') {
           deps.toast(deps.T('errPlannerDisabled'), 'err');
         }
-        throw new Error(reason);
+        throw new Error(reason + cidTag);
       }
       deps.diag('OK ' + path, 'ok');
       /* #56-4 — успешный write sprint: сервер вернул новый rev слота. На merge-повторе
