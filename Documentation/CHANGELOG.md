@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.38.0] — 2026-09-07
+
+> **A sprint write without the slot revision is no longer accepted.** The “optimistic locking” row of the operations audit #110 (wave 2). REST clients only — the widget always sends the revision itself. The data schema did not change.
+
+### Changed
+
+- **`baseRev` is mandatory for writing `sprint`/`roleItems`** via `POST sprint-data`. A body without a numeric revision (key missing, `null`, a string) is refused with `Bad Request`, reason `base_rev_required` and a `cid`; nothing is written and the slot revision does not move. Before, such a body was written without locking (last-write-wins) and silently overwrote concurrent edits. Bodies carrying only `settings` are not subject to the revision.
+- **The 409 `rev_conflict` reply for `sprint-data`** now carries a `cid` and writes a server log line like every other refusal (in 3.37.0 only the history, releases and absences slots went through the shared path).
+- **Documentation.** Chapter 08a “Other” explains the request id `[cid-…]` at the end of an error text.
+
+---
+
 ## [3.37.0] — 2026-09-07
 
 > **Reads that survive a hiccup, a request id in every refusal.** Five rows of the operations audit #110 plus #85 in one release; the data schema did not change.

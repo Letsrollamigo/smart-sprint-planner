@@ -24,6 +24,8 @@ The panel is for investigating an incident: the journal shows which requests wen
 
 Keep it off during ordinary work — it does no harm but takes space and confuses users.
 
+When the planner refuses an action, the error text ends with a request id of the form `[cid-…]`. Quote it when you contact your administrator: it points to the single server log line for that refusal — without task contents or entered values. Every error carries the id; the panel does not need to be on for it.
+
 ## Verbose logging
 
 A separate **Verbose logging (diagnostics only)** checkbox lives not here but in YouTrack's app parameters (chapter [04](04-manager-group.md)). It increases the journal's detail. Switch it on only while investigating.

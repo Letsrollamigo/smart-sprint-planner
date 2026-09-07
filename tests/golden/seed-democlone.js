@@ -223,7 +223,10 @@ function buildHistory(settings) {
   let r = await api('POST', ep(pid, 'sprint-data'), { settings: settings });
   console.log('settings POST →', JSON.stringify(r).slice(0, 120));
 
-  r = await api('POST', ep(pid, 'sprint-data'), { sprint: buildSprint(), roleItems: buildRoleItems() });
+  /* 3.38.0 — запись sprint/roleItems без числового baseRev = 400 base_rev_required: берём rev целевого слота */
+  const tgt = await api('GET', ep(pid, 'sprint-data'));
+  const baseRev = (tgt && tgt.sprint && typeof tgt.sprint._rev === 'number') ? tgt.sprint._rev : 0;
+  r = await api('POST', ep(pid, 'sprint-data'), { sprint: buildSprint(), roleItems: buildRoleItems(), baseRev: baseRev });
   console.log('sprint+roleItems POST →', JSON.stringify(r).slice(0, 120));
 
   r = await api('POST', ep(pid, 'history'), { history: buildHistory(settings) });

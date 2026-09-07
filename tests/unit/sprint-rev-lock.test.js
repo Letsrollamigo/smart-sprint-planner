@@ -40,6 +40,7 @@ test('rev-lock: baseRev не совпал с хранимым _rev → 409 rev_c
   assert.strictEqual(ctx.response.status, 409);
   assert.strictEqual(ctx.response.body.error, 'rev_conflict');
   assert.strictEqual(ctx.response.body.rev, 5);
+  assert.match(String(ctx.response.body.cid), /^cid-/);   // 3.38.0 — 409 идёт через revConflict, несёт cid
   assert.strictEqual(JSON.parse(ctx._props.ssp_sprint).name, 'Спринт 1'); // хранимое не тронуто
 });
 
@@ -54,11 +55,44 @@ test('rev-lock: baseRev совпал → запись проходит, rev ин
   assert.ok(ctx.response.body.saved.indexOf('baseRev') < 0); // служебный ключ не в saved
 });
 
-test('rev-lock: legacy-клиент без baseRev → пишет как раньше, rev всё равно растёт', () => {
+/* 3.38.0 (#110 «baseRev обязателен»): запись sprint/roleItems без числового baseRev —
+   400 base_rev_required, ничего не записано, rev не двигается. До этого legacy-клиент
+   писал last-write-wins. Settings-only тело по-прежнему без baseRev. */
+test('rev-lock: клиент без baseRev → 400 base_rev_required + cid, хранимое и rev не тронуты', () => {
   const ctx = mkCtx(validSprint({ _rev: 7 }), { sprint: validSprint({ name: 'legacy' }) });
   EP.handle(ctx);
-  assert.strictEqual(ctx.response.body.success, true);
-  assert.strictEqual(JSON.parse(ctx._props.ssp_sprint)._rev, 8);
+  assert.strictEqual(ctx.response.status, 400);
+  assert.strictEqual(ctx.response.body.success, false);
+  assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+  assert.match(String(ctx.response.body.cid), /^cid-/);
+  const stored = JSON.parse(ctx._props.ssp_sprint);
+  assert.strictEqual(stored.name, 'Спринт 1');
+  assert.strictEqual(stored._rev, 7);
+});
+
+test('rev-lock: baseRev null или строка → 400 base_rev_required (не 409)', () => {
+  for (const bad of [null, '7', NaN]) {
+    const ctx = mkCtx(validSprint({ _rev: 7 }), { sprint: validSprint({ name: 'x' }), baseRev: bad });
+    EP.handle(ctx);
+    assert.strictEqual(ctx.response.status, 400, 'baseRev=' + String(bad));
+    assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+    assert.strictEqual(JSON.parse(ctx._props.ssp_sprint)._rev, 7);
+  }
+});
+
+test('rev-lock: roleItems-only без baseRev → 400 base_rev_required', () => {
+  const ctx = mkCtx(validSprint({ _rev: 2 }), { roleItems: { analysis: [] } });
+  EP.handle(ctx);
+  assert.strictEqual(ctx.response.status, 400);
+  assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+});
+
+test('rev-lock: settings-only тело без baseRev проходит (под rev не гейтится)', () => {
+  const ctx = mkCtx(validSprint({ _rev: 7 }), { settings: { editGroups: ['g-edit'], savedAt: 1 } });
+  ctx.currentUser.groups.push({ id: 'g-admin', name: 'Admins' });
+  EP.handle(ctx);
+  assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
+  assert.strictEqual(JSON.parse(ctx._props.ssp_sprint)._rev, 7);
 });
 
 test('rev-lock: пустой слот (нет спринта) → baseRev 0 проходит, первый rev = 1', () => {

@@ -336,7 +336,7 @@ var CURRENT_PLUGIN_VERSION = '3.35.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.37.0';
+var APP_VERSION = '3.38.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -2562,20 +2562,18 @@ var ENDPOINTS = [
         /* #56-4 — optimistic lock слота ssp_sprint/ssp_roleitems: параллельная правка
            двумя пользователями шла last-write-wins и теряла чужой состав/оценки. Клиент
            шлёт baseRev (rev слота, который он загружал); расхождение → 409 rev_conflict.
-           Без baseRev (старый клиент / REST-сид) — прежнее поведение. #84 — потолок из
-           этого коммента («roleItems-only / assignerSync rev не двигают») снят ещё в
-           v3.2.1, см. ниже; 409 фронт сперва пробует слить (pure/slot-merge-pure.js). */
+           С 3.38.0 (#110 «baseRev обязателен») запись sprint/roleItems без числового
+           baseRev отклоняется 400 base_rev_required: внешний контракт требовал ключ
+           с 3.17.0, сервер лишь догнал его. Settings-only тела под rev не гейтятся.
+           #84 — потолок «roleItems-only / assignerSync rev не двигают» снят ещё в v3.2.1,
+           см. ниже; 409 фронт сперва пробует слить (pure/slot-merge-pure.js). */
         var newSlotRev = null;
         if (body.sprint !== undefined || body.roleItems !== undefined) {
+          if (typeof body.baseRev !== 'number' || !isFinite(body.baseRev)) { badRequest(ctx, 'base_rev_required'); return; }
           var revSprint = parseJson(getProp(ctx, 'ssp_sprint'), null);
           var slotRev = (revSprint && typeof revSprint._rev === 'number') ? revSprint._rev : 0;
-          if (body.baseRev !== undefined && body.baseRev !== null && body.baseRev !== slotRev) {
-            ctx.response.status = 409;
-            ctx.response.json({ success: false, error: 'rev_conflict', rev: slotRev });
-            return;
-          }
-          /* rev инкрементится на КАЖДОЙ записи sprint (и от legacy-клиентов без baseRev —
-             иначе они сбрасывали бы счётчик и провоцировали ложные конфликты). */
+          if (revConflict(ctx, body.baseRev, slotRev)) return;
+          /* rev инкрементится на КАЖДОЙ записи sprint. */
           if (body.sprint && typeof body.sprint === 'object') {
             newSlotRev = slotRev + 1;
             body.sprint._rev = newSlotRev;

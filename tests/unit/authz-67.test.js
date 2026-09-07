@@ -27,6 +27,18 @@ const G_HIST      = { id: 'g-hist', name: 'History Cleaners' };
 
 /* Роли: перечень групп пользователя. Плагин настроен всегда (иначе authzGuard
    отвечает plugin_not_configured до ролевой проверки). */
+
+/* 3.38.0 (#110 «baseRev обязателен») — запись sprint/roleItems требует числовой baseRev;
+   подставляем rev хранимого слота, как это делает виджет из своего стора. */
+function withBaseRev(body, props) {
+  if (body && typeof body === 'object' && (body.sprint !== undefined || body.roleItems !== undefined) && body.baseRev === undefined) {
+    let rev = 0;
+    try { const s = JSON.parse(props.ssp_sprint || 'null'); if (s && typeof s._rev === 'number') rev = s._rev; } catch (e) { /* пусто */ }
+    body = Object.assign({}, body, { baseRev: rev });
+  }
+  return body;
+}
+
 function mkCtx(opts) {
   opts = opts || {};
   const props = Object.assign({
@@ -45,7 +57,7 @@ function mkCtx(opts) {
     },
     project: { extensionProperties: props },
     request: {
-      body: opts.body === undefined ? '{}' : JSON.stringify(opts.body),
+      body: opts.body === undefined ? '{}' : JSON.stringify(withBaseRev(opts.body, props)),
       getParameter: (k) => (params[k] || '')
     },
     response: { status: 200, body: null, json(v) { this.body = v; } },

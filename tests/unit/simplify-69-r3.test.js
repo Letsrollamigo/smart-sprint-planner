@@ -111,13 +111,25 @@ test('user-prefs: allowlist покрывает все safeLs-ключи фрон
 const EP_SPRINT = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'sprint-data');
 const G_EDITOR  = { id: 'g-e', name: 'Editors' };
 
+
+/* 3.38.0 (#110 «baseRev обязателен») — запись sprint/roleItems требует числовой baseRev;
+   подставляем rev хранимого слота, как это делает виджет из своего стора. */
+function withBaseRev(body, props) {
+  if (body && typeof body === 'object' && (body.sprint !== undefined || body.roleItems !== undefined) && body.baseRev === undefined) {
+    let rev = 0;
+    try { const s = JSON.parse(props.ssp_sprint || 'null'); if (s && typeof s._rev === 'number') rev = s._rev; } catch (e) { /* пусто */ }
+    body = Object.assign({}, body, { baseRev: rev });
+  }
+  return body;
+}
+
 function mkProjectCtx(body, props) {
   props = Object.assign({ ssp_settings: JSON.stringify({ editGroups: [G_EDITOR.id] }) }, props || {});
   return {
     settings: { settingsManagerGroup: { id: 'g-admin', name: 'Admins' } },
     project: { key: 'SCBT', extensionProperties: props },
     currentUser: { id: 'u-1', login: 'user1', groups: [G_EDITOR], hasPermission: () => false },
-    request: { body: JSON.stringify(body), getParameter: () => '' },
+    request: { body: JSON.stringify(withBaseRev(body, props)), getParameter: () => '' },
     response: { status: 200, body: null, json(v) { this.body = v; } },
     _props: props
   };

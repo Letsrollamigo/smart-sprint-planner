@@ -27,6 +27,7 @@ function overlimitBody() {
       analysis: [{ issueId: 'T-1', inclusionStatus: 'INC_PLANNED', alloc_analysis: 60 }],
       testing:  [{ issueId: 'T-2', inclusionStatus: 'INC_PLANNED', alloc_testing: 60 }],
     },
+    baseRev: 0,   /* 3.38.0 — запись sprint/roleItems без baseRev = 400 base_rev_required */
   };
 }
 
