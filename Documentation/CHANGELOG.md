@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.38.1] — 2026-09-07
+
+> **The TTM report finds epics through the links settings, not through a name pattern in code.** Patch #75. The data schema did not change; rolling back to 3.35.0 needs no preparation.
+
+### Fixed
+
+- **The parent epic that folds stories in the TTM report** was looked up with the regex `/subtask|parent|epic/i` over the link type name, so on an instance with Russian or custom link-type names it found nothing. Parents are now taken by the “Hierarchy” role of the Task links screen — the same role that builds the backlog tree and the release composition. An instance with no rows in that table keeps the old heuristic on top of the default Subtask type, so the upgrade does not change the report; with rows present only the table applies. The “Link types for reports” list in the Reporting section (Bug tax) stays separate.
+- The “Hierarchy” role in the Task links table now shows a “Reporting” badge: the TTM report reads it too. Chapter 16 “Task links” updated.
+
+---
+
 ## [3.38.0] — 2026-09-07
 
 > **A sprint write without the slot revision is no longer accepted.** The “optimistic locking” row of the operations audit #110 (wave 2). REST clients only — the widget always sends the revision itself. The data schema did not change.

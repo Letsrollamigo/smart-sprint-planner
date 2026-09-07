@@ -16,7 +16,7 @@ A row is a link type from your YouTrack, the columns are three roles:
 
 | Role | What it means | Who uses it |
 |---|---|---|
-| **Hierarchy** | a parent-child link | the backlog tree, the estimate roll-up, the state roll-up |
+| **Hierarchy** | a parent-child link | the backlog tree, the estimate roll-up, the state roll-up, the TTM report (stories under an epic) |
 | **Dependency** | a predecessor-successor link | arrows on the Gantt chart |
 | **Information** | a link with no structural meaning | the «Bug tax» report |
 

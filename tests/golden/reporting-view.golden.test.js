@@ -52,6 +52,7 @@ require(path.join(SRC, 'pure', 'reporting-period.js'));
 require(path.join(SRC, 'pure', 'reporting-ttm.js'));
 require(path.join(SRC, 'pure', 'reporting-rollup.js'));
 require(path.join(SRC, 'pure', 'velocity-pure.js'));   /* v3.12.0 (#11) — A11 Velocity */
+require(path.join(SRC, 'pure', 'link-roles-pure.js')); /* #75 — parentIsEpic по роли «Иерархия» (мост __SSP_LINK_ROLES_PURE) */
 const REPORTING_DATA = require(path.join(SRC, 'data', 'reporting-data.js')); /* combinePauses (чистая) */
 const VIEW = require(path.join(SRC, 'domain', 'reporting-view.js'));
 
@@ -361,6 +362,51 @@ B_REPORTS.forEach(function (report) {
     assert.strictEqual(vm.report, report, 'диспетч довёл до лоадера ' + report);
     checkJsonSnapshot('reporting-vm-' + report, snapOf(deps, vm));
   });
+});
+
+/* ── #75 — родитель-эпик для TTM по роли «Иерархия» общего экрана связей ───────────────
+   Тип связи с русским именем находится только через таблицу; без строк в таблице
+   действует прежняя эвристика по имени типа (/subtask|parent|epic/i) поверх дефолтов. */
+function _epicDiag(deps) {
+  const log = [];
+  deps.diag = function (m) { log.push(String(m)); };
+  return function () {
+    const line = log.find(function (m) { return m.indexOf('reporting A2 map:') === 0; }) || '';
+    const mm = /parentEpic=(\d+)/.exec(line);
+    return mm ? parseInt(mm[1], 10) : -1;
+  };
+}
+function _issuesWithParentType(name) {
+  const iss = makeIssues();
+  const t2 = iss.find(function (i) { return i.idReadable === 'T-2'; });
+  t2.links[0].linkType.name = name;
+  return iss;
+}
+test('golden: reporting #75 — русский тип связи в таблице «Иерархия» → стори под эпиком найдена', async function () {
+  const settings = Object.assign(baseSettings(), { linkTypeRoles: [{ type: 'Родитель', hier: 'source', dep: null, info: false }] });
+  const deps = makeDeps({ settings: settings, issues: _issuesWithParentType('Родитель'), ui: { reportingReport: 'a2', reportingPeriod: 'last30' } });
+  const epics = _epicDiag(deps);
+  await runReport(deps, 'a');
+  assert.strictEqual(epics(), 1);
+});
+test('golden: reporting #75 — тот же русский тип БЕЗ строк в таблице → не находится (старый регексп его не знал)', async function () {
+  const deps = makeDeps({ issues: _issuesWithParentType('Родитель'), ui: { reportingReport: 'a2', reportingPeriod: 'last30' } });
+  const epics = _epicDiag(deps);
+  await runReport(deps, 'a');
+  assert.strictEqual(epics(), 0);
+});
+test('golden: reporting #75 — без строк в таблице имя с «epic» по-прежнему работает (эвристика поверх дефолтов)', async function () {
+  const deps = makeDeps({ issues: _issuesWithParentType('Epic story'), ui: { reportingReport: 'a2', reportingPeriod: 'last30' } });
+  const epics = _epicDiag(deps);
+  await runReport(deps, 'a');
+  assert.strictEqual(epics(), 1);
+});
+test('golden: reporting #75 — строки в таблице есть, тип вне таблицы с «epic» в имени → эвристика выключена', async function () {
+  const settings = Object.assign(baseSettings(), { linkTypeRoles: [{ type: 'Родитель', hier: 'source', dep: null, info: false }] });
+  const deps = makeDeps({ settings: settings, issues: _issuesWithParentType('Epic story'), ui: { reportingReport: 'a2', reportingPeriod: 'last30' } });
+  const epics = _epicDiag(deps);
+  await runReport(deps, 'a');
+  assert.strictEqual(epics(), 0);
 });
 
 /* ── #57-5 Н3 + #58-1: юзер-хвост в скобках, склейка ЯВНЫМ and, sort by отбрасывается ─

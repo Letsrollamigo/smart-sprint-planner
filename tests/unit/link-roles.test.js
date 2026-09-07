@@ -263,11 +263,13 @@ test('реестр ролей: набор описан данными, а не �
   assert.strictEqual(LR.roleDef('нет-такой'), null);
 });
 
-test('потребители: «Иерархия» читается бэклогом, релизами и двумя фоновыми правилами', () => {
+test('потребители: «Иерархия» читается бэклогом, релизами, двумя фоновыми правилами и отчётом TTM (#75)', () => {
   const c = LR.roleConsumers('hier', { releaseEnabled: true, backlogZones: [{ state: 'Открыта' }],
-    cascadeAggregationEnabled: true, stateRollupEnabled: false });
+    cascadeAggregationEnabled: true, stateRollupEnabled: false, reportingEnabled: true });
   const by = {}; c.forEach((x) => { by[x.id] = x; });
-  assert.deepStrictEqual(Object.keys(by).sort(), ['backlog', 'cascade', 'release', 'rollup']);
+  assert.deepStrictEqual(Object.keys(by).sort(), ['backlog', 'cascade', 'release', 'reporting', 'rollup']);
+  assert.strictEqual(by.reporting.enabled, true, '#75 — отчётность включена → бейдж активен');
+  assert.strictEqual(by.reporting.firstOnly, false, 'отчёт TTM берёт все строки иерархии, как бэклог');
   assert.strictEqual(by.backlog.enabled, true);
   assert.strictEqual(by.release.enabled, true);
   assert.strictEqual(by.cascade.enabled, true);
@@ -278,7 +280,7 @@ test('потребители: «Иерархия» читается бэклог
 
 test('потребители: выключенный модуль не исчезает, а помечается — настройка остаётся видимой', () => {
   const off = LR.roleConsumers('hier', {});
-  assert.strictEqual(off.length, 4);
+  assert.strictEqual(off.length, 5);
   assert.ok(off.every((c) => c.enabled === false), 'ничего не включено → все потребители помечены');
 });
 

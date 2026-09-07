@@ -34,6 +34,7 @@ const MODULE_I18N = {
   cascade: 'linkModCascade',
   rollup:  'linkModRollup',
   gantt:   'linkModGantt',
+  reporting: 'permGrpReporting',   /* #75 — отчёт TTM читает «Иерархию»; ключ раздела прав переиспользован */
 };
 
 function _rowOf(rows, name) {

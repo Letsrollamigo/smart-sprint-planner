@@ -288,7 +288,7 @@
       "$skip": "[undefined]",
       "$top": 201,
       "endpoint": "issues",
-      "fields": "idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(name)),links(direction,linkType(name),issues(idReadable,customFields(name,value(name))))",
+      "fields": "idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),value(name)),links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable,customFields(name,value(name))))",
       "query": "project: DEMO updated: 2026-05-03 .. *"
     }
   ],

@@ -193,6 +193,8 @@ const ROLE_DEFS = [
        легаси-пару фраз, которую форма выводит из ПЕРВОЙ строки «Иерархии». */
     { id: 'cascade', gate: 'cascade', firstOnly: true },
     { id: 'rollup',  gate: 'rollup',  firstOnly: true },
+    /* #75 — отчёт TTM складывает стори под эпик по той же роли (parentIsEpic), регексп по имени типа снят. */
+    { id: 'reporting', gate: 'reporting' },
   ] },
   { key: 'dep', kind: 'side', needsDirected: true, consumers: [
     { id: 'gantt', gate: null },
@@ -213,6 +215,7 @@ const MODULE_GATES = {
   release: function (s) { return !!(s && s.releaseEnabled); },
   cascade: function (s) { return !!(s && s.cascadeAggregationEnabled); },
   rollup:  function (s) { return !!(s && s.stateRollupEnabled); },
+  reporting: function (s) { return !!(s && s.reportingEnabled); },
 };
 
 function roleDef(key) {

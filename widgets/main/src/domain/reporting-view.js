@@ -24,7 +24,7 @@ const ISSUE_FIELDS = 'idReadable,summary,created,customFields(name,projectCustom
 /* A2 TTM: базовые поля + вложенный Type связанных задач (для parentIsEpic по links). Тип самой
    задачи уже приходит в customFields ISSUE_FIELDS (селектор без фильтра поля отдаёт все cf). */
 const ISSUE_FIELDS_A2 = ISSUE_FIELDS +
-  ',links(direction,linkType(name),issues(idReadable,customFields(name,value(name))))';
+  ',links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable,customFields(name,value(name))))';
 /* A4 Трудозатраты: id + user-поля ролей (value(login) — login матчит author нативных workItems). */
 const ISSUE_FIELDS_A4 = 'idReadable,customFields(name,projectCustomField(field(name)),value(login,name))';
 /* A5 План-факт: summary + field(name,id) (state-id для якорей + резолв name→id полей оценки) +
@@ -43,7 +43,7 @@ const ISSUE_FIELDS_B2 = 'idReadable,created,customFields(name,projectCustomField
    система/оценки) + field(name,id) (state-id + резолв estField name→id) + links(Type связанных) для
    parentIsEpic (foldChildUnits TTM). Объединение A5+A3+A2 селекторов. */
 const ISSUE_FIELDS_B0 = 'idReadable,summary,created,customFields(name,projectCustomField(field(name,id)),' +
-  'value(login,name,localizedName,minutes)),links(direction,linkType(name),issues(idReadable,customFields(name,value(name))))';
+  'value(login,name,localizedName,minutes)),links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable,customFields(name,value(name))))';
 /* A6: норматив-ориентир «месяцев бэклога» (ориентир) — константа (мокап без «из настроек»). */
 const A6_NORM_MONTHS = 6;
 
@@ -295,17 +295,31 @@ function _typeName(iss, typeNames) {
   }
   return '';
 }
-/* parentIsEpic: есть link (subtask/parent/epic по имени типа связи) на задачу типа «эпик».
+/* #75 — родитель для parentIsEpic берётся по роли «Иерархия» общего экрана связей
+   (pure/link-roles-pure.js через мост), а не регекспом по имени типа: на инстансе с
+   русскими/своими именами типов регексп не находил ничего. Инстанс без строк в таблице
+   держит прежнюю эвристику /subtask|parent|epic/i ПОВЕРХ дефолтов резолвера — апгрейд
+   не меняет отчёт там, где связи никто не настраивал. Мост недоступен → только эвристика. */
+function _hierMatchers(settings) {
+  var LR = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
+  if (!LR) return null;
+  var rows = LR.normalizeRows(settings && settings.linkTypeRoles);
+  return { LR: LR, matchers: LR.resolveLinkRoles(settings || {}).hierarchy, fromTable: rows.length > 0 };
+}
+/* parentIsEpic: среди родителей по «Иерархии» есть задача типа «эпик».
    Graceful: нет/неразрешённые links → false (трактуем как сольную стори, без дедупа/краша). */
-function _parentIsEpic(iss, typeNames) {
+function _parentIsEpic(iss, typeNames, hier) {
   var links = Array.isArray(iss.links) ? iss.links : [];
-  for (var i = 0; i < links.length; i++) {
-    var l = links[i];
-    if (!l || !l.linkType || !/subtask|parent|epic/i.test(String(l.linkType.name || ''))) continue;
-    var lis = Array.isArray(l.issues) ? l.issues : [];
-    for (var j = 0; j < lis.length; j++) {
-      if (_classifyType(_typeName(lis[j], typeNames)) === 'epic') return true;
+  var parents = (hier && hier.matchers) ? hier.LR.linkParents(iss, hier.matchers) : [];
+  if (!hier || !hier.fromTable) {
+    for (var i = 0; i < links.length; i++) {
+      var l = links[i];
+      if (!l || !l.linkType || !/subtask|parent|epic/i.test(String(l.linkType.name || ''))) continue;
+      parents = parents.concat(Array.isArray(l.issues) ? l.issues : []);
     }
+  }
+  for (var j = 0; j < parents.length; j++) {
+    if (_classifyType(_typeName(parents[j], typeNames)) === 'epic') return true;
   }
   return false;
 }
@@ -331,14 +345,14 @@ function _tileLevel(med, norm) {
 }
 /* Маппинг сырых задач YT для A2 → {issues:[{id,summary,created,type,parentIsEpic}], ids, fieldId,
    diag:{typed,parentResolved}}. type=_classifyType(Type); parentIsEpic по вложенным links. */
-function _mapIssuesA2(arr, fieldState, typeNames) {
+function _mapIssuesA2(arr, fieldState, typeNames, hier) {
   var issues = [], ids = [], fieldId = '', typed = 0, parentResolved = 0;
   for (var i = 0; i < arr.length; i++) {
     var iss = arr[i]; if (!iss || !iss.idReadable) continue;
     var cf = _cf(iss, fieldState);
     if (cf && !fieldId) fieldId = (cf.projectCustomField && cf.projectCustomField.field && cf.projectCustomField.field.id) || '';
     var type = _classifyType(_typeName(iss, typeNames));
-    var parentIsEpic = _parentIsEpic(iss, typeNames);
+    var parentIsEpic = _parentIsEpic(iss, typeNames, hier);
     if (type) typed++;
     if (parentIsEpic) parentResolved++;
     issues.push({ id: iss.idReadable, summary: iss.summary || '', type: type, parentIsEpic: parentIsEpic,
@@ -633,7 +647,7 @@ const _loadA2 = makeReportLoader('A2', 'a', function (ctx) {
   /* QueryAssist AND — Type НЕ форсим (D-скоуп аналитика) */
   return ctx.fetchIssues(ISSUE_FIELDS_A2, ctx.queryParts(
     ['updated: ' + _fmtDayUTC(win.fromTs) + ' .. *'])).then(function (f) {   /* #58-5 — вход в якорь в окне ⇒ update в окне */
-    var m = _mapIssuesA2(f.arr, ctx.fieldState, typeNames);
+    var m = _mapIssuesA2(f.arr, ctx.fieldState, typeNames, _hierMatchers(settings));   /* #75 — родители по «Иерархии» */
     if (deps.diag) deps.diag('reporting A2 map: issues=' + m.issues.length +
       ' typed=' + m.diag.typed + ' parentEpic=' + m.diag.parentResolved, 'ok');
     return deps.bulkAnchorTransitions(deps, m.ids, { fieldId: m.fieldId, anchorStates: anchorStates, shouldAbort: base.shouldAbort })
@@ -1273,7 +1287,7 @@ const _loadB0 = makeReportLoader('B0', 'b', function (ctx) {
   /* QueryAssist AND (D-скоуп аналитика) */
   return ctx.fetchIssuesPaged(ISSUE_FIELDS_B0, ctx.queryParts(null, 'updated desc')).then(function (f) {   /* #58-5 — B0 as-of метрикам нужна вся история: НЕ сужаем, только порядок; ш2 — страницы до потолка */
       var arr = f.arr, limitHit = f.limitHit, maxi = f.max;
-      var m = _mapIssuesA2(arr, fieldState, typeNames);    /* type/parentIsEpic для foldChildUnits (TTM) + fieldId состояния */
+      var m = _mapIssuesA2(arr, fieldState, typeNames, _hierMatchers(settings));    /* type/parentIsEpic по «Иерархии» (#75) для foldChildUnits (TTM) + fieldId состояния */
       var built = _buildRoleExecutors(arr, roles);         /* issueId→{roleKey→login} */
       var fieldIds = [], seenFid = {}, rolesEng = [];      /* estField name→id (ОДИН резолв) → rolesEng {key,label,fieldId} + fieldIds примитива (как A5) */
       roles.forEach(function (r) {
