@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint \"{value}\" → veld \"{field}\": {written} geschreven, {errors} fouten",
   "navDanger": "Gevarenzone",
   "cardDanger": "Gevarenzone",
-  "hintPlannerDisable": "Uitschakelen verwijdert het project uit de projectkiezer van de planner voor gewone gebruikers en stopt de bediening via het hoofdmenu. Plannergegevens blijven bewaard. Een projectconfigurator of beheerder kan het weer inschakelen — hier, of op het planner-tabblad in de YouTrack-projectinstellingen."
+  "hintPlannerDisable": "Uitschakelen verwijdert het project uit de projectkiezer van de planner voor gewone gebruikers en stopt de bediening via het hoofdmenu. Plannergegevens blijven bewaard. Een projectconfigurator of beheerder kan het weer inschakelen — hier, of op het planner-tabblad in de YouTrack-projectinstellingen.",
+  "planningRoleStatDrift": "drift",
+  "driftBadge": "Drift",
+  "driftHint": "Sinds de afstemming op {ts} ({who}): toegevoegd {a}, verwijderd {r}, schattingen gewijzigd {e}, uitgesloten {x}, teruggezet {u}",
+  "driftPanelTitle": "Wijzigingen sinds de afstemming op {ts} · {who}",
+  "driftAdded": "Toegevoegd",
+  "driftRemoved": "Verwijderd",
+  "driftEstimate": "Schatting gewijzigd",
+  "driftExcluded": "Uitgesloten van de sprint",
+  "driftRestored": "Teruggezet in de sprint",
+  "slotChangedHint": "De sprint is in een ander tabblad of door een andere gebruiker gewijzigd. Bij opslaan worden uw wijzigingen samengevoegd met de nieuwe gegevens; herlaad de pagina om ze nu te zien."
 }

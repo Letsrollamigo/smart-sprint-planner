@@ -2,10 +2,12 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.38.1**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.39.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
+> **v3.39.0 — #114: no change to the permission model. The new optional history-snapshot key `agreed` (the agreed composition baseline) passes a strict validator on write — only `at`/`by`/`items`, up to 1000 issues, ids up to 64 characters, per-issue only `e`/`x` — and is dropped on read with a `WARN_AGREED_DROPPED` migration-log entry. The slot revision probe on tab focus is the same `GET sprint-data` under the user's own permissions; no new endpoints or rights.**
+
 > **v3.38.1 — #75: no change to the model; the TTM report reads the “Hierarchy” role from the links settings instead of a name regex (read-only, same permissions).**
 >
 > **v3.38.0 — #110 wave 2: no change to the permission model; writing `sprint`/`roleItems` via `POST sprint-data` without a numeric `baseRev` is refused with `base_rev_required` — before, such a body was written last-write-wins, so risk #14 “conflict replay” for REST clients was closed only by the guide's text, now by the server; the 409 `rev_conflict` of this endpoint carries a `cid` and writes a log line like every other refusal.**

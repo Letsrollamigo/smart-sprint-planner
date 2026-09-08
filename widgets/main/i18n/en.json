@@ -1360,5 +1360,15 @@
   "sprintWriteResult": "Sprint \"{value}\" → field \"{field}\": {written} written, {errors} errors",
   "navDanger": "Danger zone",
   "cardDanger": "Danger zone",
-  "hintPlannerDisable": "Disabling removes the project from the planner's project picker for regular users and stops serving it from the main menu. Planner data is kept. A project configurator or an administrator can enable it again — here, or on the planner tab in the YouTrack project settings."
+  "hintPlannerDisable": "Disabling removes the project from the planner's project picker for regular users and stops serving it from the main menu. Planner data is kept. A project configurator or an administrator can enable it again — here, or on the planner tab in the YouTrack project settings.",
+  "planningRoleStatDrift": "drift",
+  "driftBadge": "Drift",
+  "driftHint": "Since agreement on {ts} ({who}): added {a}, removed {r}, estimates changed {e}, excluded {x}, returned {u}",
+  "driftPanelTitle": "Changes since agreement on {ts} · {who}",
+  "driftAdded": "Added",
+  "driftRemoved": "Removed",
+  "driftEstimate": "Estimate changed",
+  "driftExcluded": "Excluded from sprint",
+  "driftRestored": "Returned to sprint",
+  "slotChangedHint": "The sprint was changed in another tab or by another user. Your edits will be merged with the new data on save; reload the page to see them now."
 }

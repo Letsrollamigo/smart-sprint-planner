@@ -245,7 +245,8 @@ var ALLOWED_HISTORY_SNAP_KEYS = [
   'sprintGoal',
   'goalOutcome',
   'goalRetroNote',
-  'roles'
+  'roles',
+  'agreed'
 ];
 var ALLOWED_WORKING_DRAFT_KEYS = [
   'schemaVersion',
@@ -331,12 +332,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.35.0';
+var CURRENT_PLUGIN_VERSION = '3.39.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.38.1';
+var APP_VERSION = '3.39.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -603,6 +604,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.32.0', to: '3.35.0',
     migrate: function (snap) { /* no-op: additive optional key sprintFieldValByRole */ },
     note: 'v3.35.0: #88 additive sprint key sprintFieldValByRole + per-role fieldSprint<Role> settings'
+  },
+  /* v3.39.0 — #114: аддитивный optional-ключ снимка истории agreed (слепок согласованного
+     состава роли: оценки и признак исключения по задачам). Пишется фронтом на «Согласовать»,
+     отсутствие = роль ни разу не согласовывалась новой версией → индикатора дрейфа нет,
+     поэтому миграция no-op. */
+  { from: '3.35.0', to: '3.39.0',
+    migrate: function (snap) { /* no-op: additive optional history key agreed */ },
+    note: 'v3.39.0: #114 additive history snapshot key agreed (composition baseline at role confirmation)'
   }
 ];
 
@@ -755,6 +764,36 @@ function validateSprintRoles(roles) {
     if (roles.indexOf(roles[i]) !== i) return false; // дубль
   }
   return true;
+}
+
+/* v3.39.0 #114 — слепок согласованного состава роли в снимке истории (optional):
+   { at: number, by?: string≤200, items: { <issueId≤64>: { e?: number|null, x?: 1 } } }.
+   Пишется фронтом на «Согласовать», переносится при перезаписях; неизвестные ключи —
+   отказ (аддитивность схемы держим явной). Возвращает null или код причины (для diag). */
+function agreedError(a) {
+  if (a === null || a === undefined) return null;
+  if (typeof a !== 'object' || Array.isArray(a)) return 'not_object';
+  var keys = Object.keys(a);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] !== 'at' && keys[i] !== 'by' && keys[i] !== 'items') return 'unknown_key:' + keys[i];
+  }
+  if (typeof a.at !== 'number' || !isFinite(a.at)) return 'at_invalid';
+  if (!assertStr(a.by, 200)) return 'by_invalid';
+  if (!a.items || typeof a.items !== 'object' || Array.isArray(a.items)) return 'items_not_object';
+  var ids = Object.keys(a.items);
+  if (ids.length > 1000) return 'items_too_many';
+  for (var j = 0; j < ids.length; j++) {
+    var id = ids[j], rec = a.items[id];
+    if (id.length > 64) return 'item_id_too_long';
+    if (!rec || typeof rec !== 'object' || Array.isArray(rec)) return 'item_not_object:' + id;
+    var rk = Object.keys(rec);
+    for (var k = 0; k < rk.length; k++) {
+      if (rk[k] !== 'e' && rk[k] !== 'x') return 'item_unknown_key:' + rk[k];
+    }
+    if (rec.e !== undefined && !assertNum(rec.e)) return 'item_e_invalid:' + id;
+    if (rec.x !== undefined && rec.x !== 1) return 'item_x_invalid:' + id;
+  }
+  return null;
 }
 
 /* v1.6.0 D125 — pluginVersion: optional string 'X.Y.Z', max 32 chars.
@@ -1787,6 +1826,15 @@ function _validateHistoryRecord(h, i, strict) {
     if (!assertStr(h.goalRetroNote, 1000)) return false;
   }
   if (!validateSprintRoles(h.roles)) return false;   /* v3.27.0 #73 */
+  /* v3.39.0 #114 — слепок согласования: на записи отказ, на чтении битый слепок снимаем с
+     пометкой в migrationLog (запись истории ценнее индикатора дрейфа). */
+  var agErr = agreedError(h.agreed);
+  if (agErr) {
+    if (strict) return false;
+    _appendMigrationLog(h, { at: Date.now(), level: 'WARN_AGREED_DROPPED',
+      fromVersion: h.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: 'agreed:' + agErr });
+    delete h.agreed;
+  }
   if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
   if (!validatePluginVersion(h.pluginVersion)) return false;
   return true;
@@ -1901,6 +1949,8 @@ function diagnoseHistoryWrite(history) {
         }
       }
     }
+    var agDiag = agreedError(h.agreed);   /* v3.39.0 #114 */
+    if (agDiag) return { ok: false, where: 'agreed_' + agDiag, idx: i };
     if (!validatePluginVersion(h.pluginVersion)) return { ok: false, where: 'pluginVersion_invalid:' + h.pluginVersion + ' type=' + typeof h.pluginVersion, idx: i };
     var migErr = validateMigrationLog(h.migrationLog, 'history[' + i + ']');
     if (migErr !== null) return { ok: false, where: 'migrationLog_invalid: ' + migErr, idx: i };

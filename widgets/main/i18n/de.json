@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint „{value}\" → Feld „{field}\": {written} geschrieben, {errors} Fehler",
   "navDanger": "Gefahrenzone",
   "cardDanger": "Gefahrenzone",
-  "hintPlannerDisable": "Das Deaktivieren entfernt das Projekt für normale Nutzer aus der Projektauswahl des Planers und stoppt die Bedienung über das Hauptmenü. Die Planer-Daten bleiben erhalten. Ein Projekt-Konfigurator oder Administrator kann es wieder aktivieren — hier oder auf der Planer-Registerkarte in den YouTrack-Projekteinstellungen."
+  "hintPlannerDisable": "Das Deaktivieren entfernt das Projekt für normale Nutzer aus der Projektauswahl des Planers und stoppt die Bedienung über das Hauptmenü. Die Planer-Daten bleiben erhalten. Ein Projekt-Konfigurator oder Administrator kann es wieder aktivieren — hier oder auf der Planer-Registerkarte in den YouTrack-Projekteinstellungen.",
+  "planningRoleStatDrift": "Drift",
+  "driftBadge": "Drift",
+  "driftHint": "Seit der Abstimmung am {ts} ({who}): hinzugefügt {a}, entfernt {r}, Schätzungen geändert {e}, ausgeschlossen {x}, zurückgeholt {u}",
+  "driftPanelTitle": "Änderungen seit der Abstimmung am {ts} · {who}",
+  "driftAdded": "Hinzugefügt",
+  "driftRemoved": "Entfernt",
+  "driftEstimate": "Schätzung geändert",
+  "driftExcluded": "Aus dem Sprint ausgeschlossen",
+  "driftRestored": "In den Sprint zurückgeholt",
+  "slotChangedHint": "Der Sprint wurde in einem anderen Tab oder von einem anderen Benutzer geändert. Ihre Änderungen werden beim Speichern mit den neuen Daten zusammengeführt; laden Sie die Seite neu, um sie jetzt zu sehen."
 }

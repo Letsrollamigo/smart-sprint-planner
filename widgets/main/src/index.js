@@ -71,6 +71,7 @@ import './domain/rolecomposition-view.js';
 import './domain/allocsummary-view.js';
 import './domain/history-view.js';
 import './domain/header-view.js';
+import './domain/slot-watch.js';   /* #114 — подсказка «спринт изменён другим» по rev при возврате фокуса */
 import './domain/gantt-view.js';
 import './domain/backlog-loader.js';
 import './domain/backlog-view.js';
@@ -80,6 +81,7 @@ import './domain/capacity-view.js';
 import './domain/sprint-store.js';
 import './pure/slot-merge-pure.js';   /* #84 — трёхстороннее слияние слота на 409 */
 import './pure/sprint-field-pure.js';  /* #88 — ролевое поле «Спринт»: резолверы имени и значения */
+import './pure/scope-drift-pure.js';   /* #114 — дрейф состава после согласования */
 import './domain/release-store.js';
 import './domain/capacity-store.js';   /* R6 — стор ёмкости (ADR-001) */
 import './domain/release-view.js';

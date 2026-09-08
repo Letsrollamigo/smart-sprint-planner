@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint „{value}\" → pole „{field}\": zapsáno {written}, chyb {errors}",
   "navDanger": "Nebezpečná zóna",
   "cardDanger": "Nebezpečná zóna",
-  "hintPlannerDisable": "Vypnutí odstraní projekt z výběru projektů plánovače pro běžné uživatele a zastaví obsluhu z hlavní nabídky. Data plánovače zůstávají zachována. Konfigurátor projektu nebo správce jej může znovu zapnout — zde nebo na kartě plánovače v nastavení projektu YouTrack."
+  "hintPlannerDisable": "Vypnutí odstraní projekt z výběru projektů plánovače pro běžné uživatele a zastaví obsluhu z hlavní nabídky. Data plánovače zůstávají zachována. Konfigurátor projektu nebo správce jej může znovu zapnout — zde nebo na kartě plánovače v nastavení projektu YouTrack.",
+  "planningRoleStatDrift": "odchylka",
+  "driftBadge": "Odchylka",
+  "driftHint": "Od schválení {ts} ({who}): přidáno {a}, odebráno {r}, změněné odhady {e}, vyloučeno {x}, vráceno {u}",
+  "driftPanelTitle": "Změny od schválení {ts} · {who}",
+  "driftAdded": "Přidáno",
+  "driftRemoved": "Odebráno",
+  "driftEstimate": "Změněný odhad",
+  "driftExcluded": "Vyloučeno ze sprintu",
+  "driftRestored": "Vráceno do sprintu",
+  "slotChangedHint": "Sprint byl změněn v jiné kartě nebo jiným uživatelem. Při uložení budou vaše úpravy sloučeny s novými daty; pro jejich zobrazení teď obnovte stránku."
 }

@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint \"{value}\" → \"{field}\" alanı: {written} yazıldı, {errors} hata",
   "navDanger": "Tehlikeli bölge",
   "cardDanger": "Tehlikeli bölge",
-  "hintPlannerDisable": "Devre dışı bırakma, projeyi sıradan kullanıcılar için planlayıcının proje seçiminden kaldırır ve ana menüden hizmeti durdurur. Planlayıcı verileri korunur. Proje yapılandırıcısı veya bir yönetici yeniden etkinleştirebilir — burada ya da YouTrack proje ayarlarındaki planlayıcı sekmesinde."
+  "hintPlannerDisable": "Devre dışı bırakma, projeyi sıradan kullanıcılar için planlayıcının proje seçiminden kaldırır ve ana menüden hizmeti durdurur. Planlayıcı verileri korunur. Proje yapılandırıcısı veya bir yönetici yeniden etkinleştirebilir — burada ya da YouTrack proje ayarlarındaki planlayıcı sekmesinde.",
+  "planningRoleStatDrift": "sapma",
+  "driftBadge": "Sapma",
+  "driftHint": "{ts} tarihli mutabakattan beri ({who}): eklendi {a}, çıkarıldı {r}, tahmin değişti {e}, hariç tutuldu {x}, geri alındı {u}",
+  "driftPanelTitle": "{ts} tarihli mutabakattan bu yana değişiklikler · {who}",
+  "driftAdded": "Eklendi",
+  "driftRemoved": "Çıkarıldı",
+  "driftEstimate": "Tahmin değişti",
+  "driftExcluded": "Sprintten hariç tutuldu",
+  "driftRestored": "Sprinte geri alındı",
+  "slotChangedHint": "Sprint başka bir sekmede veya başka bir kullanıcı tarafından değiştirildi. Kaydederken düzenlemeleriniz yeni verilerle birleştirilecek; şimdi görmek için sayfayı yenileyin."
 }

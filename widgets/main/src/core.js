@@ -793,7 +793,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.38.1';
+  var APP_VERSION = '3.39.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1656,6 +1656,7 @@
   }
   function _backendCall(path, baseOpts) { return YT_API._backendCall(path, baseOpts, _ytApiDeps()); }
   function apiGet(path) { return YT_API.apiGet(path, _ytApiDeps()); }
+  function apiProbeRev(path) { return YT_API.apiProbeRev(path, _ytApiDeps()); }   /* #114 */
   function apiPost(path, body, query) { return YT_API.apiPost(path, body, query, _ytApiDeps()); }
 
   /* ═══ Инициализация ════════════════════════════════════════ */
@@ -2725,6 +2726,7 @@
       fmtThLabel: fmtThLabel, localizeEnumVal: localizeEnumVal,
       fmtPeriod: fmtPeriod, parsePeriod: parsePeriod, fmtHoursOnly: fmtHoursOnly,
       formatHoursLight: _formatHoursLight,
+      fmtDate: fmtDate,   /* #114 — дата согласования в подсказке дрейфа */
       multiKeySort: multiKeySort, getSortKey: getSortKey, setSortKey: setSortKey,
       rerenderAllSortableTables: _rerenderAllSortableTables,
       getRoleItemsArr: getRoleItemsArr,
@@ -2753,6 +2755,7 @@
       getActiveRoles: getSprintRoles, safeLs: safeLs,   /* #73 — набор спринта */
       draftGet: _draftGet, draftSet: _draftSet,
       renderRolePlannerHeader: renderRolePlannerHeader,
+      renderWidgetHeader: renderWidgetHeader,   /* #114 — бейдж дрейфа шапки после правок состава */
       applyEditorRightsToUI: applyEditorRightsToUI,
       populatePlanningRoleSel: populatePlanningRoleSel,
       refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
@@ -3082,6 +3085,13 @@
     } catch (err) { diag('cross-tab WC event err: '+err, 'err'); }
   }
   try { window.addEventListener('storage', _onCrossTabWcEvent); } catch(_){}
+  /* #114 — подсказка «спринт изменён другим» при возврате фокуса вкладки (domain/slot-watch.js). */
+  var SLOT_WATCH = (typeof window !== 'undefined' && window.__SSP_SLOT_WATCH) || {};
+  function _slotWatchDeps() {
+    return { apiProbeRev: apiProbeRev, T: T, diag: diag,
+      state: { getSprint: function () { return _sprint; }, getSlotRev: function () { return SPRINT_STORE.getSlotRev(); } } };
+  }
+  if (typeof SLOT_WATCH.install === 'function') { try { SLOT_WATCH.install(_slotWatchDeps()); } catch (e) { diag('slot-watch install err: ' + e, 'err'); } }
 
   /* D36 — При personalPlanningEnabled=false скрываем уровень «Люди».
      Если активным был «people» — fallback на «roles». */
@@ -3902,6 +3912,7 @@
       T: T, esc: esc, diag: diag, fmtDate: fmtDate,
       statusLabel: statusLabel, roleLabel: roleLabel,
       getSprintRolesFor: getSprintRolesFor,   /* #73 — бейджи по набору резолвнутого спринта */
+      getRoleItemsArr: getRoleItemsArr,       /* #114 — бейдж дрейфа состава */
       computeRequiredRevalidationLevel: computeRequiredRevalidationLevel,
       hideReassignModal: hideReassignModal,
       navAvailable: _navAvailable,

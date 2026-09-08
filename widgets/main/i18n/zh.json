@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "冲刺「{value}」→ 字段「{field}」：写入 {written}，错误 {errors}",
   "navDanger": "危险区域",
   "cardDanger": "危险区域",
-  "hintPlannerDisable": "停用后，普通用户的规划器项目选择中将不再显示该项目，并停止通过主菜单提供服务。规划器数据会保留。项目配置者或管理员可以重新启用——在此处，或在 YouTrack 项目设置的规划器标签页中。"
+  "hintPlannerDisable": "停用后，普通用户的规划器项目选择中将不再显示该项目，并停止通过主菜单提供服务。规划器数据会保留。项目配置者或管理员可以重新启用——在此处，或在 YouTrack 项目设置的规划器标签页中。",
+  "planningRoleStatDrift": "偏移",
+  "driftBadge": "偏移",
+  "driftHint": "自 {ts} 达成一致以来（{who}）：新增 {a}，移除 {r}，估算变更 {e}，排除 {x}，恢复 {u}",
+  "driftPanelTitle": "自 {ts} 达成一致以来的变更 · {who}",
+  "driftAdded": "新增",
+  "driftRemoved": "移除",
+  "driftEstimate": "估算已变更",
+  "driftExcluded": "已从冲刺中排除",
+  "driftRestored": "已恢复到冲刺",
+  "slotChangedHint": "冲刺已在另一个标签页中或被其他用户修改。保存时您的修改将与新数据合并；要立即查看，请刷新页面。"
 }

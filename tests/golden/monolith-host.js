@@ -81,6 +81,7 @@ const BRIDGE_SCRIPTS = [
   'rolecomposition-view.js',
   'history-view.js',
   'header-view.js',
+  'slot-watch.js',       /* #114 — подсказка «изменён другим» */
   'gantt-view.js',
   'backlog-view.js',
   'intro-view.js',
@@ -88,6 +89,7 @@ const BRIDGE_SCRIPTS = [
   'sprint-store.js',
   'slot-merge-pure.js',   /* #84 — трёхстороннее слияние слота на 409 */
   'sprint-field-pure.js', /* #88 — резолверы ролевого поля «Спринт» */
+  'scope-drift-pure.js',  /* #114 — дрейф состава после согласования */
   'capacity-store.js',   /* R6 — стор ёмкости (ADR-001) */
 ];
 

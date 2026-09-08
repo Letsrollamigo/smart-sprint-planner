@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint „{value}\" → pole „{field}\": zapisano {written}, błędów {errors}",
   "navDanger": "Strefa niebezpieczna",
   "cardDanger": "Strefa niebezpieczna",
-  "hintPlannerDisable": "Wyłączenie usuwa projekt z wyboru projektów planera dla zwykłych użytkowników i zatrzymuje obsługę z menu głównego. Dane planera są zachowywane. Konfigurator projektu lub administrator może włączyć go ponownie — tutaj albo na karcie planera w ustawieniach projektu YouTrack."
+  "hintPlannerDisable": "Wyłączenie usuwa projekt z wyboru projektów planera dla zwykłych użytkowników i zatrzymuje obsługę z menu głównego. Dane planera są zachowywane. Konfigurator projektu lub administrator może włączyć go ponownie — tutaj albo na karcie planera w ustawieniach projektu YouTrack.",
+  "planningRoleStatDrift": "dryf",
+  "driftBadge": "Dryf",
+  "driftHint": "Od uzgodnienia {ts} ({who}): dodano {a}, usunięto {r}, zmieniono oceny {e}, wykluczono {x}, przywrócono {u}",
+  "driftPanelTitle": "Zmiany od uzgodnienia {ts} · {who}",
+  "driftAdded": "Dodano",
+  "driftRemoved": "Usunięto",
+  "driftEstimate": "Zmieniona ocena",
+  "driftExcluded": "Wykluczono ze sprintu",
+  "driftRestored": "Przywrócono do sprintu",
+  "slotChangedHint": "Sprint został zmieniony w innej karcie lub przez innego użytkownika. Przy zapisie Twoje zmiany zostaną scalone z nowymi danymi; odśwież stronę, aby zobaczyć je teraz."
 }

@@ -1,0 +1,16 @@
+{
+  "afterInsertHasAgreed": false,
+  "agreed1": {
+    "at": 1780315200000,
+    "by": "GM Editor",
+    "items": {
+      "GM-20": {
+        "e": 300
+      }
+    }
+  },
+  "carriedUnchanged": true,
+  "committedStatus": "CONFIRMED",
+  "committedAgreedUnchanged": true,
+  "committedHasNewItem": true
+}

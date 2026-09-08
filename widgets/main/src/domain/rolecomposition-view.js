@@ -44,6 +44,41 @@ function _countUnestimated(items, rk) {
   return items.filter(function(it){ return !(it && it['estimate_'+rk] > 0); }).length;
 }
 
+/* #114 — дрейф состава роли против слепка согласования (snap.agreed). Источник текущих строк —
+   как в computeRoleQuickStats: живой _roleItems для рабочего спринта, items снимка для
+   исторического вида. FINISHED-роли дрейф не показывают: спринт закрыт, сверять не с чем. */
+function _driftPure() { return (typeof window !== 'undefined' && window.__SSP_SCOPE_DRIFT_PURE) || null; }
+function computeRoleDrift(rk, deps) {
+  var DRIFT = _driftPure();
+  var none = { has: false, count: 0 };
+  if (!DRIFT) return none;
+  var _sprint = deps.state.getSprint();
+  var _currentSprintId = deps.state.getCurrentSprintId();
+  var isHistoricalView = !!(_currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId);
+  var logicalId = isHistoricalView ? _currentSprintId : (_sprint && _sprint.sprintId);
+  if (!logicalId) return none;
+  var _history = deps.state.getHistory();
+  var snap = (Array.isArray(_history) ? _history : []).find(function (h) { return h && h.sprintId === logicalId + '_' + rk; });
+  if (!snap || !snap.agreed || snap.status === deps.STATUS.FINISHED) return none;
+  var items = isHistoricalView
+    ? (Array.isArray(snap.items) ? snap.items : [])
+    : ((typeof deps.getRoleItemsArr === 'function') ? (deps.getRoleItemsArr(rk) || []) : []);
+  return DRIFT.computeDrift(snap.agreed, items, rk);
+}
+function _driftHint(d, deps) {
+  var ts = (d.at && typeof deps.fmtDate === 'function') ? deps.fmtDate(d.at) : '';
+  return deps.T('driftHint')
+    .replace('{ts}', ts).replace('{who}', d.by || '')
+    .replace('{a}', d.added.length).replace('{r}', d.removed.length).replace('{e}', d.estimate.length)
+    .replace('{x}', d.excluded.length).replace('{u}', d.restored.length);
+}
+function _driftSpanHtml(d, deps) {
+  var DRIFT = _driftPure();
+  if (!d || !d.count || !DRIFT) return '';
+  return '<span class="planning-role-drift" title="' + deps.esc(_driftHint(d, deps)) + '">'
+    + deps.esc(deps.T('planningRoleStatDrift')) + ': ' + deps.esc(DRIFT.formatShort(d)) + '</span>';
+}
+
 function computeRoleQuickStats(rk, deps) {
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rk; });
   var _sprint = deps.state.getSprint();
@@ -115,6 +150,7 @@ function renderRoleAccordion(rk, deps) {
   var _ppSettings = deps.state.getSettings();
   var ppOn = !!(_ppSettings && _ppSettings.personalPlanningEnabled);
   var stats = computeRoleQuickStats(rk, deps);
+  var drift = computeRoleDrift(rk, deps);   /* #114 */
   var _uiExpandedRoles = deps.state.getUiExpandedRoles() || {};
   var expanded = !!_uiExpandedRoles[rk];
   var label = (typeof deps.roleLabel === 'function') ? deps.roleLabel(role) : role.label || rk;
@@ -152,6 +188,7 @@ function renderRoleAccordion(rk, deps) {
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
     +     (stats.unestimated ? '<span class="planning-role-unest">' + esc(T('planningRoleStatUnestimated')) + ': ' + stats.unestimated + '</span>' : '')   /* #89.1 */
+    +     _driftSpanHtml(drift, deps)   /* #114 */
     +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
     +     (_thisIsFine ? '<span class="planning-role-dog" title="' + esc(T('hintThisIsFine')) + '">' + DOG_SVG + '</span>' : '')   /* #98 */
     +   '</button>'
@@ -166,6 +203,31 @@ function renderRoleAccordion(rk, deps) {
     +   '</div>'
     + '</div>';
   return html;
+}
+
+/* #114 — блок «Изменения после согласования» в панели роли: список по видам дрейфа с ключами
+   задач; оценки — «было → стало» в часах. Скрыт, когда дрейфа нет или слепка нет. */
+function renderRoleDrift(rk, deps) {
+  var box = document.getElementById('drift_' + rk);
+  if (!box) return;
+  var d = computeRoleDrift(rk, deps);
+  if (!d.count) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  var T = deps.T, esc = deps.esc;
+  function hrs(m) { return (m === null || m === undefined) ? '—' : deps.formatHoursLight(m / 60); }
+  var rows = [
+    ['driftAdded',    d.added],
+    ['driftRemoved',  d.removed],
+    ['driftEstimate', d.estimate.map(function (e) { return e.id + ' (' + hrs(e.from) + ' → ' + hrs(e.to) + ')'; })],
+    ['driftExcluded', d.excluded],
+    ['driftRestored', d.restored],
+  ].filter(function (r) { return r[1].length; }).map(function (r) {
+    return '<div class="scope-drift__row"><span class="scope-drift__label">' + esc(T(r[0])) + ' (' + r[1].length + '):</span> '
+      + esc(r[1].join(', ')) + '</div>';
+  }).join('');
+  var ts = (d.at && typeof deps.fmtDate === 'function') ? deps.fmtDate(d.at) : '';
+  box.innerHTML = '<div class="scope-drift__title">'
+    + esc(T('driftPanelTitle').replace('{ts}', ts).replace('{who}', d.by || '')) + '</div>' + rows;
+  box.classList.remove('hidden');
 }
 
 function _updateRoleAccordionStats(rk, deps) {
@@ -195,6 +257,29 @@ function _updateRoleAccordionStats(rk, deps) {
     unest.textContent = deps.T('planningRoleStatUnestimated') + ': ' + stats.unestimated;
   } else if (unest) {
     unest.parentNode.removeChild(unest);
+  }
+  /* #114 — индикатор дрейфа: тот же паттерн, что unest; стоит между unest и warn. */
+  var driftEl = toggle.querySelector('.planning-role-drift');
+  var drift = computeRoleDrift(rk, deps);
+  if (drift.count) {
+    var DRIFT = _driftPure();
+    if (!driftEl) {
+      driftEl = document.createElement('span');
+      driftEl.className = 'planning-role-drift';
+      toggle.insertBefore(driftEl, toggle.querySelector('.planning-role-warn'));
+    }
+    driftEl.textContent = deps.T('planningRoleStatDrift') + ': ' + (DRIFT ? DRIFT.formatShort(drift) : String(drift.count));
+    driftEl.title = _driftHint(drift, deps);
+  } else if (driftEl) {
+    driftEl.parentNode.removeChild(driftEl);
+  }
+  /* #114 — бейдж дрейфа в шапке спринта рисует renderWidgetHeader; перерисовываем шапку только
+     когда счётчик дрейфа роли изменился (правка состава / оценки / исключения), а не на каждый
+     рендер состава. Счётчик живёт на карточке (перестраивается вместе с ней). */
+  var prevDrift = card.dataset.driftCount || '0';
+  if (String(drift.count || 0) !== prevDrift) {
+    card.dataset.driftCount = String(drift.count || 0);
+    if (typeof deps.renderWidgetHeader === 'function') { try { deps.renderWidgetHeader(); } catch (_) {} }
   }
   var warn = card.querySelector('.planning-role-toggle .planning-role-warn');
   if (stats.overlimit) {
@@ -436,6 +521,11 @@ function buildRolePanel(role, deps) {
   statusRow.appendChild(newSprintBtn);
   statusRow.appendChild(saveHeaderBtn);
   colStatus.appendChild(statusRow);
+  /* #114 — блок дрейфа состава после согласования (панель роли, под статусом). */
+  var driftBox = document.createElement('div');
+  driftBox.className = 'scope-drift hidden';
+  driftBox.id = 'drift_' + role.key;
+  colStatus.appendChild(driftBox);
 
   /* Колонка 2: Доступные ресурсы */
   var colRes = document.createElement('div');
@@ -1154,6 +1244,7 @@ function renderRoleComposition(rk, deps) {
     }
   }
   _updateRoleAccordionStats(rk, deps);
+  renderRoleDrift(rk, deps);   /* #114 */
 }
 
 /* #63 (класс D109) — карточка «Остатки»: при просмотре чужого спринта источник =
@@ -1189,6 +1280,8 @@ function updateRoleRemaining(rk, deps) {
 const api = {
   isExcludedHidden: isExcludedHidden,   /* 68-2 — читает сводная #61 */
   computeRoleQuickStats: computeRoleQuickStats,
+  computeRoleDrift: computeRoleDrift,   /* #114 */
+  renderRoleDrift: renderRoleDrift,     /* #114 */
   renderRoleAccordion: renderRoleAccordion,
   updateRoleAccordionStats: _updateRoleAccordionStats,
   updateRoleRemaining: updateRoleRemaining,

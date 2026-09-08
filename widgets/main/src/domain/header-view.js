@@ -42,6 +42,8 @@ function getLogicalSprintIds(deps) {
 }
 
 /* Все per-role записи _history для логического id (rec.sprintId === <id>_<roleKey>). */
+function _driftPure() { return (typeof window !== 'undefined' && window.__SSP_SCOPE_DRIFT_PURE) || null; }   /* #114 */
+
 function getSprintRolesEntries(logicalId, deps) {
   var _history = deps.state.getHistory();
   if (!logicalId || !Array.isArray(_history)) return [];
@@ -193,6 +195,28 @@ function _buildHeaderVm(deps) {
            +    '<span style="opacity:.7">'+esc(rLabel)+':</span> '+esc(stLabel)
            + '</span>';
     }).join('');
+    /* #114 — бейдж дрейфа состава: только роли набора спринта (как статусы), живой спринт —
+       против _roleItems, исторический — против items снимка; FINISHED-роли не считаются. */
+    var DRIFT = _driftPure();
+    var _sprintLive = deps.state.getSprint();
+    if (DRIFT && typeof deps.getRoleItemsArr === 'function') {
+      var live = !!(_sprintLive && _sprintLive.sprintId === curId);
+      var drifts = activeRoles.map(function (role) {
+        var snap = entries.find(function (r) { return r && r.roleKey === role.key; });
+        if (!snap || !snap.agreed || snap.status === 'FINISHED') return null;
+        var items = live ? (deps.getRoleItemsArr(role.key) || []) : (Array.isArray(snap.items) ? snap.items : []);
+        return { role: role, d: DRIFT.computeDrift(snap.agreed, items, role.key) };
+      }).filter(function (x) { return x && x.d.count; });
+      if (drifts.length) {
+        var total = DRIFT.summarizeDrift(drifts.map(function (x) { return x.d; }));
+        var tip = drifts.map(function (x) {
+          var rl = (typeof deps.roleLabel === 'function') ? deps.roleLabel(x.role) : (x.role.label || x.role.key);
+          return rl + ': ' + DRIFT.formatShort(x.d);
+        }).join('\n');
+        vm.badgeHtml += '<span class="s-badge s-badge--drift" title="' + esc(T('driftBadge') + ' · ' + tip) + '">'
+          + esc(T('driftBadge')) + ': ' + esc(DRIFT.formatShort(total)) + '</span>';
+      }
+    }
   } else {
     vm.diagLine = null;
     vm.badgeVisible = false;

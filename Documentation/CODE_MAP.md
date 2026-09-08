@@ -58,7 +58,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4597 | — | композиционный корень виджета. |
+| `core.js` | 4608 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -66,7 +66,7 @@
 |---|---|---|---|
 | `data-loaders.js` | 319 | `__SSP_DATA_LOADERS` | загрузчики данных проекта (Фаза 5 слайс 12, домен E6 — первый выносимый подкластер init/bootstrap). |
 | `reporting-data.js` | 538 | `__SSP_REPORTING_DATA` | #50 S1b. |
-| `youtrack-api.js` | 487 | `__SSP_YOUTRACK_API` | #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global → backend-global + projectKey. |
+| `youtrack-api.js` | 495 | `__SSP_YOUTRACK_API` | #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global → backend-global + projectKey. |
 | `allocsummary-view.js` | 247 | `__SSP_ALLOCSUMMARY_VIEW` | #61 — Сводная таблица мультиролевого планирования: read-only спойлер над аккордеонами ролей экрана «Аллокация общего ресурса» (#allocSummaryHost). |
 | `backlog-assign.js` | 138 | `__SSP_BACKLOG_ASSIGN` | #21 слайс 4 — раскладка задачи из пула бэклога в состав ролей спринта (C1-C2 спеки). |
 | `backlog-loader.js` | 422 | `__SSP_BACKLOG_LOADER` | #21 слайс 2b — async-загрузчик пула бэклога. |
@@ -78,7 +78,7 @@
 | `draft-store.js` | 371 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 329 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
 | `gantt-view.js` | 423 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
-| `header-view.js` | 373 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
+| `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
 | `history-controller.js` | 209 | — | контроллер действий вкладки «История»: правка/ завершение спринта + экспорт/импорт истории в JSON (Фаза 5, зачистка «прочих» — слайс 10). |
 | `history-io.js` | 194 | — | #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) |
 | `history-view.js` | 606 | `__SSP_HISTORY_VIEW` | История спринтов — view вкладки «История»: список-пагинация (renderHistory), групповой спойлер спринта (#60) и спойлер записи (buildSpoiler: meta+б… |
@@ -93,17 +93,18 @@
 | `release-rollback.js` | 86 | `__SSP_RELEASE_ROLLBACK` | #57-3 откат состояний задач релиза по истории поля State (⚖ владелец: снапшот НЕ храним — история изменений YT и есть снимок). |
 | `release-store.js` | 84 | `__SSP_RELEASE_STORE` | доменный стор релиз-менеджмента (#48, ADR-001). |
 | `release-view.js` | 440 | — | #48 вкладки «Релиз-менеджмент» (планируемые / история релизов). |
-| `reporting-view.js` | 1425 | `__SSP_REPORTING_VIEW` | #50 S1c/S2. |
+| `reporting-view.js` | 1439 | `__SSP_REPORTING_VIEW` | #50 S1c/S2. |
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
-| `rolecomposition-view.js` | 1128 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
+| `rolecomposition-view.js` | 1219 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
 | `settings-controller.js` | 228 | `__SSP_SETTINGS_CTRL` | обвязка формы настроек проекта (Фаза 5, зачистка «прочих» — слайс 11). |
 | `share-controller.js` | 165 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
+| `slot-watch.js` | 56 | `__SSP_SLOT_WATCH` | #114 (строка пула #110 «WebSockets / Long Polling») — подсказка «спринт изменён другим». |
 | `sprint-controller.js` | 642 | `__SSP_SPRINT_CTRL` | контроллеры спринт-CRUD (Фаза 5 слайс 6, домен E1-sprint, последний подслайс E1). |
 | `sprint-store.js` | 73 | `__SSP_SPRINT_STORE` | доменный стор конфликт-канона спринта (ADR-001, второе применение). |
 | `standup-view.js` | 377 | `__SSP_STANDUP_VIEW` | значение опции «Все роли» (не пересекается с role keys) |
 | `tab-router.js` | 107 | `__SSP_TAB_ROUTER` | Этап 4: planner-wide на всё, что не settings-overlay. |
 | `validation-controller.js` | 331 | `__SSP_VALIDATION_CTRL` | Validation-контроллер: валидация состава роли (doValidateRole), детектор перелимита аллокаций + блокировка кнопки валидации (updateAllocOverlimitUI… |
-| `working-copy.js` | 555 | `__SSP_WORKING_COPY` | #88 — резолвер ролевого значения поля «Спринт» (leaf-слой pure, гейт B1 доволен). |
+| `working-copy.js` | 571 | `__SSP_WORKING_COPY` | #88 — резолвер ролевого значения поля «Спринт» (leaf-слой pure, гейт B1 доволен). |
 | `read-gate.js` | 81 | `__SSP_READ_GATE` | #110 (v3.37.0): единый шлюз чтений YouTrack. |
 
 ### pure/ — чистые функции без DOM и стейта: расчёты, слияние, даты, сортировка
@@ -118,7 +119,7 @@
 | `enum-locale-pure.js` | 23 | `__SSP_ENUM_PURE` | B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority). |
 | `forecast-pure.js` | 123 | `__SSP_FORECAST_PURE` | Side-effect модуль: чистое ядро авто-прогноза дат старта/окончания задач (#40). |
 | `hash-pure.js` | 99 | `__SSP_HASH_PURE` | Чистые hash / equality / diff-утилиты рабочих копий. |
-| `link-roles-pure.js` | 345 | `__SSP_LINK_ROLES_PURE` | эпик #74 фаза 1 «Связи задач»: роли типов связей. |
+| `link-roles-pure.js` | 348 | `__SSP_LINK_ROLES_PURE` | эпик #74 фаза 1 «Связи задач»: роли типов связей. |
 | `migrate-pure.js` | 120 | `__SSP_MIGRATE_PURE` | #49 — personalPlanning: единый канон = per-role записи истории (histRec.personalPlanning, single PP). |
 | `period-pure.js` | 83 | `__SSP_PERIOD_PURE` | Side-effect модуль: чистые функции форматирования/парсинга периодов (минуты ↔ строка). |
 | `permissions-matrix-pure.js` | 216 | `__SSP_PERMISSIONS_MATRIX_PURE` | #71 — «Управление правами» как таблица «группа × полномочие»: чистая логика. |
@@ -131,6 +132,7 @@
 | `reporting-pure.js` | 656 | `__SSP_REPORTING_PURE` | #50 S1b. |
 | `reporting-rollup.js` | 238 | `__SSP_REPORTING_ROLLUP` | #50 B0 «Свод» (контур B, управленческий roll-up). |
 | `reporting-ttm.js` | 412 | `__SSP_REPORTING_TTM` | #50 S3b/S4b. |
+| `scope-drift-pure.js` | 105 | `__SSP_SCOPE_DRIFT_PURE` | #114 — дрейф состава роли после согласования: чистые функции без DOM и стейта. |
 | `share-url-pure.js` | 110 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
 | `slot-merge-pure.js` | 143 | `__SSP_SLOT_MERGE_PURE` | #84 «перечитать-и-слить вместо „обновите страницу"». |
 | `sort-pure.js` | 144 | `__SSP_SORT_PURE` | sandboxed write may throw |
@@ -186,7 +188,7 @@
 | `settings-dta.jsx` | 80 | секция «DtaSection» формы настроек. |
 | `settings-fields.jsx` | 134 | секция настроек «Отображаемые поля» (68-8). |
 | `settings-form.jsx` | 1027 | bespoke SettingsForm для openModal(body.kind:'component'). |
-| `settings-links.jsx` | 212 | секция настроек «Связи задач» (#74). |
+| `settings-links.jsx` | 213 | секция настроек «Связи задач» (#74). |
 | `settings-permissions.jsx` | 204 | секция «Управление правами» (#71): таблица «группа × полномочие» вместо 12 мультиселектов в трёх разных секциях. |
 | `settings-release.jsx` | 83 | секция «ReleaseSection» формы настроек. |
 | `settings-reporting.jsx` | 486 | секция «ReportingSection» формы настроек. |

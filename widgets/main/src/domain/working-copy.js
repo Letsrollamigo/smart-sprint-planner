@@ -4,6 +4,7 @@
    Мост читаем В МОМЕНТ вызова, а не при загрузке модуля: порядок импорта бандла
    не гарантирует, что pure-слой уже опубликовался. */
 function _sfPure() { return (typeof window !== 'undefined' && window.__SSP_SPRINT_FIELD_PURE) || null; }
+function _driftPure() { return (typeof window !== 'undefined' && window.__SSP_SCOPE_DRIFT_PURE) || null; }   /* #114 */
 // Working-copy lifecycle state machine (v5.3.0 D3/b) extracted from
 // widgets/main/src/core.js (Tier C, most interconnected cluster).
 // Browser bridge: window.__SSP_WORKING_COPY. Golden-tested in
@@ -258,6 +259,11 @@ function _commitWorkingCopy(rk, idx, draft, snapFromCurrent, deps) {
     });
   }
   finalSnap.revisions = newRevisions.slice(-200);  /* лимит 200 ревизий — защита от runaway */
+  /* #114 — согласование не состоялось (статус упал ниже CONFIRMED): слепок согласования
+     остаётся прежним, свежий из buildRoleSnap(wasValidated) не применяем. */
+  if (newStatus !== deps.status.CONFIRMED && newStatus !== deps.status.ALLOCATED) {
+    if (baseSnap.agreed) finalSnap.agreed = baseSnap.agreed; else delete finalSnap.agreed;
+  }
   finalSnap.hasWorkingCopy = false;
   if (baseSnap.finishedAt) finalSnap.finishedAt = baseSnap.finishedAt;
   if (baseSnap.finishedBy) finalSnap.finishedBy = baseSnap.finishedBy;
@@ -455,6 +461,16 @@ function buildRoleSnap(rk, goalFields, wasValidated, deps) {
     ? _curPP
     : ((_existingSnapForRk && _existingSnapForRk.personalPlanning) || null);
   snap.personalPlanning = deps.deepClone(ppToSnap);
+  /* #114 — слепок согласованного состава: пишется только на «Согласовать» (wasValidated), при
+     всех прочих перезаписях снимка (обновление из задачи, ручное сохранение, авто-снимок,
+     коммит рабочей копии) переносится из существующего снимка нетронутым. at/by — свой штамп
+     этого же согласования: confirmedAt ниже переписывается любым глубоким коммитом. */
+  var DRIFT = _driftPure();
+  if (wasValidated === true && DRIFT) {
+    snap.agreed = DRIFT.buildAgreed(items, rk, snap.confirmedAt, snap.confirmedBy);
+  } else if (_existingSnapForRk && _existingSnapForRk.agreed) {
+    snap.agreed = _existingSnapForRk.agreed;
+  }
   /* v1.9.0 D132 — Freeze sprint goal + inject outcome/retro from confirm dialog. */
   if (sprint.sprintGoal) snap.sprintGoal = sprint.sprintGoal;
   if (goalFields) {

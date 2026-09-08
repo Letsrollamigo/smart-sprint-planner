@@ -955,3 +955,22 @@ test('golden: renderBacklog — дерево: вложенность Эпик▸
   gm.call('renderBacklog');
   checkJsonSnapshot('backlog-tree', treeShape(backlogVm(document)));
 });
+
+/* #114 — бейдж дрейфа в шапке спринта: суммирует роли набора (analysis: GM-9 снята → «−1»),
+   FINISHED-роль со слепком не считается; при совпадении состава со слепком бейджа нет. */
+test('golden: #114 — бейдж дрейфа в шапке: сумма по ролям набора, FINISHED не считается, без расхождений бейджа нет', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  const analysis = headerRec({ sprintId: fx.SPRINT_ID + '_analysis', status: 'CONFIRMED', name: 'GM Sprint June 2026',
+    agreed: { at: 1778000000000, by: 'gm_user_validator',
+      items: { 'GM-1': { e: 600 }, 'GM-2': { e: 900 }, 'GM-3': { e: 120 }, 'GM-4': { e: 6000, x: 1 }, 'GM-9': { e: 30 } } } });
+  const testing = headerRec({ sprintId: fx.SPRINT_ID + '_testing', roleKey: 'testing', roleLabel: 'Тестирование',
+    status: 'FINISHED', name: 'GM Sprint June 2026', agreed: { at: 1778000000000, by: 'gm_user_validator', items: {} } });
+  gm.set({ _history: fx.buildHistory().concat([analysis, testing]) });
+  gm.call('renderWidgetHeader');
+  const withDrift = headerOut(document).badge;
+  delete analysis.agreed.items['GM-9'];
+  gm.call('renderWidgetHeader');
+  const noDrift = headerOut(document).badge;
+  checkJsonSnapshot('widget-header-drift-114', { withDrift: withDrift, noDrift: noDrift });
+});

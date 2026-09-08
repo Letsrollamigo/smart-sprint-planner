@@ -123,6 +123,13 @@ function _withDeadline(p, path, deps) {
   );
 }
 
+/* #114 — зонд rev слота для подсказки «изменён другим» (domain/slot-watch.js): сырой GET под
+   дедлайном чтения, БЕЗ синка rev слота и базы слияния (#84) и без stale-повтора —
+   состояние вкладки не трогаем, иначе чужие правки стали бы «нашей базой». */
+function apiProbeRev(path, deps) {
+  return _withDeadline(_backendCall(path, {}, deps), path, deps)
+    .then(function (r) { return _revOfGet(path, r); });
+}
 function apiGet(path, deps, _isRetry) {
   deps.diag('GET ' + path + ' [' + deps.state.getMode() + ']');
   return _withDeadline(_backendCall(path, {}, deps), path, deps)
@@ -502,6 +509,7 @@ const api = {
   _backendCall,
   apiGet,
   apiPost,
+  apiProbeRev,   /* #114 */
   _fetchGanttStateHistory,
 };
 

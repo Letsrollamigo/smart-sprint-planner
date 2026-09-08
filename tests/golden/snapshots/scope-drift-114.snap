@@ -1,0 +1,62 @@
+{
+  "drift": {
+    "has": true,
+    "added": [
+      "GM-3"
+    ],
+    "removed": [
+      "GM-9"
+    ],
+    "estimate": [
+      {
+        "id": "GM-2",
+        "from": 800,
+        "to": 900
+      }
+    ],
+    "excluded": [
+      "GM-4"
+    ],
+    "restored": [
+      "GM-2"
+    ],
+    "count": 5,
+    "at": 1778000000000,
+    "by": "gm_user_validator"
+  },
+  "driftFinished": {
+    "has": false,
+    "count": 0
+  },
+  "driftNoAgreed": {
+    "has": false,
+    "count": 0
+  },
+  "accordionAnalysis": "<div class=\"planning-role-card\" data-role-key=\"analysis\"><button class=\"planning-role-toggle\" type=\"button\" data-role-key=\"analysis\"><span class=\"planning-role-chevron\">▶</span><span class=\"planning-role-name\">Анализ</span><span class=\"planning-role-stat\">Ресурс: <span class=\"planning-role-stat__num\">40</span> ч</span><span class=\"planning-role-stat\">Аллокация: <span class=\"planning-role-stat__num\">18 / 40</span> ч</span><span class=\"planning-role-stat\"><span class=\"planning-role-stat__num\">3</span> задач</span><span class=\"planning-role-drift\" title=\"После согласования 05.05.2026 (gm_user_validator): добавлено 1, снято 1, изменены оценки 1, исключено 1, возвращено 1\">дрейф: +1 −1 ~1 ⊘1 ↩1</span></button><div class=\"planning-role-body\" data-role-body=\"analysis\"><div class=\"planning-role-body__actions\"><button class=\"ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople\" data-role-key=\"analysis\">Распределить по исполнителям</button></div></div></div>",
+  "accordionTestingFinished": "<div class=\"planning-role-card\" data-role-key=\"testing\"><button class=\"planning-role-toggle\" type=\"button\" data-role-key=\"testing\"><span class=\"planning-role-chevron\">▶</span><span class=\"planning-role-name\">Тестирование</span><span class=\"planning-role-stat\">Ресурс: <span class=\"planning-role-stat__num\">20</span> ч</span><span class=\"planning-role-stat\">Аллокация: <span class=\"planning-role-stat__num\">26 / 20</span> ч</span><span class=\"planning-role-stat\"><span class=\"planning-role-stat__num\">2</span> задач</span><span class=\"planning-role-warn\">Перелимит</span></button><div class=\"planning-role-body\" data-role-body=\"testing\"><div class=\"planning-role-body__actions\"><button class=\"ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople\" data-role-key=\"testing\">Распределить по исполнителям</button></div></div></div>",
+  "accordionDevBackNoAgreed": "<div class=\"planning-role-card\" data-role-key=\"devBack\"><button class=\"planning-role-toggle\" type=\"button\" data-role-key=\"devBack\"><span class=\"planning-role-chevron\">▶</span><span class=\"planning-role-name\">Разработка Back</span><span class=\"planning-role-stat\">Ресурс: <span class=\"planning-role-stat__num\">80</span> ч</span><span class=\"planning-role-stat\">Аллокация: <span class=\"planning-role-stat__num\">55 / 80</span> ч</span><span class=\"planning-role-stat\"><span class=\"planning-role-stat__num\">2</span> задач</span></button><div class=\"planning-role-body\" data-role-body=\"devBack\"><div class=\"planning-role-body__actions\"><button class=\"ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText planning-role-jumpPeople\" data-role-key=\"devBack\">Распределить по исполнителям</button></div></div></div>",
+  "panelAnalysis": "<div id=\"drift_analysis\" class=\"scope-drift\"><div class=\"scope-drift__title\">Изменения после согласования 05.05.2026 · gm_user_validator</div><div class=\"scope-drift__row\"><span class=\"scope-drift__label\">Добавлено (1):</span> GM-3</div><div class=\"scope-drift__row\"><span class=\"scope-drift__label\">Снято (1):</span> GM-9</div><div class=\"scope-drift__row\"><span class=\"scope-drift__label\">Оценка изменена (1):</span> GM-2 (13.33 → 15)</div><div class=\"scope-drift__row\"><span class=\"scope-drift__label\">Исключено из спринта (1):</span> GM-4</div><div class=\"scope-drift__row\"><span class=\"scope-drift__label\">Возвращено в спринт (1):</span> GM-2</div></div>",
+  "driftHistoricalFinished": {
+    "has": false,
+    "count": 0
+  },
+  "driftHistoricalConfirmed": {
+    "has": true,
+    "added": [],
+    "removed": [
+      "GM-H2"
+    ],
+    "estimate": [],
+    "excluded": [],
+    "restored": [],
+    "count": 1,
+    "at": 1776556800000,
+    "by": "gm_user_validator"
+  },
+  "indicatorAfterRender": {
+    "text": "дрейф: +1 −1 ~1 ⊘1 ↩1",
+    "title": "После согласования 05.05.2026 (gm_user_validator): добавлено 1, снято 1, изменены оценки 1, исключено 1, возвращено 1"
+  },
+  "indicatorAfterRestore": false,
+  "panelHiddenAfterRestore": true
+}

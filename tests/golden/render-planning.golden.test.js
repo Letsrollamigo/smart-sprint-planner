@@ -644,3 +644,68 @@ test('golden: wireRolePanel — контракты кнопок панели (п
     pagination: { afterNext: pageAfterNext, afterPrev: pageAfterPrev },
   });
 });
+
+/* #114 — дрейф состава после согласования. Слепок agreed в снимке активного спринта расходится
+   с живым _roleItems по всем пяти видам: добавлена GM-3, снята GM-9, у GM-2 изменилась оценка и
+   она возвращена из исключённых, GM-4 исключена. FINISHED-роль и роль без слепка индикатора не
+   получают. Панель роли: блок под статусом; после возврата состава к согласованному — прячется. */
+function driftHistory() {
+  return fx.buildHistory().concat([{
+    sprintId: fx.SPRINT_ID + '_analysis', roleKey: 'analysis', roleLabel: 'Анализ', name: 'GM Sprint June 2026',
+    status: 'CONFIRMED', dateStart: fx.DATE_START, dateEnd: fx.DATE_END,
+    confirmedAt: 1778000000000, confirmedBy: 'gm_user_validator', items: [],
+    agreed: { at: 1778000000000, by: 'gm_user_validator',
+      items: { 'GM-1': { e: 600 }, 'GM-2': { e: 800, x: 1 }, 'GM-4': { e: 6000 }, 'GM-9': { e: 60 } } },
+  }, {
+    sprintId: fx.SPRINT_ID + '_testing', roleKey: 'testing', roleLabel: 'Тестирование', name: 'GM Sprint June 2026',
+    status: 'FINISHED', dateStart: fx.DATE_START, dateEnd: fx.DATE_END,
+    confirmedAt: 1778000000000, finishedAt: 1778000000000, items: [],
+    agreed: { at: 1778000000000, by: 'gm_user_validator', items: {} },
+  }]);
+}
+const callDrift = '(function (rk) { return ROLECOMP_VIEW.computeRoleDrift(rk, _roleCompDeps()); })';
+const callRenderDrift = '(function (rk) { return ROLECOMP_VIEW.renderRoleDrift(rk, _roleCompDeps()); })';
+
+test('golden: #114 — дрейф состава роли: индикатор аккордеона, блок панели, без слепка и у FINISHED — ничего', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  gm.set({ _history: driftHistory() });
+  const out = {
+    drift: gm.call(callDrift, 'analysis'),
+    driftFinished: gm.call(callDrift, 'testing'),
+    driftNoAgreed: gm.call(callDrift, 'devBack'),
+    accordionAnalysis: gm.call('renderRoleAccordion', 'analysis'),
+    accordionTestingFinished: gm.call('renderRoleAccordion', 'testing'),
+    accordionDevBackNoAgreed: gm.call('renderRoleAccordion', 'devBack'),
+  };
+  document.body.insertAdjacentHTML('beforeend', '<div id="drift_analysis" class="scope-drift hidden"></div>');
+  gm.call(callRenderDrift, 'analysis');
+  out.panelAnalysis = document.getElementById('drift_analysis').outerHTML;
+  /* исторический вид: текущие строки — items снимка (пусто) → всё согласованное «снято» */
+  gm.set({ _currentSprintId: fx.HIST_SPRINT_ID });
+  const histRec = gm.get('_history').find(function (h) { return h.sprintId === fx.HIST_SPRINT_ID + '_analysis'; });
+  histRec.agreed = { at: 1776556800000, by: 'gm_user_validator', items: { 'GM-H1': { e: 600 }, 'GM-H2': { e: 900 } } };
+  out.driftHistoricalFinished = gm.call(callDrift, 'analysis');   /* FINISHED в истории → ничего */
+  histRec.status = 'CONFIRMED';
+  histRec.items = histRec.items.slice(0, 1);                       /* GM-H2 снята из снимка */
+  out.driftHistoricalConfirmed = gm.call(callDrift, 'analysis');
+  gm.set({ _currentSprintId: fx.SPRINT_ID });
+  /* обновление аккордеона: индикатор появляется после рендера и уходит при возврате к согласованному */
+  gm.call('renderPlanningRoles');
+  const card = document.querySelector('.planning-role-card[data-role-key="analysis"]');
+  const ind = card.querySelector('.planning-role-toggle .planning-role-drift');
+  out.indicatorAfterRender = ind ? { text: ind.textContent, title: ind.getAttribute('title') } : null;
+  const ri = fx.buildRoleItems();
+  ri.analysis = [
+    { issueId: 'GM-1', title: 'a', inclusionStatus: 'INC_PLANNED', estimate_analysis: 600 },
+    { issueId: 'GM-2', title: 'b', inclusionStatus: 'INC_EXCLUDED', estimate_analysis: 800 },
+    { issueId: 'GM-4', title: 'c', inclusionStatus: 'INC_PLANNED', estimate_analysis: 6000 },
+    { issueId: 'GM-9', title: 'd', inclusionStatus: 'INC_UNPLANNED', estimate_analysis: 60 },
+  ];
+  gm.set({ _roleItems: ri });
+  gm.call('_updateRoleAccordionStats', 'analysis');
+  out.indicatorAfterRestore = !!card.querySelector('.planning-role-toggle .planning-role-drift');
+  gm.call(callRenderDrift, 'analysis');
+  out.panelHiddenAfterRestore = document.getElementById('drift_analysis').classList.contains('hidden');
+  checkJsonSnapshot('scope-drift-114', out);
+});

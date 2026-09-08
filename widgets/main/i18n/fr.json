@@ -1361,5 +1361,15 @@
   "sprintWriteResult": "Sprint « {value} » → champ « {field} » : {written} écrits, {errors} erreurs",
   "navDanger": "Zone de danger",
   "cardDanger": "Zone de danger",
-  "hintPlannerDisable": "La désactivation retire le projet du sélecteur de projets du planificateur pour les utilisateurs ordinaires et arrête le service via le menu principal. Les données du planificateur sont conservées. Un configurateur du projet ou un administrateur pourra le réactiver — ici, ou dans l'onglet du planificateur des paramètres du projet YouTrack."
+  "hintPlannerDisable": "La désactivation retire le projet du sélecteur de projets du planificateur pour les utilisateurs ordinaires et arrête le service via le menu principal. Les données du planificateur sont conservées. Un configurateur du projet ou un administrateur pourra le réactiver — ici, ou dans l'onglet du planificateur des paramètres du projet YouTrack.",
+  "planningRoleStatDrift": "dérive",
+  "driftBadge": "Dérive",
+  "driftHint": "Depuis la validation du {ts} ({who}) : ajoutées {a}, retirées {r}, estimations modifiées {e}, exclues {x}, réintégrées {u}",
+  "driftPanelTitle": "Changements depuis la validation du {ts} · {who}",
+  "driftAdded": "Ajoutées",
+  "driftRemoved": "Retirées",
+  "driftEstimate": "Estimation modifiée",
+  "driftExcluded": "Exclues du sprint",
+  "driftRestored": "Réintégrées au sprint",
+  "slotChangedHint": "Le sprint a été modifié dans un autre onglet ou par un autre utilisateur. À l'enregistrement, vos modifications seront fusionnées avec les nouvelles données ; rechargez la page pour les voir maintenant."
 }

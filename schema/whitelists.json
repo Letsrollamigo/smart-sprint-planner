@@ -19,7 +19,8 @@
     "migrationLog",
     "pluginVersion",
     "sprintGoal", "goalOutcome", "goalRetroNote",
-    "roles"
+    "roles",
+    "agreed"
   ],
   "ALLOWED_WORKING_DRAFT_KEYS": [
     "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",

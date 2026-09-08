@@ -806,6 +806,9 @@
     .s-badge--planned   { background: rgba(76,175,125,.15); color: var(--success); border: 1px solid rgba(76,175,125,.3); }
     .s-badge--confirmed { background: rgba(76,175,125,.25); color: var(--success); border: 1px solid rgba(76,175,125,.5); }
     .s-badge--allocated { background: rgba(155,89,182,.20); color: #7d3c98;        border: 1px solid rgba(155,89,182,.55); }
+    .s-badge--drift     { background: rgba(245,124,0,.15);  color: var(--warn);   border: 1px solid rgba(245,124,0,.45); }   /* #114 */
+    .widget-header__slotchanged { display: inline-block; margin-left: 8px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+      background: rgba(245,124,0,.15); color: var(--warn); border: 1px solid rgba(245,124,0,.45); max-width: 100%; white-space: normal; }   /* #114 */
     body.theme-dark .s-badge--allocated,
     body[data-theme="dark"] .s-badge--allocated { background: rgba(186,140,222,.30); color: #d6a8f0; border-color: rgba(186,140,222,.55); }
     .s-badge--overlimit { background: rgba(224,90,106,.2);  color: var(--error);   border: 1px solid rgba(224,90,106,.5); }
@@ -2103,6 +2106,11 @@
     .planning-role-stat__num { color: var(--text); font-weight: 500; }
     .planning-role-warn { color: var(--error); margin-left: auto; font-size: 12px; font-weight: 600; }
     .planning-role-unest { color: var(--warn); font-size: 12px; white-space: nowrap; }   /* #89.1 */
+    .planning-role-drift { color: var(--warn); font-size: 12px; white-space: nowrap; }   /* #114 */
+    .scope-drift { font-size: 12px; margin-top: 8px; color: var(--muted); }   /* #114 */
+    .scope-drift__title { font-weight: 600; color: var(--warn); margin-bottom: 2px; }
+    .scope-drift__row { line-height: 1.45; }
+    .scope-drift__label { font-weight: 600; }
     .planning-role-body { padding: 0 14px 14px 14px; border-top: 1px solid var(--border); }
     .planning-role-body__hint { font-size: 12px; color: var(--muted); padding: 10px 0; }
     .planning-role-body__actions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 8px; }
@@ -2529,6 +2537,7 @@
       <span class="widget-header__wc-icon" data-icon="pencil"></span>
       <span class="widget-header__wc-label" data-i18n="lblHasWorkingCopy">Рабочая копия</span>
     </span>
+    <span id="widgetSlotChanged" class="widget-header__slotchanged hidden" role="status" aria-live="polite"></span>
     <button id="widgetNewSprintBtn"
             class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText widget-header__new editor-btn"
             data-i18n="btnNewSprintWidget" data-icon="add" data-aria-label-key="aria.btnNewSprintWidget">Новый спринт</button>

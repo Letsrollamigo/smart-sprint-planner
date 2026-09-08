@@ -1,0 +1,76 @@
+[
+  {
+    "sprintId": "ssp-fixture-history-1",
+    "name": "Fixture History Sprint 1",
+    "roleKey": "devFront",
+    "roleLabel": "Frontend Development",
+    "status": "FINISHED",
+    "dateStart": 1776556800000,
+    "dateEnd": 1777766400000,
+    "confirmedAt": 1776556800000,
+    "confirmedBy": "fixture_user_validator",
+    "finishedAt": 1777766400000,
+    "finishedBy": "fixture_user_validator",
+    "items": [
+      {
+        "issueId": "FIX-1",
+        "title": "Fixture task with external ID",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1776556800000,
+        "addedBy": "fixture_user_validator",
+        "externalTicketId": "EXT-1234"
+      }
+    ],
+    "personalPlanning": {},
+    "hasWorkingCopy": false,
+    "revisions": [],
+    "pluginVersion": "3.39.0"
+  },
+  {
+    "sprintId": "ssp-fixture-history-2",
+    "name": "Fixture History Sprint 2",
+    "roleKey": "devBack",
+    "roleLabel": "Backend Development",
+    "status": "CONFIRMED",
+    "dateStart": 1777939200000,
+    "dateEnd": 1779148800000,
+    "confirmedAt": 1777939200000,
+    "confirmedBy": "fixture_user_validator",
+    "items": [
+      {
+        "issueId": "FIX-2",
+        "title": "Fixture agreed task",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1777939200000,
+        "addedBy": "fixture_user_validator",
+        "estimate_devBack": 180
+      },
+      {
+        "issueId": "FIX-3",
+        "title": "Fixture excluded task",
+        "inclusionStatus": "INC_EXCLUDED",
+        "addedAt": 1777939200000,
+        "addedBy": "fixture_user_validator",
+        "estimate_devBack": 60
+      }
+    ],
+    "personalPlanning": {},
+    "hasWorkingCopy": false,
+    "revisions": [],
+    "pluginVersion": "3.39.0",
+    "agreed": {
+      "at": 1777939200000,
+      "by": "fixture_user_validator",
+      "items": {
+        "FIX-2": {
+          "e": 120
+        },
+        "FIX-3": {
+          "e": 60,
+          "x": 1
+        },
+        "FIX-4": {}
+      }
+    }
+  }
+]

@@ -321,3 +321,40 @@ test('golden: saveRoleHistorySnapshot — insert/preserve/validated + commit-flo
     toasts: calls.toasts,
   });
 });
+
+/* #114 — жизненный цикл слепка согласования agreed: нет у PLANNING-вставки; появляется на
+   validated; переносится нетронутым при пере-сейве без флага (обновление из задачи / ручное
+   сохранение); при коммите рабочей копии с понижением до PLANNING остаётся прежним. */
+test('golden: #114 — agreed: validated пишет, пере-сейв переносит, коммит с понижением не трогает', async () => {
+  const { gm } = bootWithUser();
+  gm.set({
+    apiPost: function () { return Promise.resolve({ success: true }); },
+    renderHistory: function () {}, renderRoleComposition: function () {},
+    renderWidgetHeader: function () {}, hideWorkingCopyBanner: function () {}, toast: function () {},
+  });
+  await gm.call('saveRoleHistorySnapshot', 'devFront');
+  const afterInsert = gm.get('_history')[0].agreed;
+  await gm.call('saveRoleHistorySnapshot', 'devFront', undefined, null, true);
+  const agreed1 = JSON.parse(JSON.stringify(gm.get('_history')[0].agreed));
+  const ri = fx.buildRoleItems();
+  ri.devFront[0].estimate_devFront = 999;
+  gm.set({ _roleItems: ri });
+  await gm.call('saveRoleHistorySnapshot', 'devFront');
+  const carried = JSON.parse(JSON.stringify(gm.get('_history')[0].agreed));
+  const baseSnap = gm.get('_history')[0];
+  const draft = gm.call('createWorkingDraftFromSnapshot', baseSnap, 0);
+  gm.set({ _activeWorkingDraftKey: draft.key });
+  ri.devFront.push({ issueId: 'GM-NEW', title: 'Добавлена после согласования', inclusionStatus: 'INC_PLANNED', estimate_devFront: 120 });
+  gm.set({ _roleItems: ri });
+  await gm.call('saveRoleHistorySnapshot', 'devFront');
+  await settle();
+  const committed = gm.get('_history')[0];
+  checkJsonSnapshot('working-copy-agreed-114', {
+    afterInsertHasAgreed: afterInsert !== undefined,
+    agreed1: agreed1,
+    carriedUnchanged: JSON.stringify(carried) === JSON.stringify(agreed1),
+    committedStatus: committed.status,
+    committedAgreedUnchanged: JSON.stringify(committed.agreed) === JSON.stringify(agreed1),
+    committedHasNewItem: committed.items.some(function (i) { return i.issueId === 'GM-NEW'; }),
+  });
+});

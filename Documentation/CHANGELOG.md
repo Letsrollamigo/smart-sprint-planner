@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.39.0] — 2026-09-08
+
+> **Scope drift after sign-off and a “changed in another tab” hint.** #114 plus the “slot changed by another” row of the #110 pool. The data schema changed 3.35.0 → 3.39.0: rolling back below 3.39.0 requires a database backup taken before the update; until the first sign-off on the new version a rollback needs no preparation.
+
+### Added
+
+- **Agreement baseline.** “Validate” writes an optional key `agreed` into the role snapshot — the composition at the moment of agreement: per issue the role estimate and the exclusion flag. The baseline survives every later rewrite of the snapshot (refresh from issues, manual save, working-copy commit) and changes only with the next “Validate”. A malformed baseline is refused on write (`invalid_history_structure: agreed_…`) and dropped on read with a migration-log entry — the history record matters more than the indicator. Schema marker 3.35.0 → 3.39.0, no-op migration, fixture `tests/fixtures/snapshots/3.39.0/`.
+- **Drift indicator.** The difference between the live role composition and the baseline is computed in five kinds: added, removed, estimate changed, excluded, returned. Shown in three places: a “drift: +a −r ~e ⊘x ↩u” mark on the role row of the allocation screen, a “Changes since agreement on {when} · {who}” block with a line per issue (estimates as was → now) in the role panel under the status, and a “Drift” badge in the sprint header summing the roles of the sprint set with a per-role breakdown in the tooltip. All three refresh right after an edit, disappear when the composition returns to the agreed one, and are not shown for a finished sprint.
+- **“The sprint was changed in another tab or by another user” hint.** On tab focus the planner compares the sprint slot revision with the server through a lightweight read (at most once per 20 s) and, if it moved ahead, shows a hint in the header with both revision numbers. The read does not touch the merge base, so somebody else's changes never become “yours”; on save your edits are merged with the new data the usual way.
+
+### Documentation
+
+- Chapter 06 “Inside a role card” (ru/en): section on drift after sign-off and the “changed in another tab” hint. Screenshots were not reshot — the chapter-06 frame predates the indicator.
+
+---
+
 ## [3.38.1] — 2026-09-07
 
 > **The TTM report finds epics through the links settings, not through a name pattern in code.** Patch #75. The data schema did not change; rolling back to 3.35.0 needs no preparation.

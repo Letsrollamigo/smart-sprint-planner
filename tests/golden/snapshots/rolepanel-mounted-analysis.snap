@@ -6,6 +6,8 @@
 <button class="ring-button-button ring-button-block ring-button-heightS new-sprint-btn btn--disabled-rights" id="newSprintBtn_analysis" style="" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Новый спринт</button>
 <button class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText save-header-btn btn--disabled-rights" id="saveHeaderBtn_analysis" data-tooltip="Недостаточно прав. Необходима группа «Редактирование спринта»">Сохранить ресурс роли</button>
 </div>
+<div class="scope-drift hidden" id="drift_analysis">
+</div>
 </div>
 <div class="card" style="margin-bottom: 0px;">
 <div class="card-title">Доступные ресурсы</div>

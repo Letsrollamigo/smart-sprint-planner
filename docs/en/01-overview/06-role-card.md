@@ -60,3 +60,17 @@ At the bottom of the card. It moves you to the [Distribution by assignees](07-as
 **Validate** is not cosmetic: it checks the composition against the project's rules and moves the role to the next rung. The button is not available to everyone — the right to validate is granted to a group in the project settings (chapter 09 of the setup document).
 
 If the composition breaks the limits, the planner says so. Whether it can still be saved depends on the «allow planning above the limits» setting.
+
+## Drift after sign-off
+
+**Validate** remembers the role's composition at the moment of agreement: which issues were in it, with which role estimate, and whether an issue was excluded. Everything that changes afterwards the planner shows as **drift** — in three places:
+
+| Where | What you see |
+|---|---|
+| The role row on the **Total resource allocation** screen | a mark like “drift: +2 −1 ~1 ⊘1 ↩1” — added, removed, estimates changed, excluded, returned; the tooltip spells the numbers out and names who agreed and when |
+| The role panel, under the **Planning status** tile | a “Changes since agreement on {date} · {who}” block with one line per issue: “Added”, “Removed”, “Estimate changed” (was → now), “Excluded from sprint”, “Returned to sprint” |
+| The sprint header | a **Drift** badge with the total across the roles of the sprint; the tooltip breaks it down by role |
+
+Drift forbids nothing — it shows how far the sprint has moved from what the role agreed to. Bring the composition back to the agreed one and the marks disappear on their own, no reload needed. The next **Validate** makes the new composition the baseline. A closed sprint shows no drift: its composition is fixed in the history.
+
+One more hint lives next to it in the header. If the sprint was changed in another tab or by another user, the planner compares the revision with the server when you return to the tab and says so. Your edits are merged with the new data on save; reload the page to see the other changes right away.
