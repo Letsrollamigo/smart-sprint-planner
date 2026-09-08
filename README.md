@@ -79,7 +79,7 @@ The plugin ships through two parallel channels — the version badges above alwa
 
 | Channel | Cadence | Who it's for |
 |---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. Uploads pass JetBrains review (1–3 working days) before going live. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | Stable, JB-reviewed | Teams who want vetted releases and YouTrack's built-in auto-update. Uploads pass JetBrains review (1–3 working days) before going live. Only minor releases (X.Y.0) and critical hotfixes are submitted here; other patch releases (X.Y.Z) ship on GitHub and are folded into the next minor. |
 | **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | Bleeding-edge | Teams who want the latest features immediately and don't mind installing a `.zip` manually. Every release is fully tested in CI (`node --test`: unit + golden) but ships ahead of marketplace review. |
 
 GitHub Releases is the authoritative source — every marketplace upload is built from a tagged GitHub release.

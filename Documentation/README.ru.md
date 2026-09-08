@@ -79,7 +79,7 @@ Gantt-таймлайн по роли, с привязкой к спринту и
 
 | Канал | Каденс | Кому подходит |
 |---|---|---|
-| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | Стабильный, JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая выгрузка проходит модерацию JetBrains (1–3 рабочих дня) перед публикацией. |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | Стабильный, JB-ревью | Командам, которым нужны проверенные релизы и встроенный auto-update YouTrack. Каждая выгрузка проходит модерацию JetBrains (1–3 рабочих дня) перед публикацией. Сюда подаются только минорные релизы (X.Y.0) и критичные хотфиксы; остальные патчи (X.Y.Z) выходят на GitHub и входят в следующий минорный релиз. |
 | **[GitHub Releases](https://github.com/Letsrollamigo/smart-sprint-planner/releases)** | Bleeding-edge | Командам, которым нужны последние возможности сразу и нет проблем с ручной установкой `.zip`. Каждый релиз полностью протестирован в CI (`node --test`: unit + golden), но выходит раньше marketplace-модерации. |
 
 GitHub Releases — авторитетный источник: каждая marketplace-выгрузка собирается из тегированного GitHub-релиза.
