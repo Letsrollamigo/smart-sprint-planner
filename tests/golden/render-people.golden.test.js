@@ -624,3 +624,29 @@ test('#100: при метке rev_conflict селект исполнителя �
   assert.match(assigneeCells(), /<select[^>]*disabled/,
     'с меткой селект disabled — заморозка видна, а не только слышна в тосте');
 });
+
+/* #117 — «вне диапазона» считается по календарным дням. Границы спринта у записей до 3.39.1 —
+   локальная полночь (здесь Москва: UTC-полночь − 3 ч), даты задач — UTC-полночь. GM-10 кончается
+   в последний день спринта → в диапазоне; GM-11 кончается днём позже → вне. До правки сырые ms
+   красили и GM-10. */
+test('golden: renderCurrentRoleTaskTable — #117 oor по календарным дням при легаси-границах спринта (локальная полночь)', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const H3 = 3 * 3600000;
+  const sp = gm.get('_sprint'); sp.dateStart = fx.DATE_START - H3; sp.dateEnd = fx.DATE_END - H3;
+  const rec = gm.get('_currentSprintRoleRec');
+  if (rec) { rec.dateStart = fx.DATE_START - H3; rec.dateEnd = fx.DATE_END - H3; }
+  const pp = fx.buildCurrentRolePP();
+  pp.taskAssignments['GM-10'].dateStart = fx.DATE_START;
+  pp.taskAssignments['GM-10'].dateEnd = fx.DATE_END;
+  pp.taskAssignments['GM-11'].dateStart = fx.DATE_START;
+  pp.taskAssignments['GM-11'].dateEnd = fx.DATE_END + 86400000;
+  gm.set({ _sprint: sp, _currentSprintRoleRec: rec, _currentRolePP: pp });
+  gm.call('renderCurrentRoleTaskTable');
+  const table = materializeTable(document.getElementById('currentRoleTaskHost'));
+  assert.ok(table, 'task table contract must be stashed');
+  const warns = (JSON.stringify(table).match(/вне диапазона спринта/g) || []).length;
+  assert.strictEqual(warns, 1, 'ровно одна задача вне диапазона (GM-11); последний день спринта — в диапазоне');
+  checkJsonSnapshot('people-task-table-oor-117', table);
+});

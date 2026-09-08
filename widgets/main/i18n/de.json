@@ -1371,5 +1371,6 @@
   "driftEstimate": "Schätzung geändert",
   "driftExcluded": "Aus dem Sprint ausgeschlossen",
   "driftRestored": "In den Sprint zurückgeholt",
-  "slotChangedHint": "Der Sprint wurde in einem anderen Tab oder von einem anderen Benutzer geändert. Ihre Änderungen werden beim Speichern mit den neuen Daten zusammengeführt; laden Sie die Seite neu, um sie jetzt zu sehen."
+  "slotChangedHint": "Der Sprint wurde in einem anderen Tab oder von einem anderen Benutzer geändert. Ihre Änderungen werden beim Speichern mit den neuen Daten zusammengeführt; laden Sie die Seite neu, um sie jetzt zu sehen.",
+  "outOfRangeWarn": "außerhalb des Sprintzeitraums"
 }

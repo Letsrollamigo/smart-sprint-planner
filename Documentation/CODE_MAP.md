@@ -73,7 +73,7 @@
 | `backlog-view.js` | 146 | `__SSP_BACKLOG_VIEW` | #21 слайс 3 — render-делегатор вида «по зонам». |
 | `capacity-store.js` | 60 | `__SSP_CAPACITY_STORE` | доменный стор ёмкости #45 (ADR-001, третье применение после sprint-store/release-store; |
 | `capacity-view.js` | 468 | `__SSP_CAPACITY_VIEW` | #45 R3 вкладка «Управление ёмкостью». |
-| `currentrole-view.js` | 1094 | `__SSP_CURRENTROLE_VIEW` | Current-role tables view — таблицы текущей роли уровня «Люди» («Распределение по исполнителям» + таблица задач) и их calc-хелперы. |
+| `currentrole-view.js` | 1101 | `__SSP_CURRENTROLE_VIEW` | Current-role tables view — таблицы текущей роли уровня «Люди» («Распределение по исполнителям» + таблица задач) и их calc-хелперы. |
 | `dash-shell.js` | 254 | `__SSP_DASH_SHELL` | global-рельс + дерево навигации (#25 Ф2 Этап 3+4+7, Фаза 5 слайс 13, домен E6 — выносимый подкластер init/bootstrap). |
 | `draft-store.js` | 371 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 329 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |

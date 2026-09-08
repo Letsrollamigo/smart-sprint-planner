@@ -1371,5 +1371,6 @@
   "driftEstimate": "估算已变更",
   "driftExcluded": "已从冲刺中排除",
   "driftRestored": "已恢复到冲刺",
-  "slotChangedHint": "冲刺已在另一个标签页中或被其他用户修改。保存时您的修改将与新数据合并；要立即查看，请刷新页面。"
+  "slotChangedHint": "冲刺已在另一个标签页中或被其他用户修改。保存时您的修改将与新数据合并；要立即查看，请刷新页面。",
+  "outOfRangeWarn": "超出冲刺日期范围"
 }

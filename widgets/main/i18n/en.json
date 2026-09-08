@@ -1370,5 +1370,6 @@
   "driftEstimate": "Estimate changed",
   "driftExcluded": "Excluded from sprint",
   "driftRestored": "Returned to sprint",
-  "slotChangedHint": "The sprint was changed in another tab or by another user. Your edits will be merged with the new data on save; reload the page to see them now."
+  "slotChangedHint": "The sprint was changed in another tab or by another user. Your edits will be merged with the new data on save; reload the page to see them now.",
+  "outOfRangeWarn": "outside the sprint dates"
 }

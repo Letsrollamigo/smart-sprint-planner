@@ -1371,5 +1371,6 @@
   "driftEstimate": "Zmieniona ocena",
   "driftExcluded": "Wykluczono ze sprintu",
   "driftRestored": "Przywrócono do sprintu",
-  "slotChangedHint": "Sprint został zmieniony w innej karcie lub przez innego użytkownika. Przy zapisie Twoje zmiany zostaną scalone z nowymi danymi; odśwież stronę, aby zobaczyć je teraz."
+  "slotChangedHint": "Sprint został zmieniony w innej karcie lub przez innego użytkownika. Przy zapisie Twoje zmiany zostaną scalone z nowymi danymi; odśwież stronę, aby zobaczyć je teraz.",
+  "outOfRangeWarn": "poza datami sprintu"
 }

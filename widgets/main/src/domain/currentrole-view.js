@@ -32,6 +32,14 @@ function _ic(name, cls) {
 
 function round2(v) { return (Math.round((v || 0) * 100) / 100).toFixed(2); }
 
+/* #117 — «вне диапазона» сравнивает календарные дни, а не мгновения: даты задач — UTC-полночь,
+   границы спринта у записей до 3.39.1 — локальная полночь; сырые ms красили последний день
+   спринта восточнее Гринвича и первый — западнее, пока параметры спринта не пересохранят. */
+function _dayOf(ts) {
+  var DP = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || null;
+  return (DP && typeof DP.dayMs === 'function') ? DP.dayMs(ts) : ts;
+}
+
 /* 68-8 — динамические колонки «отображаемых полей» ТОЛЬКО таблицы задач: таблица
    исполнителей ниже — не про задачи, колонок не получает. host передаём из vm-билдера
    (там известен список задач), рендер зовёт с host:null — вторая волна фетча не нужна. */
@@ -466,7 +474,7 @@ function _buildTaskTableVm(deps) {
     }
     var ts = taEntry.dateStart || null;
     var te = taEntry.dateEnd   || null;
-    var oor = (ts && sprintStart && ts < sprintStart) || (te && sprintEnd && te > sprintEnd);
+    var oor = (ts && sprintStart && _dayOf(ts) < _dayOf(sprintStart)) || (te && sprintEnd && _dayOf(te) > _dayOf(sprintEnd));   /* #117 */
     var warn = oor ? '<span style="color:var(--error);font-size:11px;margin-left:4px">' + _ic('warning') + esc(T('outOfRangeWarn') || 'вне диапазона') + '</span>' : '';
     /* #40 — transient-бейдж «не помещается в ёмкость» последнего прогноза (сессионный). */
     var unfitWarn = unfitSet[item.issueId]
@@ -715,7 +723,7 @@ function renderCurrentRoleTaskTable(deps) {
         }
         var ss = (_currentSprintRoleRec && _currentSprintRoleRec.dateStart) || (_sprint && _sprint.dateStart);
         var se = (_currentSprintRoleRec && _currentSprintRoleRec.dateEnd)   || (_sprint && _sprint.dateEnd);
-        var oor = (tsv && isStart && ss && tsv < ss) || (tsv && !isStart && se && tsv > se);
+        var oor = (tsv && isStart && ss && _dayOf(tsv) < _dayOf(ss)) || (tsv && !isStart && se && _dayOf(tsv) > _dayOf(se));   /* #117 */
         dateHost.style.outline = oor ? '1px solid var(--error)' : '';
         dateHost.style.borderRadius = oor ? '4px' : '';
         deps.saveCurrentRoleState();

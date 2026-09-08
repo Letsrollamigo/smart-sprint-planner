@@ -1371,5 +1371,6 @@
   "driftEstimate": "Stima modificata",
   "driftExcluded": "Escluse dallo sprint",
   "driftRestored": "Reintegrate nello sprint",
-  "slotChangedHint": "Lo sprint è stato modificato in un'altra scheda o da un altro utente. Al salvataggio le tue modifiche saranno unite ai nuovi dati; ricarica la pagina per vederli subito."
+  "slotChangedHint": "Lo sprint è stato modificato in un'altra scheda o da un altro utente. Al salvataggio le tue modifiche saranno unite ai nuovi dati; ricarica la pagina per vederli subito.",
+  "outOfRangeWarn": "fuori dalle date dello sprint"
 }

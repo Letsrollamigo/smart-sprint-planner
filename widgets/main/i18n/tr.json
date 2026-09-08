@@ -1371,5 +1371,6 @@
   "driftEstimate": "Tahmin değişti",
   "driftExcluded": "Sprintten hariç tutuldu",
   "driftRestored": "Sprinte geri alındı",
-  "slotChangedHint": "Sprint başka bir sekmede veya başka bir kullanıcı tarafından değiştirildi. Kaydederken düzenlemeleriniz yeni verilerle birleştirilecek; şimdi görmek için sayfayı yenileyin."
+  "slotChangedHint": "Sprint başka bir sekmede veya başka bir kullanıcı tarafından değiştirildi. Kaydederken düzenlemeleriniz yeni verilerle birleştirilecek; şimdi görmek için sayfayı yenileyin.",
+  "outOfRangeWarn": "sprint tarihleri dışında"
 }

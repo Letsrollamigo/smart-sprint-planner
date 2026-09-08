@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.39.2] — 2026-09-08
+
+> **The “outside the sprint dates” mark is computed by calendar day.** Patch #117, a tail of #116. The data schema did not change; rolling back to 3.39.0 needs no preparation.
+
+### Fixed
+
+- **A red mark on the last day of the sprint.** In the people table the out-of-range flag was computed in two places (`domain/currentrole-view.js`: row render and the date-change handler) by comparing raw milliseconds of the task date with the sprint bounds. Task dates are UTC midnight while the bounds of sprints saved before 3.39.1 are local midnight: east of Greenwich a task ending on the sprint's last day was flagged as out of range, west of Greenwich the first day was. Both sides are now compared by calendar day through `dayMs`; re-saving the sprint parameters is not needed. The golden `renderCurrentRoleTaskTable — #117` pins the legacy-bounds case: the last day is in range, the next day is out.
+- **The mark had no translation.** The key `outOfRangeWarn` existed in no locale, so the UI showed the key itself. Added in all 15 languages (“outside the sprint dates”).
+
+---
+
 ## [3.39.1] — 2026-09-08
 
 > **Dates without time are computed in UTC in every time zone.** Patch #116 (the “non-UTC test run” row of the #110 pool). The data schema did not change; rolling back to 3.39.0 needs no preparation.

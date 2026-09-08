@@ -1371,5 +1371,6 @@
   "driftEstimate": "Změněný odhad",
   "driftExcluded": "Vyloučeno ze sprintu",
   "driftRestored": "Vráceno do sprintu",
-  "slotChangedHint": "Sprint byl změněn v jiné kartě nebo jiným uživatelem. Při uložení budou vaše úpravy sloučeny s novými daty; pro jejich zobrazení teď obnovte stránku."
+  "slotChangedHint": "Sprint byl změněn v jiné kartě nebo jiným uživatelem. Při uložení budou vaše úpravy sloučeny s novými daty; pro jejich zobrazení teď obnovte stránku.",
+  "outOfRangeWarn": "mimo termíny sprintu"
 }

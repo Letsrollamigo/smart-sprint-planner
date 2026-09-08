@@ -1371,5 +1371,6 @@
   "driftEstimate": "Schatting gewijzigd",
   "driftExcluded": "Uitgesloten van de sprint",
   "driftRestored": "Teruggezet in de sprint",
-  "slotChangedHint": "De sprint is in een ander tabblad of door een andere gebruiker gewijzigd. Bij opslaan worden uw wijzigingen samengevoegd met de nieuwe gegevens; herlaad de pagina om ze nu te zien."
+  "slotChangedHint": "De sprint is in een ander tabblad of door een andere gebruiker gewijzigd. Bij opslaan worden uw wijzigingen samengevoegd met de nieuwe gegevens; herlaad de pagina om ze nu te zien.",
+  "outOfRangeWarn": "buiten de sprintdata"
 }

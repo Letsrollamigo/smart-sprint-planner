@@ -1371,5 +1371,6 @@
   "driftEstimate": "Módosított becslés",
   "driftExcluded": "Kizárva a sprintből",
   "driftRestored": "Visszatéve a sprintbe",
-  "slotChangedHint": "A sprintet egy másik lapon vagy egy másik felhasználó módosította. Mentéskor a módosításai összefésülődnek az új adatokkal; töltse újra az oldalt, hogy most lássa őket."
+  "slotChangedHint": "A sprintet egy másik lapon vagy egy másik felhasználó módosította. Mentéskor a módosításai összefésülődnek az új adatokkal; töltse újra az oldalt, hogy most lássa őket.",
+  "outOfRangeWarn": "a sprint időtartamán kívül"
 }
