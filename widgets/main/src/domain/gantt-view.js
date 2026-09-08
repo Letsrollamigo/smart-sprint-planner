@@ -178,6 +178,11 @@ function _buildGanttVm(deps) {
   var minTs = Math.min.apply(null, ganttItems.map(function(g){ return g.start; }));
   var maxTs = Math.max.apply(null, ganttItems.map(function(g){ return g.end;   }));
   var dayMs = 86400000;
+  /* #116 — даты задач календарные (UTC-полночь; старые записи могли нести локальную полночь):
+     края оси — ближайшие UTC-дни, подписи и выходные — по UTC. Раньше западнее Гринвича
+     ось и выходные уезжали на день назад. */
+  minTs = Math.ceil(minTs / dayMs - 0.5) * dayMs;
+  maxTs = Math.ceil(maxTs / dayMs - 0.5) * dayMs;
   var totalDays = Math.max(1, Math.ceil((maxTs - minTs) / dayMs)) + 1;
 
   // Ось дат
@@ -188,8 +193,8 @@ function _buildGanttVm(deps) {
     days.push({
       /* #94 — подпись дня в языке планера (был жёсткий D.MM). Формат короткий: на линейке
          помещается только день+месяц, год берётся из шапки периода. */
-      label: dayDate.toLocaleDateString(_langOf(deps), { day: 'numeric', month: '2-digit' }),
-      weekend: dayDate.getDay() === 0 || dayDate.getDay() === 6,
+      label: dayDate.toLocaleDateString(_langOf(deps), { day: 'numeric', month: '2-digit', timeZone: 'UTC' }),
+      weekend: dayDate.getUTCDay() === 0 || dayDate.getUTCDay() === 6,
     });
   }
 
@@ -290,7 +295,7 @@ function _buildGanttVm(deps) {
       editable: editable,
       lang: _langOf(deps),
       zoomLabels: { day: deps.T('ganttZoomDay'), week: deps.T('ganttZoomWeek'), month: deps.T('ganttZoomMonth') },
-      fmtDate: deps.fmtGanttDate,
+      fmtDate: deps.fmtGanttDay,   /* #116 — диапазон полосы: календарные даты по UTC */
       /* #74 фаза 2 ⚖7 — цвет на тип связи (детерминирован порядком типов в настройке)
          и легенда: только фактически видимые обозначения. */
       linkColors: _linkColors,

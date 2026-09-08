@@ -90,7 +90,7 @@ function planHistImport(selectedBaseIds, mode, fileRecords, currentHistory) {
 
 /* ── Диалог импорта (Promise-based) ── */
 function openImportHistDialog(data, deps) {
-  var T = deps.t, toast = deps.toast, fmtDate = deps.fmtDate, fmtDT = deps.fmtDT;
+  var T = deps.t, toast = deps.toast, fmtDay = deps.fmtDay, fmtDT = deps.fmtDT;   /* #116 */
   return new Promise(function(resolve) {
     var pf = _preflightHistFile(data, deps);
     if (!pf.ok) {
@@ -152,7 +152,7 @@ function openImportHistDialog(data, deps) {
         anonText: data.anonymized ? (T('importHistAnonBadge') || '') : '',
         warnings: warnings,
         groups: groupList.map(function(g){
-          return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDate(g.dateStart) : '', collision: !!g.hasCollision };
+          return { baseId: g.baseId, name: g.name, dateText: g.dateStart ? fmtDay(g.dateStart) : '', collision: !!g.hasCollision };
         }),
         labels: {
           collisionBadge: T('importHistCollisionBadge') || 'дубль',

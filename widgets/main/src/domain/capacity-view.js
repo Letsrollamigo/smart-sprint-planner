@@ -112,7 +112,7 @@ function _archiveRow(deps, rec) {
   logins.forEach(function (l) { sumBase += _num(persons[l].base, 0); });
   return {
     sprintId: rec.sprintId || '',
-    dateEndLabel: (typeof rec.dateEnd === 'number') ? deps.fmtDate(rec.dateEnd) : '—',
+    dateEndLabel: (typeof rec.dateEnd === 'number') ? deps.fmtDay(rec.dateEnd) : '—',   /* #116 */
     people: logins.length,
     baseLabel: deps.fmtHoursOnly(sumBase * 60)
   };
@@ -382,8 +382,8 @@ function _buildVm(deps, sprints, sel, ui) {
 
   return {
     selectedSprintId: sel.id, versionTag: ui.dataVersion || 0,
-    dateStartLabel: (typeof sel.dateStart === 'number') ? deps.fmtDate(sel.dateStart) : '—',
-    dateEndLabel: (typeof sel.dateEnd === 'number') ? deps.fmtDate(sel.dateEnd) : '—',
+    dateStartLabel: (typeof sel.dateStart === 'number') ? deps.fmtDay(sel.dateStart) : '—',   /* #116 */
+    dateEndLabel: (typeof sel.dateEnd === 'number') ? deps.fmtDay(sel.dateEnd) : '—',
     selectedRole: selRole, viewMode: viewMode,
     mainView: mainView, personsView: personsView, /* #52 */
     sprints: sprints.map(function (s) { return { id: s.id, name: s.name, isActive: s.isActive }; }),

@@ -125,7 +125,7 @@ function _updateRailSprintName() {
    мутирует аппликатор, vm-builder pure). Значения DOM байт-в-байт
    прежние — оракул сохранён (как слайсы 2–4). ═══ */
 function _buildHeaderVm(deps) {
-  var T = deps.T, esc = deps.esc, fmtDate = deps.fmtDate;
+  var T = deps.T, esc = deps.esc, fmtDay = deps.fmtDay;   /* #116 — даты спринта календарные */
 
   /* 1. Опции селектора: id с meta=null (все роли FINAL) отфильтрованы. */
   var ids = getLogicalSprintIds(deps);
@@ -142,8 +142,8 @@ function _buildHeaderVm(deps) {
       value: id,
       name: m.name || '',   /* #56-3 — чистое имя для рельсовой подписи (без дат-маски) */
       text: (m.name || id) +
-        (m.dateStart ? ' · ' + fmtDate(m.dateStart) : '') +
-        (m.dateEnd   ? ' — ' + fmtDate(m.dateEnd)   : ''),
+        (m.dateStart ? ' · ' + fmtDay(m.dateStart) : '') +
+        (m.dateEnd   ? ' — ' + fmtDay(m.dateEnd)   : ''),
     });
   });
 

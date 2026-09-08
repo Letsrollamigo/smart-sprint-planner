@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.39.1] — 2026-09-08
+
+> **Dates without time are computed in UTC in every time zone.** Patch #116 (the “non-UTC test run” row of the #110 pool). The data schema did not change; rolling back to 3.39.0 needs no preparation.
+
+### Fixed
+
+- **West of Greenwich, dates slipped a day back.** Sprint start and end in the header selector, the form and the history, task dates in the people table and on the Gantt axis, dates in the Excel export and in export file names were read with local `Date` getters from a UTC midnight, so zones with a negative offset showed the previous day. A calendar date is now always taken in UTC: `toDateIn`/`fmtDay` in `pure/date-pure.js`, axis and bar range in `domain/gantt-view.js`; instants (agreed at, changed at) are still shown in local time.
+- **East of Greenwich, the capacity window did not match the sprint form.** The form wrote sprint dates as local midnight (the v3.2.1 fix) while capacity, the Gantt and releases treat a date-only value as UTC midnight — in Moscow or Bangkok the capacity window started and ended a day earlier than chosen. The form now writes UTC midnight and the calculation takes the nearest UTC midnight: existing values (local midnight of any zone from −11 to +11 h) are read as the intended day, nothing to re-save; noon UTC, which YouTrack uses for date fields, stays the same day.
+- **Gate.** The unit test `date-pure-tz-116` checks the rule under Los Angeles, Moscow and Bangkok in child processes; `npm run gate` now also runs the calendar-date goldens under `TZ=America/Los_Angeles`. The `TZ=UTC` pin for the other tests is kept.
+
+---
+
 ## [3.39.0] — 2026-09-08
 
 > **Scope drift after sign-off and a “changed in another tab” hint.** #114 plus the “slot changed by another” row of the #110 pool. The data schema changed 3.35.0 → 3.39.0: rolling back below 3.39.0 requires a database backup taken before the update; until the first sign-off on the new version a rollback needs no preparation.

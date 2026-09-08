@@ -18,7 +18,7 @@
    поэтому используем текстовый маркер «Δ» в первой колонке и легенду в meta. */
 function buildConflictAOA(snap, otherSnap, deps) {
   var T = deps.t, ALL_ROLES = deps.allRoles;
-  var fmtDate = deps.fmtDate, statusLabel = deps.statusLabel, incLabel = deps.incLabel, roleLabel = deps.roleLabel;
+  var fmtDay = deps.fmtDay, statusLabel = deps.statusLabel, incLabel = deps.incLabel, roleLabel = deps.roleLabel;   /* #116 */
   var rk = snap && snap.roleKey;
   var role = rk ? ALL_ROLES.find(function(r){ return r.key === rk; }) : null;
   var roleName = role ? roleLabel(role) : (rk || '—');
@@ -37,7 +37,7 @@ function buildConflictAOA(snap, otherSnap, deps) {
   var meta = [
     [T('excelSprintName'),      snap && snap.name || '—'],
     [T('excelRole'),            roleName],
-    [T('excelPeriod'),          (snap && snap.dateStart ? fmtDate(snap.dateStart) : '—') + ' — ' + (snap && snap.dateEnd ? fmtDate(snap.dateEnd) : '—')],
+    [T('excelPeriod'),          (snap && snap.dateStart ? fmtDay(snap.dateStart) : '—') + ' — ' + (snap && snap.dateEnd ? fmtDay(snap.dateEnd) : '—')],
     [T('excelStatus'),          (snap && snap.status) ? statusLabel(snap.status) : '—'],
     [T('excelDiffHighlightLegend')], /* строка-легенда */
     []
@@ -47,7 +47,7 @@ function buildConflictAOA(snap, otherSnap, deps) {
                 T('excelColEstimate'), T('excelColFact'), T('excelColResource'), T('excelColAlloc'),
                 T('excelColAssignee'), T('excelColStartDate') || 'Старт', T('excelColEndDate') || 'Финиш'];
   function minToH(m){ return m != null ? Math.round(m/60*100)/100 : ''; }
-  function tsToD(ts){ return ts ? fmtDate(ts) : ''; }
+  function tsToD(ts){ return ts ? fmtDay(ts) : ''; }
   var items = (snap && snap.items) || [];
   var rows = items.map(function(item) {
     var iid = item.issueId || '';
@@ -99,7 +99,7 @@ function buildConflictAOA(snap, otherSnap, deps) {
 function exportSprintToExcel(rec, deps) {
   var T = deps.t, toast = deps.toast, diag = deps.diag, loadXLSXLib = deps.loadXLSXLib;
   var ALL_ROLES = deps.allRoles, ACTIVE_INC = deps.activeInc;
-  var fmtDate = deps.fmtDate, fmtDT = deps.fmtDT, fmtPeriod = deps.fmtPeriod, fmtHours = deps.fmtHours;
+  var fmtDay = deps.fmtDay, fmtDT = deps.fmtDT, fmtPeriod = deps.fmtPeriod, fmtHours = deps.fmtHours;   /* #116 */
   var toDateIn = deps.toDateIn;
   var statusLabel = deps.statusLabel, roleLabel = deps.roleLabel, incLabel = deps.incLabel, dispEnum = deps.dispEnum;
   /* Lazy load — если ещё не загружен, грузим, потом рекурсивно вызываем себя */
@@ -119,7 +119,7 @@ function exportSprintToExcel(rec, deps) {
   var meta = [
     [T('excelSprintName'), rec.name || '—'],
     [T('excelRole'), rec.roleLabel || rk],
-    [T('excelPeriod'), fmtDate(rec.dateStart) + ' — ' + fmtDate(rec.dateEnd)],
+    [T('excelPeriod'), fmtDay(rec.dateStart) + ' — ' + fmtDay(rec.dateEnd)],
     [T('excelStatus'), rec.status ? statusLabel(rec.status) : '—'],
     [T('currentRoleConfirmedAt'), (rec.confirmedBy || '—') + ' · ' + fmtDT(rec.confirmedAt)],
     [T('excelQtyTasks'), rec.items ? rec.items.length : 0],

@@ -111,7 +111,7 @@ function _color(c) { return (typeof c === 'string' && _COLOR_RE.test(c)) ? c : n
    печатаем датой без времени. */
 function _fmtDay(ts, lang) {
   var DP = (typeof window !== 'undefined' && window.__SSP_DATE_PURE) || null;
-  if (DP && typeof DP.fmtDate === 'function') return DP.fmtDate(ts, lang);
+  if (DP && typeof DP.fmtDay === 'function') return DP.fmtDay(ts, lang);   /* #116 — день по UTC: полдень UTC YouTrack = тот же день в любом поясе */
   return new Date(ts).toLocaleDateString(lang || 'en', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 

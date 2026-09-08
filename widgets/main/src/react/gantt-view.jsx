@@ -32,7 +32,7 @@ const DAY = 86400000;
 
 /* ms (UTC-полночь, канон ta) → локальный Date того же календарного дня. */
 function msToLocalDay(ms) {
-  const d = new Date(ms);
+  const d = new Date(Math.ceil(ms / DAY - 0.5) * DAY);   /* #116 — ближайшая UTC-полночь: старые даты могли нести локальную полночь */
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 /* Локальный Date → UTC-полночь ms того же календарного дня. */

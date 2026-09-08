@@ -124,7 +124,7 @@ function groupHistoryBySprint(sorted) {
    по ПЕРВОМУ раскрытию: раньше страница истории монтировала HIST_PAGE Ring Table
    сразу, теперь — ноль до клика. */
 function buildSprintGroupSpoiler(group, deps) {
-  var T = deps.T, esc = deps.esc, fmtDate = deps.fmtDate;
+  var T = deps.T, esc = deps.esc, fmtDay = deps.fmtDay;   /* #116 */
   var statusLabel = deps.statusLabel, STATUS = deps.STATUS;
   var head0 = group.recs[0].rec;
 
@@ -150,8 +150,8 @@ function buildSprintGroupSpoiler(group, deps) {
   var meta = document.createElement('div'); meta.className = 'spoiler__meta';
   meta.innerHTML =
     (head0.name ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerName')+'</span><span class="spoiler__mv" style="font-weight:600">'+esc(head0.name)+'</span></div>' : '')+
-    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDate(head0.dateStart)+'</span></div>'+
-    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDate(head0.dateEnd)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDay(head0.dateStart)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDay(head0.dateEnd)+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histGroupRoles')+'</span><span class="spoiler__mv">'+group.recs.length+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerTasks')+'</span><span class="spoiler__mv">'+tasks+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv">'+badges+'</span></div>';
@@ -245,7 +245,7 @@ function renderHistory(deps) {
 
 function buildSpoiler(rec, idx, deps) {
   var T = deps.T, esc = deps.esc, icon = deps.icon;
-  var fmtDate = deps.fmtDate, fmtDT = deps.fmtDT, fmtHours = deps.fmtHours;
+  var fmtDay = deps.fmtDay, fmtDT = deps.fmtDT, fmtHours = deps.fmtHours;   /* #116 — даты спринта календарные, мгновения — fmtDT */
   var statusLabel = deps.statusLabel;
   var STATUS = deps.STATUS;
   var _workingDrafts = deps.state.getWorkingDrafts();
@@ -302,8 +302,8 @@ function buildSpoiler(rec, idx, deps) {
     roleInline +
     outcomeInline +
     goalHeadInline +
-    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateStart)+'</span></div>'+
-    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDate(rec.dateEnd)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStart')+'</span><span class="spoiler__mv">'+fmtDay(rec.dateStart)+'</span></div>'+
+    '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerEnd')+'</span><span class="spoiler__mv">'+fmtDay(rec.dateEnd)+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerStatus')+'</span><span class="spoiler__mv"><span class="s-badge '+badgeClass+'"'+(badgeTitle?' title="'+esc(badgeTitle)+'"':'')+'>'+esc(statusLabel(rec.status))+'</span>'+(rec.isOverLimit?'<span class="overlimit-tag">'+_ic('warning')+T('overlimitTag')+'</span>':'')+wcPill+'</span></div>'+
     '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerTasks')+'</span><span class="spoiler__mv">'+(rec.items?rec.items.length:0)+'</span></div>'+
     (remVal !== undefined && remVal !== null ? '<div class="spoiler__mi"><span class="spoiler__ml">'+T('histSpoilerRem')+'</span><span class="spoiler__mv" style="color:'+(remVal<0?'var(--error)':'var(--success)')+'">'+fmtHours(remVal)+'</span></div>' : '');

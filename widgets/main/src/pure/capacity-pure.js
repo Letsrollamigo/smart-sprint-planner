@@ -33,10 +33,12 @@ function numOr(v, d) {
 
 function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-/* epoch-ms → UTC-полночь того же дня (ms). */
+/* epoch-ms календарной даты → ближайшая UTC-полночь (ms). #116: то же правило, что dayMs в
+   date-pure.js — локальная полночь зон ±11 ч (так до 3.39.1 писались dateStart/dateEnd спринта)
+   даёт задуманный день, ровно полдень UTC (поля «дата» YouTrack) — тот же день. До 3.39.1 здесь
+   был floor: восточнее Гринвича окно ёмкости начиналось и кончалось на день раньше формы спринта. */
 function floorUTCDay(ms) {
-  var d = new Date(ms);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  return Math.ceil(ms / MS_PER_DAY - 0.5) * MS_PER_DAY;
 }
 
 /* epoch-ms → 'YYYY-MM-DD' (UTC). */

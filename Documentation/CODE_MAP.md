@@ -58,7 +58,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4608 | — | композиционный корень виджета. |
+| `core.js` | 4610 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -77,7 +77,7 @@
 | `dash-shell.js` | 254 | `__SSP_DASH_SHELL` | global-рельс + дерево навигации (#25 Ф2 Этап 3+4+7, Фаза 5 слайс 13, домен E6 — выносимый подкластер init/bootstrap). |
 | `draft-store.js` | 371 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 329 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
-| `gantt-view.js` | 423 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
+| `gantt-view.js` | 428 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
 | `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
 | `history-controller.js` | 209 | — | контроллер действий вкладки «История»: правка/ завершение спринта + экспорт/импорт истории в JSON (Фаза 5, зачистка «прочих» — слайс 10). |
 | `history-io.js` | 194 | — | #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) |
@@ -113,8 +113,8 @@
 |---|---|---|---|
 | `allocsummary-pure.js` | 62 | `__SSP_ALLOCSUMMARY_PURE` | #61 — Сводная таблица мультиролевого планирования: чистая сборка строк. |
 | `backlog-vm-pure.js` | 262 | `__SSP_BACKLOG_VM_PURE` | #21 слайс 2 — ЧИСТЫЙ VM-builder пула бэклога. |
-| `capacity-pure.js` | 306 | `__SSP_CAPACITY_PURE` | Side-effect модуль: чистое ядро расчёта ёмкости (#45 R2 «ядро ёмкости»). |
-| `date-pure.js` | 52 | `__SSP_DATE_PURE` | Чистые date-хелперы. |
+| `capacity-pure.js` | 308 | `__SSP_CAPACITY_PURE` | Side-effect модуль: чистое ядро расчёта ёмкости (#45 R2 «ядро ёмкости»). |
+| `date-pure.js` | 77 | `__SSP_DATE_PURE` | Чистые date-хелперы. |
 | `display-fields-pure.js` | 179 | `__SSP_DISPLAY_FIELDS_PURE` | 68-8 «Отображаемые поля»: произвольные поля YouTrack проекта дополнительными колонками трёх таблиц задач. |
 | `enum-locale-pure.js` | 23 | `__SSP_ENUM_PURE` | B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority). |
 | `forecast-pure.js` | 123 | `__SSP_FORECAST_PURE` | Side-effect модуль: чистое ядро авто-прогноза дат старта/окончания задач (#40). |

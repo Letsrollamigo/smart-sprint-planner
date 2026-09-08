@@ -138,9 +138,9 @@ function buildForeignEnvelope(gm) {
     sourceInstance: 'http://other-instance:9090',
     anonymized: true,
     records: [
-      { sprintId: 'ext1_analysis', name: 'Ext Sprint 1', dateStart: 1779000000000 },
-      { sprintId: 'ext1_testing', name: 'Ext Sprint 1', dateStart: 1779000000000 },
-      { sprintId: existingBase + '_analysis', name: 'Collision Sprint', dateStart: 1778000000000 },
+      { sprintId: 'ext1_analysis', name: 'Ext Sprint 1', dateStart: 1778976000000 /* 2026-05-17T00:00Z — #116: календарная дата = UTC-полночь */ },
+      { sprintId: 'ext1_testing', name: 'Ext Sprint 1', dateStart: 1778976000000 /* 2026-05-17T00:00Z — #116: календарная дата = UTC-полночь */ },
+      { sprintId: existingBase + '_analysis', name: 'Collision Sprint', dateStart: 1777939200000 /* 2026-05-05T00:00Z */ },
     ],
   };
 }

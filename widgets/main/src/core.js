@@ -729,7 +729,7 @@
     return {
       t: T, toast: toast, diag: diag, loadXLSXLib: loadXLSXLib,
       allRoles: ALL_ROLES, activeInc: ACTIVE_INC,
-      fmtDate: fmtDate, fmtDT: fmtDT, fmtPeriod: fmtPeriod, fmtHours: fmtHours, toDateIn: toDateIn,
+      fmtDate: fmtDate, fmtDT: fmtDT, fmtDay: fmtDay, fmtPeriod: fmtPeriod, fmtHours: fmtHours, toDateIn: toDateIn,
       statusLabel: statusLabel, roleLabel: roleLabel, incLabel: incLabel, dispEnum: dispEnum,
     };
   }
@@ -743,6 +743,7 @@
   function fromDateIn(s) { return DATE_PURE.fromDateIn(s); }
   function fmtDate(ts)   { return DATE_PURE.fmtDate(ts, _lang); }
   function fmtDT(ts)     { return DATE_PURE.fmtDT(ts, _lang); }
+  function fmtDay(ts)    { return DATE_PURE.fmtDay(ts, _lang); }   /* #116 — календарные даты: день по UTC */
 
   /* v1.9.11 / #32 Phase 6c — тост-обвязка (Ring alertService + legacy DOM
      fallback, очередь ≤3, click-anchor позиционирование, ARIA): вынесена в
@@ -793,7 +794,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.39.0';
+  var APP_VERSION = '3.39.1';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -3384,7 +3385,7 @@
   function _historyDeps() {
     return {
       T: T, esc: esc, safeUrl: safeUrl, icon: icon, diag: diag,
-      fmtDate: fmtDate, fmtDT: fmtDT, fmtHours: fmtHours, fmtHoursOnly: fmtHoursOnly,
+      fmtDate: fmtDate, fmtDT: fmtDT, fmtDay: fmtDay, fmtHours: fmtHours, fmtHoursOnly: fmtHoursOnly,
       fmtPeriod: fmtPeriod, fmtThLabel: fmtThLabel,
       statusLabel: statusLabel, incLabel: incLabel, dispEnum: dispEnum,
       toast: toast, openModal: openModal, apiPost: apiPost,
@@ -3427,7 +3428,7 @@
   function _capacityDeps() {
     return {
       T: T, esc: esc, icon: icon, diag: diag,
-      fmtDate: fmtDate, fmtHoursOnly: fmtHoursOnly,
+      fmtDate: fmtDate, fmtDay: fmtDay, fmtHoursOnly: fmtHoursOnly,
       toast: toast, apiGet: apiGet, apiPost: apiPost,
       getSprintRolesFor: getSprintRolesFor, roleLabel: roleLabel,   /* #73 — набор выбранного в ёмкости спринта */
       checkSettingsManager: checkSettingsManager,
@@ -3742,7 +3743,7 @@
   var HISTORY_IO = (typeof window !== 'undefined' && window.__SSP_HISTORY_IO) || {};
   function _histIoDeps() {
     return {
-      t: T, toast: toast, diag: diag, fmtDate: fmtDate, fmtDT: fmtDT,
+      t: T, toast: toast, diag: diag, fmtDate: fmtDate, fmtDT: fmtDT, fmtDay: fmtDay,
       histExportFormat: HIST_EXPORT_FORMAT, histExportFormatVer: HIST_EXPORT_FORMAT_VER,
       histAcceptedFormats: HIST_ACCEPTED_FORMATS, appVersion: APP_VERSION,
       projectDisplayName: _projectDisplayName, ctx: _ctx, currentUser: _currentUser,
@@ -3909,7 +3910,7 @@
   var HEADER_VIEW = (typeof window !== 'undefined' && window.__SSP_HEADER_VIEW) || {};
   function _headerDeps() {
     return {
-      T: T, esc: esc, diag: diag, fmtDate: fmtDate,
+      T: T, esc: esc, diag: diag, fmtDate: fmtDate, fmtDay: fmtDay,
       statusLabel: statusLabel, roleLabel: roleLabel,
       getSprintRolesFor: getSprintRolesFor,   /* #73 — бейджи по набору резолвнутого спринта */
       getRoleItemsArr: getRoleItemsArr,       /* #114 — бейдж дрейфа состава */
@@ -4413,7 +4414,7 @@
       multiKeySort: multiKeySort,
       ALL_ROLES: ALL_ROLES, ACTIVE_INC: ACTIVE_INC,
       ASSIGNEE_FALLBACK_COLOR: ASSIGNEE_FALLBACK_COLOR,
-      fmtGanttDate: _fmtGanttDate, ganttDaysAgo: _ganttDaysAgo,
+      fmtGanttDate: _fmtGanttDate, fmtGanttDay: _fmtGanttDay, ganttDaysAgo: _ganttDaysAgo,
       fetchGanttStateHistory: _fetchGanttStateHistory,
       getActiveRoles: getSprintRoles,   /* #73 — набор спринта, не проекта */
       getRoleItemsArr: getRoleItemsArr,
@@ -4704,6 +4705,7 @@
 
   /* _fmtGanttDate/_ganttDaysAgo — делегаторы к DATE_PURE (объявлен выше, date-pure.js). */
   function _fmtGanttDate(ts) { return DATE_PURE._fmtGanttDate(ts, _lang); }   /* #94 */
+  function _fmtGanttDay(ts)  { return DATE_PURE._fmtGanttDay(ts, _lang); }    /* #116 */
   function _ganttDaysAgo(ts) { return DATE_PURE._ganttDaysAgo(ts); }
 
   /* Бейдж состояния (#20) — данные в vm gantt-view.js, рендер — react/gantt-view.jsx.

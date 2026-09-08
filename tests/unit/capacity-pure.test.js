@@ -23,8 +23,11 @@ test('dayKeysUTC: inclusive окно, ISO-дни', () => {
 test('dayKeysUTC: end<start → []', () => {
   assert.deepStrictEqual(C.dayKeysUTC(JUN(5), JUN(1)), []);
 });
-test('dayKeysUTC: время суток внутри epoch-ms не влияет (день нормализуется в UTC)', () => {
-  assert.deepStrictEqual(C.dayKeysUTC(JUN(1) + 23 * 3600000, JUN(2) + 1), ['2026-06-01', '2026-06-02']);
+test('dayKeysUTC: #116 — граница окна = ближайшая UTC-полночь: локальная полночь ±11 ч и полдень UTC дают задуманный день', () => {
+  assert.deepStrictEqual(C.dayKeysUTC(JUN(1) - 3 * 3600000, JUN(2) - 3 * 3600000), ['2026-06-01', '2026-06-02']);   /* полночь Москвы (UTC+3): раньше floor давал 31 мая */
+  assert.deepStrictEqual(C.dayKeysUTC(JUN(1) + 7 * 3600000, JUN(2) + 7 * 3600000), ['2026-06-01', '2026-06-02']);   /* полночь Лос-Анджелеса (UTC−7) */
+  assert.deepStrictEqual(C.dayKeysUTC(JUN(1) + 12 * 3600000, JUN(2) + 12 * 3600000), ['2026-06-01', '2026-06-02']); /* полдень UTC — поля «дата» YouTrack, тот же день */
+  assert.deepStrictEqual(C.dayKeysUTC(JUN(1) + 23 * 3600000, JUN(2) + 1), ['2026-06-02']);   /* 23:00Z — уже 2 июня */
 });
 test('isWeekendUTC: Sat/Sun по UTC', () => {
   assert.strictEqual(C.isWeekendUTC('2026-06-06'), true);  // Sat
