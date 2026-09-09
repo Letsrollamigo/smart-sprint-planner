@@ -48,5 +48,13 @@
     "plannedDate", "freezeDate", "freezeLocked",
     "patchNote", "notes", "taskUrl", "roleReps", "issues", "snapshot", "readiness",
     "createdBy", "createdAt", "updatedBy", "updatedAt", "pluginVersion"
+  ],
+  "$comment_reminders": "#112 (v3.40.0, эпик «Напоминания») — стор журнала напоминаний, project-scoped свойство *_reminders = { journal: [record…], pluginVersion }. Запись: детерминированный id <module>:<entityId>:<firedDay>, вид (ключ текста), слепок имён params, день срабатывания/гашения, чем и кем погасло. Пишет ТОЛЬКО сервер (backend-reminders.js, идемпотентный reconcile); кольцо 50 записей. Синхронизируется в backend-core.js тем же sync-скриптом.",
+  "ALLOWED_REMINDERS_KEYS": [
+    "journal", "pluginVersion"
+  ],
+  "ALLOWED_REMINDERS_RECORD_KEYS": [
+    "id", "module", "kind", "entityId", "params",
+    "firedDay", "resolvedDay", "resolvedHow", "resolvedBy"
   ]
 }

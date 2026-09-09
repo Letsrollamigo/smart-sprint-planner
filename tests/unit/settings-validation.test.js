@@ -309,13 +309,71 @@ test('#74 лестница шаг 1: таблица и легаси-пара с�
   assert.strictEqual(validateSettings(out), true);
 });
 
-test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0 (маркер уехал дальше — 68-8, #80, #88, #114)', function () {
+test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0 (маркер уехал дальше — 68-8, #80, #88, #114, #112)', function () {
   const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
-  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.39.0');
+  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.40.0');
   const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.28.0');
   assert.ok(step && step.from === '3.27.0', 'нет записи 3.27.0→3.28.0');
   /* Снимки shape не меняли — миграция обязана быть no-op (настройка project-level). */
   const snap = { sprintId: 'S-1', pluginVersion: '3.27.0' };
+  const before = JSON.stringify(snap);
+  step.migrate(snap);
+  assert.strictEqual(JSON.stringify(snap), before);
+});
+
+/* #112 (v3.40.0) — Напоминания: шесть аддитивных settings-ключей. Каждый негативный кейс
+   отличается от валидного ровно одним значением — отказ нельзя получить «за компанию». */
+test('#112: reminders* — валидные формы принимаются (все шесть, по одному, отсутствие)', function () {
+  const full = { remindersEnabled: true, remindersSprints: false, remindersCapacity: true, remindersReleases: false,
+    remindersModalMode: 'always', remindersCapacityDays: 0 };
+  assert.strictEqual(validateSettings(full), true);
+  assert.strictEqual(validateSettings({ remindersModalMode: 'daily', remindersCapacityDays: 30 }), true);
+  assert.strictEqual(validateSettings({ remindersEnabled: null, remindersCapacityDays: null }), true, 'null = отсутствие');
+  assert.strictEqual(validateSettings({ activeRoles: ['analysis'] }), true, 'без ключей — умолчания читает вычислитель');
+});
+
+test('#112: reminders* — каждое отклонение типа/enum/диапазона — отказ', function () {
+  const bad = [
+    ['remindersEnabled строкой', { remindersEnabled: 'true' }],
+    ['remindersSprints числом', { remindersSprints: 1 }],
+    ['remindersCapacity объектом', { remindersCapacity: {} }],
+    ['remindersReleases строкой', { remindersReleases: 'yes' }],
+    ['remindersModalMode вне enum', { remindersModalMode: 'weekly' }],
+    ['remindersModalMode bool', { remindersModalMode: true }],
+    ['remindersCapacityDays отрицательный', { remindersCapacityDays: -1 }],
+    ['remindersCapacityDays > 30', { remindersCapacityDays: 31 }],
+    ['remindersCapacityDays дробный', { remindersCapacityDays: 2.5 }],
+    ['remindersCapacityDays строкой', { remindersCapacityDays: '3' }],
+    ['чужой ключ с префиксом reminders', { remindersFoo: true }]
+  ];
+  for (const [label, s] of bad) assert.strictEqual(validateSettings(s), false, label);
+});
+
+test('#112: reminders* — в whitelist и в admin-тире; mergeAdminTierFromStored сохраняет stored планировочному менеджеру', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const KEYS = ['remindersEnabled','remindersSprints','remindersCapacity','remindersReleases','remindersModalMode','remindersCapacityDays'];
+  for (const k of KEYS) {
+    assert.ok(ALLOWED_SETTINGS_KEYS.indexOf(k) >= 0, k + ' вне whitelist — migrateSettingsObj стёр бы ключ на READ');
+    assert.ok(backendFull.ADMIN_TIER_SETTINGS_KEYS.indexOf(k) >= 0, k + ' вне admin-тира — сейв планировочным менеджером затёр бы настройку');
+  }
+  const stored   = { remindersEnabled: true, remindersModalMode: 'always', remindersCapacityDays: 7, activeRoles: ['analysis'] };
+  const incoming = { remindersEnabled: false, remindersModalMode: 'daily', remindersCapacityDays: 1, remindersSprints: false, activeRoles: ['testing'] };
+  const out = backendFull.mergeAdminTierFromStored(incoming, stored);
+  assert.strictEqual(out.remindersEnabled, true, 'admin-ключ взят из stored');
+  assert.strictEqual(out.remindersModalMode, 'always');
+  assert.strictEqual(out.remindersCapacityDays, 7);
+  assert.ok(!('remindersSprints' in out), 'ключа нет в stored — планировочный менеджер не может его создать');
+  assert.deepStrictEqual(out.activeRoles, ['testing'], 'планировочный ключ — из incoming');
+  const rt = backendFull.migrateSettingsObj({ activeRoles: ['analysis'], remindersEnabled: true, remindersCapacityDays: 3 });
+  assert.strictEqual(rt.remindersEnabled, true, 'round-trip через migrateSettingsObj (defensive strip не съедает)');
+  assert.strictEqual(rt.remindersCapacityDays, 3);
+});
+
+test('#112: SCHEMA_MIGRATIONS достроен записью 3.39.0→3.40.0 — no-op для снимка', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.40.0');
+  assert.ok(step && step.from === '3.39.0', 'нет записи 3.39.0→3.40.0');
+  const snap = { sprintId: 'S-1', pluginVersion: '3.39.0', roles: ['analysis'] };
   const before = JSON.stringify(snap);
   step.migrate(snap);
   assert.strictEqual(JSON.stringify(snap), before);

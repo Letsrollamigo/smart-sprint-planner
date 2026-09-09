@@ -23,6 +23,8 @@ require('./backend-reporting.js');
 require('./backend-sprintlock.js');
 /* #80 — Planner-disable backend: «Отключить планер в этом проекте»; endpoint дописывается в core.ENDPOINTS. */
 require('./backend-plannerdisable.js');
+/* #112 — Reminders backend: GET reminders (вычислитель + права адресатов + журнал); endpoint дописывается в core.ENDPOINTS. */
+require('./backend-reminders.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

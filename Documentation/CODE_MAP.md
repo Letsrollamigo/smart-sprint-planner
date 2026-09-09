@@ -211,6 +211,8 @@
 | `backend-plannerdisable.js` | Planner-disable backend (#80). |
 | `backend-project.js` | HTTP Handler (PROJECT scope) #25 Ф1 — тонкая обёртка. |
 | `backend-release.js` | Release Management backend (#48 R1.2 «сущность»). |
+| `backend-reminders-calc.js` | вычислитель напоминаний (#112 «Напоминания», v3.40.0). |
+| `backend-reminders.js` | Reminders backend (#112 «Напоминания», v3.40.0). |
 | `backend-reporting.js` | Оперативная отчётность backend (#50 S1). |
 | `backend-sprintlock.js` | Sprint-lock backend (#57-2, epic 57). |
 | `backend-userprefs.js` | User-prefs backend (#69 строка 21, эпик «Упрощение»). |
@@ -260,6 +262,7 @@
 | GET | `releases` | project | `backend-release.js` |
 | POST | `releases` | project | `backend-release.js` |
 | GET | `releases-archive` | project | `backend-release.js` |
+| GET | `reminders` | project | `backend-reminders.js` |
 | GET | `reporting-access` | project | `backend-reporting.js` |
 | GET | `sprint-lock` | project | `backend-sprintlock.js` |
 | POST | `sprint-lock` | project | `backend-sprintlock.js` |
@@ -294,6 +297,7 @@
 | Главное меню: выбор проекта, фильтр проектов | `backend-global.js`, `widgets/main/src/domain/project-nav.js` |
 | Отключение планера в проекте | `backend-plannerdisable.js` |
 | Блокировка создания спринтов | `backend-sprintlock.js` |
+| Напоминания: вычислитель, права адресатов, журнал | `backend-reminders-calc.js`, `backend-reminders.js` |
 | Workflow-правила: агрегации, подтяжка состояния | `workflow-common.js`, `workflow-cascade-aggregation.js`, `workflow-dta-aggregation.js`, `workflow-state-rollup.js`, `workflow-forbid-container.js` |
 | Даты и часовые пояса | `widgets/main/src/pure/date-pure.js`, `widgets/main/src/pure/period-pure.js` |
 | Экспорт в Excel и PDF | `widgets/main/src/domain/excel-export.js`, `widgets/main/src/pure/reporting-export-pure.js`, `widgets/main/lib/` |

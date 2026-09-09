@@ -197,6 +197,7 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |
 | POST   | `planner-disabled` | settingsManager (#80: the only writer of `plannerDisabled`; fail-closed — `plugin_not_configured` without a configured group) |
+| GET    | `reminders` | viewer (#112: the response carries only the items addressed to the caller — validators / settingsOrPlanning / release representatives by login; roleReps and the addressing rule are never echoed; side effect — an idempotent reconcile of the project's reminders journal) |
 <!-- authz-matrix:project:end -->
 
 ### Global scope (`backend-global.js`)

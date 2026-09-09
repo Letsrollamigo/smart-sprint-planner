@@ -197,6 +197,7 @@
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |
 | POST   | `planner-disabled` | settingsManager (#80: единственный писатель `plannerDisabled`; fail-closed — без настроенной группы `plugin_not_configured`) |
+| GET    | `reminders` | viewer (#112: в ответ попадают только пункты, адресованные вызывающему — валидаторы / settingsOrPlanning / представители релиза по логину; roleReps и правило адресации наружу не отдаются; побочный эффект — идемпотентная сверка журнала напоминаний проекта) |
 <!-- authz-matrix:project:end -->
 
 ### Global scope (`backend-global.js`)

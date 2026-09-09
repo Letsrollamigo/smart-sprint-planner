@@ -122,6 +122,7 @@ const WHERE = [
   ['Главное меню: выбор проекта, фильтр проектов', ['backend-global.js', SRC + '/domain/project-nav.js']],
   ['Отключение планера в проекте', ['backend-plannerdisable.js']],
   ['Блокировка создания спринтов', ['backend-sprintlock.js']],
+  ['Напоминания: вычислитель, права адресатов, журнал', ['backend-reminders-calc.js', 'backend-reminders.js']],
   ['Workflow-правила: агрегации, подтяжка состояния', ['workflow-common.js', 'workflow-cascade-aggregation.js', 'workflow-dta-aggregation.js', 'workflow-state-rollup.js', 'workflow-forbid-container.js']],
   ['Даты и часовые пояса', [SRC + '/pure/date-pure.js', SRC + '/pure/period-pure.js']],
   ['Экспорт в Excel и PDF', [SRC + '/domain/excel-export.js', SRC + '/pure/reporting-export-pure.js', 'widgets/main/lib/']],

@@ -30,7 +30,8 @@ var USER_PREFS_ALLOWED = {
   ssp_railCollapsed: 1,           // '0'|'1'
   ssp_allocLockHintShown: 1,      // '1'
   ssp_app_version_cache: 120,     // JSON {version, ts}
-  ssp_last_project_key: 100       // = PROJECT_KEY_MAX backend-global
+  ssp_last_project_key: 100,      // = PROJECT_KEY_MAX backend-global
+  ssp_reminders_shown: 600        // #112 — JSON { <projectKey>: <день ms> }: «напоминания показаны сегодня», ≈12 проектов
 };
 var USER_PREFS_MAX_BLOB = 2048;
 

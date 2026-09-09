@@ -319,6 +319,21 @@ var ALLOWED_RELEASES_KEYS = [
   'updatedAt',
   'pluginVersion'
 ];
+var ALLOWED_REMINDERS_KEYS = [
+  'journal',
+  'pluginVersion'
+];
+var ALLOWED_REMINDERS_RECORD_KEYS = [
+  'id',
+  'module',
+  'kind',
+  'entityId',
+  'params',
+  'firedDay',
+  'resolvedDay',
+  'resolvedHow',
+  'resolvedBy'
+];
 // AUTOGEN:WHITELISTS END
 /* v1.8.1 — 'NONE' добавлен для backward-compat. Pre-v1.8.1 frontend записывал level='NONE'
    в revision при commit working copy без реальных изменений (см. computeRequiredRevalidationLevel
@@ -332,7 +347,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.39.0';
+var CURRENT_PLUGIN_VERSION = '3.40.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
@@ -612,6 +627,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.35.0', to: '3.39.0',
     migrate: function (snap) { /* no-op: additive optional history key agreed */ },
     note: 'v3.39.0: #114 additive history snapshot key agreed (composition baseline at role confirmation)'
+  },
+  /* v3.40.0 — #112 «Напоминания»: новое свойство проекта ssp_reminders (журнал напоминаний,
+     пишет только сервер) + шесть аддитивных settings-ключей reminders*. Снимки спринта и
+     истории форму не меняют → миграция no-op; запись фиксирует границу схемы (пол отката
+     3.40.0: ниже ключи reminders* срезаются на чтении, журнал остаётся сиротой — SYNC_PROTOCOL §E.5). */
+  { from: '3.39.0', to: '3.40.0',
+    migrate: function (snap) { /* no-op: новое свойство проекта + settings-ключи, snapshot shape unchanged */ },
+    note: 'v3.40.0: #112 reminders journal property + reminders* settings keys'
   }
 ];
 
@@ -1180,7 +1203,15 @@ var ALLOWED_SETTINGS_KEYS = [
   /* v3.12.0 (#11) — A11 Velocity: окно скользящего среднего (закрытые спринты, int 1..10|null, дефолт 3). */
   'reportingVelocityWindow',
   /* #58-5 шаг 2 — потолок задач среза (A3/A6/B1/B0): пагинация страницами до потолка (int 200..5000|null, дефолт 1000 на фронте). */
-  'reportingMaxIssues'
+  'reportingMaxIssues',
+  /* #112 (v3.40.0) — Напоминания в планере (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
+     remindersEnabled — мастер (умолчание false: после обновления выключен во всех проектах, ⚖9);
+     remindersSprints/Capacity/Releases — тумблеры модулей (умолчание true);
+     remindersModalMode — 'daily'|'always' (показ модалки при открытии планера);
+     remindersCapacityDays — за сколько дней до старта напоминать о ёмкости (целое 0..30, умолчание 3).
+     Умолчания читает вычислитель backend-reminders-calc.js: отсутствие ключа = умолчание. */
+  'remindersEnabled','remindersSprints','remindersCapacity','remindersReleases',
+  'remindersModalMode','remindersCapacityDays'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1251,7 +1282,11 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   'reportingBugType','reportingLinkTypes', /* #50 S8c — B2 «Налог на баги»: тип-баг + типы связей баг→фича (контур B) */
   'reportingShowSystem', /* v3.9.0 — тумблер «Система» в отчётах */
   'reportingVelocityWindow', /* v3.12.0 (#11) — A11 Velocity: окно среднего */
-  'reportingMaxIssues' /* #58-5 шаг 2 — потолок задач среза A3/A6/B1/B0 */
+  'reportingMaxIssues', /* #58-5 шаг 2 — потолок задач среза A3/A6/B1/B0 */
+  /* #112 — Напоминания: весь раздел «Уведомления» — admin-тир (⚖9); для планировочного
+     менеджера preserve-merge из stored, иначе его правки молча терялись бы на сейве. */
+  'remindersEnabled','remindersSprints','remindersCapacity','remindersReleases',
+  'remindersModalMode','remindersCapacityDays'
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1563,6 +1598,16 @@ function validateSettings(settings) {
      <target state str≤200> }. Зоны светофора R3 — авто по State, своих ключей нет. */
   if (settings.releaseEnabled !== undefined && settings.releaseEnabled !== null
       && typeof settings.releaseEnabled !== 'boolean') return false;
+  /* #112 (v3.40.0) — Напоминания: четыре bool, enum режима показа, целое 0..30 дней. */
+  var remBoolKeys = ['remindersEnabled','remindersSprints','remindersCapacity','remindersReleases'];
+  for (var rb = 0; rb < remBoolKeys.length; rb++) {
+    var rbv = settings[remBoolKeys[rb]];
+    if (rbv !== undefined && rbv !== null && typeof rbv !== 'boolean') return false;
+  }
+  if (settings.remindersModalMode !== undefined && settings.remindersModalMode !== null
+      && settings.remindersModalMode !== 'daily' && settings.remindersModalMode !== 'always') return false;
+  if (settings.remindersCapacityDays !== undefined && settings.remindersCapacityDays !== null
+      && (!isNumInRange(settings.remindersCapacityDays, 0, 30) || settings.remindersCapacityDays % 1 !== 0)) return false;
   var relIdArrKeys = ['releaseCandidateManagerGroups','releaseCandidateEngineerGroups',
     'releaseManagerGroups','releaseEngineerGroups',
     'sprintLockGroups' /* #57-2 */];
@@ -3506,6 +3551,9 @@ exports.ALLOWED_CAPACITY_RECORD_KEYS = ALLOWED_CAPACITY_RECORD_KEYS;
 exports.ALLOWED_CAPACITY_PERSON_KEYS = ALLOWED_CAPACITY_PERSON_KEYS;
 exports.ROLE_KEYS                   = ROLE_KEYS; // #45 R2 — capacity alloc-key whitelist
 exports.ALLOWED_RELEASES_KEYS       = ALLOWED_RELEASES_KEYS; // #48 R1.2 — release record whitelist
+exports.ALLOWED_REMINDERS_KEYS        = ALLOWED_REMINDERS_KEYS;        // #112 — блоб журнала напоминаний (backend-reminders.js)
+exports.ALLOWED_REMINDERS_RECORD_KEYS = ALLOWED_REMINDERS_RECORD_KEYS; // #112 — одна запись журнала
+exports.isValidator                   = isValidator;                   // #112 — адресация напоминаний: предикат, не authzGuard
 exports.internalError               = internalError;         // #48 R1.2 — backend-release error path
 exports.slotRev                     = slotRev;               // R6 — optimistic lock слотов (releases/absences)
 exports.bumpSlotRev                 = bumpSlotRev;           // R6
@@ -3558,7 +3606,6 @@ if (typeof module !== 'undefined' && module.exports) {
     userInGroups:                 userInGroups,
     isPlanningManager:            isPlanningManager,          // #22
     isEditor:                     isEditor,                   // #51 — байпас-контракт
-    isValidator:                  isValidator,                // #51
     isAssigner:                   isAssigner,                 // #51
     isHistoryManager:             isHistoryManager,           // #51
   });

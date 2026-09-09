@@ -18,7 +18,9 @@ const expected = [
   'ALLOWED_CALENDAR_KEYS', 'ALLOWED_ABSENCE_ENTRY_KEYS',
   'ALLOWED_CAPACITY_RECORD_KEYS', 'ALLOWED_CAPACITY_PERSON_KEYS',
   // #48 Release Management — стор ssp_releases (R1.2 фундамент), потребляет backend-release.js.
-  'ALLOWED_RELEASES_KEYS'
+  'ALLOWED_RELEASES_KEYS',
+  // #112 Reminders — журнал напоминаний (v3.40.0), потребляет backend-reminders.js.
+  'ALLOWED_REMINDERS_KEYS', 'ALLOWED_REMINDERS_RECORD_KEYS'
 ];
 for (const k of expected) {
   if (!Array.isArray(schema[k]))      { console.error('schema: ' + k + ' must be array');                            process.exit(1); }
@@ -47,6 +49,9 @@ const generated = [
   fmtArr('ALLOWED_CAPACITY_PERSON_KEYS', schema.ALLOWED_CAPACITY_PERSON_KEYS),
   // #48 Release Management whitelist (R1.2 фундамент).
   fmtArr('ALLOWED_RELEASES_KEYS', schema.ALLOWED_RELEASES_KEYS),
+  // #112 Reminders whitelist'ы (v3.40.0): блоб журнала + одна запись.
+  fmtArr('ALLOWED_REMINDERS_KEYS',        schema.ALLOWED_REMINDERS_KEYS),
+  fmtArr('ALLOWED_REMINDERS_RECORD_KEYS', schema.ALLOWED_REMINDERS_RECORD_KEYS),
   END_MARK
 ].join('\n');
 
