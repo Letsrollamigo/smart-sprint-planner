@@ -13,7 +13,7 @@
      • node в URL — «красивый» dotted-формат спеки (params/planning.roles/…); парсер мапит его
        в ВНУТРЕННИЕ id дерева (sprint-params/planning-roles/…), которыми оперирует монолит
        (_setDashNode). buildShareSearch делает обратную мапу. Неизвестный node → опускается.
-     • focus валидируется по формату ^(role|user):<...>$; иначе опускается.
+     • focus валидируется по формату ^(role|user|hist|release):<...>$; иначе опускается.
      • URLSearchParams и для build, и для parse — устойчиво к URL-кодированию (host YT
        добавляет app_-префикс к ключам в видимой строке, но getAppLocation()/replaceAppLocation()
        работают с чистыми ключами симметрично — проверено V0-A 2026-06-09).
@@ -28,7 +28,8 @@ var NODE_URL_TO_INTERNAL = {
   'planning.standup':  'planning-standup',
   'gantt':             'gantt',
   'history':           'history',
-  'capacity':          'capacity'
+  'capacity':          'capacity',
+  'releases':          'release-planned'   /* #112 ⚖13 — «Перейти» к релизу и будущие письма #115 */
 };
 var NODE_INTERNAL_TO_URL = (function () {
   var m = {};
@@ -36,7 +37,8 @@ var NODE_INTERNAL_TO_URL = (function () {
   return m;
 })();
 
-var FOCUS_RE = /^(role|user):[A-Za-z0-9._@-]+$/;
+/* #112 — hist:<sprintId записи истории> (uuid + _roleKey) и release:<rel-…> — аддитивно к role/user. */
+var FOCUS_RE = /^(role|user|hist|release):[A-Za-z0-9._@-]+$/;
 
 function _getParams(search) {
   if (search == null || typeof search !== 'string') return null;

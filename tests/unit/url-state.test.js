@@ -139,3 +139,25 @@ describe('buildProjectSettingsHref (#109 — ссылка «открыть пл�
     assert.equal(buildProjectSettingsHref(null, null, null, true), null);
   });
 });
+
+describe('#112 — node releases, focus hist:/release: (аддитивно к #36)', () => {
+  it('node=releases ↔ release-planned в обе стороны', () => {
+    assert.equal(parseShareSearch('node=releases').node, 'release-planned');
+    assert.equal(buildShareSearch({ projectKey: 'DEMO', node: 'release-planned' }), 'projectKey=DEMO&node=releases');
+  });
+  it('focus hist:<uuid>_<roleKey> и release:<rel-…> парсятся и собираются', () => {
+    assert.equal(parseShareSearch('focus=hist:3f1c-uuid_devBack').focus, 'hist:3f1c-uuid_devBack');
+    assert.equal(parseShareSearch('focus=release:rel-abc12-x9').focus, 'release:rel-abc12-x9');
+    assert.deepEqual(parseFocus('hist:3f1c-uuid_devBack'), { kind: 'hist', value: '3f1c-uuid_devBack' });
+    assert.deepEqual(parseFocus('release:rel-abc12-x9'), { kind: 'release', value: 'rel-abc12-x9' });
+    assert.equal(buildShareSearch({ node: 'release-planned', focus: 'release:rel-abc12-x9' }), 'node=releases&focus=release%3Arel-abc12-x9');
+  });
+  it('deep-link ?node=releases&focus=release:<id> — полный разбор', () => {
+    assert.deepEqual(parseShareSearch('projectKey=DEMO&node=releases&focus=release:rel-1-2'),
+      { projectKey: 'DEMO', node: 'release-planned', focus: 'release:rel-1-2' });
+  });
+  it('прежний формат не расширился сверх четырёх видов: пустое значение и чужой вид отбрасываются', () => {
+    assert.equal('focus' in parseShareSearch('focus=hist:'), false);
+    assert.equal('focus' in parseShareSearch('focus=journal:abc'), false);
+  });
+});

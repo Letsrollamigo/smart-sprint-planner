@@ -794,7 +794,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.39.2';
+  var APP_VERSION = '3.40.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1867,6 +1867,7 @@
       _urlSyncEnabled = true;
       try { _syncStateToUrl(); } catch(_){}
       try { _updateShareBtnState(); } catch(_){}
+      try { loadReminders(); } catch(e){ diag('reminders load err: '+e, 'warn'); }   /* #112 — строго после URL-синка: «Перейти» гоняет _setDashNode */
     }
     /* v5.0 — refresh кнопки перехода в overlay настроек (видимость по серверной проверке) */
     refreshOpenSettingsBtn();
@@ -2038,6 +2039,24 @@
      прод-caller — _onShareClick внутри модуля. */
   function _buildShareHref() { return SHARE_CTRL._buildShareHref(_shareDeps()); }
   function _onShareClick() { return SHARE_CTRL._onShareClick(_shareDeps()); }
+
+  /* #112 — напоминания: контроллер за мостом window.__SSP_REMINDERS_CTRL (GET reminders, колокольчик,
+     модалка при открытии, «Перейти»); стейт остаётся здесь за deps.state.*, штамп — safeLs (user-prefs). */
+  var REMINDERS_CTRL = (typeof window !== 'undefined' && window.__SSP_REMINDERS_CTRL) || {};
+  function _remindersDeps() {
+    return {
+      T: T, diag: diag, apiGet: apiGet, openModal: openModal,
+      lsGet: safeLs.get, lsSet: safeLs.set,
+      setDashNode: _setDashNode, applyShareFocus: _applyShareFocus, setCurrentSprintId: setCurrentSprintId,
+      state: {
+        getSettings: function () { return _settings; },
+        getActiveProjectKey: function () { return _activeProjectKey; },
+        getProjectDisplayName: function () { return _projectDisplayName; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+      },
+    };
+  }
+  function loadReminders() { return REMINDERS_CTRL.load(_remindersDeps()); }
 
   /* Состояние кнопки «Поделиться» в рельсе (#36) — вынесено в header-view.js
      (Тир D слайс 5, ступень 1, коммит В); делегатор для callers share-цепочки

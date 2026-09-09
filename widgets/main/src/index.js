@@ -23,6 +23,7 @@ import './pure/util-pure.js';
 import './pure/migrate-pure.js';
 import './pure/refresh-merge-pure.js';
 import './pure/share-url-pure.js';
+import './pure/reminders-pure.js';     /* #112 — напоминания: VM модалки, штамп, адрес «Перейти», умолчания настроек */
 import './pure/planning-model-pure.js';
 import './pure/permissions-matrix-pure.js';
 import './pure/link-roles-pure.js';
@@ -72,6 +73,7 @@ import './domain/allocsummary-view.js';
 import './domain/history-view.js';
 import './domain/header-view.js';
 import './domain/slot-watch.js';   /* #114 — подсказка «спринт изменён другим» по rev при возврате фокуса */
+import './domain/reminders-controller.js';   /* #112 — GET reminders, колокольчик, модалка, «Перейти» */
 import './domain/gantt-view.js';
 import './domain/backlog-loader.js';
 import './domain/backlog-view.js';

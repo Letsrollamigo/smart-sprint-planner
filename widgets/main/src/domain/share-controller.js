@@ -74,7 +74,7 @@ function _validSprintId(id, deps) {
   return false;
 }
 
-/* Применить focus=role:K / user:L — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
+/* Применить focus=role:K / user:L / hist:<id> / release:<id> — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
 function _applyShareFocus(focus) {
   if (typeof SHARE_URL_PURE.parseFocus !== 'function') return;
   var f = SHARE_URL_PURE.parseFocus(focus);
@@ -87,6 +87,19 @@ function _applyShareFocus(focus) {
       } else if (f.kind === 'user') {
         /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
         el = document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]');
+      } else if (f.kind === 'hist') {
+        /* #112 — запись истории: группа строит ролевые спойлеры по первому раскрытию, поэтому сначала
+           раскрываем группу (клик по шапке = toggleGroup), затем запись. База id — по последнему '_'
+           (как _histBaseId). ponytail: запись на другой странице истории (HIST_PAGE) — no-op;
+           листать к странице по id — если попросят. */
+        var u = f.value.lastIndexOf('_'), base = u > 0 ? f.value.slice(0, u) : f.value;
+        var grp = document.querySelector('[data-ssp-hist-group="' + base + '"]');
+        if (grp && !grp.classList.contains('open')) { var gh = grp.querySelector(':scope > .spoiler__head'); if (gh) gh.click(); }
+        el = document.querySelector('[data-ssp-hist-rec="' + f.value + '"]');
+        if (el && !el.classList.contains('open')) { var rh = el.querySelector(':scope > .spoiler__head'); if (rh) rh.click(); }
+      } else if (f.kind === 'release') {
+        /* #112 — карточка планируемого релиза (React уже отрисован к моменту таймера). */
+        el = document.querySelector('[data-ssp-release-id="' + f.value + '"]');
       }
       if (!el) return;
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });

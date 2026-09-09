@@ -1,0 +1,30 @@
+{
+  "threeItems": {
+    "hidden": false,
+    "badgeHidden": false,
+    "badgeText": "3",
+    "title": "Напоминания: 3 активных",
+    "modalOpened": 1
+  },
+  "zeroItems": {
+    "hidden": false,
+    "badgeHidden": true,
+    "badgeText": "0",
+    "title": "Напоминания",
+    "modalOpened": 0
+  },
+  "masterOff": {
+    "hidden": true,
+    "badgeHidden": true,
+    "badgeText": "0",
+    "title": "Напоминания",
+    "modalOpened": 0
+  },
+  "notAddressee": {
+    "hidden": true,
+    "badgeHidden": true,
+    "badgeText": "0",
+    "title": "Напоминания",
+    "modalOpened": 0
+  }
+}

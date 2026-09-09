@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.39.2**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.40.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.40.0 — #112 “Reminders”: new `GET reminders` (project + global) is read-only under `viewer`; addressees are filtered on the server by the `isValidator` / `isSettingsManager` / `isPlanningManager` predicates and the release `roleReps` logins, other users’ logins never reach the response; the `ssp_reminders` journal is written by the server only (key whitelist, ring of 50, 64 KB cap); the six `reminders*` keys are admin-tier settings; the “shown today” stamp lives in user-prefs under the allow-list. The access matrix gained the `reminders` row.**
 >
 > **v3.39.2 — #117: no change to the model; the people-table “outside the sprint dates” mark compares calendar days (`_dayOf` → `dayMs`); server and permissions untouched.**
 

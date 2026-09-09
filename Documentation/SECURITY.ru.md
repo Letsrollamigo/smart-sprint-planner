@@ -2,9 +2,11 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.39.2**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.40.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
+>
+> **v3.40.0 — #112 «Напоминания»: новый `GET reminders` (project + global) — только чтение под `viewer`; адресаты фильтруются на сервере предикатами `isValidator` / `isSettingsManager` / `isPlanningManager` и логинами `roleReps` релиза, чужие логины в ответ не попадают; журнал `ssp_reminders` пишет только сервер (whitelist ключей, кольцо 50, лимит 64 КБ); шесть ключей `reminders*` — admin-тир настроек; штамп «показано сегодня» — user-prefs с allow-list. Матрица доступа дополнена строкой `reminders`.**
 >
 > **v3.39.2 — #117: модель не менялась; пометка «вне диапазона» таблицы людей считается по календарным дням (`_dayOf` → `dayMs`), сервер и права не тронуты.**
 

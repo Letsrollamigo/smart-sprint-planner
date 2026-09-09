@@ -575,6 +575,35 @@ function PickPicker(props) {
   );
 }
 
+/* ── remindersBody — #112 модалка напоминаний: секции по модулям (Спринты → Ёмкость → Релизы,
+   макет design/mirror/reminders/modal.html вариант А), у пункта одна кнопка «Перейти»
+   (props.onGo(item) → контроллер закрывает модалку и навигирует). Тексты приходят готовыми
+   из pure/reminders-pure.js (pre / выделенный days / post — React-текст, не HTML). Пустой
+   список — заглушка (открытие колокольчиком при нуле пунктов). ── */
+function RemindersBody(props) {
+  const vm = props.vm || { sections: [] };
+  const title = props.title ? <h3 className="ssp-reminders__title">{props.title}</h3> : null;
+  if (!vm.sections || !vm.sections.length) {
+    return <React.Fragment>{title}<p className="ssp-modal-body-text ssp-reminders__empty">{props.emptyText}</p></React.Fragment>;
+  }
+  return (
+    <div className="ssp-reminders__body">
+      {title}
+      {vm.sections.map((s) => (
+        <div key={s.module} className="ssp-reminders__section" data-ssp-module={s.module}>
+          <h4>{s.title}</h4>
+          {s.items.map((it) => (
+            <div key={it.id} className="ssp-reminders__item">
+              <div className="ssp-reminders__text">{it.pre}<span className="ssp-reminders__days">{it.days}</span>{it.post}</div>
+              <button type="button" className={_btnCls('secondary')} onClick={() => props.onGo(it)}>{props.goText}</button>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 if (window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.registerBody === 'function') {
   window.__SSP_RING_MODAL.registerBody('reassignForm', ReassignForm);
   window.__SSP_RING_MODAL.registerBody('confirmGoalForm', ConfirmGoalForm);
@@ -583,4 +612,5 @@ if (window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.registerBody === '
   window.__SSP_RING_MODAL.registerBody('importHistForm', ImportHistForm);
   window.__SSP_RING_MODAL.registerBody('sprintRolesForm', SprintRolesForm);
   window.__SSP_RING_MODAL.registerBody('pickPicker', PickPicker);
+  window.__SSP_RING_MODAL.registerBody('remindersBody', RemindersBody);
 }

@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.40.0] — 2026-09-09
+
+> **Reminders in the planner: a dialog on open, a bell with a counter, three modules.** Epic #112 (core; the “Journal” tab and record deletion ship in 3.41.0). The data schema changed 3.39.0 → 3.40.0: a new project property for the reminders journal and six `reminders*` settings keys. Rolling back below 3.40.0 follows the rollback procedure: the journal is left as a harmless orphan, the settings keys are stripped on read by the older version. After the upgrade the master switch is **off** in every project — enable it in the project settings.
+
+### Added
+
+- **Server-side calculator and `GET reminders`.** The dependency-free module `backend-reminders-calc.js` computes the items of three modules: “Sprints” — the end date has come and a role is not finished (per history record), or the sprint ended with no role agreed at all; “Capacity” — up to N days before the start or after it, capacity not approved (full capacity model only; fades the day after the sprint ends); “Releases” — the planned date has come and the status is neither released nor cancelled. `backend-reminders.js` returns the list in one request when the widget loads, applies addressee rights on the server (validators; those who may approve capacity; release manager and engineer or validators; the instance admin sees everything) and keeps an idempotent “fired / resolved” journal in a project property (ring of 50, key “module + entity + day”, how and by whom it resolved). Other users’ logins never reach the response.
+- **A dialog when a project opens.** Sections “Sprints → Capacity → Releases”, one “Go to” button per item; title “Reminders (N) · project X”. Frequency is a setting: “once a day” (a “shown today” stamp per project in the user preferences, the day is computed by the server) or “on every open”. The cross, Esc, the backdrop and “Close” are one action — “hide for me today”; an item fades only by the state of its entity. Global mode and the selected project only; with zero items the dialog does not open.
+- **The bell.** First in the header button row (in global mode — in the rail), a badge with the count of active items, no badge at zero; hidden when the module is off or the user is an addressee of no enabled module. Opens the same dialog. The counter refreshes on the next project load.
+- **“Go to” transitions.** A sprint role — the “History” tab with the sprint group and the record expanded and highlighted; a sprint with no agreement — the “Roles” tab with that sprint selected; capacity — the “Capacity” tab with the sprint switched; a release — “Planned releases” with the card highlighted. The share URL is extended additively: node `releases` and focus kinds `hist:<id>` / `release:<id>` (`?node=releases&focus=release:<id>`).
+- **The “Notifications” settings section** (admin tier, right before “Danger zone”): master switch, show frequency, module toggles “Sprints” / “Capacity” / “Releases” (an unavailable toggle is not hidden — it says where to enable the module), “remind N days before the sprint start” (0..30, default 3). Stored as `remindersEnabled`, `remindersSprints`, `remindersCapacity`, `remindersReleases`, `remindersModalMode`, `remindersCapacityDays`.
+- **Localization.** 36 keys × 15 locales: item texts, “today / in N d. / N d. ago”, the dialog, the bell, the settings section.
+- **Gate.** Unit tests for the calculator, the journal, rights, the pure front logic, the share URL and locale completeness; goldens for the bell (four states), the dialog spec with the stamp, repeat and transitions, history spoilers with addressing attributes; schema fixture `3.40.0/`; the module registry with deliberate budget raises for core / modules / jsx / backend.
+
+### Known limitations
+
+- Going to a history record that is not on the first page of the list opens the tab without highlighting. Local actions (finishing a role, approving capacity) do not recount the badge until the next project load. Deep links via the share URL work where the host provides navigation (YouTrack 2026.x); on 2025.3 the dialog transitions work but the address is not rewritten.
+
+---
+
 ## [3.39.2] — 2026-09-08
 
 > **The “outside the sprint dates” mark is computed by calendar day.** Patch #117, a tail of #116. The data schema did not change; rolling back to 3.39.0 needs no preparation.

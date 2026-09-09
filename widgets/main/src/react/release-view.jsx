@@ -173,7 +173,7 @@ function CompositionSection({ r, L, onRemoveIssue }) {
    смена статуса + обновление состояний; наблюдатель — карточка без контролов. */
 function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, onStatePreview, onRollbackPreview, onToggleFreeze, onEdit, onDelete, onExport, onShare, onRemoveIssue }) {
   return (
-    <li className="ssp-release-card">
+    <li className="ssp-release-card" data-ssp-release-id={r.id}>   {/* #112 — адрес для focus release:<id> */}
       <div className="ssp-release-card__head">
         <span className="ssp-release-card__title">{r.name}</span>
         {r.kind ? <span className={'ssp-release-chip ssp-release-chip--kind' + (r.kind === 'hotfix' ? ' ssp-release-chip--hotfix' : '')}>{L.kind[r.kind] || r.kind}</span> : null}

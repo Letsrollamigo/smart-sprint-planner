@@ -216,6 +216,32 @@ function openImportReplaceConfirm(deps) {
   });
 }
 
+/* #112 — модалка напоминаний (секции по модулям, макет design/mirror/reminders/modal.html).
+   Тело — React-компонент remindersBody (modal-bodies.jsx), VM готовит pure/reminders-pure.js.
+   onClose зовётся ровно один раз на любое закрытие (крестик/Esc/backdrop/«Закрыть»/«Перейти» через
+   handle.close) — контроллер пишет штамп «показано сегодня». В отличие от прочих фабрик ВОЗВРАЩАЕТ
+   handle: «Перейти» закрывает модалку до навигации. deps: t, openModal, projectName, onGo, onClose. */
+function showRemindersModal(vm, deps) {
+  var t = deps.t, openModal = deps.openModal;
+  var title = t('remModalTitle').replace('{n}', String(vm.count))
+    .replace('{project}', function () { return deps.projectName || ''; });   /* функция-замена: «$&» в имени проекта */
+  return openModal({
+    id: 'reminders',
+    type: 'informational',
+    title: title,
+    dialogClass: 'ssp-ring-modal--wide',
+    /* title дублируется в props: Ring Dialog кладёт label только в aria, видимого заголовка у модалок планера нет — тело рисует его само (макет modal.html) */
+    body: { kind: 'component', name: 'remindersBody', props: { vm: vm, title: title, onGo: deps.onGo, goText: t('remGo'), emptyText: t('remEmpty') } },
+    buttons: [
+      { id: 'close', text: t('btnClose'), variant: 'secondary', onClick: function(h){ h.close(); } },
+    ],
+    dismissOnBackdrop: true,
+    blockEscape: false,
+    showCloseButton: true,
+    onClose: function(){ if (typeof deps.onClose === 'function') deps.onClose(); },
+  });
+}
+
 const api = {
   showWorkingCopyConflictModal,
   showMultiTabConflictModal,
@@ -225,6 +251,7 @@ const api = {
   showDynFieldConfirm,
   openNewSprintRolesDialog,
   openImportReplaceConfirm,
+  showRemindersModal,
 };
 
 if (typeof window !== 'undefined') {

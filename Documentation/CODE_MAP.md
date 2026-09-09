@@ -58,7 +58,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4610 | — | композиционный корень виджета. |
+| `core.js` | 4628 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -81,7 +81,7 @@
 | `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
 | `history-controller.js` | 209 | — | контроллер действий вкладки «История»: правка/ завершение спринта + экспорт/импорт истории в JSON (Фаза 5, зачистка «прочих» — слайс 10). |
 | `history-io.js` | 194 | — | #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) |
-| `history-view.js` | 606 | `__SSP_HISTORY_VIEW` | История спринтов — view вкладки «История»: список-пагинация (renderHistory), групповой спойлер спринта (#60) и спойлер записи (buildSpoiler: meta+б… |
+| `history-view.js` | 608 | `__SSP_HISTORY_VIEW` | История спринтов — view вкладки «История»: список-пагинация (renderHistory), групповой спойлер спринта (#60) и спойлер записи (buildSpoiler: meta+б… |
 | `intro-view.js` | 321 | `__SSP_INTRO_VIEW` | рендер «вводных» планировщика (Фаза 5, зачистка «прочих» — слайс 9). |
 | `permissions.js` | 213 | `__SSP_PERMISSIONS` | Permissions-кластер: backend-проверки прав (validator/editor/assigner/ settings-manager), синглтон-батч _startPermissionsCheck и применение прав к … |
 | `pick.js` | 317 | `__SSP_PICK` | построение query + fingerprint; rawQ передаётся из React-компонента (DOM-инпут pickQuery удалён вместе с #pickOverlay). |
@@ -93,11 +93,12 @@
 | `release-rollback.js` | 86 | `__SSP_RELEASE_ROLLBACK` | #57-3 откат состояний задач релиза по истории поля State (⚖ владелец: снапшот НЕ храним — история изменений YT и есть снимок). |
 | `release-store.js` | 84 | `__SSP_RELEASE_STORE` | доменный стор релиз-менеджмента (#48, ADR-001). |
 | `release-view.js` | 440 | — | #48 вкладки «Релиз-менеджмент» (планируемые / история релизов). |
+| `reminders-controller.js` | 90 | `__SSP_REMINDERS_CTRL` | #112 «Напоминания»: один GET reminders при загрузке проекта в глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчик со с… |
 | `reporting-view.js` | 1439 | `__SSP_REPORTING_VIEW` | #50 S1c/S2. |
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
 | `rolecomposition-view.js` | 1219 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
 | `settings-controller.js` | 228 | `__SSP_SETTINGS_CTRL` | обвязка формы настроек проекта (Фаза 5, зачистка «прочих» — слайс 11). |
-| `share-controller.js` | 165 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
+| `share-controller.js` | 178 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
 | `slot-watch.js` | 56 | `__SSP_SLOT_WATCH` | #114 (строка пула #110 «WebSockets / Long Polling») — подсказка «спринт изменён другим». |
 | `sprint-controller.js` | 642 | `__SSP_SPRINT_CTRL` | контроллеры спринт-CRUD (Фаза 5 слайс 6, домен E1-sprint, последний подслайс E1). |
 | `sprint-store.js` | 73 | `__SSP_SPRINT_STORE` | доменный стор конфликт-канона спринта (ADR-001, второе применение). |
@@ -126,6 +127,7 @@
 | `planning-model-pure.js` | 73 | `__SSP_PLANNING_MODEL_PURE` | Side-effect модуль: чистые функции маппинга «Модель планирования» (simple\|light\|full) ↔ тройка legacy-флагов (personalPlanningEnabled / usePersonal… |
 | `refresh-merge-pure.js` | 107 | `__SSP_REFRESH_MERGE_PURE` | Side-effect модуль: чистое ядро слияния при «Обновить из задачи» (#35). |
 | `release-tree-pure.js` | 81 | `__SSP_RELEASE_TREE_PURE` | #48 R3.2 дерево состава релиза (US-R3-04). |
+| `reminders-pure.js` | 147 | `__SSP_REMINDERS_PURE` | #112 «Напоминания» — чистая логика фронта: показывать ли модалку при загрузке, штамп «показано сегодня», VM модалки из ответа GET reminders, подпис… |
 | `reporting-b-pure.js` | 169 | `__SSP_REPORTING_B_PURE` | #50 S8c. |
 | `reporting-export-pure.js` | 279 | `__SSP_REPORTING_EXPORT_PURE` | #50 S9. |
 | `reporting-period.js` | 116 | `__SSP_REPORTING_PERIOD` | #50 S2. |
@@ -133,7 +135,7 @@
 | `reporting-rollup.js` | 238 | `__SSP_REPORTING_ROLLUP` | #50 B0 «Свод» (контур B, управленческий roll-up). |
 | `reporting-ttm.js` | 412 | `__SSP_REPORTING_TTM` | #50 S3b/S4b. |
 | `scope-drift-pure.js` | 105 | `__SSP_SCOPE_DRIFT_PURE` | #114 — дрейф состава роли после согласования: чистые функции без DOM и стейта. |
-| `share-url-pure.js` | 110 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
+| `share-url-pure.js` | 112 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
 | `slot-merge-pure.js` | 143 | `__SSP_SLOT_MERGE_PURE` | #84 «перечитать-и-слить вместо „обновите страницу"». |
 | `sort-pure.js` | 144 | `__SSP_SORT_PURE` | sandboxed write may throw |
 | `sprint-field-pure.js` | 86 | `__SSP_SPRINT_FIELD_PURE` | #88 «ролевое поле спринта». |
@@ -149,7 +151,7 @@
 | `datepicker-bridge.js` | 179 | `__SSP_DP_BRIDGE` | Кастомный локализованный датапикер (v1.4.1 D127) — поп-ап для инпутов с маркером [data-ssp-datepicker]. |
 | `diag-snapshot.js` | 103 | `__SSP_DIAG_SNAPSHOT` | экспорт-слепок состояния из диаг-панели (#63 п.4). |
 | `fieldvalues-loader.js` | 196 | `__SSP_FIELDVALUES_LOADER` | 68-8: эфемерная подгрузка значений «отображаемых полей». |
-| `modal-specs.js` | 223 | `__SSP_MODAL_SPECS` | Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog). |
+| `modal-specs.js` | 249 | `__SSP_MODAL_SPECS` | Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog). |
 | `toast-ring.js` | 364 | `__SSP_TOAST`, `__SSP_TOAST_RING` | Тост-обвязка (v1.9.11 UX-нормализация, B-32; |
 | `user-prefs.js` | 82 | `__SSP_USER_PREFS` | предпочтения пользователя: localStorage ⊃ серверное зеркало (#69 строка 21). |
 
@@ -174,7 +176,7 @@
 | `i18n-bridge.jsx` | 37 | i18n bridge for Ring components. |
 | `input-mount.jsx` | 137 | Ring Input bridge for text/number/textarea fields outside Ring Table cells. |
 | `loader-mount.jsx` | 58 | Ring LoaderInline bridge for Phase D3. |
-| `modal-bodies.jsx` | 552 | bespoke body-компоненты для openModal(body.kind:'component'). |
+| `modal-bodies.jsx` | 581 | bespoke body-компоненты для openModal(body.kind:'component'). |
 | `modal-mount.jsx` | 263 | SspModal: настоящий React-контент в Ring Dialog. |
 | `portal.jsx` | 40 | React portal manager. |
 | `radio-mount.jsx` | 94 | Ring Radio bridge for Phase D5. |
@@ -187,10 +189,11 @@
 | `settings-cascade.jsx` | 65 | секция «CascadeSection» формы настроек. |
 | `settings-dta.jsx` | 80 | секция «DtaSection» формы настроек. |
 | `settings-fields.jsx` | 134 | секция настроек «Отображаемые поля» (68-8). |
-| `settings-form.jsx` | 1027 | bespoke SettingsForm для openModal(body.kind:'component'). |
+| `settings-form.jsx` | 1045 | bespoke SettingsForm для openModal(body.kind:'component'). |
 | `settings-links.jsx` | 213 | секция настроек «Связи задач» (#74). |
 | `settings-permissions.jsx` | 204 | секция «Управление правами» (#71): таблица «группа × полномочие» вместо 12 мультиселектов в трёх разных секциях. |
 | `settings-release.jsx` | 83 | секция «ReleaseSection» формы настроек. |
+| `settings-reminders.jsx` | 83 | секция «Уведомления» формы настроек (#112, admin-тир ⚖9; макет design/mirror/reminders/settings.html): мастер-выключатель, частота показа (Ring Rad… |
 | `settings-reporting.jsx` | 486 | секция «ReportingSection» формы настроек. |
 | `settings-rollup.jsx` | 88 | секция «StateRollupSection» формы настроек. |
 | `settings-shared.jsx` | 339 | общие листовые контролы и хелперы формы настроек. |

@@ -25,6 +25,7 @@ import { StateRollupSection } from './settings-rollup.jsx';
 import { StandupSection } from './settings-standup.jsx';
 import { BacklogSection } from './settings-backlog.jsx';
 import { ReleaseSection } from './settings-release.jsx';
+import { RemindersSection } from './settings-reminders.jsx';   /* #112 — «Уведомления» */
 import { PermissionsMatrix } from './settings-permissions.jsx';
 import { ReportingSection, _repThToRows, _repA1ToRows, _repFlowToRows, _repRowsToTh, _repRowsToA1, _repRowsToFlow } from './settings-reporting.jsx';
 
@@ -219,6 +220,9 @@ function SettingsForm(props) {
     tagMapping: Object.assign({ planned: '', prep: '', work: '', released: '', cancelled: '' },
       (initial.releaseTagMapping && typeof initial.releaseTagMapping === 'object') ? initial.releaseTagMapping : {}),
   }));
+
+  /* #112 — «Уведомления» (admin-тир): form-shape и умолчания — pure/reminders-pure.js. */
+  const [reminders, setReminders] = React.useState(() => globalThis.__SSP_REMINDERS_PURE.settingsToForm(initial));
 
   /* #50 — «Отчётность» (admin-тир). enabled + reporting-access группы A/B + пороги aging (S1c)
      + целевые статусы/ярлыки A1 (S2). */
@@ -418,6 +422,8 @@ function SettingsForm(props) {
     /* #22 — планировочный тир (Вариант C). */
     data.planningManagerGroups = groups.planning.ids.slice();
     data.planningManagerGroupNames = groups.planning.names.slice();
+    /* #112 — шесть ключей reminders* явно (клампы — formToSettings: мусор роняет весь сейв на сервере). */
+    Object.assign(data, globalThis.__SSP_REMINDERS_PURE.formToSettings(reminders));
 
     /* DTA (5c): mapping из строк (пустой type/role скипается; дубль блокирует save выше). */
     data.dtaEnabled = dta.enabled;
@@ -979,6 +985,19 @@ function SettingsForm(props) {
           bundleStates={bundleStates} loadTags={props.loadTags}
           fieldsByType={fieldsByType} /* A3 — пикеры имён полей */
           fieldTypeName={fields.fieldType} loadFieldValues={props.loadFieldValues} /* B1/B2 — значения Type-поля */
+        />
+      ),
+    },
+    {
+      /* #112 — «Уведомления» (admin-тир ⚖9) — непосредственно перед «Опасной зоной» (⚖16 У4).
+         Синтетический settings — доступность модулей из ТЕКУЩЕГО состояния формы (capacityMode
+         деривируется из planningModel, как в collect; releaseEnabled — из release.enabled), не из
+         initial — образец секции links. */
+      id: 'reminders', title: t('cardReminders'), nav: t('navReminders'),
+      node: (
+        <RemindersSection
+          t={t} value={reminders} onChange={setReminders}
+          settings={{ capacityMode: modes.planningModel === 'full' ? 'full' : 'light', releaseEnabled: release.enabled }}
         />
       ),
     },

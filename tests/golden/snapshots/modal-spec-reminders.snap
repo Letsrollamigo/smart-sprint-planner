@@ -1,0 +1,116 @@
+{
+  "spec": {
+    "id": "reminders",
+    "type": "informational",
+    "title": "Напоминания (3) · проект GM Clone",
+    "dialogClass": "ssp-ring-modal--wide",
+    "body": {
+      "kind": "component",
+      "name": "remindersBody",
+      "props": {
+        "vm": {
+          "count": 3,
+          "sections": [
+            {
+              "module": "sprints",
+              "title": "Спринты (1)",
+              "items": [
+                {
+                  "id": "sprints:sp-1_devBack",
+                  "module": "sprints",
+                  "kind": "sprintRoleOpen",
+                  "entityId": "sp-1_devBack",
+                  "pre": "Спринт «Спринт 1» закончился ",
+                  "days": "3 дн. назад",
+                  "post": ", роль «Бэкенд» не завершена.",
+                  "ref": {
+                    "sprintId": "sp-1",
+                    "roleKey": "devBack"
+                  }
+                }
+              ]
+            },
+            {
+              "module": "capacity",
+              "title": "Ёмкость (1)",
+              "items": [
+                {
+                  "id": "capacity:sp-cur",
+                  "module": "capacity",
+                  "kind": "capacityBefore",
+                  "entityId": "sp-cur",
+                  "pre": "Старт спринта «Текущий» ",
+                  "days": "через 2 дн.",
+                  "post": ", ёмкость не утверждена.",
+                  "ref": {
+                    "sprintId": "sp-cur"
+                  }
+                }
+              ]
+            },
+            {
+              "module": "releases",
+              "title": "Релизы (1)",
+              "items": [
+                {
+                  "id": "releases:rel-1",
+                  "module": "releases",
+                  "kind": "releaseOverdue",
+                  "entityId": "rel-1",
+                  "pre": "Плановая дата релиза «R 2026.09» ",
+                  "days": "сегодня",
+                  "post": ", статус «В работе».",
+                  "ref": {
+                    "releaseId": "rel-1"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "title": "Напоминания (3) · проект GM Clone",
+        "onGo": "<fn>",
+        "goText": "Перейти",
+        "emptyText": "Активных напоминаний нет"
+      }
+    },
+    "buttons": [
+      {
+        "id": "close",
+        "text": "Закрыть",
+        "variant": "secondary",
+        "onClick": "<fn>"
+      }
+    ],
+    "dismissOnBackdrop": true,
+    "blockEscape": false,
+    "showCloseButton": true,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "stampAfterClose": {
+      "GM": 1788912000000
+    },
+    "nav": [
+      {
+        "node": "history"
+      },
+      {
+        "focus": "hist:sp-1_devBack"
+      },
+      {
+        "sprint": "sp-cur",
+        "confirmed": true
+      },
+      {
+        "node": "capacity"
+      },
+      {
+        "node": "release-planned"
+      },
+      {
+        "focus": "release:rel-1"
+      }
+    ]
+  }
+}

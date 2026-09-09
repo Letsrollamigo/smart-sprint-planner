@@ -49,6 +49,7 @@ const BRIDGE_SCRIPTS = [
   'migrate-pure.js',
   'refresh-merge-pure.js',
   'share-url-pure.js',
+  'reminders-pure.js',    /* #112 — напоминания: VM/штамп/адреса */
   'backlog-vm-pure.js',
   'capacity-pure.js',
   'modal-specs.js',
@@ -82,6 +83,7 @@ const BRIDGE_SCRIPTS = [
   'history-view.js',
   'header-view.js',
   'slot-watch.js',       /* #114 — подсказка «изменён другим» */
+  'reminders-controller.js',   /* #112 — колокольчик/модалка напоминаний */
   'gantt-view.js',
   'backlog-view.js',
   'intro-view.js',

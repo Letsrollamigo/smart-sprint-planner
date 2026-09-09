@@ -188,6 +188,9 @@
     .page-header__title { font-size: 18px; font-weight: 600; }
     .page-header__sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
     .page-header__links { margin-left: auto; flex-shrink: 0; white-space: nowrap; display:flex; gap:8px; align-items:center; }
+    /* #112 — колокольчик напоминаний: бейдж-счётчик поверх иконки (макет design/mirror/reminders/bell.html, тон --primary ⚖7) */
+    .ssp-reminders__bell { position: relative; }
+    .ssp-reminders__count { position:absolute; top:-7px; right:-8px; min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:var(--primary); color:#fff; font-size:10px; font-weight:700; line-height:17px; text-align:center; box-shadow:0 0 0 2px var(--surface, #fff); }
     /* #25 Ф1 — picker проекта в шапке (global-режим). */
     .ssp-global-project-picker { display:flex; align-items:center; gap:6px; margin-left:24px; min-width:0; }
     .ssp-global-project-picker.hidden { display:none; }
@@ -1081,6 +1084,29 @@
       width: 520px !important;
       max-width: 92vw !important;
     }
+    /* #112 — модалка напоминаний (design/mirror/reminders/modal.html, вариант А): секции на левой
+       предупреждающей полосе (приём wc-diff-section), выделенный счётчик дней, одна кнопка «Перейти». */
+    .ssp-reminders__title { margin: 0 0 14px; font-size: 15px; font-weight: 600; color: var(--text); }
+    .ssp-reminders__section { margin: 0 0 14px; padding-left: 10px; border-left: 3px solid var(--warn); }
+    .ssp-reminders__section:last-child { margin-bottom: 0; }
+    .ssp-reminders__section h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: var(--muted); letter-spacing: .03em; }
+    .ssp-reminders__item { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-top: 1px solid var(--border); }
+    .ssp-reminders__section .ssp-reminders__item:first-of-type { border-top: 0; }
+    .ssp-reminders__text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.45; color: var(--text); }
+    .ssp-reminders__days { color: var(--warn); font-weight: 600; white-space: nowrap; }
+    .ssp-reminders__empty { color: var(--muted); }
+    /* #112 — раздел настроек «Уведомления» (design/mirror/reminders/settings.html): группы, строки модулей,
+       подсказка «где включить» у недоступного тумблера, инлайн «за N дн.». */
+    .ssp-reminders__group { margin: 0 0 18px; }
+    .ssp-reminders__group-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+    .ssp-reminders__row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+    .ssp-reminders__row:first-of-type { border-top: 0; }
+    .ssp-reminders__row > label { flex: 0 0 auto; margin-top: 2px; }
+    .ssp-reminders__desc { font-size: 12px; color: var(--muted); margin: 2px 0 0; line-height: 1.4; }
+    .ssp-reminders__help { font-size: 12px; color: var(--warn); margin: 2px 0 0; }
+    .ssp-reminders__inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; margin-top: 8px; }
+    .ssp-reminders__inline .field { margin: 0; }
+    .ssp-reminders__inline .field input { width: 72px; }
     /* Phase 5 #32 — settings-модалка (two-pane): умеренная ширина (показываем одну
        секцию за раз → сверх-ширина не нужна). Высоту island НЕ фиксируем — правый
        pane ограничен max-height (см. ниже), поэтому модалка стабильно помещается во
@@ -2487,6 +2513,11 @@
     <!-- #25 Ф1 — выбор проекта (только global-режим / MAIN_MENU_ITEM). Label+select строит JS. -->
     <div id="globalProjectPicker" class="ssp-global-project-picker hidden"></div>
     <div class="page-header__links">
+      <!-- #112 — колокольчик напоминаний: первым в ряду (⚖7); hidden до ответа GET reminders и в
+           проектном режиме; бейдж-счётчик — отдельный span вне текстового узла (applyI18N переписывает
+           текст кнопок, бережёт только .ssp-icon); title ставит только renderBell (один владелец). -->
+      <button id="remindersBellBtn" type="button" class="ring-button-button ring-button-block ring-button-heightS ssp-reminders__bell hidden"
+              data-icon="bell" data-aria-label-key="aria.btnReminders"><span class="ssp-reminders__count hidden" aria-hidden="true">0</span></button>
       <!-- v5.0.3 — Кнопка очистки локального черновика. Видна при наличии любого
            черновика (meta в localStorage). Текст и title ставятся скриптом, чтобы
            consistency с динамическим бейджем; data-i18n не используется по тем же

@@ -8,6 +8,7 @@ add.svg, close.svg, trash.svg, group.svg, user.svg, comment.svg, folder.svg.
 v3.24.0 (#69 строка 18, эмодзи → иконки): flag.svg, success.svg, cancel.svg, pencil.svg;
 warning.svg, calendar.svg, share.svg — той же серии.
 v3.24.1 (#69 R6, хвост эмодзи): lock.svg.
+v3.40.0 (#112 «Напоминания», колокольчик в шапке): bell.svg.
 
 Дополнительно: loader.svg — наш собственный (без атрибуции), под Apache-2.0 этого проекта.
 

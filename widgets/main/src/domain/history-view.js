@@ -146,6 +146,7 @@ function buildSprintGroupSpoiler(group, deps) {
   }).join(' ');
 
   var wrap = document.createElement('div'); wrap.className = 'spoiler';
+  wrap.setAttribute('data-ssp-hist-group', group.baseId);   /* #112 — адрес для focus hist:<id> */
   var head = document.createElement('div'); head.className = 'spoiler__head';
   var meta = document.createElement('div'); meta.className = 'spoiler__meta';
   meta.innerHTML =
@@ -254,6 +255,7 @@ function buildSpoiler(rec, idx, deps) {
 
   var role = deps.ALL_ROLES.find(function(r){ return r.key === rec.roleKey; });
   var wrap = document.createElement('div'); wrap.className = 'spoiler';
+  wrap.setAttribute('data-ssp-hist-rec', rec.sprintId);   /* #112 — адрес для focus hist:<id> */
   var head = document.createElement('div'); head.className = 'spoiler__head';
   var meta = document.createElement('div'); meta.className = 'spoiler__meta';
 
