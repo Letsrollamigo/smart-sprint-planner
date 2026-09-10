@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.41.0] — 2026-09-09
+
+> **The reminders journal, and a fix for journal writes.** Epic #112, the closing slice (S5 + S6). The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged.
+
+### Fixed
+
+- **The reminders journal was never written.** YouTrack runs `GET` extension endpoints in a read-only transaction — writing the project property from `GET reminders` was rejected by the server (`ReadonlyTransactionException`), the error was swallowed as a warning and the journal stayed empty in 3.40.0. The journal reconcile moved to `POST reminders { action:'sync' }` — the widget calls it on load (still a single request); `GET reminders` is now a pure read with the same response.
+
+### Added
+
+- **The “Journal” tab in the bell dialog.** The bell opens the dialog with the “Active (N) | Journal” tabs (on load — without tabs). The journal lists the last 50 records of the project: fired (day), module (chip), entity from the name snapshot (“sprint · role” / “sprint” / “release”), resolved (“active · N d.” or day · how · who). Loaded lazily when the tab is first opened.
+- **Deleting a journal record.** The trash icon in a row → `POST reminders-journal { action:'delete', id }`; only an addressee of the record may delete it (sprints — a validator, capacity — the approvers, releases — a validator or the release manager/engineer from the active store and the archive), otherwise `403 not_addressee` and a toast. Deleting an active record does not resolve the reminder: the next sync recreates it.
+- **`GET reminders-journal`** — the whole project journal (by fired day, open records first), served even with the master switch off.
+- **Localization.** 25 journal keys × 15 locales (tabs, columns, “how it went out” labels, refusals).
+- **Documentation.** Chapter 19a “Notifications and reminders” in Setup (EN/RU), the bell row in Overview chapter 01, six frames (`ov-013`, `ov-014`, `setup-010`, EN/RU).
+- **Gate.** Unit tests for deletion rights and the purity of `GET reminders`, the journal view-model; the dialog spec golden extended with tabs, loading and deletion refusals; the dialog body moved to `react/reminders-body.jsx` (the fat-file threshold was not raised).
+
+### Known limitations
+
+- `POST reminders sync` has no read-gate retry: a transient network error on load loses the dialog for that load (the bell and the dialog come back on the next one). Deletion rights are checked on the server — the trash icon is shown on every row.
+
+---
+
 ## [3.40.0] — 2026-09-09
 
 > **Reminders in the planner: a dialog on open, a bell with a counter, three modules.** Epic #112 (core; the “Journal” tab and record deletion ship in 3.41.0). The data schema changed 3.39.0 → 3.40.0: a new project property for the reminders journal and six `reminders*` settings keys. Rolling back below 3.40.0 follows the rollback procedure: the journal is left as a harmless orphan, the settings keys are stripped on read by the older version. After the upgrade the master switch is **off** in every project — enable it in the project settings.

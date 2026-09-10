@@ -2,9 +2,13 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.40.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.41.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.41.0 — #112: the journal reconcile moved from `GET reminders` to `POST reminders { action:'sync' }` — YouTrack runs GET extension endpoints in a read-only transaction (`ReadonlyTransactionException` on `setProp`), so in 3.40.0 the journal was never written. `GET reminders` is now a pure read with the same response. Same rights (`viewer`), the body carries only `action`, the journal is still written by the server from entity state.**
+>
+> **v3.41.0 — #112 S5 “Reminders journal”: `GET reminders-journal` reads the journal under `viewer` (the same `ssp_reminders` blob; records carry only `resolvedBy` — the login whose action resolved the item); `POST reminders-journal { action:'delete', id }` is the only journal write not made by the calculator, the right = addressee of the record’s module (sprints validator; capacity settingsOrPlanning; releases validator ∨ a release representative from the active store or the archive), refusal `403 not_addressee` with `cid`; the body goes through `parseBodyOrReject` with the `['action','id']` whitelist, the blob passes `validateRemindersBlob` before the write. Read-modify-write without `baseRev`: a lost race is repaired by the next reconcile.**
 >
 > **v3.40.0 — #112 “Reminders”: new `GET reminders` (project + global) is read-only under `viewer`; addressees are filtered on the server by the `isValidator` / `isSettingsManager` / `isPlanningManager` predicates and the release `roleReps` logins, other users’ logins never reach the response; the `ssp_reminders` journal is written by the server only (key whitelist, ring of 50, 64 KB cap); the six `reminders*` keys are admin-tier settings; the “shown today” stamp lives in user-prefs under the allow-list. The access matrix gained the `reminders` row.**
 >
@@ -199,7 +203,10 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |
 | POST   | `planner-disabled` | settingsManager (#80: the only writer of `plannerDisabled`; fail-closed — `plugin_not_configured` without a configured group) |
-| GET    | `reminders` | viewer (#112: the response carries only the items addressed to the caller — validators / settingsOrPlanning / release representatives by login; roleReps and the addressing rule are never echoed; side effect — an idempotent reconcile of the project's reminders journal) |
+| GET    | `reminders` | viewer (#112: pure read — the response carries only the items addressed to the caller — validators / settingsOrPlanning / release representatives by login; roleReps and the addressing rule are never echoed) |
+| POST   | `reminders` | viewer (#112, 3.41.0: the only action is `sync` — the same response as GET plus an idempotent reconcile of the `ssp_reminders` journal; the journal is written by the server from entity state only, the request body cannot influence it; any other action → `400 invalid_action`) |
+| GET    | `reminders-journal` | viewer (#112 S5: the whole project journal — “fired / resolved” records with no foreign logins except `resolvedBy`, the login whose action resolved the item; served even with the master switch off; writes nothing) |
+| POST   | `reminders-journal` | the addressee of the record’s module (#112 S5, `action:'delete'` by `id` only): sprints — validator; capacity — settingsOrPlanning; releases — validator OR the manager/engineer of that release (active store + archive; release gone — validator only); otherwise `403 not_addressee`. Deleting an active record does not resolve the reminder — the next `POST reminders sync` recreates it |
 <!-- authz-matrix:project:end -->
 
 ### Global scope (`backend-global.js`)

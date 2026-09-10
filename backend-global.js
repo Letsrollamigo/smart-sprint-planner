@@ -39,7 +39,7 @@ require('./backend-reporting.js');
 require('./backend-sprintlock.js');
 /* #80 — Planner-disable backend: «Отключить планер в этом проекте»; endpoint дописывается в core.ENDPOINTS. */
 require('./backend-plannerdisable.js');
-/* #112 — Reminders backend: GET reminders; дописывается в core.ENDPOINTS ДО forEach ниже (gotcha #7). */
+/* #112 — Reminders backend: GET/POST reminders, GET/POST reminders-journal; дописывается в core.ENDPOINTS ДО forEach ниже (gotcha #7). */
 require('./backend-reminders.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only

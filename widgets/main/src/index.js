@@ -95,6 +95,7 @@ import './domain/release-pick.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
 import './react/modal-bodies.jsx';
+import './react/reminders-body.jsx';   /* #112 — тело модалки напоминаний (S5: вкладки + журнал) */
 import './react/settings-form.jsx';
 import './react/loader-mount.jsx';
 import './react/datepicker-mount.jsx';

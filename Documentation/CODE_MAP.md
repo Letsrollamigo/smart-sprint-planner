@@ -93,7 +93,7 @@
 | `release-rollback.js` | 86 | `__SSP_RELEASE_ROLLBACK` | #57-3 откат состояний задач релиза по истории поля State (⚖ владелец: снапшот НЕ храним — история изменений YT и есть снимок). |
 | `release-store.js` | 84 | `__SSP_RELEASE_STORE` | доменный стор релиз-менеджмента (#48, ADR-001). |
 | `release-view.js` | 440 | — | #48 вкладки «Релиз-менеджмент» (планируемые / история релизов). |
-| `reminders-controller.js` | 90 | `__SSP_REMINDERS_CTRL` | #112 «Напоминания»: один GET reminders при загрузке проекта в глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчик со с… |
+| `reminders-controller.js` | 117 | `__SSP_REMINDERS_CTRL` | #112 «Напоминания»: один POST reminders sync при загрузке проекта в глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчи… |
 | `reporting-view.js` | 1439 | `__SSP_REPORTING_VIEW` | #50 S1c/S2. |
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
 | `rolecomposition-view.js` | 1219 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
@@ -127,7 +127,7 @@
 | `planning-model-pure.js` | 73 | `__SSP_PLANNING_MODEL_PURE` | Side-effect модуль: чистые функции маппинга «Модель планирования» (simple\|light\|full) ↔ тройка legacy-флагов (personalPlanningEnabled / usePersonal… |
 | `refresh-merge-pure.js` | 107 | `__SSP_REFRESH_MERGE_PURE` | Side-effect модуль: чистое ядро слияния при «Обновить из задачи» (#35). |
 | `release-tree-pure.js` | 81 | `__SSP_RELEASE_TREE_PURE` | #48 R3.2 дерево состава релиза (US-R3-04). |
-| `reminders-pure.js` | 147 | `__SSP_REMINDERS_PURE` | #112 «Напоминания» — чистая логика фронта: показывать ли модалку при загрузке, штамп «показано сегодня», VM модалки из ответа GET reminders, подпис… |
+| `reminders-pure.js` | 182 | `__SSP_REMINDERS_PURE` | #112 «Напоминания» — чистая логика фронта: показывать ли модалку при загрузке, штамп «показано сегодня», VM модалки из ответа GET reminders, подпис… |
 | `reporting-b-pure.js` | 169 | `__SSP_REPORTING_B_PURE` | #50 S8c. |
 | `reporting-export-pure.js` | 279 | `__SSP_REPORTING_EXPORT_PURE` | #50 S9. |
 | `reporting-period.js` | 116 | `__SSP_REPORTING_PERIOD` | #50 S2. |
@@ -151,7 +151,7 @@
 | `datepicker-bridge.js` | 179 | `__SSP_DP_BRIDGE` | Кастомный локализованный датапикер (v1.4.1 D127) — поп-ап для инпутов с маркером [data-ssp-datepicker]. |
 | `diag-snapshot.js` | 103 | `__SSP_DIAG_SNAPSHOT` | экспорт-слепок состояния из диаг-панели (#63 п.4). |
 | `fieldvalues-loader.js` | 196 | `__SSP_FIELDVALUES_LOADER` | 68-8: эфемерная подгрузка значений «отображаемых полей». |
-| `modal-specs.js` | 249 | `__SSP_MODAL_SPECS` | Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog). |
+| `modal-specs.js` | 259 | `__SSP_MODAL_SPECS` | Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog). |
 | `toast-ring.js` | 364 | `__SSP_TOAST`, `__SSP_TOAST_RING` | Тост-обвязка (v1.9.11 UX-нормализация, B-32; |
 | `user-prefs.js` | 82 | `__SSP_USER_PREFS` | предпочтения пользователя: localStorage ⊃ серверное зеркало (#69 строка 21). |
 
@@ -176,13 +176,14 @@
 | `i18n-bridge.jsx` | 37 | i18n bridge for Ring components. |
 | `input-mount.jsx` | 137 | Ring Input bridge for text/number/textarea fields outside Ring Table cells. |
 | `loader-mount.jsx` | 58 | Ring LoaderInline bridge for Phase D3. |
-| `modal-bodies.jsx` | 581 | bespoke body-компоненты для openModal(body.kind:'component'). |
+| `modal-bodies.jsx` | 552 | bespoke body-компоненты для openModal(body.kind:'component'). |
 | `modal-mount.jsx` | 263 | SspModal: настоящий React-контент в Ring Dialog. |
 | `portal.jsx` | 40 | React portal manager. |
 | `radio-mount.jsx` | 94 | Ring Radio bridge for Phase D5. |
 | `release-create.jsx` | 175 | #48 R1.3 body-компонент модалки «Новый релиз» на СТРОГО Ring UI. |
 | `release-state-preview.jsx` | 167 | #48 R2.3 body-компонент модалки «Смена состояний» (СТРОГО Ring UI). |
 | `release-view.jsx` | 413 | #48 React-презентация вкладок релиз-менеджмента (строго Ring UI). |
+| `reminders-body.jsx` | 91 | #112 «Напоминания»: тело модалки remindersBody для openModal(body.kind:'component'). |
 | `reporting-view.jsx` | 1486 | #50 React-презентация вкладок отчётности (строго Ring UI). |
 | `select-mount.jsx` | 142 | Ring Select bridge for top-level dropdowns outside Ring Table. |
 | `settings-backlog.jsx` | 77 | секция «BacklogSection» формы настроек. |
@@ -266,6 +267,9 @@
 | POST | `releases` | project | `backend-release.js` |
 | GET | `releases-archive` | project | `backend-release.js` |
 | GET | `reminders` | project | `backend-reminders.js` |
+| POST | `reminders` | project | `backend-reminders.js` |
+| GET | `reminders-journal` | project | `backend-reminders.js` |
+| POST | `reminders-journal` | project | `backend-reminders.js` |
 | GET | `reporting-access` | project | `backend-reporting.js` |
 | GET | `sprint-lock` | project | `backend-sprintlock.js` |
 | POST | `sprint-lock` | project | `backend-sprintlock.js` |

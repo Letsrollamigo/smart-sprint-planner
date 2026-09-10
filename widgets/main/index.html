@@ -1095,6 +1095,20 @@
     .ssp-reminders__text { flex: 1; min-width: 0; font-size: 13px; line-height: 1.45; color: var(--text); }
     .ssp-reminders__days { color: var(--warn); font-weight: 600; white-space: nowrap; }
     .ssp-reminders__empty { color: var(--muted); }
+    /* S5 — вкладки и таблица журнала (макет journal.html) */
+    .ssp-reminders__tabs { margin: -4px 0 12px; }
+    .ssp-reminders__tabs .ring-tabs-title { padding: 0 14px; }
+    .ssp-reminders__tabs .ring-tabs-title:first-child { padding-left: 0; }
+    .ssp-reminders__table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ssp-reminders__table th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    .ssp-reminders__table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.4; }
+    .ssp-reminders__table tr:last-child td { border-bottom: 0; }
+    .ssp-reminders__active { color: var(--warn); font-weight: 600; }
+    .ssp-reminders__chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+    .ssp-reminders__del { background: none; border: 0; cursor: pointer; color: var(--muted); padding: 2px; line-height: 0; border-radius: 4px; }
+    .ssp-reminders__del:hover { color: var(--error); background: var(--surface2); }
+    .ssp-reminders__del svg { width: 14px; height: 14px; fill: currentColor; }
+    .ssp-reminders__cap { font-size: 11px; color: var(--muted); margin: 8px 0 0; }
     /* #112 — раздел настроек «Уведомления» (design/mirror/reminders/settings.html): группы, строки модулей,
        подсказка «где включить» у недоступного тумблера, инлайн «за N дн.». */
     .ssp-reminders__group { margin: 0 0 18px; }

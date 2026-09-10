@@ -4,8 +4,7 @@
  * capacity-i18n-completeness). Гейтит: все rem*-ключи v3.40.0 присутствуют во ВСЕХ 15 локалях,
  * имеют НЕ-EN перевод (T() молча подменяет отсутствующий ключ EN→RU→самим ключом) и сохраняют
  * ВСЕ плейсхолдеры подстановок ({n} {sprint} {role} {release} {status} {days} {project}).
- * Ключи журнала (префиксы remJrn / remTab / remMod / remHow) — v3.41.0, здесь не заводятся: тест ловит
- * и лишнее, и недостающее по своему списку. */
+ * S5 (v3.41.0): ключи журнала (remTab* / remJrn* / remMod* / remHow*) в том же списке. */
 
 const test = require('node:test');
 const assert = require('node:assert');
@@ -29,6 +28,12 @@ const REMINDERS_KEYS = [
   'remSetModulesTitle', 'remSetSprints', 'remSetSprintsHint', 'remSetCapacity', 'remSetCapacityHint',
   'remSetCapacityDaysPre', 'remSetCapacityDaysPost', 'remSetCapacityUnavailable',
   'remSetReleases', 'remSetReleasesHint', 'remSetReleasesUnavailable',
+  // журнал (S5, v3.41.0)
+  'remTabActive', 'remTabJournal', 'remJrnFired', 'remJrnModule', 'remJrnEntity', 'remJrnResolved', 'remJrnActive',
+  'remJrnDelete', 'remJrnCap', 'remJrnEmpty', 'remJrnNoRights', 'remJrnDeleteError', 'remJrnLoadError',
+  'remModSprints', 'remModCapacity', 'remModReleases',
+  'remHowRoleFinished', 'remHowValidated', 'remHowCapacityApproved', 'remHowSprintOver', 'remHowReleased',
+  'remHowCancelled', 'remHowDateMoved', 'remHowGone', 'remHowModuleOff',
 ];
 const PLACEHOLDERS = ['{n}', '{sprint}', '{role}', '{release}', '{status}', '{days}', '{project}'];
 
@@ -39,6 +44,9 @@ const COGNATE_OK = new Set([
   'nl.remSectionSprints', 'nl.remSetSprints', 'nl.remSectionReleases', 'nl.remSetReleases',
   'es.remSectionSprints', 'es.remSetSprints', 'fr.remSectionSprints', 'fr.remSetSprints',
   'pt.remSectionSprints', 'pt.remSetSprints', 'fr.cardReminders', 'fr.navReminders',
+  /* журнал: «Journal», «Module», «Sprints»/«Releases» */
+  'de.remTabJournal', 'de.remModSprints', 'de.remModReleases', 'es.remModSprints', 'fr.remTabJournal', 'fr.remJrnModule',
+  'fr.remModSprints', 'nl.remJrnModule', 'nl.remModSprints', 'nl.remModReleases', 'pt.remModSprints',
 ]);
 
 const dicts = {};
@@ -54,14 +62,6 @@ test('reminders i18n: каждый ключ присутствует во все
     });
   });
   assert.deepStrictEqual(missing, [], 'Отсутствуют rem-ключи: ' + missing.join(', '));
-});
-
-test('reminders i18n: ключи журнала (v3.41.0) ещё не заведены ни в одной локали', function () {
-  const early = [];
-  EXPECTED_LOCALES.forEach(function (lc) {
-    Object.keys(dicts[lc]).forEach(function (k) { if (/^(remJrn|remTab|remHow|remMod(Sprints|Capacity|Releases)$)/.test(k)) early.push(lc + '.' + k);   /* remMod* — чипы журнала, не remModalTitle */ });
-  });
-  assert.deepStrictEqual(early, [], 'Ключи журнала раньше S5: ' + early.join(', '));
 });
 
 test('reminders i18n: нет placeholder-копий EN (реальные переводы во всех локалях)', function () {

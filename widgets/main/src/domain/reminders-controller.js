@@ -1,13 +1,16 @@
-/* domain/reminders-controller.js — #112 «Напоминания»: один GET reminders при загрузке проекта в
+/* domain/reminders-controller.js — #112 «Напоминания»: один POST reminders sync при загрузке проекта в
    глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчик со счётчиком в
    ряду .page-header__links, модалка секциями при открытии по режиму «раз в день» (штамп
    ssp_reminders_shown в user-prefs, сравнение с серверным today) / «при каждом открытии»,
    «Перейти» к экземпляру (спека §5.5). Мост window.__SSP_REMINDERS_CTRL; deps приходят
    аргументом (фабрика _remindersDeps() в ядре), стейт ядра — за deps.state.*.
    Ошибка/success:false — колокольчик скрыт, одна строка diag, без тоста (напоминания вторичны).
-   Повторно в сессии GET не ходит: колокольчик открывает ту же модалку из _last; счётчик
+   Повторно в сессии запрос не ходит: колокольчик открывает ту же модалку из _last; счётчик
    обновится при следующей загрузке проекта (локальные действия его не пересчитывают —
-   осознанное упрощение v3.40.0). Модалка — infra/modal-specs.js showRemindersModal (leaf-мост). */
+   осознанное упрощение v3.40.0). Модалка — infra/modal-specs.js showRemindersModal (leaf-мост).
+   S5 (v3.41.0): по колокольчику модалка с вкладками «Активные | Журнал» (при загрузке — без);
+   журнал грузится лениво (GET reminders-journal, раз на открытие) и удаляется по id
+   (POST reminders-journal) — отказ not_addressee / прочее → тост, список не трогается. */
 'use strict';
 
 var PURE = (typeof window !== 'undefined' && window.__SSP_REMINDERS_PURE) || {};
@@ -23,20 +26,21 @@ function load(deps) {
   renderBell(deps);
   _bindBell(deps);
   var pk = deps.state.getActiveProjectKey();
-  return Promise.resolve().then(function () { return deps.apiGet('reminders'); }).then(function (resp) {
+  /* POST, не GET: YouTrack исполняет GET endpoint в read-only транзакции — сверка журнала из GET не пишется (3.41.0) */
+  return Promise.resolve().then(function () { return deps.apiPost('reminders', { action: 'sync' }); }).then(function (resp) {
     if (pk !== deps.state.getActiveProjectKey()) return;   /* проект сменили, пока шёл GET — ответ чужой */
     if (!resp || resp.success === false) { deps.diag('reminders: ' + ((resp && resp.error) || 'empty response'), 'warn'); return; }
     _last = resp;
     renderBell(deps);
     maybeOpenOnLoad(deps);
-  }).catch(function (e) { deps.diag('reminders GET failed: ' + (e && e.message ? e.message : e), 'warn'); });
+  }).catch(function (e) { deps.diag('reminders sync failed: ' + (e && e.message ? e.message : e), 'warn'); });
 }
 
 function _bindBell(deps) {
   var btn = _btn();
   if (!btn || btn._sspRemBound) return;
   btn._sspRemBound = true;
-  btn.addEventListener('click', function () { openReminders(deps); });
+  btn.addEventListener('click', function () { openReminders(deps, true); });
 }
 
 /* hidden/бейдж/title по bellState; title — только отсюда (data-i18n-title на кнопке нет — один владелец). */
@@ -69,12 +73,37 @@ function markShownToday(deps) {
   deps.lsSet(STAMP_KEY, JSON.stringify(PURE.nextStamp(_stamp(deps), deps.state.getActiveProjectKey(), _last.today)));
 }
 
-function openReminders(deps) {
+/* Причина отказа из ответа (apiGet) или из Error apiPost («reason [cid]»). */
+function _reason(x) { return (x && x.reason) || String((x && x.message) || '').split(' ')[0]; }
+
+/* Журнал для тела модалки: load → VM таблицы, remove(id) → VM после удаления (отказ → тост + reject). */
+function _journalApi(deps) {
+  var vm = function (resp) { return PURE.buildJournalVm(resp, deps.T, deps.fmtDay); };
+  return {
+    load: function () {
+      return Promise.resolve().then(function () { return deps.apiGet('reminders-journal'); }).then(function (resp) {
+        if (!resp || resp.success === false) throw new Error(_reason(resp) || 'journal_load_failed');
+        return vm(resp);
+      });
+    },
+    remove: function (id) {
+      return Promise.resolve().then(function () { return deps.apiPost('reminders-journal', { action: 'delete', id: id }); })
+        .then(function (resp) { if (!resp || resp.success === false) throw new Error(_reason(resp) || 'journal_delete_failed'); return vm(resp); })
+        .catch(function (e) {
+          deps.toast(deps.T(_reason(e) === 'not_addressee' ? 'remJrnNoRights' : 'remJrnDeleteError'), 'err');
+          throw e;
+        });
+    }
+  };
+}
+
+function openReminders(deps, withJournal) {
   if (!_last || typeof MODAL_SPECS.showRemindersModal !== 'function') return;
   var handle = null;
   handle = MODAL_SPECS.showRemindersModal(PURE.buildVm(_last, deps.T), {
     t: deps.T, openModal: deps.openModal,
     projectName: deps.state.getProjectDisplayName() || deps.state.getActiveProjectKey() || '',
+    withJournal: !!withJournal, journal: withJournal ? _journalApi(deps) : null,
     onGo: function (item) { if (handle) handle.close(); go(item, deps); },
     onClose: function () { markShownToday(deps); }
   });

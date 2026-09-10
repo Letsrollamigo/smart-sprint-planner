@@ -30,6 +30,7 @@ Switching the project switches the whole screen: sprints, composition, history �
 
 | Item | What it is for |
 |---|---|
+| Reminders bell | appears when reminders are on in the project and at least one module is addressed to you; the number is the count of active items; a click opens the dialog with the «Active» and «Journal» tabs (Setup, chapter 19a) |
 | **Plugin Settings** | a shortcut to this project's settings; shown only to members of the settings-manager group |
 | **User Guide** | a link to this documentation |
 | **Feedback** | a link to the product's issue tracker |

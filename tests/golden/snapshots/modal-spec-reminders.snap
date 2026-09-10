@@ -71,7 +71,21 @@
         "title": "Напоминания (3) · проект GM Clone",
         "onGo": "<fn>",
         "goText": "Перейти",
-        "emptyText": "Активных напоминаний нет"
+        "emptyText": "Активных напоминаний нет",
+        "withJournal": false,
+        "journal": null,
+        "texts": {
+          "tabActive": "Активные (3)",
+          "tabJournal": "Журнал",
+          "fired": "Сработало",
+          "module": "Модуль",
+          "entity": "Сущность",
+          "resolved": "Погасло",
+          "del": "Удалить запись из журнала",
+          "cap": "Последние 50 записей проекта. Удаление убирает строку из журнала; активное напоминание при этом не гаснет и появится снова при следующем открытии.",
+          "empty": "Журнал пуст",
+          "loadError": "Не удалось загрузить журнал"
+        }
       }
     },
     "buttons": [
@@ -111,6 +125,88 @@
       {
         "focus": "release:rel-1"
       }
+    ]
+  },
+  "sync": {
+    "body": {
+      "action": "sync"
+    },
+    "loads": 7
+  },
+  "journal": {
+    "calls": [
+      [
+        "GET",
+        "reminders-journal"
+      ],
+      [
+        "POST",
+        "reminders-journal",
+        {
+          "action": "delete",
+          "id": "capacity:sp-0:1788134400000"
+        }
+      ],
+      [
+        "POST",
+        "reminders-journal",
+        {
+          "action": "delete",
+          "id": "deny"
+        }
+      ],
+      [
+        "POST",
+        "reminders-journal",
+        {
+          "action": "delete",
+          "id": "boom"
+        }
+      ]
+    ],
+    "loaded": {
+      "rows": [
+        {
+          "id": "sprints:sp-1_devBack:1788652800000",
+          "fired": "06.09.2026",
+          "module": "Спринты",
+          "entity": "«Спринт 1» · Бэкенд",
+          "active": true,
+          "resolved": "активно · 3 дн."
+        },
+        {
+          "id": "capacity:sp-0:1788134400000",
+          "fired": "31.08.2026",
+          "module": "Ёмкость",
+          "entity": "«Нулевой»",
+          "active": false,
+          "resolved": "02.09.2026 · ёмкость утверждена (pm1)"
+        }
+      ]
+    },
+    "removed": {
+      "rows": [
+        {
+          "id": "sprints:sp-1_devBack:1788652800000",
+          "fired": "06.09.2026",
+          "module": "Спринты",
+          "entity": "«Спринт 1» · Бэкенд",
+          "active": true,
+          "resolved": "активно · 3 дн."
+        }
+      ]
+    },
+    "denied": "rejected: not_addressee [cid-1]",
+    "failed": "rejected: journal_record_not_found [cid-2]",
+    "toasts": [
+      [
+        "Удалять записи могут только адресаты напоминания",
+        "err"
+      ],
+      [
+        "Не удалось удалить запись",
+        "err"
+      ]
     ]
   }
 }

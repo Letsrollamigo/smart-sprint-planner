@@ -2,9 +2,13 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.40.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.41.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
+>
+> **v3.41.0 — #112: сверка журнала переехала из `GET reminders` в `POST reminders { action:'sync' }` — YouTrack исполняет GET extension-endpoint в read-only транзакции (`ReadonlyTransactionException` на `setProp`), в 3.40.0 журнал не писался. `GET reminders` — чистое чтение с тем же ответом. Права те же (`viewer`), тело — только `action`, журнал по-прежнему пишет сервер по состоянию сущностей.**
+>
+> **v3.41.0 — #112 S5 «Журнал напоминаний»: `GET reminders-journal` — чтение журнала под `viewer` (тот же блоб `ssp_reminders`, в записях только `resolvedBy` — логин того, чьё действие погасило пункт); `POST reminders-journal { action:'delete', id }` — единственная запись в журнал не от вычислителя, право = адресат модуля записи (спринты validator; ёмкость settingsOrPlanning; релизы validator ∨ представитель релиза из актива/архива), отказ `403 not_addressee` с `cid`; тело через `parseBodyOrReject` с whitelist `['action','id']`, блоб перед записью проходит `validateRemindersBlob`. Read-modify-write без `baseRev`: потеря гонки восстанавливается следующей сверкой.**
 >
 > **v3.40.0 — #112 «Напоминания»: новый `GET reminders` (project + global) — только чтение под `viewer`; адресаты фильтруются на сервере предикатами `isValidator` / `isSettingsManager` / `isPlanningManager` и логинами `roleReps` релиза, чужие логины в ответ не попадают; журнал `ssp_reminders` пишет только сервер (whitelist ключей, кольцо 50, лимит 64 КБ); шесть ключей `reminders*` — admin-тир настроек; штамп «показано сегодня» — user-prefs с allow-list. Матрица доступа дополнена строкой `reminders`.**
 >
@@ -199,7 +203,10 @@
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |
 | POST   | `planner-disabled` | settingsManager (#80: единственный писатель `plannerDisabled`; fail-closed — без настроенной группы `plugin_not_configured`) |
-| GET    | `reminders` | viewer (#112: в ответ попадают только пункты, адресованные вызывающему — валидаторы / settingsOrPlanning / представители релиза по логину; roleReps и правило адресации наружу не отдаются; побочный эффект — идемпотентная сверка журнала напоминаний проекта) |
+| GET    | `reminders` | viewer (#112: чистое чтение — в ответ попадают только пункты, адресованные вызывающему — валидаторы / settingsOrPlanning / представители релиза по логину; roleReps и правило адресации наружу не отдаются) |
+| POST   | `reminders` | viewer (#112, 3.41.0: единственное действие `sync` — тот же ответ, что у GET, плюс идемпотентная сверка журнала `ssp_reminders`; журнал пишет только сервер по состоянию сущностей, тело запроса на него не влияет; иное действие → `400 invalid_action`) |
+| GET    | `reminders-journal` | viewer (#112 S5: журнал проекта целиком — записи «появился/погас» без чужих логинов, кроме `resolvedBy` того, чьё действие погасило пункт; отдаётся и при выключенном мастере; ничего не пишет) |
+| POST   | `reminders-journal` | адресат записи по модулю (#112 S5, только `action:'delete'` по `id`): спринты — validator; ёмкость — settingsOrPlanning; релизы — validator ИЛИ менеджер/инженер этого релиза (актив + архив; релиза нет — только validator); иначе `403 not_addressee`. Удаление активной записи напоминание не гасит — следующий `POST reminders sync` заводит её заново |
 <!-- authz-matrix:project:end -->
 
 ### Global scope (`backend-global.js`)

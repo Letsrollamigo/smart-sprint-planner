@@ -70,6 +70,7 @@ Gantt timeline per role, sprint-aware, with per-task assignees:
 **Govern**
 
 - **Release management** — group tasks into releases (kind Release / Hotfix × source Internal / Vendor) and walk them through six statuses with a previewed, mapping-driven sync of native task States. Readiness traffic-light, an Epic ▸ Story ▸ Task composition tree, composition freeze, patch notes, .txt export, an irreversible snapshot on close, and auto-archiving of the oldest closed releases. Release-manager / release-engineer permissions are enforced server-side. Off by default.
+- **Reminders** — a dialog on planner open and a bell with a counter for three things that slip between sprints: a sprint role not finished after the end date, capacity not approved before the start, a release past its planned date. Addressees are resolved server-side (validators, capacity approvers, release owners), a reminder goes out by entity state only, a per-project journal keeps the last 50 records. Off by default.
 - **Server-side authorization** on every mutating endpoint via project-scoped `ssp_settings`; deny-by-default until the settings manager group is configured.
 - **15-language UI** — Czech, German, English, Spanish, French, Hungarian, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Russian, Turkish, Chinese (Simplified). Auto-detected from the browser, manually switchable, with English fallback.
 
@@ -124,7 +125,7 @@ Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manu
 
 ## Documentation
 
-- **[docs/](docs/) — the illustrated manual, in English and Russian.** Three documents, 90 chapters, 80 screenshots: [an overview of every screen](docs/en/01-overview/), [a step-by-step rollout guide](docs/en/02-setup/), and [the fourteen reports](docs/en/03-reporting/).
+- **[docs/](docs/) — the illustrated manual, in English and Russian.** Three documents, 91 chapters, 86 screenshots: [an overview of every screen](docs/en/01-overview/), [a step-by-step rollout guide](docs/en/02-setup/), and [the fourteen reports](docs/en/03-reporting/).
 - **[Coming from Jira? A glossary](docs/en/01-overview/14-jira-mapping.md)** — Story Points, Velocity, Complete Sprint and the rest, mapped to the planner's own terms, plus what is deliberately done differently.
 - [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with configuration examples.
 - [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum-master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.

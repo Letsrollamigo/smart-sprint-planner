@@ -1,7 +1,7 @@
 /* widgets/main/src/pure/reminders-pure.js
    #112 «Напоминания» — чистая логика фронта: показывать ли модалку при загрузке, штамп
    «показано сегодня», VM модалки из ответа GET reminders, подпись дней, адрес «Перейти»,
-   состояние колокольчика, умолчания и клампы раздела настроек «Уведомления».
+   состояние колокольчика, умолчания и клампы раздела настроек «Уведомления», VM таблицы журнала (S5).
    Публикует window.__SSP_REMINDERS_PURE ДО исполнения IIFE core.js (паттерн share-url-pure).
    Без DOM, стейта и host; «сегодня» приходит от сервера (resp.today) — клиент день не считает. */
 'use strict';
@@ -14,6 +14,14 @@ var KIND_KEY = {
 };
 /* Ярлыки статусов релиза — те же ключи, что у вкладки релизов (release-view.js:101). */
 var STATUS_KEY = { planned: 'relStatusPlanned', prep: 'relStatusPrep', work: 'relStatusWork', released: 'relStatusReleased', cancelled: 'relStatusCancelled' };
+/* Журнал (S5): чип модуля и подпись «чем погасло» — ключи текста, не строки (⚖8). */
+var MODULE_KEY = { sprints: 'remModSprints', capacity: 'remModCapacity', releases: 'remModReleases' };
+var HOW_KEY = {
+  roleFinished: 'remHowRoleFinished', validated: 'remHowValidated', capacityApproved: 'remHowCapacityApproved',
+  sprintOver: 'remHowSprintOver', released: 'remHowReleased', cancelled: 'remHowCancelled',
+  dateMoved: 'remHowDateMoved', gone: 'remHowGone', moduleOff: 'remHowModuleOff'
+};
+var DAY = 86400000;
 
 function _has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 /* Подстановка данных пользователя: функция-замена, иначе String.replace трактует «$&»/«$1» в имени спринта. */
@@ -139,6 +147,33 @@ function formToSettings(f) {
   };
 }
 
+/* Сущность строки журнала из слепка params (сама сущность могла исчезнуть): «{sprint} · {role}» / «{sprint}» / «{release}». */
+function journalEntity(rec) {
+  var p = (rec && rec.params) || {};
+  if (rec.module === 'releases') return p.release ? '«' + p.release + '»' : (rec.entityId || '');
+  var s = p.sprint ? '«' + p.sprint + '»' : (rec.entityId || '');
+  return (rec.module === 'sprints' && p.role) ? s + ' · ' + p.role : s;
+}
+
+/* VM таблицы журнала (§5.6): порядок строк — как отдал сервер (firedDay убыв., открытые впереди).
+   Открытая запись — «активно · N дн.» от серверного today; погасшая — день · чем (кто). */
+function buildJournalVm(resp, T, fmtDay) {
+  var list = (resp && Array.isArray(resp.journal)) ? resp.journal : [];
+  var today = (resp && typeof resp.today === 'number') ? resp.today : null;
+  var rows = [];
+  for (var i = 0; i < list.length; i++) {
+    var r = list[i] || {}, active = r.resolvedDay === null || r.resolvedDay === undefined, resolved;
+    if (active) {
+      resolved = _sub(T('remJrnActive'), '{n}', String(today === null ? 0 : Math.max(0, Math.round((today - r.firedDay) / DAY))));
+    } else {
+      resolved = fmtDay(r.resolvedDay) + ' · ' + T(_has(HOW_KEY, r.resolvedHow) ? HOW_KEY[r.resolvedHow] : 'remHowGone') + (r.resolvedBy ? ' (' + r.resolvedBy + ')' : '');
+    }
+    rows.push({ id: r.id, fired: fmtDay(r.firedDay), module: _has(MODULE_KEY, r.module) ? T(MODULE_KEY[r.module]) : String(r.module || ''),
+      entity: journalEntity(r), active: active, resolved: resolved });
+  }
+  return { rows: rows };
+}
+
 var _api = {
   shouldOpenOnLoad: shouldOpenOnLoad,
   nextStamp: nextStamp,
@@ -151,6 +186,8 @@ var _api = {
   bellState: bellState,
   settingsToForm: settingsToForm,
   formToSettings: formToSettings,
+  journalEntity: journalEntity,
+  buildJournalVm: buildJournalVm,
   MODULE_ORDER: MODULE_ORDER
 };
 

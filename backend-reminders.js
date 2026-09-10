@@ -5,15 +5,26 @@
  * И backend-global.js ВЫШЕ чтения core.ENDPOINTS; endpoint-объекты дописывает в общий
  * core.ENDPOINTS (иначе глобальный режим — то есть весь планер — 404, gotcha #7).
  *
- * GET reminders — один запрос при загрузке виджета: читает настройки и пять свойств проекта,
- * зовёт чистый вычислитель backend-reminders-calc.js, применяет права адресатов НА СЕРВЕРЕ
- * (предикаты ядра isValidator / isSettingsManager / isPlanningManager — не authzGuard: тот при
- * отказе сам шлёт 403), идемпотентно сверяет журнал ssp_reminders и отдаёт список + счётчик.
+ * POST reminders { action:'sync' } — один запрос при загрузке виджета: читает настройки и пять
+ * свойств проекта, зовёт чистый вычислитель backend-reminders-calc.js, применяет права адресатов
+ * НА СЕРВЕРЕ (предикаты ядра isValidator / isSettingsManager / isPlanningManager — не authzGuard:
+ * тот при отказе сам шлёт 403), идемпотентно сверяет журнал ssp_reminders и отдаёт список + счётчик.
+ * GET reminders — тот же ответ БЕЗ сверки журнала (чистое чтение для внешних потребителей).
+ * Почему POST (3.41.0): YouTrack исполняет GET extension-endpoint в read-only транзакции —
+ * setProp из GET кидает ReadonlyTransactionException, журнал в 3.40.0 не писался вовсе.
  *
  * Журнал — { journal: [record…], pluginVersion }; запись = «появился / погас» по ключу
  * «модуль + сущность + день», id детерминирован. reconcile — чистая функция состояния (журнал,
- * активное множество, today): GET идёт под ретраем read-gate фронта, повтор обязан дать тот же
- * журнал. Ошибка записи журнала ответ не валит (журнал вторичен) — одна строка warn с cid.
+ * активное множество, today): повтор запроса обязан дать тот же журнал. Ошибка записи журнала
+ * ответ не валит (журнал вторичен) — одна строка warn с cid.
+ *
+ * S5 (v3.41.0): журнал наружу — GET reminders-journal (весь журнал проекта: firedDay убыв.,
+ * открытые впереди при равном дне; отдаётся и при выключенном мастере — данные сохраняются, ⚖9)
+ * и POST reminders-journal { action:'delete', id }: удалять запись может только её адресат (§4.2 —
+ * спринты: валидатор; ёмкость: settingsOrPlanning; релизы: валидатор ∨ представитель релиза из
+ * актива или архива, релиза нет → только валидатор). Удаление активной записи напоминание НЕ гасит:
+ * следующий POST reminders sync заведёт её заново с firedDay = today (⚖8, У2). Read-modify-write без
+ * baseRev (⚖ «не усложнять»): удаление по id идемпотентно, потеря гонки восстанавливается сверкой.
  *
  * ИНВАРИАНТЫ БЕЗОПАСНОСТИ — см. шапку backend-core.js: authzGuard первым; ошибки только
  * core.forbidden/badRequest/internalError (кладут cid); размер-чек до setProp; в ответ не
@@ -243,8 +254,8 @@ function publicItem(it) {
   return { id: it.id, module: it.module, kind: it.kind, entityId: it.entityId, params: it.params, days: it.days, ref: it.ref };
 }
 
-function handleGetReminders(ctx) {
-  if (!core.authzGuard(ctx, 'viewer')) return;
+/* Общий хвост GET/POST: расчёт, (sync) сверка журнала, фильтр по адресату, ответ. */
+function respondReminders(ctx, sync) {
   var settings = core.parseJson(core.getProp(ctx, 'ssp_settings', null), null) || {};
   if (settings.remindersEnabled !== true) {
     ctx.response.json({ success: true, enabled: false, count: 0, items: [], modules: {} });
@@ -262,10 +273,12 @@ function handleGetReminders(ctx) {
     today: today
   };
   var all = calc.compute(data);
-  var journal = readJournal(ctx);
-  var explainData = withReleasesArchive(ctx, data, journal, all.items);
-  var next = reconcile(journal, all.items, today, function (rec) { return calc.explainResolved(rec, explainData); });
-  writeJournalIfChanged(ctx, journal, next);
+  if (sync) {
+    var journal = readJournal(ctx);
+    var explainData = withReleasesArchive(ctx, data, journal, all.items);
+    var next = reconcile(journal, all.items, today, function (rec) { return calc.explainResolved(rec, explainData); });
+    writeJournalIfChanged(ctx, journal, next);
+  }
   var me = whoAmI(ctx), mine = [];
   for (var i = 0; i < all.items.length; i++) {
     if (isAddressee(all.items[i].addressee, me)) mine.push(publicItem(all.items[i]));
@@ -280,8 +293,76 @@ function handleGetReminders(ctx) {
   });
 }
 
+function handleGetReminders(ctx) {
+  if (!core.authzGuard(ctx, 'viewer')) return;
+  respondReminders(ctx, false);
+}
+
+function handlePostReminders(ctx) {
+  if (!core.authzGuard(ctx, 'viewer')) return;
+  var body = core.parseBodyOrReject(ctx, ['action']);
+  if (!body) return;
+  if (body.action !== 'sync') { core.badRequest(ctx, 'invalid_action'); return; }
+  respondReminders(ctx, true);
+}
+
+/* ── S5: журнал наружу ─────────────────────────────────────────────────────── */
+
+/* Порядок показа (§4.5): firedDay убыв., при равном дне открытые впереди. Хранение — по firedDay возр. */
+function byViewOrder(a, b) {
+  if (b.firedDay !== a.firedDay) return b.firedDay - a.firedDay;
+  return (a.resolvedDay === null ? 0 : 1) - (b.resolvedDay === null ? 0 : 1);
+}
+function viewJournal(list) { return list.slice().sort(byViewOrder); }
+
+function findRelease(ctx, id) {
+  var stores = ['ssp_releases', 'ssp_releases_archive'];
+  for (var s = 0; s < stores.length; s++) {
+    var list = releasesOf(core.parseJson(core.getProp(ctx, stores[s], null), null));
+    for (var i = 0; i < list.length; i++) if (list[i] && list[i].id === id) return list[i];
+  }
+  return null;
+}
+
+/* Право удалить запись = адресат её модуля (§4.2, колонка «удаление»). */
+function canDeleteRecord(ctx, rec, me) {
+  if (rec.module === 'sprints') return !!me.validator;
+  if (rec.module === 'capacity') return !!me.planning;
+  if (rec.module === 'releases') {
+    if (me.validator) return true;
+    var rel = findRelease(ctx, rec.entityId), reps = rel && rel.roleReps;
+    return !!(reps && me.login && (reps.manager === me.login || reps.engineer === me.login));
+  }
+  return false;
+}
+
+function handleGetJournal(ctx) {
+  if (!core.authzGuard(ctx, 'viewer')) return;
+  ctx.response.json({ success: true, today: calc.todayOf(Date.now()), journal: viewJournal(readJournal(ctx)) });
+}
+
+function handlePostJournal(ctx) {
+  if (!core.authzGuard(ctx, 'viewer')) return;
+  var body = core.parseBodyOrReject(ctx, ['action', 'id']);   /* тело читается один раз */
+  if (!body) return;
+  if (body.action !== 'delete') { core.badRequest(ctx, 'invalid_journal_action'); return; }
+  if (typeof body.id !== 'string' || !body.id) { core.badRequest(ctx, 'invalid_journal_id'); return; }
+  var journal = readJournal(ctx), idx = -1;
+  for (var i = 0; i < journal.length; i++) if (journal[i].id === body.id) { idx = i; break; }
+  if (idx < 0) { core.badRequest(ctx, 'journal_record_not_found'); return; }
+  if (!canDeleteRecord(ctx, journal[idx], whoAmI(ctx))) { core.forbidden(ctx, 'not_addressee'); return; }
+  var next = journal.slice(0, idx).concat(journal.slice(idx + 1));
+  var blob = { journal: next, pluginVersion: core.CURRENT_PLUGIN_VERSION };
+  if (!validateRemindersBlob(blob)) { core.badRequest(ctx, 'invalid_reminders_structure'); return; }
+  try { core.setProp(ctx, PROP, JSON.stringify(blob)); } catch (e) { core.internalError(ctx, 'reminders_journal_write_failed'); return; }
+  ctx.response.json({ success: true, today: calc.todayOf(Date.now()), journal: viewJournal(next) });
+}
+
 var REMINDERS_ENDPOINTS = [
-  { scope: 'project', method: 'GET', path: 'reminders', handle: handleGetReminders }
+  { scope: 'project', method: 'GET',  path: 'reminders',         handle: handleGetReminders },
+  { scope: 'project', method: 'POST', path: 'reminders',         handle: handlePostReminders },
+  { scope: 'project', method: 'GET',  path: 'reminders-journal', handle: handleGetJournal },
+  { scope: 'project', method: 'POST', path: 'reminders-journal', handle: handlePostJournal }
 ];
 
 /* Самрегистрация в ОБЩИЙ core.ENDPOINTS (оба handler-файла читают его — gotcha #7).

@@ -162,3 +162,33 @@ test('round-trip: settingsToForm ∘ formToSettings сохраняет хран�
   const stored = { remindersEnabled: true, remindersSprints: false, remindersCapacity: true, remindersReleases: false, remindersModalMode: 'daily', remindersCapacityDays: 0 };
   assert.deepEqual(P.formToSettings(P.settingsToForm(stored)), stored);
 });
+
+/* ── журнал (S5, §5.6) ── */
+const fmtDay = (ts) => new Date(ts).toISOString().slice(0, 10);
+const JR = (o) => Object.assign({ params: {}, resolvedDay: null, resolvedHow: null, resolvedBy: null }, o);
+test('buildJournalVm: активная строка — «активно · N дн.» от серверного today; погасшая — день · чем (кто); порядок сервера сохраняется', () => {
+  const vm = P.buildJournalVm({ today: TODAY, journal: [
+    JR({ id: 'a', module: 'sprints', entityId: 'sp-1_devBack', params: { sprint: 'Спринт 1', role: 'Бэкенд' }, firedDay: TODAY - 3 * DAY }),
+    JR({ id: 'b', module: 'capacity', entityId: 'sp-2', params: { sprint: 'Спринт 2' }, firedDay: TODAY - 5 * DAY, resolvedDay: TODAY - 4 * DAY, resolvedHow: 'capacityApproved', resolvedBy: 'pm1' }),
+    JR({ id: 'c', module: 'releases', entityId: 'rel-1', params: { release: 'R 2026.09' }, firedDay: TODAY - 1 * DAY, resolvedDay: TODAY, resolvedHow: 'released' }),
+  ] }, T, fmtDay);
+  assert.deepEqual(vm.rows.map((r) => r.id), ['a', 'b', 'c']);
+  assert.deepEqual(vm.rows[0], { id: 'a', fired: fmtDay(TODAY - 3 * DAY), module: 'Спринты', entity: '«Спринт 1» · Бэкенд', active: true, resolved: 'активно · 3 дн.' });
+  assert.deepEqual(vm.rows[1], { id: 'b', fired: fmtDay(TODAY - 5 * DAY), module: 'Ёмкость', entity: '«Спринт 2»', active: false, resolved: fmtDay(TODAY - 4 * DAY) + ' · ёмкость утверждена (pm1)' });
+  assert.equal(vm.rows[2].resolved, fmtDay(TODAY) + ' · релиз выпущен', 'без resolvedBy — без скобок');
+  assert.equal(vm.rows[2].entity, '«R 2026.09»');
+});
+test('buildJournalVm: неизвестное «чем» → «сущность удалена»; неизвестный модуль — код как есть; нет today → 0 дн.; пустой/битый ответ — без строк', () => {
+  const vm = P.buildJournalVm({ journal: [JR({ id: 'x', module: 'sprints', entityId: 'sp-9_qa', firedDay: TODAY, resolvedDay: TODAY, resolvedHow: 'weird' }), JR({ id: 'y', module: 'other', entityId: 'e', firedDay: TODAY })] }, T, fmtDay);
+  assert.equal(vm.rows[0].resolved, fmtDay(TODAY) + ' · сущность удалена');
+  assert.equal(vm.rows[0].entity, 'sp-9_qa', 'без слепка имён — id сущности');
+  assert.deepEqual([vm.rows[1].module, vm.rows[1].resolved], ['other', 'активно · 0 дн.']);
+  assert.deepEqual(P.buildJournalVm(null, T, fmtDay), { rows: [] });
+  assert.deepEqual(P.buildJournalVm({ success: true, journal: 'nope' }, T, fmtDay), { rows: [] });
+});
+test('journalEntity: спринт с ролью / без роли (легаси) / релиз', () => {
+  assert.equal(P.journalEntity({ module: 'sprints', params: { sprint: 'S', role: null } }), '«S»');
+  assert.equal(P.journalEntity({ module: 'capacity', params: { sprint: 'S', role: 'игнор' } }), '«S»');
+  assert.equal(P.journalEntity({ module: 'releases', entityId: 'rel-2', params: {} }), 'rel-2');
+});
+

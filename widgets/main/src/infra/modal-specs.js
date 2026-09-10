@@ -220,7 +220,8 @@ function openImportReplaceConfirm(deps) {
    Тело — React-компонент remindersBody (modal-bodies.jsx), VM готовит pure/reminders-pure.js.
    onClose зовётся ровно один раз на любое закрытие (крестик/Esc/backdrop/«Закрыть»/«Перейти» через
    handle.close) — контроллер пишет штамп «показано сегодня». В отличие от прочих фабрик ВОЗВРАЩАЕТ
-   handle: «Перейти» закрывает модалку до навигации. deps: t, openModal, projectName, onGo, onClose. */
+   handle: «Перейти» закрывает модалку до навигации. deps: t, openModal, projectName, onGo, onClose,
+   withJournal + journal {load, remove} (S5). */
 function showRemindersModal(vm, deps) {
   var t = deps.t, openModal = deps.openModal;
   var title = t('remModalTitle').replace('{n}', String(vm.count))
@@ -231,7 +232,16 @@ function showRemindersModal(vm, deps) {
     title: title,
     dialogClass: 'ssp-ring-modal--wide',
     /* title дублируется в props: Ring Dialog кладёт label только в aria, видимого заголовка у модалок планера нет — тело рисует его само (макет modal.html) */
-    body: { kind: 'component', name: 'remindersBody', props: { vm: vm, title: title, onGo: deps.onGo, goText: t('remGo'), emptyText: t('remEmpty') } },
+    body: { kind: 'component', name: 'remindersBody', props: {
+      vm: vm, title: title, onGo: deps.onGo, goText: t('remGo'), emptyText: t('remEmpty'),
+      /* S5: по колокольчику — вкладки «Активные | Журнал» (журнал грузит и удаляет контроллер через journal.load/remove) */
+      withJournal: !!deps.withJournal, journal: deps.journal || null,
+      texts: {
+        tabActive: t('remTabActive').replace('{n}', String(vm.count)), tabJournal: t('remTabJournal'),
+        fired: t('remJrnFired'), module: t('remJrnModule'), entity: t('remJrnEntity'), resolved: t('remJrnResolved'),
+        del: t('remJrnDelete'), cap: t('remJrnCap'), empty: t('remJrnEmpty'), loadError: t('remJrnLoadError')
+      }
+    } },
     buttons: [
       { id: 'close', text: t('btnClose'), variant: 'secondary', onClick: function(h){ h.close(); } },
     ],

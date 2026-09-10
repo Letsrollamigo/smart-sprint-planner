@@ -1,13 +1,16 @@
 /**
  * Golden-master: #112 «Напоминания» — контракт «ядро → контроллер → мосты» через монолит-хост.
  *
- *   • reminders-bell — DOM кнопки #remindersBellBtn по четырём ответам GET reminders
+ *   • reminders-bell — DOM кнопки #remindersBellBtn по четырём ответам POST reminders sync
  *     (три пункта / ноль / мастер выкл / не-адресат): hidden, бейдж, title, открылась ли модалка;
  *   • modal-spec-reminders — спек модалки (recording-стаб __SSP_RING_MODAL.open) + поведение:
  *     закрытие любым способом → onClose ровно один раз → штамп «показано сегодня» в safeLs;
  *     повторная загрузка в режиме daily модалку не открывает, в режиме always — открывает;
  *     клик колокольчика открывает ту же модалку; «Перейти» → setDashNode + applyShareFocus /
- *     setCurrentSprintId по виду пункта.
+ *     setCurrentSprintId по виду пункта;
+ *   • S5: при загрузке — без вкладок (withJournal:false), по колокольчику — с журналом:
+ *     journal.load() → GET reminders-journal → VM таблицы; journal.remove(id) → POST → VM из
+ *     ответа; отказ not_addressee → тост remJrnNoRights + reject, прочий отказ → remJrnDeleteError.
  * React-тело remindersBody не рендерится (граница характеризации — спек).
  */
 'use strict';
@@ -39,15 +42,25 @@ const RESP0 = Object.assign({}, RESP3, { count: 0, items: [] });
 const RESP_OFF = { success: true, enabled: false, count: 0, items: [], modules: {} };
 const RESP_NOT_ME = Object.assign({}, RESP3, { count: 0, items: [], modules: { sprints: { on: true, addressee: false }, capacity: { on: false, addressee: true }, releases: { on: true, addressee: false } } });
 
+/* Стабы журнала — держатели: колокольчик привязывает deps ПЕРВОЙ загрузки (в рантайме apiGet/apiPost/toast
+   стабильны), поэтому стабы читаются лениво при вызове, а не при загрузке. */
+const STUB = { reminders: {}, syncBodies: [], journal: {}, post: function () { return Promise.resolve({}); }, calls: [], toasts: [] };
+
 function boot() {
   const host = createHost();
   fx.applyBaseState(host.gm);
-  host.gm.set({ _mode: 'global', _activeProjectKey: 'GM', _projectDisplayName: 'GM Clone', _lang: 'ru' });
+  host.gm.set({ _mode: 'global', _activeProjectKey: 'GM', _projectDisplayName: 'GM Clone', _lang: 'ru',
+    apiPost: function (p, body) {
+      if (p === 'reminders') { STUB.syncBodies.push(body); return Promise.resolve(STUB.reminders); }   /* загрузка — POST sync (GET в YouTrack read-only) */
+      STUB.calls.push(['POST', p, body]); return STUB.post(p, body);
+    },
+    apiGet: function (p) { if (p === 'reminders-journal') { STUB.calls.push(['GET', p]); return Promise.resolve(STUB.journal); } return Promise.resolve({}); },
+    toast: function (msg, type) { STUB.toasts.push([msg, type]); } });
   return host;
 }
 
 async function loadWith(host, resp) {
-  host.gm.set({ apiGet: function (p) { return p === 'reminders' ? Promise.resolve(resp) : Promise.resolve({}); } });
+  STUB.reminders = resp;
   host.gm.call('loadReminders');
   await settle();
 }
@@ -108,8 +121,29 @@ test('golden: modal-spec-reminders — спек + штамп/повтор/кол
   const vmItems = props.vm.sections.map((s) => s.items[0]);
   props.onGo(vmItems[0]); props.onGo(vmItems[1]); props.onGo(vmItems[2]);
 
+  /* S5: при загрузке журнала нет, по колокольчику — есть */
+  assert.strictEqual(props.withJournal, false); assert.strictEqual(props.journal, null);
+  assert.strictEqual(modalLog[1].body.props.withJournal, true);
+  const JOURNAL = { success: true, today: TODAY, journal: [
+    { id: 'sprints:sp-1_devBack:' + (TODAY - 3 * 86400000), module: 'sprints', kind: 'sprintRoleOpen', entityId: 'sp-1_devBack', params: { sprint: 'Спринт 1', role: 'Бэкенд' }, firedDay: TODAY - 3 * 86400000, resolvedDay: null, resolvedHow: null, resolvedBy: null },
+    { id: 'capacity:sp-0:' + (TODAY - 9 * 86400000), module: 'capacity', kind: 'capacityBefore', entityId: 'sp-0', params: { sprint: 'Нулевой' }, firedDay: TODAY - 9 * 86400000, resolvedDay: TODAY - 7 * 86400000, resolvedHow: 'capacityApproved', resolvedBy: 'pm1' },
+  ] };
+  STUB.journal = JOURNAL; STUB.calls.length = 0; STUB.toasts.length = 0;
+  STUB.post = function (p, body) {
+    if (body.id === 'deny') return Promise.reject(new Error('not_addressee [cid-1]'));   /* apiPost отвергает success:false Error-ом «reason [cid]» */
+    if (body.id === 'boom') return Promise.reject(new Error('journal_record_not_found [cid-2]'));
+    return Promise.resolve({ success: true, today: TODAY, journal: JOURNAL.journal.filter((r) => r.id !== body.id) });
+  };
+  const bellProps = modalLog[1].body.props;
+  const loaded = await bellProps.journal.load();
+  const removed = await bellProps.journal.remove(JOURNAL.journal[1].id);
+  const denied = await bellProps.journal.remove('deny').then(() => 'resolved', (e) => 'rejected: ' + e.message);
+  const failed = await bellProps.journal.remove('boom').then(() => 'resolved', (e) => 'rejected: ' + e.message);
+
   checkJsonSnapshot('modal-spec-reminders', {
     spec: serializeSpec(spec),
     behavior: { stampAfterClose: stamp, nav: nav },
+    sync: { body: STUB.syncBodies[0], loads: STUB.syncBodies.length },
+    journal: { calls: STUB.calls, loaded: loaded, removed: removed, denied: denied, failed: failed, toasts: STUB.toasts },
   });
 });
