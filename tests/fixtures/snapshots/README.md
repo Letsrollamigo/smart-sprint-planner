@@ -12,7 +12,7 @@ fixture через полную цепочку `migrateSnap → validate*ForRead
 
 Цель — гарантировать, что ни один следующий релиз не сломает чтение
 snapshot'ов любого прошлого формата. Базовое правило — во внутренних правилах
-проекта (`CLAUDE.md` → «Backward-compat fixtures + schema deprecation»).
+проекта (раздел «Backward-compat fixtures + schema deprecation»).
 
 ## Структура
 

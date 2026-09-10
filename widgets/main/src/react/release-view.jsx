@@ -2,7 +2,7 @@
    Доменная логика (load/filter/persist) — в domain/release-view.js: она строит view-model и
    зовёт мост mountAt(host, vm) / unmountAt(host). Канон — capacity-view.jsx.
 
-   🔴 Правило проекта (CLAUDE_SHARED §3): контролы Ring; статус-бейдж/чипы — <span> с CSS-классом
+   🔴 Правило проекта (раздел CSS / UI): контролы Ring; статус-бейдж/чипы — <span> с CSS-классом
    (в vendored-сабсете нет Tag/Badge — как капасити). Дизайн карточки — design/mirror/release/
    planned-card.html (H1-H7 + reps; светофор/дерево/действия — R1.4/R3/R1.5, за фичами). */
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Ставит версионируемые git-хуки (симлинками на tools/hooks/).
 # Запускать в КАЖДОМ форке после клона/переезда пути — добавлено в чеклист
-# «Cwd state synchronization» (CLAUDE.md / KB Разработка/17), т.к. .git/hooks/
+# «Cwd state synchronization» (правила проекта / KB Разработка/17), т.к. .git/hooks/
 # не версионируется и исчезает при reorg (единственный owner этого не заметит).
 #
 #   sh tools/install-hooks.sh

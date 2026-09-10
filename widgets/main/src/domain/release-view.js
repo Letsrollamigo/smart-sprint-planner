@@ -1,7 +1,7 @@
 /* release-view.js — #48 вкладки «Релиз-менеджмент» (планируемые / история релизов).
    Domain-модуль (ADR-001): грузит список релизов из backend в RELEASE_STORE, строит view-model
    и монтирует React Ring-презентацию через мост window.__SSP_RELEASE_MOUNT.mountAt(host, vm)
-   (канон capacity-view). Рендер/разметка — react/release-view.jsx (строго Ring UI, CLAUDE_SHARED §3).
+   (канон capacity-view). Рендер/разметка — react/release-view.jsx (строго Ring UI — правила проекта, раздел CSS / UI).
 
    STATELESS (C1): только function/const; стейт RM — в release-store.js (deps.state.release.*).
    Star-topology (B1): чужих domain-мостов не зовёт — всё (T/apiGet/onCreate) из deps.

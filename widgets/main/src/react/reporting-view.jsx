@@ -4,7 +4,7 @@
    Ring-таблица (перешла в статус · дата ↓ · ярлык). Контур B — плейсхолдер.
    Доменная логика (fetch/примитив/период/compute) — domain/reporting-view.js; мост mountAt(host, vm).
 
-   🔴 Правило проекта (CLAUDE_SHARED §3): контролы Ring (Select/кнопки); бейджи/полосы — span/svg
+   🔴 Правило проекта (раздел CSS / UI): контролы Ring (Select/кнопки); бейджи/полосы — span/svg
    с инлайн-стилем (в vendored-сабсете нет Tag/Badge — как капасити/релизы). */
 
 import * as React from 'react';

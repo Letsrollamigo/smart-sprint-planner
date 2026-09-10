@@ -20,6 +20,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'Documentation', 'CODE_MAP.md');
@@ -62,7 +63,6 @@ const NOTES = {
   'widgets/main/main.js': 'собранный бандл фронта (esbuild, минифицирован) — артефакт, не источник',
   'widgets/main/vendored-react.chunk.js': 'вендоренный React + Ring UI одним чанком — артефакт сборки',
   'widgets/main/recharts.chunk.js': 'ленивый чанк графиков отчётности — артефакт сборки',
-  'CLAUDE.md': 'правила работы с репозиторием для сессий; общие правила форков — в соседнем Shared Docks',
   'package-lock.json': 'фиксация версий devDependencies (npm ci)',
   'widgets/main/src/icons/': 'SVG-иконки набора JetBrains, собираются в icons.generated.js',
   'widgets/main/i18n/': 'словари локалей (json)',
@@ -133,7 +133,7 @@ const WHERE = [
 ];
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
-const SKIP_DIRS = new Set(['node_modules', 'test-results', '.git', '.claude', 'playwright-report']);
+const SKIP_DIRS = new Set(['node_modules', 'test-results', '.git', 'playwright-report']);
 function exists(rel) { return fs.existsSync(path.join(ROOT, rel)); }
 function resolveAlt(spec) {
   const optional = spec.startsWith('?');
@@ -167,9 +167,23 @@ function headline(rel) {
   return esc(first);
 }
 
+/* Карта описывает репозиторий: игнорируемое git'ом (локальные промпты, спеки, кадры смоуков)
+   не печатается — иначе карта публичного форка перечисляла бы то, чего нет в клоне, и --check
+   на чистом клоне краснел бы. Отслеживаемые файлы check-ignore не отдаёт никогда. */
+function gitIgnored(rels) {
+  try {
+    const out = execFileSync('git', ['check-ignore', '-z', '--stdin'], { cwd: ROOT, input: rels.join('\0'), encoding: 'utf8' });
+    return new Set(out.split('\0').filter(Boolean));
+  } catch (e) {
+    return new Set();   /* код 1 — ничего не игнорируется; 128 — не git-репозиторий: без фильтра */
+  }
+}
 function listDir(rel) {
-  return fs.readdirSync(path.join(ROOT, rel), { withFileTypes: true })
-    .filter((d) => !d.name.startsWith('.') && !SKIP_DIRS.has(d.name))
+  const entries = fs.readdirSync(path.join(ROOT, rel), { withFileTypes: true })
+    .filter((d) => !d.name.startsWith('.') && !SKIP_DIRS.has(d.name));
+  const ignored = gitIgnored(entries.map((d) => (rel ? rel + '/' : '') + d.name));
+  return entries
+    .filter((d) => !ignored.has((rel ? rel + '/' : '') + d.name))
     .map((d) => ({ name: d.name, dir: d.isDirectory() }))
     .sort((a, b) => (a.dir !== b.dir ? (a.dir ? -1 : 1) : a.name.localeCompare(b.name, 'en')));
 }

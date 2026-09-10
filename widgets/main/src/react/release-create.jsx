@@ -4,7 +4,7 @@
    состояние формы, рисует собственный footer (SspModal статичен). Импорт в index.js после
    modal-mount.jsx.
 
-   🔴 Правило проекта (CLAUDE_SHARED §3 / feedback_react_ring_ui_mandatory): контролы —
+   🔴 Правило проекта (раздел CSS / UI): контролы —
    строго Ring vendored (`Input`/`Select`/`DatePicker`), нативка только как null-fallback для
    test-env без SSP_VENDORED (канон capacity-view.jsx). Layout под макет
    design/mirror/release/create-modal.html. Представители — union членов групп-кандидатов
