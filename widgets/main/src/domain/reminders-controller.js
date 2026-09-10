@@ -5,9 +5,10 @@
    «Перейти» к экземпляру (спека §5.5). Мост window.__SSP_REMINDERS_CTRL; deps приходят
    аргументом (фабрика _remindersDeps() в ядре), стейт ядра — за deps.state.*.
    Ошибка/success:false — колокольчик скрыт, одна строка diag, без тоста (напоминания вторичны).
-   Повторно в сессии запрос не ходит: колокольчик открывает ту же модалку из _last; счётчик
-   обновится при следующей загрузке проекта (локальные действия его не пересчитывают —
-   осознанное упрощение v3.40.0). Модалка — infra/modal-specs.js showRemindersModal (leaf-мост).
+   Колокольчик открывает ту же модалку из _last. #126 (v3.43.0): после своей записи, которая
+   гасит или сдвигает пункты (REFRESH_AFTER), ядро зовёт afterWrite → тот же POST sync без
+   модалки при загрузке; до этого список и счётчик жили до перезагрузки страницы.
+   Модалка — infra/modal-specs.js showRemindersModal (leaf-мост).
    S5 (v3.41.0): по колокольчику модалка с вкладками «Активные | Журнал» (при загрузке — без);
    журнал грузится лениво (GET reminders-journal, раз на открытие) и удаляется по id
    (POST reminders-journal) — отказ not_addressee / прочее → тост, список не трогается. */
@@ -16,24 +17,49 @@
 var PURE = (typeof window !== 'undefined' && window.__SSP_REMINDERS_PURE) || {};
 var MODAL_SPECS = (typeof window !== 'undefined' && window.__SSP_MODAL_SPECS) || {};
 var STAMP_KEY = 'ssp_reminders_shown';
-/* Единственное модуль-приватное состояние: ответ последнего GET текущего проекта (сбрасывается на каждой загрузке). */
+/* Модуль-приватное состояние: ответ последнего sync текущего проекта (сбрасывается на каждой загрузке),
+   номер последнего sync (ответ обогнанного запроса не применяется) и таймер отложенного пересчёта. */
 var _last = null;
+var _seq = 0;
+var _refreshTimer = null;
+/* #126 — записи, после которых пункты гаснут или сдвигаются: история (завершение роли, первая запись
+   слота, даты), sprint-data (даты спринта; через него же сохраняются настройки модулей), ёмкость
+   (согласование), релизы (выпуск, отмена, дата). */
+var REFRESH_AFTER = { history: true, 'sprint-data': true, capacity: true, releases: true };
 
 function _btn() { return document.getElementById('remindersBellBtn'); }
+
+/* POST, не GET: YouTrack исполняет GET endpoint в read-only транзакции — сверка журнала из GET не пишется (3.41.0) */
+function _sync(deps, onLoad) {
+  var my = ++_seq, pk = deps.state.getActiveProjectKey();
+  return Promise.resolve().then(function () { return deps.apiPost('reminders', { action: 'sync' }); }).then(function (resp) {
+    if (my !== _seq || pk !== deps.state.getActiveProjectKey()) return;   /* обогнан более поздним sync / проект сменили — ответ чужой */
+    if (!resp || resp.success === false) { deps.diag('reminders: ' + ((resp && resp.error) || 'empty response'), 'warn'); return; }
+    _last = resp;
+    renderBell(deps);
+    if (onLoad) maybeOpenOnLoad(deps);
+  }).catch(function (e) { deps.diag('reminders sync failed: ' + (e && e.message ? e.message : e), 'warn'); });
+}
 
 function load(deps) {
   _last = null;
   renderBell(deps);
   _bindBell(deps);
-  var pk = deps.state.getActiveProjectKey();
-  /* POST, не GET: YouTrack исполняет GET endpoint в read-only транзакции — сверка журнала из GET не пишется (3.41.0) */
-  return Promise.resolve().then(function () { return deps.apiPost('reminders', { action: 'sync' }); }).then(function (resp) {
-    if (pk !== deps.state.getActiveProjectKey()) return;   /* проект сменили, пока шёл GET — ответ чужой */
-    if (!resp || resp.success === false) { deps.diag('reminders: ' + ((resp && resp.error) || 'empty response'), 'warn'); return; }
-    _last = resp;
-    renderBell(deps);
-    maybeOpenOnLoad(deps);
-  }).catch(function (e) { deps.diag('reminders sync failed: ' + (e && e.message ? e.message : e), 'warn'); });
+  return _sync(deps, true);
+}
+
+/* #126 — пересчёт после своей записи: тот же POST sync, модалка при этом не всплывает.
+   Напоминания в этой загрузке не поднимались (проектный режим, сбой sync) — молчим. */
+function refresh(deps) { return _last ? _sync(deps, false) : Promise.resolve(); }
+
+/* Вход из ядра: apiPost отдаёт сюда каждую запись. Успешная запись из REFRESH_AFTER → один refresh
+   через 500 мс (валидация пишет спринт и историю подряд — схлопываем в один запрос). */
+function afterWrite(path, promise, depsFactory) {
+  if (REFRESH_AFTER[path] !== true || !promise || typeof promise.then !== 'function') return;
+  promise.then(function () {
+    clearTimeout(_refreshTimer);
+    _refreshTimer = setTimeout(function () { _refreshTimer = null; refresh(depsFactory()); }, 500);
+  }, function () { /* запись отвергнута — пересчитывать нечего */ });
 }
 
 function _bindBell(deps) {
@@ -121,7 +147,7 @@ function go(item, deps) {
   } catch (e) { deps.diag('reminders go err: ' + e, 'err'); }
 }
 
-var _api = { load: load, renderBell: renderBell, maybeOpenOnLoad: maybeOpenOnLoad, openReminders: openReminders, markShownToday: markShownToday, go: go };
+var _api = { load: load, refresh: refresh, afterWrite: afterWrite, renderBell: renderBell, maybeOpenOnLoad: maybeOpenOnLoad, openReminders: openReminders, markShownToday: markShownToday, go: go };
 
 if (typeof window !== 'undefined') {
   try { window.__SSP_REMINDERS_CTRL = _api; } catch (_) { /* sandboxed write may throw */ }

@@ -2151,6 +2151,14 @@
     /* 68-2 — бар фильтра исключённых над аккордеонами */
     .ssp-planning-toolbar { margin: 6px 0 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }   /* wrap — подпись кнопки обновления длинная: на узких экранах фильтр уходит на свою строку, а не сплющивает кнопку */
     .ssp-planning-filterbar { display: flex; justify-content: flex-end; margin-left: auto; }
+    /* 118-1в / 118-3 — строка фильтров таблиц задач (react/task-filter.jsx): на «Ролях» — своим рядом панели под кнопкой обновления и тумблером, на «Людях» — над таблицей задач */
+    .ssp-task-filter { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+    .ssp-task-filter:empty { display: none; }
+    .ssp-task-filter__tail { display: flex; align-items: center; gap: 14px; margin-left: auto; padding-bottom: 4px; }
+    .ssp-task-filter__count { font-size: 12px; color: var(--ring-secondary-color); white-space: nowrap; }
+    .ssp-task-filter__hidden { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+    .planning-role-filterchip { font-size: 11px; color: var(--ring-secondary-color); border: 1px solid var(--border); border-radius: 8px; padding: 1px 7px; white-space: nowrap; }
+    #currentRoleTaskFilter { margin-bottom: 10px; }
     .planning-role-card {
       border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--surface); overflow: hidden;
@@ -2816,6 +2824,8 @@
       <div id="planningToolbar" class="ssp-planning-toolbar" style="display:none">
         <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
         <div id="planningFilterBar" class="ssp-planning-filterbar"></div>
+        <!-- 118-1в / 118-3 — строка фильтров таблиц задач (остров react/task-filter.jsx монтирует rolecomposition-view) -->
+        <div id="planningTaskFilter" class="ssp-task-filter"></div>
       </div>
       <div id="roleAccordions" class="role-accordions"></div>
     </div>
@@ -2894,6 +2904,8 @@
             <!-- #40 — авто-прогноз дат; скрыта без settings.autoForecastEnabled (синк в renderCurrentRoleTaskTable) -->
             <button class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn hidden" id="currentRoleForecastBtn" data-i18n="btnForecastDates" data-icon="calendar">Спрогнозировать даты</button>
           </div>
+          <!-- 118-1в / 118-3 — строка фильтров таблицы задач (выбор общий с «Аллокацией»; монтирует currentrole-view) -->
+          <div id="currentRoleTaskFilter" class="ssp-task-filter"></div>
           <!-- v2.0.0 D7 — Ring Table host. Native <table> + <thead> + <tbody> removed;
                Ring Table renders its own table structure inside this host. The IIFE
                function renderCurrentRoleTaskTable() mounts via window.__SSP_TABLE.mountAt. -->

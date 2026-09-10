@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.43.0] — 2026-09-10
+
+> **Task table filters, reminders recount without a reload, «Type» among display fields.** A cumulative release: #125, #126 and #118 in full. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged (3.40.0).
+
+### Added
+
+- **Filters for the sprint's task tables:** an **Assignee · State · Role · Priority** row above the “Total resource allocation” tables (the summary and every role's composition) and above the task table of “Assignee distribution” (without Role — the role is chosen by the screen's picker). Multi-select: within a field it is “any of the ticked”, between fields it is “and”. A “Tasks shown: N of M” counter; a “filter: N of M” chip on a role's row — resource, allocation and “Over limit” are still counted over the whole composition; roles left out by the Role filter are hidden entirely with a “Hidden by the Role filter: …” note; an empty table says “No tasks match the selected filters”; “Reset filters”. The lists offer only values present in the sprint's issues, states and priorities in YouTrack's order, the assignee list has search and “Unassigned”. The list stays open while you tick; the “filter: N of M” chip, like “N tasks” on the role's row, counts only tasks with an active inclusion status; a ticked assignee shows by name even when the current screen has none of their tasks. The selection is shared by both screens, lives until the page is reloaded, is stored nowhere, and resets on a project switch.
+- **Sort by “State” in role tables:** the “State” header in a role's composition and in the “Assignee distribution” task table sorts in YouTrack's state order — as the summary table already did.
+
+### Fixed
+
+- **A cleared reminder stayed in the bell's list and counter until the page was reloaded** (#126). After your own write that clears or moves items (finishing a role, validating or saving a distribution, approving capacity, shipping, cancelling or editing a release, saving settings), the planner recounts reminders with the same `POST reminders {action:'sync'}`: the dialog does not pop up, and the journal records the outcome at once. Colleagues' changes still show on the next opening.
+- **“Clear draft” appeared only after the second edit** (#125): the draft stamp is written 800 ms later and the indicator was not refreshed after it. The indicator now refreshes on every stamp write — in the one place all writers go through.
+- **“Type” vanished from the display-fields picker:** every `field*`/`userField*` key counted as “taken”, including type, sprint and version, which are never rendered as columns. Now only fields already shown as columns are excluded: priorities, state, system, external ID, and the roles' estimates, facts and assignees.
+- **Assignees in the cross-role summary could come from another role's distribution** (since 3.17.0): unsaved edits from the “Assignee distribution” screen were laid over the role of the expanded card on “Total resource allocation” instead of the role being distributed. They now follow the role of that screen's record; the new assignee filter reads assignees from the same source.
+
+### Under the hood
+
+- New pure module `pure/task-filter-pure.js` (matching, list options) and React island `react/task-filter.jsx` on Ring Select; the `__SSP_TASK_FILTER_BAR` bridge is classified infra as a react mount. A role's composition for the table, counter and chip comes from one source (`_viewItems`/`_hideExcluded`). The live distribution behind the summary and the filter follows the role of the “Assignee distribution” record (`getCurrentSprintRoleRec` in the role-composition deps, the `_standupPP` pattern); ticked assignees' labels are cached in the island, `tryKeepOpen` keeps the list open.
+- `domain/reminders-controller.js`: `refresh`/`afterWrite` — a write-path filter, 500 ms debounce, a stale response is dropped; the core hands every write from `apiPost` to `afterWrite`.
+- Gates: unit `task-filter.test.js` (matching, options, keys in 15 locales), goldens for the filters on both screens, #125 (the button shows once the stamp is written), #126 (the bell recounts after a write, no dialog), and a classification of every `field*`/`userField*` settings key. Size budgets raised deliberately: core +6, modules +262, jsx +73.
+
+### Known limitations
+
+- Changes made by colleagues reach the bell on the next opening of the planner.
+- An empty filtered table has no reset button of its own — “Reset filters” sits in the filter row above it.
+
 ## [3.42.0] — 2026-09-10
 
 > **Rail toolbar and Ring UI tooltips.** #119. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged.

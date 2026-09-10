@@ -650,3 +650,24 @@ test('golden: renderCurrentRoleTaskTable — #117 oor по календарны�
   assert.strictEqual(warns, 1, 'ровно одна задача вне диапазона (GM-11); последний день спринта — в диапазоне');
   checkJsonSnapshot('people-task-table-oor-117', table);
 });
+
+/* 118-1в / 118-3 — строка фильтров над таблицей задач «Людей»: стаб моста острова (в golden-host
+   вендор-чанка нет). Выбор роли с «Аллокации» здесь не действует — роль выбрана селектором. */
+test('golden: 118-1в — фильтр исполнителя отбирает строки «Людей», выбор роли не мешает', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);
+  const mounts = [];
+  window.__SSP_TASK_FILTER_BAR = {
+    get() { return { assignee: ['gm_user_1'], role: ['analysis'] }; },
+    reset() {},
+    mount(host, props) { mounts.push({ host: host.id, props: props }); return true; },
+  };
+  gm.call('renderCurrentRoleTaskTable');
+  const table = materializeTable(document.getElementById('currentRoleTaskHost'));
+  assert.deepStrictEqual(table.itemKeys, ['GM-10']);
+  const m = mounts[mounts.length - 1];
+  assert.strictEqual(m.host, 'currentRoleTaskFilter');
+  assert.deepStrictEqual(Array.from(m.props.fields, (f) => f.key), ['assignee', 'state', 'priority']);   /* Array.from — массив из vm-контекста хоста */
+  assert.strictEqual(m.props.t.shown, 'Показано задач: 1 из 2');
+});

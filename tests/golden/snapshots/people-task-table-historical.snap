@@ -42,7 +42,7 @@
     {
       "id": "state",
       "title": "Состояние",
-      "sortable": false,
+      "sortable": true,
       "className": "td-state",
       "rightAlign": false,
       "header": null,

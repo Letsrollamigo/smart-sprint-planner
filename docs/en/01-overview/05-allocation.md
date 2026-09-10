@@ -37,6 +37,24 @@ Press it when the team has been working in the tracker rather than in the planne
 
 An issue can sit in the composition with the «excluded» status — taken out but not deleted, so the record of that decision is not lost. The switch takes such rows out of sight.
 
+## Filters
+
+Below the button and the switch sits a filter row: **Assignee**, **State**, **Role**, **Priority**. Each takes several values: within a field it is «any of the ticked», between fields it is «and». The filter applies to the summary table and to every role's composition at once.
+
+![The filter row: three states and two roles ticked; «Tasks shown: 10 of 23», the roles carry «filter: 1 of 7» and «filter: 8 of 9» chips, testing is hidden by the Role filter](../../assets/ov-002b-allocation-filters.en.png)
+
+| Item | What it means |
+|---|---|
+| **Tasks shown: N of M** | how many of the sprint's issues pass the filter |
+| **filter: N of M** on a role's row | the role table shows only part of the composition; resource, allocation, issue count and «Over limit» are still counted over the whole composition |
+| **Hidden by the Role filter: …** | roles left out by the Role filter are hidden entirely |
+| **No tasks match the selected filters** | the table is empty because of the filter, not because the composition is |
+| **Reset filters** | bring everything back |
+
+The lists offer only values present in the sprint's issues; states and priorities follow YouTrack's order. Assignee appears only when the planning model has assignees; «Unassigned» picks issues with no assignee.
+
+The filter changes no data and is stored nowhere: the selection lives until the page is reloaded, is shared with the [Assignee distribution](07-assignees.md) screen, and resets when you switch projects.
+
 ## An expanded role card
 
 Clicking a role's row expands it fully: planning status, resource, remainder and the issue table. Details are in chapter [06](06-role-card.md).

@@ -794,7 +794,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.42.0';
+  var APP_VERSION = '3.43.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1658,7 +1658,11 @@
   function _backendCall(path, baseOpts) { return YT_API._backendCall(path, baseOpts, _ytApiDeps()); }
   function apiGet(path) { return YT_API.apiGet(path, _ytApiDeps()); }
   function apiProbeRev(path) { return YT_API.apiProbeRev(path, _ytApiDeps()); }   /* #114 */
-  function apiPost(path, body, query) { return YT_API.apiPost(path, body, query, _ytApiDeps()); }
+  function apiPost(path, body, query) {
+    var p = YT_API.apiPost(path, body, query, _ytApiDeps());
+    if (REMINDERS_CTRL && REMINDERS_CTRL.afterWrite) REMINDERS_CTRL.afterWrite(path, p, _remindersDeps);   /* #126 — колокольчик после записей, гасящих пункты */
+    return p;
+  }
 
   /* ═══ Инициализация ════════════════════════════════════════ */
   /* v5.0.3 (итерация 5) — timing-логи + retry для YTApp.register().
@@ -2092,6 +2096,7 @@
     _isEditor = false;
     _isAssigner = false;
     RELEASE_STORE.reset(_releaseDeps());   // #48 — сброс релизного среза per-project
+    try { if (window.__SSP_TASK_FILTER_BAR) window.__SSP_TASK_FILTER_BAR.reset(); } catch (_) {}   /* 118-1в — выбор фильтров таблиц задач живёт до смены проекта */
     /* v3.2.1 — хвосты смены проекта (global-режим), раньше переживали switch:
        • field-values кэш по ИМЕНИ поля → дропдауны проекта B наполнялись значениями A;
        • бэклог: пользовательский фильтр/пул/schema-warn чужого проекта;
@@ -2797,6 +2802,7 @@
         setActiveSubtab: function (rk) { _activeSubtab = rk; },
         getActiveSubtab: function () { return _activeSubtab; },      /* 68-1 — live-PP текущей роли */
         getCurrentRolePP: function () { return _currentRolePP; },    /* 68-1 — live-PP текущей роли */
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },   /* 118-1в — чья live-PP: запись «Людей», как _standupPP */
         getIsEditor: function () { return _isEditor; },
         getIsValidator: function () { return _isValidator; },
       },

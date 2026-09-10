@@ -407,6 +407,42 @@ function _revConflictBlocked() {
   catch (_) { return false; }
 }
 
+/* 118-1в / 118-3 — строка фильтров над таблицей задач «Людей» (остров react/task-filter.jsx,
+   выбор общий с «Аллокацией», до перезагрузки): исполнитель, состояние (если колонка есть),
+   приоритет. Роли здесь нет — она выбрана селектором экрана; отбирают только показанные поля. */
+function _taskFilterBar(deps, items, ta, hasState) {
+  var bar = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_BAR) || null;
+  var pure = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_PURE) || null;
+  if (!bar || !pure) return null;
+  var T = deps.T, sel = bar.get(), names = {};
+  function loginOf(it) { var e = ta[it.issueId]; return (e && e.assignee) || ''; }
+  function enumLabel(k) { return k === pure.NONE ? '—' : (deps.dispEnum(k) || k); }
+  items.forEach(function (it) { var e = ta[it.issueId]; if (e && e.assignee) names[e.assignee] = e.assigneeName || e.assignee; });
+  var fields = [{ key: 'assignee', label: T('thAssignee'), search: true,
+    options: pure.options(items.map(loginOf).sort(function (a, b) { return String(names[a] || a).localeCompare(String(names[b] || b)); }),
+      sel.assignee, function (k) { return k === pure.NONE ? T('tfNoAssignee') : (names[k] || k); }) }];
+  if (hasState) fields.push({ key: 'state', label: T('thState'),
+    options: pure.options(deps.multiKeySort(items, 'state', ta).map(function (it) { return it.state; }), sel.state, enumLabel) });
+  fields.push({ key: 'priority', label: T('thPriority'),
+    options: pure.options(deps.multiKeySort(items, 'priority', ta).map(function (it) { return it.priority; }), sel.priority, enumLabel) });
+  var keys = fields.map(function (f) { return f.key; });
+  function pass(it) { return pure.matches(sel, { assignee: loginOf(it), state: it.state, priority: it.priority }, keys); }
+  var active = pure.isActive(sel, keys);
+  return {
+    active: active, pass: pass,
+    props: { fields: fields, onChange: function () { renderCurrentRoleTaskTable(deps); },
+      t: { all: T('tfAll'), reset: T('tfReset'), search: T('tfSearch'),
+        shown: T('tfShown').replace('{n}', active ? items.filter(pass).length : items.length).replace('{m}', items.length) } },
+  };
+}
+
+/* Пустой набор полей прячет строку (.ssp-task-filter:empty) — нет записи или задач роли. */
+function _mountTaskFilter(props) {
+  var bar = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_BAR) || null;
+  var host = document.getElementById('currentRoleTaskFilter');
+  if (bar && host) bar.mount(host, props || { fields: [] });
+}
+
 function _buildTaskTableVm(deps) {
   var T = deps.T, esc = deps.esc, safeUrl = deps.safeUrl, toDateIn = deps.toDateIn, dispEnum = deps.dispEnum;
   var _currentSprintRoleRec = deps.state.getCurrentSprintRoleRec();
@@ -465,6 +501,9 @@ function _buildTaskTableVm(deps) {
   var unfitSet = _forecastUnfitFor(deps.state.getCurrentSprintRoleRec());
   var _dyn = _dynFields(deps, active.map(function (it) { return it.issueId; }),
     (typeof deps.getHost === 'function') ? deps.getHost() : null);
+  /* 118-1в / 118-3 — опции строки фильтров — по всем активным задачам роли, отбор — поверх. */
+  var filterBar = _taskFilterBar(deps, active, ta, hasState);
+  if (filterBar && filterBar.active) active = active.filter(filterBar.pass);
   var rows = active.map(function (item) {
     var taEntry = ta[item.issueId] || {};
     var cells = {};
@@ -545,6 +584,8 @@ function _buildTaskTableVm(deps) {
     hasSystem: hasSystem,
     hasState: hasState,
     showQueue: showQueue,   /* #40 */
+    filterBar: filterBar ? filterBar.props : null,   /* 118-1в / 118-3 */
+    filtered: !!(filterBar && filterBar.active),
   };
 }
 
@@ -567,6 +608,7 @@ function renderCurrentRoleTaskTable(deps) {
      useEffect cleanup). NO manual __SSP_DATEPICKER.unmountAll / mountAllIn
      calls here — that would double-mount or strip stable roots. */
   var vm = _buildTaskTableVm(deps);
+  _mountTaskFilter(vm.filterBar);   /* 118-1в / 118-3 */
 
   if (vm.empty === 'noRec') {
     if (window.__SSP_TABLE) { try { window.__SSP_TABLE.unmountAt(host); } catch (_) {} }
@@ -587,7 +629,7 @@ function renderCurrentRoleTaskTable(deps) {
   /* min-width keeps task titles legible (default Ring cell collapses to text wrap on every word). */
   columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
   if (vm.hasState) {   /* #polish — read-only статус задачи (по настройке fieldState) */
-    columns.push({ id: 'state', title: T('thState'), sortable: false, className: 'td-state', getValue: _vmCell });
+    columns.push({ id: 'state', title: T('thState'), sortable: true, className: 'td-state', getValue: _vmCell });   /* 118-1б — ключ 'state' в SORT_KEYS_CYCLE с 68-1 */
   }
   columns.push({ id: 'priority', title: T('thPriority'), sortable: true, className: 'td-priority', getValue: _vmCell });
   if (vm.hasXPriority) {
@@ -628,7 +670,7 @@ function renderCurrentRoleTaskTable(deps) {
       },
       getItemKey: function (row) { return row.issueId; },
       stickyHeader: true,
-      emptyText: T('currentRoleNoTasks'),
+      emptyText: T(vm.filtered ? 'tfEmpty' : 'currentRoleNoTasks'),
     });
   }
 

@@ -2,7 +2,7 @@
 
 Fourteen reports in two circuits: what each one answers and what it needs from the data.
 
-Planner version **3.42.0**. Screenshots taken on YouTrack **2026.1**.
+Planner version **3.43.0**. Screenshots taken on YouTrack **2026.1**.
 
 ## Who this is for
 

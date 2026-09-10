@@ -58,7 +58,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4628 | — | композиционный корень виджета. |
+| `core.js` | 4634 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -67,15 +67,15 @@
 | `data-loaders.js` | 319 | `__SSP_DATA_LOADERS` | загрузчики данных проекта (Фаза 5 слайс 12, домен E6 — первый выносимый подкластер init/bootstrap). |
 | `reporting-data.js` | 538 | `__SSP_REPORTING_DATA` | #50 S1b. |
 | `youtrack-api.js` | 495 | `__SSP_YOUTRACK_API` | #25 Ф1 — роутинг по режиму. project → backend-project (scope:true). global → backend-global + projectKey. |
-| `allocsummary-view.js` | 247 | `__SSP_ALLOCSUMMARY_VIEW` | #61 — Сводная таблица мультиролевого планирования: read-only спойлер над аккордеонами ролей экрана «Аллокация общего ресурса» (#allocSummaryHost). |
+| `allocsummary-view.js` | 268 | `__SSP_ALLOCSUMMARY_VIEW` | #61 — Сводная таблица мультиролевого планирования: read-only спойлер над аккордеонами ролей экрана «Аллокация общего ресурса» (#allocSummaryHost). |
 | `backlog-assign.js` | 138 | `__SSP_BACKLOG_ASSIGN` | #21 слайс 4 — раскладка задачи из пула бэклога в состав ролей спринта (C1-C2 спеки). |
 | `backlog-loader.js` | 422 | `__SSP_BACKLOG_LOADER` | #21 слайс 2b — async-загрузчик пула бэклога. |
 | `backlog-view.js` | 146 | `__SSP_BACKLOG_VIEW` | #21 слайс 3 — render-делегатор вида «по зонам». |
 | `capacity-store.js` | 60 | `__SSP_CAPACITY_STORE` | доменный стор ёмкости #45 (ADR-001, третье применение после sprint-store/release-store; |
 | `capacity-view.js` | 468 | `__SSP_CAPACITY_VIEW` | #45 R3 вкладка «Управление ёмкостью». |
-| `currentrole-view.js` | 1101 | `__SSP_CURRENTROLE_VIEW` | Current-role tables view — таблицы текущей роли уровня «Люди» («Распределение по исполнителям» + таблица задач) и их calc-хелперы. |
+| `currentrole-view.js` | 1141 | `__SSP_CURRENTROLE_VIEW` | Current-role tables view — таблицы текущей роли уровня «Люди» («Распределение по исполнителям» + таблица задач) и их calc-хелперы. |
 | `dash-shell.js` | 266 | `__SSP_DASH_SHELL` | global-рельс + дерево навигации (#25 Ф2 Этап 3+4+7, Фаза 5 слайс 13, домен E6 — выносимый подкластер init/bootstrap). |
-| `draft-store.js` | 371 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
+| `draft-store.js` | 374 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 329 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
 | `gantt-view.js` | 428 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
 | `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
@@ -93,10 +93,10 @@
 | `release-rollback.js` | 86 | `__SSP_RELEASE_ROLLBACK` | #57-3 откат состояний задач релиза по истории поля State (⚖ владелец: снапшот НЕ храним — история изменений YT и есть снимок). |
 | `release-store.js` | 84 | `__SSP_RELEASE_STORE` | доменный стор релиз-менеджмента (#48, ADR-001). |
 | `release-view.js` | 440 | — | #48 вкладки «Релиз-менеджмент» (планируемые / история релизов). |
-| `reminders-controller.js` | 117 | `__SSP_REMINDERS_CTRL` | #112 «Напоминания»: один POST reminders sync при загрузке проекта в глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчи… |
+| `reminders-controller.js` | 140 | `__SSP_REMINDERS_CTRL` | #112 «Напоминания»: один POST reminders sync при загрузке проекта в глобальном режиме (после URL-синка — «Перейти» гоняет _setDashNode), колокольчи… |
 | `reporting-view.js` | 1439 | `__SSP_REPORTING_VIEW` | #50 S1c/S2. |
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
-| `rolecomposition-view.js` | 1219 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
+| `rolecomposition-view.js` | 1321 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
 | `settings-controller.js` | 228 | `__SSP_SETTINGS_CTRL` | обвязка формы настроек проекта (Фаза 5, зачистка «прочих» — слайс 11). |
 | `share-controller.js` | 178 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
 | `slot-watch.js` | 56 | `__SSP_SLOT_WATCH` | #114 (строка пула #110 «WebSockets / Long Polling») — подсказка «спринт изменён другим». |
@@ -116,7 +116,7 @@
 | `backlog-vm-pure.js` | 262 | `__SSP_BACKLOG_VM_PURE` | #21 слайс 2 — ЧИСТЫЙ VM-builder пула бэклога. |
 | `capacity-pure.js` | 308 | `__SSP_CAPACITY_PURE` | Side-effect модуль: чистое ядро расчёта ёмкости (#45 R2 «ядро ёмкости»). |
 | `date-pure.js` | 77 | `__SSP_DATE_PURE` | Чистые date-хелперы. |
-| `display-fields-pure.js` | 179 | `__SSP_DISPLAY_FIELDS_PURE` | 68-8 «Отображаемые поля»: произвольные поля YouTrack проекта дополнительными колонками трёх таблиц задач. |
+| `display-fields-pure.js` | 183 | `__SSP_DISPLAY_FIELDS_PURE` | 68-8 «Отображаемые поля»: произвольные поля YouTrack проекта дополнительными колонками трёх таблиц задач. |
 | `enum-locale-pure.js` | 23 | `__SSP_ENUM_PURE` | B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority). |
 | `forecast-pure.js` | 123 | `__SSP_FORECAST_PURE` | Side-effect модуль: чистое ядро авто-прогноза дат старта/окончания задач (#40). |
 | `hash-pure.js` | 99 | `__SSP_HASH_PURE` | Чистые hash / equality / diff-утилиты рабочих копий. |
@@ -139,6 +139,7 @@
 | `slot-merge-pure.js` | 143 | `__SSP_SLOT_MERGE_PURE` | #84 «перечитать-и-слить вместо „обновите страницу"». |
 | `sort-pure.js` | 144 | `__SSP_SORT_PURE` | sandboxed write may throw |
 | `sprint-field-pure.js` | 86 | `__SSP_SPRINT_FIELD_PURE` | #88 «ролевое поле спринта». |
+| `task-filter-pure.js` | 69 | `__SSP_TASK_FILTER_PURE` | 118-1в / 118-3: фильтры таблиц задач спринта (исполнитель · состояние · роль · приоритет). |
 | `toast-pure.js` | 45 | `__SSP_TOAST_PURE` | sandboxed write may throw |
 | `util-pure.js` | 61 | — | #69 R1 (строка 26) — ячейка «Внешний ID» (была ×3: состав/люди/история; |
 | `velocity-pure.js` | 67 | `__SSP_VELOCITY_PURE` | #11 Velocity (v3.12.0) — скорость команды по ролям из FINISHED-снимков ssp_history. |
@@ -204,6 +205,7 @@
 | `standup-view.jsx` | 175 | Тир D слайс 1, ступень 2 — React-презентация Stand-up. |
 | `table-mount.jsx` | 220 | Ring Table bridge for Phase D7. |
 | `tabs-mount.jsx` | 74 | Ring Tabs bridge for Phase D6. |
+| `task-filter.jsx` | 73 | 118-1в / 118-3: строка фильтров таблиц задач спринта на Ring Select с множественным выбором (исполнитель · состояние · роль · приоритет). |
 
 ## 3. Бэкенд и workflow
 

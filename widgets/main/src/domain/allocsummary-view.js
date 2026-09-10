@@ -46,6 +46,35 @@ function _roleItemsForDisplay(deps) {
 }
 
 
+/* 68-1 — исполнители: канон = per-role записи истории (buildPPMapFromCanon),
+   live-PP текущей редактируемой роли поверх (несфлашенные правки, паттерн _standupPP).
+   Роль live-PP — по записи экрана «Люди», не по _activeSubtab: его переставляет раскрытие
+   аккордеонов, а PP остаётся от другой роли (118-1в: фильтр по исполнителю терял задачи). */
+function _ppMap(deps) {
+  var sp = deps.state.getSprint(), sid = sp && sp.sprintId;
+  var map = (typeof deps.buildPPMapFromCanon === 'function' && sid) ? deps.buildPPMapFromCanon(sid, deps.state.getHistory()) : {};
+  var rec = deps.state.getCurrentSprintRoleRec && deps.state.getCurrentSprintRoleRec();
+  var pp = deps.state.getCurrentRolePP && deps.state.getCurrentRolePP();
+  var rk = rec && (rec.roleKey || (rec.sprintId && rec.sprintId.indexOf(sid + '_') === 0 ? rec.sprintId.slice(sid.length + 1) : ''));
+  if (rk && pp && rec.sprintId === sid + '_' + rk) map[rk] = pp;
+  return map;
+}
+
+/* 118-1в / 118-3 — строка фильтров над таблицами «Ролей»: строка сводной остаётся, если хоть
+   в одной её роли задача проходит фильтр (роль, исполнитель этой роли, состояние, приоритет) —
+   та же логика, что у счётчика строки фильтров. */
+function _taskFiltered(rows, ppMap) {
+  var bar = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_BAR) || null;
+  var pure = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_PURE) || null;
+  var sel = (bar && pure) ? bar.get() : null;
+  if (!sel || !pure.isActive(sel)) return rows;
+  return rows.filter(function (row) {
+    return (row.inRoles || []).some(function (rk) {
+      return pure.matches(sel, { assignee: pure.assigneeOf(ppMap, rk, row.issueId), state: row.state, priority: row.priority, role: rk });
+    });
+  });
+}
+
 /* Тело спойлера: легенда + Ring Table. Строится на КАЖДОЕ раскрытие/refresh —
    данные всегда свежие, кэшировать нечего (read-only витрина). */
 function _buildBody(inner, deps) {
@@ -68,15 +97,8 @@ function _buildBody(inner, deps) {
   var rows = PURE.markOverlimitRows(
     PURE.buildAllocSummaryRows(_roleItemsForDisplay(deps), keys), overByRk);   /* 68-2 */
 
-  /* 68-1 — исполнители: канон = per-role записи истории (buildPPMapFromCanon),
-     live-PP текущей редактируемой роли поверх (несфлашенные правки, паттерн
-     _standupPP). На строку — уникальные имена всех ролей через запятую (⚖ 2026-08-20). */
-  var _sprintPP = deps.state.getSprint();
-  var ppMap = (typeof deps.buildPPMapFromCanon === 'function' && _sprintPP)
-    ? deps.buildPPMapFromCanon(_sprintPP.sprintId, deps.state.getHistory()) : {};
-  var _curRk = (deps.state.getActiveSubtab && deps.state.getActiveSubtab()) || null;
-  var _curPP = (deps.state.getCurrentRolePP && deps.state.getCurrentRolePP()) || null;
-  if (_curRk && _curPP) ppMap[_curRk] = _curPP;
+  /* 68-1 — исполнители (_ppMap). На строку — уникальные имена всех ролей через запятую (⚖ 2026-08-20). */
+  var ppMap = _ppMap(deps);
   function assigneesOf(row) {
     var names = [], seen = {};
     (row.inRoles || []).forEach(function (rk) {
@@ -93,7 +115,8 @@ function _buildBody(inner, deps) {
     row.assignees = names;
     taMap[row.issueId] = { assignee: names[0] || '' };
   });
-  var sorted = deps.multiKeySort(rows, undefined, taMap);
+  var shown = _taskFiltered(rows, ppMap);   /* 118-1в / 118-3 */
+  var sorted = deps.multiKeySort(shown, undefined, taMap);
 
   var legend = document.createElement('div');
   legend.className = 'ssp-allocsum-legend';
@@ -193,7 +216,7 @@ function _buildBody(inner, deps) {
     getItemKey: function (row) { return row.iid; },
     getItemClassName: function (row) { return row && row.over ? 'ssp-allocsum-row--over' : ''; },
     stickyHeader: true,
-    emptyText: T('compSprintEmpty'),
+    emptyText: T(shown.length < rows.length ? 'tfEmpty' : 'compSprintEmpty'),
   });
 }
 
@@ -221,7 +244,7 @@ function renderAllocSummary(deps) {
   /* Счётчики шапки — по тем же pure-строкам, что и таблица (дёшево: O(n) дедуп). */
   var PURE = (typeof window !== 'undefined' && window.__SSP_ALLOCSUMMARY_PURE) || null;
   var keys = activeRoles.map(function (r) { return r.key; });
-  var rows = PURE ? PURE.buildAllocSummaryRows(_roleItemsForDisplay(deps), keys) : [];   /* 68-2 — счётчик шапки консистентен таблице */
+  var rows = PURE ? _taskFiltered(PURE.buildAllocSummaryRows(_roleItemsForDisplay(deps), keys), _ppMap(deps)) : [];   /* 68-2, 118-1в — счётчик шапки консистентен таблице */
   var overRoles = keys.filter(function (rk) { return deps.computeRoleQuickStats(rk).overlimit; });
 
   var T = deps.T, esc = deps.esc;

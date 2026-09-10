@@ -179,6 +179,7 @@ function renderRoleAccordion(rk, deps) {
     + '<circle cx="13" cy="11.2" r="0.8" fill="#7a5230"/>'
     + '<path d="M11.5 13 Q13 14.3 14.5 13" stroke="#7a5230" stroke-width="0.8" fill="none"/>'
     + '</svg>';
+  var chip = _filterChipText(rk, deps);   /* 118-1в / 118-3 — «фильтр: N из M» */
   var html = ''
     + '<div class="planning-role-card' + (expanded ? ' expanded' : '') + '" data-role-key="' + rk + '">'
     +   '<button class="planning-role-toggle" type="button" data-role-key="' + rk + '">'
@@ -187,6 +188,7 @@ function renderRoleAccordion(rk, deps) {
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatResource')) + ': <span class="planning-role-stat__num">' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat">' + esc(T('planningRoleStatAlloc')) + ': <span class="planning-role-stat__num">' + esc(allocStr) + ' / ' + esc(resStr) + '</span> ' + statSuffix + '</span>'
     +     '<span class="planning-role-stat"><span class="planning-role-stat__num">' + stats.taskCount + '</span> ' + esc(T('planningRoleStatTasks')) + '</span>'
+    +     (chip ? '<span class="planning-role-filterchip">' + esc(chip) + '</span>' : '')   /* 118-1в / 118-3 */
     +     (stats.unestimated ? '<span class="planning-role-unest">' + esc(T('planningRoleStatUnestimated')) + ': ' + stats.unestimated + '</span>' : '')   /* #89.1 */
     +     _driftSpanHtml(drift, deps)   /* #114 */
     +     (stats.overlimit ? '<span class="planning-role-warn">' + esc(T('planningRoleStatOverlimit')) + '</span>' : '')
@@ -246,6 +248,8 @@ function _updateRoleAccordionStats(rk, deps) {
   if (nums[0]) nums[0].textContent = resStr;
   if (nums[1]) nums[1].textContent = allocStr + ' / ' + resStr;
   if (nums[2]) nums[2].textContent = String(stats.taskCount);
+  var chipEl = card.querySelector('.planning-role-filterchip');   /* 118-1в / 118-3 */
+  if (chipEl) chipEl.textContent = _filterChipText(rk, deps);
   var toggle = card.querySelector('.planning-role-toggle');
   var unest = toggle.querySelector('.planning-role-unest');   /* #89.1 */
   if (stats.unestimated) {
@@ -323,6 +327,111 @@ function _renderExcludedFilter(deps) {
   bar.style.display = mounted ? '' : 'none';
 }
 
+/* 118-1в / 118-3 — фильтры таблиц задач спринта: строка над таблицами (остров
+   react/task-filter.jsx, мост __SSP_TASK_FILTER_BAR — выбор общий с «Людьми», до
+   перезагрузки), отбор — pure/task-filter-pure.js. Здесь — факты строк состава и опции.
+   Строку роли отбирают исполнитель этой роли, состояние и приоритет; роль отбирается
+   аккордеоном целиком (renderPlanningRoles). */
+var _TF_ROW = ['assignee', 'state', 'priority'];
+
+function _tf() {
+  var bar = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_BAR) || null;
+  var pure = (typeof window !== 'undefined' && window.__SSP_TASK_FILTER_PURE) || null;
+  return (bar && pure) ? { bar: bar, pure: pure, sel: bar.get() } : null;
+}
+
+/* Исполнители ролей: канон per-role записей истории + live-PP редактируемой роли поверх —
+   тот же источник, что у колонки исполнителей сводной (68-1). Роль live-PP — по записи экрана
+   «Люди» (паттерн _standupPP), не по _activeSubtab: его переставляет раскрытие аккордеонов,
+   а PP остаётся от другой роли — и фильтр по исполнителю терял его задачи. */
+function _ppMap(deps) {
+  var sid = deps.state.getCurrentSprintId();
+  var map = (typeof deps.buildPPMapFromCanon === 'function' && sid) ? deps.buildPPMapFromCanon(sid, deps.state.getHistory()) : {};
+  var rec = deps.state.getCurrentSprintRoleRec && deps.state.getCurrentSprintRoleRec();
+  var pp = deps.state.getCurrentRolePP && deps.state.getCurrentRolePP();
+  var rk = rec && (rec.roleKey || (rec.sprintId && rec.sprintId.indexOf(sid + '_') === 0 ? rec.sprintId.slice(sid.length + 1) : ''));
+  if (rk && pp && rec.sprintId === sid + '_' + rk) map[rk] = pp;
+  return map;
+}
+
+function _facts(tf, it, rk, pp) {
+  return { assignee: tf.pure.assigneeOf(pp, rk, it.issueId), state: it.state, priority: it.priority, role: rk };
+}
+
+/* Состав роли, как его показывает таблица: снапшот истории в «историческом виде» (выбран не
+   активный _sprint, без рабочей копии), иначе live _roleItems. .slice() — чтобы сортировка
+   (multiKeySort) не мутировала persisted _history. */
+function _viewItems(rk, deps) {
+  var sid = deps.state.getCurrentSprintId(), sp = deps.state.getSprint();
+  if (sid && sp && sid !== sp.sprintId) {
+    var hist = deps.state.getHistory();
+    var snap = (Array.isArray(hist) ? hist : []).find(function (h) { return h && h.sprintId === sid + '_' + rk; });
+    return (snap && Array.isArray(snap.items)) ? snap.items.slice() : [];
+  }
+  return deps.getRoleItemsArr(rk);
+}
+
+/* 68-2 — маска исключённых по тумблеру. */
+function _hideExcluded(items, deps) {
+  return isExcludedHidden() ? items.filter(function (it) { return it && it.inclusionStatus !== deps.INC.EXCLUDED; }) : items;
+}
+
+/* Чип «фильтр: N из M» в шапке роли: счётчики шапки по-прежнему по всему составу, чип
+   говорит, что таблица неполная. Считает то же, что «N задач» шапки, — только активные
+   (канон #65), иначе рядом стояли бы «27 задач» и «фильтр: 9 из 34». Пусто, когда строки
+   роли фильтр не отбирает. */
+function _filterChipText(rk, deps) {
+  var tf = _tf();
+  if (!tf || !tf.pure.isActive(tf.sel, _TF_ROW)) return '';
+  var pp = _ppMap(deps), items = _viewItems(rk, deps).filter(function (it) { return it && deps.ACTIVE_INC.indexOf(it.inclusionStatus) >= 0; });
+  var n = items.filter(function (it) { return it && tf.pure.matches(tf.sel, _facts(tf, it, rk, pp), _TF_ROW); }).length;
+  return deps.T('tfChip').replace('{n}', n).replace('{m}', items.length);
+}
+
+/* Строка фильтров экрана «Роли»: опции — по видимым задачам активных ролей, счётчик — задачи,
+   у которых хоть одна роль проходит фильтр (та же логика, что у строк сводной). Возвращает
+   выбор: renderPlanningRoles прячет аккордеоны ролей, снятых фильтром «Роль». */
+function _renderTaskFilter(deps, activeRoles) {
+  var tf = _tf(), host = document.getElementById('planningTaskFilter');
+  if (!tf || !host) return null;
+  var T = deps.T, pp = _ppMap(deps), all = [], logins = [], names = {}, total = {}, shown = {};
+  activeRoles.forEach(function (role) {
+    _hideExcluded(_viewItems(role.key, deps), deps).forEach(function (it) {
+      if (!it || !it.issueId) return;
+      var f = _facts(tf, it, role.key, pp);
+      var ta = pp[role.key] && pp[role.key].taskAssignments && pp[role.key].taskAssignments[it.issueId];
+      if (ta && ta.assignee) names[ta.assignee] = ta.assigneeName || ta.assignee;
+      all.push(it); logins.push(f.assignee);
+      total[it.issueId] = true;
+      if (tf.pure.matches(tf.sel, f)) shown[it.issueId] = true;
+    });
+  });
+  function enumLabel(k) { return k === tf.pure.NONE ? '—' : (deps.dispEnum(k) || k); }
+  function roleName(k) { var r = deps.ALL_ROLES.find(function (x) { return x.key === k; }); return r ? deps.roleLabel(r) : k; }
+  var fields = [];
+  if ((deps.state.getSettings() || {}).personalPlanningEnabled) {   /* в простой модели исполнителей нет */
+    fields.push({ key: 'assignee', label: T('thAssignee'), search: true,
+      options: tf.pure.options(logins.sort(function (a, b) { return String(names[a] || a).localeCompare(String(names[b] || b)); }),
+        tf.sel.assignee, function (k) { return k === tf.pure.NONE ? T('tfNoAssignee') : (names[k] || k); }) });
+  }
+  fields.push({ key: 'state', label: T('thState'),
+    options: tf.pure.options(deps.multiKeySort(all, 'state').map(function (it) { return it.state; }), tf.sel.state, enumLabel) });
+  fields.push({ key: 'role', label: T('tfRole'),
+    options: tf.pure.options(activeRoles.map(function (r) { return r.key; }), tf.sel.role, roleName) });
+  fields.push({ key: 'priority', label: T('thPriority'),
+    options: tf.pure.options(deps.multiKeySort(all, 'priority').map(function (it) { return it.priority; }), tf.sel.priority, enumLabel) });
+  tf.bar.mount(host, {
+    fields: fields,
+    t: { all: T('tfAll'), reset: T('tfReset'), search: T('tfSearch'),
+         shown: T('tfShown').replace('{n}', Object.keys(shown).length).replace('{m}', Object.keys(total).length) },
+    onChange: function () {
+      renderPlanningRoles(deps);
+      if (typeof deps.renderAllocSummary === 'function') { try { deps.renderAllocSummary(); } catch (_) {} }
+    },
+  });
+  return tf.sel;
+}
+
 /* #69 R1 (строка 1) — одна кнопка «Обновить из задач» над аккордеонами вместо per-role копий
    (любая из них обновляла ВЕСЬ спринт — ложный per-role смысл и конфликт-модалки чужих ролей).
    На «Людях» и Ганте — свои кнопки (другие экраны). Бинд идемпотентен (статическая кнопка). */
@@ -368,7 +477,13 @@ function renderPlanningRoles(deps) {
   if (filterBar) filterBar.style.display = '';
   _bindPlanningRefreshBtn(deps);   /* #69 R1 (строка 1) */
   _renderExcludedFilter(deps);   /* 68-2 */
-  var html = activeRoles.map(function(role){ return renderRoleAccordion(role.key, deps); }).join('');
+  var selRoles = (_renderTaskFilter(deps, activeRoles) || {}).role || [];   /* 118-1в / 118-3 */
+  var shownRoles = selRoles.length ? activeRoles.filter(function(r){ return selRoles.indexOf(r.key) >= 0; }) : activeRoles;
+  var html = shownRoles.map(function(role){ return renderRoleAccordion(role.key, deps); }).join('');
+  if (shownRoles.length < activeRoles.length) {
+    html += '<p class="ssp-task-filter__hidden">' + deps.esc(deps.T('tfHiddenRoles').replace('{roles}', activeRoles
+      .filter(function(r){ return shownRoles.indexOf(r) < 0; }).map(function(r){ return deps.roleLabel(r); }).join(', '))) + '</p>';
+  }
   container.innerHTML = html;
   _bindAccordionHandlers(deps);
 }
@@ -770,25 +885,19 @@ function _buildRoleCompositionVm(rk, deps) {
      состав читаем из снапшота истории (read-only display), а не из _roleItems активного
      спринта. Иначе шапка показывала счёт снапшота (computeRoleQuickStats), а таблица —
      пустой _roleItems → «Состав спринта пуст». Архитектура не меняется: редактирование
-     не-активного спринта по-прежнему только через рабочую копию (read-only снимается там).
-     .slice() — чтобы сортировка (multiKeySort) не мутировала persisted _history. */
+     не-активного спринта по-прежнему только через рабочую копию (read-only снимается там). */
   var isHistoricalView = _currentSprintId && _sprint && _currentSprintId !== _sprint.sprintId;
-  var items;
-  if (isHistoricalView) {
-    var _history = deps.state.getHistory();
-    var _hsnap = (Array.isArray(_history) ? _history : []).find(function(h){
-      return h && h.sprintId === _currentSprintId + '_' + rk;
-    });
-    items = (_hsnap && Array.isArray(_hsnap.items)) ? _hsnap.items.slice() : [];
-  } else {
-    items = deps.getRoleItemsArr(rk);
-  }
+  var items = _viewItems(rk, deps);
   if (!items.length) return { empty: true, itemCount: 0 };
 
   /* 68-2 — display-фильтр исключённых (после empty-чека: истинно пустой состав
      сохраняет CTA-empty-state, отфильтрованный в ноль — таблицу с emptyText). */
-  if (isExcludedHidden()) {
-    items = items.filter(function(it){ return it && it.inclusionStatus !== deps.INC.EXCLUDED; });
+  items = _hideExcluded(items, deps);
+  /* 118-1в / 118-3 — строка фильтров: тот же отбор, что у чипа и счётчика; в ноль — emptyText фильтра. */
+  var tf = _tf(), filtered = !!(tf && tf.pure.isActive(tf.sel, _TF_ROW));
+  if (filtered) {
+    var tfPP = _ppMap(deps);
+    items = items.filter(function(it){ return it && tf.pure.matches(tf.sel, _facts(tf, it, rk, tfPP), _TF_ROW); });
   }
 
   /* Номер страницы держим на стабильном _roleItems[rk] (getRoleItemsArr), а НЕ на items:
@@ -913,6 +1022,7 @@ function _buildRoleCompositionVm(rk, deps) {
   return {
     empty: false,
     itemCount: items.length,
+    filtered: filtered,   /* 118-1в / 118-3 — пусто из-за фильтра, а не «состав пуст» */
     pageNum: pageNum,
     total: total,
     dynEdit: dynEdit,
@@ -982,7 +1092,7 @@ function renderRoleComposition(rk, deps) {
   if (vm.hasXPriority) {
     columns.push({ id: 'xpriority', title: T('thXpriority'), sortable: true, getValue: _vmCell });
   }
-  columns.push({ id: 'state', title: T('thState'), sortable: false, getValue: _vmCell });
+  columns.push({ id: 'state', title: T('thState'), sortable: true, getValue: _vmCell });   /* 118-1б — ключ 'state' в SORT_KEYS_CYCLE с 68-1 */
   columns.push({ id: 'title', title: T('thTitle'), sortable: false, className: 'td-title ssp-col-title', getValue: _vmCell });
   if (vm.dynEdit) {
     columns.push({ id: 'estimate', title: T('thEstimate'), sortable: false, className: 'td-num', getValue: _vmCell });
@@ -1012,7 +1122,7 @@ function renderRoleComposition(rk, deps) {
       },
       getItemKey: function(row) { return row.iid; },
       stickyHeader: true,
-      emptyText: T('compSprintEmpty'),
+      emptyText: T(vm.filtered ? 'tfEmpty' : 'compSprintEmpty'),
     });
   }
 

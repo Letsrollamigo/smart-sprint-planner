@@ -228,6 +228,24 @@ test('golden: B23 — клик «Сбросить черновик» при чи
   assert.strictEqual(clearCalls.length, 1, 'клик при чистом драфте → backend action=clear (а не in-memory clearDraftStorage)');
 });
 
+test('golden: #125 — «Очистить черновик» появляется, как только debounce записал meta (без второй правки)', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  const sched = stubScheduler(window);
+  stubApi(gm, {});
+  gm.set({ _draft: { meta: null, ui: null, sprint: null, roleItems: null, currentRole: null, dirty: null } });
+  const btn = document.getElementById('clearDraftBtn');
+  gm.call('_markDirty', 'sprint');
+  gm.call('_draftSaveDebounced', 'sprint', function () { return { name: 'S1' }; });
+  assert.ok(btn.classList.contains('hidden'), 'до meta кнопки нет: на бэке ещё нечего чистить');
+  const debounce = sched.timers.find(function (t) { return t.delay === 800; });
+  assert.ok(debounce, 'debounce 800 мс взведён');
+  sched.timers.splice(sched.timers.indexOf(debounce), 1);
+  debounce.fn();
+  assert.ok(gm.call('_draftGet', 'meta'), 'debounce записал meta');
+  assert.ok(!btn.classList.contains('hidden'), 'кнопка видна сразу после записи meta — без второй правки');
+});
+
 test('golden: draft — saveDebounced: per-suffix таймеры, переарм, meta при выстреле, гард restore', () => {
   const { gm, window } = createHost();
   const sched = stubScheduler(window);

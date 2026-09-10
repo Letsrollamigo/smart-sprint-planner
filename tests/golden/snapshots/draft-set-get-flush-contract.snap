@@ -51,6 +51,10 @@
       "level": "ok"
     },
     {
+      "msg": "refreshDirtyIndicator: any=false meta=yes(1) badge=yes btn=yes",
+      "level": "info"
+    },
+    {
       "msg": "draft FLUSH → backend (size=167B)",
       "level": "info"
     }

@@ -32,6 +32,9 @@ function draftSet(suffix, value, deps) {
   _draft[suffix] = value;
   deps.diag('draft SET '+suffix+' (in-memory)', 'ok');
   draftScheduleFlush(deps);
+  /* #125 — кнопка «Очистить черновик» видна по meta, а meta пишут семь мест (debounce 800 мс
+     среди них) без перевызова индикатора: кнопка появлялась только со второй правки. */
+  if (suffix === 'meta' && typeof deps.refreshDirtyIndicator === 'function') deps.refreshDirtyIndicator();
 }
 function draftGet(suffix, deps) {
   var _draft = deps.state.getDraft();

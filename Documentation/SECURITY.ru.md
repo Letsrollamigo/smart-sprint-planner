@@ -2,9 +2,11 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.42.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.43.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
+>
+> **v3.43.0 — #126: после своих записей (история, спринт, ёмкость, релизы) виджет повторяет `POST reminders { action:'sync' }` — тот же эндпоинт под теми же правами (`viewer`), новых поверхностей и ключей нет; фильтры таблиц задач — только клиент, ничего не хранится.**
 >
 > **v3.41.0 — #112: сверка журнала переехала из `GET reminders` в `POST reminders { action:'sync' }` — YouTrack исполняет GET extension-endpoint в read-only транзакции (`ReadonlyTransactionException` на `setProp`), в 3.40.0 журнал не писался. `GET reminders` — чистое чтение с тем же ответом. Права те же (`viewer`), тело — только `action`, журнал по-прежнему пишет сервер по состоянию сущностей.**
 >

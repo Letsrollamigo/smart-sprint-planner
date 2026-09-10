@@ -38,7 +38,7 @@
     {
       "id": "state",
       "title": "Состояние",
-      "sortable": false,
+      "sortable": true,
       "className": null,
       "rightAlign": false,
       "header": null,

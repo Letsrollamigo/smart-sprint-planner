@@ -65,7 +65,7 @@ const PROJECT_FIELDS = [
   { name: 'Срок', type: 'date' },
 ];
 
-test('пикер исключает поля, занятые ключами field*/userField*', () => {
+test('пикер исключает поля, уже выведенные колонками (приоритет, исполнитель роли)', () => {
   const settings = { fieldPriority: 'Приоритет', userFieldAnalysis: 'Заказчик', fieldState: '' };
   const names = DF.pickerOptions(PROJECT_FIELDS, [], settings).map((o) => o.name);
   assert.deepStrictEqual(names, ['Оценка анализа', 'Срок']);
@@ -81,9 +81,31 @@ test('пикер берёт ЛЮБОЙ тип поля — date/string/period н
   assert.deepStrictEqual(types, ['period', 'enum[1]', 'string', 'date']);
 });
 
-test('occupiedNames игнорирует не-field-ключи и пустые значения', () => {
-  assert.deepStrictEqual(DF.occupiedNames({ fieldA: 'X', userFieldB: '', standupDoneStates: ['Y'], zzz: 'W' }),
+test('occupiedNames игнорирует не-колоночные ключи и пустые значения', () => {
+  assert.deepStrictEqual(DF.occupiedNames({ fieldState: 'X', userFieldAnalysis: '', standupDoneStates: ['Y'], zzz: 'W' }),
     { X: true });
+});
+
+test('#118-2: тип, спринт, версия и ролевые поля спринта пикер НЕ занимают — колонками они не выводятся', () => {
+  const settings = { fieldType: 'Тип', fieldSprint: 'Спринт', fieldVersion: 'Версия',
+    fieldSprintAnalysis: 'Спринт анализа', fieldSprintDevBack: 'Спринт бэка' };
+  assert.deepStrictEqual(DF.occupiedNames(settings), {});
+  const fields = [{ name: 'Тип', type: 'enum[1]' }, { name: 'Спринт', type: 'enum[*]' },
+    { name: 'Версия', type: 'version[*]' }, { name: 'Спринт анализа', type: 'enum[1]' }];
+  assert.deepStrictEqual(DF.pickerOptions(fields, [], settings).map((o) => o.name),
+    ['Тип', 'Спринт', 'Версия', 'Спринт анализа']);
+});
+
+test('#118-2: каждый ключ field…/userField… из whitelist настроек классифицирован — колонка или нет', () => {
+  /* Новый ключ настроек обязан попасть либо в белый список колонок occupiedNames, либо сюда. */
+  const NOT_COLUMNS = /^field(Type|Version|Sprint[A-Za-z]*)$/;
+  const keys = ALLOWED_SETTINGS_KEYS.filter((k) => /^(field|userField)/.test(k));
+  assert.ok(keys.length > 20, 'ключей field…/userField… в whitelist ожидаются десятки, найдено ' + keys.length);
+  for (const k of keys) {
+    const occupied = Object.keys(DF.occupiedNames({ [k]: 'X' })).length === 1;
+    assert.strictEqual(occupied, !NOT_COLUMNS.test(k),
+      k + (occupied ? ' занимает поле, хотя колонкой не выводится' : ' не занимает поле, хотя выводится колонкой'));
+  }
 });
 
 /* ── форматтеры значений (спека §3) ──────────────────────────────────────── */

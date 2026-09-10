@@ -147,3 +147,40 @@ test('golden: modal-spec-reminders — спек + штамп/повтор/кол
     journal: { calls: STUB.calls, loaded: loaded, removed: removed, denied: denied, failed: failed, toasts: STUB.toasts },
   });
 });
+
+/* #126 — настоящий apiPost ядра поверх стаба сетевого слоя: хук записи → afterWrite → sync. */
+test('golden: #126 — своя запись, гасящая пункт, пересчитывает колокольчик без перезагрузки и без модалки', async () => {
+  const host = createHost();
+  fx.applyBaseState(host.gm);
+  const { gm, modalLog } = host;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let resp = RESP3;
+  const posts = [];
+  gm.set({ _mode: 'global', _activeProjectKey: 'GM', _projectDisplayName: 'GM Clone', _lang: 'ru',
+    YT_API: {
+      apiGet: function () { return Promise.resolve({}); },
+      apiPost: function (p) { posts.push(p); return Promise.resolve(p === 'reminders' ? resp : { success: true }); },
+    } });
+  gm.call('loadReminders');
+  await settle();
+  assert.strictEqual(bellSnap(host).badgeText, '3');
+  /* режим «always»: ошибочный вызов модалки при загрузке из пересчёта был бы виден */
+  gm.set({ _settings: Object.assign({}, gm.get('_settings'), { remindersModalMode: 'always' }) });
+  const opened = modalLog.length;
+
+  resp = Object.assign({}, RESP3, { count: 2, items: RESP3.items.slice(1) });   /* роль завершена — пункт спринта погас */
+  await gm.call('apiPost', 'sprint-data', {});
+  await gm.call('apiPost', 'history', { history: [] });
+  await wait(650);
+  assert.strictEqual(posts.filter((p) => p === 'reminders').length, 2, 'загрузка + ОДИН пересчёт на две записи подряд');
+  assert.deepStrictEqual(bellSnap(host), { hidden: false, badgeHidden: false, badgeText: '2', title: bellSnap(host).title });
+  assert.strictEqual(modalLog.length, opened, 'пересчёт модалку не открывает');
+
+  /* запись вне списка (черновик) и отвергнутая запись колокольчик не трогают */
+  await gm.call('apiPost', 'draft', {});
+  gm.set({ YT_API: { apiGet: function () { return Promise.resolve({}); },
+    apiPost: function (p) { posts.push(p); return p === 'reminders' ? Promise.resolve(resp) : Promise.reject(new Error('rev_conflict [cid]')); } } });
+  await gm.call('apiPost', 'history', {}).catch(() => {});
+  await wait(650);
+  assert.strictEqual(posts.filter((p) => p === 'reminders').length, 2, 'ни черновик, ни отказ записи sync не зовут');
+});

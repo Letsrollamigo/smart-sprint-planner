@@ -16,6 +16,8 @@
 
 A reminder goes out **by state only**: finish the role, approve the capacity, ship or cancel the release, move the date — and the item disappears on its own. There is no «done» button: the cross, Esc and «Close» merely hide the dialog until tomorrow.
 
+When you clear an item yourself in this same planner, the bell recounts right after the save, without reloading the page (since 3.43.0). What colleagues do shows up the next time the planner is opened.
+
 ## Steps
 
 1. Turn on **«Reminders in the planner are enabled»** — the master switch.

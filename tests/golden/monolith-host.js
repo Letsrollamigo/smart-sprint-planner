@@ -56,6 +56,7 @@ const BRIDGE_SCRIPTS = [
   'diag-snapshot.js',   /* #63 п.4 — экспорт-слепок состояния */
   'user-prefs.js',      /* #69 строка 21 — localStorage ⊃ серверное зеркало предпочтений */
   'display-fields-pure.js',   /* 68-8 — набор отображаемых полей + форматтеры значений */
+  'task-filter-pure.js',      /* 118-1в / 118-3 — отбор и опции фильтров таблиц задач */
   'fieldvalues-loader.js',    /* 68-8 — эфемерная подгрузка значений (мост нужен вью для колонок) */
   'excel-export.js',
   'revalidation.js',

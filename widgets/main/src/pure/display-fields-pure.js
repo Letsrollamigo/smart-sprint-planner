@@ -65,15 +65,20 @@ function fingerprint(rows) {
   return fieldNames(rows).join(' ');
 }
 
-/* Поля, занятые другими настройками: значения ключей field.../userField... (оценки,
-   факты, исполнители ролей, приоритет, состояние, система, спринт, версия, тип,
-   внешний ID). Источник — ТЕКУЩЕЕ состояние формы, не initial: в той же сессии
-   пользователь мог переназначить поле роли, и пикер иначе разрешит взять занятое имя. */
+/* Поля, которые уже выводятся колонками по другим настройкам: приоритет, сквозной
+   приоритет, состояние, система, внешний ID, оценка/факт/исполнитель ролей.
+   Белый список ключей-колонок, а не префикс field.../userField... (#118-2): тип,
+   спринт, версия и ролевые поля спринта колонками не выводятся — префикс выкидывал
+   их из пикера, и «Тип» нельзя было взять отображаемым полем. Источник — ТЕКУЩЕЕ
+   состояние формы, не initial: в той же сессии пользователь мог переназначить поле
+   роли, и пикер иначе разрешит взять занятое имя. */
+var _COLUMN_KEY_RE = /^(fieldPriority|fieldXPriority|fieldState|fieldSystem|fieldExternalTicketId|fieldFact[A-Za-z]+|userField[A-Za-z]+|field(Analysis|Testing|Dev[A-Za-z]+))$/;
+
 function occupiedNames(settings) {
   var out = {};
   if (!settings || typeof settings !== 'object') return out;
   Object.keys(settings).forEach(function (k) {
-    if (!/^(field|userField)/.test(k)) return;
+    if (!_COLUMN_KEY_RE.test(k)) return;
     var v = settings[k];
     if (typeof v === 'string' && v) out[v] = true;
   });

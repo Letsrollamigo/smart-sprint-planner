@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.42.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.43.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.43.0 — #126: after its own writes (history, sprint, capacity, releases) the widget repeats `POST reminders { action:'sync' }` — the same endpoint under the same rights (`viewer`), no new surface or keys; the task-table filters are client-only and store nothing.**
 >
 > **v3.41.0 — #112: the journal reconcile moved from `GET reminders` to `POST reminders { action:'sync' }` — YouTrack runs GET extension endpoints in a read-only transaction (`ReadonlyTransactionException` on `setProp`), so in 3.40.0 the journal was never written. `GET reminders` is now a pure read with the same response. Same rights (`viewer`), the body carries only `action`, the journal is still written by the server from entity state.**
 >

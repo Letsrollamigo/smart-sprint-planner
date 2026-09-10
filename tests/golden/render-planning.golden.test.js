@@ -709,3 +709,78 @@ test('golden: #114 — дрейф состава роли: индикатор а
   out.panelHiddenAfterRestore = document.getElementById('drift_analysis').classList.contains('hidden');
   checkJsonSnapshot('scope-drift-114', out);
 });
+
+/* 118-1в / 118-3 — строка фильтров таблиц задач. Остров react/task-filter.jsx в golden-host не
+   грузится (нет вендор-чанка), поэтому его мост подменяется записывающим стабом с заданным выбором. */
+function stubTaskFilter(window, sel) {
+  const bar = {
+    sel: sel, mounts: [],
+    get() { return JSON.parse(JSON.stringify(this.sel)); },
+    reset() { this.sel = {}; },
+    mount(host, props) { this.mounts.push({ host: host.id, props: props }); return true; },
+  };
+  window.__SSP_TASK_FILTER_BAR = bar;
+  return bar;
+}
+
+test('golden: 118-1в — фильтр состояния отбирает строки состава роли; в ноль — emptyText фильтра', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  const bar = stubTaskFilter(window, { state: ['Open'] });
+  const host = ensureCompHost(document, 'analysis');
+  gm.call('renderRoleComposition', 'analysis');
+  assert.deepStrictEqual(materializeTable(host).itemKeys, ['GM-1', 'GM-4'], 'остались задачи в состоянии Open');
+  bar.sel = { state: ['Closed'] };
+  gm.call('renderRoleComposition', 'analysis');
+  const empty = materializeTable(host);
+  assert.deepStrictEqual(empty.itemKeys, []);
+  assert.strictEqual(empty.emptyText, 'Нет задач под выбранные фильтры', 'пусто из-за фильтра, а не «состав пуст»');
+});
+
+test('golden: 118-3 — строка фильтров «Ролей»: поля, опции, счётчик; «Роль» прячет аккордеоны, чип в шапке', () => {
+  const { gm, document, window } = createHost();
+  fx.applyBaseState(gm);
+  /* исполнители — канон истории + live-PP редактируемой роли: в базовом стейте их даёт только live-PP devBack */
+  fx.applyPeopleState(gm);
+  gm.set({ _activeSubtab: 'devBack' });
+  const bar = stubTaskFilter(window, { role: ['analysis', 'devBack'], state: ['Open'] });
+  gm.call('renderPlanningRoles');
+  const m = bar.mounts[bar.mounts.length - 1];
+  assert.strictEqual(m.host, 'planningTaskFilter');
+  /* Array.from — массивы из vm-контекста хоста с другим прототипом, deepStrictEqual их не сравнит */
+  assert.deepStrictEqual(Array.from(m.props.fields, (f) => f.key), ['assignee', 'state', 'role', 'priority']);
+  const opts = {};
+  m.props.fields.forEach((f) => { opts[f.key] = Array.from(f.options, (o) => o.key); });
+  assert.deepStrictEqual(opts.role, ['analysis', 'testing', 'devBack', 'devFront']);
+  assert.deepStrictEqual(opts.assignee, ['__none', 'gm_user_1', 'gm_user_2'], '«Не назначен» первым');
+  assert.deepStrictEqual(opts.state.slice().sort(), ['Fixed', 'In Progress', 'Open']);
+  /* роль ∈ {analysis, devBack} и Open: GM-1, GM-4 (analysis) + GM-11 (devBack) из 9 задач спринта */
+  assert.strictEqual(m.props.t.shown, 'Показано задач: 3 из 9');
+  const cards = Array.from(document.querySelectorAll('#roleAccordions .planning-role-card')).map((c) => c.dataset.roleKey);
+  assert.deepStrictEqual(cards, ['analysis', 'devBack']);
+  const roles = gm.get('ALL_ROLES');
+  const label = (rk) => gm.call('roleLabel', roles.find((r) => r.key === rk));
+  assert.strictEqual(document.querySelector('#roleAccordions .ssp-task-filter__hidden').textContent,
+    'Скрыто фильтром «Роль»: ' + label('testing') + ', ' + label('devFront'));
+  const chip = (rk) => document.querySelector('.planning-role-card[data-role-key="' + rk + '"] .planning-role-filterchip').textContent;
+  /* чип считает то же, что «N задач» шапки — только активные: GM-4 (Open, исключена) не в счёт */
+  assert.strictEqual(chip('analysis'), 'фильтр: 1 из 3');
+  assert.strictEqual(document.querySelectorAll('.planning-role-card[data-role-key="analysis"] .planning-role-stat__num')[2].textContent, '3',
+    'знаменатель чипа = число задач в шапке роли');
+  assert.strictEqual(chip('devBack'), 'фильтр: 1 из 2');
+});
+/* 118-1в — live-PP кладётся под роль записи «Людей», а не под _activeSubtab: раскрытие аккордеона
+   переставляет _activeSubtab, PP остаётся от роли «Людей» — раньше фильтр по исполнителю её задачи терял. */
+test('golden: 118-1в — фильтр по исполнителю берёт live-PP роли «Людей», даже когда _activeSubtab другой', () => {
+  const { gm, window } = createHost();
+  fx.applyBaseState(gm);
+  fx.applyPeopleState(gm);                  /* запись и live-PP «Людей» — devBack */
+  gm.set({ _activeSubtab: 'analysis' });    /* как после раскрытия аккордеона «Анализ» */
+  const bar = stubTaskFilter(window, { assignee: ['gm_user_1'] });
+  gm.call('renderPlanningRoles');
+  const m = bar.mounts[bar.mounts.length - 1];
+  assert.strictEqual(m.props.t.shown, 'Показано задач: 1 из 9', 'GM-10 исполнителя gm_user_1 — в devBack');
+  const opts = {};
+  m.props.fields.forEach((f) => { opts[f.key] = Array.from(f.options, (o) => o.key); });
+  assert.deepStrictEqual(opts.assignee, ['__none', 'gm_user_1', 'gm_user_2']);
+});

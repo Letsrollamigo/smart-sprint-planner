@@ -51,6 +51,8 @@ The lower table holds the role's issues, one row each.
 
 Dates are picked from a calendar — the same dates the [Gantt chart](09-gantt.md) draws later.
 
+Above the table sits the same filter row as on the [Total resource allocation](05-allocation.md) screen, minus the Role field: the role is already chosen by the picker at the top. The selection is shared by both screens; the assignees' resource table is not affected. Clicking the «State» header sorts the issues in YouTrack's state order.
+
 ## How a person's remainder is worked out
 
 **A person's remainder = their resource − the sum of allocations of issues where they are the assignee.** So assigning an issue changes two numbers at once: the person's remainder and the role's overall remainder.

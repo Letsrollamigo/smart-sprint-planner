@@ -28,6 +28,7 @@ import './pure/planning-model-pure.js';
 import './pure/permissions-matrix-pure.js';
 import './pure/link-roles-pure.js';
 import './pure/display-fields-pure.js';   /* 68-8 — набор отображаемых полей + форматтеры значений */
+import './pure/task-filter-pure.js';   /* 118-1в / 118-3 — фильтры таблиц задач спринта: отбор и опции списков */
 import './pure/backlog-vm-pure.js';
 import './pure/capacity-pure.js';
 import './pure/forecast-pure.js';
@@ -92,6 +93,7 @@ import './domain/release-controller.js';
 import './domain/release-rollback.js';
 import './react/sprint-lock-toggle.jsx';   /* #57-2 — тумблер блокировки создания спринтов */
 import './react/rail-tools.jsx';   /* #119 — сервисные иконки рельса + Ring Tooltip (колокольчик в шапке, строка иконок) */
+import './react/task-filter.jsx';   /* 118-1в / 118-3 — строка фильтров таблиц задач (Ring Select, выбор до перезагрузки) */
 import './domain/release-pick.js';
 import './react/portal.jsx';
 import './react/modal-mount.jsx';
