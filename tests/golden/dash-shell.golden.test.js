@@ -201,6 +201,9 @@ test('golden: _buildGlobalDashShell — захват chrome/контекста/�
     linksInUtils: has('.ssp-rail__utils .page-header__links'),
     statusBarInUtils: has('.ssp-rail__utils #widgetStatusBarSpoiler'),
     railSprintNameNode: has('#sspRailSprintName'),
+    /* #119 — хосты сервисных иконок: кластер в шапке (колокольчик) и строка под брендом */
+    headToolsHost: has('.ssp-rail__head .ssp-rail__head-tools'),
+    toolsRowHost: has('.ssp-rail__utils .ssp-rail__tools-host'),
   };
 
   /* идемпотентность — повторный вызов не плодит второй .ssp-dash */

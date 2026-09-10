@@ -15,5 +15,7 @@
   "linksInUtils": true,
   "statusBarInUtils": true,
   "railSprintNameNode": true,
+  "headToolsHost": true,
+  "toolsRowHost": true,
   "dashCountAfterSecond": 1
 }

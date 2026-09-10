@@ -62,6 +62,11 @@ const KEEP_PATTERNS = [
   'ring-query-assist',
   /* #57-2 — Ring Toggle (тумблер блокировки создания спринтов в шапке планера) */
   'ring-toggle',
+  /* #119 — Ring Tooltip (подсказки сервисных иконок рельса; Popup уже в KEEP) */
+  'ring-tooltip',
+  /* #119 — тёмная тема попапа Tooltip: ThemeProvider(DARK, passToPopups) вешает на Popup классы
+     ring-variables_dark-dark + ring-ui-theme-dark; цвета подсказки заданы во втором. */
+  'ring-ui-theme-dark',
 ];
 
 // These override KEEP_PATTERNS — if a selector contains these, it is dropped
@@ -71,7 +76,7 @@ const EXCLUDE_PATTERNS = [
   /* v2.0.0 D7 — ring-table moved to KEEP_PATTERNS */
   'ring-data-list',
   /* v2.1.0 F2 — 'ring-dropdown' moved to KEEP_PATTERNS (Ring Select uses it). */
-  'ring-tooltip',
+  /* #119 — 'ring-tooltip' moved to KEEP_PATTERNS (подсказки иконок рельса). */
   'ring-tags',
   'ring-auth',
   'ring-banner',

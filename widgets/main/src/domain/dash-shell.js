@@ -12,7 +12,9 @@
  *     persist ui.dashNode + #36-синк URL; share/не-член — no-op;
  *   • _buildGlobalDashShell — единожды на init (_mode==='global') строит .ssp-dash (grid):
  *     захватывает chrome/контекст/навигацию (.page-header/picker/widgetHeader/links/
- *     statusBar/tabs) в рельс (move, не recreate), остаток .page → пейн.
+ *     statusBar/tabs) в рельс (move, не recreate), остаток .page → пейн; #119 — хосты
+ *     сервисных иконок (.ssp-rail__head-tools / .ssp-rail__tools-host) и остров
+ *     window.__SSP_RAIL_TOOLS (колокольчик в шапку, строка иконок, Ring Tooltip).
  *
  * Паттерн (слайсы 2–12): deps-фабрика per-call (_dashDeps в монолите). const
  * SSP_DASH_NODES остаётся в ядре (его читает init-зона _loadAndRenderProject) —
@@ -206,11 +208,14 @@
     head.appendChild(tgl);
     /* picker и links вытаскиваем из .page-header ДО переноса бренда (иначе уедут вместе с ним) */
     if (pageHeader)  head.appendChild(pageHeader);
+    /* #119 — кластер сервисных иконок шапки (колокольчик рядом с «свернуть»); заполняет остров rail-tools */
+    var headTools = _el('ssp-rail__head-tools'); head.insertBefore(headTools, tgl);
     /* утилиты — компактной группой сразу под брендом. В auto-grow iframe нет
        фиксированного «дна экрана», поэтому классический «низ сайдбара» не прижать —
        наверху аккуратнее (см. правку 2026-06-06 по фидбэку владельца). */
     var utils = _el('ssp-rail__utils');
     if (headerLinks) utils.appendChild(headerLinks);
+    var rowTools = _el('ssp-rail__tools-host'); utils.appendChild(rowTools);   /* #119 — строка иконок (остров rail-tools) */
     /* спойлер «Статус активности модулей» — под пикером языка (в utils-зоне, по фидбэку) */
     if (statusBar) utils.appendChild(statusBar);
     /* контекст: проект-пикер + логические карточки спринта */
@@ -260,6 +265,13 @@
       deps.applyRailCollapsed(deps.getRailCollapsed());
     });
     deps.applyRailCollapsed(deps.getRailCollapsed());
+    /* #119 — остров сервисных иконок: контролы .page-header__links переезжают в слоты с Ring Tooltip
+       (id/обработчики целы). Без вендор-чанка (golden-host) — false, рельс остаётся столбиком кнопок. */
+    var toolsIsland = (typeof window !== 'undefined' && window.__SSP_RAIL_TOOLS) || null;
+    if (toolsIsland && headerLinks) {
+      try { toolsIsland.mount({ headHost: headTools, rowHost: rowTools, links: headerLinks }); }
+      catch (e) { deps.diag('#119 rail-tools island failed: ' + e, 'warn'); }
+    }
     deps.updateRailSprintName();
     /* #36 v2.5.2 — сразу выставить видимость кнопки «Поделиться» по наличию host.navigation
        (на YT<2026.1 спрятать немедленно, не дожидаясь выбора проекта). */

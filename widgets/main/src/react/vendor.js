@@ -33,7 +33,8 @@ import Collapse from '@jetbrains/ring-ui-built/components/collapse/collapse';
 import CollapseControl from '@jetbrains/ring-ui-built/components/collapse/collapse-control';
 import CollapseContent from '@jetbrains/ring-ui-built/components/collapse/collapse-content';
 import alertService from '@jetbrains/ring-ui-built/components/alert-service/alert-service';
-import Toggle from '@jetbrains/ring-ui-built/components/toggle/toggle';   /* #57-2 — тумблер блокировки создания спринтов (CSS-сабсет ring-toggle-* добавлен в ring-subset.css) */
+import Toggle from '@jetbrains/ring-ui-built/components/toggle/toggle';
+import Tooltip from '@jetbrains/ring-ui-built/components/tooltip/tooltip';   /* #119 — подсказки сервисных иконок рельса (CSS-сабсет ring-tooltip-* в ring-subset.css) */   /* #57-2 — тумблер блокировки создания спринтов (CSS-сабсет ring-toggle-* добавлен в ring-subset.css) */
 import { enUS } from 'date-fns/locale/en-US';
 import { ru } from 'date-fns/locale/ru';
 import { fr } from 'date-fns/locale/fr';
@@ -50,4 +51,4 @@ import { pt } from 'date-fns/locale/pt';
 import { hu } from 'date-fns/locale/hu';
 import { es } from 'date-fns/locale/es';
 const DateFnsLocales = { en: enUS, ru, fr, de, 'zh-CN': zhCN, it, pl, tr, ja, ko, cs, nl, pt, hu, es };
-globalThis.SSP_VENDORED = { React, ReactDOMClient, ReactDOM, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, Toggle, DateFnsLocales, GanttTaskReact };
+globalThis.SSP_VENDORED = { React, ReactDOMClient, ReactDOM, jsxRuntime, Dialog, LoaderInline, DatePicker, Checkbox, Radio, Tabs, Tab, Table, TableSelection: Selection, Input, Select, Collapse, CollapseControl, CollapseContent, alertService, QueryAssist, Toggle, Tooltip, DateFnsLocales, GanttTaskReact };

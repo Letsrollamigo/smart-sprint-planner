@@ -2,7 +2,7 @@
 
 Bringing the planner into a new YouTrack project step by step — from installing the app to the first sprint.
 
-Planner version **3.41.0**. Screenshots taken on YouTrack **2026.1**.
+Planner version **3.42.0**. Screenshots taken on YouTrack **2026.1**.
 
 ## Who this is for
 

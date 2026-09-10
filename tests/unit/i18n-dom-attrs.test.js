@@ -38,3 +38,26 @@ describe('index.html — только поддерживаемые data-i18n-* �
     assert.match(ctrl, /setAttribute\('placeholder',\s*T\(el\.getAttribute\('data-i18n-ph'\)\)\)/);
   });
 });
+
+/* #119 — data-i18n-title на #langSel (tipLanguage): ключ обязан быть во всех 15 локалях, иначе
+   Ring Tooltip покажет сам ключ (ожог v3.39.2: outOfRangeWarn). Гард на ВСЕ data-i18n*-ключи index.html. */
+describe('index.html — каждый data-i18n*-ключ есть во всех локалях', () => {
+  const html = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'widgets', 'main', 'index.html'), 'utf8');
+  const dir = path.join(__dirname, '..', '..', 'widgets', 'main', 'i18n');
+  const keys = new Set((html.match(/data-i18n(?:-title|-ph|-label|-tooltip)?="([^"]+)"/g) || [])
+    .map((a) => a.replace(/^[^"]+"|"$/g, '')));
+  const locales = fs.readdirSync(dir).filter((f) => /^[a-z]{2}\.json$/.test(f));
+
+  it('15 локалей на месте', () => { assert.equal(locales.length, 15); });
+
+  it('нет ключей без перевода', () => {
+    const missing = [];
+    for (const f of locales) {
+      const dict = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      for (const k of keys) if (!(k in dict)) missing.push(f + ':' + k);
+    }
+    assert.ok(keys.has('tipLanguage'), 'tipLanguage привязан к #langSel');
+    assert.deepEqual(missing, [], 'ключи без перевода: ' + missing.join(', '));
+  });
+});

@@ -30,11 +30,8 @@ Switching the project switches the whole screen: sprints, composition, history �
 
 | Item | What it is for |
 |---|---|
-| Reminders bell | appears when reminders are on in the project and at least one module is addressed to you; the number is the count of active items; a click opens the dialog with the «Active» and «Journal» tabs (Setup, chapter 19a) |
-| **Plugin Settings** | a shortcut to this project's settings; shown only to members of the settings-manager group |
-| **User Guide** | a link to this documentation |
-| **Feedback** | a link to the product's issue tracker |
-| **Language** | the language of the planner's own interface |
+| Reminders bell | in the panel header next to the collapse button; appears when reminders are on in the project and at least one module is addressed to you; the number is the count of active items; a click opens the dialog with the «Active» and «Journal» tabs (Setup, chapter 19a) |
+| Icon row | under the version: **Clear draft** (only while a draft exists), **Plugin Settings** (shown only to members of the settings-manager group), **User Guide** (this documentation), **Feedback** (the product's issue tracker), **Language** (globe; 15 languages). Each icon's label is a tooltip shown on hover or keyboard focus |
 | **Planning modules activity status** | an expandable list: which modules are enabled in this project |
 
 ## Two languages, two switches

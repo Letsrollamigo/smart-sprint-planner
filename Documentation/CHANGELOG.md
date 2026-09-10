@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.42.0] — 2026-09-10
+
+> **Rail toolbar and Ring UI tooltips.** #119. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged.
+
+### Changed
+
+- **The reminders bell moved to the rail header,** next to the “collapse” button: a compact icon with the counter instead of a full-width button.
+- **The service buttons became a row of icons** under the project name: “Clear draft” (when a draft exists), “Plugin settings” (by rights), “User guide”, “Feedback”, language. JetBrains icon set (`quick-guide`, `comment`, `earth`); the labels moved into tooltips. The language control stays a native select (the option list with flags is unchanged), its closed state is the “globe” icon.
+- **Ring UI `Tooltip`** on every service icon: 500 ms delay, shown on hover and on keyboard focus; the browser `title` on these controls is removed, so there is no double tooltip.
+- **Navigation tree.** The caret of expandable groups (“Planning”, “Releases”, “Reporting”) moved into the left margin — group and item icons now line up vertically.
+- **Project settings page** (project widget): the “User guide” and “Feedback” links got the same icons before the label, the rest of the layout is unchanged.
+
+### Under the hood
+
+- New React island `react/rail-tools.jsx`: the existing controls are not re-created — they move into slots wrapped by `Tooltip`, keeping their ids, handlers and server-side visibility; re-render via `MutationObserver`.
+- `Tooltip` vendored from `@jetbrains/ring-ui-built`, `ring-tooltip-*` classes in the CSS subset; two JetBrains icons added to `widgets/main/src/icons/`.
+- Gate: the rail shell golden checks the icon hosts; a unit test checks that every `data-i18n*` key of `index.html` exists in all 15 locales (new key `tipLanguage`).
+
+### Known limitations
+
+- In the collapsed rail the bell is hidden together with the whole header except the “expand” button — as before.
+- Documentation frames were taken before the rail re-layout; a reshoot comes as a separate wave.
+
 ## [3.41.0] — 2026-09-09
 
 > **The reminders journal, and a fix for journal writes.** Epic #112, the closing slice (S5 + S6). The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged.

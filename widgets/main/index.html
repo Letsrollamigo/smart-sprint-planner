@@ -247,6 +247,27 @@
     body.ssp-global-mode .ssp-rail__utils .page-header__links {
       margin-left: 0; flex-direction: column; align-items: stretch; gap: 6px; white-space: normal;
     }
+    /* #119 — сервисные иконки рельса (остров react/rail-tools.jsx): колокольчик в шапке рядом с
+       «свернуть», строка иконок под брендом. Подписи прячем font-size:0 — у #openSettingsBtn и
+       #clearDraftBtn текст голым узлом (applyI18N/setButtonText), span'ом не спрятать; у бейджа
+       колокольчика и иконок размер задан явно. Один auto-margin на кластер шапки (у тумблера снят). */
+    body.ssp-global-mode .ssp-rail__head-tools { order: 2; display: inline-flex; align-items: center; gap: 6px; margin-left: auto; align-self: flex-start; }
+    body.ssp-global-mode .ssp-rail__head { padding-top: 5px; }   /* #119 — бейдж колокольчика выступает над кнопкой на 5px; без отступа его режет верх iframe */
+    body.ssp-global-mode .ssp-rail__head .ssp-rail__head-tools ~ .ssp-rail__toggle { margin-left: 0; }
+    body.ssp-global-mode .ssp-rail__tools { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }   /* flex-start: ниже 1330 рельс стоит во всю ширину — space-between разнёс бы иконки по краям */
+    body.ssp-global-mode .ssp-rail__tip { display: inline-flex; }
+    body.ssp-global-mode .ssp-rail__tip--hidden { display: none; }
+    body.ssp-global-mode .ssp-rail__tool { position: relative; display: inline-flex; }
+    body.ssp-global-mode .ssp-rail__tool .ring-button-button { display: inline-flex; align-items: center; justify-content: center; width: 28px; min-width: 0; height: 28px; padding: 0; font-size: 0; line-height: 0; }   /* min-width:0 — перебивает .editor-btn.ring-button-heightS { min-width:120px } у ссылок */
+    body.ssp-global-mode .ssp-rail__head-tools .ring-button-button { width: 22px; height: 22px; }
+    body.ssp-global-mode .ssp-rail__tool .ssp-icon { width: 16px; height: 16px; margin: 0; vertical-align: 0; }
+    body.ssp-global-mode .ssp-rail__head-tools .ssp-icon { width: 14px; height: 14px; }
+    body.ssp-global-mode .ssp-rail__tool .ssp-reminders__count { top: -5px; right: -6px; min-width: 15px; height: 15px; line-height: 15px; font-size: 9px; }
+    /* язык: нативный select (⚖ 2026-08-22) прозрачным слоем поверх иконки «глобус»; список опций — системный, с флагами */
+    body.ssp-global-mode .ssp-rail__tool--lang { width: 28px; height: 28px; align-items: center; justify-content: center; box-sizing: border-box; border-radius: var(--ring-border-radius, var(--radius)); background: var(--ring-content-background-color, var(--surface)); box-shadow: inset 0 0 0 1px var(--ring-borders-color, var(--border)); color: var(--text); cursor: pointer; }   /* вид Ring block-кнопки (соседи в строке) */
+    body.ssp-global-mode .ssp-rail__tool--lang:hover { box-shadow: inset 0 0 0 1px var(--ring-border-accent-color, var(--primary)); }
+    body.ssp-global-mode .ssp-rail__tool--lang:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
+    body.ssp-global-mode .ssp-rail__tool--lang #langSel { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 
     /* контекст: проект-пикер / спринт-шапка / статусбар — каждый на всю ширину рельса */
     /* flex+gap: видимые отступы между логическими блоками (gap не перебивается margin:0 карточек) */
@@ -379,12 +400,15 @@
       background: transparent; border: none; color: var(--text); font-size: 13px; text-align: left;
       box-sizing: border-box; width: 100%;
     }
-    body.ssp-global-mode .ssp-tree__group-summary { list-style: none; }
+    /* #119 — каретка группы в левом поле (absolute), а не flex-элементом перед иконкой:
+       иконки групп и пунктов встают в одну вертикаль; translateY держим и в [open]. */
+    body.ssp-global-mode .ssp-tree__group-summary { list-style: none; position: relative; }
     body.ssp-global-mode .ssp-tree__group-summary::-webkit-details-marker { display: none; }
     body.ssp-global-mode .ssp-tree__group-summary::before {
-      content: '▸'; font-size: 10px; color: var(--muted); transition: transform .15s; flex-shrink: 0;
+      content: '▸'; font-size: 10px; color: var(--muted); transition: transform .15s;
+      position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
     }
-    body.ssp-global-mode .ssp-tree__group[open] > .ssp-tree__group-summary::before { transform: rotate(90deg); }
+    body.ssp-global-mode .ssp-tree__group[open] > .ssp-tree__group-summary::before { transform: translateY(-50%) rotate(90deg); }
     body.ssp-global-mode .ssp-tree__children { display: flex; flex-direction: column; gap: 2px; padding-left: 14px; margin-top: 2px; }
     body.ssp-global-mode .ssp-tree__item:hover,
     body.ssp-global-mode .ssp-tree__group-summary:hover,
@@ -2546,16 +2570,16 @@
               data-i18n-title="btnOpenSettingsTitle">Настройки плагина</button>
       <!-- #43 W4 (E-1) — ссылки-кнопки на Ring-классах (единый вид с openSettingsBtn) -->
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Documentation/USER-GUIDE.md"
-         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
+         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn" data-icon="quick-guide">
         <span data-i18n="linkGuide">Руководство пользователя</span>
       </a>
       <a href="https://github.com/Letsrollamigo/smart-sprint-planner/issues"
-         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn">
+         target="_blank" rel="noopener noreferrer" class="ring-button-button ring-button-block ring-button-heightS editor-btn" data-icon="comment">
         <span data-i18n="linkFeedback">Обратная связь</span>
       </a>
       <!-- Переключатель языка -->
       <!-- ⚖ владелец 2026-08-22 (#69 строка 20): единственное осознанное исключение из мандата Ring UI — нативный select языка с флагами (CLAUDE_SHARED §3). -->
-      <select id="langSel" class="btn btn--sm" style="cursor:pointer;padding:5px 8px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);appearance:none;-webkit-appearance:none;" title="Language / Язык">
+      <select id="langSel" class="btn btn--sm" style="cursor:pointer;padding:5px 8px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);appearance:none;-webkit-appearance:none;" data-i18n-title="tipLanguage">
         <option value="ru">🇷🇺 RU</option>
         <option value="en">🇬🇧 EN</option>
       </select>

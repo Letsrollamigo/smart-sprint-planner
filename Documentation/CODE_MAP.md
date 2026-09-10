@@ -74,7 +74,7 @@
 | `capacity-store.js` | 60 | `__SSP_CAPACITY_STORE` | доменный стор ёмкости #45 (ADR-001, третье применение после sprint-store/release-store; |
 | `capacity-view.js` | 468 | `__SSP_CAPACITY_VIEW` | #45 R3 вкладка «Управление ёмкостью». |
 | `currentrole-view.js` | 1101 | `__SSP_CURRENTROLE_VIEW` | Current-role tables view — таблицы текущей роли уровня «Люди» («Распределение по исполнителям» + таблица задач) и их calc-хелперы. |
-| `dash-shell.js` | 254 | `__SSP_DASH_SHELL` | global-рельс + дерево навигации (#25 Ф2 Этап 3+4+7, Фаза 5 слайс 13, домен E6 — выносимый подкластер init/bootstrap). |
+| `dash-shell.js` | 266 | `__SSP_DASH_SHELL` | global-рельс + дерево навигации (#25 Ф2 Этап 3+4+7, Фаза 5 слайс 13, домен E6 — выносимый подкластер init/bootstrap). |
 | `draft-store.js` | 371 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 329 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
 | `gantt-view.js` | 428 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
@@ -180,6 +180,7 @@
 | `modal-mount.jsx` | 263 | SspModal: настоящий React-контент в Ring Dialog. |
 | `portal.jsx` | 40 | React portal manager. |
 | `radio-mount.jsx` | 94 | Ring Radio bridge for Phase D5. |
+| `rail-tools.jsx` | 80 | #119 сервисные иконки рельса: колокольчик в шапке рядом с «свернуть», строка иконок (черновик · настройки · руководство · обратная связь · язык) по… |
 | `release-create.jsx` | 175 | #48 R1.3 body-компонент модалки «Новый релиз» на СТРОГО Ring UI. |
 | `release-state-preview.jsx` | 167 | #48 R2.3 body-компонент модалки «Смена состояний» (СТРОГО Ring UI). |
 | `release-view.jsx` | 413 | #48 React-презентация вкладок релиз-менеджмента (строго Ring UI). |

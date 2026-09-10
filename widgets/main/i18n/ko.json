@@ -2,6 +2,7 @@
   "appTitle": "Smart Sprint Planner",
   "linkGuide": "사용자 가이드",
   "linkFeedback": "피드백",
+  "tipLanguage": "인터페이스 언어",
   "tabSettings": "설정",
   "tabPlanning": "계획",
   "tabGantt": "간트 차트",
