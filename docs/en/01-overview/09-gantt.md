@@ -6,7 +6,7 @@ The sprint laid out in time: who does what, when, and what depends on what.
 
 Rail → **Planning → Gantt chart**. The role is chosen with the **Role** picker at the top — the chart always shows one role.
 
-![The Gantt chart: task bars across the days of August, a dependency arrow between two tasks, the links legend](../../assets/ov-009-gantt.en.png)
+![The Gantt chart: task bars across the days of September, a dependency arrow between two tasks, the links legend](../../assets/ov-009-gantt.en.png)
 
 ## Where the bars come from
 

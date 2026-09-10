@@ -30,7 +30,7 @@ A reminder goes out **by state only**: finish the role, approve the capacity, sh
 
 When the planner opens (from YouTrack's main menu) a dialog «Reminders (N) · project …» appears with a section per module, in the order Sprints → Capacity → Releases. Each item has a single **«Go to»** button: a sprint leads to the sprint history with the record expanded, capacity — to the capacity tab of that sprint, a release — to its card among the planned releases. With no items the dialog does not show.
 
-![The reminders dialog on planner open: unfinished roles of past sprints and two overdue releases](../../assets/ov-013-reminders-modal.en.png)
+![The reminders dialog on planner open: a single active item of the Capacity module — the capacity of the running sprint is not approved](../../assets/ov-013-reminders-modal.en.png)
 
 The bell in the header of the left panel shows the number of active items and opens the same dialog, now with two tabs: **«Active»** and **«Journal»**. The bell is visible only when the module is on and at least one enabled module is addressed to you.
 

@@ -12,7 +12,7 @@ Rail → **Sprint parameters**.
 
 | Field | What goes in |
 |---|---|
-| **Sprint name** | whatever the team calls the sprint: «Sprint 24 — August 2026» |
+| **Sprint name** | whatever the team calls the sprint: «Sprint 24 — September 2026» |
 | **Sprint goal** | one or two lines about the outcome. Not a task list — the reason the sprint exists |
 | **Start date** / **End date** | the sprint's period |
 | **Participating roles** | which roles take part; taken from the project settings |

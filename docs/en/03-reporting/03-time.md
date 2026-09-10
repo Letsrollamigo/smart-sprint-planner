@@ -26,6 +26,8 @@ Next to the number is an **«within norm» / «above norm»** badge: a compariso
 
 The **by unit type** table separates solo stories from parts of epics: they are different in nature, and mixing them into one median is misleading.
 
+The report takes the parent epic by the **“Hierarchy”** role of the Task links screen (chapter 16 of the setup guide) — the same role that builds the backlog tree and the release composition. With no rows in that table the old heuristic over the “Subtask” type applies.
+
 ⚠️ The footnote «tag-based pauses may be incomplete» is an honest warning: pauses marked by tag are visible to the planner only as of build time, not through history.
 
 ## Flow: bottleneck + rework
