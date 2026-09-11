@@ -2703,7 +2703,8 @@
     if (typeof renderRolePlannerHeader === 'function' && typeof getSprintRoles === 'function') {
       try {
         var _arIntro = getSprintRoles();
-        renderRolePlannerHeader(_arIntro && _arIntro.length ? _arIntro[0].key : null);
+        var _arLast = safeLs.get('ssp_lastActiveRole') || '';   /* #120 — тон полоски фаз: роль, выбранная в рельсе последней */
+        renderRolePlannerHeader(_arIntro && _arIntro.some(function (r) { return r.key === _arLast; }) ? _arLast : (_arIntro && _arIntro.length ? _arIntro[0].key : null));
       } catch(_){}
     }
     if (typeof renderPlanningRoles === 'function') {

@@ -478,7 +478,8 @@
           "name  goal"
           "dates extra"
           "roles roles"
-          "act   act";
+          "act   act"
+          "phases phases";
         gap: 14px 24px; align-items: start;
       }
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .card-title { grid-area: title; }
@@ -493,6 +494,7 @@
       /* #73 — строка «Роли-участницы» (id бьёт класс-правило goal выше) */
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > #sprintRolesRow { grid-area: roles; margin-top: 0 !important; }
       body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .sprint-intro-actions { grid-area: act; margin-top: 0 !important; }
+      body.ssp-global-mode.ssp-dashnode-sprint-params #sprintIntroCard > .ssp-phases__block { grid-area: phases; margin-top: 0 !important; }   /* #120 — блок фаз последней строкой на всю ширину */
       /* свёрнутый рельс → узкая полоса: всё, кроме кнопки-тогла, скрыто */
       body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail > :not(.ssp-rail__head) { display: none; }
       body.ssp-global-mode .ssp-dash.ssp-rail-collapsed .ssp-rail__head > :not(.ssp-rail__toggle) { display: none; }

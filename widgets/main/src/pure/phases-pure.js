@@ -101,16 +101,21 @@ function rowErrors(phases, stored, sprint) {
   return out;
 }
 
-/* Шкала спринта: days, недельный шаг в %, tick'и — понедельники (getUTCDay() === 1) + последний день. */
+/* Шкала спринта: days, недельный шаг в %, tick'и — первый день, понедельники (getUTCDay() === 1)
+   и последний день; понедельник ближе 15 % к краю шкалы не подписывается (подписи наезжали бы:
+   смоук 3.45.0 — «28 сент.» на «30 сент.»). */
+var TICK_GAP_PCT = 15;
 function scale(sprint) {
   var sd = sprintDays(sprint);
   if (!sd) return null;
-  var ticks = [];
-  for (var t = sd.start; t <= sd.end; t += DAY_MS) {
-    if (new Date(t).getUTCDay() === 1) ticks.push({ ts: t, pct: (t - sd.start) / (sd.days * DAY_MS) * 100, last: false });
+  var total = sd.days * DAY_MS;
+  var ticks = [{ ts: sd.start, pct: 0, last: false }];
+  for (var t = sd.start + DAY_MS; t < sd.end; t += DAY_MS) {
+    var pct = (t - sd.start) / total * 100;
+    if (new Date(t).getUTCDay() === 1 && pct >= TICK_GAP_PCT && pct <= 100 - TICK_GAP_PCT) ticks.push({ ts: t, pct: pct, last: false });
   }
-  if (!ticks.length || ticks[ticks.length - 1].ts !== sd.end) ticks.push({ ts: sd.end, pct: 100, last: true });
-  else ticks[ticks.length - 1].last = true;
+  if (sd.end !== sd.start) ticks.push({ ts: sd.end, pct: 100, last: true });
+  else ticks[0].last = true;
   return { days: sd.days, start: sd.start, end: sd.end, weekPct: 7 / sd.days * 100, ticks: ticks };
 }
 

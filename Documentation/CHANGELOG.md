@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.45.0] — 2026-09-11
+
+> **Work phases inside the sprint, “Estimate” without a confirmation dialog, search-as-you-type in the task picker.** #120 + #127 + #128 in one release. Schema 3.40.0 → 3.45.0 (additive keys `phases` / `phasesUpdatedAt` / `phasesUpdatedBy` in the sprint and history snapshots, settings keys `phasesEnabled` / `phaseRoles`) — **rolling back below 3.45.0 follows `SYNC_PROTOCOL §E.5`**: the older strict validator rejects slot and history writes carrying the new keys.
+
+### Added
+
+- **Work phases inside the sprint (#120).** The “Sprint parameters” card gets a “Work phases” block below the parameters button with its own “Save work phases” button: six phases in a fixed chain Analysis → Development → Tech test → Regression → Business test → Deploy, each with a from/to pair or “not planned”; one row per phase with a lane on the shared sprint scale (weekly divisions, labels on the first day, Mondays and the last day); phases of the role selected in the rail are saturated with a role chip according to the settings mapping, the rest are dimmed (empty mapping — one tone for all); a “changed by · when” stamp in the block header. Overlaps are allowed; orange marks with a Ring Tooltip — “starts before ‘…’” (broken chain order) and “outside the sprint range” after the sprint was moved (dashed tail past the scale edge); red refusals on the button — end before start, half of a pair, an edited phase outside the sprint. Editors or validators write; observers get disabled pickers and a button tooltip naming both groups; a finished sprint is read-only. Phases are copied into every role snapshot of the sprint, go as header rows in the role’s Excel export and travel in the history JSON export/import.
+- **Settings → “Release management”** (the “Releases” section was renamed): the last block “Work phases” — a toggle (off by default; off → no block in the parameters, dates are kept) and a “phase × roles” table over the enabled roles (a disabled role keeps its mapping). Admin tier.
+- **Every date picker in “Sprint parameters” is a Ring DatePicker** (⚖8): the sprint dates moved to the same picker as task dates; the custom calendar is gone.
+
+### Fixed
+
+- **“Estimate” in “Shared resource allocation” was written on the second attempt (#127).** The confirmation dialog is gone: the estimate is written immediately on Enter or when leaving the field (like “Allocation”); the sprint snapshot goes first, the YouTrack issue field after the snapshot is accepted; a rejected snapshot rolls the estimate and the field back. **Behaviour change:** an empty field no longer zeroes the estimate — type `0` explicitly; Escape restores the previous value. The confirmation dialog stays only for list fields (State/Priority/System); a repeated call while the dialog is open is ignored.
+- **“Pick tasks”: the list updates as you type (#128).** About 400 ms after two or more characters, without Enter; Enter and the search icon search at once; the “Add issues to release” dialog behaves the same. **Behaviour change:** the #33 decision “list only on Apply” is reverted. A stale response never lands in the picker cache or the table (fingerprint guard in `_pickSearch` and inside the `_pickLoadAll` loop; the component drops responses of superseded requests).
+- An empty Ring date picker showed the locale key literal (“btnSelect”) — “Pick a date” placeholder in all 15 locales.
+
+### Under the hood
+
+- Backend: the `backend-phases.js` satellite — `POST sprint-data?action=phases` mode (the only write path for phases: editor ∨ validator rights, toggle, `phasesShapeError` shape, `baseRev` checked against the slot only when the slot holds the sprint, sprint lookup via slot or snapshots, range check only for changed phases, fan-out into the slot and all role snapshots in one transaction, `changed:false` without a write); server-side ownership of phases — `applyStored` on `POST sprint-data`, `POST history`, `?action=snapshot` (submitted phases are overridden by stored ones; no carrier — accepted; `import-replace` accepts deliberately). Core: `PHASE_KEYS`, `dayMs`, `phasesShapeError`, tolerant read with `WARN_PHASES_DROPPED`, settings keys, `SCHEMA_MIGRATIONS` entry `3.40.0 → 3.45.0` (no-op), fixture `tests/fixtures/snapshots/3.45.0/`; `SECURITY` — matrix row and the v3.45.0 paragraph.
+- Frontend: modules `pure/phases-pure.js` (chain, pairs, order, range, scale, tone, mapping merge — every date via `dayMs`) and `domain/phases-view.js` (block, form, refusals, write, `applySaved`); the `react/tooltip-mount.jsx` mini-bridge (Ring Tooltip for string DOM); `infra/datepicker-bridge.js` removed together with its goldens and the `dpPrevMonth`/`dpNextMonth`/`btnToday` keys; `react/datepicker-mount.jsx` — `disabled` prop; `youtrack-api.js` syncs `historyRev` from the `action=phases` response; the `Switch` from “Notifications” became shared (`settings-shared.jsx`).
+- Gates: `phases-backend.test.js`, `phases-pure.test.js` (+ time zones in child processes), `phases-i18n-completeness.test.js`, `intro-view` goldens (seven block states, refused and successful writes, dates on Ring hosts), `excel` (phase rows), `render-planning` (#127 without a dialog stub), `modal-specs` (the `dynField` guard), `pick` (a stale response does not write to the cache; query change mid-load). The `PickPicker` timer and seq gate are not rendered in jsdom goldens — verified by smoke.
+
+### Known limitations
+
+- Phase bars on the Gantt chart — #122; a reminder about a moved phase and checkpoints are out of this release.
+
 ## [3.44.0] — 2026-09-11
 
 > **Links to capacity and releases.** #124. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged (3.40.0).

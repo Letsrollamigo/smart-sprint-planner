@@ -2,10 +2,9 @@
 <div class="ssp-phases">
 <div class="ssp-phases__h">Фаза</div>
 <div class="ssp-phases__axis">
-<span class="ssp-phases__tick" style="left:11.538%">25 мая</span>
+<span class="ssp-phases__tick" style="left:0.000%">22 мая</span>
 <span class="ssp-phases__tick" style="left:38.462%">1 июн.</span>
 <span class="ssp-phases__tick" style="left:65.385%">8 июн.</span>
-<span class="ssp-phases__tick" style="left:92.308%">15 июн.</span>
 <span class="ssp-phases__tick" style="right:0">16 июн.</span>
 </div>
 <div class="ssp-phases__h">С</div>
