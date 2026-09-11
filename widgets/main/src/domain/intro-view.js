@@ -265,6 +265,7 @@
       setDateField('dateEnd', '');
       var goalEl0 = document.getElementById('sprintGoal');
       if (goalEl0) goalEl0.value = '';
+      if (typeof deps.renderPhasesBlock === 'function') deps.renderPhasesBlock(rk);   /* #120 — спринта нет → блок скрыт */
       return;
     }
     // Название, даты, цель — общие; источник = выбранный спринт (активный или исторический снапшот)
@@ -322,6 +323,7 @@
     if (newBtn) newBtn.style.display = (_sprint.status === STATUS.CONFIRMED || _sprint.status === STATUS.ALLOCATED) ? '' : 'none';
     renderRoleStatusBadge(rk, deps);
     renderSprintIntroExtras(deps);
+    if (typeof deps.renderPhasesBlock === 'function') deps.renderPhasesBlock(rk);   /* #120 — блок фаз последней строкой шапки */
   }
 
   function renderRoleStatusBadge(rk, deps) {

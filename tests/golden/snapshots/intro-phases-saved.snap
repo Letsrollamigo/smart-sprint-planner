@@ -1,0 +1,20 @@
+{
+  "call": {
+    "p": "backend-project/sprint-data",
+    "q": {
+      "action": "phases"
+    },
+    "baseRevNum": true,
+    "deploy": null
+  },
+  "sprintDeploy": null,
+  "sprintBy": "Петров И. С.",
+  "histPhases": [
+    null
+  ],
+  "foreignUntouched": true,
+  "slotRev": 7,
+  "historyRev": 9,
+  "stampHasWho": true,
+  "deployStatus": "не планируется"
+}

@@ -552,6 +552,10 @@
       sprintFieldVal:  meta.sprintFieldVal || null,
       versionFieldVal: meta.versionFieldVal || null
     };
+    /* #120 — копия фаз только на чтение (показ блока до первого ответа сервера); канон в снимках и
+       слоте пишет сервер (applyStored переопределит клиентское при записи слота). */
+    var _phSnap = snaps.filter(function(s){ return s && s.phases !== undefined; })[0];
+    if (_phSnap) { sprint.phases = _phSnap.phases; sprint.phasesUpdatedAt = _phSnap.phasesUpdatedAt; sprint.phasesUpdatedBy = _phSnap.phasesUpdatedBy; }
     /* #73 — восстановить набор ролей-участниц из снапа (иначе реконструированный _sprint
        терял бы ключ, и следующие снапы перестали бы его нести). */
     var _rolesSnap = snaps.filter(function(s){ return Array.isArray(s.roles) && s.roles.length; })[0];
@@ -636,6 +640,7 @@
         if (goalEl) goalEl.value = introSrc.sprintGoal || '';
         if (typeof deps.renderSprintIntroExtras === 'function') { try { deps.renderSprintIntroExtras(); } catch(_){} }
       }
+      if (typeof deps.renderPhasesBlock === 'function') { try { deps.renderPhasesBlock(null); } catch(e){ diag('phases re-render err: '+e,'err'); } }   /* #120 */
     } else if (activeTab === 'gantt') {
       try {
         var rkG = deps.safeLs.get('ssp_lastActiveRole')

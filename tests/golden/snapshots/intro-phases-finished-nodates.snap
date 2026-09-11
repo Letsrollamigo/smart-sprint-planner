@@ -1,0 +1,17 @@
+{
+  "finished": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn",
+    "disabled": true,
+    "title": "Спринт завершён — фазы не меняются",
+    "tooltip": null,
+    "text": "Сохранить фазы работ"
+  },
+  "noDates": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn",
+    "disabled": true,
+    "title": "Сначала укажите даты спринта",
+    "tooltip": null,
+    "text": "Сохранить фазы работ"
+  },
+  "noDatesTicks": []
+}

@@ -50,7 +50,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4635 | — | композиционный корень виджета. |
+| `core.js` | 4662 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -76,6 +76,7 @@
 | `history-view.js` | 608 | `__SSP_HISTORY_VIEW` | История спринтов — view вкладки «История»: список-пагинация (renderHistory), групповой спойлер спринта (#60) и спойлер записи (buildSpoiler: meta+б… |
 | `intro-view.js` | 321 | `__SSP_INTRO_VIEW` | рендер «вводных» планировщика (Фаза 5, зачистка «прочих» — слайс 9). |
 | `permissions.js` | 213 | `__SSP_PERMISSIONS` | Permissions-кластер: backend-проверки прав (validator/editor/assigner/ settings-manager), синглтон-батч _startPermissionsCheck и применение прав к … |
+| `phases-view.js` | 271 | `__SSP_PHASES_VIEW` | #120 «Фазы работ внутри спринта»: блок «Фазы работ» в карточке «Вводные данные по спринту» (ниже кнопки «Сохранить параметры спринта», со своей кно… |
 | `pick.js` | 317 | `__SSP_PICK` | построение query + fingerprint; rawQ передаётся из React-компонента (DOM-инпут pickQuery удалён вместе с #pickOverlay). |
 | `project-nav.js` | 489 | `__SSP_PROJECT_NAV` | global-picker проектов + project-mode страница настроек (#25 Ф1, Фаза 5 слайс 14, домен E6 — выносимый подкластер init/bootstrap). |
 | `reassign-controller.js` | 181 | `__SSP_REASSIGN_CTRL` | контроллер реассайн-модалки задачи в Ганте (Фаза 5, зачистка «прочих» — слайс 7, домен D46). |
@@ -116,6 +117,7 @@
 | `migrate-pure.js` | 120 | `__SSP_MIGRATE_PURE` | #49 — personalPlanning: единый канон = per-role записи истории (histRec.personalPlanning, single PP). |
 | `period-pure.js` | 83 | `__SSP_PERIOD_PURE` | Side-effect модуль: чистые функции форматирования/парсинга периодов (минуты ↔ строка). |
 | `permissions-matrix-pure.js` | 216 | `__SSP_PERMISSIONS_MATRIX_PURE` | #71 — «Управление правами» как таблица «группа × полномочие»: чистая логика. |
+| `phases-pure.js` | 156 | `__SSP_PHASES_PURE` | #120 «Фазы работ внутри спринта»: чистые правила блока фаз (цепочка, парность, порядок, границы, шкала, тон, слияние маппинга). |
 | `planning-model-pure.js` | 73 | `__SSP_PLANNING_MODEL_PURE` | Side-effect модуль: чистые функции маппинга «Модель планирования» (simple\|light\|full) ↔ тройка legacy-флагов (personalPlanningEnabled / usePersonal… |
 | `refresh-merge-pure.js` | 107 | `__SSP_REFRESH_MERGE_PURE` | Side-effect модуль: чистое ядро слияния при «Обновить из задачи» (#35). |
 | `release-tree-pure.js` | 81 | `__SSP_RELEASE_TREE_PURE` | #48 R3.2 дерево состава релиза (US-R3-04). |
@@ -197,6 +199,7 @@
 | `table-mount.jsx` | 220 | Ring Table bridge for Phase D7. |
 | `tabs-mount.jsx` | 74 | Ring Tabs bridge for Phase D6. |
 | `task-filter.jsx` | 73 | 118-1в / 118-3: строка фильтров таблиц задач спринта на Ring Select с множественным выбором (исполнитель · состояние · роль · приоритет). |
+| `tooltip-mount.jsx` | 43 | #120 мини-мост Ring Tooltip для строкового DOM: [data-ssp-tooltip="текст"] → узел переезжает в слот <Tooltip title delay={500}> (паттерн rail-tools… |
 
 ## 3. Бэкенд и workflow
 
@@ -300,7 +303,7 @@
 | Отключение планера в проекте | `backend-plannerdisable.js` |
 | Блокировка создания спринтов | `backend-sprintlock.js` |
 | Напоминания: вычислитель, права адресатов, журнал | `backend-reminders-calc.js`, `backend-reminders.js` |
-| Фазы работ спринта: запись, серверная принадлежность, полоска и блок вводных | `backend-phases.js` |
+| Фазы работ спринта: запись, серверная принадлежность, полоска и блок вводных | `backend-phases.js`, `widgets/main/src/pure/phases-pure.js`, `widgets/main/src/domain/phases-view.js` |
 | Workflow-правила: агрегации, подтяжка состояния | `workflow-common.js`, `workflow-cascade-aggregation.js`, `workflow-dta-aggregation.js`, `workflow-state-rollup.js`, `workflow-forbid-container.js` |
 | Даты и часовые пояса | `widgets/main/src/pure/date-pure.js`, `widgets/main/src/pure/period-pure.js` |
 | Экспорт в Excel и PDF | `widgets/main/src/domain/excel-export.js`, `widgets/main/src/pure/reporting-export-pure.js`, `widgets/main/lib/` |

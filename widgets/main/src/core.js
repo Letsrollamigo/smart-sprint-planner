@@ -3150,9 +3150,36 @@
     }
   }
   var INTRO_VIEW = (typeof window !== 'undefined' && window.__SSP_INTRO_VIEW) || {};
+  /* #120 — блок «Фазы работ» (domain/phases-view.js за мостом __SSP_PHASES_VIEW): рендер последней
+     строкой шапки вводных (intro-view) и на смене спринта (sprint-controller); запись — только
+     POST sprint-data?action=phases, модель мутирует applySaved модуля из ответа сервера. */
+  var PHASES_VIEW = (typeof window !== 'undefined' && window.__SSP_PHASES_VIEW) || {};
+  function _phasesDeps() {
+    return {
+      T: T, esc: esc, diag: diag, toast: toast, apiPost: apiPost,
+      toDateIn: toDateIn, fromDateIn: fromDateIn, fmtDay: fmtDay, fmtDT: fmtDT,
+      roleLabel: roleLabel, ALL_ROLES: ALL_ROLES, STATUS: STATUS, ICONS: ICONS,
+      getActiveRoles: getSprintRoles, getLang: function () { return _lang; },
+      getIntroSource: function () { return INTRO_VIEW.getIntroSource ? INTRO_VIEW.getIntroSource(_introDeps()) : _sprint; },
+      mountDatepickers: function (el) { try { if (window.__SSP_DATEPICKER) window.__SSP_DATEPICKER.mountAllIn(el); } catch (_) {} },
+      unmountDatepickers: function (el) { try { if (window.__SSP_DATEPICKER) window.__SSP_DATEPICKER.unmountAll(el); } catch (_) {} },
+      mountTooltips: function (el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.mountAll(el); } catch (_) {} },
+      unmountTooltips: function (el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.unmountAll(el); } catch (_) {} },
+      state: {
+        getSprint: function () { return _sprint; },
+        getHistory: function () { return _history; },
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getSettings: function () { return _settings; },
+        getIsEditor: function () { return _isEditor; },
+        getIsValidator: function () { return _isValidator; },
+        getCurrentUser: function () { return _currentUser; },
+      },
+    };
+  }
+  function renderPhasesBlock(rk) { if (PHASES_VIEW.renderPhasesBlock) return PHASES_VIEW.renderPhasesBlock(rk, _phasesDeps()); }
   function _introDeps() {
     return {
-      T: T, diag: diag, apiGet: apiGet, esc: esc,
+      T: T, diag: diag, apiGet: apiGet, esc: esc, renderPhasesBlock: renderPhasesBlock,   /* #120 */
       ALL_ROLES: ALL_ROLES, STATUS: STATUS,
       getActiveRoles: getSprintRoles, statusLabel: statusLabel, roleLabel: roleLabel,   /* #73 — набор спринта */
       toDateIn: toDateIn, fmtPeriod: fmtPeriod,
@@ -4818,7 +4845,7 @@
       withLoader: withLoader, apiPost: apiPost,
       renderRoleComposition: renderRoleComposition, renderWidgetHeader: renderWidgetHeader,
       renderWorkingCopyBanner: renderWorkingCopyBanner,
-      renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge, setDateField: setDateField,
+      renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge, setDateField: setDateField, renderPhasesBlock: renderPhasesBlock,
       updateRoleRemaining: updateRoleRemaining, renderSprintIntroExtras: renderSprintIntroExtras,
       renderPlanningLevel: _renderPlanningLevel, refreshGanttForCurrentSprint: refreshGanttForCurrentSprint,
       renderHistory: renderHistory, applyHybridSprintMode: _applyHybridSprintMode,

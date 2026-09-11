@@ -56,7 +56,11 @@ function createWorkingDraftFromSnapshot(snap, idx, deps) {
       dateStart:       snap.dateStart || null,
       dateEnd:         snap.dateEnd || null,
       sprintFieldVal:  snap.sprintFieldVal || null,
-      versionFieldVal: snap.versionFieldVal || null
+      versionFieldVal: snap.versionFieldVal || null,
+      /* #120 — копия фаз только на чтение (сервер переопределит при записи слота). */
+      phases:          snap.phases,
+      phasesUpdatedAt: snap.phasesUpdatedAt,
+      phasesUpdatedBy: snap.phasesUpdatedBy
     },
     items: (snap.items || []).map(function(it){
       var copy = {};

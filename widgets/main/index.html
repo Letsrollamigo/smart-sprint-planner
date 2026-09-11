@@ -1811,6 +1811,35 @@
     .sprint-intro-dates [data-ssp-datepicker-host] .ring-date-picker-anchor { padding: 6px 10px !important; font-size: 13px !important; }
     [data-ssp-datepicker-host].is-err .ring-date-picker-anchor { border-color: var(--error) !important; box-shadow: 0 0 0 2px rgba(224,90,106,.18); }
     [data-ssp-datepicker-host] .ring-date-picker-anchor:disabled { opacity: .45; cursor: not-allowed; }
+    /* #120 — блок «Фазы работ» (макет design/mirror/phases/params-block.html): таблица «фаза | дорожка |
+       с | → | по | пометки», одна шкала на все строки; тёмная тема — только переменные приложения. */
+    .ssp-phases__block { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px; }
+    .ssp-phases__title { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 12px; }
+    .ssp-phases__stamp { margin-left: auto; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
+    .ssp-phases { display: grid; grid-template-columns: 150px minmax(320px, 1fr) 128px 18px 128px minmax(150px, 220px); gap: 10px 12px; align-items: center; }
+    .ssp-phases__h { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; align-self: end; }
+    .ssp-phases__axis { position: relative; height: 16px; align-self: end; margin-right: 6px; }
+    .ssp-phases__tick { position: absolute; bottom: 0; font-size: 11px; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
+    .ssp-phases__tick:first-child { transform: none; } .ssp-phases__tick:last-child { transform: none; }
+    .ssp-phases__lane { position: relative; height: 22px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; background-image: linear-gradient(to right, var(--border) 1px, transparent 1px); }
+    .ssp-phases__seg { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; background: var(--primary); opacity: .32; }
+    .ssp-phases__seg.is-mine { opacity: 1; }
+    .ssp-phases__seg.is-warn, .ssp-phases__seg.is-oor { background: var(--warn); opacity: 1; }
+    .ssp-phases__seg[data-tail="right"] { border-right: 2px dashed var(--warn); border-radius: 3px 0 0 3px; }
+    .ssp-phases__seg[data-tail="left"] { border-left: 2px dashed var(--warn); border-radius: 0 3px 3px 0; }
+    .ssp-phases__name { font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .ssp-phases__name.is-mine { font-weight: 600; } .ssp-phases__name.is-empty { color: var(--muted); font-weight: 400; }
+    .ssp-phases__role { font-size: 10px; font-weight: 500; color: var(--primary); background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; line-height: 16px; }
+    .ssp-phases__arrow { color: var(--muted); text-align: center; font-size: 13px; }
+    .ssp-phases__status { font-size: 11px; color: var(--muted); } .ssp-phases__status.is-empty { font-style: italic; }
+    .ssp-phases [data-ssp-datepicker-host] .ring-date-picker-anchor { padding: 5px 8px !important; font-size: 13px !important; }
+    .ssp-phases__warn, .ssp-phases__err { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+    .ssp-phases__warn { color: var(--warn); cursor: default; } .ssp-phases__err { color: var(--error); }
+    .ssp-phases__warn .ssp-icon svg, .ssp-phases__err .ssp-icon svg { width: 12px; height: 12px; }
+    .ssp-phases__actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+    .ssp-phases__errline { font-size: 11px; color: var(--error); }
+    .ssp-tip, .ssp-tip__slot { display: inline-flex; }
+    @media (max-width: 1100px) { .ssp-phases { grid-template-columns: 130px minmax(200px, 1fr) 120px 18px 120px minmax(120px, 1fr); } }
     .sprint-intro-extra { display: flex; gap: 14px; flex-wrap: wrap; }
     /* #88 — строка «роль → её значение спринта»: подпись роли слева узкой колонкой,
        список справа. Появляется только когда поля спринта у ролей разошлись. */
@@ -2805,6 +2834,9 @@
         <button id="saveSprintIntroBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnSaveSprintIntro" aria-label="">Сохранить параметры спринта</button>
         <span class="field-err" id="errSprintIntro"></span>
       </div>
+      <!-- #120 — блок «Фазы работ» (⚖5): последней секцией ниже кнопки вводных, со своей кнопкой;
+           разметку строит domain/phases-view.js; скрыт при выключенном тумблере phasesEnabled. -->
+      <div id="sprintPhasesBlock" class="ssp-phases__block hidden"></div>
     </div>
     <div class="planning-levels" role="tablist">
       <!-- v5.6.0 — Этап 4: сегмент «Гант» удалён, Гант переехал на верхний уровень (#tab-gantt) -->

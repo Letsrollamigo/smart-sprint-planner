@@ -326,6 +326,12 @@ function apiPost(path, body, query, deps, _isRetry) {
           && typeof deps.state.setSlotRev === 'function') {
         deps.state.setSlotRev(r.rev);
       }
+      /* #120 — action=phases бампает rev истории (fan-out в снимки): иначе следующий full POST history
+         этой вкладки ловил бы 409 со слиянием (лишний цикл). */
+      if (path === 'sprint-data' && r && typeof r.historyRev === 'number'
+          && typeof deps.state.setSlotRevFor === 'function') {
+        deps.state.setSlotRevFor('history', r.historyRev);
+      }
       /* R6 — успешный write слота: сервер вернул новый rev. */
       if (REV_SLOT_PATHS[path] && r && typeof r.rev === 'number'
           && typeof deps.state.setSlotRevFor === 'function') {

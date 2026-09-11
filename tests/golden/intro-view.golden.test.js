@@ -251,3 +251,209 @@ test('renderRolePlannerHeader — просмотр чужого спринта: 
   assert.strictEqual(document.getElementById('res_' + rk).value, gm.call('fmtPeriod', 6000),
     'для рабочего спринта источник ресурса не изменился');
 });
+
+/* ═══════════════════ #120 — блок «Фазы работ» (renderRolePlannerHeader → renderPhasesBlock) ═══════════════════ */
+
+const DAY_MS = 86400000;
+function ph(a, b) { return { dateStart: fx.DATE_START + a * DAY_MS, dateEnd: fx.DATE_START + b * DAY_MS }; }
+/* Макет params-block на датах фикстуры (пн 18 мая — пт 12 июня 2026, 26 дней): шесть фаз заданы. */
+function sixPhases(over) {
+  return Object.assign({ analysis: ph(0, 3), development: ph(3, 16), techTest: ph(14, 19), regression: ph(21, 22), bizTest: ph(21, 23), deploy: ph(25, 25) }, over || {});
+}
+function phasesHost(opts) {
+  opts = opts || {};
+  const h = createHost();
+  const { gm, document } = h;
+  fx.applyBaseState(gm);
+  const stubs = { bindResInputDraftListener: function () {} };
+  if (!opts.realDraft) stubs.bindSprintHeaderDraftListeners = function () {};   /* тест хостов дат держит настоящий слушатель черновика */
+  gm.set(Object.assign(stubs, {
+    _settings: Object.assign(fx.buildSettings(), { phasesEnabled: true, phaseRoles: { techTest: ['testing'], regression: ['testing'] } }, opts.settings || {}),
+    _isEditor: opts.isEditor !== undefined ? opts.isEditor : true,
+    _isValidator: !!opts.isValidator,
+  }));
+  if (opts.phases !== undefined) {
+    const sp = gm.get('_sprint');
+    sp.phases = opts.phases; sp.phasesUpdatedAt = opts.updatedAt === undefined ? null : opts.updatedAt; sp.phasesUpdatedBy = opts.updatedBy || null;
+  }
+  ensureSharedIntroDom(document);
+  ensureRolePlannerDom(document, opts.rk || 'testing');
+  return h;
+}
+function blockFacts(document) {
+  const block = document.getElementById('sprintPhasesBlock');
+  const btn = document.getElementById('savePhasesBtn');
+  const hosts = block.querySelectorAll('[data-ssp-datepicker-host]');
+  return {
+    hidden: block.classList.contains('hidden'),
+    hosts: hosts.length,
+    disabledHosts: block.querySelectorAll('[data-ssp-datepicker-host][data-disabled="1"]').length,
+    chips: Array.prototype.map.call(block.querySelectorAll('.ssp-phases__role'), (e) => e.textContent),
+    mineNames: block.querySelectorAll('.ssp-phases__name.is-mine').length,
+    segs: Array.prototype.map.call(block.querySelectorAll('.ssp-phases__seg'), (e) => e.className + (e.dataset.tail ? '|tail=' + e.dataset.tail : '')),
+    ticks: Array.prototype.map.call(block.querySelectorAll('.ssp-phases__tick'), (e) => e.textContent),
+    statuses: Array.prototype.map.call(block.querySelectorAll('.ssp-phases__status'), (e) => e.textContent.trim()),
+    tooltips: Array.prototype.map.call(block.querySelectorAll('[data-ssp-tooltip]'), (e) => e.dataset.sspTooltip),
+    stampHasWho: !!(block.querySelector('.ssp-phases__stamp') && /Петров/.test(block.querySelector('.ssp-phases__stamp').textContent)),
+    btn: btn ? { cls: btn.className, disabled: btn.disabled, title: btn.getAttribute('title'), tooltip: btn.getAttribute('data-tooltip'), text: btn.textContent } : null,
+    err: block.querySelector('#errPhases') ? block.querySelector('#errPhases').textContent : null,
+  };
+}
+
+test('golden: renderRolePlannerHeader → блок фаз — заполнено, роль «Тестирование» с чипами (макет)', () => {
+  const { gm, document } = phasesHost({ phases: sixPhases(), updatedAt: fx.DATE_START + 5 * DAY_MS, updatedBy: 'Петров И. С.' });
+  gm.call('renderRolePlannerHeader', 'testing');
+  const facts = blockFacts(document);
+  assert.strictEqual(facts.hidden, false);
+  assert.deepStrictEqual(facts.chips, ['Тестирование', 'Тестирование']);
+  assert.strictEqual(facts.mineNames, 2);
+  assert.strictEqual(facts.disabledHosts, 0);
+  assert.strictEqual(facts.stampHasWho, true);
+  checkJsonSnapshot('intro-phases-filled', facts);
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — пусто (спринт только создан): «не планируется» ×6, штампа нет, HTML по макету', () => {
+  const { gm, document } = phasesHost({ phases: null, rk: 'analysis' });
+  gm.call('renderRolePlannerHeader', 'analysis');
+  const facts = blockFacts(document);
+  assert.strictEqual(facts.statuses.filter((s) => s === 'не планируется').length, 6);
+  assert.strictEqual(facts.stampHasWho, false);
+  assert.strictEqual(facts.mineNames, 6, 'у роли анализа нет фаз в маппинге → правило одного тона: все is-mine, чипов нет');
+  assert.deepStrictEqual(facts.chips, []);
+  checkHtmlSnapshot('intro-phases-empty', document.getElementById('sprintPhasesBlock').innerHTML);
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — предупреждения: сломанный порядок (оранжевый) и «вне диапазона» с пунктирным хвостом после сужения спринта', () => {
+  const { gm, document } = phasesHost({ phases: sixPhases({ bizTest: ph(17, 23) }) });
+  gm.get('_sprint').dateEnd = fx.DATE_START + 23 * DAY_MS;   /* спринт сузили: deploy (25) снаружи */
+  gm.call('renderRolePlannerHeader', 'testing');
+  const facts = blockFacts(document);
+  assert.ok(facts.segs.some((c) => /is-warn/.test(c)), 'отрезок бизнес-теста помечен is-warn');
+  assert.ok(facts.segs.some((c) => /is-oor/.test(c) && /tail=right/.test(c)), 'deploy: is-oor + хвост справа');
+  assert.strictEqual(facts.tooltips.length, 2);
+  assert.ok(/раньше фазы «Регресс»/.test(facts.statuses[4]));
+  checkJsonSnapshot('intro-phases-warnings', facts);
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — тумблер выключен: контейнер скрыт и пуст', () => {
+  const { gm, document } = phasesHost({ phases: sixPhases(), settings: { phasesEnabled: false } });
+  gm.call('renderRolePlannerHeader', 'testing');
+  const block = document.getElementById('sprintPhasesBlock');
+  assert.strictEqual(block.classList.contains('hidden'), true);
+  assert.strictEqual(block.innerHTML, '');
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — наблюдатель: пикеры disabled, кнопка приглушена с подсказкой обеих групп; валидатор без прав редактора — рабочий блок', () => {
+  const v = phasesHost({ phases: sixPhases(), isEditor: false, isValidator: false });
+  v.gm.call('renderRolePlannerHeader', 'testing');
+  const viewer = blockFacts(v.document);
+  assert.strictEqual(viewer.disabledHosts, 12);
+  assert.ok(/btn--disabled-rights/.test(viewer.btn.cls));
+  assert.strictEqual(viewer.btn.tooltip, 'Недостаточно прав. Необходима группа «Редактирование спринта» или «Валидация спринта»');
+  const w = phasesHost({ phases: sixPhases(), isEditor: false, isValidator: true });
+  w.gm.call('renderRolePlannerHeader', 'testing');
+  const validator = blockFacts(w.document);
+  assert.strictEqual(validator.disabledHosts, 0);
+  assert.ok(!/btn--disabled-rights/.test(validator.btn.cls));
+  checkJsonSnapshot('intro-phases-rights', { viewer: viewer.btn, validator: validator.btn });
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — завершённый спринт из истории (только чтение) и спринт без дат (нет шкалы)', () => {
+  const f = phasesHost({ phases: sixPhases() });
+  f.gm.set({ _currentSprintId: fx.HIST_SPRINT_ID });   /* все снимки FINISHED, слот держит другой спринт */
+  f.gm.call('renderRolePlannerHeader', 'analysis');
+  const fin = blockFacts(f.document);
+  assert.strictEqual(fin.disabledHosts, 12);
+  assert.strictEqual(fin.btn.disabled, true);
+  assert.strictEqual(fin.btn.title, 'Спринт завершён — фазы не меняются');
+  const n = phasesHost({ phases: null });
+  n.gm.get('_sprint').dateStart = null; n.gm.get('_sprint').dateEnd = null;
+  n.gm.call('renderRolePlannerHeader', 'testing');
+  const nodates = blockFacts(n.document);
+  assert.deepStrictEqual(nodates.ticks, []);
+  assert.strictEqual(nodates.disabledHosts, 12);
+  assert.strictEqual(nodates.btn.title, 'Сначала укажите даты спринта');
+  checkJsonSnapshot('intro-phases-finished-nodates', { finished: fin.btn, noDates: nodates.btn, noDatesTicks: nodates.ticks });
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — отказ по кнопке (конец раньше начала) и отказ сервера phases_out_of_sprint:deploy: строка помечена, модель не тронута', async () => {
+  const { gm, document, window } = phasesHost({ phases: sixPhases() });
+  const posts = [];
+  gm.set({ apiPost: function (path, body, query) { posts.push({ path: path, body: body, query: query }); return Promise.reject(new Error('phases_out_of_sprint:deploy [cid-1]')); } });
+  gm.call('renderRolePlannerHeader', 'testing');
+  const block = document.getElementById('sprintPhasesBlock');
+  const host = (k, edge) => block.querySelector('[data-ssp-datepicker-host][data-ssp-phase="' + k + '"][data-ssp-edge="' + edge + '"]');
+  const click = () => document.getElementById('savePhasesBtn').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  /* клиентский отказ: конец раньше начала у тех.теста — запрос не шлётся */
+  host('techTest', 'start').dataset.value = '2026-06-05'; host('techTest', 'end').dataset.value = '2026-06-01';
+  click();
+  const client = { posts: posts.length, err: block.querySelector('#errPhases').textContent, techErr: host('techTest', 'start').classList.contains('is-err') && host('techTest', 'end').classList.contains('is-err'), status: block.querySelector('.ssp-phases__status[data-ssp-phase="techTest"]').textContent.trim() };
+  assert.strictEqual(client.posts, 0);
+  assert.strictEqual(client.techErr, true);
+  /* серверный отказ: чиним тех.тест, двигаем деплой — сервер отвечает phases_out_of_sprint:deploy */
+  host('techTest', 'end').dataset.value = '2026-06-06';
+  host('deploy', 'start').dataset.value = '2026-06-12'; host('deploy', 'end').dataset.value = '2026-06-13';
+  click();
+  await flush(12);
+  const server = { posts: posts.length, query: posts[0] && posts[0].query, sentDeploy: posts[0] && posts[0].body.sprint.phases.deploy, sentTechTest: posts[0] && posts[0].body.sprint.phases.techTest,
+    deployErr: host('deploy', 'start').classList.contains('is-err'), techErrCleared: !host('techTest', 'start').classList.contains('is-err'),
+    err: block.querySelector('#errPhases').textContent, modelDeploy: gm.get('_sprint').phases.deploy, btnEnabled: !document.getElementById('savePhasesBtn').disabled };
+  assert.strictEqual(server.posts, 1);
+  assert.strictEqual(JSON.stringify(server.query), JSON.stringify({ action: 'phases' }));
+  assert.strictEqual(server.deployErr, true, 'строка деплоя помечена по ключу из суффикса');
+  assert.strictEqual(JSON.stringify(server.modelDeploy), JSON.stringify(ph(25, 25)), 'модель не тронута отказом');
+  checkJsonSnapshot('intro-phases-refusals', { client: client, server: server });
+});
+
+test('golden: renderRolePlannerHeader → блок фаз — успех: _sprint и снимки истории получают фазы и штампы из ответа, rev слота и истории синхронизированы, блок перерисован', async () => {
+  const { gm, document, window } = phasesHost({ phases: sixPhases() });
+  const sid = fx.SPRINT_ID;
+  const resp = { success: true, action: 'phases', sprintId: sid, changed: true, phases: sixPhases({ deploy: null }), phasesUpdatedAt: fx.DATE_START + 9 * DAY_MS, phasesUpdatedBy: 'Петров И. С.', rev: 7, historyRev: 9, snaps: 1 };
+  const calls = [];
+  gm.set({ _host: { fetchApp: function (p, o) { calls.push({ p: p, q: o && o.query, body: o && o.body }); return Promise.resolve(resp); }, fetchYouTrack: function () { return Promise.resolve({}); } } });
+  /* снимок роли текущего спринта в истории — после успеха обязан получить те же фазы (fan-out сервера) */
+  gm.get('_history').push({ sprintId: sid + '_testing', roleKey: 'testing', roleLabel: 'Тестирование', status: 'CONFIRMED', dateStart: fx.DATE_START, dateEnd: fx.DATE_END, phases: sixPhases() });
+  gm.call('renderRolePlannerHeader', 'testing');
+  const block = document.getElementById('sprintPhasesBlock');
+  const host = (k, edge) => block.querySelector('[data-ssp-datepicker-host][data-ssp-phase="' + k + '"][data-ssp-edge="' + edge + '"]');
+  host('deploy', 'start').dataset.value = ''; host('deploy', 'end').dataset.value = '';
+  document.getElementById('savePhasesBtn').dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  await flush(20);
+  const store = window.__SSP_SPRINT_STORE;
+  const out = {
+    call: calls[0] && { p: calls[0].p, q: calls[0].q, baseRevNum: typeof calls[0].body.baseRev === 'number', deploy: calls[0].body.sprint.phases.deploy },
+    sprintDeploy: gm.get('_sprint').phases.deploy, sprintBy: gm.get('_sprint').phasesUpdatedBy,
+    histPhases: gm.get('_history').filter((r) => r.sprintId.indexOf(sid + '_') === 0).map((r) => r.phases && r.phases.deploy),
+    foreignUntouched: gm.get('_history').filter((r) => r.sprintId.indexOf(sid + '_') !== 0).every((r) => r.phases === undefined),
+    slotRev: store.getSlotRev(), historyRev: store.getSlotRevFor('history'),
+    stampHasWho: blockFacts(document).stampHasWho, deployStatus: block.querySelector('.ssp-phases__status[data-ssp-phase="deploy"]').textContent.trim(),
+  };
+  assert.strictEqual(out.sprintDeploy, null);
+  assert.ok(out.histPhases.length > 0 && out.histPhases.every((v) => v === null), 'снимки истории спринта получили фазы: ' + JSON.stringify(out));
+  assert.strictEqual(out.foreignUntouched, true);
+  assert.strictEqual(out.slotRev, 7); assert.strictEqual(out.historyRev, 9);
+  assert.strictEqual(out.deployStatus, 'не планируется');
+  checkJsonSnapshot('intro-phases-saved', out);
+});
+
+test('golden: renderRolePlannerHeader — даты спринта на Ring-хостах (⚖8): скрытый input несёт value, хост — data-value, ошибка валидации — is-err на хосте', () => {
+  const { gm, document } = phasesHost({ phases: null, realDraft: true });
+  gm.call('renderRolePlannerHeader', 'testing');
+  const ds = document.getElementById('dateStart'), hostDs = document.querySelector('[data-ssp-datepicker-host][data-ssp-for="dateStart"]');
+  const before = { inputType: ds.type, value: ds.value, hostValue: hostDs.dataset.value };
+  /* пользователь выбрал дату в пикере: мост пишет data-value и шлёт change на хосте → input догоняет */
+  hostDs.dataset.value = '2026-05-20';
+  hostDs.dispatchEvent(new document.defaultView.Event('change', { bubbles: true }));
+  const afterPick = { value: ds.value, sprintDateStart: gm.get('_sprint').dateStart };
+  /* пустая дата окончания → отказ вводных: рамка на хосте, не на скрытом input */
+  gm.set({ toast: function () {} });
+  gm.call('setDateField', 'dateEnd', '');
+  gm.call('doSaveSprintIntro');
+  const hostDe = document.querySelector('[data-ssp-datepicker-host][data-ssp-for="dateEnd"]');
+  const afterErr = { hostErr: hostDe.classList.contains('is-err'), errText: document.getElementById('errDate').textContent };
+  assert.strictEqual(before.inputType, 'hidden');
+  assert.strictEqual(afterPick.value, '2026-05-20');
+  assert.strictEqual(afterPick.sprintDateStart, Date.UTC(2026, 4, 20), 'слушатель черновика ядра сработал через change на input');
+  assert.strictEqual(afterErr.hostErr, true);
+  checkJsonSnapshot('intro-dates-ring-hosts', { before: before, afterPick: afterPick, afterErr: afterErr });
+});

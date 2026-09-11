@@ -189,6 +189,19 @@ function _applyEditorRightsTo(panel, deps) {
       btn.setAttribute('data-tooltip', T('tooltipNoRightsEdit'));
     }
   });
+  /* #120 — кнопка «Сохранить фазы работ»: editor ∨ validator; подсказка называет обе группы. Тот же
+     класс ставит и сам рендер блока (шапка перерисовывается чаще, чем зовётся этот проход) — здесь
+     асинхронный переворот на старте, когда чеки прав приходят позже первого рендера. */
+  var phasesBtns = panel.querySelectorAll('.phases-btn');
+  phasesBtns.forEach(function (btn) {
+    if (_isEditor || _isValidator) {
+      btn.classList.remove('btn--disabled-rights');
+      btn.removeAttribute('data-tooltip');
+    } else {
+      btn.classList.add('btn--disabled-rights');
+      btn.setAttribute('data-tooltip', T('tooltipNoRightsPhases'));
+    }
+  });
   /* v6.1.0 D82 (F5) — assigner-btn включён если editor OR assigner. */
   var assignerBtns = panel.querySelectorAll('.assigner-btn');
   assignerBtns.forEach(function (el) {

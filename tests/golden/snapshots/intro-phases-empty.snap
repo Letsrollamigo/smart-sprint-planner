@@ -1,0 +1,88 @@
+<div class="ssp-phases__title">Фазы работ</div>
+<div class="ssp-phases">
+<div class="ssp-phases__h">Фаза</div>
+<div class="ssp-phases__axis">
+<span class="ssp-phases__tick" style="left:11.538%">25 мая</span>
+<span class="ssp-phases__tick" style="left:38.462%">1 июн.</span>
+<span class="ssp-phases__tick" style="left:65.385%">8 июн.</span>
+<span class="ssp-phases__tick" style="left:92.308%">15 июн.</span>
+<span class="ssp-phases__tick" style="right:0">16 июн.</span>
+</div>
+<div class="ssp-phases__h">С</div>
+<div>
+</div>
+<div class="ssp-phases__h">По</div>
+<div>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Анализ</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="analysis" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="analysis" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="analysis">
+<em>не планируется</em>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Разработка</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="development" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="development" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="development">
+<em>не планируется</em>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Тех.тест</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="techTest" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="techTest" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="techTest">
+<em>не планируется</em>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Регресс</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="regression" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="regression" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="regression">
+<em>не планируется</em>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Бизнес-тест</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="bizTest" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="bizTest" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="bizTest">
+<em>не планируется</em>
+</div>
+<div class="ssp-phases__name is-mine is-empty">Деплой</div>
+<div class="ssp-phases__lane" style="background-size:26.923% 100%">
+</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="deploy" data-ssp-edge="start" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__arrow">→</div>
+<span data-ssp-datepicker-host="" data-ssp-phase="deploy" data-ssp-edge="end" data-value="" data-min="2026-05-22" data-max="2026-06-16" class="">
+</span>
+<div class="ssp-phases__status is-empty" data-ssp-phase="deploy">
+<em>не планируется</em>
+</div>
+</div>
+<div class="ssp-phases__actions">
+<button id="savePhasesBtn" type="button" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn">Сохранить фазы работ</button>
+<span class="ssp-phases__errline" id="errPhases">
+</span>
+</div>

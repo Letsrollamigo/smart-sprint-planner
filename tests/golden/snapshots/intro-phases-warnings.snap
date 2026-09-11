@@ -1,0 +1,45 @@
+{
+  "hidden": false,
+  "hosts": 12,
+  "disabledHosts": 0,
+  "chips": [
+    "Тестирование",
+    "Тестирование"
+  ],
+  "mineNames": 2,
+  "segs": [
+    "ssp-phases__seg",
+    "ssp-phases__seg",
+    "ssp-phases__seg is-mine",
+    "ssp-phases__seg is-mine",
+    "ssp-phases__seg is-warn",
+    "ssp-phases__seg is-oor|tail=right"
+  ],
+  "ticks": [
+    "25 мая",
+    "1 июн.",
+    "8 июн.",
+    "14 июн."
+  ],
+  "statuses": [
+    "",
+    "",
+    "",
+    "",
+    "раньше фазы «Регресс»",
+    "вне диапазона спринта"
+  ],
+  "tooltips": [
+    "Начинается 08.06.2026 — раньше фазы «Регресс» (12.06.2026). Порядок цепочки: Анализ → Разработка → Тех.тест → Регресс → Бизнес-тест → Деплой. Сохранить можно.",
+    "Спринт теперь 22.05.2026–14.06.2026, фаза выходит за его границы. Сохранить можно; чтобы снять пометку, сдвиньте фазу."
+  ],
+  "stampHasWho": false,
+  "btn": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn",
+    "disabled": false,
+    "title": null,
+    "tooltip": null,
+    "text": "Сохранить фазы работ"
+  },
+  "err": ""
+}

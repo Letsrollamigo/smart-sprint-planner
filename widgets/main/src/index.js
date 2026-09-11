@@ -17,6 +17,7 @@ import './pure/sort-pure.js';
 import './pure/period-pure.js';
 import './pure/enum-locale-pure.js';
 import './pure/date-pure.js';
+import './pure/phases-pure.js';   /* #120 — фазы работ: правила цепочки, порядка, границ, шкалы, тона */
 import './pure/hash-pure.js';
 import './pure/util-pure.js';
 import './pure/migrate-pure.js';
@@ -79,6 +80,7 @@ import './domain/backlog-loader.js';
 import './domain/backlog-view.js';
 import './domain/backlog-assign.js';
 import './domain/intro-view.js';
+import './domain/phases-view.js';   /* #120 — блок «Фазы работ» в карточке вводных */
 import './domain/capacity-view.js';
 import './domain/sprint-store.js';
 import './pure/slot-merge-pure.js';   /* #84 — трёхстороннее слияние слота на 409 */
@@ -91,6 +93,7 @@ import './domain/reporting-view.js';
 import './domain/release-controller.js';
 import './domain/release-rollback.js';
 import './react/sprint-lock-toggle.jsx';   /* #57-2 — тумблер блокировки создания спринтов */
+import './react/tooltip-mount.jsx';   /* #120 — Ring Tooltip для строкового DOM ([data-ssp-tooltip]) */
 import './react/rail-tools.jsx';   /* #119 — сервисные иконки рельса + Ring Tooltip (колокольчик в шапке, строка иконок) */
 import './react/task-filter.jsx';   /* 118-1в / 118-3 — строка фильтров таблиц задач (Ring Select, выбор до перезагрузки) */
 import './domain/release-pick.js';

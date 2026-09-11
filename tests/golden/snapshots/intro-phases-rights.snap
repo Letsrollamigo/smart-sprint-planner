@@ -1,0 +1,16 @@
+{
+  "viewer": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn btn--disabled-rights",
+    "disabled": false,
+    "title": null,
+    "tooltip": "Недостаточно прав. Необходима группа «Редактирование спринта» или «Валидация спринта»",
+    "text": "Сохранить фазы работ"
+  },
+  "validator": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn",
+    "disabled": false,
+    "title": null,
+    "tooltip": null,
+    "text": "Сохранить фазы работ"
+  }
+}

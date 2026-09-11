@@ -1,0 +1,30 @@
+{
+  "client": {
+    "posts": 0,
+    "err": "Фазы не сохранены: исправьте отмеченные строки",
+    "techErr": true,
+    "status": "конец раньше начала"
+  },
+  "server": {
+    "posts": 1,
+    "query": {
+      "action": "phases"
+    },
+    "sentDeploy": {
+      "dateStart": 1781222400000,
+      "dateEnd": 1781308800000
+    },
+    "sentTechTest": {
+      "dateStart": 1780617600000,
+      "dateEnd": 1780704000000
+    },
+    "deployErr": true,
+    "techErrCleared": true,
+    "err": "Фазы не сохранены: исправьте отмеченные строки",
+    "modelDeploy": {
+      "dateStart": 1781568000000,
+      "dateEnd": 1781568000000
+    },
+    "btnEnabled": true
+  }
+}

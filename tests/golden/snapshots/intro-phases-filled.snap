@@ -1,0 +1,43 @@
+{
+  "hidden": false,
+  "hosts": 12,
+  "disabledHosts": 0,
+  "chips": [
+    "Тестирование",
+    "Тестирование"
+  ],
+  "mineNames": 2,
+  "segs": [
+    "ssp-phases__seg",
+    "ssp-phases__seg",
+    "ssp-phases__seg is-mine",
+    "ssp-phases__seg is-mine",
+    "ssp-phases__seg",
+    "ssp-phases__seg"
+  ],
+  "ticks": [
+    "25 мая",
+    "1 июн.",
+    "8 июн.",
+    "15 июн.",
+    "16 июн."
+  ],
+  "statuses": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "tooltips": [],
+  "stampHasWho": true,
+  "btn": {
+    "cls": "ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText phases-btn",
+    "disabled": false,
+    "title": null,
+    "tooltip": null,
+    "text": "Сохранить фазы работ"
+  },
+  "err": ""
+}

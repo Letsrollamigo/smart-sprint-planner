@@ -43,6 +43,7 @@ const BRIDGE_SCRIPTS = [
   'period-pure.js',
   'enum-locale-pure.js',
   'date-pure.js',
+  'phases-pure.js',      /* #120 — правила блока фаз */
   'hash-pure.js',
   'util-pure.js',
   'migrate-pure.js',
@@ -87,6 +88,7 @@ const BRIDGE_SCRIPTS = [
   'gantt-view.js',
   'backlog-view.js',
   'intro-view.js',
+  'phases-view.js',      /* #120 — блок «Фазы работ» */
   'capacity-view.js',
   'sprint-store.js',
   'slot-merge-pure.js',   /* #84 — трёхстороннее слияние слота на 409 */
