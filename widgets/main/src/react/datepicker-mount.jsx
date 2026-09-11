@@ -6,6 +6,7 @@
    Host element contract:
    - data-value = "YYYY-MM-DD" or empty
    - data-min, data-max = "YYYY-MM-DD" constraints
+   - data-disabled = "1" → picker disabled (#120: наблюдатель / завершённый спринт / нет дат спринта)
    - data-issue = issueId (preserved for legacy handler)
    - classList contains .currentRole-task-date + .currentRole-task-start/.end */
 
@@ -32,13 +33,15 @@ function fmtYmd(d) {
 function getTranslations() {
   /* Pass through SSP T() values where they map cleanly; fall back to date-fns native
      where Ring uses month/day names (handled by locale prop). */
+  /* #120 — плейсхолдер пустого пикера phasesPickDate ×15 (до 3.45.0 мост звал несуществующие
+     btnSelect/hdrDateStart/hdrDateEnd, а T() отдаёт сам ключ — пустой пикер показывал «btnSelect»). */
   const T = (window.__SSP_T || window.T || ((k) => k));
   return {
-    setDate: T('btnSelect') || 'Set date',
-    setDateTime: T('btnSelect') || 'Set date/time',
-    setPeriod: T('btnSelect') || 'Set period',
-    addFirstDate: T('hdrDateStart') || 'Start',
-    addSecondDate: T('hdrDateEnd') || 'End',
+    setDate: T('phasesPickDate'),
+    setDateTime: T('phasesPickDate'),
+    setPeriod: T('phasesPickDate'),
+    addFirstDate: T('lblDateStart'),
+    addSecondDate: T('lblDateEnd'),
     addTime: 'Time',
     selectName: 'Select',
   };
@@ -47,13 +50,15 @@ function getTranslations() {
 function SspDatePicker({ host }) {
   const DatePicker = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.DatePicker;
   const [value, setValue] = React.useState(() => parseYmd(host.dataset.value));
+  const [disabled, setDisabled] = React.useState(() => host.dataset.disabled === '1');   /* #120 — data-disabled="1" → анкер disabled */
   /* React subscribes to host attribute changes so external updates (e.g. table
      re-render writing new data-value) refresh the picker without remount. */
   React.useEffect(() => {
     const obs = new MutationObserver(() => {
       setValue(parseYmd(host.dataset.value));
+      setDisabled(host.dataset.disabled === '1');
     });
-    obs.observe(host, { attributes: true, attributeFilter: ['data-value'] });
+    obs.observe(host, { attributes: true, attributeFilter: ['data-value', 'data-disabled'] });
     return () => obs.disconnect();
   }, [host]);
 
@@ -84,6 +89,7 @@ function SspDatePicker({ host }) {
       translations={translations}
       clear={true}
       size="S"
+      disabled={disabled}
       onChange={handleChange}
     />
   );

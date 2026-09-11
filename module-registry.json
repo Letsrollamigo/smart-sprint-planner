@@ -82,7 +82,6 @@
       "I18N_LANGS__": "i18n",
       "I18N_CTRL": "i18n",
       "MODAL_ANCHOR": "infra",
-      "DP_BRIDGE": "infra",
       "DIAG_SNAPSHOT": "infra",
       "FIELDVALUES_LOADER": "infra",
       "MODAL_SPECS": "infra",
@@ -878,15 +877,6 @@
       ],
       "publishes": [
         "MODAL_ANCHOR"
-      ]
-    },
-    "infra/datepicker-bridge.js": {
-      "layer": "infra",
-      "domain": "infra/datepicker-bridge",
-      "loc": 179,
-      "state": [],
-      "publishes": [
-        "DP_BRIDGE"
       ]
     },
     "infra/diag-snapshot.js": {

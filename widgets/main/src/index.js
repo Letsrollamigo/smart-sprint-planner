@@ -13,7 +13,6 @@ import './icons.generated.js';
 import './i18n/i18n-bridge.js';
 import './pure/toast-pure.js';
 import './infra/toast-ring.js';
-import './infra/datepicker-bridge.js';
 import './pure/sort-pure.js';
 import './pure/period-pure.js';
 import './pure/enum-locale-pure.js';

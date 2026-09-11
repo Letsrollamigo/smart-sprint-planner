@@ -50,7 +50,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4646 | — | композиционный корень виджета. |
+| `core.js` | 4635 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -141,7 +141,6 @@
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
 | `click-anchor.js` | 84 | `__SSP_MODAL_ANCHOR` | Cross-origin sandbox iframe modal anchor tracker. |
-| `datepicker-bridge.js` | 179 | `__SSP_DP_BRIDGE` | Кастомный локализованный датапикер (v1.4.1 D127) — поп-ап для инпутов с маркером [data-ssp-datepicker]. |
 | `diag-snapshot.js` | 103 | `__SSP_DIAG_SNAPSHOT` | экспорт-слепок состояния из диаг-панели (#63 п.4). |
 | `fieldvalues-loader.js` | 196 | `__SSP_FIELDVALUES_LOADER` | 68-8: эфемерная подгрузка значений «отображаемых полей». |
 | `modal-specs.js` | 259 | `__SSP_MODAL_SPECS` | Phase 2 #32 — WC-семейство мигрировано на openModal() (настоящий React в Ring Dialog). |

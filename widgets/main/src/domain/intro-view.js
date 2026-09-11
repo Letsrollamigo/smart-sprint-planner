@@ -224,6 +224,31 @@
     return _sprint;
   }
 
+  /* #120 (⚖8) — даты спринта на Ring DatePicker: носитель значения — скрытый <input id=dateStart|dateEnd>,
+     рядом хост [data-ssp-datepicker-host][data-ssp-for]. Писатели значения идут сюда (input +
+     host.dataset.value — MutationObserver моста обновляет пикер); change от хоста пробрасывается на
+     input, так что слушатели черновика ядра (bindSprintHeaderDraftListeners) и читатели .value
+     работают без правок. Хосты монтирует ядро (init / смена языка). */
+  function setDateField(id, ymd) {
+    var input = document.getElementById(id);
+    if (input) input.value = ymd || '';
+    var host = document.querySelector('[data-ssp-datepicker-host][data-ssp-for="' + id + '"]');
+    if (host) host.dataset.value = ymd || '';
+  }
+  function bindDateHosts() {
+    var card = document.getElementById('sprintIntroCard');
+    if (!card || card.__sspDateHostsBound) return;
+    card.__sspDateHostsBound = true;
+    card.addEventListener('change', function (ev) {
+      var host = (ev.target && ev.target.closest) ? ev.target.closest('[data-ssp-datepicker-host][data-ssp-for]') : null;
+      if (!host || ev.target !== host) return;
+      var input = document.getElementById(host.dataset.sspFor);
+      if (!input || input.value === (host.dataset.value || '')) return;
+      input.value = host.dataset.value || '';
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
   /* ── Рендер шапки планировщика для роли ── */
   function renderRolePlannerHeader(rk, deps) {
     var _settings = deps.state.getSettings();
@@ -236,8 +261,8 @@
       /* Свитч на проект без спринтов: не оставляем residual-значения прошлого
          проекта в общих полях формы (⚖ владелец 2026-07-03, TechDEBT+Sanitary). */
       document.getElementById('sprintName').value = '';
-      document.getElementById('dateStart').value  = '';
-      document.getElementById('dateEnd').value    = '';
+      setDateField('dateStart', '');
+      setDateField('dateEnd', '');
       var goalEl0 = document.getElementById('sprintGoal');
       if (goalEl0) goalEl0.value = '';
       return;
@@ -245,8 +270,9 @@
     // Название, даты, цель — общие; источник = выбранный спринт (активный или исторический снапшот)
     var _intro = _introSourceForCurrent(deps) || _sprint;
     document.getElementById('sprintName').value = _intro.name || '';
-    document.getElementById('dateStart').value  = deps.toDateIn(_intro.dateStart);
-    document.getElementById('dateEnd').value    = deps.toDateIn(_intro.dateEnd);
+    setDateField('dateStart', deps.toDateIn(_intro.dateStart));
+    setDateField('dateEnd', deps.toDateIn(_intro.dateEnd));
+    bindDateHosts();
     /* v1.9.0 D132 — Заполнить sprint goal textarea при переключении спринта. */
     var goalEl = document.getElementById('sprintGoal');
     if (goalEl) goalEl.value = _intro.sprintGoal || '';
@@ -326,6 +352,9 @@
     renderSprintIntroExtras: renderSprintIntroExtras,
     renderRolePlannerHeader: renderRolePlannerHeader,
     renderRoleStatusBadge: renderRoleStatusBadge,
+    setDateField: setDateField,                                                   /* #120 (⚖8) */
+    bindDateHosts: bindDateHosts,
+    getIntroSource: function (deps) { return _introSourceForCurrent(deps); },     /* #120 — источник вводных для блока фаз */
   };
   if (typeof window !== 'undefined') window.__SSP_INTRO_VIEW = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

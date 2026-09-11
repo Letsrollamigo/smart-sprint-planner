@@ -145,7 +145,7 @@ function publishedBridges(src) {
 /* Классификация моста по СЛОЮ (fork-agnostic — по суффиксу без __SCBT_/__SSP_).
    leaf-слои (infra/pure/i18n) может тянуть кто угодно; domain — нет (только через core deps). */
 const INFRA_SUFFIX = new Set([
-  'ICONS', 'TABLE', 'DATEPICKER', 'DP_BRIDGE', 'RADIO', 'CHECKBOX', 'INPUT', 'SELECT',
+  'ICONS', 'TABLE', 'DATEPICKER', 'RADIO', 'CHECKBOX', 'INPUT', 'SELECT',
   'TABS', 'COLLAPSE', 'LOADER', 'RING_MODAL', 'MODAL_ANCHOR', 'MODAL_SPECS',
   'GANTT_MOUNT', 'STANDUP_MOUNT', 'BACKLOG_MOUNT', 'CAPACITY_MOUNT', 'TOAST', 'TOAST_RING',
 ]);

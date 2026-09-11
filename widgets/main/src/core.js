@@ -396,22 +396,6 @@
     if (lbl) lbl.textContent = T('labelProject') + _projectDisplayName;
   }
 
-  /* v1.4.1 D127 — Custom localized date picker: вынесен в
-     widgets/main/src/datepicker-bridge.js (Фаза 5 слайс E3) за мост
-     window.__SSP_DP_BRIDGE (НЕ __SSP_DATEPICKER — это React-мост Ring
-     DatePicker'ов таблиц). Интерфейс кластера чисто DOM-овый (document-level
-     capture-листенеры на input[data-ssp-datepicker] + синтетические
-     input/change) — делегаторов в монолите нет. install — в той же точке
-     init, где зона регистрировала листенеры; deps late-binding (язык —
-     в момент рендера). */
-  if (typeof window !== 'undefined' && window.__SSP_DP_BRIDGE) {
-    window.__SSP_DP_BRIDGE.install({
-      T: function (key) { return T(key); },
-      esc: function (s) { return esc(s); },
-      getLang: function () { return _lang; }
-    });
-  }
-
 
   function _doFullRerender() {
     applyI18N();
@@ -420,6 +404,8 @@
     /* v2.1.0 F1+F2+F3 — mount Ring Input/Select/Collapse hosts (idempotent). */
     try { if (window.__SSP_INPUT)    window.__SSP_INPUT.mountAllIn(document); } catch (_) {}
     try { if (window.__SSP_SELECT)   window.__SSP_SELECT.mountAllIn(document); } catch (_) {}
+    /* #120 (⚖8) — хосты дат вводных: перемонтировать (локаль пикера читается при рендере; mountAt идемпотентен). */
+    try { var _dpCard = document.getElementById('sprintIntroCard'); if (window.__SSP_DATEPICKER && _dpCard) { window.__SSP_DATEPICKER.unmountAll(_dpCard); window.__SSP_DATEPICKER.mountAllIn(_dpCard); } } catch (_) {}
     _updateProjectNameLabel();
     /* v1.3.1 — после applyI18N status-bar показывает локализованный
        on/off лейбл для своих 4 chip'ов. */
@@ -1911,6 +1897,7 @@
        to call again on language switch / dynamic re-render. */
     try { if (window.__SSP_INPUT)    window.__SSP_INPUT.mountAllIn(document); } catch (_) {}
     try { if (window.__SSP_SELECT)   window.__SSP_SELECT.mountAllIn(document); } catch (_) {}
+    try { if (window.__SSP_DATEPICKER) window.__SSP_DATEPICKER.mountAllIn(document.getElementById('sprintIntroCard')); } catch (_) {}   /* #120 (⚖8) — даты вводных */
     applyIcons(); // v1.9.6 — sweep data-icon attrs → SVG spans (no-op on rerenders, data-icon removed after first pass)
     bindEmptyStateCtas(); // #43 W2 (B-2/D-1) — CTA статических empty-state'ов (идемпотентно)
     applyRingTheme(); // v1.9.9 — apply ring-variables_dark-dark on <html> for Ring CSS dark mode
@@ -3193,6 +3180,7 @@
   function renderRolePlannerHeader(rk) { return INTRO_VIEW.renderRolePlannerHeader(rk, _introDeps()); }
 
   function renderRoleStatusBadge(rk) { return INTRO_VIEW.renderRoleStatusBadge(rk, _introDeps()); }
+  function setDateField(id, ymd) { return INTRO_VIEW.setDateField(id, ymd); }   /* #120 (⚖8) — input + хост Ring DatePicker */
 
   /* ── Обновить остаток для роли — в rolecomposition-view.js (#63, класс D109):
      при просмотре чужого спринта источник = rk-снапшот выбранного спринта. ── */
@@ -4830,7 +4818,7 @@
       withLoader: withLoader, apiPost: apiPost,
       renderRoleComposition: renderRoleComposition, renderWidgetHeader: renderWidgetHeader,
       renderWorkingCopyBanner: renderWorkingCopyBanner,
-      renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge,
+      renderRolePlannerHeader: renderRolePlannerHeader, renderRoleStatusBadge: renderRoleStatusBadge, setDateField: setDateField,
       updateRoleRemaining: updateRoleRemaining, renderSprintIntroExtras: renderSprintIntroExtras,
       renderPlanningLevel: _renderPlanningLevel, refreshGanttForCurrentSprint: refreshGanttForCurrentSprint,
       renderHistory: renderHistory, applyHybridSprintMode: _applyHybridSprintMode,

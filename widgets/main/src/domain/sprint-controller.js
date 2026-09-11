@@ -322,6 +322,8 @@
       ['sprintName','dateStart','dateEnd'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.classList.remove('field-err-input');
+        var host = document.querySelector('[data-ssp-datepicker-host][data-ssp-for="' + id + '"]');   /* #120 (⚖8) */
+        if (host) host.classList.remove('is-err');
       });
       var en = document.getElementById('errName'); if (en) en.textContent = '';
       var ed = document.getElementById('errDate'); if (ed) ed.textContent = '';
@@ -331,7 +333,14 @@
       var fld = document.getElementById(fieldId);
       var err = document.getElementById(errSpanId);
       if (err) err.textContent = T(msgKey);
-      if (fld) {
+      /* #120 (⚖8) — у дат визуальная цель — хост Ring DatePicker (скрытый input не подсветить), фокус — на анкер. */
+      var host = document.querySelector('[data-ssp-datepicker-host][data-ssp-for="' + fieldId + '"]');
+      if (host) {
+        host.classList.add('is-err');
+        try { host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
+        var anchor = host.querySelector('.ring-date-picker-anchor');
+        if (anchor) { try { anchor.focus(); } catch(_){} }
+      } else if (fld) {
         fld.classList.add('field-err-input');
         try { fld.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(_){}
         try { fld.focus(); } catch(_){}
@@ -621,10 +630,8 @@
       if (introSrc) {
         var nameEl = document.getElementById('sprintName');
         if (nameEl) nameEl.value = introSrc.name || '';
-        var dsEl = document.getElementById('dateStart');
-        if (dsEl) dsEl.value = deps.toDateIn(introSrc.dateStart);
-        var deEl = document.getElementById('dateEnd');
-        if (deEl) deEl.value = deps.toDateIn(introSrc.dateEnd);
+        deps.setDateField('dateStart', deps.toDateIn(introSrc.dateStart));   /* #120 (⚖8) — input + хост пикера */
+        deps.setDateField('dateEnd', deps.toDateIn(introSrc.dateEnd));
         var goalEl = document.getElementById('sprintGoal');
         if (goalEl) goalEl.value = introSrc.sprintGoal || '';
         if (typeof deps.renderSprintIntroExtras === 'function') { try { deps.renderSprintIntroExtras(); } catch(_){} }

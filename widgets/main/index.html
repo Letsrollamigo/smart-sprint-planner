@@ -1805,6 +1805,12 @@
       align-items: start;
     }
     .sprint-intro-dates { display: flex; gap: 14px; }
+    /* #120 (⚖8) — даты спринта на Ring DatePicker: поле держит ширину, анкер крупнее табличного;
+       ошибка валидации — рамка анкера (образец field-err-input); disabled — приглушённый анкер. */
+    .sprint-intro-dates .field { min-width: 160px; }
+    .sprint-intro-dates [data-ssp-datepicker-host] .ring-date-picker-anchor { padding: 6px 10px !important; font-size: 13px !important; }
+    [data-ssp-datepicker-host].is-err .ring-date-picker-anchor { border-color: var(--error) !important; box-shadow: 0 0 0 2px rgba(224,90,106,.18); }
+    [data-ssp-datepicker-host] .ring-date-picker-anchor:disabled { opacity: .45; cursor: not-allowed; }
     .sprint-intro-extra { display: flex; gap: 14px; flex-wrap: wrap; }
     /* #88 — строка «роль → её значение спринта»: подпись роли слева узкой колонкой,
        список справа. Появляется только когда поля спринта у ролей разошлись. */
@@ -2741,12 +2747,17 @@
         <div class="sprint-intro-dates">
           <div class="field">
             <label for="dateStart" data-i18n="lblDateStart">Дата начала</label>
-            <input type="text" readonly data-ssp-datepicker id="dateStart"/>
+            <!-- #120 (⚖8) — Ring DatePicker через мост react/datepicker-mount.jsx: носитель значения —
+                 скрытый input (читатели .value и слушатели черновика без правок), хост рядом
+                 (domain/intro-view.js setDateField/bindDateHosts). -->
+            <span data-ssp-datepicker-host data-ssp-for="dateStart" data-value=""></span>
+            <input type="hidden" id="dateStart"/>
             <span class="field-err" id="errDate"></span>
           </div>
           <div class="field">
             <label for="dateEnd" data-i18n="lblDateEnd">Дата окончания</label>
-            <input type="text" readonly data-ssp-datepicker id="dateEnd"/>
+            <span data-ssp-datepicker-host data-ssp-for="dateEnd" data-value=""></span>
+            <input type="hidden" id="dateEnd"/>
           </div>
         </div>
       </div>
