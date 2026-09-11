@@ -794,7 +794,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.43.0';
+  var APP_VERSION = '3.44.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -1862,6 +1862,12 @@
       /* #45 super-light — planning-people недоступен при выключенном перс.планировании
          (deep-link/сохранённый dashNode → fallback на planning-roles). */
       if (_node === 'planning-people' && !(_settings && _settings.personalPlanningEnabled)) _node = 'planning-roles';
+      /* #124 — ссылка на «Ёмкость» несёт спринт вкладки: у неё свой селектор, не слот планирования. */
+      if (_node === 'capacity' && _pendingShareParams && _pendingShareParams.node === 'capacity' && _validSprintId(_pendingShareParams.sprintId)) {
+        var _capUi = CAPACITY_STORE.getCapacityUiState() || {};
+        _capUi.selectedSprintId = _pendingShareParams.sprintId;
+        CAPACITY_STORE.setCapacityUiState(_capUi);
+      }
       try { _setDashNode(_node); } catch(e){ diag('init dashNode err: '+e, 'err'); }
     }
     /* #36 — focus (scroll+flash), затем завершить restore: consume params + включить авто-синк URL. */
@@ -2022,6 +2028,9 @@
   function _shareDeps() {
     return {
       T: T, toast: toast, diag: diag,
+      /* #124 — цель и фокус ссылки на «Ёмкости» живут в capacity-view (выбор справа). */
+      capacityShareTarget: function () { return (typeof CAPACITY_VIEW.shareTarget === 'function') ? CAPACITY_VIEW.shareTarget(_capacityDeps()) : null; },
+      capacityFocus: function (kind, value) { if (typeof CAPACITY_VIEW.applyFocus === 'function') CAPACITY_VIEW.applyFocus(_capacityDeps(), kind, value); },
       state: {
         getHost: function () { return _host; },
         getMode: function () { return _mode; },
@@ -3539,6 +3548,9 @@
          названия/зоны до рефреша (sync rerender читает getIssueData, который наполняет только
          loadAndRender). */
       reload: function (mode) { if (RELEASE_VIEW && typeof RELEASE_VIEW.loadAndRender === 'function') RELEASE_VIEW.loadAndRender(_releaseDeps(), mode || 'planned'); },
+      /* #124 — «Скопировать ссылку» на карточке: только global + host.navigation (YT ≥ 2026.1). */
+      canCopyLink: function () { return _mode === 'global' && _navAvailable(); },
+      onCopyLink: function (target) { return SHARE_CTRL._onShareClick(_shareDeps(), target); },
       state: {
         getSettings:    function () { return _settings; },
         getCurrentUser: function () { return _currentUser; },

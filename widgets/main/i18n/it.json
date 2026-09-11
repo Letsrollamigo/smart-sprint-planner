@@ -13,6 +13,8 @@
   "shareCopyErr": "Impossibile copiare il link",
   "shareDisabledNoSprint": "Apri prima uno sprint",
   "shareHandoffHint": "Condividi il link dopo aver salvato lo sprint",
+  "shareCopyLink": "Copia link",
+  "shareCopyOkTarget": "Link copiato: {target}",
   "noAccessToProject": "Nessun accesso al progetto {key} o il planner non è collegato ad esso. Scegli un progetto disponibile sopra.",
   "sprintNotFoundFallback": "Sprint del link non trovato; aperto l'ultimo",
   "planningLevelRoles": "Allocazione delle risorse totali",

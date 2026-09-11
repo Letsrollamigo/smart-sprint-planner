@@ -13,6 +13,8 @@
   "shareCopyErr": "Odkaz se nepodařilo zkopírovat",
   "shareDisabledNoSprint": "Nejprve otevřete sprint",
   "shareHandoffHint": "Sdílejte odkaz po uložení sprintu",
+  "shareCopyLink": "Kopírovat odkaz",
+  "shareCopyOkTarget": "Odkaz zkopírován: {target}",
   "noAccessToProject": "Žádný přístup k projektu {key} nebo k němu není připojen plánovač. Vyberte dostupný projekt výše.",
   "sprintNotFoundFallback": "Sprint z odkazu nebyl nalezen; byl otevřen poslední",
   "planningLevelRoles": "Alokace celkového zdroje",

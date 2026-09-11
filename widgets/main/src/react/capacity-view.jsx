@@ -51,7 +51,7 @@ function NumCell({ value, onChange, disabled }) {
 }
 
 /* Спойлер роли на Ring Collapse (vendored). */
-function RoleSpoiler({ title, capLabel, open, onToggle, children }) {
+function RoleSpoiler({ title, capLabel, open, onToggle, roleKey, children }) {   /* roleKey — якорь фокуса role:<ключ> (#124) */
   const Collapse = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Collapse;
   const CollapseControl = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.CollapseControl;
   const CollapseContent = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.CollapseContent;
@@ -66,14 +66,14 @@ function RoleSpoiler({ title, capLabel, open, onToggle, children }) {
   );
   if (!Collapse || !CollapseControl || !CollapseContent) {
     return (
-      <details className="ssp-capacity-spoiler" open={open}>
+      <details className="ssp-capacity-spoiler" open={open} data-ssp-cap-role={roleKey}>
         <summary onClick={(e) => { e.preventDefault(); onToggle(); }}>{head}</summary>
         {open ? children : null}
       </details>
     );
   }
   return (
-    <div className="ssp-capacity-spoiler">
+    <div className="ssp-capacity-spoiler" data-ssp-cap-role={roleKey}>
       <Collapse collapsed={!open} onChange={onToggle}>
         <CollapseControl>{head}</CollapseControl>
         <CollapseContent>{children}</CollapseContent>
@@ -356,7 +356,7 @@ function CapacityInner({ vm }) {
             : ((vm.roles || []).length === 0
               ? <div className="empty">{L.noRoles}</div>
               : vm.roles.map((role) => (
-                <RoleSpoiler key={role.key} title={role.label}
+                <RoleSpoiler key={role.key} title={role.label} roleKey={role.key}
                              capLabel={computed.roleCapacities[role.key] != null ? vm.fmtH(computed.roleCapacities[role.key]) : '—'}
                              open={!!openRoles[role.key]} onToggle={() => setOpenRoles((o) => Object.assign({}, o, { [role.key]: !o[role.key] }))}>
                   {role.people.length === 0

@@ -34,6 +34,17 @@ Switching the project switches the whole screen: sprints, composition, history �
 | Icon row | under the version: **Clear draft** (only while a draft exists), **Plugin Settings** (shown only to members of the settings-manager group), **User Guide** (this documentation), **Feedback** (the product's issue tracker), **Language** (globe; 15 languages). Each icon's label is a tooltip shown on hover or keyboard focus |
 | **Planning modules activity status** | an expandable list: which modules are enabled in this project |
 
+## Sharing a link
+
+**Share** is the last item in the rail's section tree. A click copies a link to the clipboard; whoever opens it lands on the same project, the same sprint and the same section. The link only brings them to the screen: whether they can just look or also edit is decided by their own permissions. In the main menu, YouTrack's address bar follows along by itself, showing the current project, sprint and section.
+
+- Until a sprint is picked, the item is inactive — the tooltip says «Open a sprint first». The active item has a different tooltip: «Share the link after saving the sprint».
+- If the link points at something specific, the toast names it — «Link copied: …» followed by the name; otherwise it says «Link copied to clipboard».
+- On [Capacity](03-capacity.md) the link also carries the person or role picked in the right-hand column. Planned releases and release-history records have their own **Copy link** button — chapter [11](11-releases.md). Everywhere else, the release screens included, **Share** opens the screen as a whole.
+- If the link carries a specific target, the recipient sees it highlighted. The highlight waits up to five seconds for the screen to finish loading; if the data is not there in time, the screen opens without it.
+
+The item exists only in the main-menu entry; the project settings screen has none. It needs YouTrack 2026.1 and newer; on older versions the item is hidden and appears by itself once YouTrack is upgraded — the planner itself needs no update. The **Go to** button in reminders is not a link but a move inside the open planner, so it works on any YouTrack version.
+
 ## Two languages, two switches
 
 This one is easy to miss and worth remembering: **the planner's language and YouTrack's language are switched separately.**

@@ -49,6 +49,10 @@ The **Composition: 3 tasks** line expands into a list. An issue can be in a spri
 
 Shipped releases move here. A record expands and shows the composition as it was at ship time — the same way sprint history keeps a snapshot.
 
+## Links to releases
+
+A planned release's card and a record in the release history carry a **Copy link** icon in their header (on the card, next to export) — for everyone who can see releases, including people without edit rights; records in the **Archive** group have none. The recipient lands in **Planned releases** or **Release history**: the card scrolls to the middle and is briefly highlighted, a history record expands. If a planned release has shipped or been cancelled by the time the link is opened, **Planned releases** opens without a highlight — look for the release in **Release history**. The button is there only in the main-menu entry and on YouTrack 2026.1 and newer; on older versions it is hidden and appears by itself once YouTrack is upgraded — just like **Share** ([chapter 01](01-entry.md)).
+
 ## Automatic tags
 
 If release tags are switched on in the settings, the planner puts a tag on the composition's issues when the release's status changes. That leaves a trace in YouTrack: the tag shows which release an issue went out with, even outside the planner.

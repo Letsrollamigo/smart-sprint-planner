@@ -180,6 +180,12 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
         {r.source ? <span className="ssp-release-chip ssp-release-chip--src">{L.src[r.source] || r.source}</span> : null}
         <span className={'ssp-release-status ssp-release-status--' + r.status}>{L.status[r.status] || r.status}</span>
         {r.overdue ? <span className="ssp-release-status ssp-release-status--overdue">{L.status.overdue}</span> : null}
+        {/* #124 — ссылка на карточку (бывшая заготовка R4): всем ролям, только при host.navigation */}
+        {r.shareVisible ? (
+          <button type="button"
+            className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly ssp-release-card__share"
+            title={L.copyLink} aria-label={L.copyLink} onClick={() => onShare(r.id)}><RingIcon name="share" /></button>
+        ) : null}
         {/* R4 (US-R4-01) — экспорт .txt: read-only действие, доступно всем ролям */}
         <button type="button"
           className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly ssp-release-card__export"
@@ -248,12 +254,6 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
               className="ring-button-button ring-button-block ring-button-heightS ssp-release-card__freeze"
               onClick={() => onToggleFreeze(r.id)}>{r.freezeLocked ? L.unfreeze : <><RingIcon name="lock" /> {L.freeze}</>}</button>
           ) : null}
-          {/* R4 (US-R4-03, E-2) — share вендорского: shareVisible=false до YT 2026.1 (negative-якорь) */}
-          {canManage && r.shareVisible ? (
-            <button type="button"
-              className="ring-button-button ring-button-block ring-button-heightS ssp-release-card__share"
-              onClick={() => onShare(r.id)}>{L.share}</button>
-          ) : null}
           {canManage && !r.freezeLocked ? <PrimaryBtn label={L.addIssues} onClick={() => onAddIssues(r.id)} /> : null}
         </div>
       ) : null}
@@ -263,12 +263,12 @@ function ReleaseCard({ r, L, canManage, canAdvance, onAddIssues, onStatusMenu, o
 
 /* История (US-R1-13/14): спойлер-слепок закрытого релиза. CSS-паттерн .spoiler (🟡 reuse,
    класс `open` из index.html), read-only, всё из snapshot. Клавиатура: Enter/Space. */
-function HistorySpoiler({ r, L, onExport }) {
+function HistorySpoiler({ r, L, onExport, onCopyLink }) {   /* onCopyLink — #124, null в архиве и без host.navigation */
   const [open, setOpen] = React.useState(false);
   const toggle = () => setOpen((o) => !o);
   const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
   return (
-    <div className={'spoiler' + (open ? ' open' : '')}>
+    <div className={'spoiler' + (open ? ' open' : '')} data-ssp-release-id={r.id}>   {/* #124 — адрес для focus release:<id> */}
       <div className="spoiler__head" role="button" tabIndex={0} aria-expanded={open} onClick={toggle} onKeyDown={onKey}>
         <span className="ssp-release-hist__head">
           <span className="ssp-release-card__title">{r.name}</span>
@@ -281,6 +281,12 @@ function HistorySpoiler({ r, L, onExport }) {
             {r.closedAtLabel ? <span>{L.closedAt}: {r.closedAtLabel}</span> : null}
           </span>
         </span>
+        {onCopyLink ? (
+          <button type="button"
+            className="ring-button-button ring-button-inline ring-button-heightS ring-button-ghost ring-button-flat ring-button-iconOnly ssp-release-hist__share"
+            title={L.copyLink} aria-label={L.copyLink}
+            onClick={(e) => { e.stopPropagation(); onCopyLink(r.id); }} onKeyDown={(e) => e.stopPropagation()}><RingIcon name="share" /></button>
+        ) : null}
         <span className="spoiler__arrow" aria-hidden="true">▶</span>
       </div>
       <div className="spoiler__body">
@@ -377,7 +383,7 @@ function ReleaseInner({ vm }) {
     return (
       <div className="ssp-release-root">
         <div className="ssp-release-hist-list">
-          {vm.releases.map((r) => <HistorySpoiler key={r.id} r={r} L={L} onExport={vm.onExport} />)}
+          {vm.releases.map((r) => <HistorySpoiler key={r.id} r={r} L={L} onExport={vm.onExport} onCopyLink={vm.canCopyLink ? vm.onCopyLink : null} />)}
           <ArchiveSection archive={vm.archive} L={L} onLoadArchive={vm.onLoadArchive} onExport={vm.onExport} />
         </div>
       </div>

@@ -19,6 +19,7 @@
 'use strict';
 
 const test = require('node:test');
+const assert = require('node:assert/strict');
 const { createHost } = require('./monolith-host');
 const { checkJsonSnapshot } = require('./snap');
 
@@ -387,4 +388,159 @@ test('golden: share — _applyShareFocus: отложенная подсветк�
     afterUnflash: afterUnflash,
     timersAfterInvalid: timers.length,
   });
+});
+
+/* ═══════════════════ #124 — фокус в ссылке «Поделиться», ожидание цели, страховка 2025.3 ═══════════════════ */
+
+/** Управляемые таймеры + заглушка прокрутки (паттерн share-focus-contract). */
+function focusHarness(window) {
+  const timers = [];
+  window.setTimeout = function (fn, delay) { timers.push({ fn: fn, delay: delay }); return timers.length; };
+  window.HTMLElement.prototype.scrollIntoView = function () {};
+  return {
+    timers: timers,
+    runNext: function () { const t = timers.shift(); if (t) t.fn(); return t; },
+    /* только тики фокуса (200 мс): «Перейти» открывает вкладку и ставит в очередь чужие таймеры (флаш черновика) */
+    runFocusTicks: function () { for (let i = 0; i < 30; i++) { const k = timers.findIndex((t) => t.delay === 200); if (k < 0) return; timers.splice(k, 1)[0].fn(); } },
+  };
+}
+
+test('golden: share #124 — _applyShareFocus ждёт цель до 25 тиков по 200 мс, по таймауту — no-op', () => {
+  const { gm, window, document } = createHost();
+  const h = focusHarness(window);
+  gm.call('_applyShareFocus', 'role:late');
+  assert.equal(document.querySelector('[data-role-key="late"]'), null, 'предусловие: цели ещё нет');
+  h.runNext(); h.runNext();
+  assert.deepEqual(h.timers.map((t) => t.delay), [200], 'после промаха — ещё один тик 200 мс');
+  const card = document.createElement('div');
+  card.className = 'planning-role-card';
+  card.setAttribute('data-role-key', 'late');
+  document.body.appendChild(card);
+  h.runNext();
+  assert.ok(card.classList.contains('ssp-focus-flash'), 'цель дорисовалась позже — подсвечена');
+
+  h.timers.length = 0;
+  gm.call('_applyShareFocus', 'role:never');
+  let ticks = 0;
+  while (h.timers.length) { h.runNext(); ticks++; }
+  assert.equal(ticks, 25, 'ожидание ограничено 25 тиками (5 с)');
+});
+
+test('golden: share #124 — фокус на «Ёмкости»: выбор справа через стейт, подсвечены все строки человека', () => {
+  const { gm, window, document } = createHost();
+  const h = focusHarness(window);
+  treeFixture(document, 'capacity');
+  const tab = document.getElementById('tab-capacity');
+  gm.call('_applyShareFocus', 'user:lk');
+  let ui = gm.get('CAPACITY_STORE').getCapacityUiState();
+  assert.deepEqual([ui.selectedPerson, ui.viewMode], ['lk', 'person'], 'выбор человека выставлен до отрисовки строк');
+  h.runNext();   /* строк ещё нет: данные вкладки грузятся */
+  const row = (login) => { const r = document.createElement('div'); r.className = 'ssp-capacity-row'; r.setAttribute('data-login', login); tab.appendChild(r); return r; };
+  const rows = [row('lk'), row('oa'), row('lk')];
+  h.runNext();
+  assert.deepEqual(rows.map((r) => r.classList.contains('ssp-focus-flash')), [true, false, true]);
+
+  h.timers.length = 0;
+  gm.call('_applyShareFocus', 'role:an');
+  ui = gm.get('CAPACITY_STORE').getCapacityUiState();
+  assert.deepEqual([ui.selectedRole, ui.selectedPerson, ui.viewMode, ui.mainView], ['an', null, 'role', 'roles']);
+  const sp = document.createElement('div');
+  sp.className = 'ssp-capacity-spoiler';
+  sp.setAttribute('data-ssp-cap-role', 'an');
+  tab.appendChild(sp);
+  h.runNext();
+  assert.ok(sp.classList.contains('ssp-focus-flash'), 'спойлер роли подсвечен');
+});
+
+test('golden: share #124 — release: в «Истории релизов» раскрывает спойлер своей панели, планируемую не трогает', () => {
+  const { gm, window, document } = createHost();
+  const h = focusHarness(window);
+  treeFixture(document, 'release-history');
+  const planned = document.getElementById('tab-release-planned');
+  planned.innerHTML = '<li class="ssp-release-card" data-ssp-release-id="rel-1"></li>';
+  const hist = document.getElementById('tab-release-history');
+  hist.innerHTML = '<div class="spoiler" data-ssp-release-id="rel-1"><div class="spoiler__head"></div></div>';
+  const sp = hist.firstChild;
+  sp.firstChild.addEventListener('click', () => sp.classList.add('open'));
+  gm.call('_applyShareFocus', 'release:rel-1');
+  h.runNext();
+  assert.ok(sp.classList.contains('open'), 'спойлер раскрыт');
+  assert.ok(sp.classList.contains('ssp-focus-flash'));
+  assert.ok(!planned.firstChild.classList.contains('ssp-focus-flash'), 'карточка другой панели не подсвечена');
+});
+
+test('golden: share #124 — _onShareClick(target): фокус и спринт в ссылке, имя цели в тосте; невалидный фокус → общий тост', () => {
+  const { gm, document } = createHost();
+  gm.set({ _ytBase: 'http://localhost:8080', _activeProjectKey: 'GM', _currentSprintId: 's-1' });
+  const toasts = [];
+  gm.set({ toast: function (msg) { toasts.push(msg); } });
+  const diagLog = recordDiag(gm);
+  document.execCommand = function () { return true; };
+  const ctrl = gm.get('SHARE_CTRL');
+  const hrefs = () => diagLog.filter((e) => e.msg.indexOf('share copy: ') === 0).map((e) => e.msg.slice(12));
+  const T = (k) => gm.call('T', k);
+
+  ctrl._onShareClick(gm.call('_shareDeps'), { node: 'release-history', focus: 'release:rel-1', label: 'R-1' });
+  ctrl._onShareClick(gm.call('_shareDeps'), { node: 'capacity', sprintId: 's-9', focus: 'user:bad login', label: 'X' });
+  treeFixture(document, 'capacity');
+  const cu = gm.get('CAPACITY_STORE').getCapacityUiState();
+  Object.assign(cu, { selectedSprintId: 's-7', viewMode: 'person', selectedPerson: 'lk' });
+  gm.call('_onShareClick');   /* рельс на «Ёмкости» — выбор справа */
+
+  const h = hrefs();
+  assert.ok(h[0].includes('app_node=releases.history') && h[0].includes('app_focus=release%3Arel-1') && h[0].includes('app_sprintId=s-1'), h[0]);
+  assert.ok(h[1].includes('app_sprintId=s-9') && !h[1].includes('focus'), 'логин вне алфавита — фокус отброшен: ' + h[1]);
+  assert.ok(h[2].includes('app_node=capacity') && h[2].includes('app_sprintId=s-7') && h[2].includes('app_focus=user%3Alk'), h[2]);
+  assert.deepEqual(toasts, [T('shareCopyOkTarget').replace('{target}', 'R-1'), T('shareCopyOk'), T('shareCopyOkTarget').replace('{target}', 'lk')]);
+});
+
+test('golden: share #124 — страховка 2025.3: без host.navigation «Перейти» из напоминаний работает, кнопки ссылки нет', () => {
+  const { gm, window, document } = createHost();
+  const h = focusHarness(window);
+  /* хост 2025.3: fetchApp/fetchYouTrack есть, navigation — нет */
+  gm.set({ _host: { fetchApp: function () { return Promise.resolve({}); }, fetchYouTrack: function () { return Promise.resolve({}); } }, _mode: 'global' });
+  assert.equal(gm.call('_navAvailable'), false, 'предусловие: навигации нет (YT 2025.3)');
+  const tree = document.createElement('div');
+  tree.className = 'ssp-tree';
+  tree.innerHTML = '<div data-node="history">h</div><div data-node="release-planned">r</div>';
+  document.body.appendChild(tree);
+  const go = (item) => gm.get('REMINDERS_CTRL').go(item, gm.call('_remindersDeps'));
+
+  /* запись истории спринта: группа и запись раскрываются кликом по шапке */
+  const box = document.createElement('div');
+  box.innerHTML = '<div class="spoiler" data-ssp-hist-group="g1"><div class="spoiler__head"></div>' +
+    '<div class="spoiler" data-ssp-hist-rec="g1_dev"><div class="spoiler__head"></div></div></div>';
+  document.body.appendChild(box);
+  box.querySelectorAll('.spoiler__head').forEach((hd) => hd.addEventListener('click', () => hd.parentNode.classList.add('open')));
+  go({ module: 'sprints', kind: 'sprintOverdue', entityId: 'g1_dev' });
+  assert.ok(tree.querySelector('[data-node="history"]').classList.contains('active'), 'узел выставлен до фокуса');
+  h.runFocusTicks();
+  const rec = box.querySelector('[data-ssp-hist-rec="g1_dev"]');
+  assert.ok(rec.classList.contains('open') && rec.classList.contains('ssp-focus-flash'), 'запись истории раскрыта и подсвечена');
+
+  /* планируемый релиз */
+  h.timers.length = 0;
+  document.getElementById('tab-release-planned').innerHTML = '<li class="ssp-release-card" data-ssp-release-id="rel-9"></li>';
+  go({ module: 'releases', entityId: 'rel-9' });
+  h.runFocusTicks();
+  assert.ok(document.querySelector('#tab-release-planned [data-ssp-release-id="rel-9"]').classList.contains('ssp-focus-flash'), 'карточка релиза подсвечена');
+
+  /* «Скопировать ссылку» на карточках: без навигации — нет; гейт способен открыться */
+  assert.equal(gm.call('_releaseDeps').canCopyLink(), false);
+  gm.set({ _host: { navigation: { getAppLocation: function () { return Promise.resolve({}); } } } });
+  assert.equal(gm.call('_releaseDeps').canCopyLink(), true, 'с навигацией кнопка есть — assert способен упасть');
+  gm.set({ _mode: 'project' });
+  assert.equal(gm.call('_releaseDeps').canCopyLink(), false, 'в проектном режиме ссылок нет');
+});
+
+test('golden: share #124 — узел из body-класса, когда в дереве нет активного узла (старт: «Ёмкость»/«Релизы» ещё не построены)', () => {
+  const { gm, window, document } = createHost();
+  focusHarness(window);
+  gm.set({ _ytBase: 'http://localhost:8080', _activeProjectKey: 'GM', _currentSprintId: 's-1' });
+  assert.equal(document.querySelector('.ssp-tree [data-node].active'), null, 'предусловие: активного узла в дереве нет');
+  document.body.classList.add('ssp-dashnode-capacity');
+  gm.call('_applyShareFocus', 'role:an');
+  assert.equal(gm.get('CAPACITY_STORE').getCapacityUiState().selectedRole, 'an', 'фокус ушёл в выбор «Ёмкости»');
+  document.body.classList.replace('ssp-dashnode-capacity', 'ssp-dashnode-release-history');
+  assert.ok(gm.call('_buildShareHref').includes('app_node=releases.history'), 'узел попал в ссылку');
 });

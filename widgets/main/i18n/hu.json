@@ -13,6 +13,8 @@
   "shareCopyErr": "Nem sikerült másolni a hivatkozást",
   "shareDisabledNoSprint": "Először nyisson meg egy sprintet",
   "shareHandoffHint": "Ossza meg a hivatkozást a sprint mentése után",
+  "shareCopyLink": "Hivatkozás másolása",
+  "shareCopyOkTarget": "Hivatkozás másolva: {target}",
   "noAccessToProject": "Nincs hozzáférés a(z) {key} projekthez, vagy a tervező nincs hozzá csatlakoztatva. Válasszon elérhető projektet fent.",
   "sprintNotFoundFallback": "A hivatkozás sprintje nem található; az utolsó lett megnyitva",
   "planningLevelRoles": "Teljes erőforrás-elosztás",

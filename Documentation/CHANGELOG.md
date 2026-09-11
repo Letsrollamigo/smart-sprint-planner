@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.44.0] — 2026-09-11
+
+> **Links to capacity and releases.** #124. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged (3.40.0).
+
+### Added
+
+- **“Share” on the “Capacity” tab carries the selection:** the link takes the sprint picked in the tab's own selector (past sprints included — they open read-only) and the choice in the right-hand column above the calendar. “Person” mode with someone picked — the recipient gets the same person selected and their rows in the calculation briefly highlighted (all of them if the person has several roles); “By role” mode — the same role is selected, the table switches to the “By roles” view and the role's group is highlighted; “Person” mode with nobody picked — a link to the screen as a whole.
+- **“Copy link” on releases:** an icon button in the header of a planned release card (next to export) and in the header of a “Release history” record — for everyone who can see releases, including people without edit rights; records in the “Archive” group have none. It replaces the hidden R4 “Share” placeholder, which covered vendor releases only and only for those who manage releases. “Release history” became addressable — a new `releases.history` section in the link. The recipient's card scrolls to the middle and is briefly highlighted; a history record expands.
+- **The toast names the target:** “Link copied: …” followed by the name of a person, a role or a release, when the link carries one; otherwise “Link copied to clipboard”, as before.
+
+### Changed
+
+- **The highlight follows the section and waits for its target:** the target is looked up on the screen of the section in the link and awaited for up to 5 seconds while the tab loads its data; if it does not appear in time, the screen opens without a highlight. The same path serves “Go to” in reminders.
+
+### Fixed
+
+- **The address bar lost the “Capacity” and “Releases” sections on startup:** when the planner opened on one of them, YouTrack's address was rewritten without the section — the navigation tree is built before the project settings are loaded and does not have these sections yet, so no active section was found. The planner now falls back to the section the screen actually shows; the “Share” link uses the same resolver.
+
+### Under the hood
+
+- `domain/share-controller.js`: a link can carry an explicit target — `_buildShareHref(deps, target)` (`node`, `sprintId`, `focus` override the current state); `_railTarget` asks “Capacity” for the rail's target; `_findFocusTargets` looks the target up per tree section, `_applyShareFocus` retries every 200 ms up to 25 times, then gives up quietly; `_currentDashNode` falls back to the `ssp-dashnode-<id>` body class.
+- `domain/capacity-view.js`: `shareTarget` (selection plus the tab's sprint) and `applyFocus` (applies the selection through the tab's UI state; a role switches to the “By roles” view); `_selRole` — a person who arrived without a role gets the calendar of their first role. The core seeds the tab's sprint from the link into the capacity UI state on init. Anchors: `data-ssp-cap-role` on the role group, `data-ssp-release-id` on a release history record.
+- `domain/release-view.js`: `canShareRelease(release, linkAvailable)` no longer checks the source, the `_RELEASE_EXT_SHARE` flag is removed, `_copyLink` builds `release:<id>` with the release name for the toast; availability is `canCopyLink` in the core (main-menu mode and `host.navigation`). `pure/share-url-pure.js`: the `releases.history` ↔ `release-history` section.
+- i18n ×15: `shareCopyLink`, `shareCopyOkTarget`. Gates: new unit `capacity-share.test.js`; a #124 block in `url-state.test.js` (the new section, round-trip of capacity and history links, old links parse as before); `release-export.test.js` updated for `canShareRelease`; six #124 goldens in `permissions-share.golden.test.js` (waiting for the target, capacity focus, the history spoiler, target in the link and the toast, “Go to” without `host.navigation`, section from the body class). Size budgets raised deliberately: core +12, modules +100, jsx +6.
+- No new endpoints or storage keys; the link carries only `projectKey`, `sprintId`, `node` and `focus`.
+
+### Known limitations
+
+- Links need YouTrack 2026.1 or newer and the main-menu entry, like “Share” itself: on older versions the rail item and the “Copy link” buttons are hidden and appear by themselves once YouTrack is upgraded. “Go to” in reminders works on any version, as before.
+- A link to a planned release that has shipped or been cancelled by the time it is opened lands on “Planned releases” without a highlight.
+- Records in the “Archive” group have no “Copy link”: the archive is loaded only on request.
+- A login with characters other than Latin letters, digits and `._@-` does not fit into a link: the link leads to the screen and the toast is the general one.
+
 ## [3.43.0] — 2026-09-10
 
 > **Task table filters, reminders recount without a reload, «Type» among display fields.** A cumulative release: #125, #126 and #118 in full. The data schema did not change — the marker stays 3.40.0, the rollback floor is unchanged (3.40.0).

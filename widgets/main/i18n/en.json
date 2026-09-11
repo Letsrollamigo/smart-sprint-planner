@@ -76,6 +76,8 @@
   "shareCopyErr": "Could not copy the link",
   "shareDisabledNoSprint": "Open a sprint first",
   "shareHandoffHint": "Share the link after saving the sprint",
+  "shareCopyLink": "Copy link",
+  "shareCopyOkTarget": "Link copied: {target}",
   "noAccessToProject": "No access to project {key}, or the planner is not connected to it. Pick an available project above.",
   "sprintNotFoundFallback": "Sprint from the link was not found; opened the latest one",
   "planningLevelRoles": "Total resource allocation",

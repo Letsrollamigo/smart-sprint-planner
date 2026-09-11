@@ -45,10 +45,11 @@ test('buildExportText: пустые секции опускаются; закр�
   assert.ok(text.indexOf('Хотфикс') >= 0 && text.indexOf('Внутренний') >= 0);
 });
 
-test('canShareRelease: вендорский × внешний share-API (E-2); YT 2025.x → всегда false', () => {
+test('canShareRelease (#124): любой релиз при host.navigation; YT 2025.3 → всегда false', () => {
   assert.strictEqual(view.canShareRelease({ source: 'vendor' }, true), true);
-  assert.strictEqual(view.canShareRelease({ source: 'internal' }, true), false);
-  assert.strictEqual(view.canShareRelease({ source: 'vendor' }, false), false); // negative-якорь п.1
+  assert.strictEqual(view.canShareRelease({ source: 'internal' }, true), true);   // ⚖ 2026-09-10 — не только вендорский
+  assert.strictEqual(view.canShareRelease({ source: 'vendor' }, false), false); // negative-якорь: нет навигации — нет кнопки
+  assert.strictEqual(view.canShareRelease({ source: 'internal' }, false), false);
   assert.strictEqual(view.canShareRelease(null, true), false);
 });
 

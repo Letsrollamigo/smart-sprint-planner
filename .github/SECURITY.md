@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.43.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.44.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.44.0 — #124: links to capacity and releases are client-only — no new endpoints, storage keys or rights. A link carries only `projectKey`, `sprintId`, `node` and `focus`; `node` is taken from a fixed list, `focus` must match `FOCUS_RE` (`^(role|user|hist|release):[A-Za-z0-9._@-]+$`) both when the link is built and when it is parsed, anything else is dropped. A link only navigates — what the recipient can see or edit is decided by their own rights; the “Copy link” buttons appear only in the main-menu mode with `host.navigation`.**
 >
 > **v3.43.0 — #126: after its own writes (history, sprint, capacity, releases) the widget repeats `POST reminders { action:'sync' }` — the same endpoint under the same rights (`viewer`), no new surface or keys; the task-table filters are client-only and store nothing.**
 >

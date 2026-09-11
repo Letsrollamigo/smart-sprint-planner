@@ -140,6 +140,28 @@ describe('buildProjectSettingsHref (#109 — ссылка «открыть пл�
   });
 });
 
+describe('#124 — node releases.history; ссылки ёмкости с фокусом; старые ссылки как раньше', () => {
+  it('node=releases.history ↔ release-history в обе стороны', () => {
+    assert.equal(parseShareSearch('node=releases.history').node, 'release-history');
+    const s = buildShareSearch({ projectKey: 'DEMO', node: 'release-history', focus: 'release:rel-abc12-x9' });
+    assert.ok(s.includes('node=releases.history'), s);
+    assert.equal(parseShareSearch(s).focus, 'release:rel-abc12-x9');
+  });
+  it('round-trip: ёмкость (человек / роль) и история релизов', () => {
+    [
+      { projectKey: 'D', sprintId: 's', node: 'capacity', focus: 'user:jdoe' },
+      { projectKey: 'D', sprintId: 's', node: 'capacity', focus: 'role:analysis' },
+      { projectKey: 'D', sprintId: 's', node: 'release-history', focus: 'release:rel-1' },
+    ].forEach((state) => assert.deepEqual(parseShareSearch(buildShareSearch(state)), state));
+  });
+  it('старые ссылки #36/#112 разбираются как раньше', () => {
+    assert.deepEqual(parseShareSearch('projectKey=D&sprintId=s&node=planning.roles&focus=role:dev'),
+      { projectKey: 'D', sprintId: 's', node: 'planning-roles', focus: 'role:dev' });
+    assert.deepEqual(parseShareSearch('node=history&focus=hist:3f1c-uuid_devBack'), { node: 'history', focus: 'hist:3f1c-uuid_devBack' });
+    assert.equal(parseShareSearch('node=releases&focus=release:rel-1').node, 'release-planned');
+  });
+});
+
 describe('#112 — node releases, focus hist:/release: (аддитивно к #36)', () => {
   it('node=releases ↔ release-planned в обе стороны', () => {
     assert.equal(parseShareSearch('node=releases').node, 'release-planned');

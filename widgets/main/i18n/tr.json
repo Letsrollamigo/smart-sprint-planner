@@ -13,6 +13,8 @@
   "shareCopyErr": "Bağlantı kopyalanamadı",
   "shareDisabledNoSprint": "Önce bir sprint açın",
   "shareHandoffHint": "Sprinti kaydettikten sonra bağlantıyı paylaşın",
+  "shareCopyLink": "Bağlantıyı kopyala",
+  "shareCopyOkTarget": "Bağlantı kopyalandı: {target}",
   "noAccessToProject": "{key} projesine erişim yok veya planlayıcı buna bağlı değil. Yukarıdan mevcut bir proje seçin.",
   "sprintNotFoundFallback": "Bağlantıdaki sprint bulunamadı; sonuncusu açıldı",
   "planningLevelRoles": "Toplam kaynak dağılımı",

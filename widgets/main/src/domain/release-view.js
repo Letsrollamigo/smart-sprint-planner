@@ -101,9 +101,9 @@ function _labels(T) {
     status: { planned: T('relStatusPlanned'), prep: T('relStatusPrep'), work: T('relStatusWork'), released: T('relStatusReleased'), cancelled: T('relStatusCancelled'), overdue: T('relStatusOverdue') },
     kind: { release: T('relKindRelease'), hotfix: T('relKindHotfix') },
     src: { internal: T('relSrcInternal'), vendor: T('relSrcVendor') },
-    /* R4: экспорт .txt (US-R4-01) + архив (US-R4-02) + share (US-R4-03, reuse treeShare) +
+    /* R4: экспорт .txt (US-R4-01) + архив (US-R4-02) + «Скопировать ссылку» (US-R4-03 → #124) +
        патчноут/заметки в истории (полировка; reuse подписей формы). */
-    export: T('relBtnExport'), share: T('treeShare'), archiveNode: T('relArchiveNode'),
+    export: T('relBtnExport'), copyLink: T('shareCopyLink'), archiveNode: T('relArchiveNode'),
     kindLabel: T('relKindLabel'), srcLabel: T('relSrcLabel'),
     patchNote: T('relFieldPatchnote'), notes: T('relFieldNotes'), taskUrl: T('relFieldTaskUrl'),
   };
@@ -165,14 +165,19 @@ function exportRelease(deps, releaseId) {
   }
 }
 
-/* ── R4 (US-R4-03, E-2) — гейт «Поделиться» вендорского ────────────────────────
-   Обязателен только п.1 (compat-якорь): на YT 2025.x кнопки НЕТ — host-API ВНЕШНЕЙ
-   ссылки не существует (host.navigation НЕ признак: он есть и в 2025.x global-режиме,
-   а внешнюю ссылку не отдаёт — гейт по нему засветил бы кнопку). Генерация [deferred]
-   до YT 2026.1 (reuse #36). */
-var _RELEASE_EXT_SHARE = false; // ponytail: появится 2026.1 host-API внешних ссылок → заменить на capability-детект (канон _navAvailable share-controller)
-function canShareRelease(release, extShareAvailable) {
-  return !!extShareAvailable && !!release && release.source === 'vendor';
+/* ── R4 (US-R4-03) → #124 — «Скопировать ссылку» на карточке релиза ──────────────
+   Заготовка R4 гейтилась вендорским источником и ждала «внешних ссылок» YouTrack; ⚖ владелец
+   2026-09-10 (#124): это deep-link #36 для всех релизов и всех ролей. linkAvailable — deps.canCopyLink()
+   (global-режим + host.navigation, YT ≥ 2026.1): на 2025.3 кнопки нет. */
+function canShareRelease(release, linkAvailable) {
+  return !!linkAvailable && !!release;
+}
+function _canCopyLink(deps) { return typeof deps.canCopyLink === 'function' && !!deps.canCopyLink(); }
+/* Ссылка на узел релизов с фокусом release:<id>; подпись тоста — имя релиза. */
+function _copyLink(deps, node, releaseId) {
+  if (typeof deps.onCopyLink !== 'function') return;
+  var rec = _findRelease(deps, releaseId);
+  deps.onCopyLink({ node: node, focus: 'release:' + releaseId, label: (rec && rec.name) || releaseId });
 }
 
 /* R4 (US-R4-02) — lazy-загрузка архива по первому раскрытию спойлера «Архив (N)». */
@@ -199,6 +204,7 @@ function _buildVm(deps, mode, list) {
   var data = deps.state.release.getIssueData() || {};
   var repNames = deps.state.release.getRepNames() || {};
   var anchor = _anchorState(deps.state.getSettings ? deps.state.getSettings() : null); // R3.1 — якорь красной зоны
+  var canLink = _canCopyLink(deps);   /* #124 */
   return {
     mode: mode, versionTag: 0, canCreate: !!perms.canManage, canManage: !!perms.canManage, canAdvance: !!perms.canAdvance,
     releases: list.map(function (r) {
@@ -215,7 +221,7 @@ function _buildVm(deps, mode, list) {
         issuesCount: issueList.length, compositionLabel: T('relCardComposition').replace('{n}', String(issueList.length)),
         patchNote: r.patchNote || '', notes: r.notes || '', // #polish — патчноут И заметки на планируемой карточке; taskUrl — кликабельная внешняя ссылка
         taskUrl: r.taskUrl || '',
-        shareVisible: canShareRelease(r, _RELEASE_EXT_SHARE), // R4 (US-R4-03) — negative-якорь: false до YT 2026.1
+        shareVisible: canShareRelease(r, canLink), // #124 — false без host.navigation (YT 2025.3)
 
         /* R3.2 — live-дерево состава из _issueData (parents/type подтянуты fetchIssueData) */
         tree: _treeRows(issueList.map(function (id) {
@@ -236,7 +242,7 @@ function _buildVm(deps, mode, list) {
     onToggleFreeze: function (releaseId) { if (typeof deps.onToggleFreeze === 'function') deps.onToggleFreeze(releaseId); },
     onDelete: function (releaseId) { if (typeof deps.onDelete === 'function') deps.onDelete(releaseId); },
     onExport: function (releaseId) { exportRelease(deps, releaseId); },                     // R4 (US-R4-01)
-    onShare: function () { deps.diag('release share: deferred until YT 2026.1', 'info'); }, // R4 (US-R4-03 п.2)
+    onShare: function (releaseId) { _copyLink(deps, 'release-planned', releaseId); },     // #124
   };
 }
 
@@ -282,6 +288,9 @@ function _buildHistoryVm(deps, mode, list) {
     },
     onLoadArchive: function () { _loadArchive(deps); },
     onExport: function (releaseId) { exportRelease(deps, releaseId); },
+    /* #124 — ссылка на спойлер истории; у архива нет: до явной подгрузки адресат его не увидит. */
+    canCopyLink: _canCopyLink(deps),
+    onCopyLink: function (releaseId) { _copyLink(deps, 'release-history', releaseId); },
     labels: _labels(T),
   };
 }

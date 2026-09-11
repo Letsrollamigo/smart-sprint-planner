@@ -353,6 +353,22 @@ function _carryForward(deps, cb) {
 }
 
 /* ───────────────────── VM + render ───────────────────── */
+function _rolesVm(deps, sprintId) {
+  var roster = deps.state.getRoster() || {};
+  return (deps.getSprintRolesFor ? deps.getSprintRolesFor(sprintId) : []).map(function (role) {
+    return { key: role.key, label: deps.roleLabel(role), people: (roster[role.key] || []).map(function (p) { return { login: p.login, name: p.name || p.login }; }) };
+  });
+}
+
+/* Роль календаря: выбранная; иначе (#124 — человек пришёл по ссылке без роли) первая роль человека; иначе первая. */
+function _selRole(roles, ui) {
+  if (ui.selectedRole && _findRole(roles, ui.selectedRole)) return ui.selectedRole;
+  for (var i = 0; ui.selectedPerson && i < roles.length; i++) {
+    if (roles[i].people.some(function (p) { return p.login === ui.selectedPerson; })) return roles[i].key;
+  }
+  return roles[0] ? roles[0].key : null;
+}
+
 function _buildVm(deps, sprints, sel, ui) {
   var rec = deps.state.getCapacity();
   var roster = deps.state.getRoster() || {};
@@ -361,11 +377,9 @@ function _buildVm(deps, sprints, sel, ui) {
   var ppMap = (typeof deps.buildPPMapFromCanon === 'function') ? deps.buildPPMapFromCanon(sel.id, deps.state.getHistory(), null) : null;
   var model = _buildModel(deps, sel, roster, rec, ui.carry || null, ppMap);
   var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, model, absMap);
-  var roles = (deps.getSprintRolesFor ? deps.getSprintRolesFor(sel && sel.id) : []).map(function (role) {
-    return { key: role.key, label: deps.roleLabel(role), people: (roster[role.key] || []).map(function (p) { return { login: p.login, name: p.name || p.login }; }) };
-  });
+  var roles = _rolesVm(deps, sel && sel.id);
   var absTypes = deps.CAPACITY_PURE.ABSENCE_TYPES.map(function (t) { return { key: t, label: deps.T(ABS_KEY[t] || t) }; });
-  var selRole = (ui.selectedRole && _findRole(roles, ui.selectedRole)) ? ui.selectedRole : (roles[0] ? roles[0].key : null);
+  var selRole = _selRole(roles, ui);
   var viewMode = (ui.viewMode === 'role') ? 'role' : 'person';
   /* #52 (G3) — альтернативная группировка левой колонки: person top-level, его роли внутри.
      Группировка здесь (domain), React — только представление. */
@@ -491,9 +505,39 @@ function loadAndRender(deps) {
   }).catch(function (e) { deps.diag('capacity loadAndRender err: ' + e, 'err'); deps.toast(deps.T('errCapacityLoad'), 'err'); render(deps); });
 }
 
+/* #124 — цель ссылки «Поделиться» на «Ёмкости»: выбор справа + спринт вкладки (свой селектор, не слот
+   планирования). Режим «Сотрудник» без выбора — ссылка на экран. */
+function shareTarget(deps) {
+  var ui = deps.state.getCapacityUiState() || {};
+  var t = { node: 'capacity', sprintId: ui.selectedSprintId || null };
+  var roles = _rolesVm(deps, ui.selectedSprintId);
+  if (ui.viewMode === 'role') {
+    var role = _findRole(roles, _selRole(roles, ui));
+    if (role) { t.focus = 'role:' + role.key; t.label = role.label; }
+  } else if (ui.selectedPerson) {
+    var name = ui.selectedPerson;
+    roles.forEach(function (r) { r.people.forEach(function (p) { if (p.login === ui.selectedPerson) name = p.name; }); });
+    t.focus = 'user:' + ui.selectedPerson; t.label = name;
+  }
+  return t;
+}
+
+/* #124 — фокус из ссылки: выставить выбор справа и перерисовать. Данные могут ещё грузиться —
+   loadAndRender дорисует с этим же выбором (стейт общий). Роль — в виде «по ролям», где у неё спойлер. */
+function applyFocus(deps, kind, value) {
+  var u = deps.state.getCapacityUiState() || {};
+  if (kind === 'user') { u.selectedPerson = value; u.selectedRole = null; u.viewMode = 'person'; }
+  else if (kind === 'role') { u.selectedRole = value; u.selectedPerson = null; u.viewMode = 'role'; u.mainView = 'roles'; }
+  else return;
+  deps.state.setCapacityUiState(u);
+  render(deps);
+}
+
 const api = {
   render: render,
   loadAndRender: loadAndRender,
+  shareTarget: shareTarget,   /* #124 */
+  applyFocus: applyFocus,     /* #124 */
 };
 
 if (typeof window !== 'undefined') {

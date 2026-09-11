@@ -36,11 +36,15 @@ function _readShareParams(deps) {
   } catch (_) { return Promise.resolve({}); }
 }
 
-/* Внутренний id активного узла дерева (для билда URL). */
+/* Внутренний id активного узла дерева (для билда URL). #124 — фолбэк на body-класс ssp-dashnode-<id>
+   (его ставит _setDashNode): на старте дерево строится до настроек проекта, узлов «Ёмкость»/«Релизы»
+   в нём ещё нет — активный узел не отмечен, хотя вкладка уже открыта. */
 function _currentDashNode() {
   try {
     var act = document.querySelector('.ssp-tree [data-node].active');
     if (act && act.dataset && act.dataset.node) return act.dataset.node;
+    var m = /(?:^|\s)ssp-dashnode-(\S+)/.exec(document.body.className);
+    if (m) return m[1];
   } catch (_) {}
   return null;
 }
@@ -74,39 +78,73 @@ function _validSprintId(id, deps) {
   return false;
 }
 
-/* Применить focus=role:K / user:L / hist:<id> / release:<id> — прокрутка + кратковременная подсветка. Невалид → no-op (R3). */
-function _applyShareFocus(focus) {
+/* Найти цель фокуса на текущем узле; [] — ещё не отрисована. Первый элемент — куда прокрутить. */
+function _findFocusTargets(f, node) {
+  if (f.kind === 'role' && node === 'capacity') {
+    return [document.querySelector('#tab-capacity [data-ssp-cap-role="' + f.value + '"]')];
+  }
+  if (f.kind === 'user' && node === 'capacity') {
+    /* #124 — человек с несколькими ролями даёт строку в каждой — подсвечиваем все. */
+    return Array.prototype.slice.call(document.querySelectorAll('#tab-capacity .ssp-capacity-row[data-login="' + f.value + '"]'));
+  }
+  if (f.kind === 'role') {
+    return [document.querySelector('.planning-role-card[data-role-key="' + f.value + '"]')];
+  }
+  if (f.kind === 'user') {
+    /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
+    return [document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]')];
+  }
+  if (f.kind === 'hist') {
+    /* #112 — запись истории: группа строит ролевые спойлеры по первому раскрытию, поэтому сначала
+       раскрываем группу (клик по шапке = toggleGroup), затем запись. База id — по последнему '_'
+       (как _histBaseId). ponytail: запись на другой странице истории (HIST_PAGE) — no-op;
+       листать к странице по id — если попросят. */
+    var u = f.value.lastIndexOf('_'), base = u > 0 ? f.value.slice(0, u) : f.value;
+    var grp = document.querySelector('[data-ssp-hist-group="' + base + '"]');
+    if (grp && !grp.classList.contains('open')) { var gh = grp.querySelector(':scope > .spoiler__head'); if (gh) gh.click(); }
+    var rec = document.querySelector('[data-ssp-hist-rec="' + f.value + '"]');
+    if (rec && !rec.classList.contains('open')) { var rh = rec.querySelector(':scope > .spoiler__head'); if (rh) rh.click(); }
+    return [rec];
+  }
+  if (f.kind === 'release') {
+    /* #112 — карточка планируемого релиза; #124 — спойлер истории (раскрываем). Ищем в панели
+       своего узла: после полного перерендера отрисованы обе, id в них не пересекаются лишь по факту.
+       ponytail: ссылка на планируемый релиз, который к открытию уже выпущен, — no-op; фолбэк в историю
+       по стору релизов — если попросят. */
+    if (node === 'release-history') {
+      var sp = document.querySelector('#tab-release-history [data-ssp-release-id="' + f.value + '"]');
+      if (sp && !sp.classList.contains('open')) { var sh = sp.querySelector(':scope > .spoiler__head'); if (sh) sh.click(); }
+      return [sp];
+    }
+    return [document.querySelector('#tab-release-planned [data-ssp-release-id="' + f.value + '"]')];
+  }
+  return [];
+}
+
+/* Применить focus=role:K / user:L / hist:<id> / release:<id> — прокрутка + кратковременная подсветка.
+   Невалид → no-op (R3). #124 — цель зависит от узла дерева (роль/человек в «Ёмкости» — через выбор
+   экрана, не клики) и ждётся до 5 с: данные вкладок грузятся асинхронно. Первая попытка — через 200 мс,
+   как раньше; по таймауту — no-op. Тот же путь у «Перейти» из напоминаний (работает и без host.navigation). */
+const _FOCUS_TICK_MS = 200, _FOCUS_MAX_TICKS = 25;
+function _applyShareFocus(focus, deps) {
   if (typeof SHARE_URL_PURE.parseFocus !== 'function') return;
   var f = SHARE_URL_PURE.parseFocus(focus);
   if (!f) return;
-  setTimeout(function () {
+  var node = _currentDashNode();
+  if (node === 'capacity' && (f.kind === 'role' || f.kind === 'user') && deps && typeof deps.capacityFocus === 'function') {
+    try { deps.capacityFocus(f.kind, f.value); } catch (_) {}
+  }
+  var ticks = 0;
+  function tick() {
     try {
-      var el = null;
-      if (f.kind === 'role') {
-        el = document.querySelector('.planning-role-card[data-role-key="' + f.value + '"]');
-      } else if (f.kind === 'user') {
-        /* people-таблица не имеет стабильного data-login — best-effort, no-op если нет (R3). */
-        el = document.querySelector('[data-login="' + f.value + '"], [data-assignee="' + f.value + '"], [data-user="' + f.value + '"]');
-      } else if (f.kind === 'hist') {
-        /* #112 — запись истории: группа строит ролевые спойлеры по первому раскрытию, поэтому сначала
-           раскрываем группу (клик по шапке = toggleGroup), затем запись. База id — по последнему '_'
-           (как _histBaseId). ponytail: запись на другой странице истории (HIST_PAGE) — no-op;
-           листать к странице по id — если попросят. */
-        var u = f.value.lastIndexOf('_'), base = u > 0 ? f.value.slice(0, u) : f.value;
-        var grp = document.querySelector('[data-ssp-hist-group="' + base + '"]');
-        if (grp && !grp.classList.contains('open')) { var gh = grp.querySelector(':scope > .spoiler__head'); if (gh) gh.click(); }
-        el = document.querySelector('[data-ssp-hist-rec="' + f.value + '"]');
-        if (el && !el.classList.contains('open')) { var rh = el.querySelector(':scope > .spoiler__head'); if (rh) rh.click(); }
-      } else if (f.kind === 'release') {
-        /* #112 — карточка планируемого релиза (React уже отрисован к моменту таймера). */
-        el = document.querySelector('[data-ssp-release-id="' + f.value + '"]');
-      }
-      if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('ssp-focus-flash');
-      setTimeout(function () { try { el.classList.remove('ssp-focus-flash'); } catch (_) {} }, 1600);
+      var els = _findFocusTargets(f, node).filter(Boolean);
+      if (!els.length) { if (++ticks < _FOCUS_MAX_TICKS) setTimeout(tick, _FOCUS_TICK_MS); return; }
+      els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      els.forEach(function (el) { el.classList.add('ssp-focus-flash'); });
+      setTimeout(function () { els.forEach(function (el) { try { el.classList.remove('ssp-focus-flash'); } catch (_) {} }); }, 1600);
     } catch (_) {}
-  }, 200);
+  }
+  setTimeout(tick, _FOCUS_TICK_MS);
 }
 
 /* Клик по «Поделиться»: копирует текущий deep-link URL + toast. Без модалки/dropdown (D4).
@@ -135,10 +173,13 @@ function _execCopy(text) {
    app_-префиксные параметры (YT в реальном URL префиксует ключи app_; getAppLocation
    читает их обратно без префикса — V0-A 2026-06-09). */
 var _SHARE_APP_PATH = '/app/smart-sprint-planner/ssp-main-global/';
-function _buildShareHref(deps) {
+/* #124 — target {node?, sprintId?, focus?} перекрывает текущее состояние: иконка карточки релиза
+   и выбор в «Ёмкости». Без target — ссылка на экран, как в #36. */
+function _buildShareHref(deps, target) {
+  var t = target || {};
   var base = String(deps.state.getYtBase() || '').replace(/\/+$/, '');
   var raw = (typeof SHARE_URL_PURE.buildShareSearch === 'function')
-    ? SHARE_URL_PURE.buildShareSearch({ projectKey: deps.state.getActiveProjectKey(), sprintId: deps.state.getCurrentSprintId(), node: _currentDashNode() })
+    ? SHARE_URL_PURE.buildShareSearch({ projectKey: deps.state.getActiveProjectKey(), sprintId: t.sprintId || deps.state.getCurrentSprintId(), node: t.node || _currentDashNode(), focus: t.focus })
     : '';
   var prefixed = raw ? raw.split('&').map(function (p) { return 'app_' + p; }).join('&') : '';
   return base + _SHARE_APP_PATH + (prefixed ? '?' + prefixed : '');
@@ -158,10 +199,21 @@ function _projectSettingsHrefAsync(deps) {
     deps.state.getYtBase(), deps.state.getActiveProjectKey(), _PROJECT_WIDGET_TAB));
 }
 
-function _onShareClick(deps) {
-  var href = _buildShareHref(deps);
+/* #124 — цель «Поделиться» в рельсе: на «Ёмкости» — выбор справа (человек / роль) и спринт вкладки;
+   на прочих узлах — экран целиком. */
+function _railTarget(deps) {
+  if (_currentDashNode() !== 'capacity' || typeof deps.capacityShareTarget !== 'function') return null;
+  try { return deps.capacityShareTarget() || null; } catch (_) { return null; }
+}
+
+/* target — от иконки карточки релиза; без него — «Поделиться» в рельсе. Тост называет цель, только
+   если фокус реально попал в ссылку (логин вне алфавита FOCUS_RE молча отбрасывается). */
+function _onShareClick(deps, target) {
+  var t = target || _railTarget(deps);
+  var href = _buildShareHref(deps, t);
   try { deps.diag('share copy: ' + href, 'info'); } catch (_) {}
-  function ok()  { try { deps.toast(deps.T('shareCopyOk')); } catch (_) {} }
+  var label = (t && t.label && SHARE_URL_PURE.parseFocus && SHARE_URL_PURE.parseFocus(t.focus)) ? t.label : null;
+  function ok()  { try { deps.toast(label ? deps.T('shareCopyOkTarget').replace('{target}', label) : deps.T('shareCopyOk')); } catch (_) {} }
   function err() { try { deps.toast(deps.T('shareCopyErr')); } catch (_) {} }
   /* 1) синхронный execCommand в gesture'е (работает в sandboxed iframe без clipboard-write) */
   if (_execCopy(href)) { ok(); return; }

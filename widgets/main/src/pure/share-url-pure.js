@@ -29,7 +29,8 @@ var NODE_URL_TO_INTERNAL = {
   'gantt':             'gantt',
   'history':           'history',
   'capacity':          'capacity',
-  'releases':          'release-planned'   /* #112 ⚖13 — «Перейти» к релизу и будущие письма #115 */
+  'releases':          'release-planned',  /* #112 ⚖13 — «Перейти» к релизу и будущие письма #115 */
+  'releases.history':  'release-history'   /* #124 — ссылка на выпущенный/отменённый релиз */
 };
 var NODE_INTERNAL_TO_URL = (function () {
   var m = {};

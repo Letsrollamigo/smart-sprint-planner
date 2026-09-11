@@ -60,3 +60,11 @@ While capacity is a draft you can still plan against it — everyone simply know
 ## Where the grade coefficient comes from
 
 The Junior / Middle / Senior coefficients are set in the project settings, in the Capacity section. The planner does not invent them and does not substitute industry values: if a project decides that a junior and a senior count the same, that is what happens.
+
+## Linking to this screen
+
+**Share** in the rail ([chapter 01](01-entry.md)) copies a link to the sprint picked on this tab — the tab has its own sprint selector, past sprints included (those are read-only) — together with the choice in the right-hand column above the calendar:
+
+- **Person** mode with someone picked — the recipient gets that person selected and their rows in the calculation briefly highlighted (all of them, if the person has several roles);
+- **By role** mode — that role is selected, the table switches to the **By roles** view and the role's group is highlighted;
+- **Person** mode with nobody picked — the link opens the screen as a whole.
