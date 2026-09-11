@@ -254,10 +254,20 @@ function createHost(opts) {
     unmountAt: rec('CAPACITY', 'unmountAt', function (host) { if (host) { try { delete host.__sspCapacityVm; } catch (_) {} } }),
   };
   const modalLog = [];
+  /* #127 — реестр открытых id (isOpen), как в modal-mount.jsx: open добавляет, spec.onClose
+     (голдены зовут его как «закрытие любым путём») и close(id) снимают. */
+  const modalOpen = new Set();
   window.__SSP_RING_MODAL = {
-    open: function (spec) { modalLog.push(spec); bridgeLog.push({ bridge: 'RING_MODAL', method: 'open' }); return { close: function () {} }; },
+    open: function (spec) {
+      modalLog.push(spec); bridgeLog.push({ bridge: 'RING_MODAL', method: 'open' });
+      modalOpen.add(spec.id);
+      const origOnClose = spec.onClose;
+      if (typeof origOnClose === 'function') spec.onClose = function () { modalOpen.delete(spec.id); origOnClose(); };
+      return { close: function () {} };
+    },
+    isOpen: function (id) { return modalOpen.has(id); },
     mountInline: rec('RING_MODAL', 'mountInline'),
-    close: rec('RING_MODAL', 'close'),
+    close: rec('RING_MODAL', 'close', function (id) { modalOpen.delete(id); }),
   };
 
   /* ── i18n: словари напрямую из JSON, loader — минимальный стаб ── */

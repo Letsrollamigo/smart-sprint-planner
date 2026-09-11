@@ -3,7 +3,7 @@
  *
  * Характеризация семи фабрик ДО рефактора: openConfirmGoalDialog,
  * showDiscardConfirmModal, showCloseWorkingCopyModal, showMultiTabConflictModal,
- * showWorkingCopyConflictModal, _openImportReplaceConfirm, showDynFieldConfirm.
+ * showWorkingCopyConflictModal, _openImportReplaceConfirm, showDynFieldConfirm (#127 — только enum + гард подмены).
  *
  * Два среза на фабрику:
  *   - spec: снимок объекта, уходящего в __SSP_RING_MODAL.open (recording-стаб
@@ -168,39 +168,38 @@ test('golden: openConfirmGoalDialog — спек + промис confirm/cancel +
   });
 });
 
-test('golden: showDynFieldConfirm — enum/text спеки + контракт apply/cancel/escape', () => {
+test('golden: showDynFieldConfirm — enum-спека + контракт apply/cancel/escape + гард подмены (#127)', () => {
   const host = createHost();
-  const probeText = (action) => {
-    const calls = [];
-    host.gm.call('showDynFieldConfirm', 'GM Поле', 'Описание', null, 480, function (ok, v) { calls.push([ok, v]); });
-    const spec = lastSpec(host);
-    if (action === 'escape') { dismiss(spec); }
-    else if (action === 'apply') { spec.body.props.onApply('16ч'); dismiss(spec); }
-    else { spec.body.props.onCancel(); dismiss(spec); }
-    return calls;
-  };
-  const probeEnum = () => {
+  const probeEnum = (action) => {
     const calls = [];
     host.gm.call('showDynFieldConfirm', 'GM Поле', 'Описание', ['Normal', 'Critical'], 'Critical', function (ok, v) { calls.push([ok, v]); });
     const spec = lastSpec(host);
-    spec.body.props.onApply('Normal');
-    dismiss(spec);
+    if (action === 'escape') { dismiss(spec); }
+    else if (action === 'apply') { spec.body.props.onApply('Normal'); dismiss(spec); }
+    else { spec.body.props.onCancel(); dismiss(spec); }
     return calls;
   };
 
   host.gm.call('showDynFieldConfirm', 'GM Поле', 'Описание', ['Normal', 'Critical'], 'Critical', function () {});
-  const specEnum = serializeSpec(lastSpec(host));
-  host.gm.call('showDynFieldConfirm', 'GM Поле', 'Описание', null, 480, function () {});
-  const specText = serializeSpec(lastSpec(host));
+  const firstSpec = lastSpec(host);
+  const specEnum = serializeSpec(firstSpec);
+  /* #127 — второй вызов при открытом первом: колбэк отказом сразу, второго openModal нет,
+     первое окно живёт (раньше перерисовывалось, колбэк первого терялся). */
+  const opensBefore = host.modalLog.length;
+  const second = [];
+  host.gm.call('showDynFieldConfirm', 'GM Поле 2', 'Описание 2', ['A', 'B'], 'A', function (ok, v) { second.push([ok, v]); });
+  const guard = { secondCalls: second.slice(), opensDelta: host.modalLog.length - opensBefore, firstStillOpen: host.window.__SSP_RING_MODAL.isOpen('dynField') };
+  assert.deepStrictEqual(guard.secondCalls, [[false, null]], 'второй вызов при открытом окне — отказ колбэком');
+  assert.strictEqual(guard.opensDelta, 0, 'второе окно не открывается');
+  dismiss(firstSpec);
 
   checkJsonSnapshot('modal-spec-dyn-field', {
     specEnum: specEnum,
-    specText: specText,
+    guard: guard,
     behavior: {
-      applyEnum: probeEnum(),           /* raw как есть, без parsePeriod */
-      applyText: probeText('apply'),    /* parsePeriod('16ч') → минуты */
-      cancel: probeText('cancel'),
-      escape: probeText('escape'),      /* done-гард: ровно один cb(false,null) */
+      applyEnum: probeEnum('apply'),    /* raw как есть */
+      cancel: probeEnum('cancel'),
+      escape: probeEnum('escape'),      /* done-гард: ровно один cb(false,null) */
     },
   });
 });

@@ -1,0 +1,61 @@
+{
+  "a": {
+    "estimate": null,
+    "value": "",
+    "writes": 0,
+    "confirmCalls": 0
+  },
+  "b": {
+    "estimate": 300,
+    "value": "5ч",
+    "logSync": [
+      "apiPost:sprint-data"
+    ],
+    "logAfter": [
+      "apiPost:sprint-data",
+      "updateIssueField:GM-1:300:period:Analysis Estimation"
+    ]
+  },
+  "c": {
+    "estimate": 300,
+    "value": "5ч",
+    "writes": 1
+  },
+  "d": {
+    "estimate": 6000,
+    "value": "100ч",
+    "writes": 0
+  },
+  "e": {
+    "estimate": 300,
+    "value": "5ч",
+    "writes": 0
+  },
+  "f": {
+    "sync": {
+      "estimate": 420,
+      "value": "7ч",
+      "writes": 1
+    },
+    "after": {
+      "estimate": null,
+      "value": "",
+      "toasts": 1,
+      "log": [
+        "apiPost:sprint-data"
+      ]
+    }
+  },
+  "g": {
+    "aEstimate": 480,
+    "bEstimate": null,
+    "writes": 1,
+    "confirmCalls": 0
+  },
+  "toasts": [
+    {
+      "msg": "Ошибка: invalid_sprint_structure",
+      "type": "err"
+    }
+  ]
+}

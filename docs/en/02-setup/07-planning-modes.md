@@ -13,7 +13,7 @@
 | **Personal planning** | every assignee gets their own resource and remainder inside a role | when it matters to see people's load, not just roles' |
 | **Manual assignee resource** | a person's resource is typed in rather than derived from the grade | when the capacity formula does not describe your reality |
 | **Use personal resource** | the role's remainder is computed from the sum of personal resources | together with personal planning |
-| **Dynamic editing** | edit hours straight in the composition table without opening the issue | almost always convenient |
+| **Dynamic editing** | edit hours straight in the composition table without opening the issue: the estimate is written on Enter or when leaving the field (an empty field does not zero it), list fields — with confirmation | almost always convenient |
 | **Planning above the limit** | allow saving an over-limit composition without a modal warning | if the team knowingly over-promises and does not want a dialog each time |
 | **Automatic date forecast** | a «Forecast dates» button lays issues out day by day as a queue | when dates are set in bulk |
 

@@ -8,7 +8,7 @@
 // unchanged. Dependencies are injected per call via the trailing `deps` object:
 //   t          — i18n resolver (monolith T)
 //   openModal  — declarative spec API over __SSP_RING_MODAL (monolith openModal)
-//   showDynFieldConfirm additionally: localizeEnumVal, fmtPeriod, parsePeriod
+//   showDynFieldConfirm additionally: localizeEnumVal, isModalOpen (#127)
 //   openImportReplaceConfirm instead: onReplace (downstream _doImportReplaceAll),
 //   onAbandon (clears _importHistPending) — keeps monolith state out of the module.
 
@@ -137,7 +137,11 @@ function openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro, d
 function showDynFieldConfirm(title, desc, enumValues, currentVal, callback, deps) {
   var t = deps.t, openModal = deps.openModal;
   var cb = callback || function(){};
-  var isEnum = !!enumValues;
+  /* #127 — гард подмены: повторный вызов при открытом окне игнорируется (колбэк отказом),
+     первое окно живёт. Раньше второе открытие с тем же id перерисовывало первое, колбэк
+     первого не звался. Текстового режима (оценка) больше нет — оценка пишется без окна. */
+  if (deps.isModalOpen && deps.isModalOpen('dynField')) { cb(false, null); return; }
+  var values = Array.isArray(enumValues) ? enumValues : [];
   var done = false;
   var h = openModal({
     id: 'dynField',
@@ -145,16 +149,12 @@ function showDynFieldConfirm(title, desc, enumValues, currentVal, callback, deps
     title: title,
     body: { kind: 'component', name: 'dynFieldForm', props: {
       desc: desc,
-      mode: isEnum ? 'enum' : 'text',
-      options: isEnum ? enumValues.map(function(v){ return { value: v, label: deps.localizeEnumVal(v) || v }; }) : [],
-      initialValue: isEnum ? (currentVal || (enumValues[0] || '')) : (currentVal ? deps.fmtPeriod(currentVal) : ''),
-      placeholder: t('phPeriod'),
+      mode: 'enum',
+      options: values.map(function(v){ return { value: v, label: deps.localizeEnumVal(v) || v }; }),
+      initialValue: currentVal || (values[0] || ''),
       applyText: t('btnYesUpdate'),
       cancelText: t('btnNo'),
-      onApply: function(raw){
-        done = true; h.close();
-        cb(true, isEnum ? raw : deps.parsePeriod(raw));
-      },
+      onApply: function(raw){ done = true; h.close(); cb(true, raw); },
       onCancel: function(){ done = true; h.close(); cb(false, null); },
     }},
     buttons: [],

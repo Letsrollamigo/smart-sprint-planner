@@ -1,6 +1,6 @@
 /* v2.2.0 Phase 0 — SspModal: настоящий React-контент в Ring Dialog.
    Заменяет DOM-трансплантацию (dialog-mount.jsx) декларативным React-рендерингом.
-   window.__SSP_MODAL: open(spec) / close(id) / update(id,partial) / registerBody(name,comp).
+   window.__SSP_MODAL: open(spec) / close(id) / isOpen(id) / update(id,partial) / registerBody(name,comp).
    Позиционирование: IO-срез видимости (#56-6) + click-anchor фолбэк — double-RAF + settle-timer + scroll/resize.
    Bridge __SSP_DIALOG (dialog-mount.jsx) демонтирован в Phase 6 — все модалки на этом API. */
 
@@ -241,9 +241,13 @@ function SspModal({ spec, onClose }) {
 /* Имя `__SSP_RING_MODAL` — историческое:
    `__SSP_MODAL` был занят легаси-фасадом монолита (снесён при декомпозиции);
    глобал оставлен как есть ради стабильности контракта. */
+/* #127 — реестр открытых id: isOpen(id) для гарда подмены (showDynFieldConfirm);
+   снимается и в идемпотентном onClose, и в close(id), который onClose минует. */
+const _openIds = new Set();
 window.__SSP_RING_MODAL = {
   open(spec) {
     const id = 'modal-' + spec.id;
+    _openIds.add(spec.id);
     /* Идемпотентный close: гарантирует ровно один unmount и ровно один вызов
        spec.onClose — независимо от пути закрытия (кнопка → handle.close, Escape /
        backdrop → onCloseAttempt). spec.onClose — хук «модалка закрыта любым способом»
@@ -253,6 +257,7 @@ window.__SSP_RING_MODAL = {
     const onClose = () => {
       if (closed) return;
       closed = true;
+      _openIds.delete(spec.id);
       window.__SSP_REACT.unmount(id);
       if (typeof spec.onClose === 'function') {
         try { spec.onClose(); } catch (_) { /* noop */ }
@@ -262,8 +267,10 @@ window.__SSP_RING_MODAL = {
     return { close: onClose, update: (partial) => this.update(spec.id, partial) };
   },
   close(id) {
+    _openIds.delete(id);
     window.__SSP_REACT.unmount('modal-' + id);
   },
+  isOpen(id) { return _openIds.has(id); },
   update(id, partial) { void id; void partial; },
   registerBody(name, component) {
     _bodyRegistry[name] = component;

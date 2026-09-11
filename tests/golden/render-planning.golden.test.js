@@ -456,49 +456,109 @@ test('golden: состав — focusout-контракт alloc-input (парсе
   });
 });
 
-test('golden: состав — focusout dyn-period-input (confirm-флоу оценки: подтверждение и отмена)', () => {
+/* #127 — «Оценка» пишется сразу по уходу из поля / Enter, без окна подтверждения (как «Аллокация»);
+   пустое поле = не писать; неразбираемый ввод = не писать; Esc = откат ввода; запись — сперва снимок
+   (apiPost), поле задачи (updateIssueField) — только после принятого снимка; отвергнутый снимок
+   откатывает модель и поле (правило #100). Окно showDynFieldConfirm — шпион, обязан остаться не
+   вызванным. Утверждения (a) «окно не открыто», (b) «поле задачи после снимка», (f) «откат при отказе»
+   падают на коде до правки (проверено инверсией). */
+test('golden: состав — dyn-period-input пишет оценку сразу (#127: без окна, Enter/Esc, откат при отказе)', async () => {
   const { gm, document, window } = createHost();
   fx.applyBaseState(gm);
   const st = buildDynEditSettings();
-  const apiPostLog = [];
-  const updateFieldCalls = [];
-  const confirmSpecs = [];
-  let confirmAnswer = true;
+  const log = [];
+  const toasts = [];
+  const confirmCalls = [];
+  let rejectNext = false;
   gm.set({
     _settings: st,
-    apiPost: function (path) { apiPostLog.push(path); return Promise.resolve({ success: true }); },
-    updateRoleRemaining: function () {},
-    updateIssueField: function (iid, fieldName, value, type) { updateFieldCalls.push({ iid: iid, fieldName: fieldName, value: value, type: type }); },
-    showDynFieldConfirm: function (title, desc, enumValues, currentVal, cb) {
-      confirmSpecs.push({ title: title, desc: desc, enumValues: enumValues, currentVal: currentVal });
-      cb(confirmAnswer, null);
+    apiPost: function (path) {
+      log.push('apiPost:' + path);
+      if (rejectNext) { rejectNext = false; return Promise.reject(new Error('invalid_sprint_structure')); }
+      return Promise.resolve({ success: true });
     },
+    updateRoleRemaining: function () {},
+    updateIssueField: function (iid, fieldName, value, type) { log.push('updateIssueField:' + iid + ':' + value + ':' + type + ':' + fieldName); },
+    showDynFieldConfirm: function () { confirmCalls.push(Array.prototype.slice.call(arguments, 0, 4)); },
+    toast: function (msg, type) { toasts.push({ msg: msg, type: type }); },
   });
   const host = ensureCompHost(document, 'analysis');
   gm.call('renderRoleComposition', 'analysis');
-  const inp = document.createElement('input');
-  inp.className = 'dyn-period-input';
-  inp.setAttribute('data-iid', 'GM-1');
-  inp.setAttribute('data-rk', 'analysis');
-  host.appendChild(inp);
-  inp.value = '8';
-  inp.dispatchEvent(new window.Event('focusout', { bubbles: true }));
-  const confirmed = { estimate: gm.get('_roleItems').analysis[0].estimate_analysis, updateFieldCalls: updateFieldCalls.slice() };
-  /* отмена → значение инпута откатывается к старому, мутации нет */
-  confirmAnswer = false;
-  const synth2 = document.createElement('input');
-  synth2.className = 'dyn-period-input';
-  synth2.setAttribute('data-iid', 'GM-2');
-  synth2.setAttribute('data-rk', 'analysis');
-  host.appendChild(synth2);
-  synth2.value = '99';
-  synth2.dispatchEvent(new window.Event('focusout', { bubbles: true }));
-  checkJsonSnapshot('composition-dynperiod-confirm-contract', {
-    confirmed: confirmed,
-    declined: { estimate: gm.get('_roleItems').analysis[1].estimate_analysis, revertedInput: synth2.value },
-    confirmSpecs: confirmSpecs,
-    apiPostPaths: apiPostLog,
-  });
+  const items = () => gm.get('_roleItems').analysis;
+  function mkInput(iid, value) {
+    const inp = document.createElement('input');
+    inp.className = 'dyn-period-input';
+    inp.setAttribute('data-iid', iid);
+    inp.setAttribute('data-rk', 'analysis');
+    inp.value = value;
+    host.appendChild(inp);
+    return inp;
+  }
+  const focusout = (el) => el.dispatchEvent(new window.Event('focusout', { bubbles: true }));
+  const key = (el, k) => { el.focus(); el.dispatchEvent(new window.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true })); };
+  const tick = () => new Promise((r) => setTimeout(r, 0));
+  const writes = () => log.filter((l) => l.indexOf('apiPost:') === 0).length;
+
+  /* (a) оценки нет, поле пустое → ничего не пишем, окна нет */
+  items()[1].estimate_analysis = null;                     /* GM-2 */
+  const inA = mkInput('GM-2', '');
+  focusout(inA);
+  const a = { estimate: items()[1].estimate_analysis, value: inA.value, writes: writes(), confirmCalls: confirmCalls.length };
+  assert.strictEqual(a.confirmCalls, 0, '(a) окно подтверждения открываться не должно');
+  assert.strictEqual(a.writes, 0, '(a) пустое поле не пишет');
+
+  /* (b) «5ч» + уход из поля → 300 мин, один снимок, поле задачи — после принятого снимка */
+  const inB = mkInput('GM-1', '5ч');
+  focusout(inB);
+  const b = { estimate: items()[0].estimate_analysis, value: inB.value, logSync: log.slice() };
+  await tick();
+  b.logAfter = log.slice();
+  assert.deepStrictEqual(b.logAfter, ['apiPost:sprint-data', 'updateIssueField:GM-1:300:period:Analysis Estimation'],
+    '(b) сперва снимок, поле задачи — после его принятия');
+
+  /* (c) «5ч» + Enter (инпут в фокусе) → та же одна запись */
+  log.length = 0;
+  const inC = mkInput('GM-3', '5ч');
+  key(inC, 'Enter');
+  const c = { estimate: items()[2].estimate_analysis, value: inC.value, writes: writes() };
+  await tick();
+
+  /* (d) «99» + Escape → записи нет, поле = прежнее */
+  log.length = 0;
+  const inD = mkInput('GM-4', '99');
+  key(inD, 'Escape');
+  const d = { estimate: items()[3].estimate_analysis, value: inD.value, writes: writes() };
+
+  /* (e) «abc» → неразбираемый ввод, записи нет, поле = прежнее */
+  log.length = 0;
+  const inE = mkInput('GM-1', 'abc');
+  focusout(inE);
+  const e = { estimate: items()[0].estimate_analysis, value: inE.value, writes: writes() };
+
+  /* (f) снимок отвергнут → оценка и поле откатились, тост */
+  log.length = 0;
+  rejectNext = true;
+  const inF = mkInput('GM-2', '7ч');
+  focusout(inF);
+  const f = { sync: { estimate: items()[1].estimate_analysis, value: inF.value, writes: writes() } };
+  await tick();
+  f.after = { estimate: items()[1].estimate_analysis, value: inF.value, toasts: toasts.length, log: log.slice() };
+  assert.strictEqual(f.sync.writes, 1, '(f) запись ушла');
+  assert.strictEqual(f.after.estimate, null, '(f) отвергнутый снимок откатывает оценку');
+  assert.strictEqual(f.after.value, '', '(f) поле вернулось к прежнему');
+  assert.strictEqual(f.after.toasts, 1, '(f) отказ показан тостом');
+
+  /* (g) ввод в A → клик в пустую B: одна запись в A, в B ничего */
+  log.length = 0;
+  items()[3].estimate_analysis = null;                     /* GM-4 без оценки */
+  const inG1 = mkInput('GM-3', '8ч');
+  const inG2 = mkInput('GM-4', '');
+  focusout(inG1);
+  focusout(inG2);
+  const g = { aEstimate: items()[2].estimate_analysis, bEstimate: items()[3].estimate_analysis, writes: writes(), confirmCalls: confirmCalls.length };
+  await tick();
+
+  checkJsonSnapshot('composition-dynperiod-direct-write', { a: a, b: b, c: c, d: d, e: e, f: f, g: g, toasts: toasts });
 });
 
 test('golden: состав — mousedown-контракты удаления строки и dyn-enum ячейки', () => {

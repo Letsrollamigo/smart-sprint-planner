@@ -168,61 +168,26 @@ function WcDiffView(props) {
   );
 }
 
-/* ── dynFieldForm — обновление поля задачи: нативный <select> (enum) ИЛИ Ring Input (период) ──
-   Phase 3 #32. onApply(rawValue) — caller (IIFE) сам решает enum-value vs parsePeriod по mode.
-   onCancel(). */
+/* ── dynFieldForm — обновление поля-списка задачи (Состояние/Приоритет/Система): нативный <select>.
+   Phase 3 #32. onApply(rawValue) — значение списка как есть. onCancel(). #127 — текстовый режим
+   (оценка через Ring Input) снят: оценка пишется без окна, по Enter или уходу из поля. ── */
 function DynFieldForm(props) {
-  const Input = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Input;
-  const isEnum = props.mode === 'enum';
   const [value, setValue] = React.useState(props.initialValue || '');
   const onApply = props.onApply || noop;
   const onCancel = props.onCancel || noop;
-  /* #34 — blur-реформат периода к каноничному виду (часы+минуты). Только text-режим. */
-  const reformatBlur = () => {
-    if (isEnum) return;
-    const raw = (value || '').trim();
-    if (raw === '' || !/\d/.test(raw)) return;
-    const P = globalThis.__SSP_PERIOD_PURE;
-    if (P) setValue(P.fmtPeriod(P.parsePeriod(raw)));
-  };
   return (
     <React.Fragment>
       {props.desc ? <p className="ssp-modal-body-text">{props.desc}</p> : null}
-      {isEnum
-        ? (
-          <select
-            className="dyn-modal-select"
-            style={{ width: '100%', margin: '8px 0' }}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          >
-            {(props.options || []).map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        )
-        : (Input
-          ? (
-            <div style={{ margin: '8px 0' }}>
-              <Input
-                value={value}
-                placeholder={props.placeholder}
-                onChange={(ev) => setValue(ev && ev.target ? ev.target.value : '')}
-                onBlur={reformatBlur}
-              />
-            </div>
-          )
-          : (
-            <input
-              type="text"
-              className="dyn-modal-select"
-              style={{ width: '100%', margin: '8px 0' }}
-              value={value}
-              placeholder={props.placeholder}
-              onChange={(e) => setValue(e.target.value)}
-              onBlur={reformatBlur}
-            />
-          ))}
+      <select
+        className="dyn-modal-select"
+        style={{ width: '100%', margin: '8px 0' }}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      >
+        {(props.options || []).map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
       <div className="ssp-modal-footer">
         <button type="button" className={_btnCls('secondary')} onClick={() => onCancel()}>
           {props.cancelText}

@@ -1235,35 +1235,58 @@ function renderRoleComposition(rk, deps) {
         deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).catch(_persistErrToast);
         return;
       }
-      /* dynEdit: оценка-period blur */
+      /* dynEdit: оценка-period blur. #127 — пишем сразу, как «Аллокация» выше, без окна
+         подтверждения: пусто / неразбираемый ввод / без изменений → ничего не пишем и
+         возвращаем прежний показ. Порядок записи: сперва снимок (apiPost), поле задачи
+         YouTrack — только после принятого снимка; отвергнутый снимок откатывает модель и
+         поле (правило #100 — ветка «Аллокации» откат не делает, копировать её буквально нельзя). */
       if (t.matches('input.dyn-period-input[data-iid]')) {
         var rk3 = t.dataset.rk;
         var iid3 = t.dataset.iid;
         var idx3 = _findIdxByIid(rk3, iid3);
         if (idx3 < 0) { deps.diag('dyn-period-input focusout: item iid='+iid3+' not found in role '+rk3,'warn'); return; }
-        var newVal3 = deps.parsePeriod(t.value);
         var item3 = deps.getRoleItemsArr(rk3)[idx3];
         var oldVal3 = item3['estimate_'+rk3];
-        if (newVal3 === oldVal3) return;
-        var inpEl = t;
-        deps.showDynFieldConfirm(
-          deps.T('dynModalTitle'),
-          deps.T('dynConfirmEst') + ' ' + item3.issueId + ' ' + deps.T('dynConfirmEstTo') + deps.fmtPeriod(newVal3) + '»?',
-          null, null,
-          function(confirmed) {
-            if (confirmed) {
-              item3['estimate_'+rk3] = newVal3;
-              var _settings3 = deps.state.getSettings();
-              deps.updateIssueField(item3.issueId, _settings3[deps.ALL_ROLES.find(function(r){return r.key===rk3;}).fieldEst], newVal3, 'period');
-              deps.updateRoleRemaining(rk3);
-              deps.renderRoleComposition(rk3);
-              deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() }).then(function(){ deps.renderRoleComposition(rk3); }).catch(_persistErrToast);
-            } else {
-              inpEl.value = oldVal3 !== null && oldVal3 !== undefined ? deps.fmtPeriod(oldVal3) : '';
-            }
-          }
-        );
+        var raw3 = t.value.trim();
+        var fmtOld3 = (oldVal3 !== null && oldVal3 !== undefined) ? deps.fmtPeriod(oldVal3) : '';
+        if (raw3 === '') { t.value = fmtOld3; return; }                        /* пусто — не пишем (не «0м») */
+        var newVal3 = deps.parsePeriod(raw3);
+        if (newVal3 === 0 && !/^0/.test(raw3)) { t.value = fmtOld3; return; }   /* «abc» — неразбираемо, не пишем */
+        if (newVal3 === oldVal3) { t.value = fmtOld3; return; }                 /* не изменилось — нормализуем показ */
+        var prev3 = oldVal3;
+        item3['estimate_'+rk3] = newVal3;
+        t.value = deps.fmtPeriod(newVal3);
+        deps.updateRoleRemaining(rk3);
+        var _settings3 = deps.state.getSettings();
+        var role3 = deps.ALL_ROLES.find(function(r){ return r.key===rk3; });
+        deps.apiPost('sprint-data', { roleItems: deps.state.getRoleItems() })
+          .then(function () {
+            deps.updateIssueField(item3.issueId, _settings3[role3.fieldEst], newVal3, 'period');
+            deps.renderRoleComposition(rk3);
+          })
+          .catch(function (e) {
+            item3['estimate_'+rk3] = prev3;
+            t.value = fmtOld3;
+            deps.updateRoleRemaining(rk3);
+            _persistErrToast(e);
+          });
         return;
+      }
+    });
+
+    /* #127 — Enter / Escape в поле оценки: Enter → blur → единый путь записи через focusout;
+       Escape → вернуть прежний показ и blur → focusout видит «не изменилось». readOnly-инпуты
+       (roAttr) — ранний return, как у focusout. */
+    host.addEventListener('keydown', function(ev) {
+      var t = ev.target;
+      if (!t || !t.matches || !t.matches('input.dyn-period-input[data-iid]') || t.readOnly) return;
+      if (ev.key === 'Enter') { ev.preventDefault(); t.blur(); return; }
+      if (ev.key === 'Escape') {
+        var rkK = t.dataset.rk, idxK = _findIdxByIid(rkK, t.dataset.iid);
+        var itemK = idxK >= 0 ? deps.getRoleItemsArr(rkK)[idxK] : null;
+        var oldK = itemK ? itemK['estimate_'+rkK] : null;
+        t.value = (oldK !== null && oldK !== undefined) ? deps.fmtPeriod(oldK) : '';
+        t.blur();
       }
     });
   }

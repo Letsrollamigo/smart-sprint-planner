@@ -3270,13 +3270,13 @@
 
   /* ── Динамическое модальное окно ──
      Phase 3 #32 — мигрировано на openModal() (bespoke dynFieldForm, настоящий React).
-     Контракт сохранён: callback(true, val) / callback(false, null). Для enum val = выбранное
-     значение; для текстового ввода val = parsePeriod(ввод) (как в legacy). form-тип:
+     Контракт сохранён: callback(true, val) / callback(false, null); val = выбранное значение
+     списка. #127 — текстовый режим (оценка) снят: оценка пишется без окна. form-тип:
      backdrop ✅ / escape ✅ / close-X ✅; Escape/backdrop = отмена (callback(false,null)). */
-  /* Тир B — тело в modal-specs.js; enum/text-режимы и done-гард сохранены. */
+  /* Тир B — тело в modal-specs.js; enum-режим, done-гард и гард подмены (#127) там. */
   function showDynFieldConfirm(title, desc, enumValues, currentVal, callback) {
     return MODAL_SPECS.showDynFieldConfirm(title, desc, enumValues, currentVal, callback,
-      { t: T, openModal: openModal, localizeEnumVal: localizeEnumVal, fmtPeriod: fmtPeriod, parsePeriod: parsePeriod });
+      { t: T, openModal: openModal, localizeEnumVal: localizeEnumVal, isModalOpen: function (id) { return !!(window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.isOpen === 'function' && window.__SSP_RING_MODAL.isOpen(id)); } });   /* #127 — гард подмены открытого окна */
   }
 
   function loadEnumBundle(fieldName, cb) {
