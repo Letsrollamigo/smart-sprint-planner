@@ -45,6 +45,26 @@ test('golden: _buildConflictAOA — base vs working с диффом', () => {
   checkJsonSnapshot('conflict-aoa', { base: aoaBase, working: aoaWorking });
 });
 
+/* #120 — снимок с фазами: в шапке листа заголовок «Фазы работ» и шесть строк (две заданы, остальные
+   «не планируется»); снимок без ключа phases (первый тест) строк не получает. */
+test('golden: exportSprintToExcel — строки фаз работ в шапке (#120)', () => {
+  const host = createHost();
+  fx.applyBaseState(host.gm);
+  const calls = installXlsxStub(host.window);
+  const rec = Object.assign({}, host.gm.get('_history')[0], {
+    phases: { analysis: { dateStart: fx.DATE_START, dateEnd: fx.DATE_START + 3 * 86400000 }, techTest: { dateStart: fx.DATE_START + 14 * 86400000, dateEnd: fx.DATE_START + 19 * 86400000 }, deploy: null },
+    phasesUpdatedAt: fx.DATE_START, phasesUpdatedBy: 'fixture_user_2',
+  });
+  host.gm.call('exportSprintToExcel', rec);
+  const meta = calls.sheets[0];
+  const titleIdx = meta.findIndex((row) => row[0] === 'Фазы работ');
+  assert.ok(titleIdx > 0, 'заголовок «Фазы работ» в шапке');
+  const rows = meta.slice(titleIdx + 1, titleIdx + 7);
+  assert.strictEqual(rows.length, 6);
+  assert.strictEqual(rows.filter((r) => r[1] === 'не планируется').length, 4);
+  checkJsonSnapshot('export-excel-phases', rows);
+});
+
 test('golden: exportSprintToExcel — AOA, листы, имя файла', () => {
   const host = createHost();
   fx.applyBaseState(host.gm);

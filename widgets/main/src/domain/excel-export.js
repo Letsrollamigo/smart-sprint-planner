@@ -130,6 +130,17 @@ function exportSprintToExcel(rec, deps) {
   }
   if (rec.sprintFieldVal)  meta.push([T('excelSprint'), rec.sprintFieldVal]);
   if (rec.versionFieldVal) meta.push([T('excelVersion'), rec.versionFieldVal]);
+  /* #120 — фазы работ снимка: заголовок + шесть строк «фаза — с … по …» / «не планируется»;
+     снимок без ключа (до 3.45.0 или тумблер не включали) строк не даёт — старые выгрузки прежние. */
+  var PH = (typeof window !== 'undefined' && window.__SSP_PHASES_PURE) || null;
+  if (PH && rec.phases && typeof rec.phases === 'object' && !Array.isArray(rec.phases)) {
+    var phn = PH.normalize(rec.phases);
+    meta.push([T('phasesTitle')]);
+    PH.PHASE_KEYS.forEach(function (k) {
+      var pp = phn[k];
+      meta.push([T(PH.LABEL_KEYS[k]), pp ? fmtDay(pp.dateStart) + ' — ' + fmtDay(pp.dateEnd) : T('phasesNotPlanned')]);
+    });
+  }
   meta.push([]);
 
   var roleSuffixHdr = ' ' + (role ? roleLabel(role) : rk) + ' (' + T('hourShort') + ')';   /* #98 — единица через словарь */
