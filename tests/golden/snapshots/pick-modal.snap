@@ -11,7 +11,7 @@
         "labels": {
           "searchText": "Найти",
           "placeholder": "Запрос YouTrack (напр. Приоритет: Критичный #unresolved)",
-          "emptyInitial": "Введите запрос и нажмите «Найти»",
+          "emptyInitial": "Начните вводить запрос — список обновится сам; Enter или значок лупы — искать сразу",
           "searching": "Поиск…",
           "notFound": "Задачи не найдены",
           "errorPrefix": "Ошибка: ",

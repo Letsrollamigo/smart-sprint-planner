@@ -1,0 +1,26 @@
+{
+  "res": {
+    "ids": [],
+    "capped": false,
+    "stale": true
+  },
+  "cacheIds": [
+    "GM-2"
+  ],
+  "fetches": [
+    {
+      "q": "project: GM A",
+      "skip": 0
+    },
+    {
+      "q": "project: GM B",
+      "skip": 0
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Подгружаем все страницы…",
+      "type": "info"
+    }
+  ]
+}

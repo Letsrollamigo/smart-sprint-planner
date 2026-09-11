@@ -170,6 +170,59 @@ test('golden: _pickLoadAll — полная подгрузка + cap-ветка'
   });
 });
 
+/* #128 — поиск по вводу порождает гонки: ответ устаревшего запроса не должен попадать в кэш
+   нового (кэш — источник «Выбрать все» и мета добавляемых задач). Стаб с ручными резолверами:
+   ответ A физически приходит ПОСЛЕ B. Утверждение «в кэше только B» падает на коде без гарда. */
+function deferredHost(maxDeferred) {
+  const pending = [];
+  const host = {
+    log: [], pending: pending,
+    fetchApp: function () { return Promise.resolve({}); },
+    fetchYouTrack: function (p, o) {
+      host.log.push({ q: o && o.query && o.query.query, skip: o && o.query && o.query.$skip });
+      if (pending.length < maxDeferred) return new Promise(function (res) { pending.push(res); });
+      return Promise.resolve([]);   /* хвост цикла без гарда не зависает, а завершается пустой страницей */
+    },
+  };
+  return host;
+}
+
+test('golden: _pickSearch — ответ устаревшего запроса не пишет в кэш нового (#128 гард fingerprint)', async () => {
+  const { gm } = bootPick();
+  const host = deferredHost(2);
+  gm.set({ _host: host });
+  const pA = gm.call('_pickSearch', 'A', 1);
+  const pB = gm.call('_pickSearch', 'B', 1);
+  host.pending[1]([ytIssue(2)]);            /* B отвечает первым */
+  const resB = await pB;
+  host.pending[0]([ytIssue(1)]);            /* A — позже, когда fingerprint уже B */
+  const resA = await pA;
+  const cacheIds = Array.from(gm.get('_pickAllResults').keys());
+  assert.deepStrictEqual(cacheIds, ['GM-2'], 'в кэше только задачи последнего запроса');
+  assert.strictEqual(resA.stale, true, 'устаревший ответ помечен stale');
+  checkJsonSnapshot('pick-search-stale', { resA: resA, resB: resB, cacheIds: cacheIds, fingerprint: gm.get('_pickQueryFingerprint'), fetches: host.log });
+});
+
+test('golden: _pickLoadAll — смена запроса посреди подгрузки: цикл прерван, кэш нового не пополнен (#128)', async () => {
+  const { gm } = bootPick();
+  const toasts = [];
+  gm.set({ toast: function (msg, type) { toasts.push({ msg: msg, type: type }); } });
+  const host = deferredHost(2);
+  gm.set({ _host: host });
+  const pAll = gm.call('_pickLoadAll', 'A');           /* страница 0 запроса A висит */
+  const pB = gm.call('_pickSearch', 'B', 1);           /* пользователь дописал запрос → fingerprint B, кэш сброшен */
+  host.pending[1]([ytIssue(2)]);
+  await pB;
+  const page0 = []; for (let n = 1; n <= PICK_PAGE + 1; n++) page0.push(ytIssue(n));   /* hasMore=true — без гарда цикл шёл бы дальше */
+  host.pending[0](page0);
+  const res = await pAll;
+  const cacheIds = Array.from(gm.get('_pickAllResults').keys());
+  assert.strictEqual(res.stale, true, 'подгрузка устаревшего запроса помечена stale');
+  assert.deepStrictEqual(cacheIds, ['GM-2'], 'кэш B не пополнен страницами A');
+  assert.strictEqual(host.log.length, 2, 'вторая страница A не запрошена');
+  checkJsonSnapshot('pick-load-all-stale', { res: res, cacheIds: cacheIds, fetches: host.log, toasts: toasts });
+});
+
 test('golden: _pickAddSelected — структура новых item, дубли, draft/apiPost, сброс кэша', async () => {
   const { gm } = bootPick();
   const calls = { apiPost: [], markDirty: [], draftSet: [], renders: [], toasts: [] };

@@ -367,6 +367,13 @@ function PickPicker(props) {
   const [error, setError]       = React.useState(null);
 
   const masterRef = React.useRef(null);
+  /* #128 — поиск по вводу: список обновляется через AUTO_DELAY_MS после ≥ AUTO_MIN_CHARS символов;
+     Enter / лупа / выбор подсказки — сразу. seqRef отбрасывает ответы не последнего запроса
+     (items/known/loading не трогаются); на размонтирование таймер гасится. */
+  const AUTO_MIN_CHARS = 2, AUTO_DELAY_MS = 400;
+  const timerRef = React.useRef(0);
+  const seqRef = React.useRef(0);
+  React.useEffect(() => () => clearTimeout(timerRef.current), []);
 
   /* tri-state master — derived, не отдельный source-of-truth */
   let selectedAddable = 0;
@@ -380,8 +387,10 @@ function PickPicker(props) {
   }, [masterIndeterminate, masterChecked, items]);
 
   function runSearch(q, p, freshQuery) {
+    const seq = ++seqRef.current;
     setLoading(true); setError(null);
     onSearch(q, p).then((res) => {
+      if (seq !== seqRef.current) return;
       const its = (res && res.items) || [];
       setItems(its);
       setHasMore(!!(res && res.hasMore));
@@ -393,10 +402,17 @@ function PickPicker(props) {
         return next;
       });
     }).catch((e) => {
+      if (seq !== seqRef.current) return;
       setLoading(false); setItems([]); setHasMore(false); setSearched(true);
       setError((L.errorPrefix || '') + (e && e.message ? e.message : String(e)));
     });
   }
+  function onTyped(q) {
+    setQuery(q);
+    clearTimeout(timerRef.current);
+    if (q.trim().length >= AUTO_MIN_CHARS) timerRef.current = setTimeout(() => applyQuery(q), AUTO_DELAY_MS);
+  }
+  function applyNow(q) { clearTimeout(timerRef.current); applyQuery(q); }
 
   /* #33 — apply явным запросом q (из QueryAssist onApply или fallback-input Enter). */
   function applyQuery(q) {
@@ -407,7 +423,7 @@ function PickPicker(props) {
     setPage(1);
     runSearch(q, 1, fresh);
   }
-  function doSearchClick() { applyQuery(query); }
+  function doSearchClick() { applyNow(query); }
 
   function goPage(delta) {
     const np = page + delta;
@@ -433,6 +449,7 @@ function PickPicker(props) {
     }
     setAllBusy(true);
     onLoadAll(committed).then((res) => {
+      if (res && res.stale) { setAllBusy(false); return; }   /* #128 — запрос сменился посреди подгрузки */
       const ids = (res && res.ids) || [];
       setKnown(new Set(ids));
       setSelected((prev) => { const next = new Set(prev); ids.forEach((id) => next.add(id)); return next; });
@@ -491,8 +508,8 @@ function PickPicker(props) {
   return (
     <div style={{ width: '100%' }}>
       {/* #33 — нативный поиск YouTrack: Ring QueryAssist (автокомплит на лету,
-          подсветка, синтаксис) поверх search/assist. Apply (Enter / glass-иконка /
-          выбор подсказки) → запуск выборки списка. Guard-fallback на обычный input,
+          подсветка, синтаксис) поверх search/assist. #128 — список обновляется по вводу
+          (таймер), Apply (Enter / glass-иконка / выбор подсказки) — сразу. Guard-fallback на обычный input,
           если QueryAssist недоступен (старый Ring/сборка) — модалка не падает. */}
       <div className="search-row ssp-pick-search" style={{ marginBottom: '10px' }}>
         {QueryAssist ? (
@@ -501,15 +518,15 @@ function PickPicker(props) {
             placeholder={L.placeholder}
             query={query}
             dataSource={onAssist}
-            onChange={(ch) => setQuery((ch && ch.query) || '')}
-            onApply={(ch) => applyQuery((ch && ch.query) || '')}
-            onClear={() => setQuery('')}
+            onChange={(ch) => onTyped((ch && ch.query) || '')}
+            onApply={(ch) => applyNow((ch && ch.query) || '')}
+            onClear={() => { clearTimeout(timerRef.current); setQuery(''); }}
           />
         ) : (
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="text" className="ring-input" style={{ flex: 1, minWidth: 0 }}
                    value={query} placeholder={L.placeholder}
-                   onChange={(e) => setQuery(e.target.value)}
+                   onChange={(e) => onTyped(e.target.value)}
                    onKeyDown={(e) => { if (e.key === 'Enter') doSearchClick(); }} />
             <button type="button" className={_btnCls('primary')} style={{ flex: '0 0 auto', minWidth: '90px' }} onClick={doSearchClick}>
               {L.searchText}

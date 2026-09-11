@@ -1,0 +1,33 @@
+{
+  "resA": {
+    "items": [],
+    "hasMore": false,
+    "stale": true
+  },
+  "resB": {
+    "items": [
+      {
+        "idReadable": "GM-2",
+        "isAdded": true,
+        "state": "In Progress",
+        "summary": "Synthetic issue 2",
+        "priority": "Normal"
+      }
+    ],
+    "hasMore": false
+  },
+  "cacheIds": [
+    "GM-2"
+  ],
+  "fingerprint": "project: GM B|GM",
+  "fetches": [
+    {
+      "q": "project: GM A",
+      "skip": 0
+    },
+    {
+      "q": "project: GM B",
+      "skip": 0
+    }
+  ]
+}

@@ -128,6 +128,9 @@ function _pickSearch(rawQ, page, deps) {
     deps.state.setCache(new Map());
     deps.state.setFingerprint(qInfo.fingerprint);
   }
+  /* #128 — поиск по вводу порождает гонки ответов: ответ запроса, чей fingerprint уже
+     сменился, в кэш не пишется и отдаётся пустым с stale (компонент его отбрасывает). */
+  var fp = qInfo.fingerprint;
   var skip = (Math.max(1, page) - 1) * deps.pickPage;
   return deps.host.fetchYouTrack('issues', {
     query: {
@@ -137,6 +140,7 @@ function _pickSearch(rawQ, page, deps) {
       $top: deps.pickPage + 1
     }
   }).then(function(issues) {
+    if (deps.state.getFingerprint() !== fp) return { items: [], hasMore: false, stale: true };
     if (!Array.isArray(issues) || !issues.length) return { items: [], hasMore: false };
     var hasMore = issues.length > deps.pickPage;
     if (hasMore) issues = issues.slice(0, deps.pickPage);
@@ -167,6 +171,8 @@ function _pickLoadAll(rawQ, deps) {
     deps.state.setFingerprint(qInfo.fingerprint);
   }
   toast(T('toastPickAllLoading'), 'info');
+  var fp = qInfo.fingerprint;
+  var aborted = false;   /* #128 — запрос сменился посреди цикла: страницы старого в кэш нового не кладём */
   var pageIdx = Math.ceil(deps.state.getCache().size / deps.pickPage) || 0;
   var capped = false;
   function loop() {
@@ -182,6 +188,7 @@ function _pickLoadAll(rawQ, deps) {
         $top: deps.pickPage + 1
       }
     }).then(function(issues){
+      if (deps.state.getFingerprint() !== fp) { aborted = true; return; }
       if (!Array.isArray(issues) || !issues.length) return;
       var hasMore = issues.length > deps.pickPage;
       if (hasMore) issues = issues.slice(0, deps.pickPage);
@@ -191,6 +198,7 @@ function _pickLoadAll(rawQ, deps) {
     });
   }
   return loop().then(function(){
+    if (aborted) return { ids: [], capped: false, stale: true };
     var existing = new Set(deps.getRoleItemsArr(deps.state.getCurrentRole() || '').map(function(i){ return i.issueId; }));
     var ids = [];
     deps.state.getCache().forEach(function(_, id){ if (!existing.has(id)) ids.push(id); });
