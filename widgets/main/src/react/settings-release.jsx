@@ -1,16 +1,32 @@
-/* settings-release.jsx — секция «ReleaseSection» формы настроек.
+/* settings-release.jsx — секция «ReleaseSection» формы настроек (раздел «Релиз-менеджмент»).
    R6 (аудит §7 п.13) — вынесено из settings-form.jsx (декомпозиция по файлам);
-   props-контракт секции не менялся — чистый перенос. */
+   props-контракт секции не менялся — чистый перенос. #120 — последним блоком раздела «Фазы работ»:
+   тумблер phasesEnabled + таблица «фаза × роли» phaseRoles (props.activeRoles — включённые роли). */
 
 import * as React from 'react';
-import { noop, RoleCheck, RingSelLite } from './settings-shared.jsx';
+import { noop, RoleCheck, RingSelLite, Switch } from './settings-shared.jsx';
+
+/* #120 — фиксированная цепочка фаз (порядок = pure/phases-pure.js PHASE_KEYS). */
+const PHASE_ROWS = [
+  { k: 'analysis', lbl: 'phaseAnalysis' }, { k: 'development', lbl: 'phaseDevelopment' }, { k: 'techTest', lbl: 'phaseTechTest' },
+  { k: 'regression', lbl: 'phaseRegression' }, { k: 'bizTest', lbl: 'phaseBizTest' }, { k: 'deploy', lbl: 'phaseDeploy' },
+];
 
 function ReleaseSection(props) {
   const t = props.t;
   const v = props.value;
   const set = props.onChange;
   const bundleStates = props.bundleStates || [];
+  const activeRoles = props.activeRoles || [];   /* #120 — колонки таблицы «фаза × роли»: только включённые роли */
   const patch = (p) => set(Object.assign({}, v, p));
+  const phaseRoles = v.phaseRoles || {};
+  const hasPhaseRole = (k, rk) => Array.isArray(phaseRoles[k]) && phaseRoles[k].indexOf(rk) >= 0;
+  const togglePhaseRole = (k, rk) => {
+    const cur = Array.isArray(phaseRoles[k]) ? phaseRoles[k].slice() : [];
+    const i = cur.indexOf(rk);
+    if (i >= 0) cur.splice(i, 1); else cur.push(rk);
+    patch({ phaseRoles: Object.assign({}, phaseRoles, { [k]: cur }) });
+  };
   const setMap = (status, val) => patch({ mapping: Object.assign({}, v.mapping, { [status]: val }) });
   const setTagMap = (status, val) => patch({ tagMapping: Object.assign({}, v.tagMapping, { [status]: val }) });
 
@@ -84,6 +100,38 @@ function ReleaseSection(props) {
         <div><b>{t('relSrcLabel')}:</b> {t('relSrcInternal')} · {t('relSrcVendor')}</div>
       </div>
       <span className="hint" style={hintCls}>{t('relSetTypeFixedNote')}</span>
+      </div>
+
+      {/* #120 (⚖9) — «Фазы работ» последним блоком раздела, ВНЕ dim-обёртки релизов: тумблер фаз не
+          зависит от releaseEnabled; маппинг «фаза × роли» — нативные чекбоксы (как чекбоксы ролей #73;
+          Ring Select с clear зовёт только onChange — #101); колонки — только включённые роли, привязка
+          выключенной роли сохраняется (слияние в collect через pure mergePhaseRoles). */}
+      <div className="card-subtitle" style={subCls}>{t('phasesTitle')}</div>
+      <Switch on={!!v.phasesEnabled} label={t('phasesSetEnable')} onToggle={() => patch({ phasesEnabled: !v.phasesEnabled })} />
+      <span className="hint" style={hintCls}>{t('phasesSetEnableHint')}</span>
+      <div className={v.phasesEnabled ? '' : 'ssp-subfields--dim'}>
+        <div className="card-subtitle" style={subCls}>{t('phasesSetMappingTitle')}</div>
+        <span className="hint" style={hintCls}>{t('phasesSetMappingHint')}</span>
+        <table className="ssp-dta-table ssp-phases-set__table" style={{ borderCollapse: 'collapse', marginTop: '8px' }}>
+          <thead><tr>
+            <th scope="col">{t('phasesColPhase')}</th>
+            {activeRoles.map((r) => <th scope="col" key={r.key} style={{ textAlign: 'center' }}>{t('role.' + r.key)}</th>)}
+          </tr></thead>
+          <tbody>
+            {PHASE_ROWS.map((row) => (
+              <tr key={row.k}>
+                <td>{t(row.lbl)}</td>
+                {activeRoles.map((r) => (
+                  <td key={r.key} style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={hasPhaseRole(row.k, r.key)} disabled={!v.phasesEnabled}
+                      aria-label={t(row.lbl) + ' — ' + t('role.' + r.key)} onChange={() => togglePhaseRole(row.k, r.key)} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <span className="hint" style={hintCls}>{t('phasesSetUsedIn')}: {t('phasesSetUsedInParams')}</span>
       </div>
     </React.Fragment>
   );

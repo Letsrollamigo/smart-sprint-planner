@@ -219,6 +219,12 @@ function SettingsForm(props) {
     /* #55 — маппинг «статус → тег задач» (имена СУЩЕСТВУЮЩИХ тегов; пусто = без тега). */
     tagMapping: Object.assign({ planned: '', prep: '', work: '', released: '', cancelled: '' },
       (initial.releaseTagMapping && typeof initial.releaseTagMapping === 'object') ? initial.releaseTagMapping : {}),
+    /* #120 — фазы работ: тумблер (умолчание выкл.) и маппинг «фаза → роли» (копия stored; отмеченные
+       галочки — по активным ролям, привязки выключенных ролей сливаются в collect). */
+    phasesEnabled: !!initial.phasesEnabled,
+    phaseRoles: (initial.phaseRoles && typeof initial.phaseRoles === 'object' && !Array.isArray(initial.phaseRoles))
+      ? Object.keys(initial.phaseRoles).reduce((o, k) => { o[k] = Array.isArray(initial.phaseRoles[k]) ? initial.phaseRoles[k].slice() : []; return o; }, {})
+      : {},
   }));
 
   /* #112 — «Уведомления» (admin-тир): form-shape и умолчания — pure/reminders-pure.js. */
@@ -543,6 +549,13 @@ function SettingsForm(props) {
       });
       return out;
     })();
+
+    /* #120 — фазы работ: тумблер + маппинг; привязки ВЫКЛЮЧЕННЫХ ролей берутся из stored (иначе первый
+       сейв их стёр бы), активные — из отмеченных; пусто → {} (pure/phases-pure.js mergePhaseRoles). */
+    data.phasesEnabled = release.phasesEnabled;
+    data.phaseRoles = globalThis.__SSP_PHASES_PURE
+      ? globalThis.__SSP_PHASES_PURE.mergePhaseRoles(initial.phaseRoles || {}, release.phaseRoles || {}, activeRoles)
+      : (release.phaseRoles || {});
 
     /* #50 — «Отчётность». enabled + reporting-access группы + пороги aging (admin-тир,
        preserve-merge на бэке). */
@@ -973,6 +986,7 @@ function SettingsForm(props) {
           t={t} value={release} onChange={setRelease}
           bundleStates={bundleStates}
           loadTags={props.loadTags} /* #55 — опции колонки «Тег задач» */
+          activeRoles={activeRoleList} /* #120 — колонки таблицы «фаза × роли» */
         />
       ),
     },

@@ -6,20 +6,10 @@
    релизов. Значение недоступного тумблера сохраняется — сервер гейтит по доступности сам,
    включили модуль позже — напоминания заработали без повторного захода.
    Стейт — form-shape из pure/reminders-pure.js (settingsToForm/formToSettings — там же умолчания
-   и клампы); без вендор-чанка Toggle падает на RoleCheck (гард как у sprint-lock-toggle). */
+   и клампы); без вендор-чанка Toggle падает на RoleCheck (Switch — settings-shared.jsx, с #120 общий). */
 
 import * as React from 'react';
-import { RoleCheck } from './settings-shared.jsx';
-
-function Switch({ on, disabled, label, onToggle, title }) {
-  const Toggle = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Toggle;
-  if (!Toggle) return <RoleCheck on={on} disabled={disabled} label={label} onToggle={onToggle} tooltip={title} />;
-  return (
-    <span title={title || undefined}>
-      <Toggle checked={!!on} disabled={!!disabled} onChange={() => { if (!disabled) onToggle(); }}>{label}</Toggle>
-    </span>
-  );
-}
+import { Switch } from './settings-shared.jsx';   /* #120 — Switch стал общим (тумблер фаз в «Релиз-менеджменте») */
 
 function RemindersSection(props) {
   const t = props.t;

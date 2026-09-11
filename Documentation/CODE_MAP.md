@@ -165,19 +165,19 @@
 | `backlog-assign.jsx` | 77 | #21 слайс 4 — body-компонент модалки «Разложить в спринт» (C1 спеки). |
 | `backlog-view.jsx` | 506 | #21 слайс 3 — React-презентация вида «по зонам» бэклога. |
 | `capacity-view.jsx` | 531 | #45 R3 — React-презентация вкладки «Управление ёмкостью» (де-гибридизация #32: настоящий Ring React, как gantt-view/standup-view). |
-| `datepicker-mount.jsx` | 110 | Ring DatePicker bridge for Phase D4. |
+| `datepicker-mount.jsx` | 116 | Ring DatePicker bridge for Phase D4. |
 | `gantt-view.jsx` | 354 | Тир D слайс 6, ступень 2 (#39) → #20-v2 (v3.2.0) — React-презентация диаграммы Ганта на vendored gantt-task-react (MIT, SSP_VENDORED.GanttTaskReact… |
 | `i18n-bridge.jsx` | 37 | i18n bridge for Ring components. |
 | `input-mount.jsx` | 137 | Ring Input bridge for text/number/textarea fields outside Ring Table cells. |
 | `loader-mount.jsx` | 58 | Ring LoaderInline bridge for Phase D3. |
-| `modal-bodies.jsx` | 552 | bespoke body-компоненты для openModal(body.kind:'component'). |
-| `modal-mount.jsx` | 263 | SspModal: настоящий React-контент в Ring Dialog. |
+| `modal-bodies.jsx` | 534 | bespoke body-компоненты для openModal(body.kind:'component'). |
+| `modal-mount.jsx` | 270 | SspModal: настоящий React-контент в Ring Dialog. |
 | `portal.jsx` | 40 | React portal manager. |
 | `radio-mount.jsx` | 94 | Ring Radio bridge for Phase D5. |
 | `rail-tools.jsx` | 80 | #119 сервисные иконки рельса: колокольчик в шапке рядом с «свернуть», строка иконок (черновик · настройки · руководство · обратная связь · язык) по… |
 | `release-create.jsx` | 175 | #48 R1.3 body-компонент модалки «Новый релиз» на СТРОГО Ring UI. |
 | `release-state-preview.jsx` | 167 | #48 R2.3 body-компонент модалки «Смена состояний» (СТРОГО Ring UI). |
-| `release-view.jsx` | 413 | #48 React-презентация вкладок релиз-менеджмента (строго Ring UI). |
+| `release-view.jsx` | 419 | #48 React-презентация вкладок релиз-менеджмента (строго Ring UI). |
 | `reminders-body.jsx` | 91 | #112 «Напоминания»: тело модалки remindersBody для openModal(body.kind:'component'). |
 | `reporting-view.jsx` | 1486 | #50 React-презентация вкладок отчётности (строго Ring UI). |
 | `select-mount.jsx` | 142 | Ring Select bridge for top-level dropdowns outside Ring Table. |
@@ -185,14 +185,14 @@
 | `settings-cascade.jsx` | 65 | секция «CascadeSection» формы настроек. |
 | `settings-dta.jsx` | 80 | секция «DtaSection» формы настроек. |
 | `settings-fields.jsx` | 134 | секция настроек «Отображаемые поля» (68-8). |
-| `settings-form.jsx` | 1045 | bespoke SettingsForm для openModal(body.kind:'component'). |
+| `settings-form.jsx` | 1058 | bespoke SettingsForm для openModal(body.kind:'component'). |
 | `settings-links.jsx` | 213 | секция настроек «Связи задач» (#74). |
 | `settings-permissions.jsx` | 204 | секция «Управление правами» (#71): таблица «группа × полномочие» вместо 12 мультиселектов в трёх разных секциях. |
-| `settings-release.jsx` | 83 | секция «ReleaseSection» формы настроек. |
-| `settings-reminders.jsx` | 83 | секция «Уведомления» формы настроек (#112, admin-тир ⚖9; макет design/mirror/reminders/settings.html): мастер-выключатель, частота показа (Ring Rad… |
+| `settings-release.jsx` | 129 | секция «ReleaseSection» формы настроек (раздел «Релиз-менеджмент»). |
+| `settings-reminders.jsx` | 74 | секция «Уведомления» формы настроек (#112, admin-тир ⚖9; макет design/mirror/reminders/settings.html): мастер-выключатель, частота показа (Ring Rad… |
 | `settings-reporting.jsx` | 486 | секция «ReportingSection» формы настроек. |
 | `settings-rollup.jsx` | 88 | секция «StateRollupSection» формы настроек. |
-| `settings-shared.jsx` | 339 | общие листовые контролы и хелперы формы настроек. |
+| `settings-shared.jsx` | 350 | общие листовые контролы и хелперы формы настроек. |
 | `settings-standup.jsx` | 49 | секция «StandupSection» формы настроек. |
 | `sprint-lock-toggle.jsx` | 35 | #57-2 (эпик 57) тумблер блокировки создания спринтов в шапке планера (СТРОГО Ring UI — вендоренный Toggle, CSS-сабсет ring-toggle-* в ring-subset.c… |
 | `standup-view.jsx` | 175 | Тир D слайс 1, ступень 2 — React-презентация Stand-up. |

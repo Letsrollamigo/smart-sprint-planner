@@ -143,6 +143,18 @@ function LockIcon() {
   );
 }
 
+/* Ring Toggle с фолбэком на RoleCheck (без вендор-чанка). Появился в разделе «Уведомления» (#112),
+   с #120 общий: тумблер «Фазы работ» в разделе «Релиз-менеджмент». */
+function Switch({ on, disabled, label, onToggle, title }) {
+  const Toggle = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Toggle;
+  if (!Toggle) return <RoleCheck on={on} disabled={disabled} label={label} onToggle={onToggle} tooltip={title} />;
+  return (
+    <span title={title || undefined}>
+      <Toggle checked={!!on} disabled={!!disabled} onChange={() => { if (!disabled) onToggle(); }}>{label}</Toggle>
+    </span>
+  );
+}
+
 /* ── 5c helpers ── */
 
 /* trim/cap (зеркалят _cascadeStrOrNull / _cascadeMultiSelectValues). */
@@ -358,4 +370,4 @@ function StateRolesTable(props) {
   );
 }
 
-export { ADMIN_SECTION_IDS, REPORTING_DISABLED, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, LockIcon, RingIcon, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };
+export { ADMIN_SECTION_IDS, REPORTING_DISABLED, noop, genZoneUid, I18nCtx, _filterCfg, _btnCls, FieldSelect, NumField, RoleCheck, Switch, LockIcon, RingIcon, strOrNull, capValues, MultiSelect, RingSelLite, RollupOrderList, TextField, StateRolesTable };
