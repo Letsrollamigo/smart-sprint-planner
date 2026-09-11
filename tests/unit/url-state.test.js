@@ -111,7 +111,7 @@ describe('parseFocus', () => {
 });
 
 describe('buildProjectSettingsHref (#109 — ссылка «открыть планер в проекте»)', () => {
-  const TAB = 'scbt-sprint-planner:СКБТ Спринт-планер';
+  const TAB = 'smart-sprint-planner:Smart Sprint Planner';
 
   it('#111 — одна форма на все линейки: без /settings, ключ и tab закодированы', () => {
     const legacy = 'https://yt.example.com/projects/DEMO?tab=' + encodeURIComponent(TAB);

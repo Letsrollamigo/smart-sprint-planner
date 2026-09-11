@@ -74,6 +74,9 @@ test('#86 обе точки входа проверяют цель одним и
     assert.match(src, /localhost/, name + ': в allow-list нет localhost');
     assert.match(src, /127\\?\.0\\?\.0\\?\.1/, name + ': в allow-list нет 127.0.0.1');
     assert.match(src, /\.local/, name + ': в allow-list нет *.local');
-    assert.ok(!/youtrack-drcs|sovcombank/i.test(src), name + ': боевой хост не должен упоминаться в скрипте');
+    /* Зашитые адреса — только из того же allow-list: удалённый хост в скрипте не упоминается вовсе. */
+    const hosts = (src.match(/https?:\/\/[^/\s'"`)}:]+/g) || []).map((u) => u.replace(/^https?:\/\//, ''));
+    assert.ok(hosts.length > 0, name + ': предусловие — в скрипте есть адрес по умолчанию');
+    for (const h of hosts) assert.match(h, /^(localhost|127\.0\.0\.1|[\w-]+\.local)$/, name + ': зашитый адрес вне allow-list — ' + h);
   }
 });
