@@ -7,6 +7,7 @@
     "pluginVersion",
     "sprintGoal",
     "roles",
+    "phases", "phasesUpdatedAt", "phasesUpdatedBy",
     "_rev"
   ],
   "ALLOWED_HISTORY_SNAP_KEYS": [
@@ -20,7 +21,8 @@
     "pluginVersion",
     "sprintGoal", "goalOutcome", "goalRetroNote",
     "roles",
-    "agreed"
+    "agreed",
+    "phases", "phasesUpdatedAt", "phasesUpdatedBy"
   ],
   "ALLOWED_WORKING_DRAFT_KEYS": [
     "schemaVersion", "key", "baseSnapshotHash", "baseStatusAtOpen",

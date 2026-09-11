@@ -311,7 +311,7 @@ test('#74 лестница шаг 1: таблица и легаси-пара с�
 
 test('#74: SCHEMA_MIGRATIONS достроен записью 3.27.0→3.28.0 (маркер уехал дальше — 68-8, #80, #88, #114, #112)', function () {
   const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
-  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.40.0');
+  assert.strictEqual(backendFull.CURRENT_PLUGIN_VERSION, '3.45.0');
   const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.28.0');
   assert.ok(step && step.from === '3.27.0', 'нет записи 3.27.0→3.28.0');
   /* Снимки shape не меняли — миграция обязана быть no-op (настройка project-level). */
@@ -377,4 +377,56 @@ test('#112: SCHEMA_MIGRATIONS достроен записью 3.39.0→3.40.0 �
   const before = JSON.stringify(snap);
   step.migrate(snap);
   assert.strictEqual(JSON.stringify(snap), before);
+});
+
+/* #120 (v3.45.0) — Фазы работ: два settings-ключа admin-тира. Каждый негативный кейс отличается
+   от валидного ровно одним полем (assert способен упасть). */
+test('#120: phasesEnabled/phaseRoles — членство в whitelist и admin-тире', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  ['phasesEnabled', 'phaseRoles'].forEach((k) => {
+    assert.ok(backendFull.ALLOWED_SETTINGS_KEYS.indexOf(k) >= 0, k + ' не в ALLOWED_SETTINGS_KEYS');
+    assert.ok(backendFull.ADMIN_TIER_SETTINGS_KEYS.indexOf(k) >= 0, k + ' не в ADMIN_TIER_SETTINGS_KEYS');
+  });
+  assert.ok(backendFull.ALLOWED_SETTINGS_KEYS.indexOf('field') < 0);
+});
+
+test('#120: validateSettings — валидные формы phasesEnabled/phaseRoles проходят', function () {
+  assert.strictEqual(validateSettings({ phasesEnabled: true }), true);
+  assert.strictEqual(validateSettings({ phasesEnabled: false, phaseRoles: {} }), true);
+  assert.strictEqual(validateSettings({ phaseRoles: { techTest: ['testing'], regression: ['testing', 'devBack'], deploy: [] } }), true);
+  assert.strictEqual(validateSettings({ phaseRoles: null, phasesEnabled: null }), true);
+});
+
+test('#120: validateSettings — каждое отклонение формы phaseRoles/phasesEnabled — отказ', function () {
+  const bad = [
+    { phasesEnabled: 'true' },
+    { phasesEnabled: 1 },
+    { phaseRoles: [] },
+    { phaseRoles: 'techTest' },
+    { phaseRoles: { unknownPhase: ['testing'] } },
+    { phaseRoles: { techTest: 'testing' } },
+    { phaseRoles: { techTest: ['nobody'] } },
+    { phaseRoles: { techTest: ['testing', 'testing'] } },
+    { phaseRoles: { techTest: ['analysis','testing','devPlatform','devBack','devFront','devIos','devAndroid','devFs','devDb','analysis'] } },
+  ];
+  bad.forEach((s) => assert.strictEqual(validateSettings(s), false, JSON.stringify(s)));
+});
+
+test('#120: preserve-merge — планировочный менеджер не меняет phasesEnabled/phaseRoles', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const stored = { activeRoles: ['testing'], phasesEnabled: true, phaseRoles: { techTest: ['testing'] } };
+  const merged = backendFull.mergeAdminTierFromStored({ activeRoles: ['testing', 'analysis'], phasesEnabled: false, phaseRoles: {} }, stored);
+  assert.strictEqual(merged.phasesEnabled, true);
+  assert.deepStrictEqual(merged.phaseRoles, { techTest: ['testing'] });
+  assert.deepStrictEqual(merged.activeRoles, ['testing', 'analysis']);
+});
+
+test('#120: SCHEMA_MIGRATIONS достроен записью 3.40.0→3.45.0 — no-op для снимка', function () {
+  const backendFull = require(path.join(__dirname, '..', '..', 'backend-project.js'));
+  const step = backendFull.SCHEMA_MIGRATIONS.find((m) => m.to === '3.45.0');
+  assert.ok(step && step.from === '3.40.0', 'нет записи 3.40.0→3.45.0');
+  const snap = { sprintId: 'S-1', pluginVersion: '3.40.0', phases: { deploy: null } };
+  const before = JSON.stringify(snap);
+  step.migrate(snap);
+  assert.strictEqual(JSON.stringify(snap), before, 'миграция обязана быть no-op');
 });

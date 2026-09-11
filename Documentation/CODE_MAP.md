@@ -207,6 +207,7 @@
 | `backend-core.js` | ОБЩЕЕ ЯДРО (shared core, #25 Ф1) Не handler-файл: НЕ экспортирует exports.httpHandler (V1a). |
 | `backend-global.js` | HTTP Handler (GLOBAL scope, #25 Ф1) MAIN_MENU_ITEM-виджет (нет ctx.project). |
 | `backend-issuefields.js` | Issue-fields backend (вынос из backend-core.js). |
+| `backend-phases.js` | Phases backend (#120 «Фазы работ внутри спринта», v3.45.0). |
 | `backend-plannerdisable.js` | Planner-disable backend (#80). |
 | `backend-project.js` | HTTP Handler (PROJECT scope) #25 Ф1 — тонкая обёртка. |
 | `backend-release.js` | Release Management backend (#48 R1.2 «сущность»). |
@@ -300,6 +301,7 @@
 | Отключение планера в проекте | `backend-plannerdisable.js` |
 | Блокировка создания спринтов | `backend-sprintlock.js` |
 | Напоминания: вычислитель, права адресатов, журнал | `backend-reminders-calc.js`, `backend-reminders.js` |
+| Фазы работ спринта: запись, серверная принадлежность, полоска и блок вводных | `backend-phases.js` |
 | Workflow-правила: агрегации, подтяжка состояния | `workflow-common.js`, `workflow-cascade-aggregation.js`, `workflow-dta-aggregation.js`, `workflow-state-rollup.js`, `workflow-forbid-container.js` |
 | Даты и часовые пояса | `widgets/main/src/pure/date-pure.js`, `widgets/main/src/pure/period-pure.js` |
 | Экспорт в Excel и PDF | `widgets/main/src/domain/excel-export.js`, `widgets/main/src/pure/reporting-export-pure.js`, `widgets/main/lib/` |

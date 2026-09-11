@@ -41,6 +41,8 @@ require('./backend-sprintlock.js');
 require('./backend-plannerdisable.js');
 /* #112 — Reminders backend: GET/POST reminders, GET/POST reminders-journal; дописывается в core.ENDPOINTS ДО forEach ниже (gotcha #7). */
 require('./backend-reminders.js');
+/* #120 — Phases backend: POST sprint-data?action=phases (делегация из ядра) + серверная принадлежность фаз в слоте/снимках; регистрируется на core.__phases. */
+require('./backend-phases.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.

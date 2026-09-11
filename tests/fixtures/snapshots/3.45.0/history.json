@@ -1,0 +1,112 @@
+[
+  {
+    "sprintId": "ssp-fixture-history-1",
+    "name": "Fixture History Sprint 1",
+    "roleKey": "devFront",
+    "roleLabel": "Frontend Development",
+    "status": "FINISHED",
+    "dateStart": 1776556800000,
+    "dateEnd": 1777766400000,
+    "confirmedAt": 1776556800000,
+    "confirmedBy": "fixture_user_validator",
+    "finishedAt": 1777766400000,
+    "finishedBy": "fixture_user_validator",
+    "items": [
+      {
+        "issueId": "FIX-1",
+        "title": "Fixture task with external ID",
+        "inclusionStatus": "INC_PLANNED",
+        "addedAt": 1776556800000,
+        "addedBy": "fixture_user_validator",
+        "externalTicketId": "EXT-1234"
+      }
+    ],
+    "personalPlanning": {},
+    "hasWorkingCopy": false,
+    "revisions": [],
+    "pluginVersion": "3.45.0",
+    "phases": {
+      "analysis": {
+        "dateStart": 1776556800000,
+        "dateEnd": 1776729600000
+      },
+      "development": {
+        "dateStart": 1776643200000,
+        "dateEnd": 1777248000000
+      },
+      "techTest": null,
+      "regression": null,
+      "bizTest": null,
+      "deploy": null
+    },
+    "phasesUpdatedAt": 1776556800000,
+    "phasesUpdatedBy": "fixture_user_2"
+  },
+  {
+    "sprintId": "ssp-fixture-history-2",
+    "name": "Fixture History Sprint 2",
+    "roleKey": "devBack",
+    "roleLabel": "Backend Development",
+    "status": "CONFIRMED",
+    "dateStart": 1777939200000,
+    "dateEnd": 1779148800000,
+    "confirmedAt": 1777939200000,
+    "confirmedBy": "fixture_user_validator",
+    "items": [],
+    "personalPlanning": {},
+    "hasWorkingCopy": false,
+    "revisions": [],
+    "pluginVersion": "3.45.0",
+    "phases": {
+      "analysis": {
+        "dateStart": 1777939200000,
+        "dateEnd": 1778112000000
+      },
+      "development": {
+        "dateStart": 1778025600000,
+        "dateEnd": 1778630400000
+      },
+      "techTest": null,
+      "regression": null,
+      "bizTest": null,
+      "deploy": null
+    },
+    "phasesUpdatedAt": 1777939200000,
+    "phasesUpdatedBy": "fixture_user_2",
+    "agreed": {
+      "at": 1777939200000,
+      "by": "fixture_user_validator",
+      "items": {
+        "FIX-2": {
+          "e": 120
+        },
+        "FIX-3": {
+          "e": 60,
+          "x": 1
+        },
+        "FIX-4": {}
+      }
+    },
+    "settings": {
+      "remindersEnabled": true,
+      "remindersSprints": true,
+      "remindersCapacity": false,
+      "remindersReleases": true,
+      "remindersModalMode": "daily",
+      "remindersCapacityDays": 5,
+      "phasesEnabled": true,
+      "phaseRoles": {
+        "techTest": [
+          "testing"
+        ],
+        "regression": [
+          "testing"
+        ],
+        "development": [
+          "devBack",
+          "devFront"
+        ]
+      }
+    }
+  }
+]

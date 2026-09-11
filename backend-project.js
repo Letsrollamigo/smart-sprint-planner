@@ -25,6 +25,8 @@ require('./backend-sprintlock.js');
 require('./backend-plannerdisable.js');
 /* #112 — Reminders backend: GET reminders (вычислитель + права адресатов + журнал); endpoint дописывается в core.ENDPOINTS. */
 require('./backend-reminders.js');
+/* #120 — Phases backend: POST sprint-data?action=phases (делегация из ядра) + серверная принадлежность фаз в слоте/снимках; регистрируется на core.__phases. */
+require('./backend-phases.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

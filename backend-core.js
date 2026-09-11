@@ -218,6 +218,9 @@ var ALLOWED_SPRINT_KEYS = [
   'pluginVersion',
   'sprintGoal',
   'roles',
+  'phases',
+  'phasesUpdatedAt',
+  'phasesUpdatedBy',
   '_rev'
 ];
 var ALLOWED_HISTORY_SNAP_KEYS = [
@@ -246,7 +249,10 @@ var ALLOWED_HISTORY_SNAP_KEYS = [
   'goalOutcome',
   'goalRetroNote',
   'roles',
-  'agreed'
+  'agreed',
+  'phases',
+  'phasesUpdatedAt',
+  'phasesUpdatedBy'
 ];
 var ALLOWED_WORKING_DRAFT_KEYS = [
   'schemaVersion',
@@ -347,7 +353,7 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.40.0';
+var CURRENT_PLUGIN_VERSION = '3.45.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
@@ -635,6 +641,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.39.0', to: '3.40.0',
     migrate: function (snap) { /* no-op: новое свойство проекта + settings-ключи, snapshot shape unchanged */ },
     note: 'v3.40.0: #112 reminders journal property + reminders* settings keys'
+  },
+  /* v3.45.0 — #120 «Фазы работ внутри спринта»: аддитивные optional-ключи спринта и снимков
+     истории phases / phasesUpdatedAt / phasesUpdatedBy (отсутствие = «фазы не заданы») +
+     settings-ключи phasesEnabled / phaseRoles. Миграция no-op; запись фиксирует границу схемы
+     (пол отката — 3.45.0: старый строгий валидатор отвергнет запись с новыми ключами). */
+  { from: '3.40.0', to: '3.45.0',
+    migrate: function (snap) { /* no-op: additive optional keys phases + phasesUpdatedAt/By */ },
+    note: 'v3.45.0: #120 additive sprint/history keys phases + phasesUpdatedAt/By, settings keys phasesEnabled/phaseRoles'
   }
 ];
 
@@ -789,6 +803,43 @@ function validateSprintRoles(roles) {
   return true;
 }
 
+/* v3.45.0 #120 — фазы работ спринта: { <PHASE_KEYS>: null | { dateStart, dateEnd } }, даты —
+   календарные (UTC-полночь в ms, #116); сравнение только через dayMs — трёхстрочная копия
+   pure/date-pure.js (равенство гейтит tests/unit/phases-backend.test.js). Форма одна на слот и
+   снимки; на записи битая форма → отказ, на чтении — три ключа снимаются с WARN_PHASES_DROPPED.
+   Возвращает null или код причины ('shape' | '<phaseKey>'). */
+var PHASE_KEYS = ['analysis', 'development', 'techTest', 'regression', 'bizTest', 'deploy'];
+function dayMs(ts) { return Math.ceil(ts / 86400000 - 0.5) * 86400000; }
+function phasesShapeError(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== 'object' || Array.isArray(v)) return 'shape';
+  var keys = Object.keys(v);
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i], p = v[k];
+    if (PHASE_KEYS.indexOf(k) < 0) return 'shape';
+    if (p === null) continue;
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return k;
+    var pk = Object.keys(p);
+    if (pk.length !== 2 || !Object.prototype.hasOwnProperty.call(p, 'dateStart') || !Object.prototype.hasOwnProperty.call(p, 'dateEnd')) return k;
+    if (typeof p.dateStart !== 'number' || !isFinite(p.dateStart) || typeof p.dateEnd !== 'number' || !isFinite(p.dateEnd)) return k;
+    if (dayMs(p.dateEnd) < dayMs(p.dateStart)) return k;
+  }
+  return null;
+}
+/* Реакция валидаторов на форму фаз (общая для слота и снимков): strict → false; иначе снять
+   три ключа с пометкой в migrationLog (запись ценнее фаз — образец agreed). */
+function _phasesReadOrReject(snap, strict, where) {
+  var err = phasesShapeError(snap.phases);
+  if (!err && snap.phasesUpdatedAt !== undefined && !assertNum(snap.phasesUpdatedAt)) err = 'updatedAt';
+  if (!err && snap.phasesUpdatedBy !== undefined && !assertStr(snap.phasesUpdatedBy, 200)) err = 'updatedBy';
+  if (!err) return true;
+  if (strict) return false;
+  _appendMigrationLog(snap, { at: Date.now(), level: 'WARN_PHASES_DROPPED',
+    fromVersion: snap.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: where + ':' + err });
+  delete snap.phases; delete snap.phasesUpdatedAt; delete snap.phasesUpdatedBy;
+  return true;
+}
+
 /* v3.39.0 #114 — слепок согласованного состава роли в снимке истории (optional):
    { at: number, by?: string≤200, items: { <issueId≤64>: { e?: number|null, x?: 1 } } }.
    Пишется фронтом на «Согласовать», переносится при перезаписях; неизвестные ключи —
@@ -880,6 +931,7 @@ function _validateSprintBody(sprint, strict) {
     if (!assertStr(sprint.sprintGoal, 500)) return false;
   }
   if (!validateSprintRoles(sprint.roles)) return false;   /* v3.27.0 #73 */
+  if (!_phasesReadOrReject(sprint, strict, 'phases')) return false;   /* v3.45.0 #120 */
   if (validateMigrationLog(sprint.migrationLog, 'sprint') !== null) return false;
   if (!validatePluginVersion(sprint.pluginVersion)) return false;
   return true;
@@ -1211,7 +1263,12 @@ var ALLOWED_SETTINGS_KEYS = [
      remindersCapacityDays — за сколько дней до старта напоминать о ёмкости (целое 0..30, умолчание 3).
      Умолчания читает вычислитель backend-reminders-calc.js: отсутствие ключа = умолчание. */
   'remindersEnabled','remindersSprints','remindersCapacity','remindersReleases',
-  'remindersModalMode','remindersCapacityDays'
+  'remindersModalMode','remindersCapacityDays',
+  /* #120 (v3.45.0) — Фазы работ спринта (additive optional; admin-тир — см. ADMIN_TIER_SETTINGS_KEYS).
+     phasesEnabled — тумблер (умолчание false: после обновления выключен во всех проектах);
+     phaseRoles — { <phaseKey>: [roleKey…] } (умолчание {} — все фазы одним тоном). Имена ключей
+     намеренно не начинаются с field/userField (allow-list полей задач backend-issuefields.js). */
+  'phasesEnabled','phaseRoles'
 ];
 
 /* #22 — ключи admin-тира формы настроек (Вариант C). Записываются ТОЛЬКО
@@ -1286,7 +1343,8 @@ var ADMIN_TIER_SETTINGS_KEYS = [
   /* #112 — Напоминания: весь раздел «Уведомления» — admin-тир (⚖9); для планировочного
      менеджера preserve-merge из stored, иначе его правки молча терялись бы на сейве. */
   'remindersEnabled','remindersSprints','remindersCapacity','remindersReleases',
-  'remindersModalMode','remindersCapacityDays'
+  'remindersModalMode','remindersCapacityDays',
+  'phasesEnabled','phaseRoles'   /* #120 — тумблер и маппинг «фаза → роли» — settingsManager */
 ];
 
 /* #22 — preserve-merge: вернуть копию incoming, где admin-тир ключи взяты из stored
@@ -1608,6 +1666,25 @@ function validateSettings(settings) {
       && settings.remindersModalMode !== 'daily' && settings.remindersModalMode !== 'always') return false;
   if (settings.remindersCapacityDays !== undefined && settings.remindersCapacityDays !== null
       && (!isNumInRange(settings.remindersCapacityDays, 0, 30) || settings.remindersCapacityDays % 1 !== 0)) return false;
+  /* #120 (v3.45.0) — Фазы работ: phasesEnabled — bool; phaseRoles — { <PHASE_KEYS>: [ROLE_KEYS…] },
+     дедуп, ≤ 9 в массиве, пустые массивы допустимы. */
+  if (settings.phasesEnabled !== undefined && settings.phasesEnabled !== null
+      && typeof settings.phasesEnabled !== 'boolean') return false;
+  if (settings.phaseRoles !== undefined && settings.phaseRoles !== null) {
+    var prv = settings.phaseRoles;
+    if (typeof prv !== 'object' || Array.isArray(prv)) return false;
+    var prKeys = Object.keys(prv);
+    for (var pr = 0; pr < prKeys.length; pr++) {
+      if (PHASE_KEYS.indexOf(prKeys[pr]) < 0) return false;
+      var prArr = prv[prKeys[pr]];
+      if (!Array.isArray(prArr) || prArr.length > 9) return false;
+      var prSeen = {};
+      for (var pq = 0; pq < prArr.length; pq++) {
+        if (typeof prArr[pq] !== 'string' || ROLE_KEYS.indexOf(prArr[pq]) < 0 || prSeen[prArr[pq]]) return false;
+        prSeen[prArr[pq]] = true;
+      }
+    }
+  }
   var relIdArrKeys = ['releaseCandidateManagerGroups','releaseCandidateEngineerGroups',
     'releaseManagerGroups','releaseEngineerGroups',
     'sprintLockGroups' /* #57-2 */];
@@ -1880,6 +1957,7 @@ function _validateHistoryRecord(h, i, strict) {
       fromVersion: h.pluginVersion || 'unset', toVersion: CURRENT_PLUGIN_VERSION, key: 'agreed:' + agErr });
     delete h.agreed;
   }
+  if (!_phasesReadOrReject(h, strict, 'phases')) return false;   /* v3.45.0 #120 */
   if (validateMigrationLog(h.migrationLog, 'history[' + i + ']') !== null) return false;
   if (!validatePluginVersion(h.pluginVersion)) return false;
   return true;
@@ -1996,6 +2074,8 @@ function diagnoseHistoryWrite(history) {
     }
     var agDiag = agreedError(h.agreed);   /* v3.39.0 #114 */
     if (agDiag) return { ok: false, where: 'agreed_' + agDiag, idx: i };
+    var phDiag = phasesShapeError(h.phases);   /* v3.45.0 #120 */
+    if (phDiag) return { ok: false, where: 'phases_' + phDiag, idx: i };
     if (!validatePluginVersion(h.pluginVersion)) return { ok: false, where: 'pluginVersion_invalid:' + h.pluginVersion + ' type=' + typeof h.pluginVersion, idx: i };
     var migErr = validateMigrationLog(h.migrationLog, 'history[' + i + ']');
     if (migErr !== null) return { ok: false, where: 'migrationLog_invalid: ' + migErr, idx: i };
@@ -2636,9 +2716,16 @@ var ENDPOINTS = [
         if (body === null) return;
 
         var action = (ctx.request.getParameter('action') || '').trim();
-        if (action && action !== 'validate' && action !== 'assignerSync') {
+        if (action && action !== 'validate' && action !== 'assignerSync' && action !== 'phases') {
           badRequest(ctx, 'invalid_action');
           return;
+        }
+        /* #120 (v3.45.0) — фазы работ: тонкая делегация в сателлит backend-phases.js ДО rev-гейта
+           ниже (вся логика baseRev — в сателлите: сверка со слотом только если слот держит спринт,
+           иначе ложный 409 + заморозка вкладки на чужом спринте). Ветка возвращается из хендлера. */
+        if (action === 'phases') {
+          if (!module.exports.__phases) { badRequest(ctx, 'invalid_action'); return; }
+          return module.exports.__phases.handle(ctx, body);
         }
 
         if (action === 'validate') {
@@ -2782,6 +2869,8 @@ var ENDPOINTS = [
              форма как на фронте — login, sprint-controller.js:297). */
           body.sprint.updatedBy = String((ctx.currentUser && ctx.currentUser.login) || '');
           body.sprint.updatedAt = Date.now();
+          /* #120 — фазы в слоте пишет только action=phases: входящие ключи переопределяются хранимыми (носителя нет — принимаются). */
+          if (module.exports.__phases) module.exports.__phases.applyStored(body.sprint, body.sprint.sprintId, parseJson(getProp(ctx, 'ssp_sprint'), null), parseJson(getProp(ctx, 'ssp_history'), []));
           if (!validateSprintForWrite(body.sprint)) {
             badRequest(ctx, 'invalid_sprint_structure');
             return;
@@ -3006,6 +3095,7 @@ var ENDPOINTS = [
           if (snIdx >= 0) existingSN[snIdx] = snapSN;
           else existingSN.unshift(snapSN);            /* как фронт: новая запись — в голову */
           stampHistoryAudit(ctx, storedSN, existingSN);   /* #67 H8 */
+          if (module.exports.__phases) module.exports.__phases.applyStoredAll([snapSN], parseJson(getProp(ctx, 'ssp_sprint'), null), storedSN);   /* #120 */
           for (var sns = 0; sns < existingSN.length; sns++) {
             if (existingSN[sns] && typeof existingSN[sns] === 'object') existingSN[sns].pluginVersion = CURRENT_PLUGIN_VERSION;
           }
@@ -3121,6 +3211,8 @@ var ENDPOINTS = [
              (см. stampHistoryAudit). import-replace НЕ штампуется осознанно:
              восстановление бэкапа обязано сохранить исходную атрибуцию. */
           stampHistoryAudit(ctx, Array.isArray(prevHist) ? prevHist : [], body.history);
+          /* #120 — фазы снимков пишет только action=phases: протухшая вкладка их не затирает. */
+          if (module.exports.__phases) module.exports.__phases.applyStoredAll(body.history, parseJson(getProp(ctx, 'ssp_sprint'), null), Array.isArray(prevHist) ? prevHist : []);
           // v6.1.0 D69 — silent strip legacy `gantt` (см. stripDeprecatedHistoryKeys).
           body.history = stripDeprecatedHistoryKeys(body.history);
           // v1.6.0 D125 — stamp each record before validate+persist.
@@ -3563,6 +3655,18 @@ exports.ALLOWED_SPRINT_KEYS         = ALLOWED_SPRINT_KEYS;   // #110 — гей�
 exports.ALLOWED_ITEM_KEYS           = ALLOWED_ITEM_KEYS;
 exports.ALLOWED_SPRINT_DATA_KEYS    = ALLOWED_SPRINT_DATA_KEYS;
 exports.parseJson                   = parseJson;             // #48 R1.2 — stored blob parse
+/* #120 (v3.45.0) — символы ядра для backend-phases.js (валидаторы/миграция на записи слота и
+   снимков, форма фаз, dayMs, лог отказа с cid). */
+exports.PHASE_KEYS                  = PHASE_KEYS;
+exports.dayMs                       = dayMs;
+exports.phasesShapeError            = phasesShapeError;
+exports.validateSprintForWrite      = validateSprintForWrite;
+exports.validateHistoryForWrite     = validateHistoryForWrite;
+exports.migrateHistoryArr           = migrateHistoryArr;
+exports.stripDeprecatedHistoryKeys  = stripDeprecatedHistoryKeys;
+exports.stripDeprecatedSprintKeys   = stripDeprecatedSprintKeys;
+exports.logRefusal                  = logRefusal;
+exports.MAX_HISTORY_SIZE            = MAX_HISTORY_SIZE;
 
 /* v1.6.0 D125 — Test-only CommonJS exports.
    ВАЖНО: Object.assign(exports, ...) вместо module.exports = {...}.
