@@ -134,6 +134,46 @@ function openConfirmGoalDialog(sprintGoalText, existingOutcome, existingRetro, d
   });
 }
 
+/* #121 — окно причины исключения (mode 'exclude' | 'edit'): Promise<string|null> — trimmed текст на
+   подтверждение, null на «Отмена»/Escape. Без Ring — null: без окна причины исключение не проходит
+   (честнее, чем молчаливое исключение без причины). Гард второго окна — у вызывающего (isModalOpen). */
+function openExcludeReasonDialog(opts, deps) {
+  var t = deps.t, openModal = deps.openModal;
+  opts = opts || {};
+  var edit = opts.mode === 'edit';
+  return new Promise(function (resolve) {
+    if (!window.__SSP_RING_MODAL) { resolve(null); return; }
+    var result = null;
+    var h = openModal({
+      id: 'excludeReason',
+      type: 'form',
+      title: t(edit ? 'editReasonTitle' : 'excludeReasonTitle'),
+      body: { kind: 'component', name: 'excludeReasonForm', props: {
+        mode: edit ? 'edit' : 'exclude',
+        title: t(edit ? 'editReasonTitle' : 'excludeReasonTitle'),   /* видимый заголовок — в теле окна */
+        issueKey: opts.issueKey || '',
+        issueTitle: opts.issueTitle || '',
+        roleLine: opts.roleLine || '',
+        cascadeText: edit ? null : (opts.cascadeText || null),
+        stampText: edit ? (opts.stampText || null) : null,
+        existingReason: opts.existingReason || '',
+        maxLen: 500,
+        fieldLabel: t('excludeReasonLabel'),
+        placeholder: t('phExcludeReason'),
+        cancelText: t('btnCancel'),
+        confirmText: t(edit ? 'btnSaveReason' : 'btnExclude'),
+        onConfirm: function (reason) { result = String(reason || '').trim(); h.close(); },
+        onCancel: function () { result = null; h.close(); },
+      }},
+      buttons: [],
+      dismissOnBackdrop: false,
+      blockEscape: false,
+      showCloseButton: false,
+      onClose: function () { resolve(result); },   /* единственная точка resolve */
+    });
+  });
+}
+
 function showDynFieldConfirm(title, desc, enumValues, currentVal, callback, deps) {
   var t = deps.t, openModal = deps.openModal;
   var cb = callback || function(){};
@@ -258,6 +298,7 @@ const api = {
   showDiscardConfirmModal,
   showCloseWorkingCopyModal,
   openConfirmGoalDialog,
+  openExcludeReasonDialog,   /* #121 */
   showDynFieldConfirm,
   openNewSprintRolesDialog,
   openImportReplaceConfirm,

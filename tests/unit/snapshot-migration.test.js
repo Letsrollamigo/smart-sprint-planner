@@ -115,11 +115,13 @@ test('migrateSnap: defaults target to CURRENT_PLUGIN_VERSION', function () {
    v3.40.0 — девятая запись 3.39.0 → 3.40.0 (#112): новое свойство проекта под журнал
    напоминаний + settings-ключи reminders*; снимки shape не меняли → no-op.
    v3.45.0 — десятая запись 3.40.0 → 3.45.0 (#120): аддитивные optional-ключи phases /
-   phasesUpdatedAt/By в спринте и снимках + settings-ключи phasesEnabled/phaseRoles → no-op. */
-test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0 → 3.23.0 + no-op 3.23.0 → 3.27.0 → 3.28.0 → 3.29.0 → 3.32.0 → 3.35.0 → 3.39.0 → 3.40.0 → 3.45.0', function () {
+   phasesUpdatedAt/By в спринте и снимках + settings-ключи phasesEnabled/phaseRoles → no-op.
+   v3.46.0 — одиннадцатая запись 3.45.0 → 3.46.0 (#121): аддитивные optional-ключи элемента роли
+   excludeReason / excludedAt / excludedBy (причина исключения); shape снимков не менялся → no-op. */
+test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0 → 3.23.0 + no-op 3.23.0 → 3.27.0 → 3.28.0 → 3.29.0 → 3.32.0 → 3.35.0 → 3.39.0 → 3.40.0 → 3.45.0 → 3.46.0', function () {
   assert.ok(Array.isArray(SCHEMA_MIGRATIONS));
-  assert.strictEqual(SCHEMA_MIGRATIONS.length, 10,
-    'Registry: свёрнутая запись + 3.23.0 + 3.27.0 + 3.28.0 + 3.29.0 + 3.32.0 + 3.35.0 + 3.39.0 + 3.40.0 + 3.45.0; при следующем schema-change добавляй from="3.45.0"');
+  assert.strictEqual(SCHEMA_MIGRATIONS.length, 11,
+    'Registry: свёрнутая запись + 3.23.0 + 3.27.0 + 3.28.0 + 3.29.0 + 3.32.0 + 3.35.0 + 3.39.0 + 3.40.0 + 3.45.0 + 3.46.0; при следующем schema-change добавляй from="3.46.0"');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].from, '1.4.2');
   assert.strictEqual(SCHEMA_MIGRATIONS[0].to, '3.6.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[1].from, '3.6.0');
@@ -141,24 +143,26 @@ test('SCHEMA_MIGRATIONS: свёрнутая 1.4.2 → 3.6.0 + hard-removal 3.6.0
   assert.strictEqual(SCHEMA_MIGRATIONS[8].to, '3.40.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[9].from, '3.40.0');
   assert.strictEqual(SCHEMA_MIGRATIONS[9].to, '3.45.0');
+  assert.strictEqual(SCHEMA_MIGRATIONS[10].from, '3.45.0');
+  assert.strictEqual(SCHEMA_MIGRATIONS[10].to, '3.46.0');
   assert.strictEqual(typeof SCHEMA_MIGRATIONS[2].migrate, 'function');
 });
 
-test('migrateSnap: legacy snapshot получает десять SCHEMA_BUMP — 3.6.0, 3.23.0, 3.27.0, 3.28.0, 3.29.0, 3.32.0, 3.35.0, 3.39.0, 3.40.0, 3.45.0', function () {
+test('migrateSnap: legacy snapshot получает одиннадцать SCHEMA_BUMP — 3.6.0, 3.23.0, 3.27.0, 3.28.0, 3.29.0, 3.32.0, 3.35.0, 3.39.0, 3.40.0, 3.45.0, 3.46.0', function () {
   const snap = { pluginVersion: '2.14.0', editingFromHistory: false, historyIdx: 1 };
   migrateSnap(snap);
   assert.strictEqual(snap.pluginVersion, CURRENT_PLUGIN_VERSION);
   const bumps = (snap.migrationLog || []).filter(function (e) { return e.level === 'SCHEMA_BUMP'; }).map(function (e) { return e.toVersion; });
-  assert.deepStrictEqual(bumps, ['3.6.0', '3.23.0', '3.27.0', '3.28.0', '3.29.0', '3.32.0', '3.35.0', '3.39.0', '3.40.0', '3.45.0']);
+  assert.deepStrictEqual(bumps, ['3.6.0', '3.23.0', '3.27.0', '3.28.0', '3.29.0', '3.32.0', '3.35.0', '3.39.0', '3.40.0', '3.45.0', '3.46.0']);
   assert.ok(!('editingFromHistory' in snap) && !('historyIdx' in snap), 'legacy-ключи вычищены миграцией');
 });
 
-test('migrateSnap: snapshot на 3.23.0 — восемь SCHEMA_BUMP до 3.45.0; на 3.45.0 — ни одного', function () {
+test('migrateSnap: snapshot на 3.23.0 — девять SCHEMA_BUMP до 3.46.0; на 3.46.0 — ни одного', function () {
   const snap = { pluginVersion: '3.23.0' };
   migrateSnap(snap);
-  assert.strictEqual(snap.pluginVersion, '3.45.0');
-  assert.deepStrictEqual(snap.migrationLog.map(function (e) { return e.fromVersion + '→' + e.toVersion; }), ['3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0', '3.29.0→3.32.0', '3.32.0→3.35.0', '3.35.0→3.39.0', '3.39.0→3.40.0', '3.40.0→3.45.0']);
-  const cur = { pluginVersion: '3.45.0' };
+  assert.strictEqual(snap.pluginVersion, '3.46.0');
+  assert.deepStrictEqual(snap.migrationLog.map(function (e) { return e.fromVersion + '→' + e.toVersion; }), ['3.23.0→3.27.0', '3.27.0→3.28.0', '3.28.0→3.29.0', '3.29.0→3.32.0', '3.32.0→3.35.0', '3.35.0→3.39.0', '3.39.0→3.40.0', '3.40.0→3.45.0', '3.45.0→3.46.0']);
+  const cur = { pluginVersion: '3.46.0' };
   migrateSnap(cur);
   assert.ok(!cur.migrationLog, 'migrationLog не должен появиться');
 });

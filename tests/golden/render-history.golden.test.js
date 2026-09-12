@@ -377,3 +377,34 @@ test('golden: renderHistory — пагинация HIST_PAGE (страницы, 
   gm.call('renderHistory');
   checkJsonSnapshot('hist-pagination', { page1: page1, page2: page2, clampedTo: gm.get('_histPage') });
 });
+
+/* #121 — ячейка статуса включения: исключённая С причиной → span.is-excluded[data-ssp-tooltip] «причина ⏎ отметка»;
+   без причины (снимки до 3.46.0) — прежняя строка; подсказки монтируются, когда таблица дорендерилась
+   (Ring Table — createRoot, асинхронно; в голдене ячейку в DOM подкладываем руками). */
+test('golden #121: items-таблица истории — статус «Исключена» с причиной несёт подсказку, без причины — нет', async () => {
+  const { gm, document, window } = bootWithRights();
+  const tipLog = [];
+  window.__SSP_TOOLTIP = { mountAll: function (el) { tipLog.push(el && el.getAttribute('data-ssp-table-host') !== null ? 'host' : 'other'); return 1; }, unmountAll: function () { tipLog.push('unmount'); } };
+  const rec = mkRec({
+    status: 'CONFIRMED',
+    items: [
+      synItem('GM-E1', { inclusionStatus: 'INC_EXCLUDED', excludeReason: 'Блокер: зависимость', excludedAt: 1781136000000, excludedBy: 'Петров И. С.', estimate_analysis: 300 }),
+      synItem('GM-E2', { inclusionStatus: 'INC_EXCLUDED', estimate_analysis: 120 }),
+      synItem('GM-E3', { inclusionStatus: 'INC_PLANNED', estimate_analysis: 60 }),
+    ],
+  });
+  const recEl = gm.call('buildSpoiler', rec, 0);
+  document.body.appendChild(recEl);
+  click(document, recEl.querySelector('.spoiler__head'));
+  const host = recEl.querySelector('[data-ssp-table-host]');
+  const inc = materializeTable(host).columns.find((c) => c.id === 'incStatus');
+  assert.ok(inc.cells[0] && inc.cells[0].html, 'с причиной — html-ячейка');
+  assert.ok(/class="ssp-excluded__inc is-excluded" data-ssp-tooltip="Блокер: зависимость\nИсключена [^"]+ · Петров И. С."/.test(inc.cells[0].html), inc.cells[0].html);
+  assert.strictEqual(inc.cells[1], 'Исключена из спринта', 'без причины — plain-строка');
+  assert.strictEqual(inc.cells[2], 'Включена планово');
+  assert.deepStrictEqual(tipLog.filter((s) => s !== 'unmount'), [], 'до появления ячеек mountTooltips не зовётся (unmount перед сносом слота — штатно)');
+  host.insertAdjacentHTML('beforeend', '<span data-ssp-tooltip="x">Исключена из спринта</span>');   /* как commit Ring Table */
+  await new Promise((r) => setTimeout(r, 0));
+  assert.deepStrictEqual(tipLog.filter((s) => s !== 'unmount'), ['host'], 'после появления ячейки — mountTooltips на хосте таблицы');
+  checkJsonSnapshot('history-items-excluded-reason', { incStatus: inc.cells, tipLog: tipLog });
+});

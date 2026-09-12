@@ -19,6 +19,13 @@
         "addedAt": 1776556800000,
         "addedBy": "fixture_user_validator",
         "externalTicketId": "EXT-1234"
+      },
+      {
+        "issueId": "FIX-2",
+        "title": "Fixture task excluded from sprint",
+        "inclusionStatus": "INC_EXCLUDED",
+        "addedAt": 1776556800000,
+        "addedBy": "fixture_user_validator"
       }
     ],
     "personalPlanning": {},

@@ -35,7 +35,7 @@ Rail → **Total resource allocation** → click a role's row.
 | **Actual** | the role's actual field — how much has been logged already |
 | **Resource** | estimate minus actual: how much is still left to do |
 | **Allocation** | how many hours the role takes for this issue in this sprint |
-| **Inclusion status** | planned / excluded from the sprint |
+| **Inclusion status** | planned / excluded from the sprint — the latter asks for a reason and moves the row to the block below the table |
 | **bin** | remove the issue from the composition |
 
 Further right there may be **display fields** — arbitrary project fields added in the settings; in the screenshot those are «Stage» and «Unit». The planner does not store them but reads them from YouTrack when the table opens, so you see exactly what you have access to.
@@ -47,9 +47,22 @@ The **Resource** column can go negative and turn red: more has been logged than 
 ## Inclusion statuses
 
 - **Planned** — the issue counts towards the role's allocation.
-- **Excluded** — the issue stays in the list but its hours do not count.
+- **Excluded** — the issue leaves the table for the “Excluded from sprint (N)” block below it; its hours do not count.
 
-Excluding exists so that the record of a decision is not lost: it is visible that the issue was considered and taken out, rather than forgotten.
+Excluding exists so that the record of a decision is not lost: it is visible that the issue was considered and taken out, rather than forgotten — and why.
+
+## Excluded from sprint
+
+Picking “Excluded from sprint” opens the “Exclude from sprint” dialog: issue key and title, role and sprint, a reason field (up to 500 characters, a counter below the field). The reason is required — “Exclude” stays disabled while the field is empty; “Cancel” restores the previous status without writing anything. With cross-role exclusion enabled in the settings, the dialog lists the roles the cascade will reach: the same reason and the same who/when stamp go to all of them in one act.
+
+After the exclusion the row leaves the table for the **“Excluded from sprint (N)”** block below it. The block is collapsed by default — only the header with the counter is visible; expanded, it shows one row per issue: the issue link and title, the reason, “Excluded {date, time} · {who}”, and the **“Return”** and **“Edit reason”** buttons. A long reason is clipped to two lines — hover for the full text.
+
+- **Return** — puts the issue back into the table as “Planned”; the reason and stamp are cleared, excluding again asks anew. Return does not cascade to other roles.
+- **Edit reason** — the same dialog with the current text and the “Excluded … · …” line; “Save” stays disabled until the text changes. The stamp is not moved by an edit; the edit applies to this role only.
+
+Everyone who sees the sprint sees the reason. Those allowed to change the role's composition (the editing or validation groups) can edit it; for others the buttons are dimmed with a tooltip. In the historical view and on an agreed composition without a working copy there are no buttons. Issues excluded before version 3.46.0 show “—” instead of the reason and stamp.
+
+The reason is kept in the history snapshot (a tooltip on the status — chapter 10) and in the role's Excel export (the “Exclusion reason” column right after “Inclusion status”).
 
 ## The «Assign to people» button
 

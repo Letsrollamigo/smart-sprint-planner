@@ -56,3 +56,38 @@ test('#59 правило одностороннее: каскад ставит �
   assert.strictEqual(items.front[0].inclusionStatus, EXCLUDED);
   /* обратной операции у функции нет — возврат из исключения делается вручную по ролям */
 });
+
+/* #121 — dry-run каскада и причина в копиях: cascadeTargets = те же роли, что touched (уже исключённая
+   пропущена); payload {excludeReason, excludedAt, excludedBy} копируется в каждую цель; delete payload
+   игнорирует; возврат не каскадится. Каждый assert падает на коде 3.45.0 (шестого аргумента не было). */
+test('#121 cascadeTargets: те же роли, что touched у exclude; уже исключённая и роли без задачи пропущены; без мутации', () => {
+  const items = makeItems();
+  const targets = VIEW.cascadeTargets(items, 'back', 'A-1', EXCLUDED);
+  assert.deepStrictEqual(targets, [{ rk: 'front', idx: 0 }]);
+  assert.strictEqual(items.front[0].inclusionStatus, 'INC_UNPLANNED', 'dry-run не мутирует');
+  assert.deepStrictEqual(VIEW.cascadeTargets(items, 'analyst', 'A-9', EXCLUDED), []);
+  assert.deepStrictEqual(VIEW.cascadeTargets(null, 'back', 'A-1', EXCLUDED), []);
+  const touched = VIEW.cascadeExcludeAcrossRoles(items, 'back', 'A-1', 'exclude', EXCLUDED);
+  assert.deepStrictEqual(touched, targets.map((t) => t.rk), 'мутация идёт ровно по целям dry-run');
+});
+
+test('#121 exclude с payload: причина и отметки скопированы во все цели (одна отметка); delete payload игнорирует', () => {
+  const items = makeItems();
+  items.analyst.push({ issueId: 'A-1', inclusionStatus: 'INC_PLANNED' });
+  const payload = { excludeReason: 'Блокер', excludedAt: 1700000000000, excludedBy: 'Петров И. С.' };
+  const touched = VIEW.cascadeExcludeAcrossRoles(items, 'back', 'A-1', 'exclude', EXCLUDED, payload);
+  assert.deepStrictEqual(touched.sort(), ['analyst', 'front']);
+  ['front', 'analyst'].forEach((rk) => {
+    const it = items[rk].find((i) => i.issueId === 'A-1');
+    assert.strictEqual(it.inclusionStatus, EXCLUDED);
+    assert.strictEqual(it.excludeReason, 'Блокер');
+    assert.strictEqual(it.excludedAt, 1700000000000);
+    assert.strictEqual(it.excludedBy, 'Петров И. С.');
+  });
+  assert.strictEqual(items.qa[0].excludeReason, undefined, 'уже исключённая не перезаписана');
+  assert.strictEqual(items.back[0].excludeReason, undefined, 'источник мутирует caller');
+  const del = makeItems();
+  VIEW.cascadeExcludeAcrossRoles(del, 'back', 'A-1', 'delete', EXCLUDED, payload);
+  assert.strictEqual(del.front.length, 0);
+  assert.strictEqual(del.qa.length, 0);
+});

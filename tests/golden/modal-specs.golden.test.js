@@ -234,3 +234,26 @@ test('golden: _openImportReplaceConfirm — спек + стейт _importHistPen
     },
   });
 });
+
+/* #121 — окно причины исключения: спек для exclude (с каскадом) и edit, Promise<string|null>:
+   onConfirm(text) → trimmed текст, onClose без подтверждения → null. */
+test('golden: openExcludeReasonDialog — спек exclude/edit + контракт confirm/escape', async () => {
+  const host = createHost();
+  const pExclude = host.gm.call('openExcludeReasonDialog', {
+    mode: 'exclude', issueKey: 'GM-1', issueTitle: 'Задача', roleLine: 'Роль «Анализ» · Спринт',
+    cascadeText: 'Кросс-ролевое исключение включено: задача будет исключена также в ролях «Тестирование» — с той же причиной.', existingReason: '',
+  });
+  const specExclude = serializeSpec(lastSpec(host));
+  lastSpec(host).body.props.onConfirm('  причина  '); lastSpec(host).onClose();
+  const pEdit = host.gm.call('openExcludeReasonDialog', { mode: 'edit', issueKey: 'GM-1', issueTitle: 'Задача', roleLine: 'Роль «Анализ» · Спринт', stampText: 'Исключена 18.05.2026, 00:00 · Петров И. С.', existingReason: 'старая', cascadeText: 'не должен попасть' });
+  const specEdit = serializeSpec(lastSpec(host));
+  dismiss(lastSpec(host));
+  const pCancel = host.gm.call('openExcludeReasonDialog', { mode: 'exclude', issueKey: 'GM-2' });
+  lastSpec(host).body.props.onCancel(); lastSpec(host).onClose();
+  const results = { confirm: await pExclude, escape: await pEdit, cancel: await pCancel };
+  assert.strictEqual(results.confirm, 'причина');
+  assert.strictEqual(results.escape, null);
+  assert.strictEqual(results.cancel, null);
+  assert.strictEqual(specEdit.body.props.cascadeText, null, 'в режиме правки строки каскада нет');
+  checkJsonSnapshot('modal-spec-exclude-reason', { exclude: specExclude, edit: specEdit, behavior: results });
+});

@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "id": "excludeReason",
+    "type": "form",
+    "title": "Исключить из спринта",
+    "body": {
+      "kind": "component",
+      "name": "excludeReasonForm",
+      "props": {
+        "mode": "exclude",
+        "title": "Исключить из спринта",
+        "issueKey": "GM-1",
+        "issueTitle": "Анализ требований платёжного модуля",
+        "roleLine": "Роль «Анализ» · GM Sprint June 2026",
+        "cascadeText": "Кросс-ролевое исключение включено: задача будет исключена также в ролях «Тестирование» — с той же причиной.",
+        "stampText": null,
+        "existingReason": "",
+        "maxLen": 500,
+        "fieldLabel": "Причина исключения",
+        "placeholder": "Почему задача уходит из спринта — коротко, для согласования и ретро",
+        "cancelText": "Отмена",
+        "confirmText": "Исключить",
+        "onConfirm": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "source": {
+    "status": "INC_EXCLUDED",
+    "reason": "Причина исключения",
+    "at": 1780315200000,
+    "by": "Голден Пользователь"
+  },
+  "copy": {
+    "status": "INC_EXCLUDED",
+    "reason": "Причина исключения",
+    "at": 1780315200000,
+    "by": "Голден Пользователь"
+  },
+  "apiPostLog": [
+    {
+      "path": "sprint-data",
+      "keys": [
+        "roleItems"
+      ]
+    }
+  ],
+  "toasts": [
+    {
+      "msg": "Исключена также в других ролях: 1",
+      "kind": "success"
+    }
+  ]
+}

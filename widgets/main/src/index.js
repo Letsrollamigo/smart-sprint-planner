@@ -70,6 +70,7 @@ import './domain/project-nav.js';
 import './domain/standup-view.js';
 import './domain/currentrole-view.js';
 import './domain/rolecomposition-view.js';
+import './domain/excluded-view.js';   /* #121 — блок «Исключённые из спринта» и окно причины */
 import './domain/allocsummary-view.js';
 import './domain/history-view.js';
 import './domain/header-view.js';

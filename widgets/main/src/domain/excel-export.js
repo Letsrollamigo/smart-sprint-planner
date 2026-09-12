@@ -165,7 +165,9 @@ function exportSprintToExcel(rec, deps) {
     return ta.assigneeName || ta.assignee || '';
   }
   /* v6.1.0 D78 (F1) — добавлена колонка «Факт» между Estimate и Resource. */
+  /* #121 — колонка «Причина исключения» сразу после «Статус включения»: пусто у активных, ИТОГО её не считает. */
   var header = [T('excelColId'), T('excelColTitle'), T('excelColSystem'), T('excelColPriority'), T('excelColXpriority'), T('excelColState'), T('excelColInclusion'),
+    T('excelColExcludeReason'),
     T('excelColEstimate') + roleSuffixHdr,
     T('excelColFact')     + roleSuffixHdr,
     T('excelColResource') + roleSuffixHdr,
@@ -189,6 +191,7 @@ function exportSprintToExcel(rec, deps) {
       dispEnum(item.xpriority) || '',
       dispEnum(item.state)    || '',
       item.inclusionStatus ? incLabel(item.inclusionStatus) : '',
+      item.inclusionStatus === 'INC_EXCLUDED' ? (item.excludeReason || '') : '',   /* #121 */
       minToH(item['estimate_' + rk]),
       minToH(item['fact_'     + rk]),
       minToH(resourceMin),
@@ -200,7 +203,7 @@ function exportSprintToExcel(rec, deps) {
   });
 
   var _activeSnap = (rec.items || []).filter(function(i){ return ACTIVE_INC.indexOf(i.inclusionStatus) >= 0; });
-  var totalsBase = ['', T('excelTotal'), '', '', '', '', '',
+  var totalsBase = ['', T('excelTotal'), '', '', '', '', '', '',   /* #121 — восьмая пустая: причина исключения */
     Math.round(_activeSnap.reduce(function(s, i) { return s + (i['estimate_' + rk] || 0); }, 0) / 60 * 100) / 100,
     /* v6.1.0 D78 (F1) — итог по колонке «Факт». */
     Math.round(_activeSnap.reduce(function(s, i) { return s + (i['fact_' + rk] || 0); }, 0) / 60 * 100) / 100,
@@ -224,7 +227,7 @@ function exportSprintToExcel(rec, deps) {
   var wsData = meta.concat([header]).concat(rows).concat([totals]);
   var ws = XLSX.utils.aoa_to_sheet(wsData);
   /* v6.1.0 D78 (F1) — +1 колонка ширины (Факт). */
-  var cols = [{wch:16},{wch:50},{wch:16},{wch:14},{wch:20},{wch:16},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14}];
+  var cols = [{wch:16},{wch:50},{wch:16},{wch:14},{wch:20},{wch:16},{wch:20},{wch:32},{wch:14},{wch:14},{wch:14},{wch:14}];   /* #121 — +1 колонка ширины (причина) */
   if (hasAssignees) cols.push({wch:24});
   cols.push({wch:40});
   ws['!cols'] = cols;

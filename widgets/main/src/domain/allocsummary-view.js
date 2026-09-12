@@ -28,21 +28,10 @@ function _teardownBody(inner) {
 
 function _cell(row, c) { return row.cells[c.id]; }
 
-/* 68-2 — display-фильтр исключённых: маска входного roleItems по флагу тумблера
-   (deps.isExcludedHidden — источник rolecomposition-view, связь через core deps, B1).
-   Задача, исключённая в одной роли, но активная в другой, остаётся строкой
-   с оценкой только активной роли. */
+/* #121 — тумблер 68-2 снят; сводная показывает состав как есть (⚖ §О4: задача, исключённая в одной
+   роли, но активная в другой, остаётся строкой с оценкой только активной роли). */
 function _roleItemsForDisplay(deps) {
-  var all = deps.state.getRoleItems() || {};
-  if (typeof deps.isExcludedHidden !== 'function' || !deps.isExcludedHidden()) return all;
-  var out = {};
-  Object.keys(all).forEach(function (rk) {
-    var arr = all[rk];
-    out[rk] = Array.isArray(arr)
-      ? arr.filter(function (it) { return it && it.inclusionStatus !== deps.INC.EXCLUDED; })
-      : arr;
-  });
-  return out;
+  return deps.state.getRoleItems() || {};
 }
 
 

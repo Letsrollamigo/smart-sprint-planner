@@ -353,12 +353,12 @@ var ALLOWED_REVISION_LEVELS     = ['META_ONLY','ALLOCATED_REVAL','CONFIRMED_REVA
 // См. внутренние правила проекта → Версионирование (6 точек bump).
 // TODO(post-v1.6.0): автоподтягивание CURRENT_PLUGIN_VERSION из manifest.json
 //                    через build-step (esbuild --define или pre-build node-скрипт).
-var CURRENT_PLUGIN_VERSION = '3.45.0';
+var CURRENT_PLUGIN_VERSION = '3.46.0';
 /* Presentation-версия (единый источник для GET /app-version обоих handler-файлов).
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.45.0';
+var APP_VERSION = '3.46.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -649,6 +649,14 @@ var SCHEMA_MIGRATIONS = [
   { from: '3.40.0', to: '3.45.0',
     migrate: function (snap) { /* no-op: additive optional keys phases + phasesUpdatedAt/By */ },
     note: 'v3.45.0: #120 additive sprint/history keys phases + phasesUpdatedAt/By, settings keys phasesEnabled/phaseRoles'
+  },
+  /* v3.46.0 (#121 «Исключённые задачи с причиной») — аддитивные optional-ключи элемента роли
+     excludeReason / excludedAt / excludedBy (отсутствие = «причина не указана»); shape снимков
+     не менялся. Миграция no-op; запись фиксирует границу схемы (пол отката — 3.46.0: старый
+     validateItem не знает ключей → invalid_role_items_structure / invalid_history_structure). */
+  { from: '3.45.0', to: '3.46.0',
+    migrate: function (snap) { /* no-op: additive optional role-item keys excludeReason / excludedAt / excludedBy */ },
+    note: 'v3.46.0: #121 additive role-item keys excludeReason / excludedAt / excludedBy (reason of exclusion); snapshot shape unchanged'
   }
 ];
 
@@ -950,7 +958,11 @@ var ALLOWED_ITEM_KEYS = [
   /* v2.1.14 #20 — Gantt state-history: localized state label + color + field id,
      written into items by refreshRoleEstimates / syncAssigneesFromYouTrack.
      Persisted to roleItems → must be whitelisted (иначе invalid_role_items_structure). */
-  'stateLocalized','stateColor','stateFieldId'
+  'stateLocalized','stateColor','stateFieldId',
+  /* v3.46.0 #121 — reason of exclusion. Живут на элементе только при inclusionStatus ===
+     'INC_EXCLUDED' (normalizeExcludedItems срезает их при других статусах на записи состава);
+     потолок 500 и обязательность на переходе в статус — там же, форма здесь мягкая. */
+  'excludeReason','excludedAt','excludedBy'
 ];
 
 /**
@@ -977,7 +989,9 @@ function validateItem(item) {
   var strFields = ['url', 'title', 'priority', 'xpriority', 'state', 'system',
                    'version', 'assignee', 'addedBy', 'externalTicketId',
                    /* v2.1.14 #20 — Gantt state-history string fields. */
-                   'stateLocalized', 'stateFieldId'];
+                   'stateLocalized', 'stateFieldId',
+                   /* v3.46.0 #121 — форма причины и «кто»; 500 и обязательность — normalizeExcludedItems. */
+                   'excludeReason', 'excludedBy'];
   for (var s = 0; s < strFields.length; s++) {
     if (!assertStr(item[strFields[s]], 1000)) return false;
   }
@@ -998,6 +1012,7 @@ function validateItem(item) {
   }
   // Числовые поля
   if (!assertNum(item.addedAt)) return false;
+  if (!assertNum(item.excludedAt)) return false;   /* v3.46.0 #121 */
   // Все числовые динамические поля (estimate_*, fact_*, alloc_*, allocation*, estH_*, factH_*)
   for (var j = 0; j < keys.length; j++) {
     var dk = keys[j];
@@ -1027,6 +1042,51 @@ function validateRoleItems(roleItems) {
     }
   }
   return true;
+}
+
+/* v3.46.0 #121 — нормализация причины исключения на записи состава (POST sprint-data без action
+   и ?action=validate — общий pre-flight). Ключи excludeReason / excludedAt / excludedBy живут на
+   элементе только при INC_EXCLUDED; отметки «кто/когда» ставит сервер на ПЕРЕХОДЕ в статус —
+   эталон: элемент той же роли и issueId в reference (слот, если он держит этот спринт, иначе
+   снимки истории <sprintId>_<rk>). Уже исключённая: причина — входящая или хранимая (legacy без
+   причины проходит — данные до 3.46.0), отметки — хранимые (правка причины момент не двигает).
+   Один now на запрос → копии каскада #59 в нескольких ролях несут одну отметку.
+   Возвращает код отказа ('reason_required' | 'reason_too_long') или null; мутирует incoming. */
+var EXCLUDE_REASON_MAX = 500;
+function normalizeExcludedItems(ctx, incoming, reference, now) {
+  var cu = (ctx && ctx.currentUser) || {};
+  var me = String(cu.fullName || cu.login || '');
+  var rks = Object.keys(incoming || {});
+  for (var r = 0; r < rks.length; r++) {
+    var arr = incoming[rks[r]];
+    var ref = (reference && Array.isArray(reference[rks[r]])) ? reference[rks[r]] : [];
+    for (var i = 0; i < arr.length; i++) {
+      var it = arr[i];
+      if (it.inclusionStatus !== 'INC_EXCLUDED') {
+        delete it.excludeReason; delete it.excludedAt; delete it.excludedBy;
+        continue;
+      }
+      var reason = (typeof it.excludeReason === 'string') ? it.excludeReason.trim() : '';
+      if (reason.length > EXCLUDE_REASON_MAX) return 'reason_too_long';
+      var prev = null;
+      for (var p = 0; p < ref.length; p++) {
+        if (ref[p] && ref[p].issueId === it.issueId) { prev = ref[p]; break; }
+      }
+      if (prev && prev.inclusionStatus === 'INC_EXCLUDED') {
+        if (reason) it.excludeReason = reason;
+        else if (typeof prev.excludeReason === 'string' && prev.excludeReason) it.excludeReason = prev.excludeReason;
+        else delete it.excludeReason;
+        if (typeof prev.excludedAt === 'number') it.excludedAt = prev.excludedAt; else delete it.excludedAt;
+        if (typeof prev.excludedBy === 'string' && prev.excludedBy) it.excludedBy = prev.excludedBy; else delete it.excludedBy;
+      } else {
+        if (!reason) return 'reason_required';
+        it.excludeReason = reason;
+        it.excludedAt = now;
+        it.excludedBy = me;
+      }
+    }
+  }
+  return null;
 }
 
 // Жёсткий whitelist ключей settings.
@@ -2792,6 +2852,29 @@ var ENDPOINTS = [
           if (enrichInfo && enrichInfo.count > 0 && !validateRoleItems(body.roleItems)) {
             badRequest(ctx, 'invalid_role_items_structure');   /* fail-closed на баг обогатителя */
             return;
+          }
+          /* v3.46.0 #121 — нормализация причины исключения ДО JSON.stringify (размер считается
+             после неё). Эталон — по спринту: слот, если он держит этот спринт, иначе снимки истории
+             <sprintId>_<rk> (переключение спринта и коммит рабочей копии несут чужой для слота
+             состав — слепое сравнение со слотом перештамповало бы их и отвергло legacy без причины).
+             body.sprint === null (сброс слота парой {sprint:null, roleItems:{}}) — нормализовать нечего. */
+          if (body.sprint !== null) {
+            var exSid = (body.sprint && typeof body.sprint === 'object') ? body.sprint.sprintId : null;
+            var exRef = null;
+            if (body.sprint === undefined || (revSprint && exSid && revSprint.sprintId === exSid)) {
+              exRef = parseJson(getProp(ctx, 'ssp_roleitems'), null);
+            } else if (exSid) {
+              exRef = {};
+              var exHist = parseJson(getProp(ctx, 'ssp_history'), []);
+              for (var xh = 0; Array.isArray(exHist) && xh < exHist.length; xh++) {
+                var xr = exHist[xh];
+                if (xr && typeof xr.sprintId === 'string' && xr.sprintId.indexOf(exSid + '_') === 0 && Array.isArray(xr.items)) {
+                  exRef[xr.sprintId.slice(exSid.length + 1)] = xr.items;
+                }
+              }
+            }
+            var exErr = normalizeExcludedItems(ctx, body.roleItems, exRef, Date.now());
+            if (exErr) { badRequest(ctx, exErr); return; }
           }
           roleItemsStrPre = JSON.stringify(body.roleItems);
           if (roleItemsStrPre.length > MAX_PROP_SIZE) {

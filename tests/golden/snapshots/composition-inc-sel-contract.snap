@@ -1,17 +1,29 @@
 {
-  "inclusionStatus": "INC_EXCLUDED",
-  "remainCalls": [
-    "analysis"
-  ],
-  "dirty": {
-    "roleItems": true
+  "excluded": {
+    "inclusionStatus": "INC_PLANNED",
+    "modal": {
+      "id": "excludeReason",
+      "bodyName": "excludeReasonForm"
+    },
+    "remainCalls": [],
+    "dirty": null,
+    "apiPostLog": []
   },
-  "apiPostLog": [
-    {
-      "path": "sprint-data",
-      "keys": [
-        "roleItems"
-      ]
-    }
-  ]
+  "unplanned": {
+    "inclusionStatus": "INC_UNPLANNED",
+    "remainCalls": [
+      "analysis"
+    ],
+    "dirty": {
+      "roleItems": true
+    },
+    "apiPostLog": [
+      {
+        "path": "sprint-data",
+        "keys": [
+          "roleItems"
+        ]
+      }
+    ]
+  }
 }

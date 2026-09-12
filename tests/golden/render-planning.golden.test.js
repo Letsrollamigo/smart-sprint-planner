@@ -13,6 +13,7 @@ const { createHost } = require('./monolith-host');
 const { checkHtmlSnapshot, checkJsonSnapshot } = require('./snap');
 const { materializeTable } = require('./serialize');
 const fx = require('./fixtures/state');
+
 /* #110 — ждём условие, а не фиксированные миллисекунды: сон в 5/20 мс проигрывал гонку
    под нагрузкой полного гейта (один красный прогон из двух). Каждый тик — макрозадача. */
 async function waitFor(pred, what) {
@@ -393,8 +394,8 @@ test('golden: renderRoleComposition — перелимит testing блокир�
   });
 });
 
-test('golden: состав — change-контракт inc-sel (мутация + remaining + dirty + персист)', () => {
-  const { gm, document, window } = createHost();
+test('golden: состав — change-контракт inc-sel (#121: EXCLUDED → окно причины, модель/remaining/dirty/POST не тронуты; иной статус — мутация + персист как прежде)', () => {
+  const { gm, document, window, modalLog } = createHost();
   fx.applyBaseState(gm);
   const apiPostLog = [];
   const remainCalls = [];
@@ -408,15 +409,31 @@ test('golden: состав — change-контракт inc-sel (мутация +
   sel.className = 'inc-sel';
   sel.setAttribute('data-iid', 'GM-1');
   sel.setAttribute('data-rk', 'analysis');
-  sel.innerHTML = '<option value="INC_PLANNED"></option><option value="INC_EXCLUDED"></option>';
+  sel.innerHTML = '<option value="INC_PLANNED"></option><option value="INC_UNPLANNED"></option><option value="INC_EXCLUDED"></option>';
   host.appendChild(sel);
   sel.value = 'INC_EXCLUDED';
   sel.dispatchEvent(new window.Event('change', { bubbles: true }));
-  checkJsonSnapshot('composition-inc-sel-contract', {
+  /* #121 — старый контракт «change → мутация + POST» отменён: до «Исключить» ничего не меняется */
+  assert.strictEqual(gm.get('_roleItems').analysis[0].inclusionStatus, 'INC_PLANNED', 'модель не тронута до окна');
+  assert.deepStrictEqual(apiPostLog, [], 'POST не ушёл');
+  const excludedStage = {
     inclusionStatus: gm.get('_roleItems').analysis[0].inclusionStatus,
-    remainCalls: remainCalls,
+    modal: modalLog.length ? { id: modalLog[modalLog.length - 1].id, bodyName: modalLog[modalLog.length - 1].body.name } : null,
+    remainCalls: remainCalls.slice(),
     dirty: JSON.parse(JSON.stringify(gm.get('_draft').dirty || null)),
-    apiPostLog: apiPostLog,
+    apiPostLog: apiPostLog.slice(),
+  };
+  modalLog[modalLog.length - 1].onClose();   /* «Отмена» — окно закрыто без причины */
+  sel.value = 'INC_UNPLANNED';
+  sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+  checkJsonSnapshot('composition-inc-sel-contract', {
+    excluded: excludedStage,
+    unplanned: {
+      inclusionStatus: gm.get('_roleItems').analysis[0].inclusionStatus,
+      remainCalls: remainCalls,
+      dirty: JSON.parse(JSON.stringify(gm.get('_draft').dirty || null)),
+      apiPostLog: apiPostLog,
+    },
   });
 });
 
@@ -789,7 +806,7 @@ test('golden: 118-1в — фильтр состояния отбирает ст�
   const bar = stubTaskFilter(window, { state: ['Open'] });
   const host = ensureCompHost(document, 'analysis');
   gm.call('renderRoleComposition', 'analysis');
-  assert.deepStrictEqual(materializeTable(host).itemKeys, ['GM-1', 'GM-4'], 'остались задачи в состоянии Open');
+  assert.deepStrictEqual(materializeTable(host).itemKeys, ['GM-1'], 'остались задачи в состоянии Open (GM-4 исключена — в блоке #121, не в таблице)');
   bar.sel = { state: ['Closed'] };
   gm.call('renderRoleComposition', 'analysis');
   const empty = materializeTable(host);
@@ -814,8 +831,8 @@ test('golden: 118-3 — строка фильтров «Ролей»: поля, 
   assert.deepStrictEqual(opts.role, ['analysis', 'testing', 'devBack', 'devFront']);
   assert.deepStrictEqual(opts.assignee, ['__none', 'gm_user_1', 'gm_user_2'], '«Не назначен» первым');
   assert.deepStrictEqual(opts.state.slice().sort(), ['Fixed', 'In Progress', 'Open']);
-  /* роль ∈ {analysis, devBack} и Open: GM-1, GM-4 (analysis) + GM-11 (devBack) из 9 задач спринта */
-  assert.strictEqual(m.props.t.shown, 'Показано задач: 3 из 9');
+  /* роль ∈ {analysis, devBack} и Open: GM-1 (analysis) + GM-11 (devBack) из 8 задач спринта — GM-4 исключена (#121: в блоке, не в таблице) */
+  assert.strictEqual(m.props.t.shown, 'Показано задач: 2 из 8');
   const cards = Array.from(document.querySelectorAll('#roleAccordions .planning-role-card')).map((c) => c.dataset.roleKey);
   assert.deepStrictEqual(cards, ['analysis', 'devBack']);
   const roles = gm.get('ALL_ROLES');
@@ -829,6 +846,7 @@ test('golden: 118-3 — строка фильтров «Ролей»: поля, 
     'знаменатель чипа = число задач в шапке роли');
   assert.strictEqual(chip('devBack'), 'фильтр: 1 из 2');
 });
+
 /* 118-1в — live-PP кладётся под роль записи «Людей», а не под _activeSubtab: раскрытие аккордеона
    переставляет _activeSubtab, PP остаётся от роли «Людей» — раньше фильтр по исполнителю её задачи терял. */
 test('golden: 118-1в — фильтр по исполнителю берёт live-PP роли «Людей», даже когда _activeSubtab другой', () => {
@@ -839,7 +857,7 @@ test('golden: 118-1в — фильтр по исполнителю берёт li
   const bar = stubTaskFilter(window, { assignee: ['gm_user_1'] });
   gm.call('renderPlanningRoles');
   const m = bar.mounts[bar.mounts.length - 1];
-  assert.strictEqual(m.props.t.shown, 'Показано задач: 1 из 9', 'GM-10 исполнителя gm_user_1 — в devBack');
+  assert.strictEqual(m.props.t.shown, 'Показано задач: 1 из 8', 'GM-10 исполнителя gm_user_1 — в devBack');
   const opts = {};
   m.props.fields.forEach((f) => { opts[f.key] = Array.from(f.options, (o) => o.key); });
   assert.deepStrictEqual(opts.assignee, ['__none', 'gm_user_1', 'gm_user_2']);

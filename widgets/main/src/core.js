@@ -780,7 +780,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.45.0';
+  var APP_VERSION = '3.46.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -2754,15 +2754,13 @@
       getRoleItemsArr: getRoleItemsArr,
       calcRemForRole: calcRemForRole, fmtHours: fmtHours, ACTIVE_INC: ACTIVE_INC, /* #63 — остаток роли (updateRoleRemaining) */
       buildPPMapFromCanon: MIGRATE_PURE.buildPPMapFromCanon, /* 68-1 — исполнители в сводной #61 */
-      /* 68-2 — фильтр исключённых: флаг читает rolecomposition-view, сводная — через deps (B1);
-         остров Ring Toggle (generic, живёт в sprint-lock-toggle.jsx) монтирует ядро. */
-      isExcludedHidden: function () { return (typeof ROLECOMP_VIEW.isExcludedHidden === 'function') ? ROLECOMP_VIEW.isExcludedHidden() : false; },
-      mountRingToggle: function (host, vm) {
-        var island = (typeof window !== 'undefined' && window.__SSP_SPRINT_LOCK) || null;
-        if (!island || !host) return false;
-        island.mountAt(host, vm);
-        return true;
-      },
+      /* #121 — блок «Исключённые из спринта (N)» и окно причины (domain/excluded-view.js за мостом
+         __SSP_EXCLUDED_VIEW на этой же фабрике); каскад #59 — функции состава через мост. */
+      renderExcludedBlock: renderExcludedBlock, excludeWithReason: excludeWithReason,
+      cascadeExcludeAcrossRoles: function (ri, rk, iid, mode, code, payload) { return ROLECOMP_VIEW.cascadeExcludeAcrossRoles(ri, rk, iid, mode, code, payload); },
+      cascadeTargets: function (ri, rk, iid, code) { return ROLECOMP_VIEW.cascadeTargets(ri, rk, iid, code); },
+      openExcludeReasonDialog: openExcludeReasonDialog, isModalOpen: _isModalOpen,
+      mountTooltips: _mountTooltips, unmountTooltips: _unmountTooltips, fmtDT: fmtDT,
       renderAllocSummary: function () {
         if (ALLOCSUMMARY_VIEW.renderAllocSummary) { try { ALLOCSUMMARY_VIEW.renderAllocSummary(_roleCompDeps()); } catch (e) { diag('allocSummary render err: ' + e, 'err'); } }
       },
@@ -2802,6 +2800,7 @@
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },   /* 118-1в — чья live-PP: запись «Людей», как _standupPP */
         getIsEditor: function () { return _isEditor; },
         getIsValidator: function () { return _isValidator; },
+        getCurrentUser: function () { return _currentUser; },   /* #121 — отметка «кто» на клиенте */
       },
     };
   }
@@ -3164,8 +3163,7 @@
       getIntroSource: function () { return INTRO_VIEW.getIntroSource ? INTRO_VIEW.getIntroSource(_introDeps()) : _sprint; },
       mountDatepickers: function (el) { try { if (window.__SSP_DATEPICKER) window.__SSP_DATEPICKER.mountAllIn(el); } catch (_) {} },
       unmountDatepickers: function (el) { try { if (window.__SSP_DATEPICKER) window.__SSP_DATEPICKER.unmountAll(el); } catch (_) {} },
-      mountTooltips: function (el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.mountAll(el); } catch (_) {} },
-      unmountTooltips: function (el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.unmountAll(el); } catch (_) {} },
+      mountTooltips: _mountTooltips, unmountTooltips: _unmountTooltips,
       state: {
         getSprint: function () { return _sprint; },
         getHistory: function () { return _history; },
@@ -3283,6 +3281,15 @@
      (Тир D слайс 3). Делегатор сохраняет hoisting и 18 call-sites; переопределение
      ниже (v2.1.0 E4) оборачивает его пост-обработкой updateAllocOverlimitUI. */
   function renderRoleComposition(rk) { return ROLECOMP_VIEW.renderRoleComposition(rk, _roleCompDeps()); }
+  /* #121 — блок исключённых и исключение с причиной: domain/excluded-view.js за мостом __SSP_EXCLUDED_VIEW
+     на deps состава роли; окно — modal-specs.openExcludeReasonDialog; подсказки — мост __SSP_TOOLTIP. */
+  var EXCLUDED_VIEW = (typeof window !== 'undefined' && window.__SSP_EXCLUDED_VIEW) || {};
+  function renderExcludedBlock(rk) { if (EXCLUDED_VIEW.renderExcludedBlock) return EXCLUDED_VIEW.renderExcludedBlock(rk, _roleCompDeps()); }
+  function excludeWithReason(rk, iid, prevStatus, selectEl) { if (EXCLUDED_VIEW.excludeWithReason) return EXCLUDED_VIEW.excludeWithReason(rk, iid, prevStatus, selectEl, _roleCompDeps()); }
+  function openExcludeReasonDialog(opts) { return MODAL_SPECS.openExcludeReasonDialog(opts, { t: T, openModal: openModal }); }
+  function _isModalOpen(id) { return !!(window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.isOpen === 'function' && window.__SSP_RING_MODAL.isOpen(id)); }
+  function _mountTooltips(el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.mountAll(el); } catch (_) {} }
+  function _unmountTooltips(el) { try { if (window.__SSP_TOOLTIP) window.__SSP_TOOLTIP.unmountAll(el); } catch (_) {} }
 
   /* ── Динамическое модальное окно ──
      Phase 3 #32 — мигрировано на openModal() (bespoke dynFieldForm, настоящий React).
@@ -3439,6 +3446,7 @@
       fmtPeriod: fmtPeriod, fmtThLabel: fmtThLabel,
       statusLabel: statusLabel, incLabel: incLabel, dispEnum: dispEnum,
       toast: toast, openModal: openModal, apiPost: apiPost,
+      mountTooltips: _mountTooltips, unmountTooltips: _unmountTooltips,   /* #121 — подсказка причины на статусе */
       exportSprintToExcel: exportSprintToExcel, exportPerSprintJson: exportPerSprintJson,
       editHistorySprint: editHistorySprint, finishHistorySprint: finishHistorySprint,
       finishHistoryGroup: finishHistoryGroup,

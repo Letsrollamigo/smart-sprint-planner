@@ -109,6 +109,18 @@ const HISTORY = [
         addedAt:          1776556800000,
         addedBy:          'fixture_user_validator',
         externalTicketId: 'EXT-1234'
+      },
+      /* v3.46.0 #121 — excluded item carrying excludeReason / excludedAt / excludedBy
+         (keys live on the item only while inclusionStatus === 'INC_EXCLUDED'). */
+      {
+        issueId:          'FIX-2',
+        title:            'Fixture task excluded from sprint',
+        inclusionStatus:  'INC_EXCLUDED',
+        addedAt:          1776556800000,
+        addedBy:          'fixture_user_validator',
+        excludeReason:    'Fixture reason: dependency not ready',
+        excludedAt:       1776643200000,
+        excludedBy:       'fixture_user_2'
       }
     ],
     personalPlanning: {},
@@ -144,7 +156,18 @@ const WORKING_DRAFT = {
   editorLogin:      'fixture_user_2',
   editorTabToken:   'fixture-tab-token-xyz',
   sprint: Object.assign({}, SPRINT_FULL),
-  items:            [],
+  items:            [
+    {
+      issueId:          'FIX-2',
+      title:            'Fixture task excluded from sprint',
+      inclusionStatus:  'INC_EXCLUDED',
+      addedAt:          1779321600000,
+      addedBy:          'fixture_user_2',
+      excludeReason:    'Fixture reason: dependency not ready',
+      excludedAt:       1776643200000,
+      excludedBy:       'fixture_user_2'
+    }
+  ],
   personalPlanning: {
     devFront: { nkcKey: 'may', people: [], taskAssignments: {} }
   },

@@ -23,7 +23,7 @@ It is a read-only view: hours cannot be edited here — the role's composition i
 
 ## Per-role exclusion
 
-Without this setting, excluding an issue is global: taken out of the sprint means taken out of every role.
+Without this setting, excluding an issue is global: taken out of the sprint means taken out of every role — with the same reason and the same who/when stamp; the reason dialog lists the roles the cascade will reach. Returning an issue does not cascade.
 
 With it, exclusion becomes per-role: analysis on the issue is finished and excluded while testing carries on. Useful on long issues that stretch across several sprints through different roles.
 

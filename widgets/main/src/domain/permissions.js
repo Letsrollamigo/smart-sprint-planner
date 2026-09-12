@@ -192,7 +192,7 @@ function _applyEditorRightsTo(panel, deps) {
   /* #120 — кнопка «Сохранить фазы работ»: editor ∨ validator; подсказка называет обе группы. Тот же
      класс ставит и сам рендер блока (шапка перерисовывается чаще, чем зовётся этот проход) — здесь
      асинхронный переворот на старте, когда чеки прав приходят позже первого рендера. */
-  var phasesBtns = panel.querySelectorAll('.phases-btn');
+  var phasesBtns = panel.querySelectorAll('.phases-btn, .excluded-btn');   /* #121 — кнопки блока исключённых: те же права */
   phasesBtns.forEach(function (btn) {
     if (_isEditor || _isValidator) {
       btn.classList.remove('btn--disabled-rights');

@@ -1,0 +1,13 @@
+{
+  "incStatus": [
+    {
+      "html": "<span class=\"ssp-excluded__inc is-excluded\" data-ssp-tooltip=\"Блокер: зависимость\nИсключена 11.06.2026, 00:00 · Петров И. С.\">Исключена из спринта</span>"
+    },
+    "Исключена из спринта",
+    "Включена планово"
+  ],
+  "tipLog": [
+    "unmount",
+    "host"
+  ]
+}

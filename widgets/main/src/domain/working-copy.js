@@ -437,6 +437,13 @@ function buildRoleSnap(rk, goalFields, wasValidated, deps) {
     if (i.externalTicketId !== undefined && i.externalTicketId !== null && i.externalTicketId !== '') {
       obj.externalTicketId = i.externalTicketId;
     }
+    /* #121 — причина и отметки исключения едут в снимок (подсказка истории, колонка Excel);
+       снимок копирует ключи выборочно — без этих строк история и Excel пусты. */
+    if (i.inclusionStatus === 'INC_EXCLUDED') {
+      ['excludeReason', 'excludedAt', 'excludedBy'].forEach(function (k) {
+        if (i[k] !== undefined && i[k] !== null && i[k] !== '') obj[k] = i[k];
+      });
+    }
     obj['estimate_'+rk] = i['estimate_'+rk];
     obj['fact_'+rk]     = i['fact_'+rk];
     obj['alloc_'+rk]    = i['alloc_'+rk] !== undefined ? i['alloc_'+rk] : null;

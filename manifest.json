@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.45.0",
+  "version": "3.46.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What's new since v3.43.0</b><br><br>🗓 <b>Work phases inside the sprint</b> (3.45.0) — a “Work phases” block in Sprint parameters: six phases Analysis → Development → Tech test → Regression → Business test → Deploy with date pairs and a bar on the sprint scale, role chips from the phase × roles mapping in Settings → Release management, order and out-of-range warnings, range refusals; editors or validators save with their own button, phases are copied into every role snapshot and the Excel header; every date picker in Sprint parameters is now a Ring DatePicker. Also #127 — the estimate is written on Enter or leaving the field without a dialog, #128 — the task picker searches as you type. Schema 3.40.0 → 3.45.0, rollback floor 3.45.0.<br><br>🔗 <b>Links to capacity and releases</b> (3.44.0) — “Share” on the Capacity tab now puts the tab's sprint and the person or role picked on the right into the link, and the recipient lands on the same selection with it highlighted (all of a person's rows, or the role's group). Planned releases and release-history records got a “Copy link” button for everyone who can see releases; the toast names what was copied, and the highlight waits for the screen to finish loading. Also fixed: the address bar lost the Capacity and Releases sections on startup. Links need YouTrack 2026.1+, like “Share” itself.",
+  "changeNotes": "<b>What&#39;s new since v3.45.0</b><br><br>🚫 <b>Excluded issues with a reason</b> (3.46.0) — switching an issue to “Excluded from sprint” now asks why (required, up to 500 characters); with cross-role exclusion on, the same reason and the same who/when stamp go to every role at once. Excluded issues leave the role table for an “Excluded from sprint (N)” block below it — the reason, who excluded and when, “Return” and “Edit reason” buttons, the full text as a tooltip. The reason shows as a tooltip on the status in sprint history and as an “Exclusion reason” column in the Excel export. The “Hide tasks excluded from sprint” switch is gone. Schema 3.45.0 → 3.46.0, rollback floor 3.46.0.",
   "widgets": [
     {
       "key": "ssp-main",

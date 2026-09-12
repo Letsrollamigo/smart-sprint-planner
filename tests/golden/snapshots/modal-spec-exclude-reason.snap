@@ -1,0 +1,69 @@
+{
+  "exclude": {
+    "id": "excludeReason",
+    "type": "form",
+    "title": "Исключить из спринта",
+    "body": {
+      "kind": "component",
+      "name": "excludeReasonForm",
+      "props": {
+        "mode": "exclude",
+        "title": "Исключить из спринта",
+        "issueKey": "GM-1",
+        "issueTitle": "Задача",
+        "roleLine": "Роль «Анализ» · Спринт",
+        "cascadeText": "Кросс-ролевое исключение включено: задача будет исключена также в ролях «Тестирование» — с той же причиной.",
+        "stampText": null,
+        "existingReason": "",
+        "maxLen": 500,
+        "fieldLabel": "Причина исключения",
+        "placeholder": "Почему задача уходит из спринта — коротко, для согласования и ретро",
+        "cancelText": "Отмена",
+        "confirmText": "Исключить",
+        "onConfirm": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "edit": {
+    "id": "excludeReason",
+    "type": "form",
+    "title": "Изменить причину",
+    "body": {
+      "kind": "component",
+      "name": "excludeReasonForm",
+      "props": {
+        "mode": "edit",
+        "title": "Изменить причину",
+        "issueKey": "GM-1",
+        "issueTitle": "Задача",
+        "roleLine": "Роль «Анализ» · Спринт",
+        "cascadeText": null,
+        "stampText": "Исключена 18.05.2026, 00:00 · Петров И. С.",
+        "existingReason": "старая",
+        "maxLen": 500,
+        "fieldLabel": "Причина исключения",
+        "placeholder": "Почему задача уходит из спринта — коротко, для согласования и ретро",
+        "cancelText": "Отмена",
+        "confirmText": "Сохранить",
+        "onConfirm": "<fn>",
+        "onCancel": "<fn>"
+      }
+    },
+    "buttons": [],
+    "dismissOnBackdrop": false,
+    "blockEscape": false,
+    "showCloseButton": false,
+    "onClose": "<fn>"
+  },
+  "behavior": {
+    "confirm": "причина",
+    "escape": null,
+    "cancel": null
+  }
+}

@@ -81,6 +81,7 @@ const BRIDGE_SCRIPTS = [
   'standup-view.js',
   'currentrole-view.js',
   'rolecomposition-view.js',
+  'excluded-view.js',   /* #121 — блок «Исключённые из спринта» и исключение с причиной */
   'history-view.js',
   'header-view.js',
   'slot-watch.js',       /* #114 — подсказка «изменён другим» */

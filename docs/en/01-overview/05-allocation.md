@@ -33,13 +33,9 @@ Press it when the team has been working in the tracker rather than in the planne
 
 ⚠️ The button refreshes the **current role**. With three roles, refreshing all of them means pressing it in each.
 
-## The «Hide tasks excluded from sprint» switch
-
-An issue can sit in the composition with the «excluded» status — taken out but not deleted, so the record of that decision is not lost. The switch takes such rows out of sight.
-
 ## Filters
 
-Below the button and the switch sits a filter row: **Assignee**, **State**, **Role**, **Priority**. Each takes several values: within a field it is «any of the ticked», between fields it is «and». The filter applies to the summary table and to every role's composition at once.
+Below the button sits a filter row: **Assignee**, **State**, **Role**, **Priority**. Each takes several values: within a field it is «any of the ticked», between fields it is «and». The filter applies to the summary table and to every role's composition at once.
 
 ![The filter row: three states and two roles ticked; «Tasks shown: 10 of 23», the roles carry «filter: 1 of 7» and «filter: 8 of 9» chips, testing is hidden by the Role filter](../../assets/ov-002b-allocation-filters.en.png)
 

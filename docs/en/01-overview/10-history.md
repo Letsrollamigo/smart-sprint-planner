@@ -49,6 +49,7 @@ The right to it is granted to a separate group in the project settings — delib
 - the issue composition by role with estimates, actuals and allocations;
 - role resources and remainders;
 - the distribution across assignees and the dates;
-- the issues' states at the moment of closing.
+- the issues' states at the moment of closing;
+- the reason and the who/when stamp of excluded issues — as a tooltip on the underlined “Excluded” status in the record table and as the “Exclusion reason” column in the Excel export (records closed before 3.46.0 carry no reasons).
 
 That is the minimum needed to answer «what did we promise and what did we deliver» later, without relying on the issues in the tracker having been left untouched.

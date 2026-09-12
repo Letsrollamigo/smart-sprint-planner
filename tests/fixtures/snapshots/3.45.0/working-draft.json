@@ -41,7 +41,15 @@
     "migrationLog": [],
     "pluginVersion": "3.45.0"
   },
-  "items": [],
+  "items": [
+    {
+      "issueId": "FIX-2",
+      "title": "Fixture task excluded from sprint",
+      "inclusionStatus": "INC_EXCLUDED",
+      "addedAt": 1779321600000,
+      "addedBy": "fixture_user_2"
+    }
+  ],
   "personalPlanning": {
     "devFront": {
       "nkcKey": "may",

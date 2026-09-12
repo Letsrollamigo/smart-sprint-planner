@@ -557,9 +557,76 @@ function PickPicker(props) {
   );
 }
 
+/* ── excludeReasonForm — #121 причина исключения (mode 'exclude' | 'edit'): Ring Input multiline на 4 строки,
+   счётчик «N / 500», «Исключить» недоступна при пустом поле, «Сохранить» — пока текст не изменён или пуст;
+   Ctrl/Cmd+Enter в поле = подтверждение (§О11). onConfirm(text) / onCancel(). Заголовок окна — в теле (Ring Dialog
+   получает title только как aria-label, как у всех bespoke-окон). Значок «i» строки каскада —
+   inline SVG (в вендорном наборе иконок info нет); имена ролей в «» — жирным, как в макете. ── */
+const EXCL_INFO_SVG = '<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14Zm0-1.25a5.75 5.75 0 1 0 0-11.5 5.75 5.75 0 0 0 0 11.5ZM8 4.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Zm-.625 3a.625.625 0 0 1 1.25 0V11a.625.625 0 0 1-1.25 0V7.5Z" clip-rule="evenodd"/></svg>';
+function _exclCascadeHtml(text) {
+  const esc = String(text || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  return esc.replace(/«[^»]*»/g, '<b>$&</b>');
+}
+function ExcludeReasonForm(props) {
+  const Input = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Input;
+  const [text, setText] = React.useState(props.existingReason || '');
+  const onConfirm = props.onConfirm || noop;
+  const onCancel = props.onCancel || noop;
+  const maxLen = props.maxLen || 500;
+  const trimmed = text.trim();
+  const edit = props.mode === 'edit';
+  const disabled = !trimmed || (edit && trimmed === String(props.existingReason || '').trim());
+  const confirm = () => { if (!disabled) onConfirm(trimmed); };
+  const onKeyDown = (ev) => {
+    if (ev && ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); confirm(); }
+  };
+  return (
+    <React.Fragment>
+      <div className="ssp-excluded__dialog">
+        {props.title ? <h3 className="ssp-excluded__dialog-title">{props.title}</h3> : null}
+        <p className="ssp-excluded__task"><b>{props.issueKey}</b>{props.issueTitle}</p>
+        <p className="ssp-excluded__role">{props.roleLine}</p>
+        {props.cascadeText
+          ? (
+            <div className="ssp-excluded__cascade">
+              <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: EXCL_INFO_SVG }} />
+              <span dangerouslySetInnerHTML={{ __html: _exclCascadeHtml(props.cascadeText) }} />
+            </div>
+          )
+          : null}
+        {props.stampText ? <p className="ssp-excluded__stamp">{props.stampText}</p> : null}
+        <label className="ssp-excluded__label">{props.fieldLabel}</label>
+        {Input
+          ? (
+            <Input
+              multiline
+              rows={4}
+              maxLength={maxLen}
+              value={text}
+              placeholder={props.placeholder}
+              onChange={(ev) => setText(ev && ev.target ? ev.target.value : '')}
+              onKeyDown={onKeyDown}
+            />
+          )
+          : null}
+        <div className="ssp-excluded__meta">{text.length} / {maxLen}</div>
+      </div>
+      <div className="ssp-modal-footer">
+        <button type="button" className={_btnCls('secondary')} onClick={() => onCancel()}>
+          {props.cancelText}
+        </button>
+        <button type="button" className={_btnCls('primary')} disabled={disabled} onClick={confirm}>
+          {props.confirmText}
+        </button>
+      </div>
+    </React.Fragment>
+  );
+}
+
 if (window.__SSP_RING_MODAL && typeof window.__SSP_RING_MODAL.registerBody === 'function') {
   window.__SSP_RING_MODAL.registerBody('reassignForm', ReassignForm);
   window.__SSP_RING_MODAL.registerBody('confirmGoalForm', ConfirmGoalForm);
+  window.__SSP_RING_MODAL.registerBody('excludeReasonForm', ExcludeReasonForm);   /* #121 */
   window.__SSP_RING_MODAL.registerBody('wcDiffView', WcDiffView);
   window.__SSP_RING_MODAL.registerBody('dynFieldForm', DynFieldForm);
   window.__SSP_RING_MODAL.registerBody('importHistForm', ImportHistForm);

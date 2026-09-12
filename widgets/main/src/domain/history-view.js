@@ -74,7 +74,7 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
         priority: deps.dispEnum(item.priority) || '—',
         xpriority: deps.dispEnum(item.xpriority) || '—',
         state: deps.dispEnum(item.state) || '—',
-        incStatus: item.inclusionStatus ? deps.incLabel(item.inclusionStatus) : '—',
+        incStatus: _incStatusCell(item, deps),   /* #121 — подсказка причины на статусе «Исключена» */
         alloc: (function(){ var a = item['alloc_'+rk]; var v = (a !== null && a !== undefined) ? a : Math.max(0, (est||0)-(fact||0)); return deps.fmtPeriod(v); })(),
         assignee: _assigneeName(item.issueId),
         delta: { __html: histDelta(delta) },
@@ -92,6 +92,20 @@ function _buildHistoryItemsVm(items, rk, rec, deps) {
     deltaColTitle: deps.fmtThLabel(rec.roleLabel || rk),
     rows: rows,
   };
+}
+
+/* #121 — ячейка статуса включения: исключённая С причиной → подчёркивание точками + Ring Tooltip
+   «причина ⏎ отметка» через мост [data-ssp-tooltip] (React-ячейка через __html); снимки без причины
+   (данные до 3.46.0) — прежняя plain-строка без подсказки. */
+function _incStatusCell(item, deps) {
+  if (!item.inclusionStatus) return '—';
+  var label = deps.incLabel(item.inclusionStatus);
+  if (item.inclusionStatus !== 'INC_EXCLUDED' || typeof item.excludeReason !== 'string' || !item.excludeReason) return label;
+  var hasStamp = typeof item.excludedAt === 'number' || !!item.excludedBy;
+  var stamp = hasStamp ? deps.T('excludedStamp')
+    .replace('{date}', typeof item.excludedAt === 'number' ? deps.fmtDT(item.excludedAt) : '—')
+    .replace('{user}', item.excludedBy || '—') : '';
+  return { __html: '<span class="ssp-excluded__inc is-excluded" data-ssp-tooltip="' + deps.esc(item.excludeReason + (stamp ? '\n' + stamp : '')) + '">' + deps.esc(label) + '</span>' };
 }
 
 /* #60 — история группируется по спринту, а не по ролям: baseId = sprintId записи
@@ -532,6 +546,23 @@ function buildSpoiler(rec, idx, deps) {
   }
   body.appendChild(itemsSlot);
 
+  /* #121 — Ring Table рендерится асинхронно (createRoot): подсказку причины монтируем, когда ячейка
+     статуса появилась в DOM (MutationObserver на хосте, один раз); наблюдатель ставится только если
+     в строках есть ячейка с подсказкой. */
+  function _mountTipsWhenRendered(host, rows) {
+    if (typeof deps.mountTooltips !== 'function') return;
+    var need = (rows || []).some(function (r) { return r && r.cells && r.cells.incStatus && r.cells.incStatus.__html; });
+    if (!need) return;
+    if (host.querySelector('[data-ssp-tooltip]')) { deps.mountTooltips(host); return; }
+    if (typeof MutationObserver !== 'function') return;
+    var mo = new MutationObserver(function () {
+      if (!host.querySelector('[data-ssp-tooltip]')) return;
+      mo.disconnect();
+      deps.mountTooltips(host);
+    });
+    mo.observe(host, { childList: true, subtree: true });
+  }
+
   /* Локальный helper для рендера блока «summary + таблица задач».
      Используется как для базового снимка (rec.items), так и для working copy
      (draft.items). Принимает items+roleKey, рендерит в itemsSlot.
@@ -543,6 +574,7 @@ function buildSpoiler(rec, idx, deps) {
     if (window.__SSP_TABLE) {
       try { window.__SSP_TABLE.unmountAllIn(itemsSlot); } catch(_) {}
     }
+    if (typeof deps.unmountTooltips === 'function') deps.unmountTooltips(itemsSlot);   /* #121 — корни подсказок до сноса */
     itemsSlot.innerHTML = '';
     var vm = _buildHistoryItemsVm(items, rk, rec, deps);
     if (vm.summaryHtml) {
@@ -591,6 +623,7 @@ function buildSpoiler(rec, idx, deps) {
         stickyHeader: false,
         emptyText: T('histNoTasks'),
       });
+      _mountTipsWhenRendered(host, vm.rows);   /* #121 */
     } else {
       host.innerHTML = '<div class="empty">'+esc(T('histNoTasks'))+'</div>';
     }

@@ -1,0 +1,28 @@
+<div class="spoiler ssp-excluded">
+<div class="spoiler__head">
+<span class="spoiler__arrow">▶</span>
+<span class="ssp-excluded__title">Исключённые из спринта (<span class="ssp-excluded__count">1</span>)</span>
+</div>
+<div class="spoiler__body">
+<div class="ssp-excluded__row ssp-excluded__row--head">
+<div>Задача</div>
+<div>Причина</div>
+<div>Исключил</div>
+<div>
+</div>
+</div>
+<div class="ssp-excluded__row" data-iid="GM-4">
+<div class="ssp-excluded__task">
+<a class="ssp-excluded__key link" href="#" target="_blank" rel="noopener noreferrer">GM-4</a> <span class="ssp-excluded__name">Исключённая задача</span>
+</div>
+<div class="ssp-excluded__reason">
+<div class="ssp-excluded__reason-text">—</div>
+</div>
+<div class="ssp-excluded__stamp">—</div>
+<div class="ssp-excluded__actions">
+<button type="button" class="ring-button-button ring-button-block ring-button-heightS excluded-btn" data-action="return">Вернуть</button>
+<button type="button" class="ring-button-button ring-button-block ring-button-heightS ring-button-ghost ring-button-flat excluded-btn" data-action="edit">Изменить причину</button>
+</div>
+</div>
+</div>
+</div>

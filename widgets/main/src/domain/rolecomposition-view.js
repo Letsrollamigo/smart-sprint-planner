@@ -22,20 +22,47 @@
    одностороннее (возврат в одной роли не значит, что задача влезла в остальные).
    Мутирует переданную карту roleItems на месте, возвращает ключи затронутых ролей
    (роль, уже исключённая ранее, в список не попадает — тост не должен врать). */
-function cascadeExcludeAcrossRoles(roleItems, srcRk, issueId, mode, excludedCode) {
+function cascadeExcludeAcrossRoles(roleItems, srcRk, issueId, mode, excludedCode, payload) {
   var all = roleItems || {};
   var touched = [];
-  Object.keys(all).forEach(function(rk) {
-    if (rk === srcRk || !Array.isArray(all[rk])) return;
-    var arr = all[rk], idx = -1;
-    for (var i = 0; i < arr.length; i++) { if (arr[i] && arr[i].issueId === issueId) { idx = i; break; } }
-    if (idx < 0) return;
-    if (mode === 'delete') arr.splice(idx, 1);
-    else if (arr[idx].inclusionStatus === excludedCode) return;
-    else arr[idx].inclusionStatus = excludedCode;
-    touched.push(rk);
+  if (mode === 'delete') {
+    Object.keys(all).forEach(function(rk) {
+      if (rk === srcRk || !Array.isArray(all[rk])) return;
+      var arr = all[rk], idx = -1;
+      for (var i = 0; i < arr.length; i++) { if (arr[i] && arr[i].issueId === issueId) { idx = i; break; } }
+      if (idx < 0) return;
+      arr.splice(idx, 1);
+      touched.push(rk);
+    });
+    return touched;
+  }
+  /* #121 — режим exclude: цели — единый предикат cascadeTargets (та же логика, что у строки каскада в
+     окне и undo-снимка); payload {excludeReason, excludedAt, excludedBy} копируется в каждую копию —
+     один акт, одна причина, одна отметка (⚖2). */
+  cascadeTargets(all, srcRk, issueId, excludedCode).forEach(function (t) {
+    var it = all[t.rk][t.idx];
+    it.inclusionStatus = excludedCode;
+    if (payload) { it.excludeReason = payload.excludeReason; it.excludedAt = payload.excludedAt; it.excludedBy = payload.excludedBy; }
+    touched.push(t.rk);
   });
   return touched;
+}
+
+/* #121 — куда реально пойдёт каскад exclude: роли, где задача есть в составе и ещё не исключена
+   («тост не должен врать»). Чистый dry-run без мутации → [{rk, idx}] в порядке ролей карты. */
+function cascadeTargets(roleItems, srcRk, issueId, excludedCode) {
+  var all = roleItems || {}, out = [];
+  Object.keys(all).forEach(function(rk) {
+    if (rk === srcRk || !Array.isArray(all[rk])) return;
+    var arr = all[rk];
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && arr[i].issueId === issueId) {
+        if (arr[i].inclusionStatus !== excludedCode) out.push({ rk: rk, idx: i });
+        return;
+      }
+    }
+  });
+  return out;
 }
 
 /* #89.1 — задача «без оценки»: поле оценки роли пусто или ноль. Ручная аллокация
@@ -298,35 +325,6 @@ function _updateRoleAccordionStats(rk, deps) {
   }
 }
 
-/* 68-2 — фильтр «скрыть исключённые из спринта»: глобальный Ring Toggle над
-   аккордеонами (⚖ 2026-08-20: эфемерно на сессию — на прод-YT 2025.3 у виджета
-   нет localStorage, честный персист только через бэкенд, для view-тумблера это
-   оверкилл). Источник правды — data-ssp-hide-excluded на #planningFilterBar
-   (переживает innerHTML-перестройки аккордеонов); читают _buildRoleCompositionVm
-   и сводная #61 (isExcludedHidden — window-мост). Дефолт — показывать всё. */
-function isExcludedHidden() {
-  var bar = document.getElementById('planningFilterBar');
-  return !!(bar && bar.dataset && bar.dataset.sspHideExcluded === '1');
-}
-
-function _renderExcludedFilter(deps) {
-  var bar = document.getElementById('planningFilterBar');
-  if (!bar) return;
-  /* Остров — generic Ring Toggle (label + onToggle-Promise, mount-паттерн #57-2);
-     приходит через deps.mountRingToggle (звезда-топология B1: острова монтирует ядро). */
-  if (typeof deps.mountRingToggle !== 'function') { bar.style.display = 'none'; return; }
-  var mounted = deps.mountRingToggle(bar, {
-    locked: isExcludedHidden(), canToggle: true,
-    label: deps.T('hideExcludedToggle'),
-    onToggle: function (next) {
-      bar.dataset.sspHideExcluded = next ? '1' : '0';
-      renderPlanningRoles(deps);
-      if (typeof deps.renderAllocSummary === 'function') { try { deps.renderAllocSummary(); } catch (_) {} }
-    },
-  });
-  bar.style.display = mounted ? '' : 'none';
-}
-
 /* 118-1в / 118-3 — фильтры таблиц задач спринта: строка над таблицами (остров
    react/task-filter.jsx, мост __SSP_TASK_FILTER_BAR — выбор общий с «Людьми», до
    перезагрузки), отбор — pure/task-filter-pure.js. Здесь — факты строк состава и опции.
@@ -371,9 +369,9 @@ function _viewItems(rk, deps) {
   return deps.getRoleItemsArr(rk);
 }
 
-/* 68-2 — маска исключённых по тумблеру. */
-function _hideExcluded(items, deps) {
-  return isExcludedHidden() ? items.filter(function (it) { return it && it.inclusionStatus !== deps.INC.EXCLUDED; }) : items;
+/* #121 — исключённые в таблице не живут: они в блоке под ней (domain/excluded-view.js); тумблер 68-2 снят. */
+function _withoutExcluded(items, deps) {
+  return items.filter(function (it) { return it && it.inclusionStatus !== deps.INC.EXCLUDED; });
 }
 
 /* Чип «фильтр: N из M» в шапке роли: счётчики шапки по-прежнему по всему составу, чип
@@ -396,7 +394,7 @@ function _renderTaskFilter(deps, activeRoles) {
   if (!tf || !host) return null;
   var T = deps.T, pp = _ppMap(deps), all = [], logins = [], names = {}, total = {}, shown = {};
   activeRoles.forEach(function (role) {
-    _hideExcluded(_viewItems(role.key, deps), deps).forEach(function (it) {
+    _withoutExcluded(_viewItems(role.key, deps), deps).forEach(function (it) {
       if (!it || !it.issueId) return;
       var f = _facts(tf, it, role.key, pp);
       var ta = pp[role.key] && pp[role.key].taskAssignments && pp[role.key].taskAssignments[it.issueId];
@@ -476,7 +474,6 @@ function renderPlanningRoles(deps) {
   if (noSprintEl) noSprintEl.classList.add('hidden');
   if (filterBar) filterBar.style.display = '';
   _bindPlanningRefreshBtn(deps);   /* #69 R1 (строка 1) */
-  _renderExcludedFilter(deps);   /* 68-2 */
   var selRoles = (_renderTaskFilter(deps, activeRoles) || {}).role || [];   /* 118-1в / 118-3 */
   var shownRoles = selRoles.length ? activeRoles.filter(function(r){ return selRoles.indexOf(r.key) >= 0; }) : activeRoles;
   var html = shownRoles.map(function(role){ return renderRoleAccordion(role.key, deps); }).join('');
@@ -734,6 +731,11 @@ function buildRolePanel(role, deps) {
     '<span id="planPageInfo_'+role.key+'"></span>'+
     '<button class="ring-button-button ring-button-block ring-button-heightS" id="planNext_'+role.key+'">›</button>';
   compCard.appendChild(pag);
+  /* #121 — хост блока «Исключённые из спринта (N)» под таблицей и пагинацией (domain/excluded-view.js). */
+  var exclHost = document.createElement('div');
+  exclHost.id = 'exclHost_'+role.key;
+  exclHost.className = 'ssp-excluded-host';
+  compCard.appendChild(exclHost);
   frag.appendChild(compCard);
 
   /* === Навесить события === */
@@ -890,9 +892,9 @@ function _buildRoleCompositionVm(rk, deps) {
   var items = _viewItems(rk, deps);
   if (!items.length) return { empty: true, itemCount: 0 };
 
-  /* 68-2 — display-фильтр исключённых (после empty-чека: истинно пустой состав
-     сохраняет CTA-empty-state, отфильтрованный в ноль — таблицу с emptyText). */
-  items = _hideExcluded(items, deps);
+  /* #121 — исключённые уходят в блок под таблицей (после empty-чека: истинно пустой состав
+     сохраняет CTA-empty-state, состав из одних исключённых — таблицу с emptyText и блок). */
+  items = _withoutExcluded(items, deps);
   /* 118-1в / 118-3 — строка фильтров: тот же отбор, что у чипа и счётчика; в ноль — emptyText фильтра. */
   var tf = _tf(), filtered = !!(tf && tf.pure.isActive(tf.sel, _TF_ROW));
   if (filtered) {
@@ -1077,6 +1079,7 @@ function renderRoleComposition(rk, deps) {
        опустошении состава (удаление последней строки, кросс-ролевой каскад) заголовок
        застывал на прежних «N задач / аллокация». Считаем в обеих ветках. */
     _updateRoleAccordionStats(rk, deps);
+    if (deps.renderExcludedBlock) deps.renderExcludedBlock(rk);   /* #121 — пустой состав → хост пуст */
     return;
   }
 
@@ -1192,8 +1195,14 @@ function renderRoleComposition(rk, deps) {
       var iid = t.dataset.iid;
       var idx = _findIdxByIid(rk2, iid);
       if (idx < 0) { deps.diag('inc-sel change: item iid='+iid+' not found in role '+rk2,'warn'); return; }
+      if (t.value === deps.INC.EXCLUDED) {
+        /* #121 — исключение с причиной: окно → мутация + каскад #59 с той же причиной → POST → откат при
+           отказе живут в domain/excluded-view.js; здесь ничего не мутируем — «Отмена» вернёт селект. */
+        var prevStatus = deps.getRoleItemsArr(rk2)[idx].inclusionStatus;
+        if (deps.excludeWithReason) deps.excludeWithReason(rk2, iid, prevStatus, t);
+        return;
+      }
       deps.getRoleItemsArr(rk2)[idx].inclusionStatus = t.value;
-      if (t.value === deps.INC.EXCLUDED) _cascadeToOtherRoles(rk2, iid, 'exclude');   /* #59 */
       deps.updateRoleRemaining(rk2);
       deps.markDirty('roleItems');
       deps.draftSaveDebounced('roleItems', function(){ return deps.state.getRoleItems(); });
@@ -1378,6 +1387,7 @@ function renderRoleComposition(rk, deps) {
   }
   _updateRoleAccordionStats(rk, deps);
   renderRoleDrift(rk, deps);   /* #114 */
+  if (deps.renderExcludedBlock) deps.renderExcludedBlock(rk);   /* #121 — блок исключённых под таблицей */
 }
 
 /* #63 (класс D109) — карточка «Остатки»: при просмотре чужого спринта источник =
@@ -1411,7 +1421,6 @@ function updateRoleRemaining(rk, deps) {
 }
 
 const api = {
-  isExcludedHidden: isExcludedHidden,   /* 68-2 — читает сводная #61 */
   computeRoleQuickStats: computeRoleQuickStats,
   computeRoleDrift: computeRoleDrift,   /* #114 */
   renderRoleDrift: renderRoleDrift,     /* #114 */
@@ -1421,6 +1430,7 @@ const api = {
   renderPlanningRoles: renderPlanningRoles,
   renderRoleComposition: renderRoleComposition,
   cascadeExcludeAcrossRoles: cascadeExcludeAcrossRoles,
+  cascadeTargets: cascadeTargets,   /* #121 — строка каскада в окне и undo-снимок */
 };
 
 if (typeof window !== 'undefined') {

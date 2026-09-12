@@ -73,3 +73,25 @@ test('golden: exportSprintToExcel — AOA, листы, имя файла', () =>
   assert.ok(calls.sheets.length > 0, 'exportSprintToExcel must build at least one AOA sheet');
   checkJsonSnapshot('export-excel', calls);
 });
+
+/* #121 — колонка «Причина исключения» сразу после «Статус включения»: у исключённой — текст,
+   у активной — пусто, ИТОГО её не считает, ширина 32; лист сравнения wcDiff не трогается. */
+test('golden: exportSprintToExcel — колонка «Причина исключения» после статуса включения (#121)', () => {
+  const host = createHost();
+  fx.applyBaseState(host.gm);
+  const calls = installXlsxStub(host.window);
+  const rec = Object.assign({}, host.gm.get('_history')[0]);
+  rec.items = rec.items.concat([{ issueId: 'GM-EX', title: 'Исключённая с причиной', inclusionStatus: 'INC_EXCLUDED', excludeReason: 'Не готова зависимость', excludedAt: fx.DATE_START, excludedBy: 'Петров И. С.', estimate_analysis: 300, fact_analysis: 0, alloc_analysis: 300 }]);
+  host.gm.call('exportSprintToExcel', rec);
+  const sheet = calls.sheets[0];
+  const headerIdx = sheet.findIndex((row) => row[6] === 'Статус включения');
+  assert.ok(headerIdx >= 0, 'строка заголовка найдена');
+  assert.strictEqual(sheet[headerIdx][7], 'Причина исключения');
+  const exRow = sheet.find((row) => row[0] === 'GM-EX'), plRow = sheet.find((row) => row[0] === 'GM-H1');
+  assert.strictEqual(exRow[7], 'Не готова зависимость');
+  assert.strictEqual(plRow[7], '', 'у активной пусто');
+  const total = sheet.find((row) => row[1] === 'ИТОГО:');
+  assert.strictEqual(total[7], '', 'ИТОГО причину не считает');
+  assert.strictEqual(typeof total[8], 'number', 'числовые итоги сдвинулись на колонку');
+  checkJsonSnapshot('export-excel-exclude-reason', { header: sheet[headerIdx], exRow: exRow, total: total });
+});

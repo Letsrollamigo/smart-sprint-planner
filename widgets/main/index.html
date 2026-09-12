@@ -1813,6 +1813,43 @@
     .sprint-intro-dates [data-ssp-datepicker-host] .ring-date-picker-anchor { padding: 6px 10px !important; font-size: 13px !important; }
     [data-ssp-datepicker-host].is-err .ring-date-picker-anchor { border-color: var(--error) !important; box-shadow: 0 0 0 2px rgba(224,90,106,.18); }
     [data-ssp-datepicker-host] .ring-date-picker-anchor:disabled { opacity: .45; cursor: not-allowed; }
+    /* #121 — блок «Исключённые из спринта (N)» под таблицей роли (макет design/mirror/excluded/block.html)
+       и окно причины (reason-dialog.html); ниже 1330 строка складывается в три яруса; тёмная тема —
+       только переменные приложения. Правила окна — под .ssp-excluded__dialog (классы задачи/отметки
+       делят имя с блоком). */
+    .ssp-excluded { margin: 14px 0 0; }
+    .ssp-excluded .spoiler__head { padding: 10px 14px; gap: 8px; }
+    .ssp-excluded .spoiler__arrow { margin-left: 0; }
+    .ssp-excluded__title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .ssp-excluded__count { color: var(--text); }
+    .ssp-excluded__key { color: var(--primary); font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .ssp-excluded .spoiler__body { padding: 4px 14px 10px; }
+    .ssp-excluded__row { display: grid; grid-template-columns: minmax(220px, 1.1fr) minmax(280px, 2fr) 190px auto; gap: 6px 20px; align-items: start; padding: 9px 0; border-top: 1px solid var(--border); font-size: 13px; line-height: 18px; }
+    .ssp-excluded__row--head { border-top: 0; padding: 8px 0 6px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .ssp-excluded.is-readonly .ssp-excluded__row { grid-template-columns: minmax(220px, 1.1fr) minmax(280px, 2fr) 190px; }
+    .ssp-excluded__name { color: var(--text); }
+    .ssp-excluded__reason { color: var(--text); cursor: default; }
+    .ssp-excluded__reason-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .ssp-excluded .ssp-excluded__stamp { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .ssp-excluded__actions { display: flex; gap: 6px; white-space: nowrap; justify-content: flex-end; }
+    @media (max-width: 1329px) {
+      .ssp-excluded__row { grid-template-columns: 1fr auto; grid-template-areas: "task actions" "reason reason" "stamp stamp"; }
+      .ssp-excluded__row--head { display: none; }
+      .ssp-excluded__task { grid-area: task; } .ssp-excluded__reason { grid-area: reason; } .ssp-excluded__stamp { grid-area: stamp; } .ssp-excluded__actions { grid-area: actions; }
+    }
+    .ssp-excluded__inc.is-excluded { border-bottom: 1px dotted var(--muted); cursor: default; }   /* история — подсказка причины на статусе */
+    .ring-tooltip-tooltip { white-space: pre-line; }   /* многострочная подсказка «причина ⏎ отметка» */
+    .ssp-excluded__dialog-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--text); }
+    .ssp-excluded__dialog .ssp-excluded__task { margin: 0 0 4px; font-size: 13px; line-height: 18px; color: var(--ring-text-color, var(--text)); }
+    .ssp-excluded__dialog .ssp-excluded__task b { font-weight: 600; margin-right: 6px; }
+    .ssp-excluded__dialog .ssp-excluded__role { margin: 0 0 14px; font-size: 12px; line-height: 16px; color: var(--ring-secondary-color); }
+    .ssp-excluded__dialog .ssp-excluded__label { font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px; }
+    .ssp-excluded__dialog textarea.ring-input-input { resize: vertical; min-height: auto; }
+    .ssp-excluded__dialog .ssp-excluded__cascade { display: flex; gap: 8px; align-items: flex-start; background: var(--surface-light, #f5f5f5); border-radius: 6px; padding: 8px 10px; margin: -6px 0 14px; font-size: 12px; line-height: 16px; color: var(--ring-text-color, var(--text)); }
+    .ssp-excluded__dialog .ssp-excluded__cascade svg { flex: none; width: 14px; height: 14px; margin-top: 1px; color: var(--ring-icon-color); }
+    .ssp-excluded__dialog .ssp-excluded__cascade b { font-weight: 600; }
+    .ssp-excluded__dialog .ssp-excluded__stamp { margin: -6px 0 14px; font-size: 12px; line-height: 16px; color: var(--ring-secondary-color); }
+    .ssp-excluded__dialog .ssp-excluded__meta { display: flex; justify-content: flex-end; margin-top: 4px; font-size: 11px; line-height: 16px; color: var(--ring-secondary-color); font-variant-numeric: tabular-nums; }
     /* #120 — блок «Фазы работ» (макет design/mirror/phases/params-block.html): таблица «фаза | дорожка |
        с | → | по | пометки», одна шкала на все строки; тёмная тема — только переменные приложения. */
     .ssp-phases__block { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 16px; }
@@ -2187,7 +2224,6 @@
     .role-accordions { display: flex; flex-direction: column; gap: 8px; }
     /* 68-2 — бар фильтра исключённых над аккордеонами */
     .ssp-planning-toolbar { margin: 6px 0 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }   /* wrap — подпись кнопки обновления длинная: на узких экранах фильтр уходит на свою строку, а не сплющивает кнопку */
-    .ssp-planning-filterbar { display: flex; justify-content: flex-end; margin-left: auto; }
     /* 118-1в / 118-3 — строка фильтров таблиц задач (react/task-filter.jsx): на «Ролях» — своим рядом панели под кнопкой обновления и тумблером, на «Людях» — над таблицей задач */
     .ssp-task-filter { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
     .ssp-task-filter:empty { display: none; }
@@ -2864,11 +2900,10 @@
       <!-- #61 — сводная таблица мультиролевого планирования: спойлер строит
            allocsummary-view.js (гейт по тумблеру allocSummaryEnabled; выключено → пусто) -->
       <div id="allocSummaryHost"></div>
-      <!-- #69 R1 — панель уровня «Роли»: одна кнопка «Обновить из задач» (весь спринт, #35) +
-           68-2 фильтр «скрыть исключённые» (Ring Toggle рендерит rolecomposition-view._renderExcludedFilter) -->
+      <!-- #69 R1 — панель уровня «Роли»: одна кнопка «Обновить из задач» (весь спринт, #35);
+           тумблер 68-2 «скрыть исключённые» снят в #121 — исключённые живут в блоке под таблицей роли -->
       <div id="planningToolbar" class="ssp-planning-toolbar" style="display:none">
         <button type="button" id="planningRefreshBtn" class="ring-button-button ring-button-block ring-button-heightS ring-button-primaryBlock ring-button-flat ring-button-whiteText editor-btn" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
-        <div id="planningFilterBar" class="ssp-planning-filterbar"></div>
         <!-- 118-1в / 118-3 — строка фильтров таблиц задач (остров react/task-filter.jsx монтирует rolecomposition-view) -->
         <div id="planningTaskFilter" class="ssp-task-filter"></div>
       </div>

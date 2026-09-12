@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.46.0] — 2026-09-12
+
+> **Excluded issues with a reason.** #121 (release manager feedback; a separate release). Schema 3.45.0 → 3.46.0 (additive role-item keys `excludeReason` / `excludedAt` / `excludedBy` — present only while the status is “Excluded from sprint”) — **rolling back below 3.46.0 follows `SYNC_PROTOCOL §E.5`**: the old strict validator refuses composition and history writes carrying the new keys.
+
+### Added
+
+- **Reason for exclusion (#121).** Picking “Excluded from sprint” in a role table opens the “Exclude from sprint” dialog: issue key and title, role and sprint, a four-line reason field with an “N / 500” counter; “Exclude” stays disabled while the field is empty; “Cancel” and Esc restore the previous status without writing anything; Ctrl/Cmd+Enter submits. With cross-role exclusion on, the dialog names the roles the cascade will actually reach (the issue is in their composition and not yet excluded), and the same reason with the same who/when stamp goes to all of them in one act.
+- **“Excluded from sprint (N)” block** below the role table, on the spoiler pattern, collapsed by default (stays open until reload): issue link and title, the reason on two lines, “Excluded {date, time} · {who}”, “Return” and “Edit reason” buttons. The main role table shows only non-excluded issues; header counters and the remainder do not change — they already counted active issues only. The full text of a clipped reason is a Ring Tooltip on hover. Issues excluded before 3.46.0 show “—” instead of the reason and stamp; “Edit reason” opens an empty field for them. Below 1330 px the row folds into three tiers.
+- **“Return”** sets “Planned” and clears the reason and stamp (excluding again asks anew); there is no cascade on return. **“Edit reason”** — the same dialog with the current text and the stamp line, “Save” is disabled until the text changes; the stamp is not moved by an edit, and the edit does not travel to other roles.
+- **History and Excel.** In a history record table the “Excluded from sprint” status is dotted-underlined with a tooltip carrying the reason and the stamp (snapshots without a reason get no tooltip). The role Excel export gets an “Exclusion reason” column right after “Inclusion status” (empty for active issues, not summed in TOTAL).
+- **Observers** see the block and the reasons; the buttons are dimmed with a tooltip naming the required groups; the historical view and an agreed composition without a working copy are read-only, without buttons.
+
+### Changed
+
+- The **“Hide tasks excluded from sprint”** switch above the accordions is gone: excluded issues live in the block below the role table. The “Total resource allocation” summary shows the composition as is.
+- A composition write refused by the server (exclude, return, edit reason) rolls the screen back; an observer no longer sees unsaved changes after a 403. The one exception — a validator without editor rights: their edit stays local and goes out under “Validate”, as before, without a toast.
+
+### Under the hood
+
+- Backend: `normalizeExcludedItems` in the core — normalisation on composition writes (`POST sprint-data` without action and `?action=validate`): the keys are stripped for other statuses, a reason longer than 500 characters after trim is refused with `reason_too_long`, a transition into “Excluded” without a reason with `reason_required`; the who/when stamp is set by the server (`fullName || login`, one moment per request — cascade copies share one stamp); the transition reference is the slot when it holds the sprint, otherwise the history snapshots; an already excluded issue without a reason (data from before 3.46.0) passes as is; editing the reason keeps the stamp. `ALLOWED_ITEM_KEYS` and `validateItem` (shape: string ≤ 1000, number), `SCHEMA_MIGRATIONS` entry `3.45.0 → 3.46.0` (no-op), fixtures `3.45.0/` (an excluded item without keys added) and `3.46.0/`.
+- Frontend: new `domain/excluded-view.js` module (block, three actions, undo snapshot before mutation and rollback on refusal, tooltips on clipped rows), `cascadeTargets` and the reason payload in the #59 cascade (`rolecomposition-view.js`), the `ExcludeReasonForm` dialog + `openExcludeReasonDialog`, three keys in the role snapshot (`buildRoleSnap` copies keys selectively), the history status cell with a tooltip (mounted after the asynchronous Ring Table render), the Excel column; shared `mountTooltips` / `unmountTooltips` in three core deps factories; the #61 summary no longer depends on the switch.
+- Gates: `excluded-backend.test.js` (14 cases, each verified by inversion), `cross-role-exclude-59.test.js` (+2), goldens `excluded-view` (block states and the exclusion contract: dialog, cancel, cascade, refusals, return, edit, role snapshot), `modal-specs`, `render-history`, `excel`, `render-planning` (the `inc-sel` contract rewritten), `excluded-i18n-completeness.test.js` (17 keys × 15 locales, `hideExcludedToggle` removed).
+
+### Known limitations
+
+- Ring tooltips (the full reason in the block, the reason on the history status), the validator-without-editor path, the observer and the Excel download are not covered by the live agent-browser smoke (OOPIF, blob download) — they are covered by goldens and unit tests.
+- Editing the reason applies to the current role: copies in other roles keep the reason as of the moment of exclusion.
+
 ## [3.45.0] — 2026-09-11
 
 > **Work phases inside the sprint, “Estimate” without a confirmation dialog, search-as-you-type in the task picker.** #120 + #127 + #128 in one release. Schema 3.40.0 → 3.45.0 (additive keys `phases` / `phasesUpdatedAt` / `phasesUpdatedBy` in the sprint and history snapshots, settings keys `phasesEnabled` / `phaseRoles`) — **rolling back below 3.45.0 follows `SYNC_PROTOCOL §E.5`**: the older strict validator rejects slot and history writes carrying the new keys.
