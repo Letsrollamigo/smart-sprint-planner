@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.47.0] — 2026-09-14
+
+> **Cross-role Gantt.** #122, step 1 of 2 (3.47.0 — the cross-role view; 3.48.0 — forecast across all roles and epic groups). No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Added
+
+- **“All roles” mode (#122).** The role card of the Gantt chart gets a “Role | All roles” pair of buttons; in “All roles” the role picker dims and “Refresh issue data from YouTrack” stays. One track per sprint role: a header with a caret, task and conflict counts and the role’s phase chips; the track’s summary bar spans its tasks. The list on the left is 380 px, a task row is 70 px in three lines: key and title, assignee, state with the transition history.
+- **Task chain.** Bars of one issue in different roles are joined by a grey dashed arrow stage by stage: with work phases on and roles bound to phases — in phase order, roles without a phase take the built-in order relative to the bound ones; without the binding — analysis → development roles (in parallel) → testing.
+- **Schedule conflicts.** “Starts before predecessor ends” — by dependency links (a predecessor in any role) and along the chain; “outside the role’s phase” — when work phases are on. A conflicting bar gets an outline and “!”, the arrow at fault takes the warning tone, the bar tooltip names the reasons; a “Schedule conflicts: N” counter above the timeline breaks them down by kind, and the legend gains “task chain” and “schedule conflict”. Moving is not blocked — the manager decides.
+- **Phase bands.** Work phase segments on the timeline, accented in the tracks of their roles, phase plates in a 76 px header and a month row in Day zoom.
+- **Editing in any role.** Dragging a bar and the assignee list in a row write the dates and the assignee of that track’s role, even when another role is selected in the picker; the YouTrack assignee field follows the same rule as the role table.
+- **Collapsible tracks** until reload; arrows of a collapsed track move to its summary bar.
+- **Past sprints** open read-only with a “History · {sprint} · read-only” chip; a role without a snapshot shows a “no snapshot” track.
+- The Gantt mode and zoom are remembered (in the browser and in the user’s server-side preferences); a shared link to the Gantt node carries “All roles” (`focus=gantt:all`, YouTrack 2026.1+). Settings → Release management → Work phases: the “Used in” row gains a “Gantt” chip.
+
+### Changed
+
+- The Gantt zoom is shared by the “Role” and “All roles” modes.
+
+### Under the hood
+
+- Frontend: new modules `pure/gantt-all-pure.js` (stages and track order, the chain, conflicts, collapsing with arrow re-targeting, arrow styles, the axis of gantt-task-react 0.3.9), `domain/gantt-all-view.js` (the mode’s view model, drag and select for any role, history from snapshots), `react/gantt-all.jsx` and `react/gantt-shared.jsx` shared with the “Role” mode; `savePlanningForRoles` / `rollbackPlanning` in `sprint-controller.js` — history via `POST history?action=assignerSync` with the touched records, the slot strictly after its response, every touched role rolls back on `rev_conflict` and a rights refusal. After the start-up permission check the “All roles” mode re-renders.
+- Backend: the user-preferences allow-list gains `ssp_ganttMode` and `ssp_ganttZoom`; no new endpoints.
+- Gates: `gantt-all-pure` unit tests (mutation cases, the axis checked against the library’s own functions), completeness of 16 keys × 15 locales, goldens for multi-role writes (order, rollback, network failure, assigner with 403, a role without a record), the mode view model (with phases, without phases with a collapsed track, history) and the link focus.
+
+### Known limitations
+
+- Conflicts are computed only for bars with their own dates: an issue without dates spans the sprint and is not checked.
+- Dragging a bar of another role is not covered by the live agent-browser smoke (OOPIF) — goldens cover it; writing the assignee of another role was checked live.
+
 ## [3.46.0] — 2026-09-12
 
 > **Excluded issues with a reason.** #121 (release manager feedback; a separate release). Schema 3.45.0 → 3.46.0 (additive role-item keys `excludeReason` / `excludedAt` / `excludedBy` — present only while the status is “Excluded from sprint”) — **rolling back below 3.46.0 follows `SYNC_PROTOCOL §E.5`**: the old strict validator refuses composition and history writes carrying the new keys.

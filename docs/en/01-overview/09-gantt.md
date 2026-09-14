@@ -4,7 +4,7 @@ The sprint laid out in time: who does what, when, and what depends on what.
 
 ## Where
 
-Rail → **Planning → Gantt chart**. The role is chosen with the **Role** picker at the top — the chart always shows one role.
+Rail → **Planning → Gantt chart**. The role is chosen with the **Role** picker at the top; the **Role | All roles** buttons next to it switch the chart from one role to the whole sprint (see [All roles](#all-roles)).
 
 ![The Gantt chart: task bars across the days of September, a dependency arrow between two tasks, the links legend](../../assets/ov-009-gantt.en.png)
 
@@ -39,3 +39,19 @@ It is the same write channel as the calendar on the distribution screen — the 
 ## The «Refresh from task» button
 
 Re-reads states, colours and links. Needed after something changes in the tracker: the chart does not poll YouTrack on a timer.
+
+## All roles
+
+**All roles** shows the sprint as one picture: a track per role, the role’s issues inside it. The mode and the zoom are remembered; a Share link to this node opens the same mode for the recipient (YouTrack 2026.1 and later).
+
+**A track** has a header with a caret, task and conflict counts and the role’s phase chips; its summary bar spans the track’s issues. The caret collapses the track until reload, and its arrows move to the summary bar. **A task row** carries the key and title, the assignee as a list of the role’s people, and the state with the transition history.
+
+**Task chain.** When one issue is in several roles, its bars are joined by a grey dashed arrow. The role order follows the work phases when phases are on and roles are bound to them (roles without a phase take the built-in order relative to the bound ones); otherwise it is analysis → development → testing.
+
+**Schedule conflicts** are a hint, not a block. “Starts before predecessor ends” — the issue starts no later than the day its predecessor ends, by a dependency link (a predecessor in any role) or along the chain. “Outside the role’s phase” — the bar goes beyond the dates of its role’s phases (only with phases on). A conflicting bar is outlined and marked “!”, with the reasons in its tooltip; a “Schedule conflicts: N” counter sits above the chart. Only issues with their own dates are checked.
+
+**Phase bands** are work phase segments on the timeline, accented in the tracks of their roles; the phase names sit in the header.
+
+**Editing.** A bar of any track can be dragged and the assignee picked in its row: the change is written to that track’s role. The rights are the same as in the Role mode; if the server refuses, the screen returns to the saved state.
+
+**A past sprint** opens read-only with a “History · … · read-only” chip; a role without a snapshot shows a “no snapshot” track.

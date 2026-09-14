@@ -9,12 +9,12 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.46.0",
+  "version": "3.47.0",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
-  "changeNotes": "<b>What&#39;s new since v3.45.0</b><br><br>🚫 <b>Excluded issues with a reason</b> (3.46.0) — switching an issue to “Excluded from sprint” now asks why (required, up to 500 characters); with cross-role exclusion on, the same reason and the same who/when stamp go to every role at once. Excluded issues leave the role table for an “Excluded from sprint (N)” block below it — the reason, who excluded and when, “Return” and “Edit reason” buttons, the full text as a tooltip. The reason shows as a tooltip on the status in sprint history and as an “Exclusion reason” column in the Excel export. The “Hide tasks excluded from sprint” switch is gone. Schema 3.45.0 → 3.46.0, rollback floor 3.46.0.",
+  "changeNotes": "<b>What&#39;s new since v3.45.0</b><br><br>📊 <b>Cross-role Gantt</b> (3.47.0) — an “All roles” switch on the Gantt chart shows the whole sprint at once: one track per role, the task chain between roles by work phases, schedule conflicts (“starts before the predecessor ends”, “outside the role’s phase”) with outlined bars and a counter, phase bands on the timeline. Dates and assignees of any role are edited right on the chart; the mode and zoom are remembered, and a shared link opens the same mode. No schema change.<br><br>🚫 <b>Excluded issues with a reason</b> (3.46.0) — switching an issue to “Excluded from sprint” now asks why (required, up to 500 characters); with cross-role exclusion on, the same reason and the same who/when stamp go to every role at once. Excluded issues leave the role table for an “Excluded from sprint (N)” block below it — the reason, who excluded and when, “Return” and “Edit reason” buttons, the full text as a tooltip. The reason shows as a tooltip on the status in sprint history and as an “Exclusion reason” column in the Excel export. The “Hide tasks excluded from sprint” switch is gone. Schema 3.45.0 → 3.46.0, rollback floor 3.46.0.",
   "widgets": [
     {
       "key": "ssp-main",
