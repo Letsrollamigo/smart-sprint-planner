@@ -106,6 +106,15 @@ test('user-prefs: allowlist покрывает все safeLs-ключи фрон
   assert.strictEqual(up.mergeUserPrefs({}, { ssp_lang: 'en', nope: 'x' }), null);
 });
 
+/* #122 — режим и масштаб Ганта живут в safeLs: фронт шлёт в зеркало любой ssp_-ключ одним батчем с
+   языком и ролью, поэтому ключ без записи в allowlist валит ВЕСЬ батч, а не только себя. */
+test('#122 user-prefs: ключи Ганта в allowlist — батч с ними принят, чужой ключ отвергает батч целиком', () => {
+  assert.deepStrictEqual(up.mergeUserPrefs({ ssp_lang: 'ru' }, { ssp_ganttMode: 'all', ssp_ganttZoom: 'Week', ssp_lastActiveRole: 'devBack' }),
+    { ssp_lang: 'ru', ssp_ganttMode: 'all', ssp_ganttZoom: 'Week', ssp_lastActiveRole: 'devBack' });
+  assert.strictEqual(up.mergeUserPrefs({}, { ssp_ganttMode: 'all', ssp_lang: 'en', ssp_ganttCollapsed: '{}' }), null, 'чужой ключ валит и язык');
+  assert.strictEqual(up.mergeUserPrefs({}, { ssp_ganttZoom: 'Months' }), null, 'кап длины значения');
+});
+
 /* ── строка 27, шаг 2: hard-removal legacy-ключей ────────────────────────── */
 
 const EP_SPRINT = core.ENDPOINTS.find((e) => e.method === 'POST' && e.path === 'sprint-data');

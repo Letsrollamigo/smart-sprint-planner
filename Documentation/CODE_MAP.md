@@ -50,7 +50,7 @@
 
 | Модуль | LOC | Мосты | Назначение |
 |---|---|---|---|
-| `core.js` | 4671 | — | композиционный корень виджета. |
+| `core.js` | 4719 | — | композиционный корень виджета. |
 
 ### domain/ — доменные контроллеры и представления: спринт, история, релизы, бэклог, ёмкость, отчётность, Гант
 
@@ -70,7 +70,8 @@
 | `draft-store.js` | 374 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 343 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
 | `excluded-view.js` | 251 | `__SSP_EXCLUDED_VIEW` | #121 «Исключённые задачи с причиной» (v3.46.0): блок «Исключённые из спринта (N)» под таблицей состава роли (хост #exclHost_<rk> в карточке «Состав… |
-| `gantt-view.js` | 428 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
+| `gantt-all-view.js` | 368 | `__SSP_GANTT_ALL_VIEW` | Сквозной Гант по всем ролям (#122, v3.47.0) — domain-вью режима «Все роли» вкладки «Гант». |
+| `gantt-view.js` | 441 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
 | `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
 | `history-controller.js` | 209 | — | контроллер действий вкладки «История»: правка/ завершение спринта + экспорт/импорт истории в JSON (Фаза 5, зачистка «прочих» — слайс 10). |
 | `history-io.js` | 194 | — | #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) |
@@ -92,9 +93,9 @@
 | `revalidation.js` | 118 | `__SSP_REVALIDATION` | Уровни ре-валидации working copy. |
 | `rolecomposition-view.js` | 1354 | `__SSP_ROLECOMP_VIEW` | Planning-core view — уровень «Роли» вкладки Планирование: accordion-карточки ролей (quick-stats/warn перелимита) и таблица состава роли (Ring Table). |
 | `settings-controller.js` | 228 | `__SSP_SETTINGS_CTRL` | обвязка формы настроек проекта (Фаза 5, зачистка «прочих» — слайс 11). |
-| `share-controller.js` | 228 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
+| `share-controller.js` | 239 | `__SSP_SHARE_CTRL` | #36 Share-URL (deep-link + handoff): чтение share-параметров с init, авто-синк state→URL, сборка shareable-ссылки, копирование по «Поделиться» и фо… |
 | `slot-watch.js` | 56 | `__SSP_SLOT_WATCH` | #114 (строка пула #110 «WebSockets / Long Polling») — подсказка «спринт изменён другим». |
-| `sprint-controller.js` | 654 | `__SSP_SPRINT_CTRL` | контроллеры спринт-CRUD (Фаза 5 слайс 6, домен E1-sprint, последний подслайс E1). |
+| `sprint-controller.js` | 730 | `__SSP_SPRINT_CTRL` | контроллеры спринт-CRUD (Фаза 5 слайс 6, домен E1-sprint, последний подслайс E1). |
 | `sprint-store.js` | 73 | `__SSP_SPRINT_STORE` | доменный стор конфликт-канона спринта (ADR-001, второе применение). |
 | `standup-view.js` | 377 | `__SSP_STANDUP_VIEW` | значение опции «Все роли» (не пересекается с role keys) |
 | `tab-router.js` | 107 | `__SSP_TAB_ROUTER` | Этап 4: planner-wide на всё, что не settings-overlay. |
@@ -113,6 +114,7 @@
 | `display-fields-pure.js` | 183 | `__SSP_DISPLAY_FIELDS_PURE` | 68-8 «Отображаемые поля»: произвольные поля YouTrack проекта дополнительными колонками трёх таблиц задач. |
 | `enum-locale-pure.js` | 23 | `__SSP_ENUM_PURE` | B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority). |
 | `forecast-pure.js` | 123 | `__SSP_FORECAST_PURE` | Side-effect модуль: чистое ядро авто-прогноза дат старта/окончания задач (#40). |
+| `gantt-all-pure.js` | 291 | `__SSP_GANTT_ALL_PURE` | #122 «Сквозной Гант по всем ролям»: чистые правила режима «Все роли» — стадии цепочки и порядок дорожек, неявная цепочка задачи, конфликты сроков, … |
 | `hash-pure.js` | 99 | `__SSP_HASH_PURE` | Чистые hash / equality / diff-утилиты рабочих копий. |
 | `link-roles-pure.js` | 348 | `__SSP_LINK_ROLES_PURE` | эпик #74 фаза 1 «Связи задач»: роли типов связей. |
 | `migrate-pure.js` | 120 | `__SSP_MIGRATE_PURE` | #49 — personalPlanning: единый канон = per-role записи истории (histRec.personalPlanning, single PP). |
@@ -130,7 +132,7 @@
 | `reporting-rollup.js` | 238 | `__SSP_REPORTING_ROLLUP` | #50 B0 «Свод» (контур B, управленческий roll-up). |
 | `reporting-ttm.js` | 412 | `__SSP_REPORTING_TTM` | #50 S3b/S4b. |
 | `scope-drift-pure.js` | 105 | `__SSP_SCOPE_DRIFT_PURE` | #114 — дрейф состава роли после согласования: чистые функции без DOM и стейта. |
-| `share-url-pure.js` | 113 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
+| `share-url-pure.js` | 114 | `__SSP_SHARE_URL_PURE` | Side-effect модуль: чистое ядро deep-link share-URL (#36). |
 | `slot-merge-pure.js` | 143 | `__SSP_SLOT_MERGE_PURE` | #84 «перечитать-и-слить вместо „обновите страницу"». |
 | `sort-pure.js` | 144 | `__SSP_SORT_PURE` | sandboxed write may throw |
 | `sprint-field-pure.js` | 86 | `__SSP_SPRINT_FIELD_PURE` | #88 «ролевое поле спринта». |
@@ -167,7 +169,9 @@
 | `backlog-view.jsx` | 506 | #21 слайс 3 — React-презентация вида «по зонам» бэклога. |
 | `capacity-view.jsx` | 531 | #45 R3 — React-презентация вкладки «Управление ёмкостью» (де-гибридизация #32: настоящий Ring React, как gantt-view/standup-view). |
 | `datepicker-mount.jsx` | 116 | Ring DatePicker bridge for Phase D4. |
-| `gantt-view.jsx` | 354 | Тир D слайс 6, ступень 2 (#39) → #20-v2 (v3.2.0) — React-презентация диаграммы Ганта на vendored gantt-task-react (MIT, SSP_VENDORED.GanttTaskReact… |
+| `gantt-all.jsx` | 343 | #122 «Сквозной Гант по всем ролям» (v3.47.0) — React-презентация режима «Все роли» на vendored gantt-task-react 0.3.9 (SSP_VENDORED.GanttTaskReact). |
+| `gantt-shared.jsx` | 176 | #122 — общее двух React-презентаций Ганта: режим «Роль» (react/gantt-view.jsx) и режим «Все роли» (react/gantt-all.jsx). |
+| `gantt-view.jsx` | 211 | Тир D слайс 6, ступень 2 (#39) → #20-v2 (v3.2.0) — React-презентация диаграммы Ганта на vendored gantt-task-react (MIT, SSP_VENDORED.GanttTaskReact… |
 | `i18n-bridge.jsx` | 37 | i18n bridge for Ring components. |
 | `input-mount.jsx` | 137 | Ring Input bridge for text/number/textarea fields outside Ring Table cells. |
 | `loader-mount.jsx` | 58 | Ring LoaderInline bridge for Phase D3. |
@@ -189,7 +193,7 @@
 | `settings-form.jsx` | 1058 | bespoke SettingsForm для openModal(body.kind:'component'). |
 | `settings-links.jsx` | 213 | секция настроек «Связи задач» (#74). |
 | `settings-permissions.jsx` | 204 | секция «Управление правами» (#71): таблица «группа × полномочие» вместо 12 мультиселектов в трёх разных секциях. |
-| `settings-release.jsx` | 129 | секция «ReleaseSection» формы настроек (раздел «Релиз-менеджмент»). |
+| `settings-release.jsx` | 134 | секция «ReleaseSection» формы настроек (раздел «Релиз-менеджмент»). |
 | `settings-reminders.jsx` | 74 | секция «Уведомления» формы настроек (#112, admin-тир ⚖9; макет design/mirror/reminders/settings.html): мастер-выключатель, частота показа (Ring Rad… |
 | `settings-reporting.jsx` | 486 | секция «ReportingSection» формы настроек. |
 | `settings-rollup.jsx` | 88 | секция «StateRollupSection» формы настроек. |

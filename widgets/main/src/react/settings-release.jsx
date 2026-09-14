@@ -131,7 +131,12 @@ function ReleaseSection(props) {
             ))}
           </tbody>
         </table>
-        <span className="hint" style={hintCls}>{t('phasesSetUsedIn')}: {t('phasesSetUsedInParams')}</span>
+        {/* #122 Д9 — второй потребитель настройки — полосы фаз сквозного Ганта; выключенный тумблер гасит оба чипа */}
+        <span className="hint" style={hintCls}>{t('phasesSetUsedIn')}:{' '}
+          {['phasesSetUsedInParams', 'phasesSetUsedInGantt'].map((k) => (
+            <span key={k} className={'ssp-link-mod' + (v.phasesEnabled ? '' : ' ssp-link-mod--off')} style={{ marginRight: '4px' }}>{t(k)}</span>
+          ))}
+        </span>
       </div>
     </React.Fragment>
   );

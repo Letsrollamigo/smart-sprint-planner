@@ -1,0 +1,102 @@
+{
+  "headerHeight": 50,
+  "editable": false,
+  "historyBadge": "История · GM Hist May 2026 · только чтение",
+  "phaseBands": [],
+  "conflictsCounter": "",
+  "conflictsTip": "Старт раньше конца предшественника: 0 · Вне фазы своей роли: 0. Сдвиг не запрещён — решает руководитель.",
+  "linkLegend": {
+    "types": [],
+    "external": false,
+    "chain": false,
+    "conflict": false
+  },
+  "linksReady": false,
+  "conflictEdges": {},
+  "rows": [
+    {
+      "id": "track:analysis",
+      "label": "Анализ",
+      "tasksText": "2 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": []
+    },
+    {
+      "id": "analysis:GM-H1",
+      "assigneeText": "Не назначен",
+      "options": [],
+      "canAssign": false,
+      "readonly": true,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "analysis:GM-H2",
+      "assigneeText": "Не назначен",
+      "options": [],
+      "canAssign": false,
+      "readonly": true,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "track:devBack",
+      "label": "Разработка Back",
+      "tasksText": "0 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": true,
+      "collapsed": false,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": []
+    },
+    {
+      "id": "track:devFront",
+      "label": "Разработка Front",
+      "tasksText": "0 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": true,
+      "collapsed": false,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": []
+    },
+    {
+      "id": "track:testing",
+      "label": "Тестирование",
+      "tasksText": "1 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": []
+    },
+    {
+      "id": "testing:GM-H5",
+      "assigneeText": "Не назначен",
+      "options": [],
+      "canAssign": false,
+      "readonly": true,
+      "startTs": 1776556800000,
+      "endTs": 1778889600000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    }
+  ]
+}

@@ -1,0 +1,295 @@
+{
+  "headerHeight": 76,
+  "editable": true,
+  "historyBadge": "",
+  "phaseBands": [
+    {
+      "key": "analysis",
+      "label": "Анализ",
+      "startMs": 1779408000000,
+      "endMs": 1779580800000,
+      "roles": [
+        "analysis"
+      ]
+    },
+    {
+      "key": "development",
+      "label": "Разработка",
+      "startMs": 1779667200000,
+      "endMs": 1780185600000,
+      "roles": [
+        "devBack",
+        "devFront"
+      ]
+    },
+    {
+      "key": "techTest",
+      "label": "Тех.тест",
+      "startMs": 1780272000000,
+      "endMs": 1780617600000,
+      "roles": [
+        "testing"
+      ]
+    }
+  ],
+  "conflictsCounter": "Конфликтов сроков: 3",
+  "conflictsTip": "Старт раньше конца предшественника: 1 · Вне фазы своей роли: 2. Сдвиг не запрещён — решает руководитель.",
+  "linkLegend": {
+    "types": [],
+    "external": false,
+    "chain": true,
+    "conflict": true
+  },
+  "linksReady": false,
+  "conflictEdges": {
+    "analysis:GM-10→devBack:GM-10": true
+  },
+  "rows": [
+    {
+      "id": "track:analysis",
+      "label": "Анализ",
+      "tasksText": "4 задач",
+      "conflictsText": "1 конфликтов",
+      "chips": [
+        "Анализ"
+      ],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "analysis:GM-1",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1779580800000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "analysis:GM-2",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "analysis:GM-3",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "analysis:GM-10",
+      "assigneeText": "GM User One",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1779667200000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": [
+        "22.05–25.05 — вне фаз роли «Анализ» (Анализ)"
+      ]
+    },
+    {
+      "id": "track:devBack",
+      "label": "Разработка Back",
+      "tasksText": "2 задач",
+      "conflictsText": "1 конфликтов",
+      "chips": [
+        "Разработка"
+      ],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "devBack:GM-10",
+      "assigneeText": "gm_user_2",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779667200000,
+      "endTs": 1779840000000,
+      "dependencies": [
+        "analysis:GM-10"
+      ],
+      "depTypes": {
+        "analysis:GM-10": "__chain"
+      },
+      "conflicts": [
+        "Начинается 25.05 — раньше конца GM-10 в роли «Анализ» (25.05)"
+      ]
+    },
+    {
+      "id": "devBack:GM-11",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "track:devFront",
+      "label": "Разработка Front",
+      "tasksText": "1 задач",
+      "conflictsText": "",
+      "chips": [
+        "Разработка"
+      ],
+      "nosnap": true,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "devFront:GM-20",
+      "assigneeText": "Не назначен",
+      "options": [],
+      "canAssign": false,
+      "readonly": true,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "track:testing",
+      "label": "Тестирование",
+      "tasksText": "2 задач",
+      "conflictsText": "1 конфликтов",
+      "chips": [
+        "Тех.тест"
+      ],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "testing:GM-5",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779926400000,
+      "endTs": 1780444800000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": [
+        "28.05–3.06 — вне фаз роли «Тестирование» (Тех.тест)"
+      ]
+    },
+    {
+      "id": "testing:GM-6",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    }
+  ]
+}

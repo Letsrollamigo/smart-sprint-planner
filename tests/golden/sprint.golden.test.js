@@ -683,3 +683,119 @@ test('#100: обычный отказ (не rev_conflict) откат НЕ зап
     { 'GM-1': { assignee: 'srv_user' }, 'GM-2': { assignee: 'local_user' } },
     'сетевой сбой — не расхождение с сервером: правку не выбрасываем');
 });
+
+/* ════ #122 — запись personalPlanning нескольких ролей (сквозной Гант, ⚖12 «существующий канал») ════
+   История — одним POST history?action=assignerSync со списком записей (full-replace гейтится validator),
+   слот — строго после ответа истории (иначе авто-снапшот обёртки apiPost ловит 409 на протухшем baseRev),
+   отказ по расхождению или правам откатывает все роли списка и перерисовывает Гант. */
+function planningFixture(gm) {
+  fx.applyBaseState(gm);
+  stubDraft(gm);
+  const renders = stubRenders(gm);
+  renders.gantt = 0;
+  gm.set({ renderGanttChart: function () { renders.gantt += 1; } });
+  const sid = fx.SPRINT_ID;
+  const analysisPrev = { roleKey: 'analysis', resourcesByAssignee: {}, taskAssignments: { 'GM-1': { assignee: 'u_a', dateStart: 100, dateEnd: 200 } } };
+  const devPrev = { roleKey: 'devBack', resourcesByAssignee: {}, taskAssignments: { 'GM-1': { assignee: 'u_d', dateStart: 300, dateEnd: 400 } } };
+  const recA = { sprintId: sid + '_analysis', roleKey: 'analysis', personalPlanning: JSON.parse(JSON.stringify(analysisPrev)) };
+  const recD = { sprintId: sid + '_devBack', roleKey: 'devBack', personalPlanning: JSON.parse(JSON.stringify(devPrev)) };
+  gm.set({ _history: [recA, recD], _currentSprintRoleRec: recD, _currentRolePP: JSON.parse(JSON.stringify(devPrev)),
+    _isEditor: true, _isAssigner: false });
+  return { renders: renders, recA: recA, recD: recD, analysisPrev: analysisPrev, devPrev: devPrev };
+}
+
+/* Мутация, как её делает сквозной вид: prev-снимки ДО правки, чужая роль — в записи истории, текущая — в живом PP. */
+function mutateTwoRoles(gm, f) {
+  const touched = [
+    { rk: 'analysis', prevPP: JSON.parse(JSON.stringify(f.recA.personalPlanning)) },
+    { rk: 'devBack', prevPP: JSON.parse(JSON.stringify(f.recD.personalPlanning)) },
+  ];
+  f.recA.personalPlanning.taskAssignments['GM-1'].dateEnd = 250;
+  gm.get('_currentRolePP').taskAssignments['GM-1'].dateStart = 260;
+  return touched;
+}
+
+test('#122 savePlanningForRoles: история одним assignerSync с двумя записями, слот ПОСЛЕ её ответа с картой обеих ролей', async () => {
+  const { gm } = createHost();
+  const f = planningFixture(gm);
+  const log = [];
+  let releaseHistory = null;
+  gm.set({ apiPost: function (path, body, query) {
+    log.push({ path: path, query: query ? JSON.parse(JSON.stringify(query)) : null, body: JSON.parse(JSON.stringify(body)) });
+    if (path === 'history') return new Promise(function (r) { releaseHistory = function () { r({ success: true, rev: 5 }); }; });
+    return Promise.resolve({ success: true });
+  } });
+  const done = gm.call('savePlanningForRoles', mutateTwoRoles(gm, f));
+  await flush();
+  assert.deepStrictEqual(log.map((e) => e.path), ['history'], 'слот не уходит, пока история не ответила');
+  assert.deepStrictEqual(log[0].query, { action: 'assignerSync' });
+  assert.deepStrictEqual(log[0].body.history.map((h) => h.sprintId), [fx.SPRINT_ID + '_analysis', fx.SPRINT_ID + '_devBack']);
+  assert.strictEqual(log[0].body.history[0].personalPlanning.taskAssignments['GM-1'].dateEnd, 250, 'правка чужой роли');
+  assert.strictEqual(log[0].body.history[1].personalPlanning.taskAssignments['GM-1'].dateStart, 260, 'живой PP текущей роли перенесён в запись');
+  releaseHistory();
+  assert.strictEqual(await done, true);
+  assert.deepStrictEqual(log.map((e) => e.path), ['history', 'sprint-data']);
+  assert.strictEqual(log[1].query, null, 'редактор пишет слот полным телом — со слиянием #84');
+  assert.deepStrictEqual(Object.keys(log[1].body.sprint.personalPlanning).sort(), ['analysis', 'devBack']);
+  assert.strictEqual(log[1].body.sprint.personalPlanning.analysis.taskAssignments['GM-1'].dateEnd, 250);
+  assert.strictEqual(f.renders.gantt, 0, 'успешная запись Гант не перерисовывает — это делает вызывающий');
+});
+
+test('#122 savePlanningForRoles: rev_conflict на слоте откатывает обе роли, живой PP и карту слота; Гант перерисован', async () => {
+  const { gm } = createHost();
+  const f = planningFixture(gm);
+  gm.set({ apiPost: function (path) {
+    return path === 'history' ? Promise.resolve({ success: true }) : Promise.reject(new Error('rev_conflict'));
+  } });
+  const touched = mutateTwoRoles(gm, f);
+  assert.notDeepStrictEqual(f.recA.personalPlanning, f.analysisPrev, 'предусловие: мутация чужой роли сделана');
+  assert.strictEqual(await gm.call('savePlanningForRoles', touched), false);
+  assert.deepStrictEqual(f.recA.personalPlanning, f.analysisPrev, 'чужая роль откачена');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(f.recD.personalPlanning)), f.devPrev, 'запись текущей роли откачена');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(gm.get('_currentRolePP'))), f.devPrev, 'живой PP откачен');
+  assert.strictEqual(gm.get('_sprint').personalPlanning.analysis.taskAssignments['GM-1'].dateEnd, 200, 'карта слота пересобрана из отката');
+  assert.strictEqual(f.renders.gantt, 1, 'Гант перерисован');
+  assert.strictEqual(f.renders.taskTable, 1);
+});
+
+test('#122 savePlanningForRoles: сетевой сбой — не расхождение, правку не выбрасываем', async () => {
+  const { gm } = createHost();
+  const f = planningFixture(gm);
+  gm.set({ apiPost: function () { return Promise.reject(new Error('network_down')); } });
+  assert.strictEqual(await gm.call('savePlanningForRoles', mutateTwoRoles(gm, f)), false);
+  assert.strictEqual(f.recA.personalPlanning.taskAssignments['GM-1'].dateEnd, 250);
+  assert.strictEqual(gm.get('_currentRolePP').taskAssignments['GM-1'].dateStart, 260);
+  assert.strictEqual(f.renders.gantt, 0);
+});
+
+test('#122 savePlanningForRoles: назначающий без прав редактора — оба запроса assignerSync; 403 откатывает с тостом', async () => {
+  const { gm } = createHost();
+  const f = planningFixture(gm);
+  const log = [];
+  gm.set({ _isEditor: false, _isAssigner: true, apiPost: function (path, body, query) {
+    log.push(JSON.parse(JSON.stringify({ path: path, query: query || null, keys: Object.keys((body && body.sprint) || {}) })));
+    return Promise.resolve({ success: true });
+  } });
+  assert.strictEqual(await gm.call('savePlanningForRoles', mutateTwoRoles(gm, f)), true);
+  assert.deepStrictEqual(log, [
+    { path: 'history', query: { action: 'assignerSync' }, keys: [] },
+    { path: 'sprint-data', query: { action: 'assignerSync' }, keys: ['personalPlanning'] },
+  ]);
+
+  const h2 = createHost();
+  const f2 = planningFixture(h2.gm);
+  const toasts = recordToasts(h2.gm);
+  h2.gm.set({ apiPost: function () { return Promise.reject(new Error('assigner_rights_required')); } });
+  assert.strictEqual(await h2.gm.call('savePlanningForRoles', mutateTwoRoles(h2.gm, f2)), false);
+  assert.deepStrictEqual(f2.recA.personalPlanning, f2.analysisPrev, 'отказ по правам откатывает');
+  assert.strictEqual(f2.renders.gantt, 1);
+  assert.deepStrictEqual(toasts.map((t) => t.type), ['warn']);
+});
+
+test('#122 savePlanningForRoles: роль без записи истории в спринте — ничего не пишется', async () => {
+  const { gm } = createHost();
+  planningFixture(gm);
+  const log = stubApiPost(gm);
+  assert.strictEqual(await gm.call('savePlanningForRoles', [{ rk: 'testing', prevPP: undefined }]), false);
+  assert.deepStrictEqual(log, []);
+});

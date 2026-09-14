@@ -2470,6 +2470,36 @@
     .gantt-role-selector label { white-space: nowrap; }
     .gantt-role-selector select { flex: 0 0 240px; }
     .readonly-mode #ganttSyncFromYtBtn { display: none; }
+    /* #122 — Гант «Все роли» (Д1–Д6): переключатель режима в карточке роли, плашка истории, строка масштаба с
+       легендой и счётчиком конфликтов, левый список 380 px (строка 70 px в три строки, дорожка-группа), тултип бара.
+       Только переменные темы; ниже 1330 строка масштаба и карточка роли переносятся (flex-wrap). */
+    .gantt-role-selector { flex-wrap: wrap; }
+    .ssp-gantt-mode { display: inline-flex; gap: 2px; }
+    .ssp-gantt-all__hist { font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; padding: 1px 8px; white-space: nowrap; }
+    .ssp-gantt-all__scale { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0 0 8px; }
+    .ssp-gantt-all__zoom { display: flex; gap: 2px; }
+    .ssp-gantt-all__conflicts { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--warn); white-space: nowrap; }
+    .ssp-gantt-all__list { border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .ssp-gantt-all__list-h { box-sizing: border-box; padding: 6px 10px; font-weight: 600; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-bottom: none; display: flex; align-items: flex-end; }
+    .ssp-gantt-all__row, .ssp-gantt-all__track { box-sizing: border-box; padding: 4px 10px; overflow: hidden; border-top: 1px solid var(--border); border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+    .ssp-gantt-all__row { background: var(--surface); }
+    .ssp-gantt-all__track { background: var(--surface2); font-size: 12px; }
+    .ssp-gantt-all__line { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+    .ssp-gantt-all__key { font-weight: 600; font-size: 12px; flex-shrink: 0; white-space: nowrap; }
+    .ssp-gantt-all__title { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .ssp-gantt-all__assignee { width: 100%; min-width: 0; height: 20px; font-size: 11px; padding: 0 4px; }
+    .ssp-gantt-all__who { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .ssp-gantt-all__caret { border: 0; background: none; padding: 0; width: 14px; flex: none; color: var(--muted); font-size: 11px; line-height: 1; cursor: pointer; }
+    .ssp-gantt-all__role { font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .ssp-gantt-all__track--nosnap .ssp-gantt-all__role { color: var(--muted); font-weight: 500; }
+    .ssp-gantt-all__cnt { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .ssp-gantt-all__cnt-warn { color: var(--warn); }
+    .ssp-gantt-all__chips { display: flex; gap: 4px; padding-left: 20px; overflow: hidden; }
+    .ssp-gantt-all__phase-chip { font-size: 10px; font-weight: 500; color: var(--primary); background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; line-height: 16px; white-space: nowrap; }
+    .ssp-gantt-all__tip { background: var(--surface, #fff); color: var(--text); border: 1px solid var(--border, #dfe3e8); border-radius: 6px; padding: 8px 10px; font-size: 12px; box-shadow: 0 3px 6px rgba(0,0,0,.16); max-width: 300px; }
+    .ssp-gantt-all__tip-key { font-weight: 600; margin-bottom: 2px; }
+    .ssp-gantt-all__tip-muted { color: var(--muted); margin-top: 2px; }
+    .ssp-gantt-all__tip-warn { color: var(--warn); margin-top: 4px; }
     /* v1.9.9 — было: .readonly-mode .gantt-cell { pointer-events: none; }
        Снято: pointer-events:none блокировало event-targeting → браузер обходил
        cell и доставлял click на <table>; страдал также dblclick (color-toggle),
@@ -3039,6 +3069,12 @@
     <div class="card gantt-role-selector">
       <label for="ganttRoleSel" data-i18n="lblGanttRole">Роль:</label>
       <select id="ganttRoleSel" class="app-select ring-select-button"></select>
+      <!-- #122 Д1 — режим вкладки: «Роль» (как раньше) | «Все роли» (сквозной вид); в «Все роли» селектор гаснет -->
+      <div class="ssp-gantt-mode" id="ganttModeBtns" role="group">
+        <button type="button" class="ring-button-button ring-button-block ring-button-heightS" data-ssp-gantt-mode="role" data-i18n="ganttModeRole">Роль</button>
+        <button type="button" class="ring-button-button ring-button-block ring-button-heightS" data-ssp-gantt-mode="all" data-i18n="ganttModeAll">Все роли</button>
+      </div>
+      <span id="ganttHistoryBadge" class="ssp-gantt-all__hist hidden"></span>
     </div>
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">

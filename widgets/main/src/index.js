@@ -32,6 +32,7 @@ import './pure/task-filter-pure.js';   /* 118-1в / 118-3 — фильтры т�
 import './pure/backlog-vm-pure.js';
 import './pure/capacity-pure.js';
 import './pure/forecast-pure.js';
+import './pure/gantt-all-pure.js';   /* #122 — режим Ганта «Все роли»: стадии, цепочка, конфликты, сворачивание, ось либы */
 import './pure/release-tree-pure.js';
 import './pure/reporting-pure.js';
 import './pure/reporting-b-pure.js';
@@ -77,6 +78,7 @@ import './domain/header-view.js';
 import './domain/slot-watch.js';   /* #114 — подсказка «спринт изменён другим» по rev при возврате фокуса */
 import './domain/reminders-controller.js';   /* #112 — GET reminders, колокольчик, модалка, «Перейти» */
 import './domain/gantt-view.js';
+import './domain/gantt-all-view.js';   /* #122 — режим Ганта «Все роли»: дорожки ролей, цепочка, конфликты, правка любой роли */
 import './domain/backlog-loader.js';
 import './domain/backlog-view.js';
 import './domain/backlog-assign.js';
@@ -110,6 +112,7 @@ import './react/tabs-mount.jsx';
 import './react/table-mount.jsx';
 import './react/standup-view.jsx';
 import './react/gantt-view.jsx';
+import './react/gantt-all.jsx';   /* #122 — React режима Ганта «Все роли» (общее с Гантом роли — gantt-shared.jsx) */
 import './react/backlog-view.jsx';
 import './react/backlog-assign.jsx';
 import './react/release-create.jsx';

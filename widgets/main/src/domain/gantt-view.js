@@ -43,6 +43,8 @@ var _ganttLinks = { key: '', loading: false, data: null };
 function _langOf(deps) { return (deps && typeof deps.getLang === 'function' && deps.getLang()) || 'en'; }
 
 function resetLinksCache() { _ganttLinks = { key: '', loading: false, data: null }; }
+/* #122 — данные связей по ключу для режима «Все роли» (null — ещё не загружены или ключ другой). */
+function linksDataFor(key) { return (_ganttLinks.key === key) ? _ganttLinks.data : null; }
 
 const GANTT_LINK_CHUNK = 50;
 const GANTT_LINK_FIELDS = 'idReadable,links(direction,linkType(name,sourceToTarget,targetToSource),issues(idReadable))';
@@ -378,6 +380,9 @@ function renderGanttChart(deps) {
   var container = document.getElementById('ganttContainer');
   var emptyEl   = document.getElementById('ganttEmpty');
   var mount = (typeof window !== 'undefined' && window.__SSP_GANTT_MOUNT) || null;
+  /* #122 — корень режима «Все роли» на том же контейнере демонтируется при возврате в «Роль». */
+  var allMount = (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_MOUNT) || null;
+  if (container && allMount && typeof allMount.unmountAt === 'function') allMount.unmountAt(container);
   if (!deps.state.getCurrentSprintRoleRec() || !deps.state.getCurrentRolePP()) {
     if (emptyEl) emptyEl.style.display = '';
     return;
@@ -408,6 +413,8 @@ function renderGanttChart(deps) {
   /* #20-v2 — контракты gantt-task-react: drag дат + реассайн D46 двойным кликом по бару
      (одиночный клик у либы = select; прежний cell-click недоступен — ячеек больше нет). */
   vm.onDateChange = _makeGanttDateChange(deps);
+  vm.zoom = (typeof deps.getGanttZoom === 'function') ? deps.getGanttZoom() : 'Day';   /* #122 — масштаб запоминается */
+  vm.onZoom = deps.setGanttZoom;
   vm.onBarDoubleClick = function (issueId) { cellClick(issueId, null); };
   vm.onAfterRender = function () {
     /* #74 фаза 2 — связи: старт после коммита, как история состояний. Внутри guard
@@ -425,8 +432,12 @@ function renderGanttChart(deps) {
    делегатор монолита в _ytApiDeps). Поверх React-дерева легитимен: апдейты
    точечные, каждый новый рендер даёт свежие плейсхолдеры и новый фетч-пинок. */
 function _updateGanttHistDOM(container, issueId, hist, deps) {
-  var sinceEl = container.querySelector('[data-gantt-hist-since="' + issueId + '"]');
-  var prevEl  = container.querySelector('[data-gantt-hist-prev="'  + issueId + '"]');
+  /* #122 — в режиме «Все роли» задача из нескольких ролей даёт несколько строк: заполняются все. */
+  var sinceEls = container.querySelectorAll('[data-gantt-hist-since="' + issueId + '"]');
+  var prevEls  = container.querySelectorAll('[data-gantt-hist-prev="'  + issueId + '"]');
+  for (var i = 0; i < Math.max(sinceEls.length, prevEls.length); i++) _fillGanttHist(sinceEls[i], prevEls[i], hist, deps);
+}
+function _fillGanttHist(sinceEl, prevEl, hist, deps) {
   if (sinceEl) {
     sinceEl.textContent = hist.sinceTs ? deps.T('ganttStateSince').replace('{date}', deps.fmtGanttDate(hist.sinceTs)) : '';
   }
@@ -447,6 +458,8 @@ function _updateGanttHistDOM(container, issueId, hist, deps) {
 const api = {
   renderGanttChart: renderGanttChart,
   resetLinksCache: resetLinksCache,   /* 68-8 ⚖6 — ретрай из «Обновить из задачи» */
+  loadGanttLinks: _loadGanttLinks,    /* #122 — один фетч связей по задачам всех ролей */
+  linksDataFor: linksDataFor,
   _buildGanttVm: _buildGanttVm,
   _updateGanttHistDOM: _updateGanttHistDOM,
 };

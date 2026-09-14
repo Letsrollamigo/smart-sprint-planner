@@ -974,3 +974,152 @@ test('golden: #114 — бейдж дрейфа в шапке: сумма по р
   const noDrift = headerOut(document).badge;
   checkJsonSnapshot('widget-header-drift-114', { withDrift: withDrift, noDrift: noDrift });
 });
+
+/* ── #122 «Сквозной Гант»: режим «Все роли» — оракул vm-контракт «gantt-all-view.js → __SSP_GANTT_ALL_MOUNT»
+   (стаб харнесса стэшит vm на #ganttContainer.__sspGanttAllVm). Дорожки в порядке стадий фаз, составные id,
+   цепочка и конфликты в dependencies, полосы фаз и шапка 76; без фаз — шапка 50; свёрнутая дорожка забирает
+   стрелки; история — из снимков только чтение; правка любой роли идёт через savePlanningForRoles. Имена
+   тестов с renderGanttChart — второй прогон под TZ=America/Los_Angeles сверяет тот же снимок. ── */
+const GA_DAY = 86400000;
+function ganttAllVm(document) { return document.getElementById('ganttContainer').__sspGanttAllVm; }
+const plain = (v) => JSON.parse(JSON.stringify(v));
+
+function ganttAllState(gm, over) {
+  fx.applyBaseState(gm);
+  const S = fx.DATE_START, sid = fx.SPRINT_ID;
+  const rec = (rk, ta) => ({ sprintId: sid + '_' + rk, roleKey: rk, name: 'GM Sprint June 2026', dateStart: S, dateEnd: fx.DATE_END,
+    items: [], personalPlanning: { roleKey: rk, resourcesByAssignee: { gm_user_1: { assigneeName: 'GM User One' }, gm_user_2: {} }, taskAssignments: ta } });
+  const ri = fx.buildRoleItems();
+  ri.analysis.push(Object.assign({}, ri.devBack[0]));   /* GM-10 — и в анализе, и в разработке: цепочка */
+  const hist = [
+    rec('analysis', { 'GM-1': { dateStart: S, dateEnd: S + 2 * GA_DAY },
+      'GM-10': { assignee: 'gm_user_1', assigneeName: 'GM User One', dateStart: S, dateEnd: S + 3 * GA_DAY } }),
+    rec('devBack', { 'GM-10': { assignee: 'gm_user_2', dateStart: S + 3 * GA_DAY, dateEnd: S + 5 * GA_DAY } }),
+    rec('testing', { 'GM-5': { dateStart: S + 6 * GA_DAY, dateEnd: S + 12 * GA_DAY } }),
+  ];   /* devFront — задачи есть, записи истории нет (§О16) */
+  const settings = Object.assign(fx.buildSettings(), { phasesEnabled: true,
+    phaseRoles: { analysis: ['analysis'], development: ['devBack', 'devFront'], techTest: ['testing'] } });
+  const sprint = Object.assign(fx.buildSprint(), { phases: {
+    analysis: { dateStart: S, dateEnd: S + 2 * GA_DAY }, development: { dateStart: S + 3 * GA_DAY, dateEnd: S + 9 * GA_DAY },
+    techTest: { dateStart: S + 10 * GA_DAY, dateEnd: S + 14 * GA_DAY } } });
+  gm.set(Object.assign({ _settings: settings, _sprint: sprint, _roleItems: ri, _history: hist,
+    _currentSprintRoleRec: hist[1], _currentRolePP: plain(hist[1].personalPlanning), _isEditor: true, _ganttMode: 'all' }, over || {}));
+  return hist;
+}
+
+function projectGanttAll(vm) {
+  return plain({
+    headerHeight: vm.headerHeight, editable: vm.editable, historyBadge: vm.historyBadge, phaseBands: vm.phaseBands,
+    conflictsCounter: vm.conflictsCounter, conflictsTip: vm.conflictsTip, linkLegend: vm.linkLegend,
+    linksReady: vm.linksReady, conflictEdges: vm.conflictEdges,
+    rows: vm.rows.map((r) => (r.kind === 'track'
+      ? { id: r.id, label: r.label, tasksText: r.tasksText, conflictsText: r.conflictsText, chips: r.chips,
+        nosnap: r.nosnap, collapsed: r.collapsed, startTs: r.startTs, endTs: r.endTs, dependencies: r.dependencies }
+      : { id: r.id, assigneeText: r.assigneeText, options: r.options, canAssign: r.canAssign, readonly: r.readonly,
+        startTs: r.startTs, endTs: r.endTs, dependencies: r.dependencies, depTypes: r.depTypes, conflicts: r.conflicts })),
+  });
+}
+
+test('golden: renderGanttChart — «Все роли» (#122): дорожки по стадиям фаз, цепочка и конфликты, полосы фаз, шапка 76', () => {
+  const { gm, document } = createHost();
+  ganttAllState(gm);
+  gm.call('renderGanttChart');
+  const vm = ganttAllVm(document);
+  assert.ok(vm, 'vm режима «Все роли» смонтирован');
+  assert.strictEqual(document.getElementById('ganttContainer').__sspGanttVm, undefined, 'Гант роли не монтировался');
+  const p = projectGanttAll(vm);
+  assert.deepStrictEqual(p.rows.filter((r) => r.id.indexOf('track:') === 0).map((r) => r.id),
+    ['track:analysis', 'track:devBack', 'track:devFront', 'track:testing']);
+  const dev10 = p.rows.find((r) => r.id === 'devBack:GM-10');
+  assert.deepStrictEqual(dev10.dependencies, ['analysis:GM-10']);
+  assert.strictEqual(dev10.depTypes['analysis:GM-10'], '__chain');
+  assert.strictEqual(dev10.conflicts.length, 1, 'разработка стартует в день конца анализа — конфликт цепочки');
+  assert.strictEqual(p.rows.find((r) => r.id === 'testing:GM-5').conflicts.length, 1, 'тестирование раньше фазы «Тех. тест»');
+  const front = p.rows.find((r) => r.id === 'devFront:GM-20');
+  assert.ok(front.readonly && !front.canAssign, 'роль без записи истории — только чтение');
+  assert.ok(p.rows.find((r) => r.id === 'analysis:GM-1').canAssign, 'редактор меняет исполнителя чужой роли');
+  assert.strictEqual(p.headerHeight, 76);
+  assert.deepStrictEqual(p.conflictEdges, { 'analysis:GM-10→devBack:GM-10': true });
+  checkJsonSnapshot('gantt-all-phases', p);
+});
+
+test('golden: renderGanttChart — «Все роли» (#122) без фаз: шапка 50, полос нет; свёрнутая дорожка забирает стрелки', () => {
+  const { gm, document } = createHost();
+  ganttAllState(gm);
+  gm.set({ _settings: Object.assign(gm.get('_settings'), { phasesEnabled: false }) });
+  gm.call('renderGanttChart');
+  const vm = ganttAllVm(document);
+  assert.strictEqual(vm.headerHeight, 50);
+  assert.deepStrictEqual(plain(vm.phaseBands), []);
+  assert.ok(vm.rows.some((r) => r.id === 'analysis:GM-10'), 'предусловие: дорожка анализа развёрнута');
+  vm.onToggle('track:analysis');
+  const p = projectGanttAll(ganttAllVm(document));
+  assert.ok(!p.rows.some((r) => r.id.indexOf('analysis:') === 0), 'задачи анализа спрятаны');
+  assert.deepStrictEqual(p.rows.find((r) => r.id === 'devBack:GM-10').dependencies, ['track:analysis']);
+  assert.deepStrictEqual(p.conflictEdges, { 'track:analysis→devBack:GM-10': true }, 'виновник конфликта переехал на сводную полосу');
+  assert.strictEqual(p.rows.find((r) => r.id === 'track:analysis').collapsed, true);
+  checkJsonSnapshot('gantt-all-nophases-collapsed', p);
+});
+
+test('golden: renderGanttChart — «Все роли» (#122) по истории: снимки ролей только чтение, роли без снимка', () => {
+  const { gm, document } = createHost();
+  fx.applyBaseState(gm);
+  gm.set({ _currentSprintId: fx.HIST_SPRINT_ID, _ganttMode: 'all', _currentSprintRoleRec: null, _currentRolePP: null, _isEditor: true });
+  document.getElementById('tab-gantt').classList.add('readonly-mode');
+  gm.call('renderGanttChart');
+  const vm = ganttAllVm(document);
+  assert.strictEqual(vm.editable, false);
+  assert.ok(vm.rows.filter((r) => r.kind === 'bar').every((r) => r.readonly && !r.canAssign), 'все строки только чтение');
+  const badge = document.getElementById('ganttHistoryBadge');
+  assert.ok(vm.historyBadge.indexOf('GM Hist May 2026') >= 0);
+  assert.strictEqual(badge.textContent, vm.historyBadge);
+  assert.ok(!badge.classList.contains('hidden'), 'плашка истории видна');
+  checkJsonSnapshot('gantt-all-history', projectGanttAll(vm));
+});
+
+test('#122 «Все роли»: drag и select пишут через savePlanningForRoles с prev-снимком; заморозка #100, роль без записи и не-редактор — без записи', () => {
+  const { gm, document, window } = createHost();
+  const hist = ganttAllState(gm);
+  const S = fx.DATE_START;
+  const calls = [], yt = [], toasts = [];
+  gm.set({
+    savePlanningForRoles: function (t) { calls.push(plain(t)); return Promise.resolve(true); },
+    updateIssueAssigneeField: function (id, login, rk) { yt.push([id, login, rk]); },
+    toast: function (msg, type) { toasts.push(type || null); },
+  });
+  const analysisBefore = plain(hist[0].personalPlanning);
+  gm.call('renderGanttChart');
+  ganttAllVm(document).onDateChange('analysis:GM-1', S + GA_DAY, S + 2 * GA_DAY);
+  assert.deepStrictEqual(calls, [[{ rk: 'analysis', prevPP: analysisBefore }]], 'prev-снимок снят ДО мутации');
+  assert.strictEqual(hist[0].personalPlanning.taskAssignments['GM-1'].dateStart, S + GA_DAY, 'канон чужой роли изменён');
+
+  ganttAllVm(document).onDateChange('devBack:GM-10', S + 4 * GA_DAY, S + 6 * GA_DAY);
+  assert.strictEqual(gm.get('_currentRolePP').taskAssignments['GM-10'].dateStart, S + 4 * GA_DAY, 'текущая роль — в живом PP');
+  assert.strictEqual(calls[1][0].rk, 'devBack');
+
+  const container = document.getElementById('ganttContainer');
+  const sel = document.createElement('select');
+  sel.className = 'ssp-gantt-all__assignee';
+  sel.setAttribute('data-issue', 'GM-1'); sel.setAttribute('data-rk', 'analysis');
+  const opt = document.createElement('option'); opt.value = 'gm_user_1'; sel.appendChild(opt);
+  container.appendChild(sel);
+  sel.value = 'gm_user_1';
+  sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+  assert.strictEqual(hist[0].personalPlanning.taskAssignments['GM-1'].assignee, 'gm_user_1');
+  assert.strictEqual(hist[0].personalPlanning.taskAssignments['GM-1'].assigneeName, 'GM User One');
+  assert.deepStrictEqual(plain(yt), [['GM-1', 'gm_user_1', 'analysis']]);
+  assert.strictEqual(calls.length, 3);
+
+  document.body.dataset.sspRevConflict = '1';
+  ganttAllVm(document).onDateChange('analysis:GM-1', S + 5 * GA_DAY, S + 6 * GA_DAY);
+  assert.strictEqual(calls.length, 3, 'заморозка #100 — записи нет');
+  assert.strictEqual(hist[0].personalPlanning.taskAssignments['GM-1'].dateStart, S + GA_DAY, 'канон не тронут');
+  assert.deepStrictEqual(toasts, ['warn']);
+  delete document.body.dataset.sspRevConflict;
+
+  ganttAllVm(document).onDateChange('devFront:GM-20', S, S + GA_DAY);
+  assert.strictEqual(calls.length, 3, 'роль без записи истории — правки нет');
+  gm.set({ _isEditor: false });
+  ganttAllVm(document).onDateChange('analysis:GM-1', S + 7 * GA_DAY, S + 8 * GA_DAY);
+  assert.strictEqual(calls.length, 3, 'не-редактор даты не двигает');
+});

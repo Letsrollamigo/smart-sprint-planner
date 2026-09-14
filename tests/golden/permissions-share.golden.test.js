@@ -544,3 +544,26 @@ test('golden: share #124 — узел из body-класса, когда в де
   document.body.classList.replace('ssp-dashnode-capacity', 'ssp-dashnode-release-history');
   assert.ok(gm.call('_buildShareHref').includes('app_node=releases.history'), 'узел попал в ссылку');
 });
+
+test('golden: share #122 — focus=gantt:all: разбор ссылки, сборка только на узле Ганта в режиме «Все роли», применение ставит режим', async () => {
+  const { gm, document } = createHost();
+  stubNav(gm, '?projectKey=GM&node=gantt&focus=gantt:all');
+  const parsed = await gm.call('_readShareParams');
+  assert.equal(parsed.focus, 'gantt:all');
+  assert.equal(parsed.node, 'gantt');
+  gm.set({ _ytBase: 'http://localhost:8080/', _activeProjectKey: 'GM', _currentSprintId: 's-1', _ganttMode: 'all' });
+  treeFixture(document, 'gantt');
+  assert.match(gm.call('_buildShareHref'), /app_focus=gantt%3Aall/);
+  gm.set({ _ganttMode: 'role' });
+  assert.doesNotMatch(gm.call('_buildShareHref'), /app_focus/, 'режим «Роль» — фокуса нет');
+  document.querySelector('.ssp-tree').remove();
+  treeFixture(document, 'planning-roles');
+  gm.set({ _ganttMode: 'all' });
+  assert.doesNotMatch(gm.call('_buildShareHref'), /app_focus/, 'не узел Ганта — фокуса нет');
+
+  document.querySelector('.ssp-tree').remove();
+  treeFixture(document, 'gantt');
+  gm.set({ _ganttMode: 'role', refreshGanttForCurrentSprint: function () {} });
+  gm.call('_applyShareFocus', 'gantt:all');
+  assert.equal(gm.get('_ganttMode'), 'all', 'ссылка включила режим «Все роли»');
+});

@@ -159,6 +159,83 @@
     }
   }
 
+  /* ── #122 — запись personalPlanning нескольких ролей (сквозной Гант, ⚖12 «существующий канал») ──
+     touched = [{ rk, prevPP }]: prevPP — канон роли, снятый ВЫЗЫВАЮЩИМ до мутации (правило #100);
+     мутация уже сделана (текущая роль — в живом PP, чужая — в её записи истории). История — ТОЛЬКО
+     ?action=assignerSync: основная ветка full-replace гейтится validator, а у чужих ролей нет хвоста
+     авто-снапшота, которым доезжает PP редактора без прав валидатора. Слот — строго ПОСЛЕ ответа
+     истории: assignerSync бампает rev истории, а обёртка apiPost после sprint-data шлёт авто-снапшот
+     со своим baseRev — параллельный запуск дал бы ему 409 и заморозку на ровном месте (класс #103).
+     Отказ по расхождению (rev_conflict) или правам откатывает ВСЕ роли списка и перерисовывает Гант;
+     сеть/5xx правку не выбрасывают. Режим «Роль» по-прежнему идёт saveCurrentRoleState. */
+  function savePlanningForRoles(deps, touched) {
+    var st = deps.state;
+    var sid = st.getCurrentSprintId();
+    var history = st.getHistory() || [];
+    var cur = st.getCurrentSprintRoleRec();
+    var list = [];
+    (touched || []).forEach(function (t) {
+      var rec = history.find(function (r) { return r && r.sprintId === sid + '_' + t.rk; });
+      if (rec) list.push({ rk: t.rk, prevPP: t.prevPP, rec: rec });
+    });
+    if (!list.length) return Promise.resolve(false);
+    list.forEach(function (t) {
+      if (cur && t.rec.sprintId === cur.sprintId) {
+        t.rec.personalPlanning = deps.deepClone(st.getCurrentRolePP());
+        deps.markDirty('currentRole');
+        deps.draftSaveDebounced('currentRole', function () {
+          return { pp: st.getCurrentRolePP(), gantt: st.getCurrentRoleGantt(), nkcKey: st.getCurrentRoleNkcKey(),
+                   sprintRecKey: st.getCurrentSprintRoleRec() ? st.getCurrentSprintRoleRec().sprintId : null };
+        });
+      }
+      try { if (typeof deps.updateRoleAccordionStats === 'function') deps.updateRoleAccordionStats(t.rk); } catch (_) {}
+    });
+    var assignerOnly = !st.getIsEditor() && st.getIsAssigner();
+    var active = list.some(function (t) { return deps.isActiveSprintRecord(t.rec); });
+    var body = { history: list.map(function (t) {
+      return { sprintId: t.rec.sprintId, personalPlanning: deps.deepClone(t.rec.personalPlanning) };
+    }) };
+    return deps.apiPost('history', body, { action: 'assignerSync' }).then(function () {
+      if (!active) return true;
+      var sprint = st.getSprint();
+      sprint.personalPlanning = deps.buildPPMapFromCanon(sprint.sprintId, history, deps.deepClone);
+      var slot = assignerOnly
+        ? deps.apiPost('sprint-data', { sprint: { personalPlanning: deps.buildPPMapFromCanon(sprint.sprintId, history, deps.deepClone) } }, { action: 'assignerSync' })
+        : deps.apiPost('sprint-data', { sprint: sprint });
+      return slot.then(function () { return true; });
+    }).catch(function (e) {
+      var msg = String((e && e.message) || e || '');
+      deps.diag('savePlanningForRoles failed: ' + msg, 'err');
+      var rights = msg.indexOf('_rights_required') >= 0;
+      if (rights || msg.indexOf('rev_conflict') >= 0) rollbackPlanning(deps, list);
+      if (rights) { try { deps.toast(deps.T('toastNoEditRights'), 'warn'); } catch (_) {} }
+      return false;
+    });
+  }
+
+  /* #122 — откат списка ролей после отказа записи: канон каждой роли и живой PP текущей возвращаются к
+     доотказному состоянию, производная карта слота пересобирается, таблицы роли и Гант перерисовываются
+     (у отката режима «Роль» перерисовки Ганта нет — полоса оставалась сдвинутой до следующего рендера). */
+  function rollbackPlanning(deps, list) {
+    var st = deps.state;
+    var cur = st.getCurrentSprintRoleRec();
+    list.forEach(function (t) {
+      if (t.prevPP === undefined) { try { delete t.rec.personalPlanning; } catch (_) { t.rec.personalPlanning = null; } }
+      else { t.rec.personalPlanning = t.prevPP; }
+      if (cur && t.rec.sprintId === cur.sprintId) {
+        st.setCurrentRolePP(t.prevPP ? deps.deepClone(t.prevPP) : { resourcesByAssignee: {}, taskAssignments: {} });
+      }
+    });
+    var sprint = st.getSprint();
+    if (sprint && sprint.sprintId && list.some(function (t) { return deps.isActiveSprintRecord(t.rec); })) {
+      sprint.personalPlanning = deps.buildPPMapFromCanon(sprint.sprintId, st.getHistory() || [], deps.deepClone);
+    }
+    deps.diag('#122 отказ записи: personalPlanning ролей ' + list.map(function (t) { return t.rk; }).join(',') + ' откачен', 'err');
+    ['renderCurrentRoleAssigneeTable', 'renderCurrentRoleTaskTable', 'updateCurrentRoleTotals', 'renderGanttChart'].forEach(function (fn) {
+      try { if (typeof deps[fn] === 'function') deps[fn](); } catch (e) { deps.diag('#122 rollback ' + fn + ' err: ' + e, 'err'); }
+    });
+  }
+
   /* ── refreshPlanningPeopleForCurrentSprint — context-loader вкладки «Люди» ── */
   function refreshPlanningPeopleForCurrentSprint(roleKey, deps) {
     var st = deps.state;
@@ -661,6 +738,7 @@
   var api = {
     markSavedAndCleanup: markSavedAndCleanup,
     saveCurrentRoleState: saveCurrentRoleState,
+    savePlanningForRoles: savePlanningForRoles,
     refreshPlanningPeopleForCurrentSprint: refreshPlanningPeopleForCurrentSprint,
     doSaveRoleHeader: doSaveRoleHeader,
     doSaveSprintIntro: doSaveSprintIntro,

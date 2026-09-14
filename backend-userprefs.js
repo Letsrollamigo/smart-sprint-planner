@@ -31,7 +31,9 @@ var USER_PREFS_ALLOWED = {
   ssp_allocLockHintShown: 1,      // '1'
   ssp_app_version_cache: 120,     // JSON {version, ts}
   ssp_last_project_key: 100,      // = PROJECT_KEY_MAX backend-global
-  ssp_reminders_shown: 600        // #112 — JSON { <projectKey>: <день ms> }: «напоминания показаны сегодня», ≈12 проектов
+  ssp_reminders_shown: 600,       // #112 — JSON { <projectKey>: <день ms> }: «напоминания показаны сегодня», ≈12 проектов
+  ssp_ganttMode: 4,               // #122 — режим вкладки «Гант»: role|all
+  ssp_ganttZoom: 5                // #122 — масштаб Ганта: Day|Week|Month
 };
 var USER_PREFS_MAX_BLOB = 2048;
 

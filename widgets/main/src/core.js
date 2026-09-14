@@ -2018,6 +2018,7 @@
       /* #124 — цель и фокус ссылки на «Ёмкости» живут в capacity-view (выбор справа). */
       capacityShareTarget: function () { return (typeof CAPACITY_VIEW.shareTarget === 'function') ? CAPACITY_VIEW.shareTarget(_capacityDeps()) : null; },
       capacityFocus: function (kind, value) { if (typeof CAPACITY_VIEW.applyFocus === 'function') CAPACITY_VIEW.applyFocus(_capacityDeps(), kind, value); },
+      getGanttMode: function () { return _getGanttMode(); }, setGanttMode: function (m) { setGanttMode(m); },   /* #122 — focus=gantt:all */
       state: {
         getHost: function () { return _host; },
         getMode: function () { return _mode; },
@@ -2712,8 +2713,9 @@
     }
     /* v2.0.0 Phase D3 — Async checks через singleton (раньше 3 отдельных then'а).
        _startPermissionsCheck() кэширует Promise и применяет applyEditorRightsToUI
-       единожды по завершении всего батча. Race-protected для D4-D7 яруса 3. */
-    _startPermissionsCheck();
+       единожды по завершении всего батча. Race-protected для D4-D7 яруса 3.
+       #122 — «Все роли» рисует select исполнителя только при правах: первый рендер до ответа чеков перерисовывается. */
+    _startPermissionsCheck().then(function () { if (_getGanttMode() === 'all') renderGanttChart(); });
   }
 
   /* ═══ v5.5.0 — Этап 3b: accordion для уровня «Роли» в единой вкладке «Планирование» ═══
@@ -3016,6 +3018,7 @@
      без правок внутренней логики). */
   function refreshGanttForCurrentSprint(roleKey) {
     populateGanttRoleSel();
+    try { GANTT_ALL_VIEW.syncModeUi(_ganttAllDeps()); } catch (e) { diag('gantt mode ui err: ' + e, 'err'); }   /* #122 */
     var sel = document.getElementById('ganttRoleSel');
     var rk = roleKey || (sel && sel.value) || null;
     if (!rk && typeof getSprintRoles === 'function') {
@@ -3034,18 +3037,18 @@
     }
     /* Контекст для renderGanttChart: ищем запись в _history по ключу */
     var rec = _findHistRecForCurrent(rk);
-    if (!rec) {
+    if (!rec && _getGanttMode() !== 'all') {   /* #122 — «Все роли» рисуется и без записи выбранной роли */
       if (emptyEl) { emptyEl.classList.remove('hidden'); emptyEl.textContent = T('emptyGantt'); }
       if (c) c.innerHTML = '';
       _currentSprintRoleRec = null; _currentRolePP = null; _currentRoleGantt = null;
       return;
     }
     _currentSprintRoleRec = rec;
-    _currentRolePP    = (rec.personalPlanning) ? deepClone(rec.personalPlanning) : (typeof emptyPP === 'function' ? emptyPP() : { resourcesByAssignee:{}, taskAssignments:{} });
-    _currentRoleGantt = (rec.gantt) ? deepClone(rec.gantt) : { tasks:{}, updatedAt:null };
+    _currentRolePP    = !rec ? null : (rec.personalPlanning) ? deepClone(rec.personalPlanning) : (typeof emptyPP === 'function' ? emptyPP() : { resourcesByAssignee:{}, taskAssignments:{} });
+    _currentRoleGantt = !rec ? null : (rec.gantt) ? deepClone(rec.gantt) : { tasks:{}, updatedAt:null };
     _activeSubtab = rk;
     if (emptyEl) emptyEl.classList.add('hidden');
-    _renderOrphanGanttBanner(rec); /* v5.7.0 — Этап 5 */
+    if (rec) _renderOrphanGanttBanner(rec); /* v5.7.0 — Этап 5 */
     if (typeof renderGanttChart === 'function') {
       try { renderGanttChart(); } catch(e){ diag('renderGanttChart err: '+e,'err'); }
     }
@@ -4413,6 +4416,8 @@
      Фаза 5 слайс 6; делегатор — МАКС callers всего проекта: currentrole-view ×7,
      standup-view, refresh-controller late-binding dep). */
   function saveCurrentRoleState() { return SPRINT_CTRL.saveCurrentRoleState(_sprintDeps()); }
+  /* #122 — запись personalPlanning нескольких ролей сквозного Ганта (история assignerSync → слот). */
+  function savePlanningForRoles(touched) { return SPRINT_CTRL.savePlanningForRoles(_sprintDeps(), touched); }
 
   /* ── Валидировать распределение ── */
   document.getElementById('currentRoleValidateBtn').addEventListener('click', function() {
@@ -4490,6 +4495,9 @@
          без него rerender был тихим no-op (ось не нормализовалась, откат у не-editor). */
       renderGanttChart: renderGanttChart,
       getLang: function () { return _lang; },
+      /* #122 — масштаб Ганта — предпочтение пользователя, общее для режимов «Роль» и «Все роли» */
+      getGanttZoom: function () { var z = safeLs.get('ssp_ganttZoom'); return (z === 'Week' || z === 'Month') ? z : 'Day'; },
+      setGanttZoom: function (z) { safeLs.set('ssp_ganttZoom', z); },
       state: {
         getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
         getCurrentRolePP: function () { return _currentRolePP; },
@@ -4501,7 +4509,46 @@
       },
     };
   }
-  function renderGanttChart() { return GANTT_VIEW.renderGanttChart(_ganttDeps()); }
+  /* #122 — режим вкладки «Гант»: 'role' (domain/gantt-view.js) | 'all' — сквозной вид по всем ролям
+     (domain/gantt-all-view.js). Режим — предпочтение пользователя (safeLs ⊃ зеркало user-prefs), читается
+     лениво: на YT 2025.3 localStorage мёртв, а зеркало грузится после register. */
+  var GANTT_ALL_VIEW = (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_VIEW) || {};
+  var _ganttMode = null;
+  function _getGanttMode() {
+    if (_ganttMode === null) _ganttMode = (safeLs.get('ssp_ganttMode') === 'all') ? 'all' : 'role';
+    return _ganttMode;
+  }
+  function setGanttMode(m) {
+    _ganttMode = (m === 'all') ? 'all' : 'role';
+    safeLs.set('ssp_ganttMode', _ganttMode);
+    refreshGanttForCurrentSprint();
+    try { _syncStateToUrl(); } catch (_) {}
+  }
+  function _ganttAllDeps() {
+    return Object.assign(_ganttDeps(), {
+      deepClone: deepClone, emptyPP: emptyPP, roleLabel: roleLabel, getSprintRoles: getSprintRoles,
+      getPlanningForRole: _getPersonalPlanningForCurrent,   /* read-гард #56-7 чужого roleKey */
+      savePlanningForRoles: savePlanningForRoles, updateIssueAssigneeField: updateIssueAssigneeField,
+      updateCurrentRoleTotals: updateCurrentRoleTotals,
+      loadGanttLinks: GANTT_VIEW.loadGanttLinks, linksDataFor: GANTT_VIEW.linksDataFor,
+      getGanttMode: _getGanttMode, setGanttMode: setGanttMode,
+      state: {
+        getCurrentSprintId: function () { return _currentSprintId; },
+        getSprint: function () { return _sprint; },
+        getSettings: function () { return _settings; },
+        getHistory: function () { return _history; },
+        getHost: function () { return _host; },
+        getIsEditor: function () { return _isEditor; },
+        getIsAssigner: function () { return _isAssigner; },
+        getActiveWorkingDraftKey: function () { return _activeWorkingDraftKey; },
+        getCurrentSprintRoleRec: function () { return _currentSprintRoleRec; },
+        getCurrentRolePP: function () { return _currentRolePP; },
+      },
+    });
+  }
+  function renderGanttChart() {
+    return _getGanttMode() === 'all' ? GANTT_ALL_VIEW.renderGanttAll(_ganttAllDeps()) : GANTT_VIEW.renderGanttChart(_ganttDeps());
+  }
 
   /* ═══ #21 БЭКЛОГ (слайс 2b) — async-loader пула ════════════════
      Транзиентный пул (§4 спеки: НЕ храним — спрашиваем трекер при открытии вкладки);
@@ -4868,6 +4915,7 @@
       renderCurrentRoleAssigneeTable: renderCurrentRoleAssigneeTable,
       renderCurrentRoleTaskTable: renderCurrentRoleTaskTable,
       updateCurrentRoleTotals: updateCurrentRoleTotals,
+      renderGanttChart: renderGanttChart,   /* #122 — откат записи ролей перерисовывает и Гант */
       renderResourceModeIndicator: _renderResourceModeIndicator,
       renderOrphanGanttBanner: _renderOrphanGanttBanner,
       applyEditorRightsToUI: applyEditorRightsToUI,

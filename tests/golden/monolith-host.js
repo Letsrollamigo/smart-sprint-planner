@@ -52,6 +52,7 @@ const BRIDGE_SCRIPTS = [
   'reminders-pure.js',    /* #112 — напоминания: VM/штамп/адреса */
   'backlog-vm-pure.js',
   'capacity-pure.js',
+  'gantt-all-pure.js',   /* #122 — правила режима Ганта «Все роли» */
   'modal-specs.js',
   'diag-snapshot.js',   /* #63 п.4 — экспорт-слепок состояния */
   'user-prefs.js',      /* #69 строка 21 — localStorage ⊃ серверное зеркало предпочтений */
@@ -87,6 +88,7 @@ const BRIDGE_SCRIPTS = [
   'slot-watch.js',       /* #114 — подсказка «изменён другим» */
   'reminders-controller.js',   /* #112 — колокольчик/модалка напоминаний */
   'gantt-view.js',
+  'gantt-all-view.js',   /* #122 — режим Ганта «Все роли» */
   'backlog-view.js',
   'intro-view.js',
   'phases-view.js',      /* #120 — блок «Фазы работ» */
@@ -245,6 +247,12 @@ function createHost(opts) {
   /* Бэклог (#21 слайс 3): backlog-view.js строит vm и отдаёт мосту — стаб стэшит
      vm на host (host.__sspBacklogVm), голдены характеризуют контракт «модуль →
      __SSP_BACKLOG_MOUNT» (React-сторона — react/backlog-view.jsx — живьём). */
+  /* #122 — режим «Все роли»: gantt-all-view.js строит vm и отдаёт мосту — стаб стэшит vm на host
+     (host.__sspGanttAllVm), голдены характеризуют контракт «модуль → __SSP_GANTT_ALL_MOUNT». */
+  window.__SSP_GANTT_ALL_MOUNT = {
+    mountAt: rec('GANTT_ALL', 'mountAt', function (host, vm) { if (host) host.__sspGanttAllVm = vm || null; }),
+    unmountAt: rec('GANTT_ALL', 'unmountAt', function (host) { if (host) { try { delete host.__sspGanttAllVm; } catch (_) {} } }),
+  };
   window.__SSP_BACKLOG_MOUNT = {
     mountAt: rec('BACKLOG', 'mountAt', function (host, vm) { if (host) host.__sspBacklogVm = vm || null; }),
     unmountAt: rec('BACKLOG', 'unmountAt', function (host) { if (host) { try { delete host.__sspBacklogVm; } catch (_) {} } }),

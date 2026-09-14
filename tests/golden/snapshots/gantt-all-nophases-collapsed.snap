@@ -1,0 +1,170 @@
+{
+  "headerHeight": 50,
+  "editable": true,
+  "historyBadge": "",
+  "phaseBands": [],
+  "conflictsCounter": "Конфликтов сроков: 1",
+  "conflictsTip": "Старт раньше конца предшественника: 1 · Вне фазы своей роли: 0. Сдвиг не запрещён — решает руководитель.",
+  "linkLegend": {
+    "types": [],
+    "external": false,
+    "chain": true,
+    "conflict": true
+  },
+  "linksReady": false,
+  "conflictEdges": {
+    "track:analysis→devBack:GM-10": true
+  },
+  "rows": [
+    {
+      "id": "track:analysis",
+      "label": "Анализ",
+      "tasksText": "4 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": false,
+      "collapsed": true,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "track:devBack",
+      "label": "Разработка Back",
+      "tasksText": "2 задач",
+      "conflictsText": "1 конфликтов",
+      "chips": [],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "devBack:GM-10",
+      "assigneeText": "gm_user_2",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779667200000,
+      "endTs": 1779840000000,
+      "dependencies": [
+        "track:analysis"
+      ],
+      "depTypes": {
+        "track:analysis": "__chain"
+      },
+      "conflicts": [
+        "Начинается 25.05 — раньше конца GM-10 в роли «Анализ» (25.05)"
+      ]
+    },
+    {
+      "id": "devBack:GM-11",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "track:devFront",
+      "label": "Разработка Front",
+      "tasksText": "1 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": true,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "devFront:GM-20",
+      "assigneeText": "Не назначен",
+      "options": [],
+      "canAssign": false,
+      "readonly": true,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "track:testing",
+      "label": "Тестирование",
+      "tasksText": "2 задач",
+      "conflictsText": "",
+      "chips": [],
+      "nosnap": false,
+      "collapsed": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": []
+    },
+    {
+      "id": "testing:GM-5",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779926400000,
+      "endTs": 1780444800000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    },
+    {
+      "id": "testing:GM-6",
+      "assigneeText": "Не назначен",
+      "options": [
+        {
+          "value": "gm_user_1",
+          "label": "GM User One"
+        },
+        {
+          "value": "gm_user_2",
+          "label": "gm_user_2"
+        }
+      ],
+      "canAssign": true,
+      "readonly": false,
+      "startTs": 1779408000000,
+      "endTs": 1781568000000,
+      "dependencies": [],
+      "depTypes": {},
+      "conflicts": []
+    }
+  ]
+}

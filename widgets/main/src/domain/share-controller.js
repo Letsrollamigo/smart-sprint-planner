@@ -55,13 +55,20 @@ function _syncStateToUrl(deps) {
   if (typeof deps.state.getHost().navigation.replaceAppLocation !== 'function') return;
   if (typeof SHARE_URL_PURE.buildShareSearch !== 'function') return;
   try {
+    var node = _currentDashNode();
     var search = SHARE_URL_PURE.buildShareSearch({
       projectKey: deps.state.getActiveProjectKey(),
       sprintId:   deps.state.getCurrentSprintId(),
-      node:       _currentDashNode()
+      node:       node,
+      focus:      _ganttFocus(deps, node)
     });
     deps.state.getHost().navigation.replaceAppLocation({ search: search });
   } catch (_) {}
+}
+
+/* #122 — режим «Все роли» вкладки «Гант» адресуется фокусом gantt:all (только при узле gantt). */
+function _ganttFocus(deps, node) {
+  return (node === 'gantt' && deps && typeof deps.getGanttMode === 'function' && deps.getGanttMode() === 'all') ? 'gantt:all' : undefined;
 }
 
 /* Валиден ли sprintId (base-UUID) среди доступных: активный спринт или запись истории. */
@@ -131,6 +138,10 @@ function _applyShareFocus(focus, deps) {
   var f = SHARE_URL_PURE.parseFocus(focus);
   if (!f) return;
   var node = _currentDashNode();
+  if (f.kind === 'gantt') {   /* #122 — не цель для подсветки, а режим вкладки */
+    if (f.value === 'all' && node === 'gantt' && deps && typeof deps.setGanttMode === 'function') { try { deps.setGanttMode('all'); } catch (_) {} }
+    return;
+  }
   if (node === 'capacity' && (f.kind === 'role' || f.kind === 'user') && deps && typeof deps.capacityFocus === 'function') {
     try { deps.capacityFocus(f.kind, f.value); } catch (_) {}
   }
@@ -178,8 +189,9 @@ var _SHARE_APP_PATH = '/app/smart-sprint-planner/ssp-main-global/';
 function _buildShareHref(deps, target) {
   var t = target || {};
   var base = String(deps.state.getYtBase() || '').replace(/\/+$/, '');
+  var node = t.node || _currentDashNode();
   var raw = (typeof SHARE_URL_PURE.buildShareSearch === 'function')
-    ? SHARE_URL_PURE.buildShareSearch({ projectKey: deps.state.getActiveProjectKey(), sprintId: t.sprintId || deps.state.getCurrentSprintId(), node: t.node || _currentDashNode(), focus: t.focus })
+    ? SHARE_URL_PURE.buildShareSearch({ projectKey: deps.state.getActiveProjectKey(), sprintId: t.sprintId || deps.state.getCurrentSprintId(), node: node, focus: t.focus || _ganttFocus(deps, node) })
     : '';
   var prefixed = raw ? raw.split('&').map(function (p) { return 'app_' + p; }).join('&') : '';
   return base + _SHARE_APP_PATH + (prefixed ? '?' + prefixed : '');

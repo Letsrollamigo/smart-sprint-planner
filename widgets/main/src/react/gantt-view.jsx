@@ -16,119 +16,21 @@
    Новое: drag/resize баров → onDateChange → канон ta.dateStart/dateEnd (#40-канал);
    зум ViewMode Day/Week/Month; today-подсветка.
 
-   Семантика дат: канон ta = UTC-полночь ms, dateEnd = ИНКЛЮЗИВНЫЙ последний день.
-   Либа рисует end-exclusive → отображаем [start, end+1д), при drop'е конвертируем
-   назад (endToInclusiveMs). Конверсия ms↔Date через календарные компоненты (UTC при
-   чтении канона, локальные при чтении Date либы) — корректно при любом знаке TZ.
+   #122 — общее с режимом «Все роли» (конверсия дат, бейджи, граница ошибок, покраска стрелок, легенда)
+   вынесено в react/gantt-shared.jsx; масштаб запоминается у пользователя (vm.zoom / vm.onZoom).
 
    IIFE-мост: window.__SSP_GANTT_MOUNT.mountAt(host, vm) / .unmountAt(host). */
 
 import * as React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
-import { RingIcon } from './settings-shared.jsx';
+import { DAY, msToLocalDay, localDayToMs, endToInclusiveMs, ST, GanttBadge, ExtDepsBadge, GanttErrorBoundary,
+  ZOOM_COLUMN_W, paintArrows, GanttLegend } from './gantt-shared.jsx';
 
 const _mounted = new WeakMap();
-const DAY = 86400000;
-
-/* ms (UTC-полночь, канон ta) → локальный Date того же календарного дня. */
-function msToLocalDay(ms) {
-  const d = new Date(Math.ceil(ms / DAY - 0.5) * DAY);   /* #116 — ближайшая UTC-полночь: старые даты могли нести локальную полночь */
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-}
-/* Локальный Date → UTC-полночь ms того же календарного дня. */
-function localDayToMs(d) {
-  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-}
-/* Конец бара либы (exclusive Date) → инклюзивный последний день (ms, канон хранения):
-   ровно полночь → предыдущий день; иначе (drop внутри дня) — этот же день. */
-function endToInclusiveMs(end) {
-  const floor = new Date(end.getFullYear(), end.getMonth(), end.getDate());
-  const last = (end.getTime() === floor.getTime()) ? new Date(floor.getTime() - DAY) : floor;
-  return localDayToMs(last);
-}
-
-const EXT_BADGE_BASE = {
-  display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '2px',
-  padding: '0 6px', borderRadius: '8px', fontSize: '11px', whiteSpace: 'nowrap',
-  border: '1px solid var(--border)',
-};
-
-const ST = {
-  legend: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 12px', margin: '0 0 8px', fontSize: '11px', color: 'var(--muted)' },
-  legendTitle: { fontWeight: 500 },
-  legendItem: { display: 'inline-flex', alignItems: 'center', gap: '4px' },
-  legendSwatch: { display: 'inline-block', width: '14px', height: '3px', borderRadius: '2px' },
-  /* #74 ⚖6 — незакрытая внешняя зависимость предупреждает, закрытая спокойна. */
-  extDepsWarn: Object.assign({}, EXT_BADGE_BASE, { color: 'var(--warn)', borderColor: 'var(--warn)' }),
-  extDepsCalm: Object.assign({}, EXT_BADGE_BASE, { color: 'var(--muted)' }),
-  listCell: {
-    boxSizing: 'border-box', padding: '4px 8px', overflow: 'hidden',
-    borderTop: '1px solid var(--border)', borderRight: '1px solid var(--border)',
-    background: 'var(--surface)', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2px',
-  },
-  listHeader: {
-    boxSizing: 'border-box', padding: '6px 10px', fontWeight: 600, fontSize: '12px',
-    background: 'var(--surface2)', border: '1px solid var(--border)', borderBottom: 'none',
-    display: 'flex', alignItems: 'center',
-  },
-  taskLink: {
-    fontWeight: 600, overflow: 'hidden', fontSize: '12px', flexShrink: 0,
-    textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  },
-  taskAssignee: {
-    fontSize: '11px', color: 'var(--muted)', overflow: 'hidden', minWidth: 0,
-    textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-  },
-  cellLine: { display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' },
-  badgeSince: { color: 'var(--muted)', fontSize: '10px', flexShrink: 0 },
-  badgePrev: { color: 'var(--muted)', fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
-  pillDot: { display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0 },
-};
-
-/* Бейдж состояния (#20): пилюля в родных цветах stateColor + (на активном
-   спринте) плейсхолдеры since/prev, которые заполняет _updateGanttHistDOM. */
-function GanttBadge({ row }) {
-  const b = row.badge;
-  if (!b) return null;
-  const pill = {
-    display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 5px',
-    borderRadius: '10px', fontSize: '10px', lineHeight: 1.4,
-    background: b.pillBg, color: b.pillFg,
-    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
-  };
-  return (
-    <React.Fragment>
-      <span style={pill}>
-        <span style={{ ...ST.pillDot, background: b.pillFg }} />
-        {b.label}
-      </span>
-      {b.hist ? <span data-gantt-hist-since={row.issueId} style={ST.badgeSince} /> : null}
-      {b.hist ? <span data-gantt-hist-prev={row.issueId} style={ST.badgePrev}>{b.loadingText}</span> : null}
-    </React.Fragment>
-  );
-}
 
 /* Левая колонка либы (кастомный TaskListTable): паритет со старым ядром — ссылка на
    задачу, исполнитель, бейдж #20 с hist-плейсхолдерами. Высота строки = rowHeight
    пропа либы (жёстко — бары выравниваются по index*rowHeight). */
-/* #74 фаза 2 ⚖5/⚖6 — значок внешних зависимостей: предшественник вне спринта бара не
-   получает (даты чужих проектов не тянем), поэтому показывается счётчиком на строке.
-   Тултип — «номер · состояние»; незакрытая внешняя задача красится предупреждающим
-   тоном, закрытая — спокойным (это статус, поэтому здесь токены темы, а не палитра
-   типов: цвет типа = идентичность связи, смешивать нельзя). */
-function ExtDepsBadge({ row, i18n }) {
-  const ext = (row && row.extDeps) || [];
-  if (!ext.length) return null;
-  const open = ext.filter((e) => !e.resolved).length;
-  const tip = (i18n && i18n.badge ? i18n.badge + ': ' : '')
-    + ext.map((e) => e.id + ' · ' + (e.state || (i18n && i18n.unknown) || '')).join('\n');
-  return (
-    <span style={open ? ST.extDepsWarn : ST.extDepsCalm} title={tip}>
-      <RingIcon name="share" />{ext.length}
-    </span>
-  );
-}
-
 function makeTaskListTable(vm) {
   return function GanttTaskList({ tasks, rowHeight, rowWidth }) {
     return (
@@ -187,76 +89,22 @@ function makeTooltip(vm) {
   };
 }
 
-const ZOOM_COLUMN_W = { Day: 44, Week: 120, Month: 200 };
-
-/* Фейл-громко (#20-v2): OOPIF прячет ошибки фрейма от top-консоли (память
-   feedback_oopif_hidden_errors_harness) — падение либы/рендера показываем ТЕКСТОМ
-   в самом пейне (видно и юзеру, и a11y-смоуку), не роняя остальной виджет. */
-class GanttErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { err: null }; }
-  static getDerivedStateFromError(err) { return { err }; }
-  render() {
-    if (this.state.err) {
-      return (
-        <div style={{ padding: '12px', color: 'var(--error,#c22)', fontSize: '12px' }}>
-          {'Gantt render error: ' + String((this.state.err && this.state.err.message) || this.state.err)}
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-/* Раскраска стрелок по типу связи (⚖7). Порядок узлов .arrow воспроизводится
-   pure-функцией ganttArrowOrder; если фактическое число узлов не совпало с расчётом —
-   НИЧЕГО не красим: лучше один цвет по умолчанию, чем произвольно перепутанные. */
+/* Раскраска стрелок по типу связи (⚖7): порядок узлов .arrow воспроизводится pure-функцией
+   ganttArrowOrder, сопоставление и отказ при расхождении — в paintArrows (gantt-shared). */
 function _paintArrows(host, vm) {
   const LRP = globalThis.__SSP_LINK_ROLES_PURE;
   if (!host || !vm || !LRP) return;
-  const nodes = host.querySelectorAll('g.arrows > g.arrow');
-  if (!nodes.length) return;
   const plan = LRP.ganttArrowOrder(vm.rows.map((r) => ({
     id: r.issueId, dependencies: r.deps || [], depTypes: r.depTypes || {},
   })));
-  if (plan.length !== nodes.length) return;   /* расчёт разошёлся с DOM — не гадаем */
   const colors = vm.linkColors || {};
-  for (let i = 0; i < nodes.length; i++) {
-    const c = colors[plan[i].type];
-    if (!c) continue;
-    nodes[i].setAttribute('stroke', c);
-    nodes[i].setAttribute('fill', c);
-  }
-}
-
-
-/* Легенда (⚖7): только фактически видимые обозначения, настроек нет. */
-function GanttLegend({ vm }) {
-  const lg = vm && vm.linkLegend;
-  const partial = !!(vm && vm.linksPartial);
-  if (!lg || (!lg.types.length && !lg.external && !partial)) return null;
-  const i18n = vm.i18nExt || {};
-  return (
-    <div style={ST.legend}>
-      <span style={ST.legendTitle}>{i18n.legend}</span>
-      {lg.types.map((t) => (
-        <span key={t.name} style={ST.legendItem}>
-          <span style={{ ...ST.legendSwatch, background: t.color || 'grey' }} />{t.name}
-        </span>
-      ))}
-      {lg.external ? (
-        <span style={ST.legendItem}><RingIcon name="share" />{i18n.legendExt}</span>
-      ) : null}
-      {/* 68-8 ⚖6 — часть связей не доехала: раньше это молча выглядело как «связей нет». */}
-      {partial ? (
-        <span style={ST.legendItem} title={i18n.linksPartial}><RingIcon name="warning" />{i18n.linksPartial}</span>
-      ) : null}
-    </div>
-  );
+  paintArrows(host, plan, plan.map((p) => (colors[p.type] ? { stroke: colors[p.type] } : null)));
 }
 
 function GanttChart({ host }) {
   const [, force] = React.useReducer((x) => x + 1, 0);
-  const [zoom, setZoom] = React.useState('Day');
+  /* #122 — масштаб — предпочтение пользователя, общее с режимом «Все роли» */
+  const [zoom, setZoom] = React.useState(() => (host.__sspGanttVm && host.__sspGanttVm.zoom) || 'Day');
   React.useEffect(() => {
     const obs = new MutationObserver(() => force());
     obs.observe(host, { attributes: true, attributeFilter: ['data-vm-key'] });
@@ -314,7 +162,7 @@ function GanttChart({ host }) {
              кнопка не несёт визуала Ring (рамка/фон/паддинги) и читалась голым текстом;
              активное состояние — ring-button-active (ring-button-primary без block-
              контекста subset не рисует). */
-          <button type="button" key={m} onClick={() => setZoom(m)}
+          <button type="button" key={m} onClick={() => { setZoom(m); if (typeof vm.onZoom === 'function') vm.onZoom(m); }}
             className={'ring-button-button ring-button-block ring-button-heightS' + (zoom === m ? ' ring-button-active' : '')}>
             {label || m}
           </button>
