@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "선택한 역할의 단계가 “스프린트 매개변수”의 막대에서 강조됩니다. 기본은 비어 있음 — 모든 단계가 같은 색조입니다. 열은 프로젝트에서 사용 중인 역할만 표시됩니다.",
   "phasesSetUsedIn": "사용 위치",
   "phasesSetUsedInParams": "스프린트 매개변수 — 단계 막대",
-  "phasesSetUsedInGantt": "간트 — 「모든 역할」 모드의 단계 띠"
+  "phasesSetUsedInGantt": "간트 — 「모든 역할」 모드의 단계 띠",
+  "ganttForecastAllTip": "스프린트의 모든 역할을 의존 관계 순서대로 한 번에",
+  "forecastAllConfirmText": "스프린트 모든 역할의 날짜가 다시 계산되어 덮어써집니다(수동 수정 포함). 계속하시겠습니까?",
+  "toastForecastAllDone": "모든 역할의 날짜를 예측했습니다",
+  "toastForecastAllUnfit": "모든 역할의 날짜를 예측했습니다. 설정되지 않음: {n} — 행의 표시를 확인하세요",
+  "ganttWaitsFor": "{issue} · {role} 대기 중",
+  "ganttUnfitBlockTitle": "예측 후 날짜 없음 ({n})",
+  "ganttUnfitReasonWait": "선행 작업에 날짜가 없음",
+  "ganttUnfitReasonCap": "{who}의 용량이 스프린트 종료까지 소진됨",
+  "ganttCycleWarn": "링크 순환: {issues} — 독립 작업으로 배치됨",
+  "ganttEpicChip": "에픽 · 하위 작업 {n}개",
+  "ganttEpicParentRole": "상위 작업 역할 「{role}」",
+  "ganttEpicParentRoleTip": "상위 작업은 스프린트의 다른 역할에 속합니다. 여기에는 하위 작업의 날짜 범위만 표시됩니다"
 }

@@ -1,16 +1,19 @@
-/* Сквозной Гант по всем ролям (#122, v3.47.0) — domain-вью режима «Все роли» вкладки «Гант».
+/* Сквозной Гант по всем ролям (#122, v3.47.0 → v3.48.0) — domain-вью режима «Все роли» вкладки «Гант».
    Мост window.__SSP_GANTT_ALL_VIEW; deps — фабрика _ganttAllDeps() ядра, приходят аргументом на каждый
    вызов; стейт ядра читается аксессорами deps.state в момент обращения (права и заморозка #100 — на момент
-   действия, не рендера). Правила (стадии, цепочка, конфликты, сворачивание) — pure/gantt-all-pure.js,
-   презентация — react/gantt-all.jsx за мостом __SSP_GANTT_ALL_MOUNT (vm стэшится на #ganttContainer).
+   действия, не рендера). Правила (стадии, цепочка, конфликты, сворачивание, эпики) — pure/gantt-all-pure.js,
+   презентация — react/gantt-all.jsx за мостом __SSP_GANTT_ALL_MOUNT (vm стэшится на #ganttContainer),
+   прогноз по всем ролям — domain/gantt-all-forecast.js (через deps ядра).
 
    • renderGanttAll — дорожка на роль спринта в порядке стадий (⚖2/⚖3): заголовок-группа со сводной
      полосой, строки задач с полосами из personalPlanning роли (фолбэк — даты записи роли / рабочего
      спринта). История — из снимков <sprintId>_<rk> только чтение; роль без записи — «снимка нет», в живом
      спринте тоже только чтение (§О16: assignerSync такую запись молча пропускает).
+   • 3.48.0: группы эпиков в дорожке ребёнка (§A6) — родитель в своей роли строкой группы (бар = охват
+     подзадач), в чужой — пометкой роли; полосы без дат после прогноза — маркер без стрелок и сводный блок.
    • onDateChange / onAssigneeChange — правка любой роли: гейт прав → заморозка #100 → prev-снимок канона
      роли ДО мутации → мутация → savePlanningForRoles (история assignerSync → слот) → перерисовка.
-   • toggleCollapsed — свёрнутость дорожек на сессию (_collapsed); syncModeUi — кнопки «Роль | Все роли».
+   • toggleCollapsed — свёрнутость дорожек и эпиков на сессию (_collapsed); syncModeUi — кнопки «Роль | Все роли».
    Режим «Роль» по-прежнему рисует domain/gantt-view.js; корни React двух режимов на одном контейнере
    взаимно демонтируются при переключении. */
 'use strict';
@@ -22,6 +25,8 @@ var _collapsed = {};
 function _pure() { return (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_PURE) || null; }
 function _phasesPure() { return (typeof window !== 'undefined' && window.__SSP_PHASES_PURE) || null; }
 function _linkRoles() { return (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null; }
+/* прогноз по всем ролям — domain-модуль gantt-all-forecast.js, приходит через deps ядра (звезда-топология B1) */
+function _forecast(deps) { var F = deps && deps.ganttAllForecast; return (F && typeof F.unfitFor === 'function') ? F : null; }
 function _isNum(v) { return typeof v === 'number' && isFinite(v); }
 
 /* #100 — «локальный стейт разошёлся с сервером»: метку ставит api-слой, снимает перезагрузка. */
@@ -49,6 +54,13 @@ function _ctx(deps) {
 
 function _histRec(deps, sid, rk) {
   return (deps.state.getHistory() || []).find(function (r) { return r && r.sprintId === sid + '_' + rk; }) || null;
+}
+
+/* Ключ кэша связей режима (§A3.4): матчеры зависимости и иерархии (3.48.0) — правка любой из ролей связей
+   сбрасывает кэш; смена режима — тоже (ключ Ганта роли другой). */
+function _linksKey(sid, settings) {
+  var LR = _linkRoles(), lr = LR ? LR.resolveLinkRoles(settings || {}) : { dependency: [], hierarchy: [] };
+  return sid + ':all:links:' + JSON.stringify(lr.dependency) + JSON.stringify(lr.hierarchy);
 }
 
 function _conflictText(x, bar, deps, labelOf, PH) {
@@ -85,8 +97,10 @@ function _buildGanttAllVm(deps) {
   roles.forEach(function (r) { labelOf[r.key] = deps.roleLabel(r); });
   var stg = P.stages(roles.map(function (r) { return r.key; }), settings, PH.PHASE_KEYS);
   var cur = st.getCurrentSprintRoleRec();
+  /* пометки последнего прогноза — только живой спринт и только полосам, так и оставшимся без своих дат */
+  var unfitMap = (c.live && _forecast(deps)) ? _forecast(deps).unfitFor(c.sid) : {};
 
-  var tracks = [], allBars = [], barsByIssue = {}, activeIds = {}, sprintName = '';
+  var tracks = [], allBars = [], barsByIssue = {}, activeIds = {}, itemOf = {}, roleOfIssue = {}, sprintName = '';
   stg.order.forEach(function (rk) {
     var rec = _histRec(deps, c.sid, rk);
     if (rec && rec.name && !sprintName) sprintName = rec.name;
@@ -100,11 +114,14 @@ function _buildGanttAllVm(deps) {
     var bars = [];
     active.forEach(function (item) {
       activeIds[item.issueId] = true;
+      if (!itemOf[item.issueId]) { itemOf[item.issueId] = item; roleOfIssue[item.issueId] = rk; }
       var e = ta[item.issueId] || {};
-      var s = e.dateStart || dStart, en = e.dateEnd || dEnd;
+      var own = _isNum(e.dateStart) && _isNum(e.dateEnd);
+      var uf = (!own && unfitMap[P.barKey(rk, item.issueId)]) || null;
+      var s = uf ? dStart : (e.dateStart || dStart), en = uf ? dStart : (e.dateEnd || dEnd);
       if (!s || !en) return;
       var b = { key: P.barKey(rk, item.issueId), rk: rk, issueId: item.issueId, startMs: s, endMs: en,
-        own: _isNum(e.dateStart) && _isNum(e.dateEnd), item: item, e: e };
+        own: own, unfit: uf, item: item, e: e };
       bars.push(b); allBars.push(b);
       (barsByIssue[item.issueId] = barsByIssue[item.issueId] || []).push(b);
     });
@@ -113,12 +130,20 @@ function _buildGanttAllVm(deps) {
   if (!allBars.length) return null;
   var whole = P.span(allBars);
 
-  /* Связи — один фетч по объединению задач всех ролей (§A3.4); первый кадр без стрелок и без явных конфликтов. */
-  var depMatchers = LR ? LR.resolveLinkRoles(settings).dependency : [];
-  var linksKey = c.sid + ':all:links:' + JSON.stringify(depMatchers);
+  /* Связи — один фетч по объединению задач всех ролей (§A3.4); первый кадр без стрелок, явных конфликтов и эпиков. */
+  var linksKey = _linksKey(c.sid, settings);
   var linkData = deps.linksDataFor(linksKey);
   var preds = (linkData && linkData.preds) || {};
   var linkColors = LR ? LR.dependencyColors(settings) : {};
+
+  /* Группы эпиков (§A6): родитель в своей дорожке — строка группы вместо своей полосы (id либы epic:rk:P);
+     его собственные даты не показываются и в конфликты не идут, связи и цепочка рисуются к строке группы. */
+  var libId = {};
+  tracks.forEach(function (t) {
+    t.layout = P.epicLayout(t.bars.map(function (b) { return b.issueId; }), (linkData && linkData.parents) || {}, activeIds);
+    t.layout.forEach(function (g) { if (g.children && g.own) libId[P.barKey(t.rk, g.id)] = 'epic:' + t.rk + ':' + g.id; });
+  });
+  var lid = function (k) { return libId[k] || k; };
 
   /* Фазы (§A3.7): при тумблере — снимок фаз спринта (слот либо снимок роли в истории). */
   var phasesOn = settings.phasesEnabled === true;
@@ -130,56 +155,88 @@ function _buildGanttAllVm(deps) {
       roles: Array.isArray(phaseRoles[k]) ? phaseRoles[k].slice() : [] };
   });
 
-  var chain = P.chainEdges(allBars, stg.stageOf);
+  var chain = P.chainEdges(allBars.filter(function (b) { return !b.unfit; }), stg.stageOf);
   var chainTo = {};
   chain.forEach(function (e) { (chainTo[e.to] = chainTo[e.to] || []).push(e.from); });
-  var cf = P.conflicts(allBars.filter(function (b) { return b.own; }), preds, chain,
+  var cf = P.conflicts(allBars.filter(function (b) { return b.own && !libId[b.key]; }), preds, chain,
     { enabled: phasesOn, phases: phases, phaseRoles: phaseRoles, phaseKeys: PH.PHASE_KEYS });
 
-  var rows = [], seenTypes = {}, hasExt = false;
+  var rows = [], seenTypes = {}, hasExt = false, unfitList = [];
+  /* Стрелки полосы: явные предшественники (все их полосы в любой роли, §О15) и цепочка; полосы без дат после
+     прогноза стрелок не имеют ни к себе, ни от себя (Д7). */
+  function depsOf(b) {
+    var dl = [], types = {}, ext = [];
+    if (b.unfit) return { dl: dl, types: types, ext: ext };
+    (preds[b.issueId] || []).forEach(function (p) {
+      if (!p || p.id === b.issueId) return;
+      if (barsByIssue[p.id]) {
+        barsByIssue[p.id].forEach(function (pb) {
+          var id = lid(pb.key);
+          if (pb.unfit || dl.indexOf(id) >= 0) return;
+          dl.push(id); types[id] = p.type; seenTypes[p.type] = true;
+        });
+        return;
+      }
+      var sx = (linkData && linkData.ext && linkData.ext[p.id]) || { state: '', resolved: false };
+      ext.push({ id: p.id, state: sx.state, resolved: !!sx.resolved, type: p.type });
+    });
+    (chainTo[b.key] || []).forEach(function (from) {
+      var id = lid(from);
+      if (dl.indexOf(id) < 0) { dl.push(id); types[id] = P.CHAIN_TYPE; }
+    });
+    if (ext.length) hasExt = true;
+    return { dl: dl, types: types, ext: ext };
+  }
+  function barRow(t, b, id, parent) {
+    var item = b.item, e = b.e, d = depsOf(b), nosnap = !t.rec, unfitText = '', unfitTip = '';
+    if (b.unfit) {
+      var w = b.unfit.waitsFor ? P.parseId(b.unfit.waitsFor) : null;
+      unfitText = w ? T('ganttWaitsFor').replace('{issue}', w.issueId).replace('{role}', labelOf[w.rk] || w.rk) : T('forecastUnfitBadge');
+      unfitTip = w ? T('ganttUnfitReasonWait') : T('ganttUnfitReasonCap').replace('{who}', e.assigneeName || e.assignee || '');
+      unfitList.push({ issueId: b.issueId, url: item.url || '', role: labelOf[t.rk] || t.rk, mark: unfitText, reason: unfitTip });
+    }
+    return {
+      id: id, kind: 'bar', rk: t.rk, issueId: b.issueId, parent: parent,
+      title: item.title || b.issueId, url: item.url || '', roleLabel: labelOf[t.rk] || t.rk,
+      assignee: e.assignee || '', assigneeText: e.assigneeName || e.assignee || T('ganttBarTooltipUnassigned'),
+      options: t.options, canAssign: c.canAssign && !nosnap, readonly: !c.editable || nosnap,
+      bg: (item.stateColor && item.stateColor.background) || deps.ASSIGNEE_FALLBACK_COLOR,
+      startTs: b.startMs, endTs: b.endMs, badge: _badge(item, c.live, deps),
+      dependencies: d.dl, depTypes: d.types, extDeps: d.ext, unfit: !!b.unfit, unfitText: unfitText, unfitTip: unfitTip,
+      conflicts: (cf.byBar[b.key] || []).map(function (x) { return _conflictText(x, b, deps, labelOf, PH); }),
+    };
+  }
+
   tracks.forEach(function (t) {
-    var rk = t.rk, trackId = 'track:' + rk, nosnap = !t.rec;
+    var rk = t.rk, trackId = 'track:' + rk;
     var sp = P.span(t.bars) || whole;
     var nConf = t.bars.filter(function (b) { return cf.byBar[b.key]; }).length;
     var rba = (t.pp && t.pp.resourcesByAssignee) || {};
-    var options = Object.keys(rba).map(function (login) {
+    t.options = Object.keys(rba).map(function (login) {
       return { value: login, label: (rba[login] && rba[login].assigneeName) || login };
     });
     rows.push({
       id: trackId, kind: 'track', rk: rk, parent: null, dependencies: [], depTypes: {},
-      label: labelOf[rk] || rk, nosnap: nosnap, count: t.bars.length, startTs: sp.startMs, endTs: sp.endMs,
+      label: labelOf[rk] || rk, nosnap: !t.rec, count: t.bars.length, startTs: sp.startMs, endTs: sp.endMs,
       tasksText: T('ganttTrackTasks').replace('{n}', String(t.bars.length)),
       conflictsText: nConf ? T('ganttTrackConflicts').replace('{n}', String(nConf)) : '',
       chips: phaseBands.filter(function (pb) { return pb.roles.indexOf(rk) >= 0; }).map(function (pb) { return pb.label; }),
     });
-    t.bars.forEach(function (b) {
-      var item = b.item, e = b.e, dl = [], types = {}, ext = [];
-      (preds[b.issueId] || []).forEach(function (p) {
-        if (!p || p.id === b.issueId) return;
-        if (barsByIssue[p.id]) {
-          barsByIssue[p.id].forEach(function (pb) {
-            if (dl.indexOf(pb.key) >= 0) return;
-            dl.push(pb.key); types[pb.key] = p.type; seenTypes[p.type] = true;
-          });
-          return;
-        }
-        var sx = (linkData && linkData.ext && linkData.ext[p.id]) || { state: '', resolved: false };
-        ext.push({ id: p.id, state: sx.state, resolved: !!sx.resolved, type: p.type });
-      });
-      (chainTo[b.key] || []).forEach(function (from) {
-        if (dl.indexOf(from) < 0) { dl.push(from); types[from] = P.CHAIN_TYPE; }
-      });
-      if (ext.length) hasExt = true;
-      rows.push({
-        id: b.key, kind: 'bar', rk: rk, issueId: b.issueId, parent: trackId,
-        title: item.title || b.issueId, url: item.url || '', roleLabel: labelOf[rk] || rk,
-        assignee: e.assignee || '', assigneeText: e.assigneeName || e.assignee || T('ganttBarTooltipUnassigned'),
-        options: options, canAssign: c.canAssign && !nosnap, readonly: !c.editable || nosnap,
-        bg: (item.stateColor && item.stateColor.background) || deps.ASSIGNEE_FALLBACK_COLOR,
-        startTs: b.startMs, endTs: b.endMs, badge: _badge(item, c.live, deps),
-        dependencies: dl, depTypes: types, extDeps: ext,
-        conflicts: (cf.byBar[b.key] || []).map(function (x) { return _conflictText(x, b, deps, labelOf, PH); }),
-      });
+    var byIssue = {};
+    t.bars.forEach(function (b) { byIssue[b.issueId] = b; });
+    t.layout.forEach(function (g) {
+      if (!g.children) { rows.push(barRow(t, byIssue[g.id], byIssue[g.id].key, trackId)); return; }
+      var gid = 'epic:' + rk + ':' + g.id, kids = g.children.map(function (id) { return byIssue[id]; });
+      var it = itemOf[g.id] || {}, ksp = P.span(kids);
+      var head = g.own ? barRow(t, byIssue[g.id], gid, trackId) : {
+        id: gid, rk: rk, issueId: g.id, parent: trackId, title: it.title || g.id, url: it.url || '',
+        dependencies: [], depTypes: {}, extDeps: [], options: [],
+        parentRoleText: T('ganttEpicParentRole').replace('{role}', labelOf[roleOfIssue[g.id]] || roleOfIssue[g.id] || ''),
+        parentRoleTip: T('ganttEpicParentRoleTip'),
+      };
+      rows.push(Object.assign(head, { kind: 'epic', own: !!g.own, conflicts: [], startTs: ksp.startMs, endTs: ksp.endMs,
+        chipText: T('ganttEpicChip').replace('{n}', String(kids.length)) }));
+      kids.forEach(function (k) { rows.push(Object.assign(barRow(t, k, k.key, gid), { indent: true })); });
     });
   });
 
@@ -189,10 +246,10 @@ function _buildGanttAllVm(deps) {
   var rep = function (id) { return col.repOf[id] || id; };
   var edges = {};
   Object.keys(cf.edges).forEach(function (k) {
-    var ft = k.split('→'), f = rep(ft[0]), to = rep(ft[1]);
+    var ft = k.split('→'), f = rep(lid(ft[0])), to = rep(lid(ft[1]));
     if (f !== to) edges[f + '→' + to] = true;
   });
-  col.rows.forEach(function (r) { if (r.kind === 'track') r.collapsed = !!collapsedMap[r.id]; });
+  col.rows.forEach(function (r) { if (r.kind === 'track' || r.kind === 'epic') r.collapsed = !!collapsedMap[r.id]; });
 
   var fetchPlan = null;
   if (c.live && settings.fieldState) {
@@ -228,6 +285,7 @@ function _buildGanttAllVm(deps) {
     },
     fetchPlan: fetchPlan,
     linksPlan: { ids: Object.keys(activeIds), key: linksKey },
+    unfitList: unfitList,
   };
 }
 
@@ -325,7 +383,12 @@ function syncModeUi(deps) {
   }
   var sel = document.getElementById('ganttRoleSel');
   if (sel) sel.disabled = (mode === 'all');
-  if (mode !== 'all') _setHistoryBadge('');
+  var F = _forecast(deps);
+  if (F) F.syncButton(deps, mode);
+  if (mode !== 'all') {
+    _setHistoryBadge('');
+    if (F) F.renderUnfitBlock(deps, []);
+  }
 }
 
 /* Select исполнителя внутри React-списка — через делегат на контейнере: перерисовка не теряет биндинг,
@@ -357,6 +420,7 @@ function renderGanttAll(deps) {
     return;
   }
   _setHistoryBadge(built ? built.vm.historyBadge : '');
+  if (_forecast(deps)) _forecast(deps).renderUnfitBlock(deps, built ? built.unfitList : []);
   if (!built) {
     if (mount && typeof mount.unmountAt === 'function') mount.unmountAt(container);
     if (emptyEl) { emptyEl.style.display = ''; emptyEl.classList.remove('hidden'); }
@@ -372,7 +436,9 @@ function renderGanttAll(deps) {
   vm.onZoom = deps.setGanttZoom;
   vm.onAfterRender = function () {
     /* Связи и история переходов — после коммита DOM, как у Ганта роли (guard ключа внутри фетча). */
-    if (built.linksPlan.ids.length && typeof deps.loadGanttLinks === 'function') deps.loadGanttLinks(deps, built.linksPlan.ids, built.linksPlan.key);
+    if (built.linksPlan.ids.length && typeof deps.loadGanttLinks === 'function') {
+      deps.loadGanttLinks(deps, built.linksPlan.ids, built.linksPlan.key, { hierarchy: true });
+    }
     if (built.fetchPlan) deps.fetchGanttStateHistory(built.fetchPlan.ids, built.fetchPlan.key, false, built.fetchPlan.states, built.fetchPlan.fieldId);
   };
   _bindContainer(container, deps);
@@ -386,6 +452,8 @@ const api = {
   onDateChange: onDateChange,
   onAssigneeChange: onAssigneeChange,
   _buildGanttAllVm: _buildGanttAllVm,
+  /* 3.48.0 — для прогноза по всем ролям (gantt-all-forecast.js): гейты, канон роли, ключ связей */
+  _ctx: _ctx, _histRec: _histRec, _targetPP: _targetPP, _refusedByRevConflict: _refusedByRevConflict, linksKey: _linksKey,
 };
 
 if (typeof window !== 'undefined') {

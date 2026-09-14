@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Le fasi del ruolo selezionato sono evidenziate sulla barra in «Parametri dello sprint». Vuoto per impostazione predefinita — tutte le fasi hanno lo stesso tono. Colonne — solo i ruoli attivi nel progetto.",
   "phasesSetUsedIn": "Usato in",
   "phasesSetUsedInParams": "Parametri dello sprint — barra delle fasi",
-  "phasesSetUsedInGantt": "Gantt — bande delle fasi in modalità «Tutti i ruoli»"
+  "phasesSetUsedInGantt": "Gantt — bande delle fasi in modalità «Tutti i ruoli»",
+  "ganttForecastAllTip": "Tutti i ruoli dello sprint insieme, in ordine di dipendenza",
+  "forecastAllConfirmText": "Le date di tutti i ruoli dello sprint verranno ricalcolate e sovrascritte, incluse quelle corrette manualmente. Continuare?",
+  "toastForecastAllDone": "Date previste per tutti i ruoli",
+  "toastForecastAllUnfit": "Date previste per tutti i ruoli; non impostate: {n} — vedi i contrassegni nelle righe",
+  "ganttWaitsFor": "in attesa di {issue} · {role}",
+  "ganttUnfitBlockTitle": "Senza date dopo la previsione ({n})",
+  "ganttUnfitReasonWait": "il predecessore non ha date",
+  "ganttUnfitReasonCap": "la capacità di {who} è esaurita fino alla fine dello sprint",
+  "ganttCycleWarn": "Ciclo di collegamenti: {issues} — pianificate come indipendenti",
+  "ganttEpicChip": "epic · {n} sottoattività",
+  "ganttEpicParentRole": "padre nel ruolo «{role}»",
+  "ganttEpicParentRoleTip": "Il padre appartiene a un altro ruolo dello sprint; qui è mostrato solo l’intervallo di date delle sottoattività"
 }

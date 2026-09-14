@@ -44,6 +44,7 @@ const BRIDGE_SCRIPTS = [
   'enum-locale-pure.js',
   'date-pure.js',
   'phases-pure.js',      /* #120 — правила блока фаз */
+  'forecast-pure.js',    /* #122 3.48.0 — очереди и квоты прогноза по всем ролям */
   'hash-pure.js',
   'util-pure.js',
   'migrate-pure.js',
@@ -89,6 +90,7 @@ const BRIDGE_SCRIPTS = [
   'reminders-controller.js',   /* #112 — колокольчик/модалка напоминаний */
   'gantt-view.js',
   'gantt-all-view.js',   /* #122 — режим Ганта «Все роли» */
+  'gantt-all-forecast.js',   /* #122 3.48.0 — прогноз по всем ролям */
   'backlog-view.js',
   'intro-view.js',
   'phases-view.js',      /* #120 — блок «Фазы работ» */

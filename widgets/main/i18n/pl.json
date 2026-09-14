@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Fazy wybranej roli są wyróżnione na pasku w „Parametrach sprintu”. Domyślnie pusto — wszystkie fazy w jednym tonie. Kolumny — tylko role włączone w projekcie.",
   "phasesSetUsedIn": "Gdzie używane",
   "phasesSetUsedInParams": "Parametry sprintu — pasek faz",
-  "phasesSetUsedInGantt": "Gantt — pasy faz w trybie „Wszystkie role”"
+  "phasesSetUsedInGantt": "Gantt — pasy faz w trybie „Wszystkie role”",
+  "ganttForecastAllTip": "Wszystkie role sprintu naraz, w kolejności zależności",
+  "forecastAllConfirmText": "Daty wszystkich ról sprintu zostaną przeliczone i nadpisane, łącznie z poprawionymi ręcznie. Kontynuować?",
+  "toastForecastAllDone": "Daty prognozowane dla wszystkich ról",
+  "toastForecastAllUnfit": "Daty prognozowane dla wszystkich ról; nieustawione: {n} — zobacz oznaczenia w wierszach",
+  "ganttWaitsFor": "czeka na {issue} · {role}",
+  "ganttUnfitBlockTitle": "Bez dat po prognozie ({n})",
+  "ganttUnfitReasonWait": "poprzednik nie ma dat",
+  "ganttUnfitReasonCap": "pojemność {who} wyczerpana do końca sprintu",
+  "ganttCycleWarn": "Cykl powiązań: {issues} — zaplanowane jako niezależne",
+  "ganttEpicChip": "epik · {n} podzadań",
+  "ganttEpicParentRole": "rodzic w roli „{role}”",
+  "ganttEpicParentRoleTip": "Rodzic należy do innej roli sprintu; tutaj widać tylko zakres dat podzadań"
 }

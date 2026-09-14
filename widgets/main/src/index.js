@@ -79,6 +79,7 @@ import './domain/slot-watch.js';   /* #114 — подсказка «спринт
 import './domain/reminders-controller.js';   /* #112 — GET reminders, колокольчик, модалка, «Перейти» */
 import './domain/gantt-view.js';
 import './domain/gantt-all-view.js';   /* #122 — режим Ганта «Все роли»: дорожки ролей, цепочка, конфликты, правка любой роли */
+import './domain/gantt-all-forecast.js';   /* #122 3.48.0 — прогноз дат по всем ролям, блок «Без дат после прогноза» */
 import './domain/backlog-loader.js';
 import './domain/backlog-view.js';
 import './domain/backlog-assign.js';

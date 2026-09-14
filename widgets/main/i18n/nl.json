@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Fasen van de gekozen rol worden gemarkeerd op de balk in “Sprintparameters”. Standaard leeg — alle fasen in één tint. Kolommen — alleen rollen die in het project zijn ingeschakeld.",
   "phasesSetUsedIn": "Gebruikt in",
   "phasesSetUsedInParams": "Sprintparameters — fasebalk",
-  "phasesSetUsedInGantt": "Gantt — fasebanden in modus «Alle rollen»"
+  "phasesSetUsedInGantt": "Gantt — fasebanden in modus «Alle rollen»",
+  "ganttForecastAllTip": "Alle sprintrollen tegelijk, in volgorde van afhankelijkheden",
+  "forecastAllConfirmText": "De datums van alle sprintrollen worden herberekend en overschreven, inclusief handmatig aangepaste. Doorgaan?",
+  "toastForecastAllDone": "Datums voorspeld voor alle rollen",
+  "toastForecastAllUnfit": "Datums voorspeld voor alle rollen; niet ingesteld: {n} — zie de markeringen in de rijen",
+  "ganttWaitsFor": "wacht op {issue} · {role}",
+  "ganttUnfitBlockTitle": "Zonder datums na voorspelling ({n})",
+  "ganttUnfitReasonWait": "voorganger heeft geen datums",
+  "ganttUnfitReasonCap": "capaciteit van {who} is tot het einde van de sprint uitgeput",
+  "ganttCycleWarn": "Koppelingscyclus: {issues} — als onafhankelijk ingepland",
+  "ganttEpicChip": "epic · {n} subtaken",
+  "ganttEpicParentRole": "bovenliggende taak in rol «{role}»",
+  "ganttEpicParentRoleTip": "De bovenliggende taak hoort bij een andere sprintrol; hier staat alleen het datumbereik van de subtaken"
 }

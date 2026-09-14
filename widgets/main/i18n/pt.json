@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "As fases do papel selecionado são realçadas na barra em «Parâmetros do sprint». Vazio por defeito — todas as fases num só tom. Colunas — apenas os papéis ativados no projeto.",
   "phasesSetUsedIn": "Onde é usado",
   "phasesSetUsedInParams": "Parâmetros do sprint — barra de fases",
-  "phasesSetUsedInGantt": "Gantt — faixas de fases no modo «Todas as funções»"
+  "phasesSetUsedInGantt": "Gantt — faixas de fases no modo «Todas as funções»",
+  "ganttForecastAllTip": "Todas as funções do sprint de uma vez, na ordem das dependências",
+  "forecastAllConfirmText": "As datas de todas as funções do sprint serão recalculadas e sobrescritas, incluindo as ajustadas manualmente. Continuar?",
+  "toastForecastAllDone": "Datas previstas para todas as funções",
+  "toastForecastAllUnfit": "Datas previstas para todas as funções; não definidas: {n} — veja as marcas nas linhas",
+  "ganttWaitsFor": "aguardando {issue} · {role}",
+  "ganttUnfitBlockTitle": "Sem datas após a previsão ({n})",
+  "ganttUnfitReasonWait": "o predecessor não tem datas",
+  "ganttUnfitReasonCap": "a capacidade de {who} está esgotada até o fim do sprint",
+  "ganttCycleWarn": "Ciclo de vínculos: {issues} — planejadas como independentes",
+  "ganttEpicChip": "épico · {n} subtarefas",
+  "ganttEpicParentRole": "pai na função «{role}»",
+  "ganttEpicParentRoleTip": "O pai pertence a outra função do sprint; aqui é mostrado apenas o intervalo de datas das subtarefas"
 }

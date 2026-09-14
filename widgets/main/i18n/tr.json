@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Seçili rolün aşamaları “Sprint parametreleri”ndeki çubukta vurgulanır. Varsayılan boş — tüm aşamalar tek tonda. Sütunlar — yalnızca projede etkin roller.",
   "phasesSetUsedIn": "Kullanıldığı yer",
   "phasesSetUsedInParams": "Sprint parametreleri — aşama çubuğu",
-  "phasesSetUsedInGantt": "Gantt — «Tüm roller» modunda aşama bantları"
+  "phasesSetUsedInGantt": "Gantt — «Tüm roller» modunda aşama bantları",
+  "ganttForecastAllTip": "Sprintin tüm rolleri aynı anda, bağımlılık sırasına göre",
+  "forecastAllConfirmText": "Sprintin tüm rollerinin tarihleri yeniden hesaplanacak ve üzerine yazılacak (elle düzeltilenler dahil). Devam edilsin mi?",
+  "toastForecastAllDone": "Tüm roller için tarihler öngörüldü",
+  "toastForecastAllUnfit": "Tüm roller için tarihler öngörüldü; ayarlanmadı: {n} — satırlardaki işaretlere bakın",
+  "ganttWaitsFor": "{issue} · {role} bekleniyor",
+  "ganttUnfitBlockTitle": "Öngörüden sonra tarihsiz ({n})",
+  "ganttUnfitReasonWait": "öncülün tarihi yok",
+  "ganttUnfitReasonCap": "{who} kapasitesi sprint sonuna kadar tükendi",
+  "ganttCycleWarn": "Bağlantı döngüsü: {issues} — bağımsız olarak planlandı",
+  "ganttEpicChip": "epik · {n} alt görev",
+  "ganttEpicParentRole": "üst görev «{role}» rolünde",
+  "ganttEpicParentRoleTip": "Üst görev sprintin başka bir rolüne ait; burada yalnızca alt görevlerin tarih aralığı gösteriliyor"
 }

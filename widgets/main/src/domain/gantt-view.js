@@ -82,24 +82,28 @@ function _extState(iss, stateNames) {
   return { state: '', resolved: false };
 }
 
-function _loadGanttLinks(deps, ids, key) {
+/* opts.hierarchy (#122 3.48.0, режим «Все роли») — тем же фетчем собрать parents[id] по роли «Иерархия»
+   для групп эпиков; режим «Роль» opts не передаёт. */
+function _loadGanttLinks(deps, ids, key, opts) {
   var host = deps.state.getHost && deps.state.getHost();
   if (!host || !ids.length) return;
   if (_ganttLinks.loading || _ganttLinks.key === key) return;
   var s = deps.state.getSettings() || {};
   var LR = (typeof window !== 'undefined' && window.__SSP_LINK_ROLES_PURE) || null;
   if (!LR) return;
-  var matchers = LR.resolveLinkRoles(s).dependency;
-  if (!matchers.length) { _ganttLinks = { key: key, loading: false, data: { preds: {}, ext: {} } }; return; }
+  var roles = LR.resolveLinkRoles(s), matchers = roles.dependency;
+  var hier = (opts && opts.hierarchy) ? roles.hierarchy : [];
+  if (!matchers.length && !hier.length) { _ganttLinks = { key: key, loading: false, data: { preds: {}, parents: {}, ext: {} } }; return; }
 
   _ganttLinks.loading = true;
-  var preds = {}, inSprint = {};
+  var preds = {}, parents = {}, inSprint = {};
   ids.forEach(function (id) { inSprint[id] = true; });
 
   var _failed = 0;
   _fetchChunks(host, ids, GANTT_LINK_FIELDS, function (it) {
     if (!it || !it.idReadable) return;
     preds[it.idReadable] = LR.dependencyPreds(it, matchers);
+    if (hier.length) parents[it.idReadable] = LR.linkParents(it, hier).map(function (p) { return p.idReadable || p.id; });
   }).then(function (nf) {
     _failed += nf;
     var extIds = [], seen = {};
@@ -117,7 +121,7 @@ function _loadGanttLinks(deps, ids, key) {
       ext[it.idReadable] = _extState(it, stateNames);
     }).then(function (nf) { _failed += nf; return ext; });
   }).then(function (ext) {
-    _ganttLinks = { key: key, loading: false, data: { preds: preds, ext: ext || {}, partial: _failed > 0 } };
+    _ganttLinks = { key: key, loading: false, data: { preds: preds, parents: parents, ext: ext || {}, partial: _failed > 0 } };
     /* Данные приехали — перерисовать Гант со стрелками (второй кадр). */
     try { if (typeof deps.renderGanttChart === 'function') deps.renderGanttChart(); } catch (_) {}
   }).catch(function () {

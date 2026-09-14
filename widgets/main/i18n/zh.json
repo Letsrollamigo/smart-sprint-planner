@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "所选角色的阶段会在“冲刺参数”的阶段条上高亮。默认留空 — 所有阶段同一色调。列仅为项目中启用的角色。",
   "phasesSetUsedIn": "用于",
   "phasesSetUsedInParams": "冲刺参数 — 阶段条",
-  "phasesSetUsedInGantt": "甘特图 — “所有角色”模式下的阶段带"
+  "phasesSetUsedInGantt": "甘特图 — “所有角色”模式下的阶段带",
+  "ganttForecastAllTip": "按依赖顺序一次处理冲刺的所有角色",
+  "forecastAllConfirmText": "将重新计算并覆盖冲刺所有角色的日期（包括手动调整的日期）。是否继续？",
+  "toastForecastAllDone": "已预测所有角色的日期",
+  "toastForecastAllUnfit": "已预测所有角色的日期；未设置：{n} — 请查看行中的标记",
+  "ganttWaitsFor": "等待 {issue} · {role}",
+  "ganttUnfitBlockTitle": "预测后无日期（{n}）",
+  "ganttUnfitReasonWait": "前置任务没有日期",
+  "ganttUnfitReasonCap": "{who} 的容量在冲刺结束前已用尽",
+  "ganttCycleWarn": "链接循环：{issues} — 已按独立任务排期",
+  "ganttEpicChip": "史诗 · {n} 个子任务",
+  "ganttEpicParentRole": "父任务在角色“{role}”中",
+  "ganttEpicParentRoleTip": "父任务属于冲刺的另一个角色；此处仅显示子任务的日期范围"
 }

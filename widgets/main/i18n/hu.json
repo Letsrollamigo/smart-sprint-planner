@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "A kiválasztott szerep fázisai kiemelve jelennek meg a „Sprint paraméterei” sávján. Alapból üres — minden fázis egy tónusú. Oszlopok — csak a projektben bekapcsolt szerepek.",
   "phasesSetUsedIn": "Hol használatos",
   "phasesSetUsedInParams": "Sprint paraméterei — fázissáv",
-  "phasesSetUsedInGantt": "Gantt — fázissávok az „Összes szerep” módban"
+  "phasesSetUsedInGantt": "Gantt — fázissávok az „Összes szerep” módban",
+  "ganttForecastAllTip": "A sprint összes szerepe egyszerre, függőségi sorrendben",
+  "forecastAllConfirmText": "A sprint összes szerepének dátumai újraszámításra és felülírásra kerülnek, beleértve a kézzel javítottakat is. Folytatja?",
+  "toastForecastAllDone": "Dátumok előrejelezve minden szerepre",
+  "toastForecastAllUnfit": "Dátumok előrejelezve minden szerepre; nincs beállítva: {n} — lásd a sorok jelöléseit",
+  "ganttWaitsFor": "vár: {issue} · {role}",
+  "ganttUnfitBlockTitle": "Dátum nélkül az előrejelzés után ({n})",
+  "ganttUnfitReasonWait": "az előzménynek nincs dátuma",
+  "ganttUnfitReasonCap": "{who} kapacitása a sprint végéig elfogyott",
+  "ganttCycleWarn": "Kapcsolati kör: {issues} — függetlenként ütemezve",
+  "ganttEpicChip": "epik · {n} részfeladat",
+  "ganttEpicParentRole": "szülő a(z) „{role}” szerepben",
+  "ganttEpicParentRoleTip": "A szülő a sprint egy másik szerepéhez tartozik; itt csak a részfeladatok dátumtartománya látható"
 }

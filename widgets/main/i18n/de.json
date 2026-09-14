@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Die Phasen der gewählten Rolle werden in der Leiste unter „Sprint-Parameter“ hervorgehoben. Standardmäßig leer — alle Phasen in einem Ton. Spalten — nur die im Projekt aktivierten Rollen.",
   "phasesSetUsedIn": "Verwendet in",
   "phasesSetUsedInParams": "Sprint-Parameter — Phasenleiste",
-  "phasesSetUsedInGantt": "Gantt — Phasenbänder im Modus „Alle Rollen“"
+  "phasesSetUsedInGantt": "Gantt — Phasenbänder im Modus „Alle Rollen“",
+  "ganttForecastAllTip": "Alle Sprint-Rollen auf einmal, in Abhängigkeitsreihenfolge",
+  "forecastAllConfirmText": "Die Termine aller Sprint-Rollen werden neu berechnet und überschrieben, auch manuell angepasste. Fortfahren?",
+  "toastForecastAllDone": "Termine für alle Rollen prognostiziert",
+  "toastForecastAllUnfit": "Termine für alle Rollen prognostiziert; nicht gesetzt: {n} — siehe Markierungen in den Zeilen",
+  "ganttWaitsFor": "wartet auf {issue} · {role}",
+  "ganttUnfitBlockTitle": "Ohne Termine nach der Prognose ({n})",
+  "ganttUnfitReasonWait": "Vorgänger hat keine Termine",
+  "ganttUnfitReasonCap": "Kapazität von {who} bis Sprintende erschöpft",
+  "ganttCycleWarn": "Verknüpfungszyklus: {issues} — als unabhängig eingeplant",
+  "ganttEpicChip": "Epic · {n} Unteraufgaben",
+  "ganttEpicParentRole": "übergeordnet in der Rolle „{role}“",
+  "ganttEpicParentRoleTip": "Die übergeordnete Aufgabe gehört zu einer anderen Sprint-Rolle; hier wird nur der Terminbereich der Unteraufgaben gezeigt"
 }

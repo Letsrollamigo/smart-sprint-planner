@@ -1,7 +1,7 @@
 'use strict';
 
 /* #122 «Сквозной Гант по всем ролям» — полнота локализации режима «Все роли» (калька
- * phases-i18n-completeness). Гейтит: ключи ступени 3.47.0 присутствуют во ВСЕХ 15 локалях, имеют НЕ-EN
+ * phases-i18n-completeness). Гейтит: ключи ступеней 3.47.0 и 3.48.0 присутствуют во ВСЕХ 15 локалях, имеют НЕ-EN
  * перевод (T() молча подменяет отсутствующий ключ EN→RU→самим ключом) и сохраняют плейсхолдеры. Множественные
  * формы — одна на ключ, как у существующих «{n} задач» (§A8/§О12 спеки). */
 
@@ -17,8 +17,12 @@ const GANTT_ALL_KEYS = [
   'ganttModeRole', 'ganttModeAll', 'ganttConflictsCounter', 'ganttConflictsTip', 'ganttLegendChain', 'ganttLegendConflict',
   'ganttConflictBeforeTip', 'ganttConflictPhaseTip', 'ganttTrackTasks', 'ganttTrackConflicts', 'ganttTrackCollapse',
   'ganttTrackExpand', 'ganttHistoryBadge', 'ganttNoSnapshot', 'ganttAssigneeTip', 'phasesSetUsedInGantt',
+  /* ступень 3.48.0 — прогноз по всем ролям и группы эпиков */
+  'ganttForecastAllTip', 'forecastAllConfirmText', 'toastForecastAllDone', 'toastForecastAllUnfit', 'ganttWaitsFor',
+  'ganttUnfitBlockTitle', 'ganttUnfitReasonWait', 'ganttUnfitReasonCap', 'ganttCycleWarn', 'ganttEpicChip',
+  'ganttEpicParentRole', 'ganttEpicParentRoleTip',
 ];
-const PLACEHOLDERS = ['{n}', '{a}', '{b}', '{date}', '{issue}', '{role}', '{prevDate}', '{from}', '{to}', '{phases}', '{sprint}'];
+const PLACEHOLDERS = ['{n}', '{a}', '{b}', '{date}', '{issue}', '{role}', '{prevDate}', '{from}', '{to}', '{phases}', '{sprint}', '{who}', '{issues}'];
 
 /* Когнаты: значение легитимно совпадает с EN в КОНКРЕТНОЙ локали. Формат "<lc>.<key>". */
 const COGNATE_OK = new Set(['cs.ganttModeRole']);
@@ -28,8 +32,8 @@ EXPECTED_LOCALES.forEach(function (lc) {
   dicts[lc] = JSON.parse(fs.readFileSync(path.join(I18N_DIR, lc + '.json'), 'utf8'));
 });
 
-test('gantt-all i18n: 16 ключей 3.47.0 во всех 15 локалях', function () {
-  assert.strictEqual(GANTT_ALL_KEYS.length, 16);
+test('gantt-all i18n: 28 ключей (16 ступени 3.47.0 + 12 ступени 3.48.0) во всех 15 локалях', function () {
+  assert.strictEqual(GANTT_ALL_KEYS.length, 28);
   const missing = [];
   EXPECTED_LOCALES.forEach(function (lc) {
     GANTT_ALL_KEYS.forEach(function (k) {

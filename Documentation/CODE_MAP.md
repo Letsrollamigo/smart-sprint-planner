@@ -70,8 +70,9 @@
 | `draft-store.js` | 374 | `__SSP_DRAFT_STORE` | Persistence-инфра: серверный черновик (GET/POST /draft, debounced 300мс) и working copies (GET/POST /working-drafts + reconcile/gc). |
 | `excel-export.js` | 343 | — | KL#5 v5.3.0 (D48 уточнённый): один xlsx с двумя листами «Текущий снимок» / «Ваша рабочая копия» + diff-маркер в отдельной колонке. |
 | `excluded-view.js` | 251 | `__SSP_EXCLUDED_VIEW` | #121 «Исключённые задачи с причиной» (v3.46.0): блок «Исключённые из спринта (N)» под таблицей состава роли (хост #exclHost_<rk> в карточке «Состав… |
-| `gantt-all-view.js` | 368 | `__SSP_GANTT_ALL_VIEW` | Сквозной Гант по всем ролям (#122, v3.47.0) — domain-вью режима «Все роли» вкладки «Гант». |
-| `gantt-view.js` | 441 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
+| `gantt-all-forecast.js` | 184 | `__SSP_GANTT_ALL_FORECAST` | Прогноз дат по всем ролям (#122, ступень v3.48.0, спека §A5) — обвязка режима «Все роли» вкладки «Гант». |
+| `gantt-all-view.js` | 433 | `__SSP_GANTT_ALL_VIEW` | Сквозной Гант по всем ролям (#122, v3.47.0 → v3.48.0) — domain-вью режима «Все роли» вкладки «Гант». |
+| `gantt-view.js` | 445 | `__SSP_GANTT_VIEW` | Диаграмма Ганта — view вкладки «Гант» (v4.0.0): таблица «задача × дни» с полосами в цвет родного stateColor задачи YT (v2.1.14), бейджем состояния … |
 | `header-view.js` | 396 | `__SSP_HEADER_VIEW` | Шапка виджета — view «общего контекста спринта» (v5.4.0, журнал D25–D29): селектор логических спринтов, per-role статус-бейджи (v1.8.1), индикатор … |
 | `history-controller.js` | 209 | — | контроллер действий вкладки «История»: правка/ завершение спринта + экспорт/импорт истории в JSON (Фаза 5, зачистка «прочих» — слайс 10). |
 | `history-io.js` | 194 | — | #69 R1 — per-role rate_/kpe_-ключей в схеме нет (цикл снят) |
@@ -114,7 +115,7 @@
 | `display-fields-pure.js` | 183 | `__SSP_DISPLAY_FIELDS_PURE` | 68-8 «Отображаемые поля»: произвольные поля YouTrack проекта дополнительными колонками трёх таблиц задач. |
 | `enum-locale-pure.js` | 23 | `__SSP_ENUM_PURE` | B7 — locale-aware DISPLAY значений enum-полей (Priority / State / X-Priority). |
 | `forecast-pure.js` | 123 | `__SSP_FORECAST_PURE` | Side-effect модуль: чистое ядро авто-прогноза дат старта/окончания задач (#40). |
-| `gantt-all-pure.js` | 291 | `__SSP_GANTT_ALL_PURE` | #122 «Сквозной Гант по всем ролям»: чистые правила режима «Все роли» — стадии цепочки и порядок дорожек, неявная цепочка задачи, конфликты сроков, … |
+| `gantt-all-pure.js` | 429 | `__SSP_GANTT_ALL_PURE` | #122 «Сквозной Гант по всем ролям»: чистые правила режима «Все роли» — стадии цепочки и порядок дорожек, неявная цепочка задачи, конфликты сроков, … |
 | `hash-pure.js` | 99 | `__SSP_HASH_PURE` | Чистые hash / equality / diff-утилиты рабочих копий. |
 | `link-roles-pure.js` | 348 | `__SSP_LINK_ROLES_PURE` | эпик #74 фаза 1 «Связи задач»: роли типов связей. |
 | `migrate-pure.js` | 120 | `__SSP_MIGRATE_PURE` | #49 — personalPlanning: единый канон = per-role записи истории (histRec.personalPlanning, single PP). |
@@ -169,7 +170,7 @@
 | `backlog-view.jsx` | 506 | #21 слайс 3 — React-презентация вида «по зонам» бэклога. |
 | `capacity-view.jsx` | 531 | #45 R3 — React-презентация вкладки «Управление ёмкостью» (де-гибридизация #32: настоящий Ring React, как gantt-view/standup-view). |
 | `datepicker-mount.jsx` | 116 | Ring DatePicker bridge for Phase D4. |
-| `gantt-all.jsx` | 343 | #122 «Сквозной Гант по всем ролям» (v3.47.0) — React-презентация режима «Все роли» на vendored gantt-task-react 0.3.9 (SSP_VENDORED.GanttTaskReact). |
+| `gantt-all.jsx` | 376 | #122 «Сквозной Гант по всем ролям» (v3.47.0 → v3.48.0) — React-презентация режима «Все роли» на vendored gantt-task-react 0.3.9 (SSP_VENDORED.Gantt… |
 | `gantt-shared.jsx` | 176 | #122 — общее двух React-презентаций Ганта: режим «Роль» (react/gantt-view.jsx) и режим «Все роли» (react/gantt-all.jsx). |
 | `gantt-view.jsx` | 211 | Тир D слайс 6, ступень 2 (#39) → #20-v2 (v3.2.0) — React-презентация диаграммы Ганта на vendored gantt-task-react (MIT, SSP_VENDORED.GanttTaskReact… |
 | `i18n-bridge.jsx` | 37 | i18n bridge for Ring components. |

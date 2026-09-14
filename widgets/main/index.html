@@ -2470,6 +2470,7 @@
     .gantt-role-selector label { white-space: nowrap; }
     .gantt-role-selector select { flex: 0 0 240px; }
     .readonly-mode #ganttSyncFromYtBtn { display: none; }
+    .readonly-mode #ganttForecastAllBtn { display: none; }
     /* #122 — Гант «Все роли» (Д1–Д6): переключатель режима в карточке роли, плашка истории, строка масштаба с
        легендой и счётчиком конфликтов, левый список 380 px (строка 70 px в три строки, дорожка-группа), тултип бара.
        Только переменные темы; ниже 1330 строка масштаба и карточка роли переносятся (flex-wrap). */
@@ -2500,6 +2501,16 @@
     .ssp-gantt-all__tip-key { font-weight: 600; margin-bottom: 2px; }
     .ssp-gantt-all__tip-muted { color: var(--muted); margin-top: 2px; }
     .ssp-gantt-all__tip-warn { color: var(--warn); margin-top: 4px; }
+    /* #122 3.48.0 — эпики и полосы без дат после прогноза */
+    .ssp-gantt-all__row--epic { background: var(--bg); }
+    .ssp-gantt-all__row--child { padding-left: 26px; }
+    .ssp-gantt-all__epic-chip { flex: none; font-size: 10px; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 0 5px; line-height: 16px; white-space: nowrap; }
+    .ssp-gantt-all__parent-role { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .ssp-gantt-all__unfit { font-size: 11px; color: var(--warn); white-space: nowrap; }
+    #ganttUnfitBlock { margin-top: 10px; }
+    .ssp-gantt-unfit .spoiler__body { padding: 4px 14px 10px; }
+    .ssp-gantt-unfit__title { font-weight: 600; font-size: 13px; }
+    .ssp-gantt-unfit__row { padding: 4px 0; font-size: 12px; border-top: 1px solid var(--border); }
     /* v1.9.9 — было: .readonly-mode .gantt-cell { pointer-events: none; }
        Снято: pointer-events:none блокировало event-targeting → браузер обходил
        cell и доставлял click на <table>; страдал также dblclick (color-toggle),
@@ -3079,9 +3090,12 @@
     <div id="ganttEmpty" class="banner banner--info hidden" data-i18n="emptyGantt">Нет данных для отображения.</div>
     <div style="text-align:right; margin-bottom:8px; display:flex; justify-content:flex-end; gap:6px;">
       <!-- v2.1.14 — merged: sync assignee+state из YT + дозагрузка истории состояний. -->
+      <!-- #122 3.48.0 Д7 — прогноз дат по всем ролям: только режим «Все роли» при авто-прогнозе, вторичная, права редактора -->
+      <button id="ganttForecastAllBtn" class="ring-button-button ring-button-block ring-button-heightM editor-btn hidden" data-i18n="btnForecastDates" data-i18n-title="ganttForecastAllTip" data-icon="calendar">Спрогнозировать даты</button>
       <button id="ganttSyncFromYtBtn" class="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText" data-i18n="btnRefreshFromTask" data-icon="update">Обновить данные задач из YouTrack</button>
     </div>
     <div id="ganttContainer"></div>
+    <div id="ganttUnfitBlock"></div>
   </div>
 
 <div class="tab-panel" id="tab-history">

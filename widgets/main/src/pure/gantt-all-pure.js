@@ -228,6 +228,151 @@ function span(bars) {
   return lo === null ? null : { startMs: lo, endMs: hi };
 }
 
+/* ── §A6 группы эпиков (3.48.0) ── */
+function _idCmp(a, b) { return String(a).localeCompare(String(b), undefined, { numeric: true }); }
+
+/* Раскладка дорожки на группы эпиков. ids — активные задачи дорожки в порядке строк роли; parents —
+   { id: [id родителя…] } из кэша связей; inSprint — { id: true }, задача с активной полосой в любой роли.
+   Родитель — первый из родителей в спринте по idReadable (§О8); родитель вне спринта — дети плоско (⚖7).
+   Один уровень: родитель, сам стоящий в дорожке, под своего родителя не уходит (вложенность спека не
+   описывает). Позиция группы — первый её участник (родитель или подзадача), дети — в порядке дорожки.
+   → [{ id, children: null }] — обычная строка | [{ id: родитель, children: [id…], own: родитель в дорожке }] */
+function epicLayout(ids, parents, inSprint) {
+  const list = Array.isArray(ids) ? ids : [];
+  const inTrack = {}, parentOf = {};
+  list.forEach(function (id) { inTrack[id] = true; });
+  list.forEach(function (id) {
+    const ps = ((parents && parents[id]) || []).filter(function (p) { return p !== id && inSprint && inSprint[p]; }).sort(_idCmp);
+    if (ps.length) parentOf[id] = ps[0];
+  });
+  const heads = {};
+  Object.keys(parentOf).forEach(function (id) { heads[parentOf[id]] = true; });
+  list.forEach(function (id) { if (heads[id]) delete parentOf[id]; });
+  const groups = {}, out = [];
+  list.forEach(function (id) {
+    const g = parentOf[id] || (heads[id] ? id : null);
+    if (!g) { out.push({ id: id, children: null }); return; }
+    if (!groups[g]) { groups[g] = { id: g, children: [], own: !!inTrack[g] }; out.push(groups[g]); }
+    if (g !== id) groups[g].children.push(id);
+  });
+  /* голова, чьи дети здесь сами головы (один уровень), — обычная строка */
+  return out.map(function (e) { return (e.children && !e.children.length) ? { id: e.id, children: null } : e; });
+}
+
+/* ── §A5 прогноз по всем ролям (3.48.0) ── */
+const EPS = 1e-6;
+
+/* Упаковка needH часов в дневные остатки quotas с дня fromIdx: старт — первый день с остатком (окно ожидания
+   раньше по оси уже заняли следующие задачи очереди). Не влезла до конца окна — потреблённое возвращается,
+   null: очередь не обрывается (в отличие от forecastAssignee #40). → { startIdx, endIdx } | null */
+function packOne(quotas, needH, fromIdx) {
+  let need = needH, s = -1, e = -1;
+  const took = [];
+  for (let d = Math.max(0, fromIdx); d < quotas.length && need > EPS; d++) {
+    if (quotas[d] <= EPS) continue;
+    const take = Math.min(quotas[d], need);
+    quotas[d] -= take; need -= take;
+    took.push([d, take]);
+    if (s < 0) s = d;
+    e = d;
+  }
+  if (need > EPS) { took.forEach(function (t) { quotas[t[0]] += t[1]; }); return null; }
+  return { startIdx: s, endIdx: e };
+}
+
+/* Сильно связные компоненты графа (Тарьян) из ≥ 2 вершин. out — { key: [key…] }. */
+function _sccs(nodes, out) {
+  let n = 0;
+  const index = {}, low = {}, onStack = {}, stack = [], comps = [];
+  function visit(v) {
+    index[v] = low[v] = n++; stack.push(v); onStack[v] = true;
+    (out[v] || []).forEach(function (w) {
+      if (!HAS.call(index, w)) { visit(w); low[v] = Math.min(low[v], low[w]); }
+      else if (onStack[w]) low[v] = Math.min(low[v], index[w]);
+    });
+    if (low[v] !== index[v]) return;
+    const comp = [];
+    let w;
+    do { w = stack.pop(); onStack[w] = false; comp.push(w); } while (w !== v);
+    if (comp.length > 1) comps.push(comp);
+  }
+  nodes.forEach(function (v) { if (!HAS.call(index, v)) visit(v); });
+  return comps;
+}
+
+function _iso(ms) { return new Date(dayMs(ms)).toISOString().slice(0, 10); }
+
+/* §A5.3 — прогноз дат по всем ролям в порядке зависимостей (⚖5).
+   bars — все полосы спринта [{ key, issueId, endMs }] (endMs — СОБСТВЕННЫЙ конец или null); preds — { issueId:
+   [{ id }] } из кэша связей (явная связь — от каждой полосы предшественника в любой роли, §О15); chain — рёбра
+   chainEdges; queues — { personKey: [key…] } в порядке очереди (обвязка: FORECAST_PURE.orderQueue; порядок ключей
+   = порядок обхода); people — { personKey: { days: [iso…], quotas: [часы по дням] } }; needH — { key: часы }.
+   Полоса вне очередей — фиксированная: даты не пишутся, предшественником идёт своим концом (нет дат — зависимые
+   ждут). Циклы — рёбра внутри компоненты снимаются, полосы укладываются как независимые (⚖4).
+   → { dates: { key: { startIso, endIso } }, unfit: { key: { reason: 'wait'|'cap', waitsFor: key|null } },
+       cycles: [[issueId…]] } */
+function forecastAll(input) {
+  const inp = input || {};
+  const bars = Array.isArray(inp.bars) ? inp.bars : [];
+  const queues = inp.queues || {}, people = inp.people || {}, needH = inp.needH || {};
+  const byKey = {}, byIssue = {}, predsOf = {}, out = {};
+  bars.forEach(function (b) {
+    byKey[b.key] = b; predsOf[b.key] = [];
+    (byIssue[b.issueId] = byIssue[b.issueId] || []).push(b);
+  });
+  function edge(f, t) {
+    if (f === t || predsOf[t].indexOf(f) >= 0) return;
+    predsOf[t].push(f);
+    (out[f] = out[f] || []).push(t);
+  }
+  bars.forEach(function (b) {
+    ((inp.preds && inp.preds[b.issueId]) || []).forEach(function (p) {
+      if (p && p.id !== b.issueId) (byIssue[p.id] || []).forEach(function (pb) { edge(pb.key, b.key); });
+    });
+  });
+  (inp.chain || []).forEach(function (e) { if (e && byKey[e.from] && byKey[e.to]) edge(e.from, e.to); });
+  const cycles = _sccs(bars.map(function (b) { return b.key; }), out).map(function (comp) {
+    const ids = [];
+    comp.forEach(function (k) {
+      predsOf[k] = predsOf[k].filter(function (f) { return comp.indexOf(f) < 0; });
+      if (ids.indexOf(byKey[k].issueId) < 0) ids.push(byKey[k].issueId);
+    });
+    return ids.sort(_idCmp);
+  });
+
+  const queued = {}, done = {}, endIso = {}, dates = {}, unfit = {}, rem = {};
+  Object.keys(queues).forEach(function (pk) {
+    rem[pk] = ((people[pk] && people[pk].quotas) || []).slice();
+    queues[pk].forEach(function (k) { if (byKey[k]) queued[k] = true; });
+  });
+  bars.forEach(function (b) {
+    if (queued[b.key]) return;
+    done[b.key] = true;
+    if (isNum(b.endMs)) endIso[b.key] = _iso(b.endMs);
+  });
+  for (let progress = true; progress;) {
+    progress = false;
+    Object.keys(queues).forEach(function (pk) {
+      const days = (people[pk] && people[pk].days) || [];
+      queues[pk].forEach(function (k) {
+        if (done[k] || !queued[k] || predsOf[k].some(function (f) { return !done[f]; })) return;
+        done[k] = progress = true;
+        const noDates = predsOf[k].filter(function (f) { return !endIso[f]; })[0];
+        if (noDates) { unfit[k] = { reason: 'wait', waitsFor: noDates }; return; }
+        let last = '';
+        predsOf[k].forEach(function (f) { if (endIso[f] > last) last = endIso[f]; });
+        let from = 0;
+        while (from < days.length && days[from] <= last) from++;
+        const r = packOne(rem[pk], needH[k] || 0, from);
+        if (!r) { unfit[k] = { reason: 'cap', waitsFor: null }; return; }
+        dates[k] = { startIso: days[r.startIdx], endIso: days[r.endIdx] };
+        endIso[k] = dates[k].endIso;
+      });
+    });
+  }
+  return { dates: dates, unfit: unfit, cycles: cycles };
+}
+
 /* ── Ось либы 0.3.9 (локальные Date, preStepsCount 1) ── */
 function _add(d, n, unit) {
   return new Date(d.getFullYear() + (unit === 'year' ? n : 0), d.getMonth() + (unit === 'month' ? n : 0),
@@ -300,6 +445,7 @@ const _api = {
   barKey: barKey, parseId: parseId, stages: stages, chainEdges: chainEdges, conflicts: conflicts,
   collapseRows: collapseRows, arrowStyles: arrowStyles, span: span,
   axisDates: axisDates, xOf: xOf, monthSpans: monthSpans,
+  epicLayout: epicLayout, packOne: packOne, forecastAll: forecastAll,
 };
 
 if (typeof window !== 'undefined') {

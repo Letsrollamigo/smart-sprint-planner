@@ -221,3 +221,104 @@ test('#122 monthSpans: центр отрезка каждого месяца в�
   assert.equal(sp[1].x, (nov1 + (day.length - 1) * 44) / 2, 'ноябрь: от 1 ноября до правого края');
   assert.equal(sp[1].date.getMonth(), 10);
 });
+
+/* ── 3.48.0: группы эпиков (§A6) ── */
+test('#122 epicLayout: родитель в дорожке — группа на его месте; в чужой роли — на месте первой подзадачи; вне спринта — плоско', () => {
+  const inSprint = { 'N-1': true, 'N-5': true, 'N-6': true, 'N-7': true, 'N-9': true };
+  const parents = { 'N-5': ['N-9'], 'N-6': ['N-9'] };
+  assert.deepEqual(G.epicLayout(['N-1', 'N-9', 'N-5', 'N-7', 'N-6'], parents, inSprint), [
+    { id: 'N-1', children: null }, { id: 'N-9', children: ['N-5', 'N-6'], own: true }, { id: 'N-7', children: null },
+  ]);
+  assert.deepEqual(G.epicLayout(['N-1', 'N-5', 'N-7', 'N-6'], parents, inSprint), [
+    { id: 'N-1', children: null }, { id: 'N-9', children: ['N-5', 'N-6'], own: false }, { id: 'N-7', children: null },
+  ], 'родитель в другой роли — группа встаёт на место N-5');
+  /* мутация: родителя нет в спринте — группы нет */
+  const out = Object.assign({}, inSprint); delete out['N-9'];
+  assert.deepEqual(G.epicLayout(['N-5', 'N-6'], parents, out), [{ id: 'N-5', children: null }, { id: 'N-6', children: null }]);
+  /* родитель в дорожке без своих подзадач здесь — обычная строка */
+  assert.deepEqual(G.epicLayout(['N-9', 'N-1'], parents, inSprint), [{ id: 'N-9', children: null }, { id: 'N-1', children: null }]);
+});
+
+test('#122 epicLayout: два родителя в спринте — первый по idReadable (§О8), числовое сравнение; один уровень вложенности', () => {
+  const inSprint = { 'N-2': true, 'N-9': true, 'N-10': true, 'N-3': true };
+  assert.deepEqual(G.epicLayout(['N-2'], { 'N-2': ['N-10', 'N-9'] }, inSprint), [{ id: 'N-9', children: ['N-2'], own: false }]);
+  /* N-9 — родитель N-2 и сам подзадача N-3: в дорожке он голова своей группы, под N-3 не уходит */
+  assert.deepEqual(G.epicLayout(['N-9', 'N-2'], { 'N-2': ['N-9'], 'N-9': ['N-3'] }, inSprint),
+    [{ id: 'N-9', children: ['N-2'], own: true }]);
+  /* три яруса в одной дорожке: N-3 → N-9 → N-2; N-9 — голова, N-3 без детей здесь остаётся строкой, не исчезает */
+  assert.deepEqual(G.epicLayout(['N-3', 'N-9', 'N-2'], { 'N-2': ['N-9'], 'N-9': ['N-3'] }, inSprint),
+    [{ id: 'N-3', children: null }, { id: 'N-9', children: ['N-2'], own: true }]);
+});
+
+/* ── 3.48.0: прогноз по всем ролям (§A5) ── */
+test('#122 packOne: старт — первый день с остатком не раньше fromIdx; не влезла — потреблённое возвращается', () => {
+  const q = [8, 8, 8];
+  assert.deepEqual(G.packOne(q, 12, 0), { startIdx: 0, endIdx: 1 });
+  assert.deepEqual(q, [0, 4, 8]);
+  assert.equal(G.packOne(q, 20, 1), null);
+  assert.deepEqual(q, [0, 4, 8], 'частичное потребление откатилось');
+  assert.deepEqual(G.packOne(q, 12, 1), { startIdx: 1, endIdx: 2 });
+});
+
+const FDAYS = ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09'];
+const person = (h) => ({ days: FDAYS.slice(), quotas: FDAYS.map(() => h) });
+function fc(over) {
+  return G.forecastAll(Object.assign({ bars: [], preds: {}, chain: [], queues: {}, people: {}, needH: {} }, over));
+}
+
+test('#122 forecastAll: зависимая стартует на следующий день после конца предшественника; мутация — предшественник короче', () => {
+  const bars = [{ key: 'devBack:A', issueId: 'A' }, { key: 'testing:B', issueId: 'B' }];
+  const base = { bars: bars, preds: { B: [{ id: 'A' }] }, queues: { 'u1|devBack': ['devBack:A'], 'u2|testing': ['testing:B'] },
+    people: { 'u1|devBack': person(8), 'u2|testing': person(8) } };
+  const r = fc(Object.assign({ needH: { 'devBack:A': 16, 'testing:B': 8 } }, base));
+  assert.deepEqual(r.dates['devBack:A'], { startIso: '2026-10-05', endIso: '2026-10-06' });
+  assert.deepEqual(r.dates['testing:B'], { startIso: '2026-10-07', endIso: '2026-10-07' });
+  const m = fc(Object.assign({ needH: { 'devBack:A': 8, 'testing:B': 8 } }, base));
+  assert.equal(m.dates['testing:B'].startIso, '2026-10-06');
+});
+
+test('#122 forecastAll: окно ожидания занимает следующая задача очереди (⚖5); мутация — без связи порядок очереди', () => {
+  const bars = [{ key: 'devBack:A', issueId: 'A' }, { key: 'testing:B', issueId: 'B' }, { key: 'testing:C', issueId: 'C' }];
+  const base = { bars: bars, queues: { 'u0|testing': ['testing:B', 'testing:C'], 'u1|devBack': ['devBack:A'] },
+    people: { 'u0|testing': person(8), 'u1|devBack': person(8) }, needH: { 'devBack:A': 16, 'testing:B': 8, 'testing:C': 16 } };
+  const r = fc(Object.assign({ preds: { B: [{ id: 'A' }] } }, base));
+  assert.deepEqual(r.dates['testing:C'], { startIso: '2026-10-05', endIso: '2026-10-06' }, 'C занял дни, пока B ждёт A');
+  assert.deepEqual(r.dates['testing:B'], { startIso: '2026-10-07', endIso: '2026-10-07' });
+  const m = fc(base);
+  assert.equal(m.dates['testing:B'].startIso, '2026-10-05');
+  assert.equal(m.dates['testing:C'].startIso, '2026-10-06');
+});
+
+test('#122 forecastAll: «не помещается» возвращает потреблённое и не обрывает очередь', () => {
+  const r = fc({ bars: [{ key: 'devBack:X', issueId: 'X' }, { key: 'devBack:Y', issueId: 'Y' }],
+    queues: { 'u1|devBack': ['devBack:X', 'devBack:Y'] }, people: { 'u1|devBack': person(8) }, needH: { 'devBack:X': 50, 'devBack:Y': 8 } });
+  assert.deepEqual(r.unfit['devBack:X'], { reason: 'cap', waitsFor: null });
+  assert.deepEqual(r.dates['devBack:Y'], { startIso: '2026-10-05', endIso: '2026-10-05' });
+});
+
+test('#122 forecastAll: фиксированный предшественник — своим концом; без дат (нет исполнителя) — зависимые ждут, в т.ч. по цепочке', () => {
+  const bars = [{ key: 'analysis:T', issueId: 'T', endMs: null }, { key: 'devBack:T', issueId: 'T' }];
+  const base = { bars: bars, chain: [{ from: 'analysis:T', to: 'devBack:T' }], queues: { 'u1|devBack': ['devBack:T'] },
+    people: { 'u1|devBack': person(8) }, needH: { 'devBack:T': 8 } };
+  assert.deepEqual(fc(base).unfit['devBack:T'], { reason: 'wait', waitsFor: 'analysis:T' });
+  const dated = fc(Object.assign({}, base, { bars: [{ key: 'analysis:T', issueId: 'T', endMs: Date.UTC(2026, 9, 6) }, bars[1]] }));
+  assert.deepEqual(dated.dates['devBack:T'], { startIso: '2026-10-07', endIso: '2026-10-07' });
+  /* ожидание наследуется: C ждёт T, которая сама без дат */
+  const chainWait = fc(Object.assign({}, base, { bars: bars.concat([{ key: 'testing:C', issueId: 'C' }]), preds: { C: [{ id: 'T' }] },
+    queues: { 'u1|devBack': ['devBack:T'], 'u2|testing': ['testing:C'] }, people: { 'u1|devBack': person(8), 'u2|testing': person(8) },
+    needH: { 'devBack:T': 8, 'testing:C': 8 } }));
+  assert.equal(chainWait.unfit['testing:C'].reason, 'wait');
+});
+
+test('#122 forecastAll: цикл из двух задач — укладываются как независимые и попадают в cycles; порядок входа не влияет', () => {
+  const bars = [{ key: 'devBack:N-2', issueId: 'N-2' }, { key: 'devBack:N-10', issueId: 'N-10' }];
+  const input = { bars: bars, preds: { 'N-2': [{ id: 'N-10' }], 'N-10': [{ id: 'N-2' }] },
+    queues: { 'u1|devBack': ['devBack:N-2'], 'u2|devBack': ['devBack:N-10'] },
+    people: { 'u1|devBack': person(8), 'u2|devBack': person(8) }, needH: { 'devBack:N-2': 8, 'devBack:N-10': 8 } };
+  const r = fc(input);
+  assert.deepEqual(r.cycles, [['N-2', 'N-10']]);
+  assert.equal(r.dates['devBack:N-2'].startIso, '2026-10-05');
+  assert.equal(r.dates['devBack:N-10'].startIso, '2026-10-05');
+  assert.deepEqual(r.unfit, {});
+  assert.deepEqual(fc(Object.assign({}, input, { bars: bars.slice().reverse() })), r);
+});

@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "選択したロールのフェーズが「スプリントのパラメータ」のバーで強調表示されます。既定では空 — すべてのフェーズが同じ色調です。列はプロジェクトで有効なロールのみです。",
   "phasesSetUsedIn": "使用箇所",
   "phasesSetUsedInParams": "スプリントのパラメータ — フェーズバー",
-  "phasesSetUsedInGantt": "ガント — 「すべての役割」モードのフェーズ帯"
+  "phasesSetUsedInGantt": "ガント — 「すべての役割」モードのフェーズ帯",
+  "ganttForecastAllTip": "スプリントのすべての役割を依存関係の順に一括で",
+  "forecastAllConfirmText": "スプリントのすべての役割の日付が再計算され上書きされます（手動修正分を含む）。続行しますか？",
+  "toastForecastAllDone": "すべての役割の日付を予測しました",
+  "toastForecastAllUnfit": "すべての役割の日付を予測しました。未設定: {n} — 行のマークを参照してください",
+  "ganttWaitsFor": "{issue} · {role} を待機中",
+  "ganttUnfitBlockTitle": "予測後に日付なし（{n}）",
+  "ganttUnfitReasonWait": "先行タスクに日付がありません",
+  "ganttUnfitReasonCap": "{who} のキャパシティはスプリント終了まで使い切られています",
+  "ganttCycleWarn": "リンクの循環: {issues} — 独立したタスクとして配置しました",
+  "ganttEpicChip": "エピック · サブタスク {n} 件",
+  "ganttEpicParentRole": "親は役割「{role}」",
+  "ganttEpicParentRoleTip": "親はスプリントの別の役割に属します。ここにはサブタスクの日付範囲のみ表示されます"
 }

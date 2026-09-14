@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Fáze vybrané role se zvýrazní na liště v „Parametrech sprintu“. Ve výchozím stavu prázdné — všechny fáze mají jeden odstín. Sloupce — pouze role zapnuté v projektu.",
   "phasesSetUsedIn": "Kde se používá",
   "phasesSetUsedInParams": "Parametry sprintu — lišta fází",
-  "phasesSetUsedInGantt": "Gantt — pásy fází v režimu „Všechny role“"
+  "phasesSetUsedInGantt": "Gantt — pásy fází v režimu „Všechny role“",
+  "ganttForecastAllTip": "Všechny role sprintu najednou, v pořadí závislostí",
+  "forecastAllConfirmText": "Termíny budou přepočítány a přepsány pro všechny role sprintu, včetně ručně upravených. Pokračovat?",
+  "toastForecastAllDone": "Termíny prognózovány pro všechny role",
+  "toastForecastAllUnfit": "Termíny prognózovány pro všechny role; nenastaveno: {n} — viz značky v řádcích",
+  "ganttWaitsFor": "čeká na {issue} · {role}",
+  "ganttUnfitBlockTitle": "Bez termínů po prognóze ({n})",
+  "ganttUnfitReasonWait": "předchůdce nemá termíny",
+  "ganttUnfitReasonCap": "kapacita {who} je vyčerpána do konce sprintu",
+  "ganttCycleWarn": "Cyklus vazeb: {issues} — naplánováno jako nezávislé",
+  "ganttEpicChip": "epik · {n} podúkolů",
+  "ganttEpicParentRole": "rodič v roli „{role}“",
+  "ganttEpicParentRoleTip": "Rodič patří do jiné role sprintu; zde je jen rozsah termínů podúkolů"
 }

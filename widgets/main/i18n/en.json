@@ -1502,5 +1502,17 @@
   "phasesSetMappingHint": "Phases of the selected role are highlighted on the bar in “Sprint parameters”. Empty by default — all phases share one tone. Columns are the roles enabled in the project.",
   "phasesSetUsedIn": "Used in",
   "phasesSetUsedInParams": "Sprint parameters — phase bar",
-  "phasesSetUsedInGantt": "Gantt — phase bands in “All roles” mode"
+  "phasesSetUsedInGantt": "Gantt — phase bands in “All roles” mode",
+  "ganttForecastAllTip": "All sprint roles at once, in dependency order",
+  "forecastAllConfirmText": "Dates will be recalculated and overwritten for all sprint roles, including manual edits. Continue?",
+  "toastForecastAllDone": "Dates forecast for all roles",
+  "toastForecastAllUnfit": "Dates forecast for all roles; not set: {n} — see row marks",
+  "ganttWaitsFor": "waiting for {issue} · {role}",
+  "ganttUnfitBlockTitle": "No dates after forecast ({n})",
+  "ganttUnfitReasonWait": "predecessor has no dates",
+  "ganttUnfitReasonCap": "{who}’s capacity is exhausted until sprint end",
+  "ganttCycleWarn": "Link cycle: {issues} — scheduled as independent",
+  "ganttEpicChip": "epic · {n} subtasks",
+  "ganttEpicParentRole": "parent in role “{role}”",
+  "ganttEpicParentRoleTip": "The parent belongs to another sprint role; only the subtasks’ date span is shown here"
 }

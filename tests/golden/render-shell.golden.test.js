@@ -1123,3 +1123,83 @@ test('#122 «Все роли»: drag и select пишут через savePlannin
   ganttAllVm(document).onDateChange('analysis:GM-1', S + 7 * GA_DAY, S + 8 * GA_DAY);
   assert.strictEqual(calls.length, 3, 'не-редактор даты не двигает');
 });
+
+/* ── #122 ступень 3.48.0: группы эпиков и прогноз по всем ролям. Связи подменяются стабом GANTT_VIEW.linksDataFor
+   (в jsdom-хосте фетча нет): parents — иерархия, preds — явные зависимости. ── */
+test('golden: renderGanttChart — «Все роли» 3.48.0: эпик — строка группы в своей роли и пометка в чужой, стрелки к группе, свёрнутый эпик забирает стрелки', () => {
+  const { gm, document } = createHost();
+  ganttAllState(gm);
+  const links = { preds: { 'GM-5': [{ id: 'GM-1', type: 'Depend' }] }, parents: { 'GM-10': ['GM-1'] }, ext: {} };
+  gm.set({ GANTT_VIEW: Object.assign({}, gm.get('GANTT_VIEW'), { linksDataFor: () => links }) });
+  gm.call('renderGanttChart');
+  const byId = (vm) => { const m = {}; vm.rows.forEach((r) => { m[r.id] = r; }); return m; };
+  const vm = ganttAllVm(document), r = byId(vm), ids = vm.rows.map((x) => x.id);
+  assert.ok(!r['analysis:GM-1'], 'полоса родителя в своей роли заменена строкой группы');
+  assert.strictEqual(r['epic:analysis:GM-1'].kind, 'epic');
+  assert.strictEqual(r['epic:analysis:GM-1'].own, true);
+  assert.ok(r['epic:analysis:GM-1'].canAssign, 'родитель в своей роли — полная строка с исполнителем');
+  assert.ok(ids.indexOf('epic:analysis:GM-1') < ids.indexOf('analysis:GM-10'));
+  assert.strictEqual(r['analysis:GM-10'].parent, 'epic:analysis:GM-1');
+  assert.strictEqual(r['analysis:GM-10'].indent, true);
+  const foreign = r['epic:devBack:GM-1'];
+  assert.strictEqual(foreign.own, false);
+  assert.ok(foreign.parentRoleText.indexOf(r['track:analysis'].label) >= 0, 'пометка «родитель в роли «Анализ»»');
+  assert.deepStrictEqual([foreign.startTs, foreign.endTs], [r['devBack:GM-10'].startTs, r['devBack:GM-10'].endTs], 'бар группы = охват подзадач');
+  assert.deepStrictEqual(plain(r['testing:GM-5'].dependencies), ['epic:analysis:GM-1'], 'связь на родителя рисуется к строке группы');
+
+  vm.onToggle('epic:devBack:GM-1');
+  const c = byId(ganttAllVm(document));
+  assert.ok(!c['devBack:GM-10'], 'подзадача спрятана');
+  assert.strictEqual(c['epic:devBack:GM-1'].collapsed, true);
+  assert.ok(c['epic:devBack:GM-1'].dependencies.indexOf('analysis:GM-10') >= 0, 'цепочка подзадачи перешла на бар эпика');
+
+  links.parents = {};
+  gm.call('renderGanttChart');
+  const flat = byId(ganttAllVm(document));
+  assert.ok(flat['analysis:GM-1'] && !flat['epic:analysis:GM-1'], 'без иерархии — плоско');
+});
+
+test('#122 3.48.0 прогноз по всем ролям: цепочка ролей одним savePlanningForRoles с prev-снимками; предшественник без дат — «ждёт», даты стёрты, пометки и блок', async () => {
+  const { gm, document, window } = createHost();
+  const hist = ganttAllState(gm);
+  const saves = [], toasts = [];
+  const links = { preds: {}, parents: {}, ext: {} };
+  gm.set({
+    GANTT_VIEW: Object.assign({}, gm.get('GANTT_VIEW'), { linksDataFor: () => links }),
+    apiGet: () => Promise.resolve(null),
+    getApprovedCapacityForPerson: () => 80,
+    savePlanningForRoles: (t) => { saves.push(plain(t)); return Promise.resolve(true); },
+    toast: (msg, type) => { toasts.push([msg, type || null]); },
+  });
+  const ri = gm.get('_roleItems');
+  ri.analysis.find((i) => i.issueId === 'GM-10').alloc_analysis = 480;
+  ri.devBack.find((i) => i.issueId === 'GM-10').alloc_devBack = 480;
+  const F = window.__SSP_GANTT_ALL_FORECAST;
+  const analysisBefore = plain(hist[0].personalPlanning);
+  assert.strictEqual(await F.runForecastAll(gm.call('_ganttAllDeps')), true);
+  assert.strictEqual(saves.length, 1, 'одна запись на все роли');
+  assert.deepStrictEqual(saves[0].map((t) => t.rk).sort(), ['analysis', 'devBack']);
+  assert.deepStrictEqual(saves[0].find((t) => t.rk === 'analysis').prevPP, analysisBefore, 'prev-снимок снят ДО мутации');
+  const aTa = hist[0].personalPlanning.taskAssignments['GM-10'], dTa = gm.get('_currentRolePP').taskAssignments['GM-10'];
+  assert.ok(typeof aTa.dateEnd === 'number' && typeof dTa.dateStart === 'number');
+  assert.ok(dTa.dateStart > aTa.dateEnd, 'разработка — после конца анализа той же задачи (цепочка)');
+  assert.strictEqual(toasts[toasts.length - 1][1], 'success');
+
+  /* предшественник без исполнителя и без дат держит обе полосы GM-10 (⚖ владелец 2026-09-14: «ждёт», даты стираются) */
+  links.preds = { 'GM-10': [{ id: 'GM-1', type: 'Depend' }] };
+  delete hist[0].personalPlanning.taskAssignments['GM-1'].dateStart;
+  delete hist[0].personalPlanning.taskAssignments['GM-1'].dateEnd;
+  assert.strictEqual(await F.runForecastAll(gm.call('_ganttAllDeps')), true);
+  assert.strictEqual(hist[0].personalPlanning.taskAssignments['GM-10'].dateStart, null);
+  assert.strictEqual(gm.get('_currentRolePP').taskAssignments['GM-10'].dateStart, null);
+  assert.strictEqual(toasts[toasts.length - 1][1], 'warn');
+  assert.ok(toasts[toasts.length - 1][0].indexOf('2') >= 0, 'тост: не поставлены 2');
+  const rows = ganttAllVm(document).rows, a10 = rows.find((x) => x.id === 'analysis:GM-10'), d10 = rows.find((x) => x.id === 'devBack:GM-10');
+  assert.ok(a10.unfit && d10.unfit, 'обе полосы — маркеры без дат');
+  assert.ok(a10.unfitText.indexOf('GM-1') >= 0, 'пометка «ждёт GM-1 · роль»');
+  assert.deepStrictEqual(plain(d10.dependencies), [], 'к полосе без дат стрелок нет');
+  assert.strictEqual(a10.startTs, a10.endTs);
+  const block = document.getElementById('ganttUnfitBlock');
+  assert.ok(block.querySelector('.spoiler.open'), 'блок раскрыт сразу после прогноза');
+  assert.strictEqual(block.querySelectorAll('.ssp-gantt-unfit__row').length, 2);
+});

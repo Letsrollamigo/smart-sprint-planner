@@ -780,7 +780,7 @@
      manifest через backend endpoint app-version реализовано в v5.6.0 (D40, см. _loadAppVersion);
      APP_VERSION остаётся как runtime-fallback при cache miss / network error.
      v6.0.0: бампить здесь синхронно с manifest.json/version, backend-project.js и widgets[0].description. */
-  var APP_VERSION = '3.47.0';
+  var APP_VERSION = '3.48.0';
 
   /* v2.5.6-decomp (Тир D слайс 6): per-assignee палитра v5.7.0 (D47) и её резолвер
      сняты как доказуемо мёртвые — цвет полос Ганта с v2.1.14 идёт из родного
@@ -4512,7 +4512,7 @@
   /* #122 — режим вкладки «Гант»: 'role' (domain/gantt-view.js) | 'all' — сквозной вид по всем ролям
      (domain/gantt-all-view.js). Режим — предпочтение пользователя (safeLs ⊃ зеркало user-prefs), читается
      лениво: на YT 2025.3 localStorage мёртв, а зеркало грузится после register. */
-  var GANTT_ALL_VIEW = (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_VIEW) || {};
+  var GANTT_ALL_VIEW = (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_VIEW) || {}, GANTT_ALL_FORECAST = (typeof window !== 'undefined' && window.__SSP_GANTT_ALL_FORECAST) || {};
   var _ganttMode = null;
   function _getGanttMode() {
     if (_ganttMode === null) _ganttMode = (safeLs.get('ssp_ganttMode') === 'all') ? 'all' : 'role';
@@ -4529,7 +4529,7 @@
       deepClone: deepClone, emptyPP: emptyPP, roleLabel: roleLabel, getSprintRoles: getSprintRoles,
       getPlanningForRole: _getPersonalPlanningForCurrent,   /* read-гард #56-7 чужого roleKey */
       savePlanningForRoles: savePlanningForRoles, updateIssueAssigneeField: updateIssueAssigneeField,
-      updateCurrentRoleTotals: updateCurrentRoleTotals,
+      updateCurrentRoleTotals: updateCurrentRoleTotals, apiGet: apiGet, openModal: openModal, diag: diag, getApprovedCapacityForPerson: getApprovedCapacityForPerson, ganttAllView: GANTT_ALL_VIEW, ganttAllForecast: GANTT_ALL_FORECAST,
       loadGanttLinks: GANTT_VIEW.loadGanttLinks, linksDataFor: GANTT_VIEW.linksDataFor,
       getGanttMode: _getGanttMode, setGanttMode: setGanttMode,
       state: {
@@ -4692,11 +4692,11 @@
     return Math.round(CAPACITY_PURE.roleCapacity(rk, rec) * 60);
   }
   /* §9 — ёмкость человека в роли в ЧАСАХ (role-scoped base×alloc, D1↔D12 — НЕ полный base).
-     Fallback = PP-ресурс человека. */
-  function getApprovedCapacityForPerson(login, rk) {
+     Fallback = PP-ресурс человека; ppOverride — PP чужой роли (#122 прогноз по всем ролям), иначе PP текущей. */
+  function getApprovedCapacityForPerson(login, rk, ppOverride) {
     var rec = _approvedRecordForPlanning();
     if (!rec) {
-      var rba = _currentRolePP && _currentRolePP.resourcesByAssignee;
+      var rba = (ppOverride || _currentRolePP) && (ppOverride || _currentRolePP).resourcesByAssignee;
       return (rba && rba[login] && typeof rba[login].resource === 'number') ? rba[login].resource : 0;
     }
     var p = rec.persons && rec.persons[login];

@@ -1,11 +1,13 @@
-/* #122 «Сквозной Гант по всем ролям» (v3.47.0) — React-презентация режима «Все роли» на vendored
+/* #122 «Сквозной Гант по всем ролям» (v3.47.0 → v3.48.0) — React-презентация режима «Все роли» на vendored
    gantt-task-react 0.3.9 (SSP_VENDORED.GanttTaskReact). Логика — domain/gantt-all-view.js (vm) и
    pure/gantt-all-pure.js (правила, ось); компонент тупой: ноль обращений к стейту, правка — колбэками vm.
 
    Что делает либа и что поверх неё:
-   - строки одной высоты (rowHeight 70, бар 31 px через barFill 44); заголовок дорожки — строка-группа
-     type 'project' (сводная полоса, isDisabled — без drag); сворачивание — фильтром в vm (hideChildren
-     либе не передаётся); порядок — displayOrder с 1;
+   - строки одной высоты (rowHeight 70, бар 31 px через barFill 44); заголовок дорожки и группа эпика — строки
+     type 'project' (сводная полоса / охват подзадач, isDisabled — без drag); сворачивание — фильтром в vm
+     (hideChildren либе не передаётся); порядок — displayOrder с 1;
+   - полоса без дат после прогноза (3.48.0) — task с end = start: либа сама делает её smalltask, подпись
+     (пометка «ждёт / не помещается») выносит справа от старта; фон прозрачный, стрелок нет;
    - левый список 380 px и тултип бара — наши компоненты (TaskListTable / TaskListHeader / TooltipContent);
      select исполнителя неуправляемый: change ловит делегат домена на контейнере;
    - поверх SVG одним MutationObserver-эффектом (узлы помечены data-ssp-poke и не будят наблюдателя):
@@ -25,9 +27,30 @@ import { DAY, msToLocalDay, localDayToMs, endToInclusiveMs, GanttBadge, ExtDepsB
 const _mounted = new WeakMap();
 const ROW_H = 70;
 const SVG_NS = 'http://www.w3.org/2000/svg';
-/* Сводная полоса дорожки — тон primary (как подсветка «сегодня»): приглушённая у развёрнутой, плотнее у свёрнутой. */
+/* Сводная полоса дорожки — тон primary (как подсветка «сегодня»): приглушённая у развёрнутой, плотнее у свёрнутой;
+   бар группы эпика (Д8) — плотнее сводной, чтобы отличался от неё. */
 const TRACK_BG = 'rgba(66,130,214,0.18)';
 const TRACK_BG_COLLAPSED = 'rgba(66,130,214,0.45)';
+const EPIC_BG = 'rgba(66,130,214,0.35)';
+
+/* Ring Tooltip внутри React-дерева (мост mountTooltips переносит узлы и сломал бы реконсиляцию), тёмная,
+   задержка 500 мс; без вендора — нативный title. */
+function Tip({ title, children }) {
+  const Tooltip = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Tooltip;
+  if (!Tooltip) return <span title={title}>{children}</span>;
+  return <Tooltip title={title} delay={500}>{children}</Tooltip>;
+}
+
+function Caret({ row, vm }) {
+  const i = vm.i18nExt || {};
+  const label = row.kind === 'epic' ? row.chipText : (row.collapsed ? i.expand : i.collapse);
+  return (
+    <button type="button" className="ssp-gantt-all__caret" aria-expanded={!row.collapsed}
+      title={label} aria-label={label} onClick={() => { if (typeof vm.onToggle === 'function') vm.onToggle(row.id); }}>
+      {row.collapsed ? '▸' : '▾'}
+    </button>
+  );
+}
 
 function TrackRow({ row, vm, h, w }) {
   const i = vm.i18nExt || {};
@@ -36,12 +59,7 @@ function TrackRow({ row, vm, h, w }) {
     <div className={'ssp-gantt-all__track' + (row.nosnap ? ' ssp-gantt-all__track--nosnap' : '')}
       style={{ height: h + 'px', width: w }} data-gantt-track={row.rk}>
       <div className="ssp-gantt-all__line">
-        {empty ? null : (
-          <button type="button" className="ssp-gantt-all__caret" aria-expanded={!row.collapsed}
-            title={row.collapsed ? i.expand : i.collapse} aria-label={row.collapsed ? i.expand : i.collapse} onClick={() => { if (typeof vm.onToggle === 'function') vm.onToggle(row.id); }}>
-            {row.collapsed ? '▸' : '▾'}
-          </button>
-        )}
+        {empty ? null : <Caret row={row} vm={vm} />}
         <span className="ssp-gantt-all__role" title={row.label}>{row.label}</span>
         <span className="ssp-gantt-all__cnt">
           {empty ? i.noSnapshot : row.tasksText + (row.nosnap ? ' · ' + i.noSnapshot : '')}
@@ -57,17 +75,28 @@ function TrackRow({ row, vm, h, w }) {
   );
 }
 
+/* Строка задачи (Д4) и строка группы эпика (Д8): родитель в своей роли — полная строка с чипом; в чужой —
+   чип и пометка роли родителя с подсказкой, без исполнителя и состояния. Подзадача — с отступом. */
 function TaskRow({ row, vm, h, w }) {
   const i = vm.i18nExt || {};
-  const known = row.options.some((o) => o.value === row.assignee);
+  const epic = row.kind === 'epic', foreign = epic && !row.own;
+  const known = (row.options || []).some((o) => o.value === row.assignee);
+  const chip = epic ? <span className="ssp-gantt-all__epic-chip">{row.chipText}</span> : null;
+  const cls = 'ssp-gantt-all__row' + (epic ? ' ssp-gantt-all__row--epic' : '') + (row.indent ? ' ssp-gantt-all__row--child' : '');
   return (
-    <div className="ssp-gantt-all__row" style={{ height: h + 'px', width: w }} data-gantt-issue={row.issueId} data-gantt-rk={row.rk}>
+    <div className={cls} style={{ height: h + 'px', width: w }} data-gantt-issue={row.issueId} data-gantt-rk={row.rk}>
       <div className="ssp-gantt-all__line">
+        {epic ? <Caret row={row} vm={vm} /> : null}
         <a href={row.url} target="_blank" rel="noopener noreferrer" className="link ssp-gantt-all__key">{row.issueId}</a>
         <span className="ssp-gantt-all__title" title={row.title}>{row.title}</span>
       </div>
       <div className="ssp-gantt-all__line">
-        {row.canAssign ? (
+        {foreign ? (
+          <React.Fragment>
+            {chip}
+            <Tip title={row.parentRoleTip}><span className="ssp-gantt-all__parent-role">{row.parentRoleText}</span></Tip>
+          </React.Fragment>
+        ) : row.canAssign ? (
           /* неуправляемый select: change — делегатом домена; key пересоздаёт его при смене исполнителя */
           <select key={row.assignee} className="ssp-gantt-all__assignee assigner-btn" data-issue={row.issueId} data-rk={row.rk}
             defaultValue={row.assignee} title={i.assigneeTip}>
@@ -77,10 +106,14 @@ function TaskRow({ row, vm, h, w }) {
           </select>
         ) : <span className="ssp-gantt-all__who" title={row.assigneeText}>{row.assigneeText}</span>}
       </div>
-      <div className="ssp-gantt-all__line">
-        <GanttBadge row={row} />
-        <ExtDepsBadge row={row} i18n={vm.i18nExt} />
-      </div>
+      {foreign ? null : (
+        <div className="ssp-gantt-all__line">
+          {chip}
+          <GanttBadge row={row} />
+          <ExtDepsBadge row={row} i18n={vm.i18nExt} />
+          {row.unfitText ? <span className="ssp-gantt-all__unfit" title={row.unfitTip}>{'! ' + row.unfitText}</span> : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -107,31 +140,28 @@ function makeListHeader(vm) {
   };
 }
 
-/* Тултип бара (Д5): ключ, название, исполнитель · роль дорожки, даты, строки конфликтов тоном --warn. */
+/* Тултип бара (Д5): ключ, название, исполнитель · роль дорожки, даты (или пометка прогноза), строки конфликтов тоном --warn. */
 function makeTooltip(vm) {
   return function GanttAllTooltip({ task }) {
     const row = vm._rowsById[task.id];
     if (!row || row.kind !== 'bar') return <div />;
-    const dates = (typeof vm.fmtDate === 'function') ? vm.fmtDate(row.startTs) + ' – ' + vm.fmtDate(row.endTs) : '';
+    const dates = row.unfit ? row.unfitText
+      : ((typeof vm.fmtDate === 'function') ? vm.fmtDate(row.startTs) + ' – ' + vm.fmtDate(row.endTs) : '');
     return (
       <div className="ssp-gantt-all__tip">
         <div className="ssp-gantt-all__tip-key">{row.issueId}</div>
         <div>{row.title}</div>
         <div className="ssp-gantt-all__tip-muted">{row.assigneeText + ' · ' + row.roleLabel}</div>
-        {dates ? <div className="ssp-gantt-all__tip-muted">{dates}</div> : null}
+        {dates ? <div className={row.unfit ? 'ssp-gantt-all__tip-warn' : 'ssp-gantt-all__tip-muted'}>{dates}</div> : null}
         {row.conflicts.map((c, k) => <div key={k} className="ssp-gantt-all__tip-warn">{'! ' + c}</div>)}
       </div>
     );
   };
 }
 
-/* Счётчик конфликтов (Д1): подсказка — Ring Tooltip внутри React-дерева (мост mountTooltips переносит узлы
-   и сломал бы реконсиляцию), тёмная, задержка 500 мс. */
+/* Счётчик конфликтов (Д1): подсказка — Ring Tooltip, тёмная, задержка 500 мс. */
 function ConflictCounter({ vm }) {
-  const Tooltip = globalThis.SSP_VENDORED && globalThis.SSP_VENDORED.Tooltip;
-  const body = <span className="ssp-gantt-all__conflicts"><RingIcon name="warning" />{vm.conflictsCounter}</span>;
-  if (!Tooltip) return <span title={vm.conflictsTip}>{body}</span>;
-  return <Tooltip title={vm.conflictsTip} delay={500}>{body}</Tooltip>;
+  return <Tip title={vm.conflictsTip}><span className="ssp-gantt-all__conflicts"><RingIcon name="warning" />{vm.conflictsCounter}</span></Tip>;
 }
 
 function _svg(tag, attrs, style) {
@@ -281,6 +311,7 @@ function GanttAll({ host }) {
   const { Gantt, ViewMode } = GT;
   vm._rowsById = {};
   vm.rows.forEach((r) => { vm._rowsById[r.id] = r; });
+  const paint = (bg) => ({ backgroundColor: bg, backgroundSelectedColor: bg, progressColor: bg, progressSelectedColor: bg });
   const tasks = vm.rows.map((r, idx) => {
     const base = {
       id: r.id, progress: 0, displayOrder: idx + 1,   /* 0 либа читает как «нет порядка» */
@@ -288,12 +319,16 @@ function GanttAll({ host }) {
       dependencies: (r.dependencies && r.dependencies.length) ? r.dependencies.slice() : undefined,
     };
     if (r.kind === 'track') {
-      const bg = !r.count ? 'transparent' : (r.collapsed ? TRACK_BG_COLLAPSED : TRACK_BG);
       return Object.assign(base, { name: '', type: 'project', isDisabled: true,
-        styles: { backgroundColor: bg, backgroundSelectedColor: bg, progressColor: bg, progressSelectedColor: bg } });
+        styles: paint(!r.count ? 'transparent' : (r.collapsed ? TRACK_BG_COLLAPSED : TRACK_BG)) });
     }
-    return Object.assign(base, { name: r.issueId, type: 'task', project: r.parent, isDisabled: !vm.editable || r.readonly,
-      styles: { backgroundColor: r.bg, backgroundSelectedColor: r.bg, progressColor: r.bg, progressSelectedColor: r.bg } });
+    if (r.kind === 'epic') {
+      return Object.assign(base, { name: r.issueId, type: 'project', project: r.parent, isDisabled: true, styles: paint(EPIC_BG) });
+    }
+    if (r.unfit) {
+      return Object.assign(base, { end: base.start, name: r.unfitText, type: 'task', project: r.parent, isDisabled: true, styles: paint('transparent') });
+    }
+    return Object.assign(base, { name: r.issueId, type: 'task', project: r.parent, isDisabled: !vm.editable || r.readonly, styles: paint(r.bg) });
   });
   tasksRef.current = tasks;
   const zoomBtns = [['Day', vm.zoomLabels.day], ['Week', vm.zoomLabels.week], ['Month', vm.zoomLabels.month]];

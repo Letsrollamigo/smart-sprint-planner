@@ -1503,5 +1503,17 @@
   "phasesSetMappingHint": "Las fases del rol seleccionado se resaltan en la barra de «Parámetros del sprint». Vacío por defecto — todas las fases con un mismo tono. Columnas — solo los roles activados en el proyecto.",
   "phasesSetUsedIn": "Dónde se usa",
   "phasesSetUsedInParams": "Parámetros del sprint — barra de fases",
-  "phasesSetUsedInGantt": "Gantt — bandas de fases en el modo «Todos los roles»"
+  "phasesSetUsedInGantt": "Gantt — bandas de fases en el modo «Todos los roles»",
+  "ganttForecastAllTip": "Todos los roles del sprint a la vez, en orden de dependencias",
+  "forecastAllConfirmText": "Las fechas de todos los roles del sprint se recalcularán y sobrescribirán, incluidas las ajustadas manualmente. ¿Continuar?",
+  "toastForecastAllDone": "Fechas pronosticadas para todos los roles",
+  "toastForecastAllUnfit": "Fechas pronosticadas para todos los roles; sin fijar: {n} — vea las marcas en las filas",
+  "ganttWaitsFor": "esperando a {issue} · {role}",
+  "ganttUnfitBlockTitle": "Sin fechas tras el pronóstico ({n})",
+  "ganttUnfitReasonWait": "el predecesor no tiene fechas",
+  "ganttUnfitReasonCap": "la capacidad de {who} está agotada hasta el fin del sprint",
+  "ganttCycleWarn": "Ciclo de vínculos: {issues} — planificadas como independientes",
+  "ganttEpicChip": "épica · {n} subtareas",
+  "ganttEpicParentRole": "padre en el rol «{role}»",
+  "ganttEpicParentRoleTip": "El padre pertenece a otro rol del sprint; aquí solo se muestra el rango de fechas de las subtareas"
 }
