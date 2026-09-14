@@ -71,6 +71,17 @@ test('fromSettings: нет planningModel → дериват из флагов (P
   });
 });
 
+test('fromSettings: нет planningModel, capacityMode=full → full (#131: настройки до v2.14.0 не понижаются до simple)', function () {
+  assert.deepStrictEqual(
+    planningModelFromSettings({ capacityMode: 'full', personalPlanningEnabled: false, usePersonalForResource: false, manualPersonalResource: true }),
+    { model: 'full', lightSub: 'manual' });
+  /* capacityMode учитывается только при отсутствии planningModel */
+  assert.strictEqual(planningModelFromSettings({ planningModel: 'simple', capacityMode: 'full' }).model, 'simple');
+  /* capacityMode=light — прежняя деривация из флагов */
+  assert.strictEqual(planningModelFromSettings({ capacityMode: 'light', personalPlanningEnabled: true }).model, 'light');
+  assert.strictEqual(planningModelFromSettings({ capacityMode: 'light' }).model, 'simple');
+});
+
 test('fromSettings: невалидный planningModel → дериват из флагов', function () {
   assert.strictEqual(planningModelFromSettings({ planningModel: 'garbage', personalPlanningEnabled: true }).model, 'light');
 });

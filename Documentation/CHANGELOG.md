@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.48.1] — 2026-09-14
+
+> **Patch #131.** Planning model for settings without `planningModel` (projects that never saved settings through the form since v2.14.0). No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Fixed
+
+- **The settings form downgraded the capacity model of legacy projects (#131).** When stored settings had no `planningModel` (data older than v2.14.0), the form showed “Simple”, and the very first save for any reason wrote `capacityMode` = light — the “Capacity” tab disappeared from navigation and the personal-planning flags were reset. The model is now derived from stored settings when the key is missing: `capacityMode` = full → “Full”, otherwise “Light”/“Simple” by the personal-planning flag; saving without changes keeps `capacityMode` as it was. Found by the schema-migration regression ladder (2.12.0 → 3.48.0).
+
+### Under the hood
+
+- `pure/planning-model-pure.js:planningModelFromSettings` — `capacityMode` branch ahead of the legacy-flag derivation; unit test on a 2.12.0-shaped settings snapshot. Both code bases, front-end size unchanged.
+
+---
+
 ## [3.48.0] — 2026-09-14
 
 > **Cross-role Gantt — step 2 of 2.** #122: forecast across all roles and epic groups. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.

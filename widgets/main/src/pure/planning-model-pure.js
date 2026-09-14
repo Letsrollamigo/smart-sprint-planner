@@ -52,13 +52,13 @@ function planningModelToFlags(model, lightSub, opts) {
 }
 
 /* settings → { model, lightSub }. Источник — settings.planningModel; если его нет или
-   он невалиден (старый снимок) — деривируем из legacy-флагов.
-   PLANNING_MODEL_SHIM — fallback-деривацию снять, когда planningModel есть у всех. */
+   он невалиден (старый снимок) — деривируем: capacityMode='full' → full (#131, снимки до
+   v2.14.0 иначе понижались до simple), иначе из legacy-флагов. PLANNING_MODEL_SHIM — снять, когда есть у всех. */
 function planningModelFromSettings(settings) {
   var s = settings || {};
   var model = s.planningModel;
   if (PLANNING_MODELS.indexOf(model) < 0) {
-    model = s.personalPlanningEnabled ? 'light' : 'simple';
+    model = s.capacityMode === 'full' ? 'full' : (s.personalPlanningEnabled ? 'light' : 'simple');
   }
   return {
     model: model,
