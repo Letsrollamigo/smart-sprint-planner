@@ -8,6 +8,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.48.0] — 2026-09-14
+
+> **Cross-role Gantt — step 2 of 2.** #122: forecast across all roles and epic groups. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Added
+
+- **Forecast across all roles (#122).** A “Forecast dates” button on the Gantt chart in “All roles” mode (with “Auto-forecast dates” on, editor rights): dates are computed for every sprint role at once in dependency order — by dependency links (the predecessor as a whole, in all its roles) and along the task chain; one queue per person per role, capacity, the useful-hours cap, the calendar and absences work as in the role forecast. When assigned issues already have dates, a confirmation asks about overwriting them for all sprint roles. Only dates are written; the next issues in a queue take the days while a predecessor is awaited.
+- **“waiting for {issue} · {role}” and “over capacity” marks.** An issue that received no dates (its predecessor has none — including the same issue in a previous role without an assignee; the person’s capacity is exhausted until sprint end) stays in its track with the mark in the third line of the cell and at its start on the timeline, without arrows; a “No dates after forecast (N)” block under the timeline lists the issue, the role and the reason and opens right after the forecast. Marks and the block last until reload; the toast names the count.
+- **Link cycle** (issues depending on each other) — a “Link cycle: … — scheduled as independent” warning; dates are set as for independent issues, arrows stay as they are.
+- **Epic groups (#122).** Subtasks are grouped under their parent inside a role track (by the “Hierarchy” role of the links screen) when the parent is in the sprint in at least one role: the parent row with a caret and an “epic · N subtasks” chip, indented subtasks, the parent bar spanning the subtasks’ dates. In its own role the parent is a full row (assignee, state, history); in another role it carries a “parent in role “X”” mark with a tooltip. A collapsed epic hides its subtasks and takes their arrows; a parent outside the sprint leaves the subtasks flat.
+
+### Changed
+
+- The links cache of the “All roles” mode honours the “Hierarchy” role: links are loaded even when the “Dependency” role is not configured.
+- Under the Light model a person’s capacity in another role is read from that role’s planning, not the current one.
+
+### Under the hood
+
+- Frontend: new module `domain/gantt-all-forecast.js` (inputs per sprint role, queues per person · role, quotas from the calendar and absences, prev-snapshots per role and a single `savePlanningForRoles` write, marks and the summary block, the button); `pure/gantt-all-pure.js` — `forecastAll` (graph of explicit links and the chain, cycles via Tarjan, packing that never truncates a queue, `packOne`) and `epicLayout` (epic groups, one level); `domain/gantt-all-view.js` — groups in the view model, markers for bars without dates, the links key with hierarchy; `domain/gantt-view.js` — `parents` in the links fetch; `getApprovedCapacityForPerson(login, rk, pp)`. The view and the forecast talk only through core deps. No backend changes.
+- Gates: unit tests for the forecast and epics (mutation cases), completeness of 28 keys × 15 locales, goldens for the epic view model (parent row in its own and another role, arrows to the group, collapsing) and the forecast (one write for all roles with prev-snapshots, “waiting” with erased dates, the block).
+
+### Known limitations
+
+- The forecast waits for the sprint links: until they arrive the button answers with a “Failed to compute the forecast” toast.
+- An issue without an assignee in some role gets no dates in that role and holds the issues depending on it (owner decision: “waiting”, their dates are erased).
+- Tracks of roles without a history record (“no snapshot”) are left untouched by the forecast.
+- Epic groups are one level deep: an epic that is itself a subtask in the same track stays a separate group.
+- Checked live on both stands: the forecast with “waiting”, a cycle and the block, epic groups and collapsing; “over capacity”, the rollback on a server refusal and the assigner-without-editor path are covered by goldens and unit tests.
+
 ## [3.47.0] — 2026-09-14
 
 > **Cross-role Gantt.** #122, step 1 of 2 (3.47.0 — the cross-role view; 3.48.0 — forecast across all roles and epic groups). No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.

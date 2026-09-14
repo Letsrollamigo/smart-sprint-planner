@@ -55,3 +55,18 @@ Re-reads states, colours and links. Needed after something changes in the tracke
 **Editing.** A bar of any track can be dragged and the assignee picked in its row: the change is written to that track’s role. The rights are the same as in the Role mode; if the server refuses, the screen returns to the saved state.
 
 **A past sprint** opens read-only with a “History · … · read-only” chip; a role without a snapshot shows a “no snapshot” track.
+
+## Forecast across all roles
+
+The **“Forecast dates”** button in “All roles” mode (shown with “Auto-forecast dates” on; editor rights required) schedules every sprint role at once: an issue waits for its predecessors — by a dependency link and along the chain (the same issue in the previous role), each person has a queue in each role, and capacity, the calendar and absences work as in the role forecast. When assigned issues already have dates, the planner asks for confirmation — the dates will be overwritten for all sprint roles. Only dates are written.
+
+- **waiting for {issue} · {role}** — the predecessor has no dates, for example the analysis of the same issue is not assigned to anyone;
+- **over capacity** — the person’s capacity is exhausted until sprint end;
+- **No dates after forecast (N)** — a block under the timeline: issue, role, reason; open right after the forecast;
+- **Link cycle: …** — the issues depend on each other; their dates are set as for independent issues.
+
+The marks and the block last until reload. An issue without an assignee gets no dates and holds the issues depending on it.
+
+## Epic groups
+
+When issues in a track share a parent (the “Hierarchy” role of the links screen) and the parent is in the sprint in at least one role, the subtasks are grouped under it: the parent row with a caret and an **“epic · N subtasks”** chip, indented subtasks, the parent bar spanning the subtasks’ dates. In its own role the parent stays a full row — the assignee and state are edited like for any issue; in another track it carries a **“parent in role “X””** mark instead. The caret collapses the group and its arrows move to the parent bar. A parent outside the sprint leaves the subtasks flat.

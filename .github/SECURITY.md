@@ -2,9 +2,11 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.47.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.48.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
+>
+> **v3.48.0 — #122 “Cross-role Gantt”, step 2 (forecast across all roles and epic groups): no new endpoints, groups or permissions; the server is not involved.** The forecast runs on the client and writes only `dateStart`/`dateEnd` into `personalPlanning` of the touched roles through the same path as editing on the cross-role view (`POST history?action=assignerSync` with the touched records → the slot), under editor rights; the calendar and absences are read via the existing `GET calendar` / `GET absences`. The issue hierarchy for epic groups is read from YouTrack by the same ephemeral links fetch as dependencies, nothing is stored. No schema change.
 >
 > **v3.47.0 — #122 “Cross-role Gantt”: no new endpoints, groups or permissions.** Dates and the assignee of an issue in another role’s track are written through the existing path: first the history — `POST history?action=assignerSync` (the `assigner` guard: editor, assigner, settings manager, release manager or release engineer) with the `<sprintId>_<rk>` records of the touched roles, then, after its response, the slot — `POST sprint-data` (editor) or `?action=assignerSync` for an assigner without editor rights (the server rewrites only `personalPlanning`). Write checks and validators are unchanged; a server refusal (`rev_conflict`, missing rights) rolls every touched role back on screen. The `POST user-prefs` allow-list gains two keys — `ssp_ganttMode` and `ssp_ganttZoom` with short string values; an unknown key still rejects the whole batch. No schema change.
 >

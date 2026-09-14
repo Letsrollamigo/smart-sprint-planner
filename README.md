@@ -57,7 +57,7 @@ Gantt timeline per role, sprint-aware, with per-task assignees:
 
 **Track**
 
-- **Gantt timeline per role or across all roles** — one track per sprint role, the task chain between roles, date conflicts with outlined bars and a counter, work phase bands; dates and assignees of any role are edited right on the chart.
+- **Gantt timeline per role or across all roles** — one track per sprint role, the task chain between roles, date conflicts with outlined bars and a counter, work phase bands; dates and assignees of any role are edited right on the chart. “Forecast dates” schedules all roles at once in dependency order and marks what stays without dates; subtasks are grouped under their parent epic.
 - **Sprint history** — confirmed snapshots, shared working drafts, per-user personal drafts, and one-click restore.
 - **Sprint Goals** — structured goals (title, success metric, owner) attached to each sprint and kept visible on the stand-up overlay.
 - **Stand-up assistant** — full-screen daily overlay with per-role task lists (Done Yesterday / Doing Today / Blocked), live timer, and blocker-highlight mode; runs on the current sprint's data.
