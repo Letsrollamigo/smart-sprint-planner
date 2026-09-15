@@ -263,11 +263,11 @@ test('реестр ролей: набор описан данными, а не �
   assert.strictEqual(LR.roleDef('нет-такой'), null);
 });
 
-test('потребители: «Иерархия» читается бэклогом, релизами, двумя фоновыми правилами и отчётом TTM (#75)', () => {
+test('потребители: «Иерархия» читается бэклогом, релизами, двумя фоновыми правилами, отчётом TTM (#75) и группами эпиков Ганта (#133)', () => {
   const c = LR.roleConsumers('hier', { releaseEnabled: true, backlogZones: [{ state: 'Открыта' }],
     cascadeAggregationEnabled: true, stateRollupEnabled: false, reportingEnabled: true });
   const by = {}; c.forEach((x) => { by[x.id] = x; });
-  assert.deepStrictEqual(Object.keys(by).sort(), ['backlog', 'cascade', 'release', 'reporting', 'rollup']);
+  assert.deepStrictEqual(Object.keys(by).sort(), ['backlog', 'cascade', 'gantt', 'release', 'reporting', 'rollup']);
   assert.strictEqual(by.reporting.enabled, true, '#75 — отчётность включена → бейдж активен');
   assert.strictEqual(by.reporting.firstOnly, false, 'отчёт TTM берёт все строки иерархии, как бэклог');
   assert.strictEqual(by.backlog.enabled, true);
@@ -276,12 +276,15 @@ test('потребители: «Иерархия» читается бэклог
   assert.strictEqual(by.rollup.enabled, false, 'подтяжка состояния выключена в проекте');
   assert.strictEqual(by.cascade.firstOnly, true, 'фоновые правила берут только первую строку иерархии');
   assert.strictEqual(by.backlog.firstOnly, false);
+  assert.strictEqual(by.gantt.enabled, true, '#133 — группы эпиков в режиме «Все роли» строятся всегда, тумблера у Ганта нет');
+  assert.strictEqual(by.gantt.firstOnly, false, 'Гант берёт все строки иерархии, как бэклог');
 });
 
 test('потребители: выключенный модуль не исчезает, а помечается — настройка остаётся видимой', () => {
   const off = LR.roleConsumers('hier', {});
-  assert.strictEqual(off.length, 5);
-  assert.ok(off.every((c) => c.enabled === false), 'ничего не включено → все потребители помечены');
+  assert.strictEqual(off.length, 6);
+  assert.ok(off.filter((c) => c.id !== 'gantt').every((c) => c.enabled === false), 'ничего не включено → все потребители с тумблером помечены');
+  assert.strictEqual(off.find((c) => c.id === 'gantt').enabled, true, 'у Ганта тумблера нет — бейдж всегда активен');
 });
 
 test('потребители: «Зависимость» читает Гант, «Инфо» — бэклог; бэклог включён наличием зон или старта', () => {

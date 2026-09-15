@@ -195,6 +195,7 @@ const ROLE_DEFS = [
     { id: 'rollup',  gate: 'rollup',  firstOnly: true },
     /* #75 — отчёт TTM складывает стори под эпик по той же роли (parentIsEpic), регексп по имени типа снят. */
     { id: 'reporting', gate: 'reporting' },
+    { id: 'gantt', gate: null },   /* #133 — группы эпиков Ганта «Все роли» (3.48.0): все строки иерархии, тумблера нет */
   ] },
   { key: 'dep', kind: 'side', needsDirected: true, consumers: [
     { id: 'gantt', gate: null },
