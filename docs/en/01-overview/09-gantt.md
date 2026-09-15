@@ -10,7 +10,7 @@ Rail → **Planning → Gantt chart**. The role is chosen with the **Role** pick
 
 ## Where the bars come from
 
-A bar is drawn from the **start** and **finish** dates set on the [Distribution by assignees](07-assignees.md) screen. An issue without dates does not appear on the chart — there is nowhere to draw it.
+A bar is drawn from the **start** and **finish** dates set on the [Distribution by assignees](07-assignees.md) screen. An issue without dates stretches across the whole sprint.
 
 A bar's colour is the issue's state colour from YouTrack. That makes the chart readable as a snapshot: yellow bars are development, orange is review, red is an issue on hold.
 
@@ -36,13 +36,15 @@ A bar can be dragged with the mouse and the issue's dates change. Rights are che
 
 It is the same write channel as the calendar on the distribution screen — the data is one and the same.
 
-## The «Refresh from task» button
+## The «Refresh issue data from YouTrack» button
 
 Re-reads states, colours and links. Needed after something changes in the tracker: the chart does not poll YouTrack on a timer.
 
 ## All roles
 
 **All roles** shows the sprint as one picture: a track per role, the role’s issues inside it. The mode and the zoom are remembered; a Share link to this node opens the same mode for the recipient (YouTrack 2026.1 and later).
+
+![All roles mode: a track per role with its phase chips and conflict count, work phase bars above the calendar, dependency arrows between issues](../../assets/ov-009a-gantt-all-roles.en.png)
 
 **A track** has a header with a caret, task and conflict counts and the role’s phase chips; its summary bar spans the track’s issues. The caret collapses the track until reload, and its arrows move to the summary bar. **A task row** carries the key and title, the assignee as a list of the role’s people, and the state with the transition history.
 
@@ -59,6 +61,8 @@ Re-reads states, colours and links. Needed after something changes in the tracke
 ## Forecast across all roles
 
 The **“Forecast dates”** button in “All roles” mode (shown with “Auto-forecast dates” on; editor rights required) schedules every sprint role at once: an issue waits for its predecessors — by a dependency link and along the chain (the same issue in the previous role), each person has a queue in each role, and capacity, the calendar and absences work as in the role forecast. When assigned issues already have dates, the planner asks for confirmation — the dates will be overwritten for all sprint roles. Only dates are written.
+
+![After Forecast dates: the schedule conflict counter, outlined conflicting bars, «over capacity» marks, and the Without dates after forecast block with a reason for each issue](../../assets/ov-009b-gantt-forecast.en.png)
 
 - **waiting for {issue} · {role}** — the predecessor has no dates, for example the analysis of the same issue is not assigned to anyone;
 - **over capacity** — the person’s capacity is exhausted until sprint end;

@@ -35,6 +35,12 @@ Practically three or four. Beyond that the table stops fitting on screen and the
 
 ## What to choose
 
-Fields that answer «what kind of work is this» are useful: system, component, stage, stream. Fields already in the table are not: priority, state, estimate.
+Fields that answer «what kind of work is this» are useful: system, component, stage, stream. Fields already in the table — priority, state, estimate — are not offered at all (see below).
 
 🔴 **Only choose fields the project actually has and that are filled in.** YouTrack's «Spent time», for instance, is not a custom field — it lives in time tracking, and a column for it comes out empty. An empty column is worse than a missing one: it looks like breakage.
+
+## What the list leaves out
+
+Fields the planner already shows as columns through other settings do not appear in the list: role estimates, actuals and assignees, priority, cross priority, state, system, external ticket ID. That way the same field never lands in the table twice.
+
+The issue type, sprint (the shared one and per-role ones) and version fields are not shown as columns, so they are in the list: «Type», for instance, can be shown as a column of its own without removing it from «Other fields» (since version 3.43.0).

@@ -25,7 +25,7 @@ Each role is one collapsed row:
 
 **Over limit is not a block.** The planner does not stop a team from over-promising; it stops them from over-promising *unnoticed*. The decision is the team's: drop an issue, cut an estimate, or knowingly go negative.
 
-## The «Refresh from task» button
+## The «Refresh issue data from YouTrack» button
 
 The button above the role list re-reads the issues in YouTrack and updates what the planner stores about them: state, priority, estimate, assignee, state colour.
 
@@ -37,7 +37,7 @@ Press it when the team has been working in the tracker rather than in the planne
 
 Below the button sits a filter row: **Assignee**, **State**, **Role**, **Priority**. Each takes several values: within a field it is «any of the ticked», between fields it is «and». The filter applies to the summary table and to every role's composition at once.
 
-![The filter row: three states and two roles ticked; «Tasks shown: 10 of 23», the roles carry «filter: 1 of 7» and «filter: 8 of 9» chips, testing is hidden by the Role filter](../../assets/ov-002b-allocation-filters.en.png)
+![The filter row: three states and two roles ticked; «Tasks shown: 9 of 22», the roles carry «filter: 1 of 7» and «filter: 8 of 9» chips, testing is hidden by the Role filter](../../assets/ov-002b-allocation-filters.en.png)
 
 | Item | What it means |
 |---|---|
@@ -49,7 +49,7 @@ Below the button sits a filter row: **Assignee**, **State**, **Role**, **Priorit
 
 The lists offer only values present in the sprint's issues; states and priorities follow YouTrack's order. Assignee appears only when the planning model has assignees; «Unassigned» picks issues with no assignee.
 
-The filter changes no data and is stored nowhere: the selection lives until the page is reloaded, is shared with the [Assignee distribution](07-assignees.md) screen, and resets when you switch projects.
+The filter changes no data and is stored nowhere: the selection lives until the page is reloaded, is shared with the [Assignee distribution](07-assignees.md) screen, and resets when you switch projects. Validation, saving and export work with the full composition.
 
 ## An expanded role card
 

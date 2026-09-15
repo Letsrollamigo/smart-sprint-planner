@@ -12,16 +12,22 @@ The screen is a matrix: a row is a YouTrack group, a column is a permission, and
 
 | Column | What it allows |
 |---|---|
-| **Editing** | change the sprint composition, hours, dates; save a draft |
+| **Settings** | change the project's planning settings — roles, fields, modes, capacity; the administration sections and this table stay with the settings-management group |
 | **Validation** | move a role to the next rung (composition agreed → distributed) |
-| **Assigning people** | set an issue's assignee inside the planner |
-| **Clearing history** | wipe the project's sprint history |
-| **Circuit A** | access to the operational reports |
-| **Circuit B** | access to the management reports |
+| **Editing** | change the sprint composition, hours, dates; save a draft |
+| **Clear history** | wipe the project's sprint history |
+| **Assignees & dates** | assign people and move issue dates |
+| **Sprint lock** | flip the sprint-creation lock in the planner header; existing sprints keep working |
+| **Manager pool** | not a permission but a pool: the release manager is picked from these groups in the release card |
+| **Engineer pool** | not a permission but a pool: the release engineer is picked from these groups in the release card |
+| **Release manager** | full rights in release management: create, edit, change status and delete releases |
+| **Release engineer** | build and change release status, without full management |
+| **Tier A** | access to the operational reports |
+| **Tier B** | access to the management reports |
 
 Groups are added with the **Add group** button; the list comes from YouTrack's groups.
 
-## Why six permissions rather than one
+## Why many permissions rather than one
 
 Because these actions cost different amounts. Fixing hours is the team's ordinary work. Saying «the composition is agreed» is a statement with an agreement behind it. Wiping the history is irreversible. Seeing management reports is not a technical question but one of who those numbers are addressed to.
 

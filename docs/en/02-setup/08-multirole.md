@@ -10,8 +10,8 @@
 
 | Setting | What it gives |
 |---|---|
-| **Cross-role allocation summary** | a shared spoiler appears above the role list: one issue per row, roles as columns, totals at the edges |
-| **Per-role exclusion** | an issue can be excluded from the sprint in one role while staying in another |
+| **Cross-role summary table** | a shared spoiler appears above the role list: one issue per row, roles as columns, totals at the edges |
+| **Cross-role exclusion of an issue** | excluding an issue from the sprint in one role also excludes it in the sprint's other roles |
 
 ## The summary table
 
@@ -21,11 +21,11 @@ A row is an issue, a column is a role, and the intersection holds the allocation
 
 It is a read-only view: hours cannot be edited here — the role's composition is for that.
 
-## Per-role exclusion
+## Cross-role exclusion
 
-Without this setting, excluding an issue is global: taken out of the sprint means taken out of every role — with the same reason and the same who/when stamp; the reason dialog lists the roles the cascade will reach. Returning an issue does not cascade.
+With this setting, excluding an issue is global: excluded from the sprint in one role — by an inclusion-status change or with the bin — means excluded from every role. On a status change the same reason and the same who/when stamp go to all roles in one act, and the reason dialog lists the roles the cascade will reach (the bin removes the row without a reason). Returning an issue does not cascade.
 
-With it, exclusion becomes per-role: analysis on the issue is finished and excluded while testing carries on. Useful on long issues that stretch across several sprints through different roles.
+Without it, exclusion is per-role: analysis on the issue is finished and excluded while testing carries on. Useful on long issues that stretch across several sprints through different roles.
 
 ## When to switch this on
 

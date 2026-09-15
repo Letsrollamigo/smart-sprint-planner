@@ -32,7 +32,7 @@ A reference page: walk through the list before handing the planner to the team.
 - [ ] **Issue links**: hierarchy and dependency types are described (chapter [16](16-links.md)) — before the roll-ups are switched on.
 - [ ] **Roll-ups** of estimates and states are switched on together (chapters [14](14-cascade.md), [15](15-state-rollup.md)).
 - [ ] **Display fields**: only existing, populated fields are chosen (chapter [17](17-display-fields.md)).
-- [ ] **Releases**: the status mapping is set (chapter [18](18-releases.md)).
+- [ ] **Release management**: the status mapping is set (chapter [18](18-releases.md)).
 - [ ] **Reporting**: switched on AND the circuits are ticked in the permissions matrix (chapter [19](19-reporting.md)).
 
 ## The check

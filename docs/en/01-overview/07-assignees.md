@@ -31,7 +31,7 @@ The upper table holds the people picked for this role.
 | **Allocations by project** | where their time goes, with shares: `Billing · 72.00h · 55%` |
 | **Remainder (h)** | how much of them is still free |
 
-**+ Pick Assignees** opens the people picker, **Clear** removes everyone, **Refresh from task** re-reads the issue data.
+**+ Pick Assignees** opens the people picker, **Clear** removes everyone, **Refresh issue data from YouTrack** re-reads the issue data.
 
 The «Allocations by project» column is the most useful one in a planning meeting: it shows at once that a person is not «half free» but torn between three systems.
 

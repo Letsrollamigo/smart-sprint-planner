@@ -47,6 +47,8 @@ The sprint's set of roles is fixed when it is created and stored with the sprint
 
 The **“Work phases”** block is the last section of the card, below the “Save sprint parameters” button, with its own **“Save work phases”** button. It appears when the “Work phases in the sprint are enabled” toggle is on in the project settings (chapter 18 of “Setup”); when the toggle is off the block is hidden, the dates you entered are kept and return once it is enabled again.
 
+![The Work phases block in the sprint parameters: six segments on a shared scale, from → to date pairs, the chip of the role selected on the left next to its phase, and the changed-by stamp in the block header](../../assets/ov-001a-sprint-phases.en.png)
+
 Six phases in a fixed order: **Analysis → Development → Tech test → Regression → Business test → Deploy**. Each has one “from”–“to” pair or nothing (“not planned”). Phases may overlap — regression and the business test usually do.
 
 A phase row: name → lane with the sprint scale (weekly divisions, labels on Mondays and the last day) → “from” picker → “to” picker → marks. When roles are mapped to phases in the settings, the phases of the role selected in the rail are drawn in a saturated tone with a role chip and the rest are dimmed; with no mapping every phase shares one tone.

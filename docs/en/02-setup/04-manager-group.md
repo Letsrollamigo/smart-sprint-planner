@@ -36,7 +36,7 @@ The second checkbox, **Verbose logging (diagnostics only)**, turns on a detailed
 
 ![The planner's settings screen once the group is set: the administration sections have appeared](../../assets/setup-009-settings-unlocked.en.png)
 
-The yellow bar disappears and an **ADMINISTRATION** block appears in the list on the left with all its sections: permissions, differentiated tracking, roll-ups, links, display fields, backlog, capacity, releases, reporting.
+The yellow bar disappears and an **ADMINISTRATION** block appears in the list on the left with all its sections: permissions, differentiated tracking, roll-ups, links, display fields, backlog, capacity, release management, reporting, notifications, danger zone.
 
 From that moment the planner accepts writes — but only from members of the named group.
 

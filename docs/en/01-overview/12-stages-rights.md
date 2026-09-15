@@ -25,7 +25,7 @@ The planner does not think in terms of «admin and not admin» but in separate p
 |---|---|
 | **Editing** | change the composition, hours, dates; save a draft |
 | **Validation** | move a role to the next rung |
-| **Assigning people** | set an issue's assignee inside the planner |
+| **Assignees & dates** | assign people and move issue dates |
 | **Clearing history** | wipe the project's sprint history |
 
 Two more permissions sit outside the ladder — access to reporting circuits A and B; they are covered in the same chapter 09.

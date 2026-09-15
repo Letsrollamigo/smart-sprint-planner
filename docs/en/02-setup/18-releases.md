@@ -4,7 +4,7 @@
 
 ## Where
 
-**Project Settings → Apps → Smart Sprint Planner → ADMINISTRATION → Releases**.
+**Project Settings → Apps → Smart Sprint Planner → ADMINISTRATION → Release management**.
 
 ## What is configured
 
@@ -40,9 +40,11 @@ Not a setting but an operation on the release card: **Freeze scope** forbids add
 
 The last block of the section is **“Work phases”** (independent of the “Enable release management” checkbox):
 
+![Release management, the Work phases block: the toggle is on, the table marks which role works in which phase; the Used in row names the phase strip and the Gantt chart](../../assets/setup-011-phases-settings.en.png)
+
 - **Toggle “Work phases in the sprint are enabled”** — off by default. On — “Sprint parameters” shows six date pairs and the phase bar: Analysis → Development → Tech test → Regression → Business test → Deploy (chapter 02 of the “Overview”). Off — the block is hidden; saved dates are kept and return when enabled.
 - **Table “Which roles work in which phase”** — rows are the six phases, columns are only the roles enabled in the project. A tick means “the role works in this phase”: a role may have several phases, a phase several roles. The table is empty by default and all phases share one tone; with a filled table the phases of the selected role are highlighted on the bar and the rest are dimmed. A mapping of a disabled role is not erased — it comes back with the role.
-- The “Used in” line reminds you that today only the phase bar in “Sprint parameters” reads this table.
+- The “Used in” line lists who reads this table: the phase bar in “Sprint parameters” and the phase bands on the Gantt chart in “All roles” mode.
 
 Both settings are admin-tier: only the settings-management group changes them; the planning manager does not see them.
 

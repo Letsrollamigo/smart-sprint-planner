@@ -16,8 +16,8 @@ A row is a link type from your YouTrack, the columns are three roles:
 
 | Role | What it means | Who uses it |
 |---|---|---|
-| **Hierarchy** | a parent-child link | the backlog tree, the estimate roll-up, the state roll-up, the TTM report (stories under an epic) |
-| **Dependency** | a predecessor-successor link | arrows on the Gantt chart |
+| **Hierarchy** | a parent-child link | the backlog tree, the estimate roll-up, the state roll-up, the TTM report (stories under an epic), epic groups on the Gantt chart in «All roles» mode |
+| **Dependency** | a predecessor-successor link | arrows on the Gantt chart; in «All roles» mode also schedule conflicts and the cross-role date forecast |
 | **Information** | a link with no structural meaning | the «Bug tax» report |
 
 Hierarchy and dependency also need a **side**: which end of the link holds the parent or the predecessor. The phrase picker shows your instance's actual wordings — «parent for», «is required for» — so there is nothing to guess.

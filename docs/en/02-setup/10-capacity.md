@@ -10,11 +10,11 @@
 
 | Model | Where a role's resource comes from | Who it suits |
 |---|---|---|
-| **Off** | typed in by hand on the role card | small teams, short sprints |
-| **Simplified** | hours norm × the number of people in the role | when the team is stable and absences are rare |
+| **Simple** | typed in by hand as one number on the role card; no per-person calculation | small teams, short sprints |
+| **Light** | per-assignee calculation: everyone has their own resource, the role total is summed automatically | when people's load matters, not just the roles' |
 | **Full** | computed per person: calendar, absences, rate, participation, grade | when there are more than five people and holidays are routine |
 
-The [Capacity](../01-overview/03-capacity.md) section appears in the rail for the second and third models.
+The [Capacity](../01-overview/03-capacity.md) section appears in the rail only with the Full model.
 
 ## What the full model configures
 
