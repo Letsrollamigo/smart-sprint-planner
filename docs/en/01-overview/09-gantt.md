@@ -60,7 +60,7 @@ Re-reads states, colours and links. Needed after something changes in the tracke
 
 ## Forecast across all roles
 
-The **“Forecast dates”** button in “All roles” mode (shown with “Auto-forecast dates” on; editor rights required) schedules every sprint role at once: an issue waits for its predecessors — by a dependency link and along the chain (the same issue in the previous role), each person has a queue in each role, and capacity, the calendar and absences work as in the role forecast. When assigned issues already have dates, the planner asks for confirmation — the dates will be overwritten for all sprint roles. Only dates are written.
+The **“Forecast dates”** button in “All roles” mode (shown with “Auto-forecast dates” on; editor rights required) schedules every sprint role at once: an issue waits for its predecessors — by a dependency link and along the chain (the same issue in the previous role), each person has a queue in each role, and capacity, the calendar and absences work as in the role forecast. When assigned issues already have dates, the planner asks for confirmation — the dates will be overwritten for all sprint roles. Only dates are written. Each person’s queue within a role follows issue priority, not the issues’ current dates, so running the forecast again with unchanged data gives the same dates.
 
 ![After Forecast dates: the schedule conflict counter, outlined conflicting bars, «over capacity» marks, and the Without dates after forecast block with a reason for each issue](../../assets/ov-009b-gantt-forecast.en.png)
 

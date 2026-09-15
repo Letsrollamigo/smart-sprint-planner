@@ -302,6 +302,16 @@ function _sccs(nodes, out) {
 
 function _iso(ms) { return new Date(dayMs(ms)).toISOString().slice(0, 10); }
 
+/* §A5.3 п.3 (3.48.2) — очередь (человек, роль) сквозного прогноза: ранг (порядок роли по приоритету) → issueId, без текущих
+   дат. Укладка обтекает ожидающие полосы (⚖5 «окно занимают»), и дата старта перестаёт отражать порядок очереди: сортировка
+   по датам делала повторный прогноз неидемпотентным (#132). Прогноз роли (FORECAST_PURE.orderQueue) не меняется. */
+function queueOrder(entries) {
+  return (Array.isArray(entries) ? entries : []).slice().sort(function (a, b) {
+    const ra = isNum(a.rank) ? a.rank : Infinity, rb = isNum(b.rank) ? b.rank : Infinity;
+    return ra !== rb ? (ra < rb ? -1 : 1) : _idCmp(a.issueId, b.issueId);
+  });
+}
+
 /* §A5.3 — прогноз дат по всем ролям в порядке зависимостей (⚖5).
    bars — все полосы спринта [{ key, issueId, endMs }] (endMs — СОБСТВЕННЫЙ конец или null); preds — { issueId:
    [{ id }] } из кэша связей (явная связь — от каждой полосы предшественника в любой роли, §О15); chain — рёбра
@@ -445,7 +455,7 @@ const _api = {
   barKey: barKey, parseId: parseId, stages: stages, chainEdges: chainEdges, conflicts: conflicts,
   collapseRows: collapseRows, arrowStyles: arrowStyles, span: span,
   axisDates: axisDates, xOf: xOf, monthSpans: monthSpans,
-  epicLayout: epicLayout, packOne: packOne, forecastAll: forecastAll,
+  epicLayout: epicLayout, packOne: packOne, forecastAll: forecastAll, queueOrder: queueOrder,
 };
 
 if (typeof window !== 'undefined') {

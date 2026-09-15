@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.48.2] — 2026-09-15
+
+> **Patch #132.** Re-running the cross-role forecast gives the same dates. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Fixed
+
+- **Re-running the cross-role forecast reordered issues (#132).** In the “All roles” Gantt mode each person’s queue within a role was sorted by the issues’ current dates. The next issue in the queue fills the window while an issue waits for its predecessor, so its start date landed before that of a higher-priority issue, and a second forecast over the forecast dates changed the queue and produced different dates. The cross-role forecast queue now follows the role’s issue priority: current and manual dates do not affect the order, and re-running the forecast with unchanged data gives the same dates. The single-role forecast is unchanged.
+
+### Under the hood
+
+- `pure/gantt-all-pure.js:queueOrder` — the (person, role) queue by rank and issue key, without dates; `domain/gantt-all-forecast.js` calls it instead of `FORECAST_PURE.orderQueue`. Unit test re-running the forecast over its own dates. Both code bases, module size budget +9 lines.
+
+---
+
 ## [3.48.1] — 2026-09-14
 
 > **Patch #131.** Planning model for settings without `planningModel` (projects that never saved settings through the form since v2.14.0). No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.

@@ -85,7 +85,7 @@ function runForecastAll(deps) {
       /* третий аргумент — PP роли: фолбэк Light иначе читал бы текущую роль и чужие люди получали бы 0 часов */
       people[pk] = { days: days.map(function (d) { return d.iso; }),
         quotas: FP.dailyQuotas(deps.getApprovedCapacityForPerson(b0.login, b0.rk, b0.pp) || 0, days, useful) };
-      queues[pk] = FP.orderQueue(groups[pk]).map(function (b) { return b.key; });
+      queues[pk] = P.queueOrder(groups[pk]).map(function (b) { return b.key; });   /* без дат — прогноз идемпотентен (#132) */
     });
     var res = P.forecastAll({ bars: data.bars, preds: links.preds || {}, chain: P.chainEdges(data.bars, data.stageOf),
       queues: queues, people: people, needH: needH });

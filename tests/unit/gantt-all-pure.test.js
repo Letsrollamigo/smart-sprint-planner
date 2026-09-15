@@ -322,3 +322,35 @@ test('#122 forecastAll: цикл из двух задач — укладываю
   assert.deepEqual(r.unfit, {});
   assert.deepEqual(fc(Object.assign({}, input, { bars: bars.slice().reverse() })), r);
 });
+
+/* ── 3.48.2: очередь сквозного прогноза без дат (#132) ── */
+test('#132 queueOrder: ранг → ключ (N-2 раньше N-10), даты не участвуют, без ранга — в хвост', () => {
+  const e = [
+    { key: 'devBack:N-10', issueId: 'N-10', rank: 1, startMs: Date.UTC(2026, 9, 5) },
+    { key: 'devBack:N-3', issueId: 'N-3', startMs: Date.UTC(2026, 9, 1) },
+    { key: 'devBack:N-2', issueId: 'N-2', rank: 1, startMs: Date.UTC(2026, 9, 9) },
+    { key: 'devBack:N-7', issueId: 'N-7', rank: 0, startMs: Date.UTC(2026, 9, 20) },
+  ];
+  assert.deepEqual(G.queueOrder(e).map((x) => x.issueId), ['N-7', 'N-2', 'N-10', 'N-3']);
+  assert.equal(e[0].issueId, 'N-10', 'вход не мутирован');
+});
+
+test('#132 forecastAll + queueOrder: повторный прогноз поверх собственных дат даёт те же даты; мутация — очередь по датам старта переставляет задачи', () => {
+  const days = ['2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16'];
+  const ms = (iso) => Date.parse(iso + 'T00:00:00Z');
+  /* A первой по приоритету, 40 ч, ждёт фиксированного предшественника P до 06.10; B 32 ч без предшественников */
+  const input = (ta, order) => {
+    const bars = [{ key: 'devBack:P', issueId: 'P', endMs: ms('2026-10-06') },
+      { key: 'devBack:A', issueId: 'A', rank: 0, startMs: ta.A && ta.A[0], endMs: ta.A && ta.A[1] },
+      { key: 'devBack:B', issueId: 'B', rank: 1, startMs: ta.B && ta.B[0], endMs: ta.B && ta.B[1] }];
+    return { bars: bars, preds: { A: [{ id: 'P' }] }, queues: { 'u1|devBack': order(bars.slice(1)).map((b) => b.key) },
+      people: { 'u1|devBack': { days: days, quotas: days.map(() => 8) } }, needH: { 'devBack:A': 40, 'devBack:B': 32 } };
+  };
+  const back = (r) => ({ A: [ms(r.dates['devBack:A'].startIso), ms(r.dates['devBack:A'].endIso)], B: [ms(r.dates['devBack:B'].startIso), ms(r.dates['devBack:B'].endIso)] });
+  const run1 = fc(input({}, G.queueOrder));
+  assert.equal(run1.dates['devBack:B'].startIso, '2026-10-05', 'B обтекает ожидающую A (⚖5)');
+  assert.deepEqual(fc(input(back(run1), G.queueOrder)).dates, run1.dates);
+  const byStart = (bs) => bs.slice().sort((a, b) => a.startMs - b.startMs);
+  assert.notDeepEqual(fc(input(back(run1), byStart)).dates, run1.dates, 'очередь по датам старта неидемпотентна — ассерт умеет падать');
+});
+
