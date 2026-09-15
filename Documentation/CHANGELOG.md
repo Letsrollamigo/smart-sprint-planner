@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.48.3] — 2026-09-15
+
+> **Patch #133.** The “Used by” column in the “Issue links” settings lists Gantt for the Hierarchy role. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Fixed
+
+- **“Used by” did not list Gantt for the Hierarchy role (#133).** Since 3.48.0, epic groups on the Gantt chart in the “All roles” mode are built from links with the Hierarchy role, yet the “Used by” column in the “Issue links” settings named only other modules. Links with this role now carry a “Gantt” badge. Gantt has no on/off switch, so the badge is always active, as it is for Dependencies. Module behavior is unchanged.
+
+### Under the hood
+
+- `pure/link-roles-pure.js:ROLE_DEFS` — `gantt` consumer for the `hier` role; unit test for the consumer list. Both code bases, module size budget +1 line.
+
+---
+
 ## [3.48.2] — 2026-09-15
 
 > **Patch #132.** Re-running the cross-role forecast gives the same dates. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
