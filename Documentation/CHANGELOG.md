@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.49.1] — 2026-09-22
+
+> **Patch #134, #135.** A calendar write without the list of years no longer wipes the project calendar, and a history write without records no longer answers “success”. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Fixed
+
+- **An empty calendar write wiped the project calendar (#134).** `POST calendar` with a body without `years` (an empty body included) passed validation and stored an empty working calendar. Such a request is now refused — `calendar_invalid`, field `years`, nested code `not_object`; the stored calendar is untouched. An explicit empty `years: {}` remains a deliberate way to clear the calendar. The planner UI always sends `years`.
+- **A history write without data answered “success” (#135).** `POST history` without `action` and with a body without the `history` key answered `success: true` and wrote nothing. It is now refused — `invalid_history_structure: missing`, and the revision does not grow; a successful full write always carries `rev`. The planner UI always sends the `history` key.
+
+### Under the hood
+
+- `backend-capacity.js:validateCalendarForWrite` — the missing `years` is no longer replaced with an empty object; `backend-core.js` — a refusal in the main history write branch. No new refusal codes, the code registry and the contract baseline are unchanged; three paragraphs and the edition notes updated in the contract. Unit tests (+2, one rewritten), `scripts/contract-smoke.sh` — four checks. Both code bases.
+
+---
+
 ## [3.49.0] — 2026-09-22
 
 > **#113 “External REST: a 43-operation contract”.** The contract `Integrations/openapi-sprint.yaml` describes the planner's whole external REST, every refusal carries a machine-readable code and a request id, and agents get small operations. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
