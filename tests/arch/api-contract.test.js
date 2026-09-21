@@ -6,7 +6,7 @@
  *   3. базовая линия `api-contract.baseline.json` — ключи, однажды обещанные интеграторам:
  *      удаление или переименование = красный. Добавление — осознанное обновление линии.
  * YAML читается минимальным разбором (в проекте нет yaml-библиотеки): схемы —
- * `components.schemas.<Name>.properties.<key>` по отступам. Corp-only файл: без него skip.
+ * `components.schemas.<Name>.properties.<key>` по отступам. Без файла контракта — skip.
  */
 'use strict';
 const { test } = require('node:test');
@@ -37,7 +37,7 @@ function parseContract(text) {
 }
 const sortedEq = (a, b) => JSON.stringify(a.slice().sort()) === JSON.stringify(b.slice().sort());
 
-test('api-contract — контракт совпадает с белыми списками кода и версией плагина', { skip: !present && 'нет Integrations/openapi-sprint.yaml (corp-only)' }, () => {
+test('api-contract — контракт совпадает с белыми списками кода и версией плагина', { skip: !present && 'нет Integrations/openapi-sprint.yaml' }, () => {
   const core = require(path.join(ROOT, 'backend-core.js'));
   const pkg = require(path.join(ROOT, 'package.json'));
   const c = parseContract(fs.readFileSync(YAML, 'utf8'));
@@ -51,9 +51,16 @@ test('api-contract — контракт совпадает с белыми сп�
   for (const k of c.schemas.PostSprintDataRequest) assert.ok(core.ALLOWED_SPRINT_DATA_KEYS.includes(k), 'POST-ключ вне whitelist: ' + k);
   assert.ok(sortedEq(c.schemas.PostSprintDataRequest, ['sprint', 'roleItems', 'baseRev']), 'PostSprintDataRequest');
   for (const s of ['AppError', 'RevConflict']) assert.ok(c.schemas[s].includes('cid'), s + ' без cid (#85)');
+  for (const s of ['AppError', 'RevConflict']) assert.ok(c.schemas[s].includes('reason'), s + ' без reason (#113)');
+  /* #113 — записи, которые присылает клиент (и запись истории): ключи схемы = белый список кода */
+  for (const [schema, list] of [['Release', 'ALLOWED_RELEASES_KEYS'], ['AbsenceEntry', 'ALLOWED_ABSENCE_ENTRY_KEYS'],
+    ['CapacityPerson', 'ALLOWED_CAPACITY_PERSON_KEYS'], ['Calendar', 'ALLOWED_CALENDAR_KEYS'], ['HistoryRecord', 'ALLOWED_HISTORY_SNAP_KEYS']]) {
+    assert.ok(c.schemas[schema], 'в контракте нет схемы ' + schema);
+    assert.ok(sortedEq(c.schemas[schema], core[list]), `${schema}: контракт ${JSON.stringify(c.schemas[schema])} ≠ ${list} ${JSON.stringify(core[list])}`);
+  }
 });
 
-test('api-contract — аддитивность: ключи базовой линии не исчезают и не переименовываются', { skip: !present && 'нет Integrations/openapi-sprint.yaml (corp-only)' }, () => {
+test('api-contract — аддитивность: ключи базовой линии не исчезают и не переименовываются', { skip: !present && 'нет Integrations/openapi-sprint.yaml' }, () => {
   const c = parseContract(fs.readFileSync(YAML, 'utf8'));
   const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
   const lost = [];

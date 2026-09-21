@@ -6,6 +6,8 @@ Applies to version **3.48.3**. The model is server-authoritative: deny-by-defaul
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
+> **v3.49.0 — #113 “External REST: a 43-operation contract”: no new groups or permissions.** (1) **One refusal envelope:** only five core helpers write `success:false`; every refusal carries `reason`, `cid` and a refusal-log line — including the global contour, user preferences and issue-field writes (their `error` value is unchanged, `reason` repeats the code). A refusal written past the helpers and a code without a description are blocked by the `tests/arch/error-codes.test.js` gate; the code registry is `Integrations/ERROR_CODES.md` (generated from the code). (2) **Partial write closed:** a body mixing `settings` with `sprint` or `roleItems` is refused with `mixed_settings_write` before any write — before, the slot could be written ahead of the settings rights check. (3) **`baseRev` is mandatory** for `history` (no `action`, and `snapshot`), `releases` and `absences`; the “raw” absences form without the wrapper is closed (`base_rev_required`). (4) **Small operations** (`backend-ops.js`, 11 `?action=` variants) have no write paths and no rights of their own: they apply one change to the stored data and call the regular full write of the same path — rights, validators, limits, revisions, server stamps and the release-engineer rule are inherited by construction; for `sprint-data` operations the role is checked before any data is read (the “authz first” invariant), and the refusal `cid` equals the `cid` of the original request. (5) `assignerSync` without a `sprint` object → `sprint_required` (before, `sprint:null` with this action reset the slot); a non-empty unknown `action` on `releases`/`absences` → `invalid_action`. The external REST is described by the contract `Integrations/openapi-sprint.yaml`; the primary integration address is by project key, and the project address is not closed by the “planner disabled” toggle (#80, described in the contract).
+>
 > **v3.48.0 — #122 “Cross-role Gantt”, step 2 (forecast across all roles and epic groups): no new endpoints, groups or permissions; the server is not involved.** The forecast runs on the client and writes only `dateStart`/`dateEnd` into `personalPlanning` of the touched roles through the same path as editing on the cross-role view (`POST history?action=assignerSync` with the touched records → the slot), under editor rights; the calendar and absences are read via the existing `GET calendar` / `GET absences`. The issue hierarchy for epic groups is read from YouTrack by the same ephemeral links fetch as dependencies, nothing is stored. No schema change.
 >
 > **v3.47.0 — #122 “Cross-role Gantt”: no new endpoints, groups or permissions.** Dates and the assignee of an issue in another role’s track are written through the existing path: first the history — `POST history?action=assignerSync` (the `assigner` guard: editor, assigner, settings manager, release manager or release engineer) with the `<sprintId>_<rk>` records of the touched roles, then, after its response, the slot — `POST sprint-data` (editor) or `?action=assignerSync` for an assigner without editor rights (the server rewrites only `personalPlanning`). Write checks and validators are unchanged; a server refusal (`rev_conflict`, missing rights) rolls every touched role back on screen. The `POST user-prefs` allow-list gains two keys — `ssp_ganttMode` and `ssp_ganttZoom` with short string values; an unknown key still rejects the whole batch. No schema change.
@@ -179,6 +181,8 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | POST   | `sprint-data?action=validate` | validator (writes `sprint`/`roleItems` without editor — deliberate, v3.2.1; the `sprint:null` branch — editor ∨ validator, #67) |
 | POST   | `sprint-data?action=assignerSync` | assigner union (partial save of `personalPlanning` only) |
 | POST   | `sprint-data?action=phases` | editor ∨ validator (#120, 3.45.0: the only write path for work phases — `sprint.phases` by `sprintId`; requires `phasesEnabled`; `baseRev` is checked only when the working slot holds the sprint; fan-out into the slot and every role snapshot, `phasesUpdatedAt/By` stamped by the server; any other sprint/history write overrides submitted phases with the stored ones) |
+| POST   | `sprint-data?action=upsertItem` · `removeItem` · `patchSprint` | editor (#113, 3.49.0: small operations — the server applies one change to the stored data and calls the regular full write; rights, validators, limits and `baseRev` are inherited; the role is checked before any data is read) |
+| POST   | `sprint-data?action=assignPerson` | assigner union (#113, 3.49.0: two regular writes — `sprint-data?action=assignerSync`, then `history?action=assignerSync`; the `baseRev` gate of the first refuses the operation before any write) |
 | GET    | `history` | viewer |
 | POST   | `history` | validator; **shortening by more than 1 record — historyManager (#67, no admin bypass)**; audit fields are server-stamped (#67 H8) |
 | POST   | `history?action=snapshot` | editor ∨ validator (upsert of exactly one record by `sprintId`, deletes nothing — #67 H5; H8 audit stamps) |
@@ -201,10 +205,12 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `capacity` | viewer (grades, rates, roster allocations) |
 | GET    | `capacity-archive` | viewer |
 | POST   | `capacity` | settingsManager OR planningManager (`approvedBy` is a server stamp) |
+| POST   | `capacity?action=upsertPerson` | settingsManager OR planningManager (#113, 3.49.0: a small operation on top of `?action=save`) |
 | GET    | `calendar` | viewer |
 | POST   | `calendar` | settingsManager |
 | GET    | `absences` | viewer (who is absent and when) |
 | POST   | `absences` | settingsManager OR planningManager |
+| POST   | `absences?action=upsertAbsence` · `removeAbsence` | settingsManager OR planningManager (#113, 3.49.0: small operations on top of the full write; `baseRev` is mandatory) |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
 | POST   | `update-issue-field` | assigner union (types: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; project isolation; `fieldName` — length/characters + **allow-list of configured fields, #67 H7**; **v3.25.0: `Issue.isVisibleTo` → `issue_not_found`, `Issue.canBeWrittenBy` against the user's own rights → `field_not_writable`**) |
@@ -212,6 +218,7 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager OR releaseManager; releaseEngineer — advance-diff only (`engineerDiffAllowed`) |
+| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` | same as the full `releases` write (#113, 3.49.0: small operations; the engineer diff rule applies to the assembled full body) |
 | GET    | `reporting-access` | viewer (response carries A/B contour flags by membership) |
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |

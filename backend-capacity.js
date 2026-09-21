@@ -498,8 +498,7 @@ function migrateCapacity(rec) { return rec; }
 
 /* Кастомный 400 с массивом reason-кодов (без эха значений). */
 function badWithErrors(ctx, reason, errors) {
-  try { ctx.response.status = 400; } catch (e) { /* ignore */ }
-  ctx.response.json({ success: false, error: 'Bad Request', reason: reason, errors: errors || [] });
+  core.badRequest(ctx, reason, { errors: errors || [] });
 }
 
 function handleGetCapacity(ctx) {
@@ -536,6 +535,7 @@ function handlePostCapacity(ctx) {
   if (!core.authzGuard(ctx, 'settingsOrPlanning')) return;
 
   var action = (ctx.request.getParameter('action') || 'save').trim();
+  if (core.__ops && core.__ops.has('capacity', action)) return core.__ops.handle(ctx, 'capacity', action);   /* #113 — мелкие операции, до разбора тела */
   if (action !== 'save' && action !== 'approve' && action !== 'reapprove') { core.badRequest(ctx, 'invalid_action'); return; }
 
   var sprintId = (ctx.request.getParameter('sprintId') || '').trim();
@@ -714,26 +714,24 @@ function handleGetAbsences(ctx) {
 function handlePostAbsences(ctx) {
   // планировочный тир (ввод отсутствий).
   if (!core.authzGuard(ctx, 'settingsOrPlanning')) return;
+  /* #113 — мелкие операции (backend-ops.js), до разбора тела; пустой action — полная запись. */
+  var action = (ctx.request.getParameter('action') || '').trim();
+  if (action) {
+    if (core.__ops && core.__ops.has('absences', action)) return core.__ops.handle(ctx, 'absences', action);
+    core.badRequest(ctx, 'invalid_action'); return;
+  }
   var body = core.parseBodyOrReject(ctx, null); /* динамические login-ключи — без whitelist */
   if (body === null) return;
-  // body = карта login→[entry] (динамические login-ключи → filterKeys не применим; validator
-  // нормализует каждую запись до {from,to,type} — gotcha #8). Обёртку
-  // {absences:{…}} распознаём по ШЕЙПУ (non-array object), не по наличию ключа: иначе легит-
-  // логин буквально «absences» (значение = массив) ложно принялся бы за обёртку и весь POST
-  // (включая других людей) терялся бы с 400.
-  var map = (body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences)) ? body.absences : body;
-  /* R6 — optimistic lock (P1 #13): full-map replace двумя менеджерами шёл last-write-wins.
-     baseRev уважаем ТОЛЬКО в обёрточной форме {absences:{…}, baseRev} — в raw-map теле
-     top-level ключи суть логины, baseRev там был бы «логином» (legacy-клиенты его не шлют). */
-  if (body.absences && core.revConflict(ctx, body.baseRev, core.slotRev(ctx, 'ssp_absences_rev'))) return;
-  /* v3.2.1 — анти-wipe: битое/оборванное тело парсится в {} (core.getBody) и до фикса
-     ВАЛИДНО затирало реестр отсутствий всех людей с success:true. Пустая карта легальна
-     только через ЯВНУЮ обёртку {absences:{}} (фронт v3.2.1+ всегда шлёт обёртку). */
-  if (!Object.keys(map).length
-      && !(body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences))) {
-    core.badRequest(ctx, 'absences_empty_body');
-    return;
-  }
+  /* #113 — принимается только обёртка {absences:{login→[entry]}, baseRev}: «сырая» карта
+     нести baseRev не может (верхние ключи — логины), а запись слота без ревизии шла
+     last-write-wins. Тем же гейтом закрыт анти-wipe v3.2.1: битое/оборванное тело
+     парсится в {} и отклоняется, пустая карта легальна только явной обёрткой {absences:{}}.
+     Обёртка — по ШЕЙПУ (non-array object): логин буквально «absences» несёт массив. */
+  var wrapped = !!body.absences && typeof body.absences === 'object' && !Array.isArray(body.absences);
+  if (!wrapped || typeof body.baseRev !== 'number' || !isFinite(body.baseRev)) { core.badRequest(ctx, 'base_rev_required'); return; }
+  var map = body.absences;
+  /* R6 — optimistic lock (P1 #13): full-map replace двумя менеджерами шёл last-write-wins. */
+  if (core.revConflict(ctx, body.baseRev, core.slotRev(ctx, 'ssp_absences_rev'))) return;
   var va = validateAbsencesForWrite(map);
   if (!va.ok) { badWithErrors(ctx, 'absences_invalid', va.errors); return; }
   var s = JSON.stringify(va.normalized);

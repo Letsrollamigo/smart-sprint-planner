@@ -27,6 +27,8 @@ require('./backend-plannerdisable.js');
 require('./backend-reminders.js');
 /* #120 — Phases backend: POST sprint-data?action=phases (делегация из ядра) + серверная принадлежность фаз в слоте/снимках; регистрируется на core.__phases. */
 require('./backend-phases.js');
+/* #113 — Ops backend: мелкие операции внешнего REST (?action=upsertItem … через штатную полную запись); регистрируется на core.__ops. */
+require('./backend-ops.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

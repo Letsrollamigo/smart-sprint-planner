@@ -28,7 +28,7 @@
  *   GET  check-validator         — viewer
  *   GET  field-values            — viewer
  *   GET  get-user-field-values   — viewer
- *   POST update-issue-field      — editor
+ *   POST update-issue-field      — assigner (editor ⊃ assigner)
  */
 
 
@@ -62,8 +62,8 @@ function dlog(ctx, msg) {
 function cid(ctx) {
   if (!ctx) return null;
   try {
-    if (!ctx.__scbtCid) ctx.__scbtCid = 'cid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-    return ctx.__scbtCid;
+    if (!ctx.__sspCid) ctx.__sspCid = 'cid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    return ctx.__sspCid;
   } catch (e) { return null; }
 }
 function logRefusal(ctx, status, reason) {
@@ -100,7 +100,7 @@ function bumpSlotRev(ctx, prop) {
 function revConflict(ctx, baseRev, cur) {
   if (baseRev === undefined || baseRev === null || baseRev === cur) return false;
   ctx.response.status = 409;
-  ctx.response.json({ success: false, error: 'rev_conflict', rev: cur, cid: cid(ctx) });
+  ctx.response.json({ success: false, error: 'rev_conflict', reason: 'rev_conflict', rev: cur, cid: cid(ctx) });
   logRefusal(ctx, 409, 'rev_conflict');
   return true;
 }
@@ -2525,24 +2525,41 @@ function forbidden(ctx, reason) {
   logRefusal(ctx, 403, reason || 'insufficient_rights');
 }
 
+/* #113 — необязательные ключи отказа (errors[], debug, values…) подмешиваются в конверт. */
+function withExtra(body, extra) {
+  if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
+  return body;
+}
+
 /**
  * Отклоняет запрос с кодом 400.
  */
-function badRequest(ctx, reason) {
+function badRequest(ctx, reason, extra) {
   ctx.response.status = 400;
-  ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input', cid: cid(ctx) });
+  ctx.response.json(withExtra({ success: false, error: 'Bad Request', reason: reason || 'invalid_input', cid: cid(ctx) }, extra));
   logRefusal(ctx, 400, reason || 'invalid_input');
 }
 
 /**
  * Отклоняет запрос с кодом 500 — неожиданная серверная ошибка.
- * Подробности — только в server log при enableDebugLog.
+ * reason — машинный код-литерал (без текста исключения); подробности — в extra либо в
+ * server log при enableDebugLog.
  */
-function internalError(ctx, reason) {
+function internalError(ctx, reason, extra) {
   try { ctx.response.status = 500; } catch (e) { /* ignore */ }
   dlog(ctx, 'internalError: ' + (reason || ''));
-  ctx.response.json({ success: false, error: 'internal_error', cid: cid(ctx) });
-  logRefusal(ctx, 500, 'internal_error');
+  ctx.response.json(withExtra({ success: false, error: 'internal_error', reason: reason || 'internal_error', cid: cid(ctx) }, extra));
+  logRefusal(ctx, 500, reason || 'internal_error');
+}
+
+/**
+ * #113 — отказ полей задач: код причины остаётся в `error` (его читает виджет),
+ * `reason` дублирует код — единый конверт для внешних клиентов.
+ */
+function refuseCompat(ctx, code, extra) {
+  try { ctx.response.status = 400; } catch (e) { /* ignore */ }
+  ctx.response.json(withExtra({ success: false, error: code, reason: code, cid: cid(ctx) }, extra));
+  logRefusal(ctx, 400, code);
 }
 
 /**
@@ -2706,7 +2723,7 @@ var ENDPOINTS = [
           });
         } catch (e) {
           dlog(ctx, 'project-fields error: ' + String(e && e.message));
-          ctx.response.json({ success: false, error: 'internal_error', fields: [] });
+          internalError(ctx, 'project_fields_failed', { fields: [] });
           return;
         }
         ctx.response.json({
@@ -2772,10 +2789,20 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
 
+        var action = (ctx.request.getParameter('action') || '').trim();
+        /* #113 — мелкие операции (backend-ops.js): делегация ДО разбора тела — ctx.request.body
+           в YT-рантайме читается один раз, сателлит разбирает его своим белым списком. */
+        if (module.exports.__ops && module.exports.__ops.has('sprint-data', action)) return module.exports.__ops.handle(ctx, 'sprint-data', action);
+
         var body = parseBodyOrReject(ctx, ALLOWED_SPRINT_DATA_KEYS);
         if (body === null) return;
+        /* #113 — смешанное тело: слот писался ДО проверки прав на settings (torn write).
+           Виджет настройки шлёт отдельным телом; смешанное отклоняется до любой записи. */
+        if (body.settings !== undefined && (body.sprint !== undefined || body.roleItems !== undefined)) {
+          badRequest(ctx, 'mixed_settings_write');
+          return;
+        }
 
-        var action = (ctx.request.getParameter('action') || '').trim();
         if (action && action !== 'validate' && action !== 'assignerSync' && action !== 'phases') {
           badRequest(ctx, 'invalid_action');
           return;
@@ -2794,6 +2821,8 @@ var ENDPOINTS = [
           /* v6.1.0 D82 (F5) — assigner partial save: разрешено только обновление
              personalPlanning внутри текущего ssp_sprint. Иерархия editor⊃assigner. */
           if (!authzGuard(ctx, 'assigner')) return;
+          /* #113 — тело без sprint отвечало «успехом без записи». */
+          if (!body.sprint || typeof body.sprint !== 'object') { badRequest(ctx, 'sprint_required'); return; }
         } else {
           // Обычное сохранение: проверки прав по ключам ниже.
           // Для sprint/roleItems/items нужен editor, для settings — settingsManager.
@@ -3164,6 +3193,7 @@ var ENDPOINTS = [
             badRequest(ctx, 'invalid_snapshot_body');
             return;
           }
+          if (typeof bodySN.baseRev !== 'number' || !isFinite(bodySN.baseRev)) { badRequest(ctx, 'base_rev_required'); return; }   /* #113 */
           if (revConflict(ctx, bodySN.baseRev, slotRev(ctx, 'ssp_history_rev'))) return;
           var existingSN = parseJson(getProp(ctx, 'ssp_history'), []);
           if (!Array.isArray(existingSN)) existingSN = [];
@@ -3268,7 +3298,9 @@ var ENDPOINTS = [
         if (body === null) return;
 
         /* R6 — optimistic lock: full-replace истории (P1 #11 — параллельная работа двух
-           ролей теряла снапшоты, класс v2.16.6). Гейт ДО каких-либо записей. */
+           ролей теряла снапшоты, класс v2.16.6). Гейт ДО каких-либо записей.
+           #113 — baseRev обязателен, как у sprint-data (#110). */
+        if (typeof body.baseRev !== 'number' || !isFinite(body.baseRev)) { badRequest(ctx, 'base_rev_required'); return; }
         if (revConflict(ctx, body.baseRev, slotRev(ctx, 'ssp_history_rev'))) return;
 
         var hRevNew = null;
@@ -3331,7 +3363,7 @@ var ENDPOINTS = [
         if (!authzGuard(ctx, 'viewer')) return;
         var configured = isSettingsManagerConfigured(ctx);
         if (!configured) {
-          ctx.response.json({ canManage: false, configured: false, reason: 'not_configured', groupName: '' });
+          ctx.response.json({ success: true, canManage: false, configured: false, reason: 'not_configured', groupName: '' });
           return;
         }
         /* v1.8.3 — settingsManagerGroup может быть object (UserGroup picker) или string (legacy). */
@@ -3350,6 +3382,7 @@ var ENDPOINTS = [
         /* #22 — планировочный тир: settings-менеджер ⊃ планировочный менеджер. */
         var canPlanning = canManage || isPlanningManager(ctx);
         ctx.response.json({
+          success:           true,
           canManage:         canManage,
           canManagePlanning: canPlanning,   // #22 — может открыть форму + править планировочный тир
           canEditWorkflow:   canManage,     // #22 — admin-группа (workflow + доступ/права) рендерится только при true
@@ -3370,7 +3403,7 @@ var ENDPOINTS = [
       path: 'check-instance-admin',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ isInstanceAdmin: isInstanceAdmin(ctx) });
+        ctx.response.json({ success: true, isInstanceAdmin: isInstanceAdmin(ctx) });
       }
     },
 
@@ -3388,7 +3421,7 @@ var ENDPOINTS = [
       path: 'app-version',
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
-        ctx.response.json({ version: APP_VERSION });
+        ctx.response.json({ success: true, version: APP_VERSION });
       }
     },
 
@@ -3401,6 +3434,7 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
         ctx.response.json({
+          success:     true,
           isValidator: isValidator(ctx),
           configured:  isSettingsManagerConfigured(ctx)
         });
@@ -3415,6 +3449,7 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
         ctx.response.json({
+          success:    true,
           isEditor:   isEditor(ctx),
           configured: isSettingsManagerConfigured(ctx)
         });
@@ -3429,6 +3464,7 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
         ctx.response.json({
+          success:    true,
           isAssigner: isAssigner(ctx),
           configured: isSettingsManagerConfigured(ctx)
         });
@@ -3444,6 +3480,7 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
         ctx.response.json({
+          success:          true,
           isHistoryManager: isHistoryManager(ctx),
           configured:       isSettingsManagerConfigured(ctx)
         });
@@ -3462,10 +3499,10 @@ var ENDPOINTS = [
       handle: function (ctx) {
         if (!authzGuard(ctx, 'viewer')) return;
         var login = (ctx.currentUser && ctx.currentUser.login) || '';
-        if (!login) { ctx.response.json({ data: null }); return; }
+        if (!login) { ctx.response.json({ success: true, data: null }); return; }
         var allDrafts = parseJson(getProp(ctx, 'ssp_drafts'), {}) || {};
         var slot = allDrafts[login] || null;
-        ctx.response.json({ data: slot });
+        ctx.response.json({ success: true, data: slot });
       }
     },
     {
@@ -3524,7 +3561,7 @@ var ENDPOINTS = [
         }
 
         setProp(ctx, 'ssp_drafts', allStr);
-        ctx.response.json({ ok: true, savedAt: Date.now() });
+        ctx.response.json({ success: true, ok: true, savedAt: Date.now() });
       }
     },
 
@@ -3573,7 +3610,7 @@ var ENDPOINTS = [
             return;
           }
           setProp(ctx, 'ssp_workdrafts', delStr);
-          ctx.response.json({ ok: true, deleted: delKey });
+          ctx.response.json({ success: true, ok: true, deleted: delKey, found: !!existing });   /* #113 — «удалять было нечего» виден клиенту */
           return;
         }
 
@@ -3666,7 +3703,7 @@ var ENDPOINTS = [
           return;
         }
         setProp(ctx, 'ssp_workdrafts', mergedStr);
-        ctx.response.json({ ok: true, sizeKb: Math.round(mergedStr.length / 1024) });
+        ctx.response.json({ success: true, ok: true, sizeKb: Math.round(mergedStr.length / 1024) });
       }
     },
 
@@ -3730,6 +3767,9 @@ exports.ALLOWED_REMINDERS_KEYS        = ALLOWED_REMINDERS_KEYS;        // #112 �
 exports.ALLOWED_REMINDERS_RECORD_KEYS = ALLOWED_REMINDERS_RECORD_KEYS; // #112 — одна запись журнала
 exports.isValidator                   = isValidator;                   // #112 — адресация напоминаний: предикат, не authzGuard
 exports.internalError               = internalError;         // #48 R1.2 — backend-release error path
+exports.refuseCompat                = refuseCompat;          // #113 — отказ полей задач (backend-issuefields.js)
+exports.migrateSprintObj            = migrateSprintObj;      // #113 — backend-ops.js читает слот как GET sprint-data
+exports.migrateRoleItemsObj         = migrateRoleItemsObj;
 exports.slotRev                     = slotRev;               // R6 — optimistic lock слотов (releases/absences)
 exports.bumpSlotRev                 = bumpSlotRev;           // R6
 exports.revConflict                 = revConflict;           // R6

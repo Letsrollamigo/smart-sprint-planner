@@ -1,0 +1,1493 @@
+{
+  "$comment": "Генерируется scripts/gen-error-codes.js — руками не править. Запись на пару «код + хелпер».",
+  "codes": [
+    {
+      "code": "absence_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "absences_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "absences_invalid",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "access_denied",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-global.js",
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "alloc_sum_exceeds_100",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "assigner_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "auth_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "auth_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js",
+        "backend-global.js",
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "base_rev_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js",
+        "backend-core.js",
+        "backend-ops.js",
+        "backend-phases.js",
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "calendar_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "calendar_invalid",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "capacity_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "capacity_persons_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "delta_must_be_zero",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "draft_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "duplicate_date",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "editor_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "field_name_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "field_not_found",
+      "http": 400,
+      "error": "field_not_found",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "field_not_whitelisted",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "field_not_writable",
+      "http": 400,
+      "error": "field_not_writable",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "field_values_failed",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "from_after_to",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "history_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "history_manager_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "insufficient_rights",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "internal_error",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_action",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js",
+        "backend-core.js",
+        "backend-release.js",
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_capacity_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_data",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_date",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid",
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "invalid_delta",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid",
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "invalid_field_name",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_history_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_history_structure:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": true,
+      "published": true
+    },
+    {
+      "code": "invalid_input",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-global.js",
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_issue_id",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_issue_id_in_list",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_issue_ids",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_journal_action",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_journal_id",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_json",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_keys",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-global.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_login",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "invalid_period_value",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_personal_planning",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_phases_body",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_phases_structure:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-phases.js"
+      ],
+      "dynamic": true,
+      "published": true
+    },
+    {
+      "code": "invalid_planner_disable_body",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-plannerdisable.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_prefs",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_project_key",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-global.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_releases_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_reminders_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_role_items_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_settings_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_snapshot_body",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_sprint_lock_body",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-sprintlock.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_sprint_structure",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_state_field_name",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "invalid_type",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid",
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "invalid_update_issue_params",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "invalid_working_draft:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": true,
+      "published": false
+    },
+    {
+      "code": "invalid_year",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "issue_not_found",
+      "http": 400,
+      "error": "issue_not_found",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "issue_not_in_project",
+      "http": 400,
+      "error": "issue_not_in_project",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "item_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "journal_record_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "key_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "mixed_settings_write",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "not_addressee",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "not_array",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid",
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "not_object",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "absences_invalid",
+        "calendar_invalid"
+      ],
+      "published": true
+    },
+    {
+      "code": "not_owner",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "ops_field_invalid:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": true,
+      "published": true
+    },
+    {
+      "code": "ops_field_required:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": true,
+      "published": true
+    },
+    {
+      "code": "phases_disabled",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "phases_out_of_sprint:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-phases.js"
+      ],
+      "dynamic": true,
+      "published": true
+    },
+    {
+      "code": "planner_disabled",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-global.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "plugin_not_configured",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "prefs_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "project_fields_failed",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "project_unavailable",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-global.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "prototype_pollution_detected",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "reason_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "reason_too_long",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_engineer_scope_field_change",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_engineer_scope_record_added",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_engineer_scope_record_count_change",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_engineer_scope_snapshot_change",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_engineer_scope_status_transition",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "release_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "releases_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-release.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "reminders_journal_write_failed",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-reminders.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "rev_conflict",
+      "http": 409,
+      "error": "rev_conflict",
+      "field": "reason",
+      "helper": "revConflict",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "role_items_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "role_record_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-ops.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "settings_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-plannerdisable.js",
+        "backend-sprintlock.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "settings_manager_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_creation_locked",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_data_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_dates_missing",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_finished",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_id_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_lock_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-sprintlock.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_not_current",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_not_found",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js",
+        "backend-ops.js",
+        "backend-phases.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "sprint_required",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "store_failed",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-global.js",
+        "backend-userprefs.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "unknown_role",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "update_issue_field_failed",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "user_field_values_failed",
+      "http": 500,
+      "error": "internal_error",
+      "field": "reason",
+      "helper": "internalError",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "user_not_found",
+      "http": 400,
+      "error": "user_not_found",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "validator_rights_required",
+      "http": 403,
+      "error": "Forbidden",
+      "field": "reason",
+      "helper": "forbidden",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "value_not_found",
+      "http": 400,
+      "error": "value_not_found",
+      "field": "both",
+      "helper": "refuseCompat",
+      "modules": [
+        "backend-issuefields.js"
+      ],
+      "dynamic": false,
+      "published": true
+    },
+    {
+      "code": "working_draft_too_large:",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": true,
+      "published": false
+    },
+    {
+      "code": "working_drafts_too_large",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "reason",
+      "helper": "badRequest",
+      "modules": [
+        "backend-core.js"
+      ],
+      "dynamic": false,
+      "published": false
+    },
+    {
+      "code": "year_mismatch",
+      "http": 400,
+      "error": "Bad Request",
+      "field": "errors[].code",
+      "helper": "badRequest",
+      "modules": [
+        "backend-capacity.js"
+      ],
+      "dynamic": false,
+      "parent": [
+        "calendar_invalid"
+      ],
+      "published": true
+    }
+  ]
+}

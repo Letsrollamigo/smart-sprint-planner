@@ -345,10 +345,11 @@ test('#5 regression: live-save после approve СОХРАНЯЕТ frozen abse
 
 test('#3 regression: POST /absences с логином «absences» не теряет данные', () => {
   const s = new Stand();
-  const ctx = s.ctx({ role: 'planner', body: {
+  /* #113 — запись только обёрткой {absences, baseRev}; логин «absences» живёт внутри карты. */
+  const ctx = s.ctx({ role: 'planner', body: { baseRev: 0, absences: {
     absences: [{ from: '2026-06-02', to: '2026-06-03', type: 'vacation' }],
     realuser: [{ from: '2026-06-04', to: '2026-06-05', type: 'sick' }]
-  } });
+  } } });
   handlePostAbsences(ctx);
   assert.strictEqual(ctx._res()._out.success, true);
   const stored = JSON.parse(s.props.ssp_absences);

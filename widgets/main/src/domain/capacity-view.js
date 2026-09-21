@@ -256,7 +256,7 @@ function _saveAbsences(deps, fullMap) {
   if (_uiAbs.absencesLoadFailed) { deps.toast(deps.T('errCapacityLoad'), 'err'); return; }
   var map = fullMap || deps.state.getAbsences() || {};
   /* v3.2.1 — явная обёртка: backend отличает осознанно-пустую карту от битого тела
-     (анти-wipe guard absences_empty_body). */
+     (с 3.49.0 — гейт base_rev_required; baseRev подставляет транспорт). */
   deps.apiPost('absences', { absences: map }).then(function (r) {
     if (r && r.success) { deps.state.setAbsences(JSON.parse(JSON.stringify(map))); deps.toast(deps.T('msgAbsencesSaved'), 'success'); loadAndRender(deps); }
     else deps.toast(deps.T('errAbsencesSave'), 'err');

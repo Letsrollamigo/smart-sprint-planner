@@ -19,6 +19,8 @@ var entities = require('@jetbrains/youtrack-scripting-api/entities');
 /* Локальные алиасы ядра — тела хендлеров переехали дословно и зовут их без префикса. */
 var authzGuard = core.authzGuard;
 var badRequest = core.badRequest;
+var refuseCompat  = core.refuseCompat;
+var internalError = core.internalError;
 var getBody    = core.getBody;
 var filterKeys = core.filterKeys;
 var parseBodyOrReject = core.parseBodyOrReject;
@@ -195,10 +197,14 @@ var ISSUEFIELDS_ENDPOINTS = [
           }
         } catch (e) {
           dlog(ctx, 'field-values error: ' + String(e && e.message));
-          ctx.response.json({ success: false, error: 'internal_error', values: [], debug: debugInfo });
+          internalError(ctx, 'field_values_failed', { values: [], debug: debugInfo });
           return;
         }
-        ctx.response.json({ success: !!values.length || debugInfo.found, fieldName: fieldName, values: values, resolved: resolved, colors: colors, debug: debugInfo });
+        if (!debugInfo.found) {
+          refuseCompat(ctx, 'field_not_found', { fieldName: fieldName, values: [], resolved: [], colors: {}, debug: debugInfo });
+          return;
+        }
+        ctx.response.json({ success: true, fieldName: fieldName, values: values, resolved: resolved, colors: colors, debug: debugInfo });
       }
     },
 
@@ -232,7 +238,7 @@ var ISSUEFIELDS_ENDPOINTS = [
             });
           }
           if (!pf) {
-            ctx.response.json({ success: false, error: 'field_not_found', users: [], debug: debug });
+            refuseCompat(ctx, 'field_not_found', { users: [], debug: debug });
             return;
           }
           debug.found = true;
@@ -292,7 +298,7 @@ var ISSUEFIELDS_ENDPOINTS = [
           ctx.response.json({ success: true, users: users, debug: debug });
         } catch (e) {
           dlog(ctx, 'get-user-field-values error: ' + String(e && e.message));
-          ctx.response.json({ success: false, error: 'internal_error', users: [], debug: debug });
+          internalError(ctx, 'user_field_values_failed', { users: [], debug: debug });
         }
       }
     },
@@ -355,19 +361,19 @@ var ISSUEFIELDS_ENDPOINTS = [
         try {
           var issue = entities.Issue.findById(issueId);
           if (!issue) {
-            ctx.response.json({ success: false, error: 'issue_not_found' });
+            refuseCompat(ctx, 'issue_not_found');
             return;
           }
           /* v3.2.1 — изоляция проекта на app-уровне: authz считается по ssp_settings
              ЭТОГО проекта, а findById достаёт задачу любого — assigner проекта A мог
              писать поля задач проекта B (страховала только платформенная ACL YT). */
           if (!issue.project || !ctx.project || issue.project.key !== ctx.project.key) {
-            ctx.response.json({ success: false, error: 'issue_not_in_project' });
+            refuseCompat(ctx, 'issue_not_in_project');
             return;
           }
           /* #67 Q1c — скрытая задача: тот же ответ, что у несуществующей (без оракула). */
           if (!issueVisibleTo(issue, ctx)) {
-            ctx.response.json({ success: false, error: 'issue_not_found' });
+            refuseCompat(ctx, 'issue_not_found');
             return;
           }
 
@@ -376,13 +382,13 @@ var ISSUEFIELDS_ENDPOINTS = [
 
           /* #67 Q1 — право на запись поля по правам YouTrack самого пользователя. */
           if (!fieldWritableBy(issue, projectField ? projectField.name : fieldName, ctx)) {
-            ctx.response.json({ success: false, error: 'field_not_writable' });
+            refuseCompat(ctx, 'field_not_writable');
             return;
           }
 
           if (type === 'user') {
             if (!projectField) {
-              ctx.response.json({ success: false, error: 'field_not_found' });
+              refuseCompat(ctx, 'field_not_found');
               return;
             }
             var userVal = null;
@@ -390,7 +396,7 @@ var ISSUEFIELDS_ENDPOINTS = [
               try { userVal = entities.User.findByLogin(String(value).substring(0, 200)); } catch (_) {}
             }
             if (value !== null && !userVal) {
-              ctx.response.json({ success: false, error: 'user_not_found' });
+              refuseCompat(ctx, 'user_not_found');
               return;
             }
             issue.fields[projectField.name] = userVal;
@@ -413,7 +419,7 @@ var ISSUEFIELDS_ENDPOINTS = [
             }
           } else {
             if (!projectField) {
-              ctx.response.json({ success: false, error: 'field_not_found' });
+              refuseCompat(ctx, 'field_not_found');
               return;
             }
             // value может быть null (сброс поля)
@@ -422,7 +428,7 @@ var ISSUEFIELDS_ENDPOINTS = [
               bundleValue = projectField.findValueByName(String(value).substring(0, 500));
             }
             if (value !== null && !bundleValue) {
-              ctx.response.json({ success: false, error: 'value_not_found' });
+              refuseCompat(ctx, 'value_not_found');
               return;
             }
             issue.fields[projectField.name] = bundleValue;
@@ -431,7 +437,7 @@ var ISSUEFIELDS_ENDPOINTS = [
         } catch (e) {
           dlog(ctx, 'update-issue-field error: ' + String(e && e.message));
           /* #57-3 — текст исключения (отказ state-machine и т.п.) видимее кода в per-task отчёте */
-          ctx.response.json({ success: false, error: 'internal_error', message: String(e && e.message || '').substring(0, 300) });
+          internalError(ctx, 'update_issue_field_failed', { message: String(e && e.message || '').substring(0, 300) });
         }
       }
     },

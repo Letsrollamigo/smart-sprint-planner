@@ -102,11 +102,7 @@ function applyStoredAll(records, slot, history) {
 }
 
 function refuse(ctx, reason, extra) {
-  ctx.response.status = 400;
-  var body = { success: false, error: 'Bad Request', reason: reason, cid: core.cid(ctx) };
-  if (extra) Object.keys(extra).forEach(function (k) { body[k] = extra[k]; });
-  ctx.response.json(body);
-  core.logRefusal(ctx, 400, reason);
+  core.badRequest(ctx, reason, extra);
 }
 
 function handle(ctx, body) {

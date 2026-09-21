@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.49.0] — release date
+
+> **#113 “External REST: a 43-operation contract”.** The contract `Integrations/openapi-sprint.yaml` describes the planner's whole external REST, every refusal carries a machine-readable code and a request id, and agents get small operations. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
+
+### Added
+
+- **An external REST contract of 43 operations (#113).** `Integrations/openapi-sprint.yaml` (OpenAPI 3.1) — the sprint and its issue set, history, capacity, calendar and absences, releases, reminders, sprint lock, administration; eight sections, write variants selected by the `action` parameter. Operations that replace data wholesale, are irreversible or change how the project works are marked “⚠” and `x-restricted: true`. The default server address is a placeholder: the working address is filled in by hand. The primary integration address is by project key: `/api/extensionEndpoints/smart-sprint-planner/backend-global/{path}?projectKey=<KEY>`.
+- **Small operations for agents — 11 `?action=` variants.** `upsertItem`, `removeItem`, `patchSprint`, `assignPerson` (`sprint-data`), `upsertPerson` (`capacity`), `upsertAbsence`, `removeAbsence` (`absences`), `upsertRelease`, `setReleaseStatus`, `addReleaseIssues`, `removeReleaseIssues` (`releases`). The client sends one change and `baseRev`; the server applies it to the stored data and runs the regular full write — same rights, checks, limits and revisions. The response carries `action` and `applied`.
+- **A registry of refusal codes.** `Integrations/ERROR_CODES.md` — 96 published codes, each with “what it means” and “what to do”; generated from the backend code (`npm run error-codes`), the full registry is `Integrations/error-codes.json`.
+- **Documentation chapter “22. Integrations: the external REST”** — preparing the service user, addresses, permissions, the response envelope, revisions and a sample scenario; in English and Russian.
+
+### Changed
+
+- **One refusal envelope.** Every refusal carries `reason` and `cid` — including the by-project-key address, revision conflicts, internal errors and issue-field writes (their `error` value is unchanged, `reason` repeats the code). The `check-*`, `app-version` and draft responses gained `success: true`.
+- **`baseRev` is mandatory for all revisioned data** — besides the sprint, now for history (the write without `action`, and `snapshot`), releases and absences; without it the answer is `base_rev_required`. The planner interface always sends the revision; an external client has to read it from the GET. Absences are accepted only as the wrapper `{absences, baseRev}`.
+- **A mixed body is refused.** `settings` together with `sprint` or `roleItems` in one request → `mixed_settings_write`, nothing is written. Before, the slot could be written ahead of the settings rights check.
+- **“Success without effect” closed.** `sprint-data?action=assignerSync` without a `sprint` object → `sprint_required`; `working-drafts?action=delete` answers with `found`; a non-empty unknown `action` on `releases` and `absences` → `invalid_action`.
+
+### Under the hood
+
+- Five core helpers are the only writers of `success:false` (`badRequest`, `forbidden`, `internalError`, `revConflict`, `refuseCompat`); satellite wrappers reduce to them. A new satellite, `backend-ops.js` — small operations through a context adapter and the regular full-write handler (delegation happens before the body is parsed: the YouTrack runtime reads a request body once).
+- `scripts/gen-error-codes.js` + the `tests/arch/error-codes.test.js` gate: the registry matches the generation; every code has a description and no code reaches a helper through a variable; published codes are present in the contract; `success:false` past the helpers is forbidden. The `api-contract` gate checks the contract against the code's allowlists and a baseline of keys the client sends.
+- `scripts/contract-smoke.sh` — a contract check on a stand: reads, platform and application refusals, a round of small operations with the revision growing. Unit tests `cid-envelope`, `contract-113`, `backend-ops`. Both code bases; backend size budgets carry a `budgetNote`.
+
+---
+
 ## [3.48.3] — 2026-09-15
 
 > **Patch #133.** The “Used by” column in the “Issue links” settings lists Gantt for the Hierarchy role. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.

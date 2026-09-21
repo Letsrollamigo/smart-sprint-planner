@@ -129,6 +129,10 @@ function withBaseRev(body, props) {
     try { const s = JSON.parse(props.ssp_sprint || 'null'); if (s && typeof s._rev === 'number') rev = s._rev; } catch (e) { /* пусто */ }
     body = Object.assign({}, body, { baseRev: rev });
   }
+  /* #113 — baseRev обязателен и у записи истории: как транспорт виджета, подставляем rev слота. */
+  if (body && typeof body === 'object' && body.history !== undefined && body.baseRev === undefined) {
+    body = Object.assign({}, body, { baseRev: parseInt(props.ssp_history_rev, 10) || 0 });
+  }
   return body;
 }
 

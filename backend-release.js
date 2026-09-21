@@ -240,6 +240,12 @@ function handlePostReleases(ctx) {
   if (!core.authzGuard(ctx, 'viewer')) return; // аутентификация (инвариант: authzGuard первым)
   var perms = releasePerms(ctx);
   if (!perms.canAdvance) { core.forbidden(ctx, 'release_rights_required'); return; }
+  /* #113 — мелкие операции (backend-ops.js), до разбора тела; пустой action — полная запись. */
+  var action = (ctx.request.getParameter('action') || '').trim();
+  if (action) {
+    if (core.__ops && core.__ops.has('releases', action)) return core.__ops.handle(ctx, 'releases', action);
+    core.badRequest(ctx, 'invalid_action'); return;
+  }
   /* v3.2.1 — core.getBody вместо raw json(): лимит 2МБ + sanitizeDeep + не-500 на не-JSON
      (единственный handler, ходивший мимо общего конверта). */
   var body = core.parseBodyOrReject(ctx, null); /* blob валидируется целиком ниже */
@@ -247,7 +253,9 @@ function handlePostReleases(ctx) {
   /* v3.2.1 — тело без ЯВНОГО releases-массива больше не коэрсится в []: один битый/
      оборванный POST стирал все релизы проекта с success:true. */
   if (!Array.isArray(body.releases)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }
-  /* R6 — optimistic lock (P1 #14б): full-blob replace двумя РМ шёл last-write-wins. */
+  /* R6 — optimistic lock (P1 #14б): full-blob replace двумя РМ шёл last-write-wins.
+     #113 — baseRev обязателен, как у sprint-data (#110). */
+  if (typeof body.baseRev !== 'number' || !isFinite(body.baseRev)) { core.badRequest(ctx, 'base_rev_required'); return; }
   if (core.revConflict(ctx, body.baseRev, core.slotRev(ctx, 'ssp_releases_rev'))) return;
   var blob = { releases: body.releases };
   if (!validateReleasesBlob(blob)) { core.badRequest(ctx, 'invalid_releases_structure'); return; }

@@ -37,6 +37,7 @@ If you simply work inside a sprint, you want the [Overview](../01-overview/).
 | 19a | [Notifications and reminders](19a-reminders.md) | no |
 | 20 | [Check: the first sprint](20-first-sprint.md) | yes |
 | 21 | [Rollout checklist](21-checklist.md) | for reference |
+| 22 | [Integrations: the external REST](22-integrations.md) | no |
 
 ## How to read this
 

@@ -6,6 +6,8 @@
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
 >
+> **v3.49.0 — #113 «Внешний REST: контракт на 43 операции»: новых групп и полномочий нет.** (1) **Единый конверт отказа:** `success:false` пишут только пять хелперов ядра; у каждого отказа есть `reason`, `cid` и строка журнала отказов — в том числе в глобальном контуре, у предпочтений пользователя и у записи полей задач (значение `error` у них прежнее, `reason` дублирует код). Отказ мимо хелперов и код без описания запрещены гейтом `tests/arch/error-codes.test.js`; реестр кодов — `Integrations/ERROR_CODES.md` (генерируется из кода). (2) **Закрыта частичная запись:** тело, где `settings` смешан со `sprint` либо `roleItems`, отклоняется `mixed_settings_write` до любой записи — раньше слот успевал записаться до проверки прав на настройки. (3) **`baseRev` обязателен** у `history` (без `action` и `snapshot`), `releases` и `absences`; «сырая» форма отсутствий без обёртки закрыта (`base_rev_required`). (4) **Мелкие операции** (`backend-ops.js`, 11 вариантов `?action=`) своих путей записи и своих прав не имеют: применяют одно изменение к хранимым данным и вызывают штатную полную запись того же пути — права, валидаторы, лимиты, ревизии, серверные штампы и правило релиз-инженера наследуются по построению; у операций `sprint-data` роль проверяется до чтения данных (инвариант «authz первым»), `cid` отказа совпадает с `cid` исходного запроса. (5) `assignerSync` без объекта `sprint` → `sprint_required` (раньше `sprint:null` с этим действием сбрасывал слот); непустой неизвестный `action` у `releases`/`absences` → `invalid_action`. Внешний REST описан контрактом `Integrations/openapi-sprint.yaml`; основной адрес интеграций — по ключу проекта, проектный адрес тумблером «планер отключён» не закрывается (#80, описано в контракте).
+>
 > **v3.48.0 — #122 «Сквозной Гант по всем ролям», ступень 2 (прогноз по всем ролям и группы эпиков): новых эндпоинтов, групп и полномочий нет, сервер не участвует.** Прогноз считается на клиенте и пишет только даты `dateStart`/`dateEnd` в `personalPlanning` затронутых ролей тем же каналом, что правка на сквозном виде (`POST history?action=assignerSync` списком записей → слот), под правами редактора; календарь и отсутствия читаются существующими `GET calendar` / `GET absences`. Иерархия задач для групп эпиков читается из YouTrack тем же эфемерным фетчем связей, что и зависимости, ничего не сохраняется. Схема данных не меняется.
 >
 > **v3.47.0 — #122 «Сквозной Гант по всем ролям»: новых эндпоинтов, групп и полномочий нет.** Даты и исполнитель задачи в дорожке чужой роли пишутся существующим каналом: сначала история — `POST history?action=assignerSync` (гейт `assigner`: редактор, назначающий, settings-менеджер, релиз-менеджер или релиз-инженер) списком записей `<sprintId>_<rk>` затронутых ролей, после её ответа — слот: `POST sprint-data` (editor) либо `?action=assignerSync` у назначающего без прав редактора (сервер переписывает только `personalPlanning`). Проверки и валидаторы записи прежние; отказ сервера (`rev_conflict`, отказ прав) откатывает на экране все затронутые роли. В allow-list `POST user-prefs` добавлены два ключа — `ssp_ganttMode` и `ssp_ganttZoom` с короткими строковыми значениями; неизвестный ключ по-прежнему отвергает весь батч. Схема данных не меняется.
@@ -179,6 +181,8 @@
 | POST   | `sprint-data?action=validate` | validator (пишет `sprint`/`roleItems` без editor — осознанно, v3.2.1; ветка `sprint:null` — editor ∨ validator, #67) |
 | POST   | `sprint-data?action=assignerSync` | assigner-объединение (partial save только `personalPlanning`) |
 | POST   | `sprint-data?action=phases` | editor ∨ validator (#120, 3.45.0: единственный путь записи фаз работ — `sprint.phases` по `sprintId`; требует `phasesEnabled`; `baseRev` сверяется только если слот держит спринт; fan-out в слот и все снимки роли, штампы `phasesUpdatedAt/By` — серверные; прочие записи спринта/истории переопределяют присланные фазы хранимыми) |
+| POST   | `sprint-data?action=upsertItem` · `removeItem` · `patchSprint` | editor (#113, 3.49.0: мелкие операции — сервер применяет одно изменение к хранимым данным и вызывает штатную полную запись; права, валидаторы, лимиты, `baseRev` наследуются; роль проверяется до чтения данных) |
+| POST   | `sprint-data?action=assignPerson` | assigner-объединение (#113, 3.49.0: две штатные записи — `sprint-data?action=assignerSync`, затем `history?action=assignerSync`; гейт `baseRev` первой отклоняет операцию до любой записи) |
 | GET    | `history` | viewer |
 | POST   | `history` | validator; **укорочение более чем на 1 запись — historyManager (#67, без байпаса админа)**; аудит-поля штампуются сервером (#67 H8) |
 | POST   | `history?action=snapshot` | editor ∨ validator (upsert ровно одной записи по `sprintId`, ничего не удаляет — #67 H5; аудит-штампы H8) |
@@ -201,10 +205,12 @@
 | GET    | `capacity` | viewer (грейды, ставки, аллокации ростера) |
 | GET    | `capacity-archive` | viewer |
 | POST   | `capacity` | settingsManager ИЛИ planningManager (`approvedBy` — серверный штамп) |
+| POST   | `capacity?action=upsertPerson` | settingsManager ИЛИ planningManager (#113, 3.49.0: мелкая операция поверх `?action=save`) |
 | GET    | `calendar` | viewer |
 | POST   | `calendar` | settingsManager |
 | GET    | `absences` | viewer (кто и когда отсутствует) |
 | POST   | `absences` | settingsManager ИЛИ planningManager |
+| POST   | `absences?action=upsertAbsence` · `removeAbsence` | settingsManager ИЛИ planningManager (#113, 3.49.0: мелкие операции поверх полной записи; `baseRev` обязателен) |
 | GET    | `field-values` | viewer |
 | GET    | `get-user-field-values` | viewer |
 | POST   | `update-issue-field` | assigner-объединение (типы: `period`/`enum`/`state`/`version`/`owned`/`build`/`user`; изоляция проекта; `fieldName` — длина/символы + **allow-list настроенных полей, #67 H7**; **v3.25.0: `Issue.isVisibleTo` → `issue_not_found`, `Issue.canBeWrittenBy` по правам самого пользователя → `field_not_writable`**) |
@@ -212,6 +218,7 @@
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager ИЛИ releaseManager; releaseEngineer — только advance-дифф (`engineerDiffAllowed`) |
+| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` | как у полной записи `releases` (#113, 3.49.0: мелкие операции; дифф-правило инженера действует на собранное полное тело) |
 | GET    | `reporting-access` | viewer (ответ — флаги контуров A/B по членству) |
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |

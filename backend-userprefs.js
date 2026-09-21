@@ -19,8 +19,8 @@
 
 var core = require('./backend-core.js');
 
-function bad(ctx, reason)    { try { ctx.response.status = 400; } catch (e) {} ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input' }); }
-function forbid(ctx, reason) { try { ctx.response.status = 403; } catch (e) {} ctx.response.json({ success: false, error: 'Forbidden',   reason: reason || 'access_denied' }); }
+function bad(ctx, reason)    { core.badRequest(ctx, reason || 'invalid_input'); }
+function forbid(ctx, reason) { core.forbidden(ctx, reason || 'access_denied'); }
 
 /* Allowlist ключей → cap длины значения. Ключи = safeLs-ключи фронта. */
 var USER_PREFS_ALLOWED = {

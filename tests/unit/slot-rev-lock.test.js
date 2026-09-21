@@ -2,8 +2,8 @@
 
 /* R6 — optimistic lock слотов history/releases/absences (обобщение #56-4, стабильность §3
  * P1 #11/#13/#14): baseRev vs хранимый rev-счётчик в отдельном extProp ssp_<slot>_rev.
- * Контракт: расхождение → 409 rev_conflict + echo rev; без baseRev (legacy) — прежнее
- * поведение; rev двигается только с реальной записью; GET отдаёт rev.
+ * Контракт: расхождение → 409 rev_conflict + echo rev; без числового baseRev — 400
+ * base_rev_required (#113); rev двигается только с реальной записью; GET отдаёт rev.
  * Запуск: node --test 'tests/unit/slot-rev-lock.test.js'. */
 
 const test = require('node:test');
@@ -59,12 +59,29 @@ test('history POST: baseRev совпал → запись + rev+1 в ответ�
   assert.strictEqual(JSON.parse(props.ssp_history).length, 1);
 });
 
-test('history POST: legacy без baseRev → пишет (прежнее поведение), rev всё равно двигается', () => {
-  const props = { ssp_settings: HIST_SETTINGS, ssp_history: '[]', ssp_history_rev: '7' };
-  const ctx = mkCtx(props, { history: [validSnap()] });
-  ep('POST', 'history').handle(ctx);
-  assert.strictEqual(ctx.response.body.success, true);
-  assert.strictEqual(ctx.response.body.rev, 8);
+test('#113 history POST без числового baseRev (полная запись и snapshot) → 400 base_rev_required, запись и rev не тронуты', () => {
+  for (const params of [{}, { action: 'snapshot' }]) {
+    for (const baseRev of [undefined, '7', null]) {
+      const props = { ssp_settings: HIST_SETTINGS, ssp_history: '[]', ssp_history_rev: '7' };
+      const body = { history: [validSnap()] };
+      if (baseRev !== undefined) body.baseRev = baseRev;
+      const ctx = mkCtx(props, body, params);
+      ep('POST', 'history').handle(ctx);
+      assert.strictEqual(ctx.response.status, 400);
+      assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+      assert.strictEqual(props.ssp_history, '[]');
+      assert.strictEqual(props.ssp_history_rev, '7');
+    }
+  }
+});
+
+test('#113 history: clear / import-replace / assignerSync baseRev не требуют (исключения по замыслу)', () => {
+  for (const action of ['clear', 'import-replace', 'assignerSync']) {
+    const props = { ssp_settings: HIST_SETTINGS, ssp_history: '[]', ssp_history_rev: '7' };
+    const ctx = mkCtx(props, { history: [] }, { action: action });
+    ep('POST', 'history').handle(ctx);
+    assert.strictEqual(ctx.response.body.success, true, action);
+  }
 });
 
 test('history POST без history-ключа: rev НЕ двигается (нет записи — нет бампа)', () => {
@@ -140,13 +157,40 @@ test('absences POST (обёртка): baseRev мимо → 409; совпал →
   assert.ok(JSON.parse(props.ssp_absences).user1);
 });
 
-test('absences POST (legacy raw-map, без обёртки): лок не участвует — прежнее поведение', () => {
-  const props = { ssp_settings: '{}', ssp_absences: '{}', ssp_absences_rev: '5' };
+test('#113 absences POST: «сырая» карта, обёртка без числа и пустое тело → 400 base_rev_required, слот цел', () => {
   const entry = { from: '2026-07-01', to: '2026-07-05', type: 'vacation' };
-  const ctx = mkCtx(props, { user1: [entry] });
+  const bodies = [{ user1: [entry] }, { absences: { user1: [entry] } }, { absences: { user1: [entry] }, baseRev: '5' },
+    { absences: [entry], baseRev: 5 }, {}];
+  for (const body of bodies) {
+    const props = { ssp_settings: '{}', ssp_absences: '{"keep":[]}', ssp_absences_rev: '5' };
+    const ctx = mkCtx(props, body);
+    ep('POST', 'absences').handle(ctx);
+    assert.strictEqual(ctx.response.status, 400);
+    assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+    assert.strictEqual(props.ssp_absences, '{"keep":[]}');
+    assert.strictEqual(props.ssp_absences_rev, '5');
+  }
+});
+
+test('#113 absences POST: явная пустая обёртка {absences:{}, baseRev} очищает реестр', () => {
+  const props = { ssp_settings: '{}', ssp_absences: '{"keep":[]}', ssp_absences_rev: '5' };
+  const ctx = mkCtx(props, { absences: {}, baseRev: 5 });
   ep('POST', 'absences').handle(ctx);
   assert.strictEqual(ctx.response.body.success, true);
-  assert.strictEqual(ctx.response.body.rev, 6);   // rev двигается и на legacy-записи (как #56-4)
+  assert.strictEqual(props.ssp_absences, '{}');
+});
+
+test('#113 releases POST без числового baseRev → 400 base_rev_required, блоб и rev не тронуты', () => {
+  for (const baseRev of [undefined, '3', null]) {
+    const props = { ssp_settings: '{}', ssp_releases: '{"releases":[]}', ssp_releases_rev: '3' };
+    const body = { releases: [] };
+    if (baseRev !== undefined) body.baseRev = baseRev;
+    const ctx = mkCtx(props, body);
+    ep('POST', 'releases').handle(ctx);
+    assert.strictEqual(ctx.response.status, 400);
+    assert.strictEqual(ctx.response.body.reason, 'base_rev_required');
+    assert.strictEqual(props.ssp_releases_rev, '3');
+  }
 });
 
 test('absences GET: rev в ответе', () => {

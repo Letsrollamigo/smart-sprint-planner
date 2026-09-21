@@ -43,6 +43,8 @@ require('./backend-plannerdisable.js');
 require('./backend-reminders.js');
 /* #120 — Phases backend: POST sprint-data?action=phases (делегация из ядра) + серверная принадлежность фаз в слоте/снимках; регистрируется на core.__phases. */
 require('./backend-phases.js');
+/* #113 — Ops backend: мелкие операции внешнего REST (?action=upsertItem … через штатную полную запись); регистрируется на core.__ops. */
+require('./backend-ops.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.
@@ -70,9 +72,9 @@ var MAX_PICKER_KEYS = 5000;                          // лимит батча pi
    остаток (SECURITY). Отказ приходит как reason:'too_large' (конверт getBody). */
 var MAX_PICKER_BODY = 262144;
 
-// ── 4xx-хелперы (форма ответа идентична core.badRequest/forbidden) ───────────
-function gBad(ctx, reason)    { try { ctx.response.status = 400; } catch (e) {} ctx.response.json({ success: false, error: 'Bad Request', reason: reason || 'invalid_input' }); }
-function gForbid(ctx, reason) { try { ctx.response.status = 403; } catch (e) {} ctx.response.json({ success: false, error: 'Forbidden',   reason: reason || 'access_denied' }); }
+// ── 4xx-хелперы — конверт и строка лога с cid даёт ядро (#113) ───────────────
+function gBad(ctx, reason)    { core.badRequest(ctx, reason || 'invalid_input'); }
+function gForbid(ctx, reason) { core.forbidden(ctx, reason || 'access_denied'); }
 
 function getProjectKey(globalCtx) {
   try {
@@ -158,7 +160,7 @@ core.ENDPOINTS.forEach(function (ep) {
 // app-version — статика, без read-gate (бейдж версии в шапке до выбора проекта).
 endpoints.push({
   scope: 'global', method: 'GET', path: 'app-version',
-  handle: function (ctx) { ctx.response.json({ version: core.APP_VERSION }); }
+  handle: function (ctx) { ctx.response.json({ success: true, version: core.APP_VERSION }); }
 });
 
 // filter-planner-projects — авторитетный арбитр picker'а (§6.2).

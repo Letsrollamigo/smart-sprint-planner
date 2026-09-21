@@ -1,0 +1,8 @@
+# Линт контракта: npx --yes @redocly/cli lint Integrations/openapi-sprint.yaml --config Integrations/redocly.yaml
+extends:
+  - recommended
+rules:
+  # Платформа отдаёт прикладные отказы как HTTP 200 (см. «Транспорт ошибок» в контракте) — 4XX у операций нет по замыслу.
+  operation-4xx-response: off
+  # Внутренний контракт плагина — лицензии у описания нет.
+  info-license: off

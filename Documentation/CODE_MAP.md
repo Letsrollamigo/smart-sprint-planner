@@ -7,6 +7,7 @@
 - `assets/` — графика витрины
 - `docs/` — опубликованная документация со скриншотами
 - `Documentation/` — документация: CHANGELOG, SECURITY (матрица доступа), гайды, эта карта
+- `Integrations/` — контракт внешних клиентов (OpenAPI), гайд подключения, материалы по модели прав
 - `schema/` — whitelists.json — источник allow-list ключей схемы, синхронизируется в бэкенд скриптом
 - `scripts/` — сборка и гейты: whitelists, иконки, Ring-CSS, реестр модулей, карта кода, release-check, деплой на стенд
 - `tests/` — node --test: unit, golden, arch, mirror, fixtures
@@ -215,6 +216,7 @@
 | `backend-core.js` | ОБЩЕЕ ЯДРО (shared core, #25 Ф1) Не handler-файл: НЕ экспортирует exports.httpHandler (V1a). |
 | `backend-global.js` | HTTP Handler (GLOBAL scope, #25 Ф1) MAIN_MENU_ITEM-виджет (нет ctx.project). |
 | `backend-issuefields.js` | Issue-fields backend (вынос из backend-core.js). |
+| `backend-ops.js` | мелкие операции внешнего REST (#113 1в). |
 | `backend-phases.js` | Phases backend (#120 «Фазы работ внутри спринта», v3.45.0). |
 | `backend-plannerdisable.js` | Planner-disable backend (#80). |
 | `backend-project.js` | HTTP Handler (PROJECT scope) #25 Ф1 — тонкая обёртка. |

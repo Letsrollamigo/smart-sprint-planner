@@ -62,6 +62,8 @@ test('readReleases: парсит стор проекта; мусор → []', ()
 /* Полный mock ctx: группы юзера (по id), stored-блоб, POST-тело. Настройки проекта
    содержат релиз-группы g-rm/g-re; settingsManagerGroup=g-admin (configured). */
 function mkCtx(groups, storedReleases, body) {
+  /* #113 — baseRev обязателен: как транспорт виджета, подставляем rev слота (в моке — 0). */
+  if (body && body.releases !== undefined && body.baseRev === undefined) body = Object.assign({}, body, { baseRev: 0 });
   return {
     settings: { settingsManagerGroup: { id: 'g-admin', name: 'Admins' } },
     currentUser: { id: 'u-1', login: 'user1', groups: (groups || []).map((g) => ({ id: g, name: g })) },
@@ -71,7 +73,7 @@ function mkCtx(groups, storedReleases, body) {
     } },
     /* v3.2.1 — handlePostReleases читает через core.getBody (ctx.request.body — сырая
        строка) вместо raw json(): мок отдаёт оба представления. */
-    request: { json: () => body, body: body === undefined ? '' : JSON.stringify(body) },
+    request: { json: () => body, body: body === undefined ? '' : JSON.stringify(body), getParameter: () => '' },
     response: { status: 200, body: null, json(v) { this.body = v; } },
   };
 }

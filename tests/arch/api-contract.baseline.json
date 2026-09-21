@@ -18,7 +18,10 @@
       "pluginVersion",
       "personalPlanning",
       "migrationLog",
-      "_rev"
+      "_rev",
+      "phases",
+      "phasesUpdatedAt",
+      "phasesUpdatedBy"
     ],
     "Item": [
       "issueId",
@@ -36,7 +39,10 @@
       "externalTicketId",
       "stateLocalized",
       "stateFieldId",
-      "stateColor"
+      "stateColor",
+      "excludeReason",
+      "excludedAt",
+      "excludedBy"
     ],
     "RoleItems": [
       "analysis",
@@ -74,13 +80,154 @@
       "success",
       "error",
       "rev",
-      "cid"
+      "cid",
+      "reason"
     ],
     "AppError": [
       "success",
       "error",
       "cid",
-      "reason"
+      "reason",
+      "errors",
+      "rev",
+      "message"
+    ],
+    "RemindersOk": [
+      "success",
+      "enabled",
+      "today",
+      "count",
+      "items",
+      "modules"
+    ],
+    "ReminderItem": [
+      "id",
+      "module",
+      "kind",
+      "entityId",
+      "params",
+      "days",
+      "ref"
+    ],
+    "ReminderModules": [
+      "sprints",
+      "capacity",
+      "releases"
+    ],
+    "RemindersJournalOk": [
+      "success",
+      "today",
+      "journal"
+    ],
+    "ReminderJournalRecord": [
+      "id",
+      "module",
+      "kind",
+      "entityId",
+      "params",
+      "firedDay",
+      "resolvedDay",
+      "resolvedHow",
+      "resolvedBy"
+    ],
+    "PostRemindersJournalRequest": [
+      "action",
+      "id"
+    ],
+    "PostRemindersRequest": [
+      "action"
+    ],
+    "PhaseInterval": [
+      "dateStart",
+      "dateEnd"
+    ],
+    "Release": [
+      "id",
+      "name",
+      "kind",
+      "source",
+      "status",
+      "plannedDate",
+      "freezeDate",
+      "freezeLocked",
+      "patchNote",
+      "notes",
+      "taskUrl",
+      "roleReps",
+      "issues",
+      "snapshot",
+      "readiness",
+      "createdBy",
+      "createdAt",
+      "updatedBy",
+      "updatedAt",
+      "pluginVersion"
+    ],
+    "AbsenceEntry": [
+      "from",
+      "to",
+      "type",
+      "hoursDelta"
+    ],
+    "CapacityPerson": [
+      "grade",
+      "rate",
+      "participation",
+      "alloc",
+      "base",
+      "absencesApplied"
+    ],
+    "UpsertItemRequest": [
+      "roleKey",
+      "item",
+      "baseRev"
+    ],
+    "RemoveItemRequest": [
+      "roleKey",
+      "issueId",
+      "baseRev"
+    ],
+    "PatchSprintRequest": [
+      "sprint",
+      "baseRev"
+    ],
+    "AssignPersonRequest": [
+      "roleKey",
+      "issueId",
+      "login",
+      "dateStart",
+      "dateEnd",
+      "baseRev"
+    ],
+    "UpsertPersonRequest": [
+      "login",
+      "person"
+    ],
+    "UpsertAbsenceRequest": [
+      "login",
+      "entry",
+      "baseRev"
+    ],
+    "RemoveAbsenceRequest": [
+      "login",
+      "from",
+      "to",
+      "baseRev"
+    ],
+    "UpsertReleaseRequest": [
+      "release",
+      "baseRev"
+    ],
+    "SetReleaseStatusRequest": [
+      "id",
+      "status",
+      "snapshot",
+      "baseRev"
+    ],
+    "ReleaseIssuesRequest": [
+      "id",
+      "issues",
+      "baseRev"
     ]
   }
 }
