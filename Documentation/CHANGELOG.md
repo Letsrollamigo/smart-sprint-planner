@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
-## [3.49.0] — release date
+## [3.49.0] — 2026-09-22
 
 > **#113 “External REST: a 43-operation contract”.** The contract `Integrations/openapi-sprint.yaml` describes the planner's whole external REST, every refusal carries a machine-readable code and a request id, and agents get small operations. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
 
