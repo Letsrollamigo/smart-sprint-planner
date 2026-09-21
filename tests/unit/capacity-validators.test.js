@@ -198,6 +198,25 @@ test('POST /calendar: planner (НЕ admin) → 403; admin → ok', () => {
   handlePostCalendar(c2);
   assert.strictEqual(c2._res()._out.success, true);
 });
+test('#134 calendar: без years / years:null → not_object по полю years; явный years:{} — очистка', () => {
+  for (const cal of [{}, { years: null }, { years: undefined }]) {
+    const r = validateCalendarForWrite(cal);
+    assert.strictEqual(r.ok, false);
+    assert.deepStrictEqual(r.errors, [{ field: 'years', code: 'not_object' }]);
+  }
+  assert.deepStrictEqual(validateCalendarForWrite({ years: {} }), { ok: true, normalized: { years: {} } });
+});
+test('#134 POST /calendar: пустое тело → 400 calendar_invalid, хранимый календарь не тронут', () => {
+  const s = new Stand();
+  s.props.ssp_calendar = JSON.stringify({ years: { '2026': [{ date: '2026-01-01', type: 'holiday', hoursDelta: 0 }] } });
+  const before = s.props.ssp_calendar;
+  const c = s.ctx({ role: 'admin', body: {} });
+  handlePostCalendar(c);
+  assert.strictEqual(c._res().status, 400);
+  assert.strictEqual(c._res()._out.reason, 'calendar_invalid');
+  assert.deepStrictEqual(c._res()._out.errors, [{ field: 'years', code: 'not_object' }]);
+  assert.strictEqual(s.props.ssp_calendar, before);
+});
 
 /* ═══════════════════ Статусная машина + no-client-claims ═══════════════════ */
 

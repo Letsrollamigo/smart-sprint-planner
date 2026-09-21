@@ -84,12 +84,15 @@ test('#113 history: clear / import-replace / assignerSync baseRev не треб�
   }
 });
 
-test('history POST без history-ключа: rev НЕ двигается (нет записи — нет бампа)', () => {
-  const props = { ssp_settings: HIST_SETTINGS, ssp_history: '[]', ssp_history_rev: '2' };
+test('#135 history POST без history-ключа → 400 invalid_history_structure: missing, запись и rev не тронуты', () => {
+  const stored = JSON.stringify([validSnap()]);
+  const props = { ssp_settings: HIST_SETTINGS, ssp_history: stored, ssp_history_rev: '2' };
   const ctx = mkCtx(props, { baseRev: 2 });
   ep('POST', 'history').handle(ctx);
-  assert.strictEqual(ctx.response.body.success, true);
-  assert.strictEqual(ctx.response.body.rev, undefined);
+  assert.strictEqual(ctx.response.status, 400);
+  assert.strictEqual(ctx.response.body.success, false);
+  assert.strictEqual(ctx.response.body.reason, 'invalid_history_structure: missing');
+  assert.strictEqual(props.ssp_history, stored);
   assert.strictEqual(props.ssp_history_rev, '2');
 });
 

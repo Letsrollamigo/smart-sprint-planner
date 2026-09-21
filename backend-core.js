@@ -3347,8 +3347,8 @@ var ENDPOINTS = [
           }
           setProp(ctx, 'ssp_history', hStr);
           hRevNew = bumpSlotRev(ctx, 'ssp_history_rev');   /* rev двигается только с реальной записью */
-        }
-        ctx.response.json(hRevNew !== null ? { success: true, rev: hRevNew } : { success: true });
+        } else { badRequest(ctx, 'invalid_history_structure: missing'); return; }   /* #135 — без `history` был «успех без записи» */
+        ctx.response.json({ success: true, rev: hRevNew });
       }
     },
 

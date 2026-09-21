@@ -356,9 +356,9 @@ function validateCalendarForWrite(cal) {
   if (!cal || typeof cal !== 'object' || Array.isArray(cal)) {
     return { ok: false, errors: [{ field: 'root', code: 'not_object' }] };
   }
+  /* #134 — анти-wipe: без `years` тело стирало календарь; ключ обязателен объектом, явный {} — осознанная очистка. */
   var years = cal.years;
-  if (years === undefined || years === null) years = {};
-  if (typeof years !== 'object' || Array.isArray(years)) {
+  if (!years || typeof years !== 'object' || Array.isArray(years)) {
     return { ok: false, errors: [{ field: 'years', code: 'not_object' }] };
   }
   var normalizedYears = {};

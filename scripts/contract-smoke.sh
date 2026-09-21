@@ -5,7 +5,8 @@
 #   1. GET-операции контракта отвечают success:true;
 #   2. отказы: 401 (плохой токен), 404 (неверное имя приложения), invalid_project_key и
 #      project_unavailable с cid, base_rev_required у записи слота без ревизии,
-#      mixed_settings_write у смешанного тела;
+#      mixed_settings_write у смешанного тела, calendar_invalid у записи календаря без years
+#      (#134), invalid_history_structure у записи истории без history (#135);
 #   3. круг мелких операций с проверкой, что rev слота растёт на 1 за операцию:
 #      upsertItem → GET → removeItem; upsertAbsence → removeAbsence;
 #      upsertRelease → addReleaseIssues → setReleaseStatus → removeReleaseIssues.
@@ -89,6 +90,18 @@ rel = ok('GET releases (для отказа без baseRev)', call('GET', 'relea
 refusal('POST releases без baseRev → base_rev_required', call('POST', 'releases', {'releases': rel.get('releases', [])}), 'base_rev_required')
 refusal('POST absences «сырой» формой → base_rev_required', call('POST', 'absences', {}), 'base_rev_required')
 refusal('неизвестное действие → invalid_action', call('POST', 'releases', {'baseRev': 0}, {'action': 'noSuchAction'}), 'invalid_action')
+# #134 — тело без years не стирает календарь. На сборке без правки запрос прошёл бы — возвращаем календарь.
+cal_before = call('GET', 'calendar')[1].get('calendar')
+st, b = call('POST', 'calendar', {})
+if b.get('success') is True and cal_before:
+    call('POST', 'calendar', {'years': cal_before.get('years') or {}})
+check('POST calendar без years → calendar_invalid (years: not_object)',
+      b.get('reason') == 'calendar_invalid' and b.get('errors') == [{'field': 'years', 'code': 'not_object'}], b)
+check('POST calendar без years: календарь не тронут', call('GET', 'calendar')[1].get('calendar') == cal_before)
+# #135 — запись истории без history: отказ, ревизия на месте.
+hist_rev = call('GET', 'history')[1].get('rev', 0)
+refusal('POST history без history → invalid_history_structure: missing', call('POST', 'history', {'baseRev': hist_rev}), 'invalid_history_structure: missing')
+check('POST history без history: rev не сдвинут', call('GET', 'history')[1].get('rev', 0) == hist_rev)
 
 # ── 3. Круг мелких операций ─────────────────────────────────────────────────
 def step(name, resp, want_rev=None, applied=None):
