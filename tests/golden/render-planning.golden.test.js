@@ -692,14 +692,19 @@ test('golden: wireRolePanel — контракты кнопок панели (п
   document.getElementById('clearBtn_analysis').click();
   const clearSpec = modalLog[0];
   const confirmBtn = clearSpec.buttons.find(function (b) { return b.id === 'confirm'; });
+  /* #136 — окно записи. Раскрытие панели выше пишет ui.expandedRoles в черновик, и через 300 мс
+     автосейв шлёт POST draft; под нагрузкой CPU он успевал попасть в лог до среза. Контракт
+     очистки — то, что уходит по клику «Да»: POST синхронный, между этими строками таймеров нет. */
+  apiPostLog.length = 0;
   confirmBtn.onClick({ close: function () {} });
-  await waitFor(function () { return apiPostLog.length >= 1; }, 'очистка состава отправлена');
+  const clearPosts = apiPostLog.slice();
+  await waitFor(function () { return clearPosts.length >= 1; }, 'очистка состава отправлена');
   const clearContract = {
     modalId: clearSpec.id,
     modalType: clearSpec.type,
     buttonIds: clearSpec.buttons.map(function (b) { return b.id; }),
     itemsAfterClear: gm.get('_roleItems').analysis.length,
-    apiPostPaths: apiPostLog.slice(),
+    apiPostPaths: clearPosts,
   };
 
   /* пагинация панели: у testing 2 задачи = 1 страница → next инкрементит _page,
