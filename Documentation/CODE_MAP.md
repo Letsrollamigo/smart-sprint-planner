@@ -7,7 +7,7 @@
 - `assets/` — графика витрины
 - `docs/` — опубликованная документация со скриншотами
 - `Documentation/` — документация: CHANGELOG, SECURITY (матрица доступа), гайды, эта карта
-- `Integrations/` — контракт внешних клиентов (OpenAPI), гайд подключения, материалы по модели прав
+- `Integrations/` — контракт внешних клиентов (OpenAPI), гайд подключения, материалы по модели прав; mcp-server/ — MCP-сервер для ИИ-агентов поверх контракта
 - `schema/` — whitelists.json — источник allow-list ключей схемы, синхронизируется в бэкенд скриптом
 - `scripts/` — сборка и гейты: whitelists, иконки, Ring-CSS, реестр модулей, карта кода, release-check, деплой на стенд
 - `tests/` — node --test: unit, golden, arch, mirror, fixtures

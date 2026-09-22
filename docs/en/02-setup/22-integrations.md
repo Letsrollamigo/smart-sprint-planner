@@ -104,3 +104,7 @@ POST sprint-data?projectKey=DEMO&action=assignPerson
 ## Compatibility
 
 The external contract changes **by addition only**: keys and paths a scenario was written against are never renamed and never disappear; new things arrive as new keys and new `action` variants. The promise covers what the client sends; responses may grow. The guarantee is held by automated tests in the repository: the contract is checked against the code's allowlists and a baseline of keys, the list of refusal codes — against the server code.
+
+## MCP server for AI agents
+
+For AI agents (Claude Code, Kilo Code, Cursor and other MCP clients) the repository ships a ready-made [MCP server](../../../Integrations/mcp-server/README.md) on top of this contract: nineteen tools — eight for reading and eleven point writes (draft upload with a guard against overwriting an occupied slot, issues, sprint header, assignments, absences, capacity participants, releases) — plus reference resources and scenario prompts. It is a shared HTTP server in a container; every request carries the caller's personal YouTrack token in the `Authorization` header, so the permissions are exactly those of the person behind the agent. The restricted operations of this chapter are not exposed by the server at all.

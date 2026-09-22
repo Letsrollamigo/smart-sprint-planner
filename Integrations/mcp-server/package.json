@@ -1,0 +1,42 @@
+{
+  "name": "smart-sprint-planner-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Smart Sprint Planner: read and point-write planner data through the YouTrack external REST",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "sprint-planner-mcp": "src/index.js"
+  },
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "contract",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "TZ=UTC node --test tests/*.test.js",
+    "smoke": "node tests/smoke.mjs",
+    "sync-contract": "node scripts/sync-contract.mjs",
+    "check-contract": "node scripts/sync-contract.mjs --check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Letsrollamigo/smart-sprint-planner.git",
+    "directory": "Integrations/mcp-server"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "youtrack",
+    "sprint-planner",
+    "agent"
+  ]
+}

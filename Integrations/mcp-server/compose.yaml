@@ -1,0 +1,11 @@
+# Общий MCP-сервер планера в контейнере (OrbStack / Docker). Токенов здесь нет — их передают клиенты.
+services:
+  planner-mcp:
+    build: .
+    image: sprint-planner-mcp:0.1.0
+    container_name: planner-mcp
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    restart: unless-stopped

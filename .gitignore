@@ -21,3 +21,7 @@ tests/screenshots/
 
 # Internal session prompts — не публикуем в public GitHub
 Prompts/
+
+# MCP server (#113): local evals against stand data and the container env file
+Integrations/mcp-server/evals/
+Integrations/mcp-server/.env
