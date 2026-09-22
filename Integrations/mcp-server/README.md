@@ -108,6 +108,10 @@ The smoke writes data with point operations and restores the state; it only work
 
 The code is the same for both planner builds; only `src/branding.js` (app name, product name, default language), `package.json` and this file differ. The contract and code registry copies in `contract/` are synchronised with `npm run sync-contract`.
 
+## Releases
+
+The package is published by GitHub Actions (`.github/workflows/mcp-publish.yml`) on a tag of the form `mcp-vX.Y.Z` that matches the `version` in `package.json`: tests and the contract check run, then the package goes to npm through trusted publishing with a provenance attestation, and the container image goes to `ghcr.io/letsrollamigo/smart-sprint-planner-mcp` with the tags `X.Y.Z` and `latest`. A manual run of the workflow is a dry run by default. The planner's own release process reacts to `vX.Y.Z` tags only.
+
 ## Not in the first version
 
 Restricted contract operations, sprint validation, capacity approval and phases; release deletion (the planner has no point operation for it); OAuth and sessions — the token travels in every request header; resources are static only.

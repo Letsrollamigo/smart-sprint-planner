@@ -1,0 +1,129 @@
+# Publishes the MCP server (Integrations/mcp-server) on a `mcp-vX.Y.Z` tag:
+#   1. npm — trusted publishing (OIDC, no tokens in secrets), provenance attached;
+#   2. container image — ghcr.io/<owner>/smart-sprint-planner-mcp:X.Y.Z and :latest.
+# The planner's own release workflow reacts to `vX.Y.Z` tags only and is not affected.
+# Manual run (workflow_dispatch) defaults to a dry run: tests, version guard, `npm publish --dry-run`,
+# image build without push. One-time setup on npmjs.com: package settings → Trusted publisher →
+# GitHub Actions, repository Letsrollamigo/smart-sprint-planner, workflow file mcp-publish.yml.
+name: MCP server publish
+
+on:
+  push:
+    tags:
+      - 'mcp-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: no publish, no image push'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Integrations/mcp-server
+
+jobs:
+  npm:
+    name: Test and publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write   # OIDC token for npm trusted publishing
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      dry_run: ${{ steps.meta.outputs.dry_run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false   # never use caching in release builds
+
+      - name: Resolve version and mode
+        id: meta
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            TAG_VERSION="${TAG#mcp-v}"
+            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+              echo "::error::tag $TAG does not match package.json version $PKG_VERSION"; exit 1
+            fi
+            DRY=false
+          else
+            DRY="${{ inputs.dry_run }}"
+          fi
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
+          echo "npm $(npm --version), version $PKG_VERSION, dry_run=$DRY"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Contract copies match Integrations/
+        run: npm run check-contract
+
+      - name: Unit tests and invariants
+        run: npm test
+
+      - name: Refuse to republish an existing version
+        if: steps.meta.outputs.dry_run == 'false'
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          if npm view "$NAME@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
+            echo "::error::$NAME@${{ steps.meta.outputs.version }} is already in the registry — bump the version"; exit 1
+          fi
+
+      - name: Publish (dry run)
+        if: steps.meta.outputs.dry_run == 'true'
+        run: npm publish --access public --dry-run
+
+      - name: Publish to npm (trusted publishing, provenance)
+        if: steps.meta.outputs.dry_run == 'false'
+        run: npm publish --access public --provenance
+
+  image:
+    name: Build and push container image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: npm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        if: needs.npm.outputs.dry_run == 'false'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/smart-sprint-planner-mcp"
+          echo "tags=$IMAGE:${{ needs.npm.outputs.version }},$IMAGE:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Build (and push unless dry run)
+        uses: docker/build-push-action@v7
+        with:
+          context: Integrations/mcp-server
+          push: ${{ needs.npm.outputs.dry_run == 'false' }}
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.npm.outputs.version }}
+            org.opencontainers.image.licenses=MIT
