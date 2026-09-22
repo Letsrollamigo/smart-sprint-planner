@@ -25,6 +25,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { createHost } = require('./monolith-host');
+/* #137 — этот файл характеризует сам автосейв черновика: хост пускает его в моки только по флагу. */
 const { checkJsonSnapshot } = require('./snap');
 const fx = require('./fixtures/state');
 
@@ -94,7 +95,7 @@ function recordToasts(gm) {
 /* ═══════════════════ серверный черновик (_draft*) ═══════════════════ */
 
 test('golden: draft — set/get/del + debounce 300мс: переарм, один POST на серию', () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
   const diagLog = recordDiag(gm);
@@ -121,7 +122,7 @@ test('golden: draft — set/get/del + debounce 300мс: переарм, один
 });
 
 test('golden: draft — гарды flush: no-pending, перелимит 200KB (pending не сбрасывается), reject', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
   const toasts = recordToasts(gm);
@@ -156,7 +157,7 @@ test('golden: draft — гарды flush: no-pending, перелимит 200KB (
 });
 
 test('golden: draft — load с backend: маппинг слота, пустой ответ, reject', async () => {
-  const { gm } = createHost();
+  const { gm } = createHost({ recordDraftFlush: true });
   const diagLog = recordDiag(gm);
   const api = stubApi(gm, {
     'get:draft': { data: { meta: { savedAt: 5 }, ui: { activeTab: 'gantt' }, sprint: { name: 'S' },
@@ -182,7 +183,7 @@ test('golden: draft — load с backend: маппинг слота, пустой
 });
 
 test('golden: draft — clearOnBackend (action=clear) и clearDraftStorage (сброс id + ре-рендер шапки)', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
@@ -208,7 +209,7 @@ test('golden: draft — clearOnBackend (action=clear) и clearDraftStorage (сб
 });
 
 test('golden: B23 — клик «Сбросить черновик» при чистом контенте (meta есть, не dirty) → backend action=clear', async () => {
-  const { gm, document, window } = createHost();
+  const { gm, document, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   stubScheduler(window);
   const api = stubApi(gm, {});
@@ -229,7 +230,7 @@ test('golden: B23 — клик «Сбросить черновик» при чи
 });
 
 test('golden: #125 — «Очистить черновик» появляется, как только debounce записал meta (без второй правки)', () => {
-  const { gm, document, window } = createHost();
+  const { gm, document, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
   stubApi(gm, {});
@@ -247,7 +248,7 @@ test('golden: #125 — «Очистить черновик» появляетс�
 });
 
 test('golden: draft — saveDebounced: per-suffix таймеры, переарм, meta при выстреле, гард restore', () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   const sched = stubScheduler(window);
   stubApi(gm, {});
   recordDiag(gm);
@@ -281,7 +282,7 @@ test('golden: draft — saveDebounced: per-suffix таймеры, переарм
 /* ═══════════════════ dirty-механика ═══════════════════ */
 
 test('golden: dirty — markDirty/markClean/isDirty: карта секций, индикатор, гарды', () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   stubScheduler(window);
   stubApi(gm, {});
   recordDiag(gm);
@@ -323,7 +324,7 @@ test('golden: dirty — markDirty/markClean/isDirty: карта секций, и
 });
 
 test('golden: dirty — WC-путь markDirty: sync активной копии, rk из подвкладки или roleKey снимка', () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
   stubApi(gm, {});
@@ -374,7 +375,7 @@ test('golden: dirty — WC-путь markDirty: sync активной копии,
 /* ═══════════════════ working copies (_workingDrafts*) ═══════════════════ */
 
 test('golden: WC — schedule/flush: переарм при живом таймере, POST, шапка + cross-tab маркеры', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
   const headerCalls = [];
@@ -402,7 +403,7 @@ test('golden: WC — schedule/flush: переарм при живом тайме
 });
 
 test('golden: WC — flush-ошибки: quota → toast + dirty восстановлен; прочее → diag + dirty', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   stubScheduler(window);
   const toasts = recordToasts(gm);
   const diagLog = recordDiag(gm);
@@ -427,7 +428,7 @@ test('golden: WC — flush-ошибки: quota → toast + dirty восстан�
 });
 
 test('golden: WC — load (карта/мусор/reject) и deleteOnBackend (key/без key)', async () => {
-  const { gm } = createHost();
+  const { gm } = createHost({ recordDraftFlush: true });
   const diagLog = recordDiag(gm);
   let api = stubApi(gm, { 'get:working-drafts': { data: { k1: { key: 'k1' } } } });
   await gm.call('_workingDraftsLoadFromBackend');
@@ -462,7 +463,7 @@ test('golden: WC — load (карта/мусор/reject) и deleteOnBackend (key
    оставался протухшим — и все правки пользователя после загрузки летели в отказ.
    Теперь reconcile отдаёт флаг, а пишет gcWorkingDrafts — ровно один раз. */
 test('golden: WC — reconcile: гард !loaded, orphan-чистка, выравнивание hasWorkingCopy (без POST — #103)', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
@@ -499,7 +500,7 @@ test('golden: WC — reconcile: гард !loaded, orphan-чистка, выра�
 });
 
 test('golden: WC — gc: TTL 30 дней от frozen-now, null-записи, toast-сводка, снятие флага истории', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   const sched = stubScheduler(window);
   const api = stubApi(gm, {});
@@ -539,7 +540,7 @@ test('golden: WC — gc: TTL 30 дней от frozen-now, null-записи, toa
    Отказ GC глотался пустым `.catch(function(){})`, клиентский rev оставался протухшим,
    и каждая последующая правка пользователя получала отказ. */
 test('#103: reconcile + gc на одном init шлют РОВНО один POST history', async () => {
-  const { gm, window } = createHost();
+  const { gm, window } = createHost({ recordDraftFlush: true });
   fx.applyBaseState(gm);
   stubScheduler(window);
   const api = stubApi(gm, {});

@@ -150,6 +150,7 @@ function seededRandom(seed) {
  * Создаёт песочницу с загруженным монолитом.
  * @param {object} [opts]
  * @param {string} [opts.lang='ru'] — язык T() (фиксируется до eval монолита).
+ * @param {boolean} [opts.recordDraftFlush=false] — пускать фоновый автосейв черновика в моки apiPost (#137).
  * @returns {{ window: object, document: object, gm: {get,set,call}, fetchAppLog: Array }}
  */
 function createHost(opts) {
@@ -319,6 +320,28 @@ function createHost(opts) {
   window.eval(mono);
 
   if (!window.__GM) throw new Error('GM hook not installed — monolith eval failed silently');
+
+  /* #137 — фоновый автосейв черновика мимо моков apiPost. draft-store через 300 мс после
+     draftSet/markDirty (800 + 300 у draftSaveDebounced) шлёт POST draft {data}, после
+     syncWorkingDraftFromMemory — POST working-drafts {data}. Моки тестов пишут в журнал ВСЕ
+     POST, и под нагрузкой CPU (параллельный npm test двух форков) фоновый вызов успевал в
+     срез журнала (#136 wireRolePanel, excluded-view #121). Здесь он отвечает успехом, не
+     доходя до мока: продукт ведёт себя как при принятом POST, журнал видит только то, что
+     тест вызвал сам. Явные draft?action=clear и working-drafts?action=delete проходят.
+     Тесты самого автосейва (draft-store.golden) включают запись: recordDraftFlush: true. */
+  if (!opts.recordDraftFlush) {
+    const rawSet = window.__GM.set;
+    window.__GM.set = function (vars) {
+      if (vars && typeof vars.apiPost === 'function') {
+        const mock = vars.apiPost;
+        vars = Object.assign({}, vars, { apiPost: function (path, body, query) {
+          if ((path === 'draft' || path === 'working-drafts') && !(query && query.action)) return window.Promise.resolve({ success: true });
+          return mock.apply(this, arguments);
+        } });
+      }
+      return rawSet(vars);
+    };
+  }
 
   return { window, document: window.document, gm: window.__GM, fetchAppLog, bridgeLog, modalLog };
 }
