@@ -2,7 +2,7 @@
 #   1. npm — trusted publishing (OIDC, no tokens in secrets), provenance attached;
 #   2. container image — ghcr.io/<owner>/smart-sprint-planner-mcp:X.Y.Z and :latest.
 # The planner's own release workflow reacts to `vX.Y.Z` tags only and is not affected.
-# Manual run (workflow_dispatch) defaults to a dry run: tests, version guard, `npm publish --dry-run`,
+# Manual run (workflow_dispatch) defaults to a dry run: tests, version guard, `npm pack --dry-run`,
 # image build without push. One-time setup on npmjs.com: package settings → Trusted publisher →
 # GitHub Actions, repository Letsrollamigo/smart-sprint-planner, workflow file mcp-publish.yml.
 name: MCP server publish
@@ -83,9 +83,9 @@ jobs:
             echo "::error::$NAME@${{ steps.meta.outputs.version }} is already in the registry — bump the version"; exit 1
           fi
 
-      - name: Publish (dry run)
+      - name: Pack (dry run — tarball contents, no registry call)
         if: steps.meta.outputs.dry_run == 'true'
-        run: npm publish --access public --dry-run
+        run: npm pack --dry-run
 
       - name: Publish to npm (trusted publishing, provenance)
         if: steps.meta.outputs.dry_run == 'false'
