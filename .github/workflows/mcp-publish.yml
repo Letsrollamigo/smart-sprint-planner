@@ -75,12 +75,16 @@ jobs:
       - name: Unit tests and invariants
         run: npm test
 
-      - name: Refuse to republish an existing version
+      - name: Is this version already in the registry?
+        id: registry
         if: steps.meta.outputs.dry_run == 'false'
         run: |
           NAME="$(node -p "require('./package.json').name")"
           if npm view "$NAME@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
-            echo "::error::$NAME@${{ steps.meta.outputs.version }} is already in the registry — bump the version"; exit 1
+            echo "::notice::$NAME@${{ steps.meta.outputs.version }} is already published — npm publish is skipped, the image is still built"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pack (dry run — tarball contents, no registry call)
@@ -88,7 +92,7 @@ jobs:
         run: npm pack --dry-run
 
       - name: Publish to npm (trusted publishing, provenance)
-        if: steps.meta.outputs.dry_run == 'false'
+        if: steps.meta.outputs.dry_run == 'false' && steps.registry.outputs.exists != 'true'
         run: npm publish --access public --provenance
 
   image:
