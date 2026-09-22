@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Letsrollamigo/smart-sprint-planner.git",
+    "url": "git+https://github.com/Letsrollamigo/smart-sprint-planner.git",
     "directory": "Integrations/mcp-server"
   },
   "keywords": [
