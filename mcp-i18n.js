@@ -12,7 +12,7 @@ var DICT = {
     "tools": {
       "get_project_overview": {
         "title": "Обзор проекта в планере",
-        "description": "Первый вызов для проекта: версия планера, настроен ли планер (configured), активные роли, шапка рабочего спринта с числом задач по ролям, включена ли блокировка создания спринтов, число релизов и ревизия реестра. Только чтение. Памятка: трудозатраты и ресурсы — минуты (8 ч = 480); даты спринта, релизов и назначений — epoch-ms; отсутствия — YYYY-MM-DD. Коды ролей, статусов и типов — только латиницей. baseRev можно не передавать — инструмент прочитает текущую ревизию сам; полная заливка черновика не затирает занятый слот без overwrite. Права — права пользователя в YouTrack и в группах ролей планера."
+        "description": "Первый вызов для проекта: версия планера, настроен ли планер (configured), активные роли, шапка рабочего спринта с числом задач по ролям, включена ли блокировка создания спринтов, число релизов и ревизия реестра. Только чтение. Памятка: трудозатраты и ресурсы — минуты (8 ч = 480); даты спринта, релизов и назначений — epoch-ms; отсутствия — YYYY-MM-DD. Коды ролей, статусов и типов — только латиницей. baseRev можно не передавать — инструмент прочитает текущую ревизию сам; полная заливка черновика не затирает занятый слот без overwrite. Права — права пользователя в YouTrack и в группах ролей планера. Записи в один проект — по очереди, не параллельно: одновременные записи могут потерять изменения; после серии перечитай данные и проверь."
       },
       "get_sprint": {
         "title": "Рабочий спринт и состав",
@@ -44,47 +44,47 @@ var DICT = {
       },
       "upload_draft": {
         "title": "Залить черновик спринта",
-        "description": "Записать черновик спринта в рабочий слот проекта целиком: шапка (статус принудительно PLANNING) и состав задач по ролям. Сервер проверяет, что роли активны в проекте, и отказывает (slot_occupied), если слот занят чужим черновиком или спринтом в работе — тогда нужен overwrite:true. Задаче достаточно issueId и оценки: название, состояние и приоритет сервер наполняет из YouTrack (до 200 задач за запрос, счётчик enriched). Роль: редактор."
+        "description": "Записать черновик спринта в рабочий слот проекта целиком: шапка (статус принудительно PLANNING) и состав задач по ролям. Сервер проверяет, что роли активны в проекте, и отказывает (slot_occupied), если слот занят чужим черновиком или спринтом в работе — тогда нужен overwrite:true. Задаче достаточно issueId и оценки: название, состояние и приоритет сервер наполняет из YouTrack (до 200 задач за запрос, счётчик enriched). Роль: редактор. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "upsert_item": {
         "title": "Добавить или изменить задачу роли",
-        "description": "Точечно добавить задачу в роль или изменить её ключи (слияние: присланное обновляется, остальное сохраняется). Исключить с причиной — inclusionStatus INC_EXCLUDED и excludeReason. Роль: редактор. Ревизию читает сам."
+        "description": "Точечно добавить задачу в роль или изменить её ключи (слияние: присланное обновляется, остальное сохраняется). Исключить с причиной — inclusionStatus INC_EXCLUDED и excludeReason. Роль: редактор. Ревизию читает сам. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "remove_item": {
         "title": "Убрать задачу из роли",
-        "description": "Точечно убрать задачу из состава роли. Задачи нет — item_not_found. Роль: редактор."
+        "description": "Точечно убрать задачу из состава роли. Задачи нет — item_not_found. Роль: редактор. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "patch_sprint": {
         "title": "Изменить шапку спринта",
-        "description": "Точечно изменить часть шапки рабочего спринта: название, даты, цель, значения полей, ресурсы ролей (минуты). Создать спринт этим нельзя — используй planner_upload_draft. Роль: редактор."
+        "description": "Точечно изменить часть шапки рабочего спринта: название, даты, цель, значения полей, ресурсы ролей (минуты). Создать спринт этим нельзя — используй planner_upload_draft. Роль: редактор. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "assign_person": {
         "title": "Назначить исполнителя",
-        "description": "Назначить человека на задачу роли (login) и при желании даты работы; login null — снять. Работает, когда роль уже отправлена на согласование либо спринт запущен — иначе role_record_not_found. Роль: распределяющий. В ответе rev слота и historyRev."
+        "description": "Назначить человека на задачу роли (login) и при желании даты работы; login null — снять. Работает, когда роль уже отправлена на согласование либо спринт запущен — иначе role_record_not_found. Роль: распределяющий. В ответе rev слота и historyRev. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "upsert_absence": {
         "title": "Добавить или заменить отсутствие",
-        "description": "Точечно добавить отсутствие сотрудника (from, to, type, hoursDelta); запись с теми же датами заменяется целиком. Роль: управление настройками либо планировочный менеджер."
+        "description": "Точечно добавить отсутствие сотрудника (from, to, type, hoursDelta); запись с теми же датами заменяется целиком. Роль: управление настройками либо планировочный менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "remove_absence": {
         "title": "Удалить отсутствие",
-        "description": "Удалить отсутствие сотрудника по логину и паре дат from/to. Нет такой записи — absence_not_found. Роль: управление настройками либо планировочный менеджер."
+        "description": "Удалить отсутствие сотрудника по логину и паре дат from/to. Нет такой записи — absence_not_found. Роль: управление настройками либо планировочный менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "upsert_capacity_person": {
         "title": "Добавить или изменить участника ёмкости",
-        "description": "Точечно добавить участника в запись ёмкости спринта или изменить его грейд, ставку, долю участия, распределение по ролям. Без sprintId — спринт рабочего слота; у спринта должны быть даты. Ревизии у ёмкости нет. Роль: управление настройками либо планировочный менеджер."
+        "description": "Точечно добавить участника в запись ёмкости спринта или изменить его грейд, ставку, долю участия, распределение по ролям. Без sprintId — спринт рабочего слота; у спринта должны быть даты. Ревизии у ёмкости нет. Роль: управление настройками либо планировочный менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "upsert_release": {
         "title": "Создать или изменить релиз",
-        "description": "Создать релиз либо изменить существующий по id (слияние ключей; убрать значение — null). Роль: релиз-менеджер; релиз-инженеру доступен только перевод существующего релиза на следующий статус цепочки."
+        "description": "Создать релиз либо изменить существующий по id (слияние ключей; убрать значение — null). Роль: релиз-менеджер; релиз-инженеру доступен только перевод существующего релиза на следующий статус цепочки. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "set_release_status": {
         "title": "Сменить статус релиза",
-        "description": "Перевести релиз в статус: цепочка planned → prep → work → released, cancelled — отмена. Релиз-инженер — только на следующий шаг цепочки; snapshot — только вместе с released. Роль: релиз-менеджер либо релиз-инженер."
+        "description": "Перевести релиз в статус: цепочка planned → prep → work → released, cancelled — отмена. Релиз-инженер — только на следующий шаг цепочки; snapshot — только вместе с released. Роль: релиз-менеджер либо релиз-инженер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       },
       "update_release_issues": {
         "title": "Изменить состав задач релиза",
-        "description": "Добавить (add) и/или убрать (remove) задачи релиза одним вызовом; выполняется как две точечные операции по цепочке ревизий. Роль: релиз-менеджер."
+        "description": "Добавить (add) и/или убрать (remove) задачи релиза одним вызовом; выполняется как две точечные операции по цепочке ревизий. Роль: релиз-менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       }
     },
     "fields": {
@@ -195,7 +195,7 @@ var DICT = {
     "tools": {
       "get_project_overview": {
         "title": "Project overview in the planner",
-        "description": "First call for a project: planner version, whether the planner is configured, active roles, the working sprint header with issue counts per role, whether sprint creation is locked, release count and registry revision. Read-only. Memo: effort and resources are minutes (8 h = 480); sprint, release and assignment dates are epoch-ms; absences are YYYY-MM-DD. Role, status and type codes are Latin only. baseRev may be omitted — the tool reads the current revision itself; a full draft upload does not overwrite an occupied slot without overwrite. Permissions are those of the user in YouTrack and in the planner role groups."
+        "description": "First call for a project: planner version, whether the planner is configured, active roles, the working sprint header with issue counts per role, whether sprint creation is locked, release count and registry revision. Read-only. Memo: effort and resources are minutes (8 h = 480); sprint, release and assignment dates are epoch-ms; absences are YYYY-MM-DD. Role, status and type codes are Latin only. baseRev may be omitted — the tool reads the current revision itself; a full draft upload does not overwrite an occupied slot without overwrite. Permissions are those of the user in YouTrack and in the planner role groups. Writes to one project — one at a time, not in parallel: simultaneous writes may lose changes; after a series re-read the data and verify."
       },
       "get_sprint": {
         "title": "Working sprint and issues",
@@ -227,47 +227,47 @@ var DICT = {
       },
       "upload_draft": {
         "title": "Upload a sprint draft",
-        "description": "Write a sprint draft into the project working slot entirely: header (status forced to PLANNING) and issues by role. The server checks that the roles are active in the project and refuses (slot_occupied) when the slot holds someone else's draft or a sprint in progress — then overwrite:true is needed. An issue needs only issueId and an estimate: title, state and priority are filled by the server from YouTrack (up to 200 issues per request, counter enriched). Role: editor."
+        "description": "Write a sprint draft into the project working slot entirely: header (status forced to PLANNING) and issues by role. The server checks that the roles are active in the project and refuses (slot_occupied) when the slot holds someone else's draft or a sprint in progress — then overwrite:true is needed. An issue needs only issueId and an estimate: title, state and priority are filled by the server from YouTrack (up to 200 issues per request, counter enriched). Role: editor. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "upsert_item": {
         "title": "Add or change a role issue",
-        "description": "Point operation: add an issue to a role or change its keys (merge: what is sent is updated, the rest is kept). Exclude with a reason — inclusionStatus INC_EXCLUDED and excludeReason. Role: editor. Reads the revision itself."
+        "description": "Point operation: add an issue to a role or change its keys (merge: what is sent is updated, the rest is kept). Exclude with a reason — inclusionStatus INC_EXCLUDED and excludeReason. Role: editor. Reads the revision itself. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "remove_item": {
         "title": "Remove an issue from a role",
-        "description": "Point operation: remove an issue from the role issue list. Missing issue — item_not_found. Role: editor."
+        "description": "Point operation: remove an issue from the role issue list. Missing issue — item_not_found. Role: editor. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "patch_sprint": {
         "title": "Change the sprint header",
-        "description": "Point operation: change part of the working sprint header: name, dates, goal, field values, role resources (minutes). A sprint cannot be created this way — use planner_upload_draft. Role: editor."
+        "description": "Point operation: change part of the working sprint header: name, dates, goal, field values, role resources (minutes). A sprint cannot be created this way — use planner_upload_draft. Role: editor. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "assign_person": {
         "title": "Assign a person",
-        "description": "Assign a person (login) to a role issue and optionally the work dates; login null — unassign. Works once the role was sent for confirmation or the sprint is running — otherwise role_record_not_found. Role: assigner. The response carries the slot rev and historyRev."
+        "description": "Assign a person (login) to a role issue and optionally the work dates; login null — unassign. Works once the role was sent for confirmation or the sprint is running — otherwise role_record_not_found. Role: assigner. The response carries the slot rev and historyRev. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "upsert_absence": {
         "title": "Add or replace an absence",
-        "description": "Point operation: add an employee absence (from, to, type, hoursDelta); a record with the same dates is replaced entirely. Role: settings manager or planning manager."
+        "description": "Point operation: add an employee absence (from, to, type, hoursDelta); a record with the same dates is replaced entirely. Role: settings manager or planning manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "remove_absence": {
         "title": "Remove an absence",
-        "description": "Remove an employee absence by login and the from/to date pair. No such record — absence_not_found. Role: settings manager or planning manager."
+        "description": "Remove an employee absence by login and the from/to date pair. No such record — absence_not_found. Role: settings manager or planning manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "upsert_capacity_person": {
         "title": "Add or change a capacity participant",
-        "description": "Point operation: add a participant to the sprint capacity record or change their grade, rate, participation share, allocation across roles. Without sprintId — the working slot sprint; the sprint must have dates. Capacity has no revision. Role: settings manager or planning manager."
+        "description": "Point operation: add a participant to the sprint capacity record or change their grade, rate, participation share, allocation across roles. Without sprintId — the working slot sprint; the sprint must have dates. Capacity has no revision. Role: settings manager or planning manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "upsert_release": {
         "title": "Create or change a release",
-        "description": "Create a release or change an existing one by id (key merge; null removes a value). Role: release manager; a release engineer may only move an existing release to the next status in the chain."
+        "description": "Create a release or change an existing one by id (key merge; null removes a value). Role: release manager; a release engineer may only move an existing release to the next status in the chain. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "set_release_status": {
         "title": "Change release status",
-        "description": "Move a release to a status: chain planned → prep → work → released, cancelled — cancellation. A release engineer — only to the next chain step; snapshot — only together with released. Role: release manager or release engineer."
+        "description": "Move a release to a status: chain planned → prep → work → released, cancelled — cancellation. A release engineer — only to the next chain step; snapshot — only together with released. Role: release manager or release engineer. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       },
       "update_release_issues": {
         "title": "Change release issues",
-        "description": "Add (add) and/or remove (remove) release issues in one call; executed as two point operations chained by revision. Role: release manager."
+        "description": "Add (add) and/or remove (remove) release issues in one call; executed as two point operations chained by revision. Role: release manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       }
     },
     "fields": {
