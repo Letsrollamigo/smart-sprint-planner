@@ -37,6 +37,7 @@
 - `backend-*.js` — бэкенд приложения: HTTP-обработчики (extensionEndpoints), исполняются внутри YouTrack; core = общие гейты, валидаторы, миграции; остальные — по фичам
 - `entity-extensions.json` — объявление extension-properties — слотов хранения на Project/User
 - `manifest.json` — манифест приложения YouTrack: виджеты, версия, changeNotes
+- `mcp-*.js` — MCP-инструменты для встроенного MCP YouTrack: mcp-common.js — определения и адаптер к обработчикам главного меню, mcp-i18n.js — словарь, mcp-tool-<имя>.js — файл на инструмент
 - `module-registry.json` — реестр модулей фронта: слой, LOC, стейт, мосты — контракт арх-гейтов
 - `NOTICE.md` — уведомления о лицензиях вендоренных библиотек
 - `package-lock.json` — фиксация версий devDependencies (npm ci)
@@ -226,6 +227,8 @@
 | `backend-reporting.js` | Оперативная отчётность backend (#50 S1). |
 | `backend-sprintlock.js` | Sprint-lock backend (#57-2, epic 57). |
 | `backend-userprefs.js` | User-prefs backend (#69 строка 21, эпик «Упрощение»). |
+| `mcp-common.js` | MCP-инструменты планера во встроенном MCP YouTrack (#113 1б-2, «Custom MCP Tools», YouTrack ≥ 2025.3). |
+| `mcp-i18n.js` | Словарь MCP-инструментов (#113 1б-2): описания инструментов и полей для модели агента, сводки результатов, тексты отказов. |
 | `workflow-cascade-aggregation.js` | Cascade aggregation parent ← child workflow rule. v1.3.0 — RESOLVED B-1..B-14 (см. .roadmap-source/feature-2-cascade-and-forbid.md): B-1: один общи… |
 | `workflow-common.js` | общая инфраструктура workflow-правил. |
 | `workflow-dta-aggregation.js` | Differentiated Time Accounting (DTA) workflow rule. v1.2.1 — Acceptance hot-fix on top of v1.2.0: Bug A — workflow.message выходило на EN при русск… |
@@ -312,6 +315,7 @@
 | Блокировка создания спринтов | `backend-sprintlock.js` |
 | Напоминания: вычислитель, права адресатов, журнал | `backend-reminders-calc.js`, `backend-reminders.js` |
 | Фазы работ спринта: запись, серверная принадлежность, полоска и блок вводных | `backend-phases.js`, `widgets/main/src/pure/phases-pure.js`, `widgets/main/src/domain/phases-view.js` |
+| MCP-инструменты во встроенном MCP YouTrack: определения, проверка входа, словарь | `mcp-common.js`, `mcp-i18n.js`, `tests/unit/mcp-tools.test.js` |
 | Workflow-правила: агрегации, подтяжка состояния | `workflow-common.js`, `workflow-cascade-aggregation.js`, `workflow-dta-aggregation.js`, `workflow-state-rollup.js`, `workflow-forbid-container.js` |
 | Даты и часовые пояса | `widgets/main/src/pure/date-pure.js`, `widgets/main/src/pure/period-pure.js` |
 | Экспорт в Excel и PDF | `widgets/main/src/domain/excel-export.js`, `widgets/main/src/pure/reporting-export-pure.js`, `widgets/main/lib/` |

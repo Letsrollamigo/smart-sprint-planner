@@ -98,3 +98,27 @@ test('WF2 — реестр полон: каждый workflow-*.js имеет з�
   assert.deepStrictEqual(orphan, [],
     'Осиротевшие записи в registry.workflow.modules (файла нет на диске): ' + orphan.join(', '));
 });
+
+/* MC1/MC2 (#113 1б-2): MCP-инструменты во встроенном MCP YouTrack — mcp-common.js (адаптер,
+   схемы, проекции, определения), mcp-i18n.js (словарь) и однострочные mcp-tool-<имя>.js (файл на
+   инструмент — требование YouTrack; соответствие файлов определениям — tests/unit/mcp-tools.test.js).
+   Свой агрегат _meta.budgets.mcp вне BE1 (⚖ владелец 2026-09-23); реестр mcp.modules — без
+   однострочников. Числа per-fork. */
+function listMcpModules() {
+  return fs.readdirSync(ROOT).filter((f) => /^mcp-.*\.js$/.test(f)).sort();
+}
+
+test('MC1 — Σ LOC mcp-*.js не превышает агрегатный бюджет (ratchet only down)', () => {
+  assertAggregate('mcp', listMcpModules(),
+    'MCP-слой перерос: инструмент — тонкое определение в mcp-common.js над обработчиками, логика — в backend-*.js');
+});
+
+test('MC2 — реестр полон: каждый mcp-*.js, кроме mcp-tool-*.js, имеет запись, нет осиротевших', () => {
+  const mc = reg.mcp;
+  assert.ok(mc && mc.modules, 'module-registry.json: отсутствует mcp.modules');
+  const onDisk = listMcpModules().filter((f) => !f.startsWith('mcp-tool-'));
+  const missing = onDisk.filter((f) => !mc.modules[f]);
+  const orphan = Object.keys(mc.modules).filter((f) => !fs.existsSync(path.join(ROOT, f)));
+  assert.deepStrictEqual(missing, [], 'Новый mcp-*.js без записи в registry.mcp.modules (добавь loc): ' + missing.join(', '));
+  assert.deepStrictEqual(orphan, [], 'Осиротевшие записи в registry.mcp.modules (файла нет на диске): ' + orphan.join(', '));
+});

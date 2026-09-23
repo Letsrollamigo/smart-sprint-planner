@@ -42,6 +42,7 @@ const BRIDGE = '__' + NS + '_';
 const NOTES = {
   'backend-*.js': 'бэкенд приложения: HTTP-обработчики (extensionEndpoints), исполняются внутри YouTrack; core = общие гейты, валидаторы, миграции; остальные — по фичам',
   'workflow-*.js': 'правила workflow YouTrack (Issue.onChange): агрегации, подтяжка состояния родителя, запрет контейнера; общая инфраструктура — workflow-common.js',
+  'mcp-*.js': 'MCP-инструменты для встроенного MCP YouTrack: mcp-common.js — определения и адаптер к обработчикам главного меню, mcp-i18n.js — словарь, mcp-tool-<имя>.js — файл на инструмент',
   'manifest.json': 'манифест приложения YouTrack: виджеты, версия, changeNotes',
   'entity-extensions.json': 'объявление extension-properties — слотов хранения на Project/User',
   'settings.json': 'JSON-схема параметров приложения (группа настройщика, debug-лог)',
@@ -124,6 +125,7 @@ const WHERE = [
   ['Блокировка создания спринтов', ['backend-sprintlock.js']],
   ['Напоминания: вычислитель, права адресатов, журнал', ['backend-reminders-calc.js', 'backend-reminders.js']],
   ['Фазы работ спринта: запись, серверная принадлежность, полоска и блок вводных', ['backend-phases.js', SRC + '/pure/phases-pure.js', SRC + '/domain/phases-view.js']],
+  ['MCP-инструменты во встроенном MCP YouTrack: определения, проверка входа, словарь', ['mcp-common.js', 'mcp-i18n.js', 'tests/unit/mcp-tools.test.js']],
   ['Workflow-правила: агрегации, подтяжка состояния', ['workflow-common.js', 'workflow-cascade-aggregation.js', 'workflow-dta-aggregation.js', 'workflow-state-rollup.js', 'workflow-forbid-container.js']],
   ['Даты и часовые пояса', [SRC + '/pure/date-pure.js', SRC + '/pure/period-pure.js']],
   ['Экспорт в Excel и PDF', [SRC + '/domain/excel-export.js', SRC + '/pure/reporting-export-pure.js', 'widgets/main/lib/']],
@@ -291,7 +293,7 @@ function render() {
   L.push('');
   L.push('| Файл | Назначение |');
   L.push('|---|---|');
-  for (const f of fs.readdirSync(ROOT).filter((n) => /^(backend|workflow)-.*\.js$/.test(n)).sort()) {
+  for (const f of fs.readdirSync(ROOT).filter((n) => /^((backend|workflow)-|mcp-(?!tool-)).*\.js$/.test(n)).sort()) {
     L.push('| `' + f + '` | ' + headline(f) + ' |');
   }
   L.push('');
