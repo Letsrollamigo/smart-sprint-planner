@@ -17,11 +17,12 @@
  * rev_conflict нет; baseRev агента передаётся как есть. Дизайн — Spec/INTEGRATIONS_113_1B2_INAPP_DESIGN.md.
  */
 
-var core = require('./backend-core.js');
-var ENDPOINTS = require('./backend-global.js').httpHandler.endpoints;
 var t = require('./mcp-i18n.js').t;
 
-var ROLE_KEYS = core.ROLE_KEYS;
+/* Бэкенд планера грузится только при вызове инструмента (call), не при загрузке модуля: YouTrack при
+   импорте пакета загружает каждый mcp-tool-*.js, и 19 загрузок всего бэкенда растягивали импорт до
+   20–40 с у предела кучи (замер 23.09). Поэтому ключи ролей — копия core.ROLE_KEYS (равенство — юнит). */
+var ROLE_KEYS = ['analysis', 'testing', 'devPlatform', 'devBack', 'devFront', 'devIos', 'devAndroid', 'devFs', 'devDb'];
 var SPRINT_STATUSES = ['PLANNING', 'CONFIRMED', 'ALLOCATED', 'FINISHED'];
 var INCLUSION_STATUSES = ['INC_PENDING', 'INC_PLANNED', 'INC_UNPLANNED', 'INC_EXCLUDED'];
 var ABSENCE_TYPES = ['vacation', 'sick', 'out_of_membership', 'regional_holiday', 'training', 'teamleading', 'other'];
@@ -65,8 +66,9 @@ function refuse(b, status) {
 /* ── Адаптер: обработчик главного меню на подставном запросе ─────────────────── */
 
 function call(c, method, path, params, body) {
+  var eps = require('./backend-global.js').httpHandler.endpoints;
   var ep = null;
-  for (var i = 0; i < ENDPOINTS.length; i++) if (ENDPOINTS[i].method === method && ENDPOINTS[i].path === path) { ep = ENDPOINTS[i]; break; }
+  for (var i = 0; i < eps.length; i++) if (eps[i].method === method && eps[i].path === path) { ep = eps[i]; break; }
   var q = merge({ projectKey: c.key }, params);
   var cap = { status: 200, body: null };
   var response = { json: function (b) { cap.body = b; } };
@@ -501,3 +503,4 @@ function tool(name) {
 exports.tool = tool;
 exports.NAMES = Object.keys(DEFS);
 exports.check = check;   // test-only
+exports.ROLE_KEYS = ROLE_KEYS;   // test-only

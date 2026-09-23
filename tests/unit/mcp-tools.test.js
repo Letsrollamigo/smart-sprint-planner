@@ -76,6 +76,11 @@ test('словарь: ключи RU и EN совпадают, у каждого 
   assert.strictEqual(unresolved, null, 'нет описания поля: ' + unresolved);
 });
 
+test('ключи ролей — копия core.ROLE_KEYS; бэкенд не грузится при загрузке модуля инструмента', () => {
+  assert.deepStrictEqual(mcp.ROLE_KEYS, require(path.join(ROOT, 'backend-core.js')).ROLE_KEYS);
+  assert.ok(!/^var \w+ = require\('\.\/backend-/m.test(fs.readFileSync(path.join(ROOT, 'mcp-common.js'), 'utf8')), 'require бэкенда — только внутри call()');
+});
+
 test('аннотации: чтение — readOnly, удаление и заливка — destructive, заливка не идемпотентна', () => {
   const ann = (n) => mcp.tool(n).annotations;
   mcp.NAMES.filter((n) => n.startsWith('get_')).forEach((n) => assert.strictEqual(ann(n).readOnlyHint, true, n));
