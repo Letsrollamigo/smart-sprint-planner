@@ -8,6 +8,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.50.0] — 2026-09-24
+
+> **MCP tools inside the app.** #113: 19 tools for AI agents ship in the planner package and are run by YouTrack’s built-in MCP server — no separate server needed. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor is 3.46.0.
+
+### Added
+
+- **19 `planner_*` MCP tools in YouTrack’s built-in MCP server (YouTrack 2025.3+).** A client (an agent in an IDE or chat) connects `{your YouTrack}/mcp?customToolPackages=smart-sprint-planner` with its own permanent token; without the parameter the planner tools are not shown. Reading (8): project overview, working sprint, history, capacity, calendar, absences, releases, reminders. Point writes (11): draft upload (an occupied slot is refused with `slot_occupied` unless `overwrite`), add or remove an issue, part of the sprint header, assignee, absences, a capacity participant, a release, its status and issues. Tool descriptions are in English.
+- **Permissions are exactly the user’s.** A tool calls the same handler as the external REST by project key: project access, the disabled planner, roles by settings groups, data checks and revisions are unchanged. The contract’s restricted operations (full replacement of history, calendar, absences and releases, sprint lock, disabling the planner, issue field writes) are not exposed as tools.
+- **Refusals** arrive as a tool error: the first line is the meaning and what to do, the second is JSON with `reason` and `cid` (codes — `Integrations/ERROR_CODES.md`). An agent’s `baseRev` is passed as is; without it the tool reads the current revision itself.
+
+### Operations
+
+- **Install cost.** Importing the package with the tools takes 13–33 s and briefly takes +0.5–0.9 GB of YouTrack memory (measured on test instances; empty tools cost the same — it is the platform’s price). Install in a quiet window with at least ~1 GB of free heap. A YouTrack restart does not repeat the import cost.
+- **Call load.** Client connect — 14 ms, a call — 11–26 ms, call memory is temporary; the number of projects does not multiply the load.
+- **Simultaneous writes.** Strictly simultaneous writes to one project may lose changes — YouTrack does not detect a conflict between parallel transactions (affects REST, MCP and the UI, #139, reported to JetBrains). The write tools’ descriptions tell agents to write to one project sequentially and re-read after a series.
+- **Deleting or renaming** a tool file cannot be combined with adding new files in one update — YouTrack 2025.3 answers such an import with error 500; such changes ship as a separate release.
+
+### Under the hood
+
+- `mcp-common.js` (input checks, a call of the `backend-global.js` handler on a substitute request, the response shape; the backend is loaded on call, not on module load), `mcp-i18n.js` (descriptions dictionary), 19 one-line `mcp-tool-<name>.js`, `manifest.aiToolPrefix = "planner"`. Size gates MC1/MC2 and the `mcp` section in `module-registry.json`, the code map, `build:check`, the zip file list; unit `tests/unit/mcp-tools.test.js`, stand smoke `Integrations/mcp-server/tests/smoke-inapp.mjs`. The external REST contract did not change (version 3.50.0).
+
+---
+
 ## [3.49.1] — 2026-09-22
 
 > **Patch #134, #135.** A calendar write without the list of years no longer wipes the project calendar, and a history write without records no longer answers “success”. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor stays 3.46.0.
