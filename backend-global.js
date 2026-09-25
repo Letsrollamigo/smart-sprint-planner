@@ -45,6 +45,8 @@ require('./backend-reminders.js');
 require('./backend-phases.js');
 /* #113 — Ops backend: мелкие операции внешнего REST (?action=upsertItem … через штатную полную запись); регистрируется на core.__ops. */
 require('./backend-ops.js');
+/* #113 — Access backend: GET my-roles (роли вызывающего для внешних клиентов); дописывается в core.ENDPOINTS ДО forEach ниже (gotcha #7). */
+require('./backend-access.js');
 
 // Стендовая эмпирика (Test_user_2, не-админ с доступом к DEMO): 'READ_PROJECT' — админ-only
 // (у участника false), а 'READ_PROJECT_BASIC' = true у участника И админа, false у no-access.

@@ -2,11 +2,13 @@
 
 > 🇬🇧 English · 🇷🇺 [Читать по-русски](../Documentation/SECURITY.ru.md)
 
-Applies to version **3.50.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
+Applies to version **3.51.0**. The model is server-authoritative: deny-by-default, whitelist validators, defense against Prototype Pollution, and an explicit role model.
 
 > The "Roles", "Access matrix" and "Threats and mitigations" sections were regenerated from code following authz audit #67 (2026-08-19): the matrix covers every endpoint of both handlers (project + global). The unit invariant `tests/unit/security-matrix-invariant.test.js` checks the matrix against the actual `core.ENDPOINTS` registry — any drift fails the gate.
 >
 > **MCP server 0.1.0 — #113 (2026-09-22), a component outside the planner zip (`Integrations/mcp-server/`).** A shared HTTP server for AI agents on top of the external REST contract: stateless and without accounts of its own — every request carries the caller's personal permanent YouTrack token in the `Authorization` header, the server forwards it to YouTrack and does not keep it (no caching, no logging, nothing on disk); a request without the header gets 401 before the MCP protocol starts. Permissions are exactly those of the token user in YouTrack and in the planner role groups: the server adds and bypasses nothing. The restricted contract operations (full replacement of history/calendar/absences/releases, sprint lock, disabling the planner, issue field writes) do not exist in the server at all; the draft upload refuses to overwrite an occupied slot without an explicit `overwrite`; `READ_ONLY=1` registers no write tools, `PROJECT_ALLOWLIST` limits projects before any HTTP. Outbound HTTP goes only to `YT_BASE_URL` on contract paths (an invariant pinned by the server tests); the log carries allow-listed fields only, no bodies or tokens.
+
+> **v3.51.0 — #113 “Planner operations for the n8n node and MCP”: no new groups or permissions.** (1) `GET my-roles` returns the caller’s role flags in the project (`editor`, `assigner`, `validator`, `historyManager`, `settingsManager`, `planningManager`, `releaseManager`, `releaseEngineer`, `sprintLockManager`, plus `configured`, `disabled`, `instanceAdmin`) from the same core predicates that gate writes; read-only, available to any project member (on the main address — after the read gate). The answer reveals neither group membership lists nor logins. (2) `POST releases?action=removeRelease` (#138) deletes one release from the active registry as a small operation on top of the standard full write: release manager role (or settings manager), `baseRev` is required, a release engineer is refused by the one-step rule (`release_engineer_scope_record_count_change`); the archive is not touched. Previously this was possible only by replacing the whole registry. (3) `POST filter-planner-projects` is added to the external contract with no code change (authentication, 256 KB body cap, up to 5000 keys, read gate per key). (4) 22 built-in MCP tools (+ `filter_projects`, `get_my_roles`, `remove_release`) — adapters over the same handlers, permissions are inherited.
 
 > **v3.50.0 — #113 “MCP tools inside the app”: no new groups, permissions or write paths.** 19 `mcp-tool-*.js` files in the package root (plus `mcp-common.js`, `mcp-i18n.js`) are run by YouTrack’s built-in MCP server (2025.3+) as the calling user (`ctx.currentUser`): the client connects `{baseUrl}/mcp?customToolPackages=smart-sprint-planner` with its own permanent token, and the tools are visible only with that parameter. A tool never touches storage itself — it calls the external REST handler of the main menu (`backend-global.js`) on a substitute request, so the project key format, project existence and read access (`project_unavailable`), the disabled planner (`planner_disabled`), roles by the planner’s settings groups, validators, whitelists and revisions are inherited by construction; no HTTP is made and the REST contract does not change. The contract’s restricted operations (full replacement of history, calendar, absences and releases, sprint lock, disabling the planner, issue field writes) are not exposed as tools; a draft upload does not overwrite an occupied slot without an explicit `overwrite`. Input is checked by the tool before the call (YouTrack itself checks only `required`). ⚠ Strictly simultaneous writes to one project may lose changes — YouTrack transactions do not detect a concurrent write conflict (#139, a platform property that affects REST, MCP and the UI); the write tools’ descriptions tell agents to write to one project sequentially and re-read after a series.
 
@@ -169,7 +171,7 @@ In Smart Sprint Planner v1.0.0:
 
 ## Endpoint access matrix
 
-Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpoints; the global handler exposes the same endpoints via `?projectKey=` (except `sync-acl` and `app-version`) plus 4 of its own. The "matrix = code" invariant lives in `tests/unit/security-matrix-invariant.test.js`.
+Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 35 project endpoints; the global handler exposes the same endpoints via `?projectKey=` (except `sync-acl` and `app-version`) plus 4 of its own. The "matrix = code" invariant lives in `tests/unit/security-matrix-invariant.test.js`.
 
 ### Project scope (`backend-project.js` → `core.ENDPOINTS`)
 
@@ -204,6 +206,7 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `check-editor` | viewer |
 | GET    | `check-assigner` | viewer |
 | GET    | `check-history-manager` | viewer |
+| GET    | `my-roles` | viewer (#113, 3.51.0: the caller’s role flags by planner groups from the same predicates that gate writes; read-only) |
 | GET    | `app-version` | viewer |
 | POST   | `sync-acl` | viewer (writes the `ssp_acl` mirror ONLY from `ctx.settings`; the body is not read) |
 | GET    | `capacity` | viewer (grades, rates, roster allocations) |
@@ -222,7 +225,7 @@ Regenerated from code (#67, 2026-08-19): `core.ENDPOINTS` holds 34 project endpo
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager OR releaseManager; releaseEngineer — advance-diff only (`engineerDiffAllowed`) |
-| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` | same as the full `releases` write (#113, 3.49.0: small operations; the engineer diff rule applies to the assembled full body) |
+| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` · `removeRelease` | same as the full `releases` write (#113, 3.49.0: small operations; `removeRelease` — #138, 3.51.0; the engineer diff rule applies to the assembled full body — deleting a release is closed to the engineer) |
 | GET    | `reporting-access` | viewer (response carries A/B contour flags by membership) |
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |

@@ -87,7 +87,9 @@ export function makeSchemas(t) {
       calendar: z.object({ projectKey: ProjectKey, year: z.number().int().min(2000).max(2100).optional().describe(d('year')) }).strict(),
       absences: z.object({ projectKey: ProjectKey, login: Login.optional().describe(d('loginFilter')), from: IsoDate.optional().describe(d('periodFrom')), to: IsoDate.optional().describe(d('periodTo')) }).strict(),
       releases: z.object({ projectKey: ProjectKey, status: z.enum(RELEASE_STATUSES).optional().describe(d('releaseStatusFilter')), includeArchive: z.boolean().default(false).describe(d('includeArchive')) }).strict(),
-      reminders: z.object({ projectKey: ProjectKey, includeJournal: z.boolean().default(false).describe(d('includeJournal')) }).strict()
+      reminders: z.object({ projectKey: ProjectKey, includeJournal: z.boolean().default(false).describe(d('includeJournal')) }).strict(),
+      filterProjects: z.object({ keys: z.array(z.string().min(1).max(100)).max(5000).describe(d('projectKeys')) }).strict(),
+      myRoles: z.object({ projectKey: ProjectKey }).strict()
     },
     write: {
       uploadDraft: z.object({ projectKey: ProjectKey, sprint: SprintIn.describe(d('sprint')), roleItems: z.partialRecord(z.enum(ROLE_KEYS), z.array(ItemIn).max(1000)).describe(d('roleItems')),
@@ -103,7 +105,8 @@ export function makeSchemas(t) {
       upsertRelease: z.object({ projectKey: ProjectKey, release: ReleaseIn.describe(d('release')), baseRev: BaseRev }).strict(),
       setReleaseStatus: z.object({ projectKey: ProjectKey, id: z.string().min(1).max(64).describe(d('releaseId')), status: z.enum(RELEASE_STATUSES).describe(d('releaseStatus')),
         snapshot: z.record(z.string(), z.unknown()).optional().describe(d('snapshot')), baseRev: BaseRev }).strict(),
-      updateReleaseIssues: z.object({ projectKey: ProjectKey, id: z.string().min(1).max(64).describe(d('releaseId')), add: Issues.optional().describe(d('issuesAdd')), remove: Issues.optional().describe(d('issuesRemove')), baseRev: BaseRev }).strict()
+      updateReleaseIssues: z.object({ projectKey: ProjectKey, id: z.string().min(1).max(64).describe(d('releaseId')), add: Issues.optional().describe(d('issuesAdd')), remove: Issues.optional().describe(d('issuesRemove')), baseRev: BaseRev }).strict(),
+      removeRelease: z.object({ projectKey: ProjectKey, id: z.string().min(1).max(64).describe(d('releaseId')), baseRev: BaseRev }).strict()
     }
   };
 }
@@ -123,5 +126,7 @@ export const OUT = {
   uploadDraft: loose({ rev: Any, enriched: Any, warnings: Any }),
   write: loose({ rev: Any, applied: Any, retried: z.boolean() }),
   capacityWrite: loose({ sprintId: Any, applied: Any, allocOk: Any }),
-  releaseIssues: loose({ rev: Any, added: z.array(z.string()), removed: z.array(z.string()) })
+  releaseIssues: loose({ rev: Any, added: z.array(z.string()), removed: z.array(z.string()) }),
+  filterProjects: loose({ projects: z.array(Any) }),
+  myRoles: loose({ configured: Any, instanceAdmin: Any, roles: Any })
 };

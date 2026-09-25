@@ -29,6 +29,8 @@ require('./backend-reminders.js');
 require('./backend-phases.js');
 /* #113 — Ops backend: мелкие операции внешнего REST (?action=upsertItem … через штатную полную запись); регистрируется на core.__ops. */
 require('./backend-ops.js');
+/* #113 — Access backend: GET my-roles (роли вызывающего для внешних клиентов); endpoint дописывается в core.ENDPOINTS. */
+require('./backend-access.js');
 
 /* Test-only re-export: unit-тесты делают require('./backend-project.js'). */
 if (typeof module !== 'undefined' && module.exports) {

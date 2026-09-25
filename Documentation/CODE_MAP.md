@@ -213,6 +213,7 @@
 
 | Файл | Назначение |
 |---|---|
+| `backend-access.js` | «мои роли» (#113, v3.51.0). |
 | `backend-capacity.js` | Capacity Management backend (#45 R2 «ядро ёмкости»). |
 | `backend-core.js` | ОБЩЕЕ ЯДРО (shared core, #25 Ф1) Не handler-файл: НЕ экспортирует exports.httpHandler (V1a). |
 | `backend-global.js` | HTTP Handler (GLOBAL scope, #25 Ф1) MAIN_MENU_ITEM-виджет (нет ctx.project). |
@@ -239,6 +240,7 @@
 
 | Метод | Путь | Scope | Модуль |
 |---|---|---|---|
+| GET | `my-roles` | project | `backend-access.js` |
 | GET | `capacity` | project | `backend-capacity.js` |
 | GET | `capacity-archive` | project | `backend-capacity.js` |
 | POST | `capacity` | project | `backend-capacity.js` |

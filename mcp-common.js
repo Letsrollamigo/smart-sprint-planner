@@ -388,6 +388,21 @@ var DEFS = {
     return { data: data, summary: data.enabled ? t('result.reminders', { count: data.count }) : t('result.remindersOff') };
   } },
 
+  /* Проектов у инструмента нет (ключи — вход), projectKey не нужен: обработчик главного меню его не читает. */
+  filter_projects: { ann: R, input: obj({ keys: d('projectKeys', { type: 'array', maxItems: 5000, items: { type: 'string', minLength: 1, maxLength: 100 } }) }, ['keys']), run: function (c, a) {
+    var b = post(c, 'filter-planner-projects', { keys: a.keys });
+    var list = Array.isArray(b.projects) ? b.projects : [];
+    return { data: { projects: list }, summary: t('result.filterProjects', { count: list.length, total: a.keys.length }) };
+  } },
+
+  get_my_roles: { ann: R, input: input({}), run: function (c) {
+    var b = get(c, 'my-roles');
+    var roles = isObj(b.roles) ? b.roles : {};
+    var mine = Object.keys(roles).filter(function (k) { return roles[k] === true; });
+    return { data: { configured: val(b, 'configured'), disabled: val(b, 'disabled'), instanceAdmin: val(b, 'instanceAdmin'), roles: roles },
+      summary: t('result.myRoles', { projectKey: c.key, roles: mine.join(', ') || '—' }) };
+  } },
+
   upload_draft: { ann: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     input: input({ sprint: SPRINT_IN, roleItems: byRole(d(null, { type: 'array', maxItems: 1000, items: item() }), 'roleItems'),
       overwrite: flag('overwrite', false), baseRev: baseRev() }, ['sprint', 'roleItems']), run: function (c, a) {
@@ -470,6 +485,10 @@ var DEFS = {
       if (typeof r2.rev === 'number') rev = r2.rev;
     }
     return { data: { rev: rev, added: added, removed: removed }, summary: t('result.releaseIssues', { id: a.id, added: added.length, removed: removed.length, rev: rev }) };
+  } },
+
+  remove_release: { ann: D, input: input({ id: str('releaseId', 64, 1), baseRev: baseRev() }, ['id']), run: function (c, a) {
+    return written('removeRelease', post(c, 'releases', { id: a.id, baseRev: revOf(a.baseRev, function () { return bodyRev(get(c, 'releases')); }) }, { action: 'removeRelease' }));
   } }
 };
 

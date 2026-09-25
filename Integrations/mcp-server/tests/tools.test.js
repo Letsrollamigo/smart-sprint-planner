@@ -10,18 +10,18 @@ async function setup(opts, mutate) {
   return { st, c, lines };
 }
 
-test('состав сервера: 19 инструментов, 5 ресурсов, 3 промпта; READ_ONLY — 8 инструментов без записи', async () => {
+test('состав сервера: 22 инструмента, 5 ресурсов, 3 промпта; READ_ONLY — 10 инструментов без записи', async () => {
   const { c } = await setup();
   const tools = (await c.client.listTools()).tools;
-  assert.equal(tools.length, 19);
+  assert.equal(tools.length, 22);
   assert.ok(tools.every((t) => t.name.startsWith('planner_') && t.description && t.annotations));
-  assert.equal(tools.filter((t) => t.annotations.readOnlyHint).length, 8);
+  assert.equal(tools.filter((t) => t.annotations.readOnlyHint).length, 10);
   assert.equal((await c.client.listResources()).resources.length, 5);
   assert.equal((await c.client.listPrompts()).prompts.length, 3);
   await c.close();
   const ro = await setup({ readOnly: true });
   const names = (await ro.c.client.listTools()).tools.map((t) => t.name);
-  assert.equal(names.length, 8); assert.ok(names.every((n) => n.startsWith('planner_get_')));
+  assert.equal(names.length, 10); assert.ok(names.every((n) => /^planner_(get|filter)_/.test(n)));
   await ro.c.close();
 });
 
@@ -47,7 +47,12 @@ test('чтение: обзор, спринт с фильтрами, истори
   assert.equal(rel.structuredContent.releases.length, 0); assert.equal(rel.structuredContent.rev, 7);
   const rem = await c.call('planner_get_reminders', { projectKey: 'DEMO', includeJournal: true });
   assert.equal(rem.structuredContent.count, 1); assert.deepEqual(rem.structuredContent.journal, []);
-  st.version = '3.48.3';
+  const fp = await c.call('planner_filter_projects', { keys: ['DEMO', 'OTHER'] });
+  assert.deepEqual(fp.structuredContent.projects.map((p) => p.key), ['DEMO']);
+  assert.deepEqual(st.calls.at(-1).query, {}, 'projectKey не передаётся');
+  const mr = await c.call('planner_get_my_roles', { projectKey: 'DEMO' });
+  assert.equal(mr.structuredContent.roles.editor, true); assert.match(mr.content[0].text, /editor, releaseManager/);
+  st.version = '3.50.0';
   const old = await c.call('planner_get_project_overview', { projectKey: 'DEMO' });
   assert.equal(old.structuredContent.contractOk, false); assert.match(old.content[0].text, /старше/);
   await c.close();
@@ -76,6 +81,10 @@ test('запись: цикл ревизий с одним повтором, св
   assert.equal(cp.structuredContent.sprintId, 'sprint-1'); assert.equal(cp.structuredContent.allocOk, true);
   const ab = await c.call('planner_upsert_absence', { projectKey: 'DEMO', login: 'ivanov', entry: { from: '2026-10-13', to: '2026-10-17', type: 'vacation' } });
   assert.equal(ab.structuredContent.rev, 3);
+  const rr = await c.call('planner_remove_release', { projectKey: 'DEMO', id: 'rel-1' });
+  assert.deepEqual(rr.structuredContent, { rev: 10, applied: { id: 'rel-1' }, retried: false }); assert.deepEqual(st.releases.releases, []);
+  const rr2 = await c.call('planner_remove_release', { projectKey: 'DEMO', id: 'rel-1' });
+  assert.equal(rr2.isError, true); assert.match(rr2.content[0].text, /release_not_found/);
   await c.close();
 });
 
@@ -116,6 +125,8 @@ test('ошибки: отказ с подсказкой и cid, платформ�
   const o = await setup({ allowlist: ['OTHER'] });
   const na = await o.c.call('planner_get_sprint', { projectKey: 'DEMO' });
   assert.match(na.content[0].text, /project_not_allowed/); assert.equal(o.st.calls.length, 0);
+  const nf = await o.c.call('planner_filter_projects', { keys: ['DEMO'] });
+  assert.deepEqual(nf.structuredContent.projects, []); assert.equal(o.st.calls.length, 0, 'ключи вне allowlist не уходят в YouTrack');
   await o.c.close();
   const e = await setup();
   const pr = await e.c.call('planner_get_sprint', { projectKey: 'NOPE' });

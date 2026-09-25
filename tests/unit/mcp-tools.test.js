@@ -51,13 +51,14 @@ function refusal(name, args, u) {
 test('файл на инструмент: mcp-tool-<имя>.js ровно по определениям, одна строка, имя без префикса', () => {
   const files = fs.readdirSync(ROOT).filter((f) => /^mcp-tool-.*\.js$/.test(f)).sort();
   assert.deepStrictEqual(files, mcp.NAMES.map((n) => 'mcp-tool-' + n + '.js').sort());
-  assert.strictEqual(mcp.NAMES.length, 19);
+  assert.strictEqual(mcp.NAMES.length, 22);
   for (const n of mcp.NAMES) {
     assert.strictEqual(fs.readFileSync(path.join(ROOT, 'mcp-tool-' + n + '.js'), 'utf8'), "exports.aiTool = require('./mcp-common.js').tool('" + n + "');\n");
     const tl = require(path.join(ROOT, 'mcp-tool-' + n + '.js')).aiTool;
     assert.strictEqual(tl.name, n);
     assert.ok(!/^planner_/.test(tl.name), 'префикс даёт manifest.aiToolPrefix');
     assert.strictEqual(typeof tl.execute, 'function');
+    if (n === 'filter_projects') continue;   // ключи проектов — вход, projectKey не нужен
     assert.strictEqual(tl.inputSchema.properties.projectKey.type, 'string');
     assert.ok(tl.inputSchema.required.includes('projectKey'));
   }
@@ -83,8 +84,8 @@ test('ключи ролей — копия core.ROLE_KEYS; бэкенд не г�
 
 test('аннотации: чтение — readOnly, удаление и заливка — destructive, заливка не идемпотентна', () => {
   const ann = (n) => mcp.tool(n).annotations;
-  mcp.NAMES.filter((n) => n.startsWith('get_')).forEach((n) => assert.strictEqual(ann(n).readOnlyHint, true, n));
-  ['remove_item', 'remove_absence', 'update_release_issues', 'upload_draft'].forEach((n) => assert.strictEqual(ann(n).destructiveHint, true, n));
+  mcp.NAMES.filter((n) => n.startsWith('get_') || n === 'filter_projects').forEach((n) => assert.strictEqual(ann(n).readOnlyHint, true, n));
+  ['remove_item', 'remove_absence', 'update_release_issues', 'upload_draft', 'remove_release'].forEach((n) => assert.strictEqual(ann(n).destructiveHint, true, n));
   assert.strictEqual(ann('upload_draft').idempotentHint, false);
   assert.strictEqual(ann('upsert_item').destructiveHint, false);
 });
@@ -194,4 +195,38 @@ test('пустые правки — nothing_to_do без записи', () => {
   mkProject();
   assert.strictEqual(refusal('patch_sprint', { projectKey: 'SCBT', sprint: {} }).info.reason, 'nothing_to_do');
   assert.strictEqual(refusal('update_release_issues', { projectKey: 'SCBT', id: 'R-1' }).info.reason, 'nothing_to_do');
+});
+
+/* ── 3.51.0: проекты с планером, мои роли, удаление релиза ──────────────────── */
+
+test('filter_projects: проект с планером виден, без планера и без права чтения — нет; projectKey не нужен', () => {
+  mkProject();
+  projects.BARE = { key: 'BARE', name: 'Bare', extensionProperties: {} };
+  const r = run('filter_projects', { keys: ['SCBT', 'BARE', 'NOPE'] });
+  assert.deepStrictEqual(r.projects.map((p) => p.key), ['SCBT']);
+  assert.strictEqual(r.projects[0].hasMirror, true);
+  assert.deepStrictEqual(run('filter_projects', { keys: ['SCBT'] }, user([G_ADMIN], false)).projects, []);
+  assert.strictEqual(refusal('filter_projects', {}).info.reason, 'invalid_argument:keys');
+});
+
+test('get_my_roles: роли по группам планера и сводка со списком ролей', () => {
+  mkProject();
+  const r = run('get_my_roles', { projectKey: 'SCBT' });
+  assert.strictEqual(r.configured, true);
+  assert.strictEqual(r.roles.editor, true);
+  assert.strictEqual(r.roles.validator, true);
+  assert.strictEqual(r.roles.settingsManager, true);
+  assert.strictEqual(r.roles.releaseEngineer, false);
+  assert.ok(r.summary.includes('editor'));
+  assert.ok(Object.values(run('get_my_roles', { projectKey: 'SCBT' }, user([])).roles).every((v) => v === false));
+});
+
+test('remove_release: удаляет релиз по id через мелкую операцию; нет релиза — release_not_found', () => {
+  const REL = { id: 'R-1', name: 'v1', kind: 'release', source: 'internal', status: 'planned', issues: [] };
+  const props = mkProject({ ssp_releases: JSON.stringify({ releases: [REL, Object.assign({}, REL, { id: 'R-2' })] }), ssp_releases_rev: '3' });
+  const r = run('remove_release', { projectKey: 'SCBT', id: 'R-1' });
+  assert.deepStrictEqual(r.applied, { id: 'R-1' });
+  assert.strictEqual(r.rev, 4);
+  assert.deepStrictEqual(JSON.parse(props.ssp_releases).releases.map((x) => x.id), ['R-2']);
+  assert.strictEqual(refusal('remove_release', { projectKey: 'SCBT', id: 'R-1' }).info.reason, 'release_not_found');
 });

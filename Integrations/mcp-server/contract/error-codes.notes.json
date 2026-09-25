@@ -270,8 +270,10 @@
   },
   "invalid_keys": {
     "ru": "Перечень ключей проектов — не массив.",
+    "en": "The list of project keys is not an array.",
     "action": "Исправить тело запроса по схеме операции и повторить.",
-    "published": false
+    "actionEn": "Fix the request body according to the operation schema and retry.",
+    "published": true
   },
   "invalid_login": {
     "ru": "Логин пуст либо длиннее 200 символов.",

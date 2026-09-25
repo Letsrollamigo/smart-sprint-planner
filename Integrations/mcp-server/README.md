@@ -2,9 +2,9 @@
 
 [Русская версия](./README.ru.md)
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server that gives an AI agent (Claude Code, Kilo Code, Cursor or any other MCP client) access to planner data per YouTrack project: the working sprint and its issues by role, history, capacity, calendar and absences, releases, reminders. Under the hood it speaks the planner's [external REST contract](../openapi-sprint.yaml), edition 3.49.1; the server keeps no state, has no accounts of its own and adds no permissions.
+A [Model Context Protocol](https://modelcontextprotocol.io) server that gives an AI agent (Claude Code, Kilo Code, Cursor or any other MCP client) access to planner data per YouTrack project: the working sprint and its issues by role, history, capacity, calendar and absences, releases, reminders. Under the hood it speaks the planner's [external REST contract](../openapi-sprint.yaml), edition 3.51.0; the server keeps no state, has no accounts of its own and adds no permissions.
 
-**Server version 0.1.0 · compatible with planner ≥ 3.49.1** (checked by the project overview tool).
+**Server version 0.2.0 · compatible with planner ≥ 3.51.0** (checked by the project overview tool; on planner 3.49.1–3.50.x every tool works except `planner_get_my_roles` and `planner_remove_release`).
 
 ## Access model
 
@@ -71,7 +71,7 @@ The agent's first call is `planner_get_project_overview`: planner version and co
 
 ## Tools
 
-Units: effort and resources are **minutes** (8 h = 480), sprint and release dates are epoch-ms, absences are `YYYY-MM-DD`. Role, status and type codes are Latin (resource `planner://reference/enums`). Every tool requires `projectKey`.
+Units: effort and resources are **minutes** (8 h = 480), sprint and release dates are epoch-ms, absences are `YYYY-MM-DD`. Role, status and type codes are Latin (resource `planner://reference/enums`). Every tool except `planner_filter_projects` requires `projectKey`.
 
 | Tool | What it does | Role |
 |---|---|---|
@@ -83,6 +83,8 @@ Units: effort and resources are **minutes** (8 h = 480), sprint and release date
 | `planner_get_absences` | absences (login and period filters) | member |
 | `planner_get_releases` | release registry, caller permissions, revision; archive by flag | member |
 | `planner_get_reminders` | reminders addressed to the caller; journal by flag | member |
+| `planner_filter_projects` | of the given project keys — those with the planner attached and readable by the caller (list the projects with the standard YouTrack tools); since 0.2.0 | any user |
+| `planner_get_my_roles` | the caller’s roles in the project by planner groups, `configured`, `instanceAdmin`; since 0.2.0 | member |
 | `planner_upload_draft` | upload a whole sprint draft; an occupied slot is refused with `slot_occupied` unless `overwrite` | editor |
 | `planner_upsert_item` · `planner_remove_item` | add/change a role issue · remove an issue | editor |
 | `planner_patch_sprint` | change part of the sprint header (name, dates, goal, role resources) | editor |
@@ -90,6 +92,7 @@ Units: effort and resources are **minutes** (8 h = 480), sprint and release date
 | `planner_upsert_absence` · `planner_remove_absence` | add/replace · remove an absence | settings manager / planning manager |
 | `planner_upsert_capacity_person` | add/change a capacity participant | same |
 | `planner_upsert_release` · `planner_set_release_status` · `planner_update_release_issues` | create/change a release · change status · add and remove issues | release manager (engineer — next status step) |
+| `planner_remove_release` | delete one release from the active registry (the archive is not touched); since 0.2.0 | release manager |
 
 Revisions: `baseRev` is optional — the server reads the current one and retries a point operation once on a conflict; a passed `baseRev` is used as is. A full draft upload is never retried.
 

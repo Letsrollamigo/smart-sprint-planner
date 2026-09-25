@@ -1,5 +1,5 @@
 // @ts-check
-/** Одиннадцать инструментов записи: guards, цикл ревизий, точечные операции. */
+/** Двенадцать инструментов записи: guards, цикл ревизий, точечные операции. */
 import { defineTool } from './common.js';
 import { OUT } from '../schemas.js';
 import { slotRev, bodyRev, withRev } from '../ops.js';
@@ -115,5 +115,10 @@ export function registerWriteTools(server, ctx) {
       retried = retried || r.retried;
     }
     return { text: t('result.releaseIssues', { id, added: added.length, removed: removed.length, rev: rev ?? '—' }), data: { rev: rev ?? null, added, removed, retried } };
+  } });
+
+  defineTool(server, ctx, 'planner_remove_release', { input: S.write.removeRelease, output: OUT.write, annotations: D, handler: async ({ projectKey, id, baseRev }) => {
+    const r = await withRev({ baseRev, readRev: readRelRev(projectKey), run: (rev) => ops.releasesAction(projectKey, 'removeRelease', { id, baseRev: rev }) });
+    return writeResult('removeRelease', r);
   } });
 }

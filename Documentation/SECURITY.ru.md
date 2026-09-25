@@ -2,11 +2,13 @@
 
 > 🇬🇧 [Read in English](../.github/SECURITY.md) · 🇷🇺 По-русски
 
-Актуально для версии **3.50.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
+Актуально для версии **3.51.0**. Модель — server-authoritative: deny-by-default, whitelist-валидаторы, защита от Prototype Pollution и явная ролевая модель.
 
 > Разделы «Роли», «Матрица доступа» и «Угрозы и митигации» перегенерированы из кода по итогам authz-аудита #67 (2026-08-19): матрица покрывает все endpoints обоих handler'ов (project + global). Юнит-инвариант `tests/unit/security-matrix-invariant.test.js` сверяет матрицу с фактическим реестром `core.ENDPOINTS` — рассинхрон роняет гейт.
 >
 > **MCP-сервер 0.1.0 — #113 (2026-09-22), компонент вне зипа планера (`Integrations/mcp-server/`).** Общий HTTP-сервер для ИИ-агентов поверх внешнего REST-контракта: без состояния и без своих учётных записей — каждый запрос несёт личный постоянный токен YouTrack вызывающего в заголовке `Authorization`, сервер пересылает его в YouTrack и не хранит (не кэширует, не логирует, на диск не пишет); запрос без заголовка — 401 до протокола MCP. Права — ровно права пользователя токена в YouTrack и группах ролей планера: сервер ничего не добавляет и не обходит. Ограниченных операций контракта (полная замена истории/календаря/отсутствий/релизов, блокировка спринтов, отключение планера, запись полей задач) у сервера нет вовсе; заливка черновика отказывается затирать занятый слот без явного `overwrite`; `READ_ONLY=1` не регистрирует инструменты записи, `PROJECT_ALLOWLIST` ограничивает проекты до любого HTTP. Исходящий HTTP — только к `YT_BASE_URL` по путям контракта (инвариант закреплён тестами сервера); журнал — поля из белого списка, без тел и токенов.
+
+> **v3.51.0 — #113 «Операции планера для ноды n8n и MCP»: новых групп и полномочий нет.** (1) `GET my-roles` — флаги ролей вызывающего в проекте (`editor`, `assigner`, `validator`, `historyManager`, `settingsManager`, `planningManager`, `releaseManager`, `releaseEngineer`, `sprintLockManager`, плюс `configured`, `disabled`, `instanceAdmin`) из тех же предикатов ядра, что гейтят запись; только чтение, доступ — участник проекта (по основному адресу — после read-gate). Состав групп и логины ответ не раскрывает. (2) `POST releases?action=removeRelease` (#138) — удаление одного релиза из активного реестра мелкой операцией поверх штатной полной записи: роль релиз-менеджера (либо управление настройками), `baseRev` обязателен, релиз-инженеру отказывает правило одного шага (`release_engineer_scope_record_count_change`); архив не затрагивается. Раньше то же достигалось только полной заменой реестра. (3) `POST filter-planner-projects` внесён во внешний контракт без изменения кода (аутентификация, cap тела 256 КБ, до 5000 ключей, read-gate по каждому ключу). (4) Встроенных MCP-инструментов 22 (+ `filter_projects`, `get_my_roles`, `remove_release`) — адаптеры над теми же обработчиками, права наследуются.
 
 > **v3.50.0 — #113 «MCP-инструменты внутри приложения»: новых групп, полномочий и путей записи нет.** 19 файлов `mcp-tool-*.js` в корне пакета (плюс `mcp-common.js`, `mcp-i18n.js`) исполняет встроенный MCP-сервер YouTrack (≥ 2025.3) под учётной записью вызывающего (`ctx.currentUser`): клиент подключает `{baseUrl}/mcp?customToolPackages=smart-sprint-planner` со своим постоянным токеном, инструменты видны только с этим параметром. Инструмент в хранилище сам не ходит — вызывает обработчик внешнего REST главного меню (`backend-global.js`) на подставном запросе, поэтому формат ключа проекта, существование проекта и право его читать (`project_unavailable`), отключение планера (`planner_disabled`), роли по группам настроек планера, валидаторы, белые списки и ревизии наследуются по построению; HTTP не выполняется, контракт REST не меняется. Ограниченных операций контракта (полная замена истории, календаря, отсутствий и релизов, блокировка спринтов, отключение планера, запись полей задач) у инструментов нет; заливка черновика не затирает занятый слот без явного `overwrite`. Вход сверяется своей проверкой до вызова (YouTrack проверяет только `required`). ⚠ Строго одновременные записи в один проект могут потерять изменения — транзакции YouTrack не обнаруживают конфликт параллельной записи (#139, свойство платформы, касается REST, MCP и экрана); в описаниях инструментов записи — правило для агентов: писать в один проект по очереди, после серии перечитать.
 
@@ -169,7 +171,7 @@
 
 ## Матрица доступа по endpoints
 
-Перегенерирована из кода (#67, 2026-08-19): `core.ENDPOINTS` — 34 project-endpoint'а; global-handler — те же endpoints через `?projectKey=` (кроме `sync-acl` и `app-version`) + 4 собственных. Инвариант «матрица = код» — `tests/unit/security-matrix-invariant.test.js`.
+Перегенерирована из кода (#67, 2026-08-19): `core.ENDPOINTS` — 35 project-endpoint'ов; global-handler — те же endpoints через `?projectKey=` (кроме `sync-acl` и `app-version`) + 4 собственных. Инвариант «матрица = код» — `tests/unit/security-matrix-invariant.test.js`.
 
 ### Project scope (`backend-project.js` → `core.ENDPOINTS`)
 
@@ -204,6 +206,7 @@
 | GET    | `check-editor` | viewer |
 | GET    | `check-assigner` | viewer |
 | GET    | `check-history-manager` | viewer |
+| GET    | `my-roles` | viewer (#113, 3.51.0: флаги ролей вызывающего по группам планера из тех же предикатов, что гейтят запись; только чтение) |
 | GET    | `app-version` | viewer |
 | POST   | `sync-acl` | viewer (пишет зеркало `ssp_acl` ТОЛЬКО из `ctx.settings`, тело не читается) |
 | GET    | `capacity` | viewer (грейды, ставки, аллокации ростера) |
@@ -222,7 +225,7 @@
 | GET    | `releases` | viewer |
 | GET    | `releases-archive` | viewer |
 | POST   | `releases` | settingsManager ИЛИ releaseManager; releaseEngineer — только advance-дифф (`engineerDiffAllowed`) |
-| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` | как у полной записи `releases` (#113, 3.49.0: мелкие операции; дифф-правило инженера действует на собранное полное тело) |
+| POST   | `releases?action=upsertRelease` · `setReleaseStatus` · `addReleaseIssues` · `removeReleaseIssues` · `removeRelease` | как у полной записи `releases` (#113, 3.49.0: мелкие операции; `removeRelease` — #138, 3.51.0; дифф-правило инженера действует на собранное полное тело — удаление релиза инженеру закрыто) |
 | GET    | `reporting-access` | viewer (ответ — флаги контуров A/B по членству) |
 | GET    | `sprint-lock` | viewer |
 | POST   | `sprint-lock` | sprintLockManager |

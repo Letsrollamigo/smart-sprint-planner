@@ -11,7 +11,6 @@ import fs from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import branding from '../src/branding.js';
-import { createClient } from '../src/client.js';
 import { loadConfig, pickLang } from '../src/config.js';
 import { loadDictionary, makeT } from '../src/i18n/index.js';
 import { createLog } from '../src/log.js';
@@ -55,7 +54,7 @@ const okCall = async (name, a) => { const r = await call(name, a); check(name + 
 const refusal = async (name, a, reason) => { const r = await call(name, a); const e = r._meta?.error || {}; check(name + ' → ' + reason, r.isError === true && e.reason === reason, r.content?.[0]?.text); return e; };
 
 // 1. Состав
-const tools = (await c.listTools()).tools; check('listTools = 19', tools.length === 19, tools.length);
+const tools = (await c.listTools()).tools; check('listTools = 22', tools.length === 22, tools.length);
 check('listResources = 5', (await c.listResources()).resources.length === 5);
 check('listPrompts = 3', (await c.listPrompts()).prompts.length === 3);
 check('resource enums читается', (await c.readResource({ uri: 'planner://reference/enums' })).contents[0].text.includes('releaseChain'));
@@ -65,6 +64,12 @@ const ov = await okCall('planner_get_project_overview', {});
 check('overview.contractOk', ov.contractOk === true, JSON.stringify(ov));
 const sp = await okCall('planner_get_sprint', {});
 for (const [n, a] of [['planner_get_history', { limit: 5 }], ['planner_get_capacity', {}], ['planner_get_calendar', {}], ['planner_get_absences', {}], ['planner_get_releases', {}], ['planner_get_reminders', { includeJournal: true }]]) await okCall(n, a);
+const fpRaw = await c.callTool({ name: 'planner_filter_projects', arguments: { keys: [projectKey, 'NoSuchProject113'] } });
+check('planner_filter_projects (без projectKey)', !fpRaw.isError, fpRaw.content?.[0]?.text);
+const fp = fpRaw.structuredContent || {};
+check('filter_projects: проект с планером найден, чужой ключ пропущен', JSON.stringify((fp.projects || []).map((p) => p.key)) === JSON.stringify([projectKey]), JSON.stringify(fp));
+const mr = await okCall('planner_get_my_roles', {});
+check('get_my_roles: роли и configured', typeof mr.configured === 'boolean' && typeof mr.roles?.editor === 'boolean', JSON.stringify(mr));
 
 // 3. Отказы
 { // токен не проверяется до вызова инструмента (сервер не ходит в YouTrack на initialize) — 401 приходит из инструмента
@@ -120,12 +125,11 @@ check('set_release_status: rev +1', ss.rev === rel.rev + 4, ss.rev);
 const cur = await okCall('planner_get_releases', {});
 const mine = (cur.releases || []).find((r) => r.id === rid);
 check('релиз записан: статус prep, состав -2', !!mine && mine.status === 'prep' && JSON.stringify(mine.issues) === JSON.stringify([projectKey + '-2']), JSON.stringify(mine));
-// возврат состояния: удаления релиза точечной операцией нет — полная запись напрямую, мимо сервера
-const direct = createClient({ baseUrl: ytBase, appId, token, timeoutMs: 30000 });
-const full = await direct.call('GET', 'releases', { projectKey });
-const rest = (full.releases || []).filter((r) => r.id !== rid);
-const restored = await direct.call('POST', 'releases', { projectKey, body: { releases: rest, baseRev: full.rev } }).then(() => true).catch((e) => e.message);
-check('releases: возврат состояния полной записью', restored === true, restored);
+// возврат состояния — точечным удалением релиза (#138, 3.51.0)
+const rr = await okCall('planner_remove_release', { id: rid });
+check('remove_release: rev +1, applied.id', rr.rev === rel.rev + 5 && rr.applied?.id === rid, JSON.stringify(rr));
+check('релиза больше нет', !((await okCall('planner_get_releases', {})).releases || []).some((r) => r.id === rid));
+await refusal('planner_remove_release', { id: rid }, 'release_not_found');
 
 await c.close();
 if (server) await new Promise((r) => server.close(r));

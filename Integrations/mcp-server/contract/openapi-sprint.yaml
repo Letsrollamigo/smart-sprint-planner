@@ -16,11 +16,13 @@ openapi: 3.1.0
 # Редакция 3.49.0: 43 операции (23 сочетания «метод + путь», варианты записи —
 # параметром action), единый конверт отказа, мелкие операции для агентов,
 # исправлен адрес глобального контура.
+# Редакция 3.51.0: 46 операций (25 сочетаний «метод + путь») — добавлены список
+# проектов с планером, роли вызывающего и удаление релиза.
 # ══════════════════════════════════════════════════════════════════════════════
 
 info:
   title: Smart Sprint Planner — внешний REST
-  version: 3.50.0
+  version: 3.51.0
   description: |
     ## Совместимость — правило аддитивности
 
@@ -61,6 +63,14 @@ info:
       пустой календарь. Явный пустой `years: {}` остаётся осознанной очисткой.
     - **`POST /history` без `action` и без ключа `history`** отклоняется —
       `invalid_history_structure: missing`; раньше отвечал успехом без записи.
+
+    Записи редакции 3.51.0 (только добавления):
+    - **`POST /filter-planner-projects`** — какие из переданных проектов с подключённым
+      планером видны вызывающему. Операция работала и раньше (выбор проекта в главном
+      меню планера), в контракт внесена в 3.51.0.
+    - **`GET /my-roles`** — роли вызывающего в проекте по группам планера.
+    - **`POST /releases?action=removeRelease`** — удаление одного релиза из активного
+      реестра (мелкая операция).
 
     ## Адреса
 
@@ -128,8 +138,8 @@ info:
     полной записи плюс `action` и `applied` (что именно изменено). Перечень:
     `upsertItem`, `removeItem`, `patchSprint`, `assignPerson` (`/sprint-data`);
     `upsertPerson` (`/capacity`); `upsertAbsence`, `removeAbsence` (`/absences`);
-    `upsertRelease`, `setReleaseStatus`, `addReleaseIssues`, `removeReleaseIssues`
-    (`/releases`). `upsert*` — слияние: присланные ключи обновляют запись, остальные
+    `upsertRelease`, `setReleaseStatus`, `addReleaseIssues`, `removeReleaseIssues`,
+    `removeRelease` — с 3.51.0 (`/releases`). `upsert*` — слияние: присланные ключи обновляют запись, остальные
     сохраняются (исключение — `upsertAbsence`: запись заменяется целиком).
 
     ## Ограниченные операции
@@ -234,6 +244,8 @@ tags:
     description: Запрет создания новых спринтов в проекте
   - name: Администрирование
     description: Отключение планера в проекте и запись полей задач — ограниченные операции
+  - name: Доступ
+    description: Проекты с подключённым планером и роли вызывающего в проекте (3.51.0)
 
 paths:
   /sprint-data:
@@ -533,6 +545,109 @@ paths:
               schema:
                 anyOf:
                   - $ref: "#/components/schemas/AppVersionOk"
+                  - $ref: "#/components/schemas/AppError"
+
+  /filter-planner-projects:
+    servers:
+      - url: "{baseUrl}/api/extensionEndpoints/smart-sprint-planner/backend-global"
+        description: Только основной адрес; параметр `projectKey` не нужен
+        variables:
+          baseUrl:
+            default: https://youtrack.example.local
+            description: Базовый URL инстанса YouTrack (без завершающего /) — заглушка, подставьте свой
+    post:
+      operationId: filterPlannerProjects
+      tags: ["Доступ"]
+      summary: Какие из переданных проектов — с подключённым планером и видны вызывающему (3.51.0)
+      description: |
+        Принимает ключи проектов и возвращает те из них, где подключён планер и которые
+        вызывающий вправе читать. Перечень проектов инстанса операция не отдаёт — его берут
+        штатным REST YouTrack (`GET {baseUrl}/api/admin/projects?fields=shortName,name`) либо
+        инструментами MCP YouTrack и передают ключи сюда. Ответ всегда актуален: сервер
+        проверяет каждый ключ при каждом вызове и ничего не запоминает. Так же работает выбор
+        проекта в главном меню планера — операция существовала и раньше, в контракт внесена
+        в 3.51.0.
+
+        **Адрес** — только основной и без `projectKey`:
+        `{baseUrl}/api/extensionEndpoints/smart-sprint-planner/backend-global/filter-planner-projects`.
+        По проектному адресу операции нет (404 `HTTP handler not found`).
+
+        **«Планер подключён»** — в проекте сохранялись настройки планера либо задана группа
+        управления настройками и планер хотя бы раз открывали в проекте. Ключ проекта без
+        доступа у вызывающего, несуществующий, недопустимой формы, не строка и повтор
+        пропускаются молча — отказа по ним нет, в ответ они не попадают. Проект с отключённым
+        планером (`POST /planner-disabled`) виден только тому, кто вправе включить его обратно
+        (управление настройками, администратор YouTrack), и помечен `disabled: true`.
+
+        **Лимиты:** тело до 256 КБ (иначе `too_large`); обрабатываются первые 5000 ключей,
+        остальные отбрасываются без отказа. Порядок ответа — по названию проекта.
+
+        **Роль** — любой аутентифицированный пользователь. Ничего не меняет. Отказы:
+        `auth_required`, `invalid_keys` (`keys` не массив), `too_large`, `invalid_json`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FilterPlannerProjectsRequest"
+            example:
+              keys: ["DEMO", "SP", "TEST"]
+      responses:
+        "200":
+          description: |
+            Проекты с планером либо прикладная ошибка (`success:false`) — HTTP-статус в обоих
+            случаях 200.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/FilterPlannerProjectsOk"
+                  - $ref: "#/components/schemas/AppError"
+
+  /my-roles:
+    get:
+      operationId: getMyRoles
+      tags: ["Доступ"]
+      summary: Роли вызывающего в проекте по группам планера (3.51.0)
+      description: |
+        Какие роли планера есть у пользователя токена в проекте — чтобы интеграция заранее
+        знала, какие записи ей доступны, а не узнавала об этом отказом. Ответ собран из тех же
+        проверок, которыми сервер пропускает запись; своей модели прав у операции нет.
+
+        **Ключи `roles`** (true — роль есть): `editor` — редактор, `assigner` —
+        распределяющий, `validator` — согласующий, `historyManager` — управление историей,
+        `settingsManager` — управление настройками, `planningManager` — планировочный
+        менеджер, `releaseManager` — релиз-менеджер, `releaseEngineer` — релиз-инженер,
+        `sprintLockManager` — блокировка создания спринтов. Роль — это членство в группе,
+        а не право операции: часть операций допускает несколько ролей (распределение —
+        также редактору, управлению настройками и релиз-ролям; запись релизов — также
+        управлению настройками). Роль каждой операции названа в её описании.
+
+        **Администратор YouTrack** (`instanceAdmin: true`) получает все роли, кроме
+        управления историей: очистка и замена истории требуют явного членства в группе
+        и от администратора.
+
+        **`configured: false`** — в настройках приложения в проекте не задана группа
+        управления настройками: запись закрыта всем, кроме администратора YouTrack, роли —
+        false. По основному адресу признак берётся из копии, которую планер сохраняет при
+        открытии в проекте, — как у любой записи по этому адресу.
+
+        **`disabled`** — планер отключён в проекте. По основному адресу отключённый проект
+        отвечает отказом `planner_disabled` раньше этой операции, поэтому `disabled: true`
+        видно только по проектному адресу.
+
+        **Роль** — участник проекта. Ничего не меняет. Отказы: `auth_required`; по основному
+        адресу также `invalid_project_key`, `project_unavailable`, `planner_disabled`.
+      parameters:
+        - $ref: "#/components/parameters/ProjectKeyGlobal"
+      responses:
+        "200":
+          description: Роли либо прикладная ошибка (`success:false`) — HTTP-статус в обоих случаях 200.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/MyRolesOk"
                   - $ref: "#/components/schemas/AppError"
 
   /history:
@@ -1142,7 +1257,8 @@ paths:
       summary: "Запись релизов: мелкие операции (3.49.0); ⚠ полная замена — ограниченная"
       description: |
         Реестр релизов проекта хранится одним блоком с ревизией. На этом пути — полная
-        замена реестра (без `action`) и четыре мелкие операции (3.49.0). Мелкая операция
+        замена реестра (без `action`) и пять мелких операций (четыре с 3.49.0, `removeRelease` —
+        с 3.51.0). Мелкая операция
         читает хранимый реестр, применяет одно изменение и проводит результат через ту же
         полную запись — права, проверки формы, лимиты, штампы аудита, авто-архив и правило
         релиз-инженера у всех вариантов одинаковы. Внешним клиентам рекомендуются мелкие
@@ -1230,6 +1346,14 @@ paths:
         `applied: { id, removed }` — фактически убранные идентификаторы · отказы — как
         у `addReleaseIssues`.
 
+        **`removeRelease`** (3.51.0) — удалить один релиз из активного реестра · роль:
+        релиз-менеджер · тело `{ id, baseRev }`. Остальные записи реестра и задачи YouTrack
+        из состава релиза не меняются. Архив не затрагивается: релиз, уже вынесенный
+        в архив, операцией не удаляется (`release_not_found`). Удаление необратимо —
+        восстановить запись можно только заново через `upsertRelease` · `applied: { id }` ·
+        отказы: `ops_field_required:id`, `release_not_found`; у релиз-инженера —
+        `release_engineer_scope_record_count_change`.
+
         **без `action` — полная замена реестра.**
 
         > ⚠ **Ограниченная операция.** Тело `{ releases, baseRev }` заменяет активный
@@ -1250,9 +1374,9 @@ paths:
         - name: action
           in: query
           required: false
-          schema: { type: string, enum: [upsertRelease, setReleaseStatus, addReleaseIssues, removeReleaseIssues] }
+          schema: { type: string, enum: [upsertRelease, setReleaseStatus, addReleaseIssues, removeReleaseIssues, removeRelease] }
           description: |
-            Мелкая операция (3.49.0). Параметр не передан — полная замена реестра
+            Мелкая операция (3.49.0; `removeRelease` — 3.51.0). Параметр не передан — полная замена реестра
             (⚠ ограниченная). Иное непустое значение → `invalid_action`.
       requestBody:
         required: true
@@ -1264,6 +1388,7 @@ paths:
                 - $ref: "#/components/schemas/UpsertReleaseRequest"
                 - $ref: "#/components/schemas/SetReleaseStatusRequest"
                 - $ref: "#/components/schemas/ReleaseIssuesRequest"
+                - $ref: "#/components/schemas/RemoveReleaseRequest"
             examples:
               upsertRelease:
                 summary: "?action=upsertRelease — создать релиз"
@@ -1297,6 +1422,11 @@ paths:
                   baseRev: 10
                   id: "rel-2026-10"
                   issues: ["DEMO-103"]
+              removeRelease:
+                summary: "?action=removeRelease — удалить релиз (3.51.0)"
+                value:
+                  baseRev: 11
+                  id: "rel-2026-10"
       responses:
         "200":
           description: |
@@ -2503,6 +2633,99 @@ components:
           type: string
           description: Версия приложения вида `X.Y.Z`; совпадает с `info.version` контракта той же редакции
 
+    FilterPlannerProjectsRequest:
+      type: object
+      description: |
+        Тело `POST /filter-planner-projects` (3.51.0): ключи проектов для проверки.
+        Посторонние ключи верхнего уровня сервер отбрасывает молча.
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          description: |
+            Ключи проектов (`shortName`), например из `GET /api/admin/projects`. Не массив —
+            `invalid_keys`; сверх 5000 ключей — отбрасываются.
+      required: [keys]
+
+    FilterPlannerProjectsOk:
+      type: object
+      description: "Ответ `POST /filter-planner-projects` (3.51.0). Схема ответа: состав ключей может расширяться"
+      properties:
+        success:
+          const: true
+        projects:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannerProject"
+          description: Проекты с подключённым планером, видимые вызывающему, по названию; нет таких — пустой массив
+      required: [success, projects]
+
+    PlannerProject:
+      type: object
+      description: Проект с подключённым планером — строка ответа `POST /filter-planner-projects`
+      properties:
+        key:
+          type: string
+          description: Ключ проекта в том написании, что пришло в запросе (без пробелов по краям)
+        name:
+          type: string
+          description: Название проекта
+        hasMirror:
+          type: boolean
+          description: |
+            true — планер сохранил в проекте копию группы управления настройками для
+            основного адреса; false — запись по основному адресу отвечает
+            `plugin_not_configured`, пока планер не откроют в проекте
+        disabled:
+          type: boolean
+          description: Есть только со значением true — планер в проекте отключён (виден тем, кто может включить)
+      required: [key, name, hasMirror]
+
+    MyRolesOk:
+      type: object
+      description: "Ответ `GET /my-roles` (3.51.0). Схема ответа: состав ключей может расширяться"
+      properties:
+        success:
+          const: true
+        configured:
+          type: boolean
+          description: Группа управления настройками задана в настройках приложения в проекте
+        disabled:
+          type: boolean
+          description: Планер отключён в проекте (по основному адресу всегда false — см. описание операции)
+        instanceAdmin:
+          type: boolean
+          description: Вызывающий — администратор YouTrack
+        roles:
+          $ref: "#/components/schemas/MyRoles"
+      required: [success, configured, disabled, instanceAdmin, roles]
+
+    MyRoles:
+      type: object
+      description: Роли вызывающего по группам планера; true — роль есть
+      properties:
+        editor:
+          type: boolean
+        assigner:
+          type: boolean
+        validator:
+          type: boolean
+        historyManager:
+          type: boolean
+        settingsManager:
+          type: boolean
+        planningManager:
+          type: boolean
+        releaseManager:
+          type: boolean
+        releaseEngineer:
+          type: boolean
+        sprintLockManager:
+          type: boolean
+      required: [editor, assigner, validator, historyManager, settingsManager, planningManager, releaseManager, releaseEngineer, sprintLockManager]
+
     HistoryRecord:
       type: object
       description: |
@@ -3459,6 +3682,22 @@ components:
           type: number
           description: "`rev` из `GET /releases` либо из ответа предыдущей записи; обязателен числом"
       required: [id, issues, baseRev]
+
+    RemoveReleaseRequest:
+      type: object
+      title: removeRelease
+      description: |
+        Тело `?action=removeRelease` (3.51.0). Посторонние ключи верхнего уровня сервер
+        отбрасывает молча.
+      properties:
+        id:
+          type: string
+          minLength: 1
+          description: Идентификатор релиза; релиза нет в активном реестре — `release_not_found`
+        baseRev:
+          type: number
+          description: "`rev` из `GET /releases` либо из ответа предыдущей записи; обязателен числом"
+      required: [id, baseRev]
 
     SprintLockOk:
       type: object

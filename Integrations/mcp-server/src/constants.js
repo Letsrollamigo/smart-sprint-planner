@@ -3,7 +3,7 @@
 
 export const SERVER_NAME = 'sprint-planner-mcp';
 /** Минимальная версия плагина (= версия контракта), под которую собран сервер. */
-export const CONTRACT_MIN = '3.49.1';
+export const CONTRACT_MIN = '3.51.0';
 /** Предел длины текстовой части ответа инструмента (символов). */
 export const CHARACTER_LIMIT = 40000;
 
@@ -23,7 +23,7 @@ export const PHASE_KEYS = /** @type {const} */ (['analysis', 'development', 'tec
 /** Пути контракта, к которым сервер вообще обращается (инвариант «исходящий HTTP только к контракту»). */
 export const CONTRACT_PATHS = /** @type {const} */ ([
   'app-version', 'sprint-data', 'history', 'capacity', 'capacity-archive', 'calendar', 'absences',
-  'releases', 'releases-archive', 'reminders', 'reminders-journal', 'sprint-lock'
+  'releases', 'releases-archive', 'reminders', 'reminders-journal', 'sprint-lock', 'filter-planner-projects', 'my-roles'
 ]);
 
 /** Лимиты списков в ответах чтения (вместо усечения по символам — предсказуемо для агента). */

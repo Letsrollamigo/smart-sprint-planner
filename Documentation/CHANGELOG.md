@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.51.0] — 2026-09-25
+
+> **Planner operations for the n8n node and AI agents.** #113: the “which projects have the planner attached” request joins the contract, plus a new “my roles” request and single-release deletion (#138); 22 built-in MCP tools, MCP server 0.2.0. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor is 3.46.0.
+
+### Added
+
+- **`POST filter-planner-projects` in the contract.** Of the given project keys the server returns those where the planner is attached and the token’s user may read (`key`, `name`, `hasMirror`, `disabled` for turned-off ones). The project list comes from the standard YouTrack REST; the request is live — the server checks the keys on every call. The operation existed before (project picker in the main menu), the code is unchanged; main address only, without `projectKey`, body up to 256 KB, up to 5000 keys. The `invalid_keys` refusal code is now published.
+- **`GET my-roles`** — the caller’s roles in the project by planner groups: `editor`, `assigner`, `validator`, `historyManager`, `settingsManager`, `planningManager`, `releaseManager`, `releaseEngineer`, `sprintLockManager`, plus `configured`, `disabled`, `instanceAdmin`. The answer is built from the same checks that let writes through; a YouTrack administrator gets every role except history management.
+- **`POST releases?action=removeRelease` (#138)** — deletes one release from the active registry as a small operation: release manager role, `baseRev` required, a release engineer is refused with `release_engineer_scope_record_count_change`, a missing release — `release_not_found`. The archive and YouTrack issues are not changed. Previously a release could be deleted from outside only by replacing the whole registry.
+- **Three MCP tools in YouTrack’s built-in MCP server** — `planner_filter_projects` (no `projectKey`), `planner_get_my_roles`, `planner_remove_release`; 22 in total (10 read, 12 write).
+- **MCP server 0.2.0** (`Integrations/mcp-server/`, npm and GHCR) — the same three tools; minimum planner version 3.51.0 (on 3.49.1–3.50.x every tool works except `planner_get_my_roles` and `planner_remove_release`); `PROJECT_ALLOWLIST` narrows the keys of `planner_filter_projects` before the request.
+
+### Operations
+
+- **Install cost.** Importing the package with 22 tools on test instances takes 1–10 s with a peak of +0.35–0.9 GB of YouTrack heap; an upgrade rehearsal 3.50.0 → 3.51.0 on YouTrack 2025.3 took 4 s, +0.35 GB, no out-of-memory. Tool files are only added, so upgrading from 3.50.0 or 3.49.1 is a single import. Install in a quiet window with at least 1 GB of free heap.
+
+### Under the hood
+
+- New module `backend-access.js` (GET `my-roles`); `isEditor`, `isAssigner`, `isHistoryManager`, `isSettingsManagerConfigured` join the core’s runtime exports; `removeRelease` is one row of the `backend-ops.js` operations table on top of the standard full write. The contract has 46 operations (25 method + path pairs) with a new “Access” section. The smoke scripts `contract-smoke.sh`, `smoke.mjs`, `smoke-inapp.mjs` cover the new operations and remove their test release with `removeRelease`.
+
+---
+
 ## [3.50.0] — 2026-09-24
 
 > **MCP tools inside the app.** #113: 19 tools for AI agents ship in the planner package and are run by YouTrack’s built-in MCP server — no separate server needed. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor is 3.46.0.

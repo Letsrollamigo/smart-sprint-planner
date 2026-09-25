@@ -12,6 +12,8 @@ export function makeOps(client) {
   const post = (path, key, body, query) => client.call('POST', path, { projectKey: key, body, query });
   return {
     appVersion: () => client.call('GET', 'app-version'),
+    filterPlannerProjects: (/** @type {string[]} */ keys) => client.call('POST', 'filter-planner-projects', { body: { keys } }),
+    myRoles: (/** @type {string} */ key) => get('my-roles', key),
     sprintData: (/** @type {string} */ key) => get('sprint-data', key),
     history: (/** @type {string} */ key) => get('history', key),
     capacity: (/** @type {string} */ key, /** @type {string|undefined} */ sprintId) => get('capacity', key, { sprintId }),

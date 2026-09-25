@@ -28,7 +28,7 @@ test('http: healthz без токена, 401 без WWW-Authenticate, 405, па�
     return r.structuredContent.version;
   };
   const rs = await Promise.all([call('perm-a'), call('perm-b')]);
-  assert.deepEqual(rs, ['3.49.1', '3.49.1']);
+  assert.deepEqual(rs, ['3.51.0', '3.51.0']);
   assert.ok(tokens.includes('perm-a') && tokens.includes('perm-b'));
   await new Promise((r) => server.close(r));
 });

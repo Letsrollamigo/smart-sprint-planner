@@ -228,6 +228,41 @@
       "id",
       "issues",
       "baseRev"
+    ],
+    "FilterPlannerProjectsRequest": [
+      "keys"
+    ],
+    "FilterPlannerProjectsOk": [
+      "success",
+      "projects"
+    ],
+    "PlannerProject": [
+      "key",
+      "name",
+      "hasMirror",
+      "disabled"
+    ],
+    "MyRolesOk": [
+      "success",
+      "configured",
+      "disabled",
+      "instanceAdmin",
+      "roles"
+    ],
+    "MyRoles": [
+      "editor",
+      "assigner",
+      "validator",
+      "historyManager",
+      "settingsManager",
+      "planningManager",
+      "releaseManager",
+      "releaseEngineer",
+      "sprintLockManager"
+    ],
+    "RemoveReleaseRequest": [
+      "id",
+      "baseRev"
     ]
   }
 }

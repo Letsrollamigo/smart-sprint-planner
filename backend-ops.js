@@ -212,6 +212,17 @@ function applySetReleaseStatus(releases, body) {
   return { next: next, applied: { id: body.id, status: body.status } };
 }
 
+/* #138 — точечное удаление из активного реестра; архив не трогается. Релиз-инженеру отказывает
+   полная запись (правило одного шага статуса: число записей изменилось). */
+function applyRemoveRelease(releases, body) {
+  if (typeof body.id !== 'string' || !body.id) return required('id');
+  var next = Array.isArray(releases) ? clone(releases) : [];
+  var idx = findRelease(next, body.id);
+  if (idx < 0) return { refuse: 'release_not_found' };
+  next.splice(idx, 1);
+  return { next: next, applied: { id: body.id } };
+}
+
 function issuesOk(list) {
   return Array.isArray(list) && list.length <= 2000
     && list.every(function (s) { return typeof s === 'string' && s.length >= 1 && s.length <= 64; });
@@ -303,7 +314,8 @@ var OPS = {
     addReleaseIssues:    { keys: ['id', 'issues', 'baseRev'],             rev: true, read: readReleases, fullAction: '', full: wrap('releases'),
       apply: function (stored, body) { return applyReleaseIssues(stored, body, true); } },
     removeReleaseIssues: { keys: ['id', 'issues', 'baseRev'],             rev: true, read: readReleases, fullAction: '', full: wrap('releases'),
-      apply: function (stored, body) { return applyReleaseIssues(stored, body, false); } }
+      apply: function (stored, body) { return applyReleaseIssues(stored, body, false); } },
+    removeRelease:       { keys: ['id', 'baseRev'],                       rev: true, read: readReleases, apply: applyRemoveRelease,    fullAction: '', full: wrap('releases') }
   }
 };
 
@@ -367,6 +379,7 @@ if (typeof module !== 'undefined' && module.exports) {
   Object.assign(exports, {
     applyUpsertItem: applyUpsertItem, applyRemoveItem: applyRemoveItem, applyPatchSprint: applyPatchSprint, applyAssignPerson: applyAssignPerson,
     applyUpsertAbsence: applyUpsertAbsence, applyRemoveAbsence: applyRemoveAbsence, applyUpsertPerson: applyUpsertPerson,
-    applyUpsertRelease: applyUpsertRelease, applySetReleaseStatus: applySetReleaseStatus, applyReleaseIssues: applyReleaseIssues
+    applyUpsertRelease: applyUpsertRelease, applySetReleaseStatus: applySetReleaseStatus, applyReleaseIssues: applyReleaseIssues,
+    applyRemoveRelease: applyRemoveRelease
   });
 }

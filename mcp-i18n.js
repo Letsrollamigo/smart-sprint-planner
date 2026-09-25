@@ -85,6 +85,18 @@ var DICT = {
       "update_release_issues": {
         "title": "Изменить состав задач релиза",
         "description": "Добавить (add) и/или убрать (remove) задачи релиза одним вызовом; выполняется как две точечные операции по цепочке ревизий. Роль: релиз-менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
+      },
+      "filter_projects": {
+        "title": "Проекты с подключённым планером",
+        "description": "Из переданных ключей проектов вернуть те, где подключён планер и которые пользователь вправе читать: ключ, название, disabled (планер отключён — такой проект видят только те, кто может включить его обратно). Перечень проектов инстанса инструмент не отдаёт — возьми его штатными инструментами YouTrack и передай ключи сюда (до 5000). Ответ всегда актуален, ничего не запоминается. Только чтение."
+      },
+      "get_my_roles": {
+        "title": "Мои роли в проекте",
+        "description": "Роли пользователя токена в проекте по группам планера (true — роль есть): editor, assigner, validator, historyManager, settingsManager, planningManager, releaseManager, releaseEngineer, sprintLockManager; configured — планер в проекте настроен; instanceAdmin — администратор YouTrack (все роли, кроме управления историей). Вызови перед записью, чтобы не получить отказ по правам. Роль — это членство в группе: часть операций допускает несколько ролей, роль каждого инструмента названа в его описании. Только чтение."
+      },
+      "remove_release": {
+        "title": "Удалить релиз",
+        "description": "Удалить один релиз из активного реестра по id; остальные релизы, архив и задачи YouTrack не меняются. Необратимо — восстановить можно только заново через planner_upsert_release. Нет такого релиза — release_not_found. Роль: релиз-менеджер. Записи в один проект делай по очереди, не параллельно: одновременные записи могут потерять изменения; после серии записей перечитай данные и проверь свои изменения."
       }
     },
     "fields": {
@@ -152,7 +164,8 @@ var DICT = {
       "release": "Релиз: id обязателен; остальное — что нужно записать (слияние с хранимым, убрать значение — null)",
       "snapshot": "Слепок закрытия — только при переводе в released",
       "issuesAdd": "Идентификаторы задач, которые добавить в релиз",
-      "issuesRemove": "Идентификаторы задач, которые убрать из релиза"
+      "issuesRemove": "Идентификаторы задач, которые убрать из релиза",
+      "projectKeys": "Ключи проектов YouTrack (shortName), до 5000, например [\"DEMO\", \"SP\"]"
     },
     "result": {
       "overview": "Проект {projectKey}: планер {version}; слот — {sprint}; релизов {releases}.",
@@ -169,7 +182,9 @@ var DICT = {
       "remindersOff": "Мастер напоминаний в проекте выключен.",
       "written": "{action}: записано, ревизия {rev}.",
       "uploaded": "Черновик {sprintId} записан, ревизия {rev}; предупреждений: {warnings}.",
-      "releaseIssues": "Релиз {id}: добавлено {added}, убрано {removed}; ревизия {rev}."
+      "releaseIssues": "Релиз {id}: добавлено {added}, убрано {removed}; ревизия {rev}.",
+      "filterProjects": "С подключённым планером: {count} из {total} переданных проектов.",
+      "myRoles": "Проект {projectKey}: роли — {roles}."
     },
     "errors": {
       "refusal": "Отказ планера {reason} (HTTP {status}). {hint}cid={cid}.",
@@ -268,6 +283,18 @@ var DICT = {
       "update_release_issues": {
         "title": "Change release issues",
         "description": "Add (add) and/or remove (remove) release issues in one call; executed as two point operations chained by revision. Role: release manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
+      },
+      "filter_projects": {
+        "title": "Projects with the planner attached",
+        "description": "From the given project keys, return those where the planner is attached and the user may read: key, name, disabled (the planner is turned off — such a project is visible only to those who can turn it back on). The tool does not list the instance's projects — get them with the standard YouTrack tools and pass the keys here (up to 5000). The answer is always current, nothing is cached. Read-only."
+      },
+      "get_my_roles": {
+        "title": "My roles in the project",
+        "description": "The token user's roles in the project by planner groups (true — the user has the role): editor, assigner, validator, historyManager, settingsManager, planningManager, releaseManager, releaseEngineer, sprintLockManager; configured — the planner is set up in the project; instanceAdmin — YouTrack administrator (every role except history management). Call it before writing to avoid a permission refusal. A role is group membership: some operations accept several roles, each tool's description names its role. Read-only."
+      },
+      "remove_release": {
+        "title": "Delete a release",
+        "description": "Delete one release from the active registry by id; other releases, the archive and YouTrack issues are not changed. Irreversible — it can only be recreated with planner_upsert_release. No such release — release_not_found. Role: release manager. Make writes to one project one at a time, not in parallel: simultaneous writes may lose changes; after a series of writes re-read the data and verify your changes."
       }
     },
     "fields": {
@@ -335,7 +362,8 @@ var DICT = {
       "release": "Release: id is required; the rest — what to write (merged with the stored record; null removes a value)",
       "snapshot": "Closing snapshot — only when moving to released",
       "issuesAdd": "Issue ids to add to the release",
-      "issuesRemove": "Issue ids to remove from the release"
+      "issuesRemove": "Issue ids to remove from the release",
+      "projectKeys": "YouTrack project keys (shortName), up to 5000, e.g. [\"DEMO\", \"SP\"]"
     },
     "result": {
       "overview": "Project {projectKey}: planner {version}; slot — {sprint}; releases {releases}.",
@@ -352,7 +380,9 @@ var DICT = {
       "remindersOff": "The reminders master switch is off in this project.",
       "written": "{action}: written, revision {rev}.",
       "uploaded": "Draft {sprintId} written, revision {rev}; warnings: {warnings}.",
-      "releaseIssues": "Release {id}: added {added}, removed {removed}; revision {rev}."
+      "releaseIssues": "Release {id}: added {added}, removed {removed}; revision {rev}.",
+      "filterProjects": "With the planner attached: {count} of {total} given projects.",
+      "myRoles": "Project {projectKey}: roles — {roles}."
     },
     "errors": {
       "refusal": "Planner refusal {reason} (HTTP {status}). {hint}cid={cid}.",

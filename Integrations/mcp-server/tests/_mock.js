@@ -11,7 +11,7 @@ export const NOTES = JSON.parse(fs.readFileSync(new URL('../contract/error-codes
 /** Состояние мок-проекта. */
 export function makeState() {
   return {
-    version: '3.49.1',
+    version: '3.51.0',
     sprint: { sprintId: 'sprint-1', name: 'Спринт 1', status: 'PLANNING', dateStart: 1790000000000, dateEnd: 1791000000000, resourceAnalysis: 4800, _rev: 5 },
     roleItems: { analysis: [{ issueId: 'DEMO-1', title: 'Задача 1', inclusionStatus: 'INC_PLANNED', estimate_analysis: 480 }, { issueId: 'DEMO-2', inclusionStatus: 'INC_EXCLUDED', excludeReason: 'дубль' }], testing: [] },
     settings: { activeRoles: ['analysis', 'testing'], rates: { secret: 1 } },
@@ -39,6 +39,7 @@ export function mockFetch(st) {
     st.calls.push({ method: String(init && init.method), path, query, body, auth });
     const json = (/** @type {unknown} */ b, status = 200) => new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
     if (st.platformStatus) return new Response('{"error":"x"}', { status: st.platformStatus });
+    if (path === 'filter-planner-projects') return json({ success: true, projects: body.keys.filter((/** @type {string} */ k) => k === 'DEMO').map((/** @type {string} */ k) => ({ key: k, name: 'Демо', hasMirror: true })) });
     if (path !== 'app-version' && query.projectKey !== 'DEMO') return json(refuse('project_unavailable'));
     const action = query.action || '';
     const revGate = (/** @type {number} */ cur) => {
@@ -50,6 +51,7 @@ export function mockFetch(st) {
     switch (path) {
       case 'app-version': return json({ success: true, version: st.version });
       case 'sprint-lock': return json({ success: true, locked: st.locked });
+      case 'my-roles': return json({ success: true, configured: true, disabled: false, instanceAdmin: false, roles: { editor: true, releaseManager: true, validator: false } });
       case 'sprint-data':
         if (init?.method === 'GET') return json({ success: true, sprint: st.sprint, roleItems: st.roleItems, settings: st.settings, configured: true });
         { const g = revGate(st.sprint ? st.sprint._rev : 0); if (g) return json(g);
@@ -72,6 +74,8 @@ export function mockFetch(st) {
       case 'releases':
         if (init?.method === 'GET') return json({ success: true, ...st.releases, archivedCount: 0 });
         { const g = revGate(st.releases.rev); if (g) return json(g); st.releases.rev++;
+          if (action === 'removeRelease' && !st.releases.releases.some((r) => r.id === body.id)) { st.releases.rev--; return json(refuse('release_not_found')); }
+          if (action === 'removeRelease') st.releases.releases = st.releases.releases.filter((r) => r.id !== body.id);
           const applied = action === 'addReleaseIssues' ? { id: body.id, added: body.issues } : action === 'removeReleaseIssues' ? { id: body.id, removed: body.issues } : { id: body.id || body.release?.id };
           return json({ success: true, rev: st.releases.rev, action, applied }); }
       case 'releases-archive': return json({ success: true, releases: [] });

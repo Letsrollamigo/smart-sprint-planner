@@ -1,5 +1,5 @@
 // @ts-check
-/** Восемь инструментов чтения. */
+/** Десять инструментов чтения. */
 import { defineTool } from './common.js';
 import { OUT } from '../schemas.js';
 import { slotRev, bodyRev } from '../ops.js';
@@ -99,5 +99,20 @@ export function registerReadTools(server, ctx) {
     const data = { enabled: rem.enabled === true, today: rem.today ?? null, count: typeof rem.count === 'number' ? rem.count : 0, items: Array.isArray(rem.items) ? rem.items : [], modules: rem.modules ?? null };
     if (includeJournal) { const j = await ops.remindersJournal(projectKey); data.journal = (Array.isArray(j.journal) ? j.journal : []).slice(0, LIMITS.journal); }
     return { text: data.enabled ? t('result.reminders', { count: data.count }) : t('result.remindersOff'), data };
+  } });
+
+  /* Ключ проекта здесь — вход, а не адрес: PROJECT_ALLOWLIST сужает перечень до запроса. */
+  defineTool(server, ctx, 'planner_filter_projects', { input: S.read.filterProjects, output: OUT.filterProjects, annotations: R, handler: async ({ keys }) => {
+    const asked = ctx.allowlist.length ? keys.filter((/** @type {string} */ k) => ctx.allowlist.includes(k)) : keys;
+    const r = asked.length ? await ops.filterPlannerProjects(asked) : { projects: [] };
+    const projects = Array.isArray(r.projects) ? r.projects : [];
+    return { text: t('result.filterProjects', { count: projects.length, total: keys.length }), data: { projects } };
+  } });
+
+  defineTool(server, ctx, 'planner_get_my_roles', { input: S.read.myRoles, output: OUT.myRoles, annotations: R, handler: async ({ projectKey }) => {
+    const r = await ops.myRoles(projectKey);
+    const roles = isObj(r.roles) ? r.roles : {};
+    const data = { configured: r.configured ?? null, disabled: r.disabled ?? null, instanceAdmin: r.instanceAdmin ?? null, roles };
+    return { text: t('result.myRoles', { projectKey, roles: Object.keys(roles).filter((k) => roles[k] === true).join(', ') || '—' }), data };
   } });
 }

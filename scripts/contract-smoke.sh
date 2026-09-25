@@ -2,14 +2,14 @@
 # contract-smoke.sh — проверка внешнего REST планера на тест-стенде (#113 1в).
 #
 # Идёт по основному адресу интеграций (глобальный, по ключу проекта):
-#   1. GET-операции контракта отвечают success:true;
+#   1. GET-операции контракта отвечают success:true; my-roles и filter-planner-projects (3.51.0);
 #   2. отказы: 401 (плохой токен), 404 (неверное имя приложения), invalid_project_key и
 #      project_unavailable с cid, base_rev_required у записи слота без ревизии,
 #      mixed_settings_write у смешанного тела, calendar_invalid у записи календаря без years
 #      (#134), invalid_history_structure у записи истории без history (#135);
 #   3. круг мелких операций с проверкой, что rev слота растёт на 1 за операцию:
 #      upsertItem → GET → removeItem; upsertAbsence → removeAbsence;
-#      upsertRelease → addReleaseIssues → setReleaseStatus → removeReleaseIssues.
+#      upsertRelease → addReleaseIssues → setReleaseStatus → removeReleaseIssues → removeRelease (3.51.0).
 # После прогона состояние возвращается (созданное удаляется).
 #
 # Использование:  bash scripts/contract-smoke.sh <base-url> <app> <projectKey>
@@ -75,6 +75,12 @@ sprint = sd.get('sprint') or {}
 for p in ('history', 'capacity-archive', 'calendar', 'absences', 'releases', 'releases-archive', 'reminders', 'reminders-journal', 'sprint-lock'):
     ok('GET ' + p, call('GET', p))
 ok('GET app-version', call('GET', 'app-version', key=None))
+mr = ok('GET my-roles', call('GET', 'my-roles'))
+check('my-roles: девять ролей-флагов и configured', isinstance(mr.get('configured'), bool) and len(mr.get('roles') or {}) == 9
+      and all(isinstance(v, bool) for v in (mr.get('roles') or {}).values()), mr)
+fp = ok('POST filter-planner-projects', call('POST', 'filter-planner-projects', {'keys': [KEY, 'NoSuchProject113', KEY]}, key=None))
+check('filter-planner-projects: свой проект один раз, чужой ключ пропущен', [p.get('key') for p in fp.get('projects', [])] == [KEY], fp)
+refusal('filter-planner-projects: keys не массив → invalid_keys', call('POST', 'filter-planner-projects', {'keys': KEY}, key=None), 'invalid_keys')
 if sprint.get('sprintId'):
     ok('GET capacity', call('GET', 'capacity', params={'sprintId': sprint['sprintId']}))
 
@@ -168,9 +174,10 @@ step('removeReleaseIssues', call('POST', 'releases', {'id': rec['id'], 'issues':
 cur = call('GET', 'releases')[1]
 mine = [r for r in cur.get('releases', []) if r.get('id') == rec['id']]
 check('releases: статус и состав записаны', bool(mine) and mine[0].get('status') == 'prep' and mine[0].get('issues') == [KEY + '-2'], mine)
-# возврат состояния: удаления релиза мелкой операцией нет — полная запись без смоук-записи
-rest = [r for r in cur.get('releases', []) if r.get('id') != rec['id']]
-ok('releases: возврат состояния полной записью', call('POST', 'releases', {'releases': rest, 'baseRev': cur.get('rev', 0)}))
+# возврат состояния — точечным удалением релиза (#138, 3.51.0)
+step('removeRelease', call('POST', 'releases', {'id': rec['id'], 'baseRev': rrev + 4}, {'action': 'removeRelease'}), rrev + 5, {'id': rec['id']})
+check('removeRelease: релиза больше нет', not [r for r in call('GET', 'releases')[1].get('releases', []) if r.get('id') == rec['id']])
+refusal('removeRelease повторно → release_not_found', call('POST', 'releases', {'id': rec['id'], 'baseRev': rrev + 5}, {'action': 'removeRelease'}), 'release_not_found')
 
 print()
 print('ИТОГ: ' + ('PASS' if not failed else 'FAIL (%d): %s' % (len(failed), '; '.join(failed))))

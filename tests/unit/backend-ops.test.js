@@ -237,6 +237,7 @@ test('каждая операция слота: чужой baseRev → 409 rev_c
     ['releases', 'setReleaseStatus', { id: 'R-1', status: 'prep' }, 3],
     ['releases', 'addReleaseIssues', { id: 'R-1', issues: ['DEMO-2'] }, 3],
     ['releases', 'removeReleaseIssues', { id: 'R-1', issues: ['DEMO-1'] }, 3],
+    ['releases', 'removeRelease', { id: 'R-1' }, 3],
   ];
   for (const [p, action, body, rev] of cases) {
     const props = baseProps();
@@ -265,6 +266,7 @@ test('каждая операция: без прав → 403 до чтения �
     ['releases', 'setReleaseStatus', { id: 'R-404', status: 'prep', baseRev: 3 }, 'release_rights_required'],
     ['releases', 'addReleaseIssues', { id: 'R-1', issues: ['DEMO-2'], baseRev: 3 }, 'release_rights_required'],
     ['releases', 'removeReleaseIssues', { id: 'R-1', issues: ['DEMO-1'], baseRev: 3 }, 'release_rights_required'],
+    ['releases', 'removeRelease', { id: 'R-404', baseRev: 3 }, 'release_rights_required'],
   ];
   for (const [p, action, body, reason] of cases) {
     const props = baseProps();
@@ -395,6 +397,26 @@ test('releases: upsertRelease → addReleaseIssues → setReleaseStatus → remo
   assert.strictEqual(props.ssp_releases_rev, '7');
   const miss = call('releases', 'setReleaseStatus', { id: 'R-404', status: 'prep', baseRev: 7 }, props);
   assert.strictEqual(miss.response.body.reason, 'release_not_found');
+});
+
+test('removeRelease (#138): удаляет одну запись, остальные целы; release_not_found; релиз-инженеру отказ полной записи', () => {
+  assert.deepStrictEqual(ops.applyRemoveRelease([REL], { id: 'R-1' }).next, []);
+  assert.strictEqual(ops.applyRemoveRelease([REL], {}).refuse, 'ops_field_required:id');
+  assert.strictEqual(ops.applyRemoveRelease(null, { id: 'R-1' }).refuse, 'release_not_found');
+  const other = Object.assign({}, REL, { id: 'R-2', name: 'v2.0' });
+  const props = baseProps({ ssp_releases: JSON.stringify({ releases: [REL, other] }) });
+  const rm = call('releases', 'removeRelease', { id: 'R-1', baseRev: 3 }, props);
+  assert.strictEqual(rm.response.body.success, true, JSON.stringify(rm.response.body));
+  assert.deepStrictEqual(rm.response.body.applied, { id: 'R-1' });
+  assert.deepStrictEqual(JSON.parse(props.ssp_releases).releases.map((r) => r.id), ['R-2']);
+  assert.strictEqual(props.ssp_releases_rev, '4');
+  assert.strictEqual(call('releases', 'removeRelease', { id: 'R-1', baseRev: 4 }, props).response.body.reason, 'release_not_found');
+  const eng = baseProps({ ssp_settings: JSON.stringify({ releaseEngineerGroups: ['g-eng'] }) });
+  const ctx = mkCtx(eng, { id: 'R-1', baseRev: 3 }, { action: 'removeRelease' }, false);
+  ctx.currentUser.groups = [{ id: 'g-eng', name: 'Engineers' }];
+  withWarn(() => ep('releases').handle(ctx));
+  assert.strictEqual(ctx.response.body.reason, 'release_engineer_scope_record_count_change');
+  assert.strictEqual(JSON.parse(eng.ssp_releases).releases.length, 1);
 });
 
 test('неизвестное действие по-прежнему invalid_action на всех четырёх путях', () => {

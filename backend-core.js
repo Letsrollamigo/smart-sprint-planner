@@ -358,7 +358,7 @@ var CURRENT_PLUGIN_VERSION = '3.46.0';
    Бампить синхронно с manifest.json/version + frontend APP_VERSION.
    ⚠️ require('./manifest.json') в песочнице YT НЕ работает (проверено пробой 2026-07-11,
    YT 2026.1) — руками литерал; temp-деплой стенда патчит его scripts/stand-deploy.sh. */
-var APP_VERSION = '3.50.0';
+var APP_VERSION = '3.51.0';
 var MAX_WORKDRAFT_PER_KEY       = 256 * 1024; // 256 КБ на одну рабочую копию
 var MAX_WORKDRAFTS_TOTAL        = 480 * 1024; // 480 КБ суммарно (буфер до MAX_PROP_SIZE = 500 КБ)
 
@@ -3766,6 +3766,10 @@ exports.ALLOWED_RELEASES_KEYS       = ALLOWED_RELEASES_KEYS; // #48 R1.2 — rel
 exports.ALLOWED_REMINDERS_KEYS        = ALLOWED_REMINDERS_KEYS;        // #112 — блоб журнала напоминаний (backend-reminders.js)
 exports.ALLOWED_REMINDERS_RECORD_KEYS = ALLOWED_REMINDERS_RECORD_KEYS; // #112 — одна запись журнала
 exports.isValidator                   = isValidator;                   // #112 — адресация напоминаний: предикат, не authzGuard
+exports.isEditor                    = isEditor;              // #113 — GET my-roles (backend-access.js)
+exports.isAssigner                  = isAssigner;
+exports.isHistoryManager            = isHistoryManager;
+exports.isSettingsManagerConfigured = isSettingsManagerConfigured;
 exports.internalError               = internalError;         // #48 R1.2 — backend-release error path
 exports.refuseCompat                = refuseCompat;          // #113 — отказ полей задач (backend-issuefields.js)
 exports.migrateSprintObj            = migrateSprintObj;      // #113 — backend-ops.js читает слот как GET sprint-data
@@ -3832,8 +3836,5 @@ if (typeof module !== 'undefined' && module.exports) {
     // Auth helpers (test-only)
     userInGroups:                 userInGroups,
     isPlanningManager:            isPlanningManager,          // #22
-    isEditor:                     isEditor,                   // #51 — байпас-контракт
-    isAssigner:                   isAssigner,                 // #51
-    isHistoryManager:             isHistoryManager,           // #51
   });
 }

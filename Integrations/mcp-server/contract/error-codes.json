@@ -546,7 +546,7 @@
         "backend-global.js"
       ],
       "dynamic": false,
-      "published": false
+      "published": true
     },
     {
       "code": "invalid_login",
