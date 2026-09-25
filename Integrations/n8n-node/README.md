@@ -80,7 +80,8 @@ npm test               # build + node --test over dist/
 - `nodes/SprintPlanner/shared/` holds byte copies of the MCP server's `constants`, `errors`, `ops`, `shape` and the hints in the build language; change them only in the server, then run `npm run sync-shared`.
 - Operations live in `nodes/SprintPlanner/actions/<resource>/<operation>.operation.ts`; network calls only in `nodes/SprintPlanner/transport/`.
 - `tests/smoke-n8n.mjs` runs the node on a local n8n against a test YouTrack (environment variables are listed in the file header); `tests/scan-source.mjs` runs the n8n source scanner.
-- Releases are published to npm with provenance by the `n8n-node-publish.yml` GitHub workflow on an `n8n-vX.Y.Z` tag.
+- The node is developed in the [Smart Sprint Planner repository](https://github.com/Letsrollamigo/smart-sprint-planner) (`Integrations/n8n-node`) and mirrored to this repository for publishing; `npm run check-shared` works only inside the planner repository, where the MCP server sources live.
+- Releases are published to npm with provenance by the `publish.yml` GitHub workflow of this repository on a `vX.Y.Z` tag.
 
 ## License
 

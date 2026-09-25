@@ -1,0 +1,54 @@
+# Checks the n8n node (Integrations/n8n-node) in the planner repository: the shared layer matches the MCP server,
+# tests, lint and the tarball contents. Nothing is published from here — the node is mirrored to its own repository
+# (Letsrollamigo/n8n-nodes-smart-sprint-planner), which publishes to npm with provenance on a vX.Y.Z tag.
+name: n8n node checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Integrations/n8n-node/**'
+      - 'Integrations/mcp-server/src/**'
+      - 'Integrations/error-codes.notes.json'
+  pull_request:
+    paths:
+      - 'Integrations/n8n-node/**'
+      - 'Integrations/mcp-server/src/**'
+      - 'Integrations/error-codes.notes.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Integrations/n8n-node
+
+jobs:
+  check:
+    name: Shared layer, tests, lint, pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Shared layer matches the MCP server
+        run: npm run check-shared
+
+      - name: Build and unit tests
+        run: npm test
+
+      - name: Lint and pack (tarball contents, no registry call)
+        run: |
+          npm run lint
+          npm pack --dry-run

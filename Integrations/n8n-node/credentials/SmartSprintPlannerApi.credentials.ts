@@ -14,7 +14,7 @@ export class SmartSprintPlannerApi implements ICredentialType {
 
 	icon: Icon = { light: 'file:sprintPlanner.svg', dark: 'file:sprintPlanner.dark.svg' };
 
-	documentationUrl = 'https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#credentials';
+	documentationUrl = 'https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner#credentials';
 
 	properties: INodeProperties[] = [
 		{

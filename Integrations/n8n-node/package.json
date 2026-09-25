@@ -1,9 +1,9 @@
 {
 	"name": "n8n-nodes-smart-sprint-planner",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "n8n node for Smart Sprint Planner: the working sprint and role items, history, capacity, absences, releases and permissions through the YouTrack external REST",
 	"license": "MIT",
-	"homepage": "https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#readme",
+	"homepage": "https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner#readme",
 	"keywords": [
 		"n8n-community-node-package"
 	],
@@ -13,8 +13,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Letsrollamigo/smart-sprint-planner.git",
-		"directory": "Integrations/n8n-node"
+		"url": "git+https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner.git"
 	},
 	"scripts": {
 		"build": "n8n-node build",

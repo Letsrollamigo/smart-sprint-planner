@@ -6,12 +6,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#credentials"
+				"url": "https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner#credentials"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#readme"
+				"url": "https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner#readme"
 			}
 		]
 	}

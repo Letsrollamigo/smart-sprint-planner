@@ -4,6 +4,6 @@ export const BRAND = {
 	appId: 'smart-sprint-planner',
 	credentialName: 'smartSprintPlannerApi',
 	displayName: 'Smart Sprint Planner',
-	docsUrl: 'https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#readme',
+	docsUrl: 'https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner#readme',
 	features: { issueSearch: true, issueSetField: true },
 } as const;
