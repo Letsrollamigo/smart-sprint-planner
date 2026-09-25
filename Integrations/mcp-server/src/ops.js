@@ -2,7 +2,7 @@
 /** Операции контракта как функции + цикл ревизий. Ничего не знает об MCP. */
 import { PlannerRefusal } from './errors.js';
 
-/** @typedef {ReturnType<import('./client.js').createClient>} Client */
+/** @typedef {{ call: (method: 'GET'|'POST', path: string, opts?: { projectKey?: string, query?: Record<string, unknown>, body?: unknown }) => Promise<Record<string, unknown>> }} Client */
 
 /** @param {Client} client */
 export function makeOps(client) {
