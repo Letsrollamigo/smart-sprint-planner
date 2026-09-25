@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smart-sprint-planner",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "n8n node for Smart Sprint Planner: the working sprint and role items, history, capacity, absences, releases and permissions through the YouTrack external REST",
 	"license": "MIT",
 	"homepage": "https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node#readme",
