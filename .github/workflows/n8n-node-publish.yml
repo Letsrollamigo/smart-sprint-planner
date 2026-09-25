@@ -1,0 +1,89 @@
+# Publishes the n8n node (Integrations/n8n-node) to npm on an `n8n-vX.Y.Z` tag — trusted publishing (OIDC,
+# no tokens in secrets) with provenance, as n8n requires for verified community nodes.
+# `npm run release` = `n8n-node release`: inside GitHub Actions it runs lint and build, then `npm publish`
+# with provenance. The planner's release workflow (`vX.Y.Z`) and the MCP server's (`mcp-vX.Y.Z`) are not affected.
+# Manual run (workflow_dispatch) is always a dry run: shared-layer check, tests, lint, `npm pack --dry-run`.
+# One-time setup on npmjs.com: package settings → Trusted publisher → GitHub Actions,
+# repository Letsrollamigo/smart-sprint-planner, workflow file n8n-node-publish.yml.
+name: n8n node publish
+
+on:
+  push:
+    tags:
+      - 'n8n-v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Integrations/n8n-node
+
+jobs:
+  npm:
+    name: Test and publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write   # OIDC token for npm trusted publishing and provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false   # never use caching in release builds
+
+      - name: Resolve version and mode
+        id: meta
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            TAG_VERSION="${TAG#n8n-v}"
+            if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+              echo "::error::tag $TAG does not match package.json version $PKG_VERSION"; exit 1
+            fi
+            DRY=false
+          else
+            DRY=true
+          fi
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
+          echo "npm $(npm --version), version $PKG_VERSION, dry_run=$DRY"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Shared layer matches the MCP server
+        run: npm run check-shared
+
+      - name: Build and unit tests
+        run: npm test
+
+      - name: Is this version already in the registry?
+        id: registry
+        if: steps.meta.outputs.dry_run == 'false'
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          if npm view "$NAME@${{ steps.meta.outputs.version }}" version >/dev/null 2>&1; then
+            echo "::notice::$NAME@${{ steps.meta.outputs.version }} is already published — npm publish is skipped"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint and pack (dry run — tarball contents, no registry call)
+        if: steps.meta.outputs.dry_run == 'true'
+        run: |
+          npm run lint
+          npm pack --dry-run
+
+      - name: Publish to npm (lint, build, publish with provenance)
+        if: steps.meta.outputs.dry_run == 'false' && steps.registry.outputs.exists != 'true'
+        run: npm run release

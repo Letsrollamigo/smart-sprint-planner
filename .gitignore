@@ -25,3 +25,7 @@ Prompts/
 # MCP server (#113): local evals against stand data and the container env file
 Integrations/mcp-server/evals/
 Integrations/mcp-server/.env
+
+# n8n node (#113): dependencies and build output
+Integrations/n8n-node/node_modules/
+Integrations/n8n-node/dist/

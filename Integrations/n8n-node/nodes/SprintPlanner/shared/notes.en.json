@@ -1,0 +1,411 @@
+{
+  "absence_not_found": {
+    "en": "The employee has no absence with these start and end dates.",
+    "actionEn": "Re-read absences with GET and check the login and dates."
+  },
+  "absences_data_too_large": {
+    "en": "The serialized absence registry exceeds the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "absences_invalid": {
+    "en": "The absence registry fails validation; details are in errors.",
+    "actionEn": "Fix the records listed in errors."
+  },
+  "access_denied": {},
+  "alloc_sum_exceeds_100": {
+    "en": "A participant's allocation across roles exceeds 100 % — approval refused.",
+    "actionEn": "Fix the allocation shares and repeat the approval."
+  },
+  "assigner_rights_required": {
+    "en": "The token user cannot assign issues: none of the roles granting this right.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "auth_required": {
+    "en": "Request without valid authorization (class Bad Request — only for internal draft operations outside the contract).",
+    "actionEn": "Send the Authorization: Bearer header with a valid permanent token."
+  },
+  "base_rev_required": {
+    "en": "A write of revisioned data was sent without a numeric baseRev.",
+    "actionEn": "Read the data with GET and pass the received revision in baseRev."
+  },
+  "calendar_data_too_large": {
+    "en": "The serialized calendar exceeds the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "calendar_invalid": {
+    "en": "The production calendar fails validation; details are in errors.",
+    "actionEn": "Fix the records listed in errors."
+  },
+  "capacity_data_too_large": {
+    "en": "The serialized capacity records exceed the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "capacity_persons_required": {
+    "en": "The body has no persons object.",
+    "actionEn": "Pass persons — a map \"login → participant parameters\"."
+  },
+  "delta_must_be_zero": {
+    "en": "For this day type the hours delta must be zero.",
+    "actionEn": "Pass hoursDelta: 0 or change the day type."
+  },
+  "draft_too_large": {},
+  "duplicate_date": {
+    "en": "The date occurs twice in the year calendar.",
+    "actionEn": "Keep one record per date."
+  },
+  "editor_rights_required": {
+    "en": "The token user is not in the project editor group.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "field_name_required": {},
+  "field_not_found": {
+    "en": "The project has no field with this name.",
+    "actionEn": "Check the field name in the project settings."
+  },
+  "field_not_whitelisted": {
+    "en": "The field is not among the fields assigned to the planner in the project settings.",
+    "actionEn": "Write only fields selected in the planner settings."
+  },
+  "field_not_writable": {
+    "en": "The token user has no right to change this issue field.",
+    "actionEn": "Grant the field right to the token user or make the edit as another user."
+  },
+  "field_values_failed": {},
+  "from_after_to": {
+    "en": "The absence start is later than its end.",
+    "actionEn": "Swap or fix the dates."
+  },
+  "history_data_too_large": {
+    "en": "The serialized history exceeds the storage limit.",
+    "actionEn": "Shorten the history: remove or export old records."
+  },
+  "history_manager_rights_required": {
+    "en": "The token user is not in the history management group; the right is not inherited even by an administrator.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "insufficient_rights": {},
+  "internal_error": {
+    "en": "Unexpected server error without a specific code.",
+    "actionEn": "Retry later; if it repeats, contact the administrator quoting the cid from the response."
+  },
+  "invalid_action": {
+    "en": "Unknown value of the action parameter (or of the action in the body) for this path.",
+    "actionEn": "Use the action value from the operation description or drop the parameter."
+  },
+  "invalid_capacity_structure": {
+    "en": "The capacity record fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_data": {},
+  "invalid_date": {
+    "en": "The date is not in YYYY-MM-DD format or does not exist.",
+    "actionEn": "Fix the date."
+  },
+  "invalid_delta": {
+    "en": "The hours delta is out of the allowed range for this type.",
+    "actionEn": "Fix hoursDelta per the schema description."
+  },
+  "invalid_field_name": {
+    "en": "The field name is empty, too long or contains invalid characters.",
+    "actionEn": "Fix the field name."
+  },
+  "invalid_history_structure": {
+    "en": "The history array fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_history_structure:": {
+    "en": "A history record fails validation; after the colon — the error location and record number.",
+    "actionEn": "Fix the named place in the record and retry."
+  },
+  "invalid_input": {},
+  "invalid_issue_id": {
+    "en": "The issue identifier does not look like a key of the form ABC-123.",
+    "actionEn": "Fix the issue identifier."
+  },
+  "invalid_issue_id_in_list": {},
+  "invalid_issue_ids": {},
+  "invalid_journal_action": {
+    "en": "The reminders journal supports only the delete action.",
+    "actionEn": "Pass action: delete in the body."
+  },
+  "invalid_journal_id": {
+    "en": "The journal record identifier was not passed.",
+    "actionEn": "Pass the record id as a string."
+  },
+  "invalid_json": {
+    "en": "The request body is not a valid JSON object.",
+    "actionEn": "Send a JSON object with the Content-Type: application/json header."
+  },
+  "invalid_keys": {
+    "en": "The list of project keys is not an array.",
+    "actionEn": "Fix the request body according to the operation schema and retry."
+  },
+  "invalid_login": {
+    "en": "The login is empty or longer than 200 characters.",
+    "actionEn": "Fix the login."
+  },
+  "invalid_period_value": {
+    "en": "The period field value is not a number of minutes within the allowed range.",
+    "actionEn": "Pass a non-negative number of minutes."
+  },
+  "invalid_personal_planning": {
+    "en": "The personal planning in the body fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_phases_body": {
+    "en": "The phases action body does not contain the phases object and sprint identifier in the expected form.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_phases_structure:": {
+    "en": "The phases fail shape validation; after the colon — the phase name or shape.",
+    "actionEn": "Fix the named phase: both dates are numbers, start not later than end."
+  },
+  "invalid_planner_disable_body": {
+    "en": "The planner disable body fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_prefs": {},
+  "invalid_project_key": {
+    "en": "The projectKey parameter is missing or does not look like a project key.",
+    "actionEn": "Pass the project key in the projectKey parameter."
+  },
+  "invalid_releases_structure": {
+    "en": "The releases array fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_reminders_structure": {
+    "en": "The reminders data fails shape validation after the change.",
+    "actionEn": "Retry later; if it repeats, contact the administrator quoting the cid from the response."
+  },
+  "invalid_role_items_structure": {
+    "en": "The roleItems object fails validation: unknown role, unknown issue keys, wrong types.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_settings_structure": {
+    "en": "The settings object fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_snapshot_body": {
+    "en": "The snapshot action accepts exactly one history record with a sprint identifier.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_sprint_lock_body": {
+    "en": "The sprint lock body fails shape validation.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_sprint_structure": {
+    "en": "The sprint object fails validation: unknown keys, wrong types or values.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_state_field_name": {},
+  "invalid_type": {
+    "en": "Unknown day or absence type.",
+    "actionEn": "Use a type from the schema description."
+  },
+  "invalid_update_issue_params": {
+    "en": "Required parameters of the issue field write were not passed.",
+    "actionEn": "Fix the request body per the operation schema and retry."
+  },
+  "invalid_working_draft:": {},
+  "invalid_year": {
+    "en": "The year key is not four digits.",
+    "actionEn": "Use a key of the form 2026."
+  },
+  "issue_not_found": {
+    "en": "Issue not found.",
+    "actionEn": "Check the issue identifier."
+  },
+  "issue_not_in_project": {
+    "en": "The issue belongs to another project.",
+    "actionEn": "Address the issue through its own project."
+  },
+  "item_not_found": {
+    "en": "The given role has no issue with this identifier.",
+    "actionEn": "Re-read the issue list with GET and check the role and issue identifier."
+  },
+  "journal_record_not_found": {
+    "en": "The journal has no record with this identifier.",
+    "actionEn": "Re-read the journal with GET."
+  },
+  "key_required": {},
+  "mixed_settings_write": {
+    "en": "settings and sprint or roleItems were passed in one body; nothing was written.",
+    "actionEn": "Write settings in a separate request, without sprint and roleItems."
+  },
+  "not_addressee": {
+    "en": "A reminders journal record can be deleted only by its addressee.",
+    "actionEn": "Perform the deletion as the record addressee."
+  },
+  "not_array": {
+    "en": "An array was expected.",
+    "actionEn": "Pass an array at the named place."
+  },
+  "not_object": {
+    "en": "An object was expected.",
+    "actionEn": "Pass an object at the named place."
+  },
+  "not_owner": {},
+  "ops_field_invalid:": {
+    "en": "A body field of the point operation has an invalid value; the field name follows the colon.",
+    "actionEn": "Fix the named field value per the operation description."
+  },
+  "ops_field_required:": {
+    "en": "The point operation body lacks a required field; the field name follows the colon.",
+    "actionEn": "Add the named field to the request body."
+  },
+  "phases_disabled": {
+    "en": "Sprint phases are disabled in the project settings.",
+    "actionEn": "Enable phases in the planner settings or do not call the phases action."
+  },
+  "phases_out_of_sprint:": {
+    "en": "A phase interval is outside the sprint dates; after the colon — the first such phase, all are in errors.",
+    "actionEn": "Fit the phases into the sprint dates or change the sprint dates first."
+  },
+  "planner_disabled": {
+    "en": "The planner is disabled in this project; the project-key address is closed.",
+    "actionEn": "Enable the planner in the project (an administration operation) or exclude the project from the traversal."
+  },
+  "plugin_not_configured": {
+    "en": "The planner settings management group is not set in the project — writing is closed.",
+    "actionEn": "Open the app settings in the project and set the role groups; for writes by project key — open the planner in the project once or save its settings."
+  },
+  "prefs_too_large": {},
+  "project_fields_failed": {},
+  "project_unavailable": {
+    "en": "No project with this key, or the token user has no access to it (the answer is deliberately the same).",
+    "actionEn": "Check the project key and the token user's access to the project."
+  },
+  "prototype_pollution_detected": {
+    "en": "The request body contains forbidden keys (__proto__, constructor, prototype).",
+    "actionEn": "Remove the service keys from the request body."
+  },
+  "reason_required": {
+    "en": "An issue was moved to \"excluded\" without a non-empty reason.",
+    "actionEn": "Pass the exclusion reason in the issue excludeReason field."
+  },
+  "reason_too_long": {
+    "en": "The exclusion reason is longer than 500 characters.",
+    "actionEn": "Shorten the exclusion reason."
+  },
+  "release_engineer_scope_field_change": {
+    "en": "A release engineer changes a field not available to them.",
+    "actionEn": "Limit the change to the status and its related fields, or make the edit as a release manager."
+  },
+  "release_engineer_scope_record_added": {
+    "en": "A release engineer cannot replace release records.",
+    "actionEn": "Change the registry composition as a release manager."
+  },
+  "release_engineer_scope_record_count_change": {
+    "en": "A release engineer cannot add or delete releases.",
+    "actionEn": "Create and delete releases as a release manager."
+  },
+  "release_engineer_scope_snapshot_change": {
+    "en": "A release engineer changes the scope snapshot outside a move to \"released\".",
+    "actionEn": "Pass snapshot only together with the move to the released status."
+  },
+  "release_engineer_scope_status_transition": {
+    "en": "A release engineer moves the status not to the next chain step.",
+    "actionEn": "Move the status strictly one step forward."
+  },
+  "release_not_found": {
+    "en": "No release with this identifier.",
+    "actionEn": "Re-read releases with GET and check the identifier."
+  },
+  "release_rights_required": {
+    "en": "The token user has no role allowing release changes.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "releases_too_large": {
+    "en": "The serialized releases exceed the storage limit.",
+    "actionEn": "Shorten the registry: completed releases go to the archive."
+  },
+  "reminders_journal_write_failed": {
+    "en": "The server could not save the reminders journal.",
+    "actionEn": "Retry later; if it repeats, contact the administrator quoting the cid from the response."
+  },
+  "rev_conflict": {
+    "en": "The data was changed by another writer after your read; nothing was written. rev in the response is the current revision.",
+    "actionEn": "Re-read the data with the corresponding GET, take the fresh revision and repeat the request."
+  },
+  "role_items_data_too_large": {
+    "en": "The serialized issue list exceeds the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "role_record_not_found": {
+    "en": "The history has no record of this role for the current sprint — there is nowhere to store the personal planning.",
+    "actionEn": "Wait for the role record to appear (the role was sent for confirmation or the sprint was started) and retry."
+  },
+  "settings_data_too_large": {
+    "en": "The serialized settings exceed the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "settings_manager_rights_required": {
+    "en": "The token user is not in the planner settings management group.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "sprint_creation_locked": {
+    "en": "Sprint creation is locked in the project: a sprint with a new identifier cannot be written.",
+    "actionEn": "Remove the lock (the sprint lock operation) or change the existing sprint."
+  },
+  "sprint_data_too_large": {
+    "en": "The serialized sprint exceeds the storage limit.",
+    "actionEn": "Reduce the data (fewer records or shorter texts) and retry."
+  },
+  "sprint_dates_missing": {
+    "en": "The sprint has no start and end dates — calculation is impossible.",
+    "actionEn": "Set the sprint dates and retry."
+  },
+  "sprint_finished": {
+    "en": "The sprint is finished — phases no longer change.",
+    "actionEn": "Change phases only for an unfinished sprint."
+  },
+  "sprint_id_required": {
+    "en": "The sprintId parameter was not passed.",
+    "actionEn": "Pass the current sprint sprintId in the query string."
+  },
+  "sprint_lock_rights_required": {
+    "en": "The token user may not change the sprint creation lock.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "sprint_not_current": {
+    "en": "sprintId does not match the current project sprint — capacity is written only for it.",
+    "actionEn": "Read the current sprint with GET and pass its identifier."
+  },
+  "sprint_not_found": {
+    "en": "There is no sprint the operation refers to: the slot is empty or the identifier does not match the stored one.",
+    "actionEn": "Read the sprint with GET; create the sprint with a full write or fix the identifier."
+  },
+  "sprint_required": {
+    "en": "The assignerSync action requires a sprint object in the body.",
+    "actionEn": "Pass sprint with the personal planning."
+  },
+  "store_failed": {},
+  "too_large": {
+    "en": "The request body is larger than 2 MB.",
+    "actionEn": "Reduce the request body; split large changes into several requests."
+  },
+  "unknown_role": {},
+  "update_issue_field_failed": {
+    "en": "The issue field write ended with a server error; message is diagnostics, do not parse it.",
+    "actionEn": "Retry later; if it repeats, contact the administrator quoting the cid from the response."
+  },
+  "user_field_values_failed": {},
+  "user_not_found": {
+    "en": "No user with this login.",
+    "actionEn": "Check the login."
+  },
+  "validator_rights_required": {
+    "en": "The token user is not in the project validator group.",
+    "actionEn": "Add the token user to the required planner role group in the project settings, or run the operation as another user."
+  },
+  "value_not_found": {
+    "en": "The passed value is not among the field values.",
+    "actionEn": "Pass an existing field value."
+  },
+  "working_draft_too_large:": {},
+  "working_drafts_too_large": {},
+  "year_mismatch": {
+    "en": "The record date does not belong to the year it is filed under.",
+    "actionEn": "Move the record under its own year."
+  }
+}
