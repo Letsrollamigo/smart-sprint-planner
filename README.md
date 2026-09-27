@@ -77,6 +77,13 @@ Gantt timeline per role, sprint-aware, with per-task assignees:
 - **Server-side authorization** on every mutating endpoint via project-scoped `ssp_settings`; deny-by-default until the settings manager group is configured.
 - **15-language UI** — Czech, German, English, Spanish, French, Hungarian, Italian, Japanese, Korean, Dutch, Polish, Portuguese, Russian, Turkish, Chinese (Simplified). Auto-detected from the browser, manually switchable, with English fallback.
 
+**Integrate**
+
+- **External REST with an OpenAPI contract** — 46 operations — the working sprint, history, capacity, calendar, absences, releases, reminders and more; one refusal envelope with `reason` and `cid`, point writes guarded by the data revision. Permissions are exactly those of the token's user. Contract: [`openapi-sprint.yaml`](Integrations/openapi-sprint.yaml), guide: [Integrations](docs/en/02-setup/22-integrations.md).
+- **MCP tools inside YouTrack** — 22 planner tools (10 read, 12 write) for YouTrack's built-in MCP server (YouTrack 2025.3+): an AI agent connects to `{your YouTrack}/mcp?customToolPackages=smart-sprint-planner` with its own token, nothing else to deploy.
+- **Standalone MCP server** — the same tools for agents outside YouTrack: npm [`smart-sprint-planner-mcp`](https://www.npmjs.com/package/smart-sprint-planner-mcp) and the image `ghcr.io/letsrollamigo/smart-sprint-planner-mcp` ([README](Integrations/mcp-server/README.md)).
+- **n8n community node** — [`n8n-nodes-smart-sprint-planner`](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner): 26 operations as n8n actions and as an AI Agent tool ([npm](https://www.npmjs.com/package/n8n-nodes-smart-sprint-planner)).
+
 ## Installation
 
 The plugin ships through two parallel channels — the version badges above always show the current state of each:
@@ -128,8 +135,9 @@ Requirements: Node.js 20+. A YouTrack 2024.3+ instance is needed only for **manu
 
 ## Documentation
 
-- **[docs/](docs/) — the illustrated manual, in English and Russian.** Three documents, 91 chapters, 86 screenshots: [an overview of every screen](docs/en/01-overview/), [a step-by-step rollout guide](docs/en/02-setup/), and [the fourteen reports](docs/en/03-reporting/).
+- **[docs/](docs/) — the illustrated manual, in English and Russian.** Three documents, 44 chapters and 49 screenshots in each language: [an overview of every screen](docs/en/01-overview/), [a step-by-step rollout guide](docs/en/02-setup/), and [the fourteen reports](docs/en/03-reporting/).
 - **[Coming from Jira? A glossary](docs/en/01-overview/14-jira-mapping.md)** — Story Points, Velocity, Complete Sprint and the rest, mapped to the planner's own terms, plus what is deliberately done differently.
+- **[Integrations](docs/en/02-setup/22-integrations.md)** — the external REST contract, MCP tools, the [MCP server](Integrations/mcp-server/README.md) and the [n8n node](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner).
 - [USER-GUIDE.md](Documentation/USER-GUIDE.md) — full usage guide with configuration examples.
 - [METHODOLOGY-GUIDE.md](Documentation/METHODOLOGY-GUIDE.md) — team-lead / Scrum-master / PM perspective: ceremony mapping, capacity planning, time-tracking discipline, anti-patterns.
 - [SECURITY.md](.github/SECURITY.md) — security model, threat surface, and disclosure process.

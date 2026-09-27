@@ -6,7 +6,7 @@
 > managers — anyone responsible for *how* a multi-role team plans, runs and
 > reflects on a sprint, not only *what* gets built.
 >
-> **Companion:** [USER-GUIDE.md](USER-GUIDE.md) explains every screen and
+> **Companion:** the [illustrated manual](../docs/) explains every screen and
 > button. This document explains *when and why* to use them inside a Scrum
 > or Scrum-ban process.
 
@@ -110,6 +110,36 @@ sprint history. Personal drafts let individuals sketch their own view
 without affecting the shared one — useful for offline preparation before
 the meeting.
 
+### Work phases — agreeing the calendar inside the sprint (v3.45.0+)
+
+When the sprint runs through a fixed sequence — analysis, development,
+technical test, regression, business test, deploy — agree those windows
+at planning, not in a side spreadsheet. The **Work phases** block in
+Sprint parameters holds six date pairs on the sprint scale. Phases may
+overlap (regression and the business test usually do); a phase that
+starts before the previous one or runs outside the sprint range gets a
+warning, not a block. Bind roles to phases in the settings and each role
+sees its own windows highlighted. Treat a warning as a question for the
+room — "do we really start the business test before regression ends?" —
+not as an error to silence.
+
+### The cross-role Gantt — one timeline for the whole sprint (v3.47.0+)
+
+Once each role's composition is agreed, switch the Gantt chart to
+**All roles**: one track per role, the same issue's bars across roles
+joined into a chain, dependency arrows between issues. Conflicts — an
+issue that starts before its predecessor ends, or a bar outside its
+role's phase — are outlined and counted. **Forecast dates** in this mode
+schedules every role at once in dependency order, from each person's
+capacity, the calendar and absences; whatever cannot be scheduled lands
+in a *No dates after forecast* block with the reason (waiting for a
+predecessor, over capacity, a link cycle). This is the moment for the
+handoff conversation between leads: the analysis lead sees when
+development can realistically start, the test lead sees when regression
+will actually get the build. It does not change the anti-pattern in §7:
+plan in the composition tables first, then check the plan on the
+timeline.
+
 ### Daily Stand-up — the Stand-up assist view
 
 Without a dedicated view the daily would come down to the module status
@@ -188,6 +218,18 @@ ratio as a **calibration metric** for the team's estimates, not a
 performance score. A consistent 30% overrun in QA means QA estimates
 need a bigger buffer next sprint, not that QA needs to "go faster".
 
+### Scope changes on record — excluded issues with a reason (v3.46.0+)
+
+A sprint rarely ends with the scope it started with. When an issue
+leaves a role, the planner asks for a reason (required, up to 500
+characters) and stamps who excluded it and when; the issue moves to an
+*Excluded from sprint (N)* block below the role table, and the reason
+travels into sprint history and the Excel export. At the review, open
+that block for each role: the exclusions and their reasons are the
+honest answer to "why did the commitment shrink". At the retrospective,
+recurring reasons — "waiting for the vendor", "requirements changed
+after commit" — are the pattern to work on.
+
 ### Sprint Retrospective — plan/fact warnings as feedback loop
 
 If `dtaWarningsEnabled` is on, every work-item log triggers a workflow
@@ -197,6 +239,19 @@ plan and when. Bring that record to the retrospective: the conversation
 shifts from "we felt overloaded" to "the analysis role hit the 110%
 threshold on day 3 of every sprint for the last six". That's a much
 sharper retro input.
+
+### Between sprints — reminders about what slips (v3.40.0+)
+
+Three things most often fall between two sprints: a role nobody marked
+finished after the end date, capacity not approved before the start
+(full planning model), and a release past its planned date. With
+reminders on, the planner shows them in a dialog on open and on a bell
+with a counter — to the people who can act: validators, capacity
+approvers, release owners. A reminder clears only when the underlying
+state changes: finish the role, approve the capacity, ship, cancel or
+reschedule the release. Use it as the lead's pre-planning checklist
+rather than a nag: an empty bell before planning means the previous
+sprint was closed properly.
 
 ### Backlog Refinement — pre-sizing per role before the planning meeting
 
@@ -360,7 +415,7 @@ composition. The sign you've outgrown "Light": role capacity has
 become something negotiated *during* planning instead of an input to
 it. If your team owns its own capacity and calibrates it at retros,
 "Light" is simpler and sufficient. The tab reference is
-[USER-GUIDE.md, section 6](USER-GUIDE.md#6-picking-tasks-and-setting-role-capacity).
+[Overview 03. Capacity](../docs/en/01-overview/03-capacity.md).
 
 ### Capacity → planned dates: the auto-forecast
 
@@ -574,6 +629,23 @@ abstract to act on or too detailed to read. Keep capacity decisions
 inside the project, and use higher-level YouTrack views for portfolio
 roll-up.
 
+### Integrations — letting other tools and agents work with the plan (v3.49.0+)
+
+The planner exposes its data through a documented external REST (an
+OpenAPI contract), MCP tools for AI agents inside YouTrack, a standalone
+MCP server and an n8n node. For the process, two rules matter. First,
+every integration acts with exactly the permissions of the user whose
+token it uses: give automation a dedicated service user with only the
+planner roles it needs, and treat its writes like a team member's.
+Second, write to one project sequentially — strictly simultaneous
+writes may lose changes (a YouTrack property) — and re-read after a
+series of writes. Good first uses: uploading a draft composition
+prepared elsewhere before the planning meeting (the planner refuses to
+overwrite an occupied working slot), posting absences from an HR
+calendar, and letting an agent answer "what is in the sprint for role
+X" without anyone exporting spreadsheets. Details are in
+[Integrations](../docs/en/02-setup/22-integrations.md).
+
 ---
 
 ## 6. Operational reporting: the feedback loop
@@ -586,7 +658,7 @@ into ritual — the team plans beautifully, but nobody sees where the
 plan systematically diverges from reality.
 
 The reference for every report and setting is
-[USER-GUIDE.md, section 13](USER-GUIDE.md#13-operational-reporting).
+[Reporting](../docs/en/03-reporting/).
 This chapter is about *which report to read at which ritual* and the
 organisational decisions the module will demand from you.
 
@@ -884,8 +956,9 @@ must be in order"):
 
 ## 9. Further reading
 
-- [USER-GUIDE.md](USER-GUIDE.md) — every screen, every button, every
-  setting. The reference companion to this guide.
+- [docs/](../docs/) — the illustrated manual: every screen, every button,
+  every setting, in English and Russian. The reference companion to this
+  guide.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each release and when.
   Useful when a behaviour described here was introduced in a specific
   version.
@@ -912,4 +985,4 @@ template — this document improves with real reports from real teams.
 
 ---
 
-**End of guide.** Document version 1.10.0 · 2026-08-21 (in sync with plugin v3.20.0: stand-up by real states, the Full model available, 14 reports).
+**End of guide.** Document version 1.11.0 · 2026-09-28 (in sync with plugin v3.51.0: work phases, excluded issues with a reason, the cross-role Gantt and forecast, reminders, integrations).

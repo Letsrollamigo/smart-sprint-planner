@@ -1,8 +1,43 @@
-# n8n-nodes-smart-sprint-planner
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Letsrollamigo/n8n-nodes-smart-sprint-planner/main/assets/readme/hero.svg" width="100%"
+       alt="Smart Sprint Planner node for n8n — sprints, capacity and releases of YouTrack teams as n8n actions and as an AI Agent tool.">
+</p>
 
-An [n8n](https://n8n.io) community node for [Smart Sprint Planner](https://github.com/Letsrollamigo/smart-sprint-planner), a YouTrack app: the working sprint and its issues by role, history, capacity, calendar and absences, releases, reminders, your own planner roles, plus YouTrack issue search and field writes. The node talks to the planner's external REST in YouTrack with a permanent token, so it has exactly the permissions of the token's user in YouTrack and in the planner's role groups.
+<p align="center">
+  <a href="https://www.npmjs.com/package/n8n-nodes-smart-sprint-planner"><img src="https://img.shields.io/npm/v/n8n-nodes-smart-sprint-planner?label=npm&color=FF6A3D" alt="Latest version on npm"></a>
+  <a href="https://docs.n8n.io/integrations/community-nodes/installation/"><img src="https://img.shields.io/badge/n8n-2.x-1B2A4E.svg" alt="Works with n8n 2.x"></a>
+  <a href="https://github.com/Letsrollamigo/smart-sprint-planner"><img src="https://img.shields.io/badge/Smart%20Sprint%20Planner-3.49.1+-1B2A4E.svg" alt="Requires Smart Sprint Planner 3.49.1 or later"></a>
+  <a href="https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-6E7686.svg" alt="MIT license"></a>
+</p>
 
-The external REST contract, roles and refusal codes are described in [Integrations: the external REST](https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/docs/en/02-setup/22-integrations.md).
+An [n8n](https://n8n.io) community node for [Smart Sprint Planner](https://github.com/Letsrollamigo/smart-sprint-planner), a YouTrack app for sprints that span several functional roles. Read the working sprint and its issues by role, history, capacity, calendar and absences, releases and reminders; write sprint items, absences and releases; search YouTrack issues and set their fields — from any workflow, or hand the node to an AI Agent as a tool.
+
+The node talks to the planner's external REST in YouTrack with a permanent token, so it has exactly the permissions of the token's user in YouTrack and in the planner's role groups.
+
+## What it looks like
+
+**Sprint → Get** on a demo project: the working sprint with its goal, roles, resources and issues by role.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Letsrollamigo/n8n-nodes-smart-sprint-planner/main/assets/readme/shot-sprint-get.png" width="100%"
+       alt="n8n node panel: credential Smart Sprint Planner account, resource Sprint, operation Get, project NOVA; the output shows Sprint 24 in PLANNING status with three roles, resources per role and issues by role.">
+</p>
+
+**AI Agent tool:** the agent answers from the planner's data — the log on the right shows the node's call and its response.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Letsrollamigo/n8n-nodes-smart-sprint-planner/main/assets/readme/shot-ai-agent.png" width="100%"
+       alt="n8n canvas: a chat trigger, an AI Agent with an OpenRouter chat model and the Smart Sprint Planner node attached as a tool; the chat shows the answer about Sprint 24 and planner version 3.51.0, the log shows the tool call and its output.">
+</p>
+
+## Part of Smart Sprint Planner
+
+| | |
+|---|---|
+| **[Smart Sprint Planner](https://github.com/Letsrollamigo/smart-sprint-planner)** | the YouTrack app itself — source, releases, changelog |
+| **[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/31727-smart-sprint-planner)** | install the planner into YouTrack |
+| **[Integrations guide](https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/docs/en/02-setup/22-integrations.md)** | the external REST contract, roles and refusal codes ([на русском](https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/docs/ru/02-setup/22-integrations.md)) |
+| **[MCP server](https://github.com/Letsrollamigo/smart-sprint-planner/blob/main/Integrations/mcp-server/README.md)** | the same operations for AI agents outside n8n |
 
 ## Requirements
 
@@ -80,9 +115,9 @@ npm test               # build + node --test over dist/
 - `nodes/SprintPlanner/shared/` holds byte copies of the MCP server's `constants`, `errors`, `ops`, `shape` and the hints in the build language; change them only in the server, then run `npm run sync-shared`.
 - Operations live in `nodes/SprintPlanner/actions/<resource>/<operation>.operation.ts`; network calls only in `nodes/SprintPlanner/transport/`.
 - `tests/smoke-n8n.mjs` runs the node on a local n8n against a test YouTrack (environment variables are listed in the file header); `tests/scan-source.mjs` runs the n8n source scanner.
-- The node is developed in the [Smart Sprint Planner repository](https://github.com/Letsrollamigo/smart-sprint-planner) (`Integrations/n8n-node`) and mirrored to this repository for publishing; `npm run check-shared` works only inside the planner repository, where the MCP server sources live.
+- The node is developed in the [Smart Sprint Planner repository](https://github.com/Letsrollamigo/smart-sprint-planner/tree/main/Integrations/n8n-node) (`Integrations/n8n-node`) and mirrored to [this repository](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner) for publishing; `npm run check-shared` works only inside the planner repository, where the MCP server sources live.
 - Releases are published to npm with provenance by the `publish.yml` GitHub workflow of this repository on a `vX.Y.Z` tag.
 
 ## License
 
-MIT © Letsrollamigo
+[MIT](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner/blob/main/LICENSE) © Letsrollamigo

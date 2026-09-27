@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="360" viewBox="0 0 1200 360"
+     role="img" aria-labelledby="sspn-hero-t sspn-hero-d">
+  <title id="sspn-hero-t">Smart Sprint Planner node for n8n</title>
+  <desc id="sspn-hero-d">An n8n community node for the Smart Sprint Planner YouTrack app: sprints, capacity and releases as n8n actions, and as a tool for the AI Agent. A fragment of an n8n canvas shows a trigger wired to the planner node, its sprint output, and an AI Agent using the node as a tool.</desc>
+
+  <defs>
+    <pattern id="canvas-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#D9D5C8"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="360" rx="24" fill="#F2F0EA"/>
+  <rect x="1.5" y="1.5" width="1197" height="357" rx="22.5" fill="none" stroke="#1B2A4E" stroke-width="3"/>
+
+  <g id="title-block" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <text x="64" y="98" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="16" letter-spacing="3" fill="#6E7686">N8N COMMUNITY NODE · YOUTRACK APP</text>
+    <text x="62" y="162" font-size="54" font-weight="700" fill="#1B2A4E">Smart Sprint Planner</text>
+    <rect x="64" y="180" width="120" height="6" rx="3" fill="#FF6A3D"/>
+    <text x="64" y="222" font-size="21" fill="#3A445C">Sprints, capacity and releases of your YouTrack</text>
+    <text x="64" y="251" font-size="21" fill="#3A445C">teams as n8n actions — and as an AI Agent tool.</text>
+    <text x="64" y="300" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="16" letter-spacing="1" fill="#6E7686">26 OPERATIONS · 11 RESOURCES · NPM PROVENANCE · MIT</text>
+  </g>
+
+  <g id="project-proof" transform="translate(716 48)">
+    <rect width="420" height="264" rx="14" fill="#FFFFFF"/>
+    <rect width="420" height="264" rx="14" fill="url(#canvas-dots)"/>
+    <rect x="1" y="1" width="418" height="262" rx="13" fill="none" stroke="#1B2A4E" stroke-width="2"/>
+
+    <g id="trigger" transform="translate(28 44)">
+      <rect width="56" height="56" rx="12" fill="#FFFFFF" stroke="#1B2A4E" stroke-width="2"/>
+      <path d="M31 12 L19 31 H28 L25 44 L37 25 H28 Z" fill="#FF6A3D"/>
+    </g>
+    <line x1="84" y1="72" x2="126" y2="72" stroke="#1B2A4E" stroke-width="2.5"/>
+    <circle cx="84" cy="72" r="4" fill="#FFFFFF" stroke="#1B2A4E" stroke-width="2"/>
+
+    <g id="planner-node" transform="translate(126 36)">
+      <rect width="72" height="72" rx="16" fill="#F2F0EA" stroke="#1B2A4E" stroke-width="2.5"/>
+      <g transform="translate(4 4)">
+        <rect x="10" y="14" width="22" height="6" rx="3" fill="#1B2A4E"/>
+        <rect x="20" y="24" width="26" height="6" rx="3" fill="#1B2A4E"/>
+        <rect x="14" y="34" width="20" height="6" rx="3" fill="#1B2A4E" opacity="0.55"/>
+        <rect x="26" y="44" width="24" height="6" rx="3" fill="#FF6A3D"/>
+      </g>
+    </g>
+    <text x="218" y="66" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="19" fill="#1B2A4E">Sprint · Get</text>
+    <text x="218" y="92" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+          font-size="17" fill="#6E7686">project NOVA</text>
+
+    <g id="output" transform="translate(28 128)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17">
+      <rect width="364" height="60" rx="10" fill="#FFFFFF" stroke="#E5E2D8" stroke-width="2"/>
+      <text x="16" y="25" fill="#3A445C">Sprint 24 · PLANNING</text>
+      <text x="16" y="48" fill="#6E7686">analysis · testing · platform</text>
+    </g>
+
+    <g id="agent-tool">
+      <rect x="28" y="206" width="132" height="40" rx="10" fill="#1B2A4E"/>
+      <text x="94" y="232" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="18" font-weight="600" fill="#FFFFFF">AI Agent</text>
+      <line x1="160" y1="226" x2="196" y2="226" stroke="#FF6A3D" stroke-width="2.5" stroke-dasharray="6 5"/>
+      <circle cx="222" cy="226" r="25" fill="#F2F0EA" stroke="#1B2A4E" stroke-width="2.5"/>
+      <g transform="translate(202 206) scale(0.625)">
+        <rect x="10" y="14" width="22" height="6" rx="3" fill="#1B2A4E"/>
+        <rect x="20" y="24" width="26" height="6" rx="3" fill="#1B2A4E"/>
+        <rect x="14" y="34" width="20" height="6" rx="3" fill="#1B2A4E" opacity="0.55"/>
+        <rect x="26" y="44" width="24" height="6" rx="3" fill="#FF6A3D"/>
+      </g>
+      <text x="262" y="232" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+            font-size="17" fill="#6E7686">as a tool</text>
+    </g>
+  </g>
+</svg>

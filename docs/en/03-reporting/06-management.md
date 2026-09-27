@@ -4,6 +4,8 @@ Four reports answering not «how is the sprint going» but «what does the proce
 
 Access is granted through a separate **Circuit B** column in the [permissions matrix](../02-setup/09-permissions.md).
 
+![The management circuit's screen before a report is built](../../assets/rep-b-00-overview.en.png)
+
 ## Technical debt: volume and share by role
 
 **The question:** how much unpaid debt have we accumulated.

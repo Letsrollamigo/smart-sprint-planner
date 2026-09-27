@@ -77,6 +77,13 @@ Gantt-таймлайн по роли, с привязкой к спринту и
 - **Server-side авторизация** на каждом мутирующем эндпоинте через проектные настройки `ssp_settings`; deny-by-default до настройки группы управления настройками.
 - **15 языков UI** — чешский, немецкий, английский, испанский, французский, венгерский, итальянский, японский, корейский, нидерландский, польский, португальский, русский, турецкий, китайский (упрощённый). Авто-детект по браузеру, ручное переключение, fallback на английский.
 
+**Интеграции**
+
+- **Внешний REST с контрактом OpenAPI** — 46 операций — рабочий спринт, история, ёмкость, календарь, отсутствия, релизы, напоминания и не только; единый конверт отказа с `reason` и `cid`, точечная запись с проверкой ревизии данных. Права — ровно права пользователя токена. Контракт: [`openapi-sprint.yaml`](../Integrations/openapi-sprint.yaml), руководство: [Интеграции](../docs/ru/02-setup/22-integrations.md).
+- **MCP-инструменты внутри YouTrack** — 22 инструмента планера (10 чтения, 12 записи) для встроенного MCP-сервера YouTrack (YouTrack 2025.3+): ИИ-агент подключается к `{ваш YouTrack}/mcp?customToolPackages=smart-sprint-planner` со своим токеном, ничего дополнительно разворачивать не нужно.
+- **Отдельный MCP-сервер** — те же инструменты для агентов вне YouTrack: npm [`smart-sprint-planner-mcp`](https://www.npmjs.com/package/smart-sprint-planner-mcp) и образ `ghcr.io/letsrollamigo/smart-sprint-planner-mcp` ([README](../Integrations/mcp-server/README.ru.md)).
+- **Нода n8n** — [`n8n-nodes-smart-sprint-planner`](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner): 26 операций как действия n8n и как инструмент AI Agent ([npm](https://www.npmjs.com/package/n8n-nodes-smart-sprint-planner)).
+
 ## Установка
 
 Плагин выходит по двум параллельным каналам — версионные бейджи выше всегда показывают текущее состояние каждого:
@@ -128,7 +135,8 @@ npm test               # unit + golden (Node test runner, jsdom — без бр�
 
 ## Документация
 
-- **[docs/](../docs/) — иллюстрированное руководство на русском и английском.** Три документа, 89 глав, 86 кадров: [обзор всех экранов](../docs/ru/01-overview/), [внедрение по шагам](../docs/ru/02-setup/) и [четырнадцать отчётов](../docs/ru/03-reporting/).
+- **[docs/](../docs/) — иллюстрированное руководство на русском и английском.** Три документа, 44 главы и 49 кадров на каждом языке: [обзор всех экранов](../docs/ru/01-overview/), [внедрение по шагам](../docs/ru/02-setup/) и [четырнадцать отчётов](../docs/ru/03-reporting/).
+- **[Интеграции](../docs/ru/02-setup/22-integrations.md)** — контракт внешнего REST, MCP-инструменты, [MCP-сервер](../Integrations/mcp-server/README.ru.md) и [нода n8n](https://github.com/Letsrollamigo/n8n-nodes-smart-sprint-planner).
 - [USER-GUIDE.ru.md](USER-GUIDE.ru.md) — полное руководство пользователя с примерами конфигурации.
 - [METHODOLOGY-GUIDE.ru.md](METHODOLOGY-GUIDE.ru.md) — взгляд team-lead'а / Scrum master'а / PM'а: карта церемоний, capacity planning, дисциплина учёта времени, антипаттерны.
 - [SECURITY.ru.md](SECURITY.ru.md) — модель безопасности, поверхность угроз, процесс ответственного раскрытия.

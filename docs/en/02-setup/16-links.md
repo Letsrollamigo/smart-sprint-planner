@@ -1,10 +1,12 @@
 # 16. Issue links
 
-**Optional, but three other modules need it.** This section explains to the planner what each of YouTrack's link types means.
+**Optional, but several other modules read it — the «Used by» column shows which.** This section explains to the planner what each of YouTrack's link types means.
 
 ## Where
 
 **Project Settings → Apps → Smart Sprint Planner → ADMINISTRATION → Issue links**.
+
+![The Issue links section: link types with the Hierarchy, Dependencies and Info roles and the «Used by» column with module badges](../../assets/setup-008-issue-links.en.png)
 
 ## The problem it solves
 
@@ -16,15 +18,19 @@ A row is a link type from your YouTrack, the columns are three roles:
 
 | Role | What it means | Who uses it |
 |---|---|---|
-| **Hierarchy** | a parent-child link | the backlog tree, the estimate roll-up, the state roll-up, the TTM report (stories under an epic), epic groups on the Gantt chart in «All roles» mode |
-| **Dependency** | a predecessor-successor link | arrows on the Gantt chart; in «All roles» mode also schedule conflicts and the cross-role date forecast |
-| **Information** | a link with no structural meaning | the «Bug tax» report |
+| **Hierarchy** | a parent-child link | the backlog tree, the release scope, the estimate roll-up, the state roll-up, the TTM report (stories under an epic), epic groups on the Gantt chart in «All roles» mode |
+| **Dependencies** | a predecessor-successor link | arrows on the Gantt chart; in «All roles» mode also schedule conflicts and the cross-role date forecast |
+| **Info** | a link with no structural meaning | the backlog: a marker with the number of related issues; does not affect calculations |
 
 Hierarchy and dependency also need a **side**: which end of the link holds the parent or the predecessor. The phrase picker shows your instance's actual wordings — «parent for», «is required for» — so there is nothing to guess.
 
+## The «Used by» column
+
+Next to each link the table lists the modules that read it: Backlog, Releases, Estimate cascade, State rollup, Reporting, Gantt. A module that is off in the project is crossed out — the link is set up, but nothing reads it yet. Estimate cascade and State rollup take only the **first** link marked «Hierarchy»; it carries a star. Gantt has no switch of its own: it always reads every Hierarchy link (epic groups in «All roles» mode) and every dependency (arrows).
+
 A typical configuration:
 
-| Link type | Hierarchy | Dependency | Information |
+| Link type | Hierarchy | Dependencies | Info |
 |---|---|---|---|
 | Subtask | source | | |
 | Depend | | source | |

@@ -40,6 +40,8 @@ Clicking the row opens the card.
 
 An update is installed over the top the same way — from the marketplace or by uploading a new zip. Project data is untouched by an update.
 
+Since 3.50.0 the package carries MCP tools, and importing it briefly takes up to about 1 GB of YouTrack heap (a few seconds up to half a minute). Update in a quiet window and make sure YouTrack has at least 1 GB of free heap at that moment.
+
 **Rolling back to a previous version** works the same way — upload the older zip over the top. It is safe only down to the version where the data schema last changed: every release's notes say whether the schema changed and how far back you can go without preparation. Going further back requires restoring a YouTrack database backup taken before the update: the older version does not understand the newer data and stops saving the sprint.
 
 🔴 **Do not delete the app to «reinstall it cleanly».** Deleting the app from YouTrack wipes all of its data in every project: sprints, history, settings. An update installs over the top; nothing needs deleting for it.

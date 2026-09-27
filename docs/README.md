@@ -12,7 +12,7 @@ Planner version **3.51.0**. Screenshots taken on YouTrack **2026.1**.
 | Document | Who it is for |
 |---|---|
 | **[Overview](en/01-overview/)** | everyone who works inside a sprint: analysts, developers, testers, leads. What every screen shows, what every button does, where the numbers come from. |
-| **[Setup and rollout](en/02-setup/)** | the YouTrack project admin who brings the planner into a new project. Step by step, from installing the app to the first sprint. |
+| **[Setup and rollout](en/02-setup/)** | the YouTrack project admin who brings the planner into a new project. Step by step, from installing the app to the first sprint — plus [integrations](en/02-setup/22-integrations.md): the REST contract, MCP tools and the n8n node. |
 | **[Reporting](en/03-reporting/)** | leads and managers. Fourteen reports in two circuits: what each one answers and what it needs from the data. |
 
 ## 🇷🇺 Русский
@@ -20,7 +20,7 @@ Planner version **3.51.0**. Screenshots taken on YouTrack **2026.1**.
 | Документ | Кому |
 |---|---|
 | **[Обзор](ru/01-overview/)** | всем, кто работает со спринтом: аналитикам, разработчикам, тестировщикам, лидам. Что показывает каждый экран, что делает каждая кнопка, откуда берутся цифры. |
-| **[Внедрение и настройка](ru/02-setup/)** | администратору проекта YouTrack, который заводит планер для своей команды. По шагам — от установки приложения до первого спринта. |
+| **[Внедрение и настройка](ru/02-setup/)** | администратору проекта YouTrack, который заводит планер для своей команды. По шагам — от установки приложения до первого спринта, плюс [интеграции](ru/02-setup/22-integrations.md): контракт REST, MCP-инструменты и нода n8n. |
 | **[Отчётность](ru/03-reporting/)** | лидам и руководителям. Четырнадцать отчётов в двух контурах: на какой вопрос отвечает каждый и что ему нужно от данных. |
 
 ---
