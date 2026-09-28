@@ -1218,6 +1218,10 @@
     /* #74 — экран «Связи задач»: каркас матрицы прав (#71) + колонка «где используется».
        Колонки-роли приходят данными из ROLE_DEFS, поэтому ширины заданы не поимённо. */
     .ssp-settings-form .ssp-link-table .ssp-perm-th-name { min-width: 240px; }
+    /* Подпись роли в каждой локали — одно слово (самое длинное — «Afhankelijkheden»): рвать его
+       внутри нельзя, при 80px «Dependencies» ломалось в «Dependencie/s». Колонка авто-раскладки
+       раздвигается под слово; многословная «Где используется» переносится по пробелам. */
+    .ssp-settings-form .ssp-link-table .ssp-perm-th { overflow-wrap: normal; }
     .ssp-link-phrases { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
     .ssp-link-phrases .ssp-icon { margin-right: 4px; }
     .ssp-settings-form .ssp-link-where { padding: 6px 10px; vertical-align: middle; }
