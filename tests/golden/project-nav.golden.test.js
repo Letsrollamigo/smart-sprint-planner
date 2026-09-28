@@ -602,7 +602,7 @@ test('#109 global: configured:false → полоса «настройки не �
   gm.set({
     _mode: 'global',
     _activeProjectKey: 'T109',
-    _ytBase: 'http://localhost:8081',
+    _ytBase: 'http://localhost:8080',
     _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2025.3' }); },
              fetchApp: function () { return Promise.resolve({}); } },
     apiGet: function (p) {
@@ -624,7 +624,7 @@ test('#109 global: configured:false → полоса «настройки не �
   assert.ok(a, 'в полосе есть кнопка-ссылка');
   /* YT 2025.3 — вкладка настроек проекта адресуется без сегмента /settings. */
   assert.strictEqual(a.getAttribute('href'),
-    'http://localhost:8081/projects/T109?tab=' + encodeURIComponent('smart-sprint-planner:Smart Sprint Planner'));
+    'http://localhost:8080/projects/T109?tab=' + encodeURIComponent('smart-sprint-planner:Smart Sprint Planner'));
 });
 
 test('#111 global: инстанс 2026.1 → адрес вкладки БЕЗ /settings (форма со /settings там отдаёт 404)', async () => {
@@ -653,7 +653,7 @@ test('#111 global: инстанс 2026.1 → адрес вкладки БЕЗ /s
 test('#109 global: configured:true → обе полосы скрыты', async () => {
   const { gm, document } = createHost();
   gm.set({
-    _mode: 'global', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8081',
+    _mode: 'global', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8080',
     _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2026.2' }); },
              fetchApp: function () { return Promise.resolve({}); } },
     apiGet: function (p) {
@@ -673,7 +673,7 @@ test('#109 global: configured:true → обе полосы скрыты', async 
 test('#109 project: configured:false → старая полоса «плагин не настроен», новой нет', async () => {
   const { gm, document } = createHost();
   gm.set({
-    _mode: 'project', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8081',
+    _mode: 'project', _activeProjectKey: 'T109', _ytBase: 'http://localhost:8080',
     _host: { fetchYouTrack: function () { return Promise.resolve({ version: '2025.3' }); },
              fetchApp: function () { return Promise.resolve({}); } },
     apiGet: function (p) {

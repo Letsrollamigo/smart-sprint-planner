@@ -50,7 +50,7 @@ test('validateItem accepts item with URL-shaped externalTicketId', function () {
     addedAt: 1779148800000,
     addedBy: 'fixture_user_1',
     inclusionStatus: 'INC_PLANNED',
-    externalTicketId: 'https://service-desk.corp/ticket/999'
+    externalTicketId: 'https://service-desk.example/ticket/999'
   };
   assert.strictEqual(validateItem(item), true);
 });
@@ -94,7 +94,7 @@ test('validateItem accepts long URL as externalTicketId (> 200 chars, within 100
     addedAt: 1779148800000,
     addedBy: 'fixture_user_1',
     inclusionStatus: 'INC_PLANNED',
-    externalTicketId: 'https://service-desk.corp/browse/' + 'X'.repeat(170)  // ~205 chars
+    externalTicketId: 'https://service-desk.example/browse/' + 'X'.repeat(170)  // ~205 chars
   };
   assert.strictEqual(validateItem(item), true);
 });

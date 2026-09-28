@@ -19,7 +19,7 @@ function mkCtx(props, groups, admin) {
   return {
     settings: { settingsManagerGroup: { id: 'g-set', name: 'g-set' } },
     currentUser: { id: 'u-1', login: 'user1', groups: groups, hasPermission: (p) => admin === true && p === 'UPDATE_PROJECT' },
-    project: { key: 'SCBT', extensionProperties: props },
+    project: { key: 'NOVA', extensionProperties: props },
     request: { body: '', getParameter: () => null },
     response: { status: 200, body: null, json(v) { this.body = v; } },
   };
@@ -53,11 +53,11 @@ test('инстанс-админ — все роли, кроме управлен
 });
 
 test('главное меню: my-roles проходит read-gate и отвечает по зеркалу ssp_acl', () => {
-  entities.Project.findByKey = (k) => (k === 'SCBT' ? { key: 'SCBT', name: 'SCBT', extensionProperties: {
+  entities.Project.findByKey = (k) => (k === 'NOVA' ? { key: 'NOVA', name: 'NOVA', extensionProperties: {
     ssp_acl: JSON.stringify({ settingsManagerGroup: G('g-set') }), ssp_settings: JSON.stringify(SETTINGS) } } : null);
   const ep = global.httpHandler.endpoints.find((e) => e.method === 'GET' && e.path === 'my-roles');
   const ctx = { currentUser: { login: 'u', groups: [G('g-set')], hasPermission: (p) => p === 'READ_PROJECT_BASIC' },
-    request: { getParameter: (k) => (k === 'projectKey' ? 'SCBT' : null) }, response: { json(v) { this.body = v; } } };
+    request: { getParameter: (k) => (k === 'projectKey' ? 'NOVA' : null) }, response: { json(v) { this.body = v; } } };
   ep.handle(ctx);
   assert.strictEqual(ctx.response.body.roles.settingsManager, true);
   assert.strictEqual(ctx.response.body.roles.editor, false);

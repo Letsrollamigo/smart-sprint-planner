@@ -19,7 +19,7 @@ function mkCtx(props, body, params) {
   return {
     settings: { settingsManagerGroup: { id: 'g-admin', name: 'Admins' } },
     currentUser: { id: 'u-1', login: 'user1', groups: [{ id: 'g-admin', name: 'Admins' }], hasPermission: () => false },
-    project: { key: 'SCBT', extensionProperties: props },
+    project: { key: 'NOVA', extensionProperties: props },
     request: { body: JSON.stringify(body), getParameter: (k) => (params[k] || '') },
     response: { status: 200, body: null, json(v) { this.body = v; } },
   };

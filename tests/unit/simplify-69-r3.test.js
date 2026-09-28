@@ -140,7 +140,7 @@ function mkProjectCtx(body, props) {
   props = Object.assign({ ssp_settings: JSON.stringify({ editGroups: [G_EDITOR.id] }) }, props || {});
   return {
     settings: { settingsManagerGroup: { id: 'g-admin', name: 'Admins' } },
-    project: { key: 'SCBT', extensionProperties: props },
+    project: { key: 'NOVA', extensionProperties: props },
     currentUser: { id: 'u-1', login: 'user1', groups: [G_EDITOR], hasPermission: () => false },
     request: { body: JSON.stringify(withBaseRev(body, props)), getParameter: () => '' },
     response: { status: 200, body: null, json(v) { this.body = v; } },
@@ -157,7 +157,7 @@ function sprintBody(over) {
 }
 
 test('шаг 2: POST sprint-data с legacy `items` — ключ молча отброшен (вне ALLOWED_SPRINT_DATA_KEYS), ssp_items не пишется', () => {
-  const ctx = mkProjectCtx({ items: [{ issueId: 'SCBT-1' }], sprint: sprintBody() });
+  const ctx = mkProjectCtx({ items: [{ issueId: 'NOVA-1' }], sprint: sprintBody() });
   EP_SPRINT.handle(ctx);
   assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
   assert.strictEqual(ctx._props.ssp_items, undefined, 'ssp_items не записан');
@@ -168,7 +168,7 @@ test('шаг 2: POST sprint-data с legacy `items` — ключ молча от�
 
 test('шаг 2: GET sprint-data без roleItems → {} (READ-fallback ssp_items снят)', () => {
   const EP_GET = core.ENDPOINTS.find((e) => e.method === 'GET' && e.path === 'sprint-data');
-  const ctx = mkProjectCtx({}, { ssp_items: JSON.stringify([{ issueId: 'SCBT-1' }]), ssp_settings: JSON.stringify({ viewGroups: [G_EDITOR.id], activeRoles: ['analysis'] }) });
+  const ctx = mkProjectCtx({}, { ssp_items: JSON.stringify([{ issueId: 'NOVA-1' }]), ssp_settings: JSON.stringify({ viewGroups: [G_EDITOR.id], activeRoles: ['analysis'] }) });
   EP_GET.handle(ctx);
   assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
   assert.deepStrictEqual(ctx.response.body.roleItems, {});
@@ -189,13 +189,13 @@ test('шаг 2: editingFromHistory/historyIdx на WRITE молча стрипа
 
 test('шаг 2: assignerSync поверх хранимого спринта ≤v3.21 (editingFromHistory:false в сторадже) — проходит, ключ вычищен', () => {
   const stored = Object.assign(sprintBody({ editingFromHistory: false, historyIdx: 1 }), { pluginVersion: '3.6.0' });
-  const ctx = mkProjectCtx({ sprint: { personalPlanning: { 'SCBT-1': { assignee: 'user1' } } } }, { ssp_sprint: JSON.stringify(stored) });
+  const ctx = mkProjectCtx({ sprint: { personalPlanning: { 'NOVA-1': { assignee: 'user1' } } } }, { ssp_sprint: JSON.stringify(stored) });
   ctx.request.getParameter = (k) => (k === 'action' ? 'assignerSync' : '');
   EP_SPRINT.handle(ctx);
   assert.strictEqual(ctx.response.body.success, true, JSON.stringify(ctx.response.body));
   const after = JSON.parse(ctx._props.ssp_sprint);
   assert.ok(!('editingFromHistory' in after) && !('historyIdx' in after));
-  assert.deepStrictEqual(after.personalPlanning, { 'SCBT-1': { assignee: 'user1' } });
+  assert.deepStrictEqual(after.personalPlanning, { 'NOVA-1': { assignee: 'user1' } });
 });
 
 test('шаг 2: миграция на READ — sprint 3.6.0 с legacy-ключами → ключей нет, SCHEMA_BUMP 3.6.0→3.23.0→3.27.0→3.28.0→3.29.0→3.32.0→3.35.0→3.39.0→3.40.0→3.45.0→3.46.0', () => {

@@ -119,6 +119,6 @@ const final = { _meta, backend: prev.backend, workflow: prev.workflow, jsx, modu
 if (!final.backend) delete final.backend;
 if (!final.workflow) delete final.workflow;
 
-const INDENT = (fs.existsSync(REG) && /^\{\n {2}"/.test(fs.readFileSync(REG, 'utf8'))) ? 2 : 1; // corp indent=1 / comm indent=2
+const INDENT = (fs.existsSync(REG) && /^\{\n {2}"/.test(fs.readFileSync(REG, 'utf8'))) ? 2 : 1; // отступ как у уже лежащего реестра: 1 или 2
 fs.writeFileSync(REG, JSON.stringify(final, null, INDENT) + '\n');
 console.log(`module-registry.json: ${Object.keys(modules).length} модулей (Σ${sumModules}) + ${Object.keys(jsxModules).length} jsx (Σ${sumJsx}), fat(>${FAT})=${fatCount}, core=${coreLoc} LOC${RESET ? ' [reset]' : ''}`);

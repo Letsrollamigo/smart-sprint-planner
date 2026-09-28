@@ -54,7 +54,7 @@ function mkCtx(opts) {
   const params = opts.params || {};
   return {
     settings: { settingsManagerGroup: { id: 'g-admin', name: 'Admins' } },
-    project: { key: 'SCBT', extensionProperties: props },
+    project: { key: 'NOVA', extensionProperties: props },
     currentUser: {
       id: 'u-1', login: opts.login || 'user1', fullName: opts.fullName || undefined,
       groups: opts.groups || [],
@@ -176,7 +176,7 @@ test('snapshot: baseRev-конфликт — 409, история цела', () =
 test('H7: fieldName вне настроенных полей — 400 field_not_whitelisted', () => {
   const ctx = mkCtx({ groups: [G_EDITOR],
                       settings: { fieldPriority: 'Priority' },
-                      body: { issueId: 'SCBT-1', fieldName: 'Секретное поле', value: 'x', type: 'enum' } });
+                      body: { issueId: 'NOVA-1', fieldName: 'Секретное поле', value: 'x', type: 'enum' } });
   EP_UPDATE.handle(ctx);
   assert.strictEqual(ctx.response.body.reason, 'field_not_whitelisted');
 });
@@ -187,7 +187,7 @@ test('H7: настроенное поле проходит гейт (доход�
   try {
     const ctx = mkCtx({ groups: [G_EDITOR],
                         settings: { fieldPriority: 'Priority' },
-                        body: { issueId: 'SCBT-1', fieldName: 'Priority', value: 'x', type: 'enum' } });
+                        body: { issueId: 'NOVA-1', fieldName: 'Priority', value: 'x', type: 'enum' } });
     EP_UPDATE.handle(ctx);
     assert.strictEqual(ctx.response.body.error, 'issue_not_found');   /* гейт пройден */
   } finally { entities.Issue.findById = orig; }
@@ -198,7 +198,7 @@ test('H7: фолбэк релизного state-поля — "State" разре�
   entities.Issue.findById = () => null;
   try {
     const ctx = mkCtx({ groups: [G_EDITOR],
-                        body: { issueId: 'SCBT-1', fieldName: 'State', value: 'In Progress', type: 'state' } });
+                        body: { issueId: 'NOVA-1', fieldName: 'State', value: 'In Progress', type: 'state' } });
     EP_UPDATE.handle(ctx);
     assert.strictEqual(ctx.response.body.error, 'issue_not_found');   /* гейт пройден */
   } finally { entities.Issue.findById = orig; }
@@ -301,13 +301,13 @@ test('H11: обычное тело picker\'а проходит cap и доход
 function mkIssue(over) {
   return Object.assign({
     summary: 'Реальное название задачи',
-    project: { key: 'SCBT' },
+    project: { key: 'NOVA' },
     isVisibleTo: () => true,
     fields: {}
   }, over || {});
 }
 function item(over) {
-  return Object.assign({ issueId: 'SCBT-1', addedAt: 1750000000000 }, over || {});
+  return Object.assign({ issueId: 'NOVA-1', addedAt: 1750000000000 }, over || {});
 }
 function postRoleItems(ctx) { EP_SPRINT.handle(ctx); return JSON.parse(ctx._props.ssp_roleitems || '{}'); }
 
@@ -361,12 +361,12 @@ test('обогащение: задача чужого проекта пропу�
 
 test('обогащение: невидимая задача не обогащается и неотличима от несуществующей (без оракула)', () => {
   const orig = entities.Issue.findById;
-  entities.Issue.findById = (id) => (id === 'SCBT-1'
+  entities.Issue.findById = (id) => (id === 'NOVA-1'
     ? mkIssue({ isVisibleTo: () => false })   /* скрытая Visible to */
     : null);                                  /* несуществующая */
   try {
     const ctx = mkCtx({ groups: [G_EDITOR],
-                        body: { roleItems: { analysis: [item(), item({ issueId: 'SCBT-404' })] } } });
+                        body: { roleItems: { analysis: [item(), item({ issueId: 'NOVA-404' })] } } });
     const ri = postRoleItems(ctx);
     assert.strictEqual(ctx.response.body.success, true);
     assert.strictEqual(ctx.response.body.enriched, undefined);   /* обе не считаются нигде */
@@ -380,7 +380,7 @@ test('обогащение: лимит 200 — частичное обогаще
   entities.Issue.findById = () => mkIssue();
   try {
     const items = [];
-    for (let i = 1; i <= 250; i++) items.push(item({ issueId: 'SCBT-' + i }));
+    for (let i = 1; i <= 250; i++) items.push(item({ issueId: 'NOVA-' + i }));
     const ctx = mkCtx({ groups: [G_EDITOR], body: { roleItems: { analysis: items } } });
     const ri = postRoleItems(ctx);
     assert.strictEqual(ctx.response.body.success, true);
@@ -414,14 +414,14 @@ function mkWritableIssue(over) {
   const fields = {};
   const pf = { name: 'State', findValueByName: (n) => ({ name: n }) };
   return Object.assign({
-    project: { key: 'SCBT', findFieldByName: () => pf },
+    project: { key: 'NOVA', findFieldByName: () => pf },
     isVisibleTo: () => true,
     canBeWrittenBy: () => true,
     fields: fields
   }, over || {});
 }
 function updBody(over) {
-  return Object.assign({ issueId: 'SCBT-1', fieldName: 'State', value: 'In Progress', type: 'state' }, over || {});
+  return Object.assign({ issueId: 'NOVA-1', fieldName: 'State', value: 'In Progress', type: 'state' }, over || {});
 }
 
 test('Q1: видимая задача + право на запись — поле пишется', () => {
@@ -514,16 +514,16 @@ test('Q1: поле типа user — тот же гейт права на зап
 test('Q2: refresh-assignees — скрытая задача отдаётся как null, видимая — с данными', () => {
   const orig = entities.Issue.findById;
   const mk = (visible) => ({
-    project: { key: 'SCBT' },
+    project: { key: 'NOVA' },
     isVisibleTo: () => visible,
     fields: { Assignee: { login: 'dev2', fullName: 'Разработчик' } }
   });
-  entities.Issue.findById = (id) => (id === 'SCBT-1' ? mk(false) : mk(true));
+  entities.Issue.findById = (id) => (id === 'NOVA-1' ? mk(false) : mk(true));
   try {
-    const ctx = mkCtx({ groups: [], body: { issueIds: ['SCBT-1', 'SCBT-2'], fieldName: 'Assignee' } });
+    const ctx = mkCtx({ groups: [], body: { issueIds: ['NOVA-1', 'NOVA-2'], fieldName: 'Assignee' } });
     EP_REFRESH.handle(ctx);
     assert.strictEqual(ctx.response.body.success, true);
-    assert.strictEqual(ctx.response.body.assignees['SCBT-1'], null);
-    assert.strictEqual(ctx.response.body.assignees['SCBT-2'].login, 'dev2');
+    assert.strictEqual(ctx.response.body.assignees['NOVA-1'], null);
+    assert.strictEqual(ctx.response.body.assignees['NOVA-2'].login, 'dev2');
   } finally { entities.Issue.findById = orig; }
 });

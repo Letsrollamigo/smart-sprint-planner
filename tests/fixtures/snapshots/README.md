@@ -67,7 +67,7 @@ Byte-identical соседей (кроме `pluginVersion`) не держим: 20
 
 В fixture'ах **запрещены** реальные данные из прода. Все user-имена —
 `fixture_user_<N>`. Все project-имена — `Fixture <…>`. Реальные логины,
-email'ы, корпоративные project-keys и т.п. недопустимы.
+email'ы, реальные project-keys и т.п. недопустимы.
 
 ## История
 

@@ -8,7 +8,7 @@
  * Рассинхрон в любую сторону — красный. Роли по строкам не сверяются (семантика
  * веток не извлекается из кода автоматически) — за ними следит authz-67.test.js.
  *
- * Файлы: corp — Documentation/SECURITY.md; community — Documentation/SECURITY.ru.md
+ * Файлы: Documentation/SECURITY.md (в одной редакции) или Documentation/SECURITY.ru.md (в другой)
  * + .github/SECURITY.md. Тест берёт все существующие из списка кандидатов —
  * файл теста fork-identical.
  *
@@ -65,9 +65,9 @@ function diff(a, b) { return [...a].filter((x) => !b.has(x)).sort(); }
 /* ── файлы-кандидаты (per-fork) ──────────────────────────────────────────── */
 
 const CANDIDATES = [
-  'Documentation/SECURITY.md',      // corp
-  'Documentation/SECURITY.ru.md',   // community (RU)
-  '.github/SECURITY.md'             // community (EN, GitHub tab)
+  'Documentation/SECURITY.md',      // редакция с одним файлом (RU)
+  'Documentation/SECURITY.ru.md',   // редакция с двумя языками: RU
+  '.github/SECURITY.md'             // …и EN, вкладка Security на GitHub
 ];
 const files = CANDIDATES.filter((f) => fs.existsSync(path.join(ROOT, f)));
 

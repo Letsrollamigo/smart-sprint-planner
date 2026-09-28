@@ -17,7 +17,7 @@ const i18n = require(path.join(ROOT, 'mcp-i18n.js'));
 
 const SPRINT = { sprintId: 'S-1', name: 'Спринт', status: 'PLANNING', dateStart: 1779148800000, dateEnd: 1780358400000,
   updatedBy: 'user1', updatedAt: 1779148800000, personalPlanning: {}, _rev: 4 };
-const ITEM = { issueId: 'SCBT-1', title: 'Задача', inclusionStatus: 'INC_PLANNED', estimate_analysis: 480 };
+const ITEM = { issueId: 'NOVA-1', title: 'Задача', inclusionStatus: 'INC_PLANNED', estimate_analysis: 480 };
 const G_ADMIN = { id: 'g-admin', name: 'Admins' };
 
 let projects = {};
@@ -30,7 +30,7 @@ function mkProject(over) {
     ssp_settings: JSON.stringify({ editGroups: ['g-admin'], validationGroups: ['g-admin'], activeRoles: ['analysis'] }),
     ssp_sprint: JSON.stringify(SPRINT), ssp_roleitems: JSON.stringify({ analysis: [ITEM] })
   }, over || {});
-  projects = { SCBT: { key: 'SCBT', name: 'SCBT', extensionProperties: props } };
+  projects = { NOVA: { key: 'NOVA', name: 'NOVA', extensionProperties: props } };
   return props;
 }
 /* Не-админ: чтение проекта есть, глобальной роли нет; groups — членство в группах планера. */
@@ -95,16 +95,16 @@ test('аннотации: чтение — readOnly, удаление и зал�
 test('вход: лишний ключ, чужой enum, тип, шаблон — invalid_argument ДО обращения к проекту; default проставляется', () => {
   mkProject();
   lookups = 0;
-  assert.strictEqual(refusal('get_sprint', { projectKey: 'SCBT', extra: 1 }).info.reason, 'invalid_argument:extra');
-  assert.strictEqual(refusal('get_sprint', { projectKey: 'SCBT', roleKey: 'nope' }).info.reason, 'invalid_argument:roleKey');
-  assert.strictEqual(refusal('get_history', { projectKey: 'SCBT', limit: 1.5 }).info.reason, 'invalid_argument:limit');
-  assert.strictEqual(refusal('remove_item', { projectKey: 'SCBT', roleKey: 'analysis', issueId: '1-bad' }).info.reason, 'invalid_argument:issueId');
-  assert.strictEqual(refusal('upsert_item', { projectKey: 'SCBT', roleKey: 'analysis', item: { issueId: 'SCBT-1', estimate_analysis: 5 } }).info.reason,
+  assert.strictEqual(refusal('get_sprint', { projectKey: 'NOVA', extra: 1 }).info.reason, 'invalid_argument:extra');
+  assert.strictEqual(refusal('get_sprint', { projectKey: 'NOVA', roleKey: 'nope' }).info.reason, 'invalid_argument:roleKey');
+  assert.strictEqual(refusal('get_history', { projectKey: 'NOVA', limit: 1.5 }).info.reason, 'invalid_argument:limit');
+  assert.strictEqual(refusal('remove_item', { projectKey: 'NOVA', roleKey: 'analysis', issueId: '1-bad' }).info.reason, 'invalid_argument:issueId');
+  assert.strictEqual(refusal('upsert_item', { projectKey: 'NOVA', roleKey: 'analysis', item: { issueId: 'NOVA-1', estimate_analysis: 5 } }).info.reason,
     'invalid_argument:item.estimate_analysis', 'контрактные ключи роли на вход не принимаются');
-  assert.strictEqual(refusal('upload_draft', { projectKey: 'SCBT', sprint: { sprintId: 'S', name: 'N', dateStart: 1, dateEnd: 2 }, roleItems: { bogus: [] } }).info.reason,
+  assert.strictEqual(refusal('upload_draft', { projectKey: 'NOVA', sprint: { sprintId: 'S', name: 'N', dateStart: 1, dateEnd: 2 }, roleItems: { bogus: [] } }).info.reason,
     'invalid_argument:roleItems.bogus');
   assert.strictEqual(lookups, 0, 'проект не читался');
-  const a = { projectKey: 'SCBT' };
+  const a = { projectKey: 'NOVA' };
   assert.strictEqual(mcp.check(mcp.tool('get_sprint').inputSchema, a, ''), null);
   assert.deepStrictEqual([a.includeExcluded, a.includeSettings, a.limit], [true, false, 200]);
 });
@@ -113,7 +113,7 @@ test('вход: лишний ключ, чужой enum, тип, шаблон —
 
 test('get_sprint: проекция роли (estimate_<роль> → estimate), ревизия, сводка', () => {
   mkProject();
-  const r = run('get_sprint', { projectKey: 'SCBT' });
+  const r = run('get_sprint', { projectKey: 'NOVA' });
   assert.strictEqual(r.sprint.sprintId, 'S-1');
   assert.strictEqual(r.sprint.rev, 4);
   assert.deepStrictEqual(r.activeRoles, ['analysis']);
@@ -125,7 +125,7 @@ test('get_sprint: проекция роли (estimate_<роль> → estimate), 
 
 test('шлюз главного меню: нет права чтения или нет проекта — один отказ project_unavailable', () => {
   mkProject();
-  const e1 = refusal('get_sprint', { projectKey: 'SCBT' }, user([G_ADMIN], false));
+  const e1 = refusal('get_sprint', { projectKey: 'NOVA' }, user([G_ADMIN], false));
   const e2 = refusal('get_sprint', { projectKey: 'NOPE' });
   for (const e of [e1, e2]) {
     assert.strictEqual(e.info.kind, 'planner');
@@ -139,37 +139,37 @@ test('шлюз главного меню: нет права чтения или 
 
 test('планер отключён в проекте — planner_disabled', () => {
   mkProject({ ssp_settings: JSON.stringify({ editGroups: ['g-admin'], activeRoles: ['analysis'], plannerDisabled: true }) });
-  assert.strictEqual(refusal('get_sprint', { projectKey: 'SCBT' }).info.reason, 'planner_disabled');
+  assert.strictEqual(refusal('get_sprint', { projectKey: 'NOVA' }).info.reason, 'planner_disabled');
 });
 
 /* ── Запись ─────────────────────────────────────────────────────────────────── */
 
 test('upsert_item: не-админ редактор по группам пишет через штатную полную запись; наблюдатель — отказ прав', () => {
   const props = mkProject();
-  const r = run('upsert_item', { projectKey: 'SCBT', roleKey: 'analysis', item: { issueId: 'SCBT-2', estimate: 60 } });
+  const r = run('upsert_item', { projectKey: 'NOVA', roleKey: 'analysis', item: { issueId: 'NOVA-2', estimate: 60 } });
   assert.strictEqual(r.rev, 5);
-  assert.deepStrictEqual(r.applied, { roleKey: 'analysis', issueId: 'SCBT-2', created: true });
+  assert.deepStrictEqual(r.applied, { roleKey: 'analysis', issueId: 'NOVA-2', created: true });
   const stored = JSON.parse(props.ssp_roleitems).analysis;
-  assert.strictEqual(stored.find((i) => i.issueId === 'SCBT-2').estimate_analysis, 60);
-  assert.strictEqual(stored.find((i) => i.issueId === 'SCBT-1').estimate_analysis, 480);
+  assert.strictEqual(stored.find((i) => i.issueId === 'NOVA-2').estimate_analysis, 60);
+  assert.strictEqual(stored.find((i) => i.issueId === 'NOVA-1').estimate_analysis, 480);
 
   const before = props.ssp_roleitems;
-  const e = refusal('upsert_item', { projectKey: 'SCBT', roleKey: 'analysis', item: { issueId: 'SCBT-3' } }, user([]));
+  const e = refusal('upsert_item', { projectKey: 'NOVA', roleKey: 'analysis', item: { issueId: 'NOVA-3' } }, user([]));
   assert.strictEqual(e.info.reason, 'editor_rights_required');
   assert.strictEqual(props.ssp_roleitems, before, 'состав не тронут');
 });
 
 test('baseRev агента передаётся как есть: чужая ревизия — rev_conflict с текущей', () => {
   mkProject();
-  const e = refusal('remove_item', { projectKey: 'SCBT', roleKey: 'analysis', issueId: 'SCBT-1', baseRev: 1 });
+  const e = refusal('remove_item', { projectKey: 'NOVA', roleKey: 'analysis', issueId: 'NOVA-1', baseRev: 1 });
   assert.strictEqual(e.info.reason, 'rev_conflict');
   assert.strictEqual(e.info.rev, 4);
   assert.ok(e.message.split('\n')[0].includes('4'));
 });
 
 test('upload_draft: чужая роль, занятый слот без overwrite — защиты до записи; overwrite пишет PLANNING', () => {
-  const draft = { projectKey: 'SCBT', sprint: { sprintId: 'S-2', name: 'Новый', dateStart: 1779148800000, dateEnd: 1780358400000 },
-    roleItems: { analysis: [{ issueId: 'SCBT-5', estimate: 120 }] } };
+  const draft = { projectKey: 'NOVA', sprint: { sprintId: 'S-2', name: 'Новый', dateStart: 1779148800000, dateEnd: 1780358400000 },
+    roleItems: { analysis: [{ issueId: 'NOVA-5', estimate: 120 }] } };
   let props = mkProject();
   const e1 = refusal('upload_draft', Object.assign({}, draft, { roleItems: { testing: [] } }));
   assert.strictEqual(e1.info.reason, 'role_not_active');
@@ -193,8 +193,8 @@ test('upload_draft: чужая роль, занятый слот без overwrit
 
 test('пустые правки — nothing_to_do без записи', () => {
   mkProject();
-  assert.strictEqual(refusal('patch_sprint', { projectKey: 'SCBT', sprint: {} }).info.reason, 'nothing_to_do');
-  assert.strictEqual(refusal('update_release_issues', { projectKey: 'SCBT', id: 'R-1' }).info.reason, 'nothing_to_do');
+  assert.strictEqual(refusal('patch_sprint', { projectKey: 'NOVA', sprint: {} }).info.reason, 'nothing_to_do');
+  assert.strictEqual(refusal('update_release_issues', { projectKey: 'NOVA', id: 'R-1' }).info.reason, 'nothing_to_do');
 });
 
 /* ── 3.51.0: проекты с планером, мои роли, удаление релиза ──────────────────── */
@@ -202,31 +202,31 @@ test('пустые правки — nothing_to_do без записи', () => {
 test('filter_projects: проект с планером виден, без планера и без права чтения — нет; projectKey не нужен', () => {
   mkProject();
   projects.BARE = { key: 'BARE', name: 'Bare', extensionProperties: {} };
-  const r = run('filter_projects', { keys: ['SCBT', 'BARE', 'NOPE'] });
-  assert.deepStrictEqual(r.projects.map((p) => p.key), ['SCBT']);
+  const r = run('filter_projects', { keys: ['NOVA', 'BARE', 'NOPE'] });
+  assert.deepStrictEqual(r.projects.map((p) => p.key), ['NOVA']);
   assert.strictEqual(r.projects[0].hasMirror, true);
-  assert.deepStrictEqual(run('filter_projects', { keys: ['SCBT'] }, user([G_ADMIN], false)).projects, []);
+  assert.deepStrictEqual(run('filter_projects', { keys: ['NOVA'] }, user([G_ADMIN], false)).projects, []);
   assert.strictEqual(refusal('filter_projects', {}).info.reason, 'invalid_argument:keys');
 });
 
 test('get_my_roles: роли по группам планера и сводка со списком ролей', () => {
   mkProject();
-  const r = run('get_my_roles', { projectKey: 'SCBT' });
+  const r = run('get_my_roles', { projectKey: 'NOVA' });
   assert.strictEqual(r.configured, true);
   assert.strictEqual(r.roles.editor, true);
   assert.strictEqual(r.roles.validator, true);
   assert.strictEqual(r.roles.settingsManager, true);
   assert.strictEqual(r.roles.releaseEngineer, false);
   assert.ok(r.summary.includes('editor'));
-  assert.ok(Object.values(run('get_my_roles', { projectKey: 'SCBT' }, user([])).roles).every((v) => v === false));
+  assert.ok(Object.values(run('get_my_roles', { projectKey: 'NOVA' }, user([])).roles).every((v) => v === false));
 });
 
 test('remove_release: удаляет релиз по id через мелкую операцию; нет релиза — release_not_found', () => {
   const REL = { id: 'R-1', name: 'v1', kind: 'release', source: 'internal', status: 'planned', issues: [] };
   const props = mkProject({ ssp_releases: JSON.stringify({ releases: [REL, Object.assign({}, REL, { id: 'R-2' })] }), ssp_releases_rev: '3' });
-  const r = run('remove_release', { projectKey: 'SCBT', id: 'R-1' });
+  const r = run('remove_release', { projectKey: 'NOVA', id: 'R-1' });
   assert.deepStrictEqual(r.applied, { id: 'R-1' });
   assert.strictEqual(r.rev, 4);
   assert.deepStrictEqual(JSON.parse(props.ssp_releases).releases.map((x) => x.id), ['R-2']);
-  assert.strictEqual(refusal('remove_release', { projectKey: 'SCBT', id: 'R-1' }).info.reason, 'release_not_found');
+  assert.strictEqual(refusal('remove_release', { projectKey: 'NOVA', id: 'R-1' }).info.reason, 'release_not_found');
 });

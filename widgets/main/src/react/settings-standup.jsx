@@ -5,8 +5,8 @@
 import * as React from 'react';
 import { _btnCls, MultiSelect, StateRolesTable } from './settings-shared.jsx';
 
-/* #69 R1 (строка 7) — парная с corp константа (паттерн #64): в community done-пикер ЖИВ — done-канон
-   отчётности (A10/spillover); в corp скрыт (`true`), т.к. отчётность там отключена. DIFF_MAP §10a. */
+/* #69 R1 (строка 7) — парная константа другой редакции (паттерн #64): здесь done-пикер ЖИВ — done-канон
+   отчётности (A10/spillover); в редакции без отчётности он скрыт (`true`). DIFF_MAP §10a. */
 const STANDUP_DONE_PICKER_HIDDEN = false;
 
 function StandupSection(props) {

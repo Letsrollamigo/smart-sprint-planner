@@ -30,7 +30,7 @@ function mkCtx(body, props, opts) {
   props = Object.assign({}, props || {});
   return {
     settings: { settingsManagerGroup: opts.smGroup !== undefined ? opts.smGroup : G_ADMIN },
-    project: { key: 'SCBT', extensionProperties: props },
+    project: { key: 'NOVA', extensionProperties: props },
     currentUser: { id: 'u-1', login: 'user1', groups: opts.userGroups || [G_ADMIN], hasPermission: () => false },
     request: { body: JSON.stringify(body), getParameter: () => '' },
     response: { status: 200, body: null, json(v) { this.body = v; } },
@@ -82,7 +82,7 @@ test('isPlannerDisabled: строго === true; мусор/строки/1 — fa
 });
 
 test('риск 3: флаг в history[].settings НЕ выключает проект — гейт читает только актуальный блоб', () => {
-  const project = { key: 'SCBT', extensionProperties: {
+  const project = { key: 'NOVA', extensionProperties: {
     ssp_settings: JSON.stringify({ activeRoles: ['analysis'] }),   /* актуальный блоб БЕЗ флага */
     ssp_history: JSON.stringify([{ sprintId: 'S-1', settings: { plannerDisabled: true } }])  /* снимок эпохи С флагом */
   } };
@@ -145,7 +145,7 @@ test('риск 4 (global): пустое зеркало ssp_acl → buildProjectC
     request: { body: JSON.stringify({ disabled: false }), getParameter: () => '' },
     response: { status: 200, body: null, json(v) { this.body = v; } }
   };
-  const project = { key: 'SCBT', extensionProperties: { ssp_settings: JSON.stringify({ plannerDisabled: true }) } };  /* зеркала нет */
+  const project = { key: 'NOVA', extensionProperties: { ssp_settings: JSON.stringify({ plannerDisabled: true }) } };  /* зеркала нет */
   const ctx = glob.buildProjectCtx(globalCtx, project);
   EP_PD.handle(ctx);
   assert.strictEqual(globalCtx.response.status, 403);
@@ -162,7 +162,7 @@ test('global happy-path: зеркало ssp_acl с группой + членст
     ssp_settings: JSON.stringify({ plannerDisabled: true }),
     ssp_acl: JSON.stringify({ settingsManagerGroup: { id: G_ADMIN.id, name: G_ADMIN.name } })
   };
-  const ctx = glob.buildProjectCtx(globalCtx, { key: 'SCBT', extensionProperties: props });
+  const ctx = glob.buildProjectCtx(globalCtx, { key: 'NOVA', extensionProperties: props });
   EP_PD.handle(ctx);
   assert.strictEqual(globalCtx.response.body.success, true, JSON.stringify(globalCtx.response.body));
   assert.ok(!('plannerDisabled' in JSON.parse(props.ssp_settings)));

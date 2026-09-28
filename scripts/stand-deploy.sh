@@ -13,7 +13,7 @@
 # Использование:  bash scripts/stand-deploy.sh <temp-version> [base-url]
 #   temp-version — строго выше последней задеплоенной (напр. 3.2.94)
 #   base-url     — дефолт http://localhost:8080
-# Креды: Keychain scbt-yt-teststand/Letsrollamigo (или env YT_STAND_USER/YT_STAND_PASS).
+# Креды: env YT_STAND_USER/YT_STAND_PASS либо Keychain (service из env YT_STAND_KEYCHAIN_SERVICE, account = пользователь).
 set -euo pipefail
 
 VER="${1:?usage: stand-deploy.sh <temp-version> [base-url]}"
@@ -33,7 +33,7 @@ if ! [[ "$BASE" =~ ^https?://(localhost|127\.0\.0\.1|\[::1\]|[A-Za-z0-9._-]+\.lo
 fi
 
 USER_="${YT_STAND_USER:-Letsrollamigo}"
-PASS="${YT_STAND_PASS:-$(security find-generic-password -s scbt-yt-teststand -a "$USER_" -w)}"
+PASS="${YT_STAND_PASS:-$(security find-generic-password -s "${YT_STAND_KEYCHAIN_SERVICE:?задайте YT_STAND_PASS либо YT_STAND_KEYCHAIN_SERVICE}" -a "$USER_" -w)}"
 
 cd "$ROOT"
 npm run build >/dev/null

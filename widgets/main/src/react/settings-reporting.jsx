@@ -74,7 +74,7 @@ function ReportingSection(props) {
   const hintCls = { fontSize: '12px', color: 'var(--muted)', marginTop: '6px', display: 'block' };
   /* #50 — пороги aging (A7) / цели A1 / поток A8-A9: строка = пикер состояния из бандла State-поля
      + сателлит-поля + добавить/удалить (паттерн зон бэклога #21; НЕ фикс-строка на КАЖДОЕ значение
-     бандла — на корп-инстансе бандл длинный). bundleStates реактивно из fields.fieldState. */
+     бандла — на больших инстансах бандл длинный). bundleStates реактивно из fields.fieldState. */
   const bundleStates = props.bundleStates || [];
   const numCell = { width: '80px', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: '4px', boxSizing: 'border-box' };
   const txtCell = { width: '100%', padding: '4px 6px', border: '1px solid var(--border)', borderRadius: '4px', boxSizing: 'border-box' };
