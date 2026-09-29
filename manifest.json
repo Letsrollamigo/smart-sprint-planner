@@ -9,13 +9,13 @@
     "url": "https://github.com/Letsrollamigo",
     "email": "Oberon999@yandex.kz"
   },
-  "version": "3.51.0",
+  "version": "3.51.1",
   "icon": "app-logo.svg",
   "iconDark": "app-logo-dark.svg",
   "minYouTrackVersion": "2024.3.0",
   "settings": "settings.json",
   "aiToolPrefix": "planner",
-  "changeNotes": "<b>What&#39;s new since v3.50.0</b><br><br>🔌 <b>Planner operations for integrations and AI agents</b> (3.51.0) — an integration can now find out which projects have the planner attached (<code>filter-planner-projects</code> joins the contract), check its own roles in a project before writing (<code>my-roles</code>), and delete a single release (<code>removeRelease</code>) instead of replacing the whole release registry. The built-in MCP tools grow to 22: <code>planner_filter_projects</code>, <code>planner_get_my_roles</code>, <code>planner_remove_release</code>. No schema change.",
+  "changeNotes": "<b>What&#39;s new since v3.50.0</b><br><br>🛠 <b>Capacity keeps unsaved edits</b> (3.51.1) — Save and Approve first write the absences marked in the calendar, and Save absences no longer resets table edits; before, saving one half of the screen silently dropped unsaved changes in the other, and approval froze the old absences (#140).<br><br>🔌 <b>Planner operations for integrations and AI agents</b> (3.51.0) — an integration can now find out which projects have the planner attached (<code>filter-planner-projects</code> joins the contract), check its own roles in a project before writing (<code>my-roles</code>), and delete a single release (<code>removeRelease</code>) instead of replacing the whole release registry. The built-in MCP tools grow to 22: <code>planner_filter_projects</code>, <code>planner_get_my_roles</code>, <code>planner_remove_release</code>. No schema change.",
   "widgets": [
     {
       "key": "ssp-main",

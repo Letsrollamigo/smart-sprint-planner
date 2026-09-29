@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [3.51.1] — 2026-09-29
+
+> **Capacity tab patch.** #140: saving one half of the screen no longer drops unsaved edits in the other. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor is 3.46.0.
+
+### Fixed
+
+- **Absences no longer vanish after the table’s Save (#140).** The tab has two write buttons: Save / Approve / Re-approve above the table and Save absences under the calendar. After either of them the tab re-read the server and discarded unsaved edits in the other half behind a success toast: a marked vacation disappeared and the base hours went back. Now the table buttons first write the absences marked in the calendar, then the table; if the server refuses the absences, the table is not written.
+- **Approve freezes the current absences (#140).** Approval freezes absences as stored on the server; unsent calendar marks used to miss the approved capacity, so the approved base was overstated.
+- **Save absences keeps table edits (#140).** Changed but unsaved grade, rate, participation and allocations survive the tab reload; absences are re-read from the server.
+
+### Under the hood
+
+- `domain/capacity-view.js`: the table write sends the absence draft first when it differs from the server’s; the absence write carries only the edited table rows across the reload. Golden `tests/golden/capacity-save-draft.golden.test.js`. External REST, MCP tools and the n8n node are unchanged — only the contract version moved.
+
+---
+
 ## [3.51.0] — 2026-09-25
 
 > **Planner operations for the n8n node and AI agents.** #113: the “which projects have the planner attached” request joins the contract, plus a new “my roles” request and single-release deletion (#138); 22 built-in MCP tools, MCP server 0.2.0. No schema change: `CURRENT_PLUGIN_VERSION` stays 3.46.0, the rollback floor is 3.46.0.
