@@ -219,7 +219,26 @@ function _labels(deps) {
 }
 
 /* ───────────────────── persist / actions ───────────────────── */
-function _persist(deps, sel, action, model) {
+/* #140 — у экрана две кнопки сохранения, а перезагрузка после любой пере-сидит обе половины
+   локального стейта: неотправленное во второй половине пропадало молча (прод-баг: отметил
+   отпуск → «Сохранить» таблицы → зелёный тост, отпуска нет). Поэтому запись таблицы сперва
+   досылает черновик отсутствий, а запись отсутствий переносит правки таблицы через перезагрузку. */
+function _absKey(m) {
+  var o = {};
+  Object.keys(m || {}).sort().forEach(function (l) { if (m[l] && m[l].length) o[l] = m[l]; });
+  return JSON.stringify(o);
+}
+/* Правленые строки модели относительно посева вкладки; null — правок нет. Переносим только их:
+   нетронутая копия поверх свежей записи затёрла бы чужое сохранение. */
+function _modelEdits(model, seed) {
+  var out = null;
+  Object.keys(model || {}).forEach(function (l) {
+    if (JSON.stringify(model[l]) !== JSON.stringify((seed || {})[l])) (out || (out = {}))[l] = model[l];
+  });
+  return out;
+}
+
+function _persist(deps, sel, action, model, absDraft, seed) {
   /* v3.2.1 — ростер не загрузился → модель пуста не по воле пользователя;
      сохранение затёрло бы grade/rate/alloc всех людей спринта. */
   var _uiPersist = deps.state.getCapacityUiState ? (deps.state.getCapacityUiState() || {}) : {};
@@ -232,35 +251,51 @@ function _persist(deps, sel, action, model) {
   });
   var check = deps.CAPACITY_PURE.validateAllocSums(persons);
   if ((action === 'approve' || action === 'reapprove') && !check.ok) { deps.toast(deps.T('sumAllocOverlimit'), 'err'); return; }
-  deps.apiPost('capacity', { persons: persons }, { action: action, sprintId: sel.id }).then(function (r) {
-    if (r && r.success) {
-      deps.toast(deps.T(action === 'save' ? 'msgCapacitySaved' : 'msgCapacityApproved'), 'success');
-      /* v3.2.1 — сброс _planCap ядра: без него Full-остатки планирования
-         считались по устаревшей записи ёмкости до полной перезагрузки. */
-      if (typeof deps.invalidatePlanCap === 'function') deps.invalidatePlanCap(sel.id);
-      loadAndRender(deps); // перезагрузка → ++dataVersion → React пере-сидит локальный стейт
-    } else {
-      var reason = (r && r.reason) || 'unknown';
-      deps.toast(deps.T(reason === 'alloc_sum_exceeds_100' ? 'sumAllocOverlimit' : 'errCapacitySave'), 'err');
-    }
-  }).catch(function (e) { deps.diag('persistCapacity err: ' + e, 'err'); deps.toast(deps.T('errCapacitySave'), 'err'); });
+  /* #140 — отсутствия раньше таблицы: утверждение замораживает их с сервера (§8). */
+  var flush = (absDraft && _absKey(absDraft) !== _absKey(deps.state.getAbsences()))
+    ? _postAbsences(deps, absDraft) : Promise.resolve(null);
+  flush.then(function (absSaved) {
+    if (absSaved === false) return;   // отсутствия не приняты — таблицу не пишем, черновики целы
+    /* Таблица не записалась, а отсутствия уже на сервере — перечитать их (слияние #84
+       могло подмешать чужое), правки таблицы перенести. */
+    function failed() { if (absSaved) loadAndRender(deps, { model: _modelEdits(model, seed) }); }
+    return deps.apiPost('capacity', { persons: persons }, { action: action, sprintId: sel.id }).then(function (r) {
+      if (r && r.success) {
+        deps.toast(deps.T(action === 'save' ? 'msgCapacitySaved' : 'msgCapacityApproved'), 'success');
+        /* v3.2.1 — сброс _planCap ядра: без него Full-остатки планирования
+           считались по устаревшей записи ёмкости до полной перезагрузки. */
+        if (typeof deps.invalidatePlanCap === 'function') deps.invalidatePlanCap(sel.id);
+        loadAndRender(deps); // перезагрузка → ++dataVersion → React пере-сидит локальный стейт
+      } else {
+        var reason = (r && r.reason) || 'unknown';
+        deps.toast(deps.T(reason === 'alloc_sum_exceeds_100' ? 'sumAllocOverlimit' : 'errCapacitySave'), 'err');
+        failed();
+      }
+    }).catch(function (e) { deps.diag('persistCapacity err: ' + e, 'err'); deps.toast(deps.T('errCapacitySave'), 'err'); failed(); });
+  });
 }
 
-function _saveAbsences(deps, fullMap) {
+/* Запись реестра отсутствий: резолвит true/false, не реджектит; успех не тостит (решает вызывающий). */
+function _postAbsences(deps, map) {
   /* #67 H3 — сбой GET absences молча ставил пустой реестр, следующее сохранение его
      персистило: единственная в аудите потеря данных обычным кликом (архива у absences
      нет, baseRev остаётся синхронным с прошлого успешного GET). Гейт по образцу
      rosterLoadFailed; CSV-путь (fullMap) блокируем тоже — full-replace поверх
      незагруженного реестра затирает так же. */
   var _uiAbs = deps.state.getCapacityUiState ? (deps.state.getCapacityUiState() || {}) : {};
-  if (_uiAbs.absencesLoadFailed) { deps.toast(deps.T('errCapacityLoad'), 'err'); return; }
-  var map = fullMap || deps.state.getAbsences() || {};
+  if (_uiAbs.absencesLoadFailed) { deps.toast(deps.T('errCapacityLoad'), 'err'); return Promise.resolve(false); }
   /* v3.2.1 — явная обёртка: backend отличает осознанно-пустую карту от битого тела
      (с 3.49.0 — гейт base_rev_required; baseRev подставляет транспорт). */
-  deps.apiPost('absences', { absences: map }).then(function (r) {
-    if (r && r.success) { deps.state.setAbsences(JSON.parse(JSON.stringify(map))); deps.toast(deps.T('msgAbsencesSaved'), 'success'); loadAndRender(deps); }
-    else deps.toast(deps.T('errAbsencesSave'), 'err');
-  }).catch(function (e) { deps.diag('saveAbsences err: ' + e, 'err'); deps.toast(deps.T('errAbsencesSave'), 'err'); });
+  return deps.apiPost('absences', { absences: map }).then(function (r) {
+    if (r && r.success) { deps.state.setAbsences(JSON.parse(JSON.stringify(map))); return true; }
+    deps.toast(deps.T('errAbsencesSave'), 'err'); return false;
+  }).catch(function (e) { deps.diag('saveAbsences err: ' + e, 'err'); deps.toast(deps.T('errAbsencesSave'), 'err'); return false; });
+}
+
+function _saveAbsences(deps, fullMap, modelEdits) {
+  _postAbsences(deps, fullMap || deps.state.getAbsences() || {}).then(function (ok) {
+    if (ok) { deps.toast(deps.T('msgAbsencesSaved'), 'success'); loadAndRender(deps, { model: modelEdits }); }
+  });
 }
 
 function _downloadTemplate() {
@@ -376,7 +411,14 @@ function _buildVm(deps, sprints, sel, ui) {
   var readOnly = !sel.isActive;
   var ppMap = (typeof deps.buildPPMapFromCanon === 'function') ? deps.buildPPMapFromCanon(sel.id, deps.state.getHistory(), null) : null;
   var model = _buildModel(deps, sel, roster, rec, ui.carry || null, ppMap);
-  var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, model, absMap);
+  /* #140 — правки таблицы, перенесённые через перезагрузку, поверх свежей модели (только люди
+     текущего ростера). `model` остаётся посевом для _modelEdits. */
+  var persons = model;
+  if (ui.keepModel) {
+    persons = {};
+    Object.keys(model).forEach(function (l) { persons[l] = ui.keepModel[l] || model[l]; });
+  }
+  var computed = readOnly ? _frozenView(rec) : _computeView(deps, sel, persons, absMap);
   var roles = _rolesVm(deps, sel && sel.id);
   var absTypes = deps.CAPACITY_PURE.ABSENCE_TYPES.map(function (t) { return { key: t, label: deps.T(ABS_KEY[t] || t) }; });
   var selRole = _selRole(roles, ui);
@@ -403,7 +445,7 @@ function _buildVm(deps, sprints, sel, ui) {
     sprints: sprints.map(function (s) { return { id: s.id, name: s.name, isActive: s.isActive }; }),
     status: _status(rec), readOnly: readOnly, isReapprove: !!(rec && rec.status === 'approved'),
     grades: Object.keys(deps.CAPACITY_PURE.DEFAULT_KPE),
-    roles: roles, persons: model, computed: computed,
+    roles: roles, persons: persons, computed: computed,
     calendarDays: _calendarDays(deps, sel), dows: deps.T('calendarDows').split(','),
     selectedPerson: ui.selectedPerson || null, absencesByLogin: absMap,
     absenceTypes: absTypes, uncoveredYears: _uncoveredYears(deps, sel), canUploadCsv: !!ui.canCsv,
@@ -417,10 +459,10 @@ function _buildVm(deps, sprints, sel, ui) {
     onRoleSelect: function (rk) { var u = deps.state.getCapacityUiState() || {}; u.selectedRole = rk; u.selectedPerson = null; deps.state.setCapacityUiState(u); render(deps); },
     onViewModeChange: function (mode) { var u = deps.state.getCapacityUiState() || {}; u.viewMode = (mode === 'role') ? 'role' : 'person'; deps.state.setCapacityUiState(u); render(deps); },
     onMainViewChange: function (mode) { var u = deps.state.getCapacityUiState() || {}; u.mainView = (mode === 'persons') ? 'persons' : 'roles'; deps.state.setCapacityUiState(u); render(deps); }, /* #52 */
-    onSave: function (m) { _persist(deps, sel, 'save', m); },
-    onApprove: function (m) { _persist(deps, sel, 'approve', m); },
-    onReapprove: function (m) { _persist(deps, sel, 'reapprove', m); },
-    onSaveAbsences: function (fullMap) { _saveAbsences(deps, fullMap); },
+    onSave: function (m, abs) { _persist(deps, sel, 'save', m, abs, model); },
+    onApprove: function (m, abs) { _persist(deps, sel, 'approve', m, abs, model); },
+    onReapprove: function (m, abs) { _persist(deps, sel, 'reapprove', m, abs, model); },
+    onSaveAbsences: function (fullMap, m) { _saveAbsences(deps, fullMap, _modelEdits(m, model)); },
     onUploadCsv: function (file) { _uploadCsv(deps, file); },
     canUploadCsvGlobal: !!ui.canGlobalCsv, /* #51 */
     onUploadCsvGlobal: function (file) { _uploadCsvGlobal(deps, file); },
@@ -451,13 +493,14 @@ function render(deps) {
   mount.mountAt(host, _buildVm(deps, sprints, sel, ui));
 }
 
-function loadAndRender(deps) {
+function loadAndRender(deps, keep) {
   var settings = deps.state.getSettings() || {};
   if (settings.capacityMode !== 'full') { render(deps); return; }
   var ui = deps.state.getCapacityUiState() || {};
   var sprints = _sprintList(deps);
   if (!ui.selectedSprintId || !_findSprint(sprints, ui.selectedSprintId)) ui.selectedSprintId = sprints.length ? sprints[0].id : null;
   ui.dataVersion = (ui.dataVersion || 0) + 1;
+  ui.keepModel = (keep && keep.model) || null;   /* #140 — живёт до следующей перезагрузки */
   deps.state.setCapacityUiState(ui);
   var sel = _findSprint(sprints, ui.selectedSprintId);
 

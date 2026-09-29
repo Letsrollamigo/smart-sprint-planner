@@ -309,12 +309,12 @@ function CapacityInner({ vm }) {
           ? <span className="ssp-capacity-readonly">{L.readOnlyHint}</span>
           : <button type="button" className="ring-button-button ring-button-block ring-button-heightM ring-button-primaryBlock ring-button-flat ring-button-whiteText"
                     disabled={anyOver} title={anyOver ? L.sumOver : ''}
-                    onClick={() => (vm.isReapprove ? vm.onReapprove(model) : vm.onApprove(model))}>
+                    onClick={() => (vm.isReapprove ? vm.onReapprove(model, absByLogin) : vm.onApprove(model, absByLogin))}>
               {vm.isReapprove ? L.reapprove : L.approve}
             </button>}
         {!vm.readOnly
           ? <button type="button" className="ring-button-button ring-button-block ring-button-heightM"
-                    onClick={() => vm.onSave(model)}>{L.save}</button>
+                    onClick={() => vm.onSave(model, absByLogin)}>{L.save}</button>
           : null}
       </div>
 
@@ -475,7 +475,7 @@ function CapacityInner({ vm }) {
             : null}
           {viewMode === 'person' && selLogin && !readOnly
             ? <button type="button" className="ring-button-button ring-button-block ring-button-heightS ssp-capacity-saveabs"
-                      onClick={() => vm.onSaveAbsences(absByLogin)}>{L.saveAbs}</button>
+                      onClick={() => vm.onSaveAbsences(absByLogin, model)}>{L.saveAbs}</button>
             : null}
         </div>
       </div>
