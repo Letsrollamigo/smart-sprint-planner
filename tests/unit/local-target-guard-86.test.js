@@ -22,6 +22,7 @@ const path = require('node:path');
 const ROOT = path.join(__dirname, '..', '..');
 const DEPLOY = path.join(ROOT, 'scripts', 'stand-deploy.sh');
 const SEED = path.join(ROOT, 'tests', 'golden', 'seed-democlone.js');
+const SMOKE = path.join(ROOT, 'scripts', 'contract-smoke.sh');
 
 const REMOTE = ['https://example.invalid', 'https://youtrack.example.com', 'http://10.0.0.5:8080'];
 
@@ -30,6 +31,19 @@ test('#86 stand-deploy: удалённая цель отвергается с к
     const r = spawnSync('bash', [DEPLOY, '9.9.9', url], { encoding: 'utf8', cwd: ROOT });
     assert.strictEqual(r.status, 2, url + ': ожидался отказ (exit 2), получено ' + r.status);
     assert.match(r.stderr, /ОТКАЗ/, url + ': отказ обязан быть назван в stderr');
+  }
+});
+
+test('#142 отказ не зависит от локали: в UTF-8 кавычка после имени переменной не приклеивается к имени', () => {
+  /* «$BASE» в тексте отказа: bash 3.2 (macOS) в UTF-8-локали читал первый байт «»» как часть
+     имени → `BASE…: unbound variable`, exit 1 вместо 2 и без слова «ОТКАЗ». Локали на машине
+     может не быть — тогда bash остаётся в C и проверка совпадает с #86. */
+  const env = { ...process.env, LC_ALL: 'en_US.UTF-8', YT_TOKEN: '' };
+  for (const args of [[DEPLOY, '9.9.9', 'https://example.invalid'], [SMOKE, 'https://example.invalid', 'app', 'KEY']]) {
+    const r = spawnSync('bash', args, { encoding: 'utf8', cwd: ROOT, env });
+    const name = path.basename(args[0]);
+    assert.strictEqual(r.status, 2, name + ': ожидался отказ (exit 2), получено ' + r.status + ' — ' + r.stderr.split('\n')[0]);
+    assert.match(r.stderr, /ОТКАЗ/, name + ': отказ обязан быть назван в stderr');
   }
 });
 

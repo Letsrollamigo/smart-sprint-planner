@@ -23,7 +23,7 @@ APP="${2:?usage: contract-smoke.sh <base-url> <app> <projectKey>}"
 KEY="${3:?usage: contract-smoke.sh <base-url> <app> <projectKey>}"
 # Предохранитель «только локальный стенд» — как у stand-deploy.sh (#86): скрипт пишет данные.
 if ! [[ "$BASE" =~ ^https?://(localhost|127\.0\.0\.1|\[::1\]|[A-Za-z0-9._-]+\.local)(:[0-9]+)?/?$ ]]; then
-  echo "contract-smoke: ОТКАЗ — цель «$BASE» не локальный тест-стенд." >&2
+  echo "contract-smoke: ОТКАЗ — цель «${BASE}» не локальный тест-стенд." >&2
   exit 2
 fi
 if [ -z "${YT_TOKEN:-}" ]; then
