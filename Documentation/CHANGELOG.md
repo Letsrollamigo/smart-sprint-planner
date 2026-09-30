@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Absences no longer vanish after the table’s Save (#140).** The tab has two write buttons: Save / Approve / Re-approve above the table and Save absences under the calendar. After either of them the tab re-read the server and discarded unsaved edits in the other half behind a success toast: a marked vacation disappeared and the base hours went back. Now the table buttons first write the absences marked in the calendar, then the table; if the server refuses the absences, the table is not written.
 - **Approve freezes the current absences (#140).** Approval freezes absences as stored on the server; unsent calendar marks used to miss the approved capacity, so the approved base was overstated.
 - **Save absences keeps table edits (#140).** Changed but unsaved grade, rate, participation and allocations survive the tab reload; absences are re-read from the server.
+- **Role labels in Issue links no longer break mid-word.** In the issue links settings table a long role name (“Dependencies” at 1920 px) wrapped letter by letter; the column now widens to the longest single-word label across the 15 locales. CSS-only change.
 
 ### Under the hood
 
