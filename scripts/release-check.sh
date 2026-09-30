@@ -120,6 +120,16 @@ else
   fail "capacity i18n неполна — 'TZ=UTC node --test tests/unit/capacity-i18n-completeness.test.js'"
 fi
 
+# ── копии контракта в MCP-сервере (#113 — версия контракта растёт с каждым релизом планера) ─
+if [ -f "Integrations/mcp-server/scripts/sync-contract.mjs" ]; then
+  echo "— MCP-сервер: копии контракта —"
+  if node Integrations/mcp-server/scripts/sync-contract.mjs --check >/dev/null 2>&1; then
+    ok "копии контракта в MCP-сервере совпадают с Integrations/"
+  else
+    fail "копии в MCP-сервере разошлись с Integrations/ — node Integrations/mcp-server/scripts/sync-contract.mjs"
+  fi
+fi
+
 # ── architecture gate ─────────────────────────────────────────────────────────
 echo "— architecture gate —"
 if npm run --silent gate >/dev/null 2>&1; then
