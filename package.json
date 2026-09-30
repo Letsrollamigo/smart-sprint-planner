@@ -32,7 +32,8 @@
     "recharts": "^3.9.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "gantt-task-react": "^0.3.9"
+    "gantt-task-react": "^0.3.9",
+    "typescript": "^6.0.3"
   },
   "overrides": {
     "gantt-task-react": {
